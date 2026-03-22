@@ -349,13 +349,13 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     // Prefix: when EnableFailureRedesign and our roll fails, apply opposite effect (numeric) or +1 Workmanship (imbue), or let original run.
     [HarmonyPrefix]
     [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.HandleRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(double) })]
-    public static bool PreHandleRecipe(Player player, WorldObject source, WorldObject target, Recipe recipe, double percentSuccess)
+    public static bool PreHandleRecipe(Player player, WorldObject source, WorldObject target, Recipe recipe, double successChance)
     {
         Settings? s = CurrentSettings;
         if (s == null || (!s.EnableFailureRedesign && !s.EnableDefaultImbueFailureWorkmanship))
             return true;
 
-        bool rolledSuccess = Random.Shared.NextDouble() * 100.0 < percentSuccess;
+        bool rolledSuccess = Random.Shared.NextDouble() * 100.0 < successChance;
         if (rolledSuccess)
             return true;
 

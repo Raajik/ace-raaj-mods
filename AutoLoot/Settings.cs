@@ -40,7 +40,8 @@ public class Settings
     ///
     /// The /autoloot command creates this folder automatically if it doesn't exist yet.
     /// </summary>
-    public string LootProfilePath { get; set; } = Path.Combine(ModManager.ModPath, "AutoLoot", "LootProfiles");
+    // Default empty: PatchClass sets Path.Combine(ModC.ModPath, "LootProfiles") after load (ModManager.ModPath is not reliable during ctor / JSON new()).
+    public string LootProfilePath { get; set; } = "";
 
     /// <summary>
     /// The filename of the profile that is automatically enabled for a player the first

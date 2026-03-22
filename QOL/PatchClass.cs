@@ -2,10 +2,41 @@ using MotionTable = ACE.DatLoader.FileTypes.MotionTable;
 
 namespace QOL;
 
-[HarmonyPatch]
+// Marketplace recall + max specialized credits use manual Harmony.Patch in OnStartSuccess so AccessTools can bind
+// private methods (e.g. GetTotalSpecializedCredits) and we do not run during BasicMod.PatchAllUncategorized before Init().
+
 public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
 {
     static bool _qolCommandCategoriesRegistered;
+
+    public override async Task OnStartSuccess()
+    {
+        await base.OnStartSuccess();
+        ApplyCoreManualHarmonyPatches();
+    }
+
+    void ApplyCoreManualHarmonyPatches()
+    {
+        Harmony harmony = ModC.Harmony;
+        try
+        {
+            MethodInfo? tele = AccessTools.Method(typeof(Player), "HandleActionTeleToMarketPlace");
+            if (tele != null)
+                harmony.Patch(tele, prefix: new HarmonyMethod(typeof(PatchClass), nameof(PreHandleActionTeleToMarketPlace)));
+            else
+                ModManager.Log("QOL: Player.HandleActionTeleToMarketPlace not found; marketplace recall patch skipped.", ModManager.LogLevel.Warn);
+
+            MethodInfo? spec = AccessTools.Method(typeof(SkillAlterationDevice), "GetTotalSpecializedCredits", new Type[] { typeof(Player) });
+            if (spec != null)
+                harmony.Patch(spec, postfix: new HarmonyMethod(typeof(PatchClass), nameof(PostGetTotalSpecializedCredits)));
+            else
+                ModManager.Log("QOL: SkillAlterationDevice.GetTotalSpecializedCredits(Player) not found; max-spec patch skipped.", ModManager.LogLevel.Warn);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"QOL: core Harmony patches failed: {ex.Message}", ModManager.LogLevel.Error);
+        }
+    }
 
     public override void Start()
     {
@@ -100,9 +131,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         }
     }
 
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Player), nameof(Player.HandleActionTeleToMarketPlace))]
-    public static bool PreHandleActionTeleToMarketPlace(ref Player __instance)
+    public static bool PreHandleActionTeleToMarketPlace(Player __instance)
     {
         if (__instance?.Session?.Network == null)
             return false;
@@ -181,10 +210,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         return false;
     }
 
-    //Fakes having more credits invested
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(SkillAlterationDevice), "GetTotalSpecializedCredits", new Type[] { typeof(Player) })]
-    public static void PostGetTotalSpecializedCredits(Player player, ref SkillAlterationDevice __instance, ref int __result)
+    // Fakes having more credits invested (instance method on SkillAlterationDevice; ACE keeps it private — resolve via AccessTools in ApplyCoreManualHarmonyPatches).
+    public static void PostGetTotalSpecializedCredits(SkillAlterationDevice __instance, Player player, ref int __result)
     {
         if (Settings == null)
             return;

@@ -20,38 +20,41 @@ public partial class PatchClass : BasicPatch<Settings>
     static readonly object GenerateTreasurePatchLock = new();
     static bool GenerateTreasurePostfixPatched;
 
-    /// <summary>
-    /// Constructor. Called immediately when ACE loads the mod.
-    ///
-    /// We initialize Settings here rather than relying on OnWorldOpen, because
-    /// OnWorldOpen doesn't reliably fire before players issue their first command.
-    /// The null-coalescing fallback (new Settings()) uses all the defaults defined
-    /// in Settings.cs, so the mod still works even if Settings.json doesn't exist yet.
-    /// </summary>
+    // SettingsContainer is assigned in Init() after this ctor; do not touch it here.
+
     public PatchClass(BasicMod mod, string settingsName = "Settings.json") : base(mod, settingsName)
     {
-        try
-        {
-            Settings ??= SettingsContainer.Settings;
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"AutoLoot: constructor settings load failed ({ex.Message}); using defaults.", ModManager.LogLevel.Warn);
-            Settings ??= new Settings();
-        }
     }
 
     public override void Start()
     {
         base.Start();
+    }
+
+    public override async Task OnStartSuccess()
+    {
+        await base.OnStartSuccess();
+        SyncSettingsLootPathAndTreasureHook();
+    }
+
+    static void NormalizeLootProfilePath(Settings s, string modFolder)
+    {
+        if (string.IsNullOrWhiteSpace(s.LootProfilePath))
+            s.LootProfilePath = Path.Combine(modFolder, "LootProfiles");
+    }
+
+    void SyncSettingsLootPathAndTreasureHook()
+    {
         try
         {
-            Settings ??= SettingsContainer.Settings;
+            Settings = SettingsContainer.Settings ?? new Settings();
+            NormalizeLootProfilePath(Settings, ModC.ModPath);
         }
         catch (Exception ex)
         {
-            ModManager.Log($"AutoLoot: Start settings load failed ({ex.Message}); using defaults.", ModManager.LogLevel.Warn);
+            ModManager.Log($"AutoLoot: settings sync failed ({ex.Message}); using defaults.", ModManager.LogLevel.Warn);
             Settings ??= new Settings();
+            NormalizeLootProfilePath(Settings!, ModC.ModPath);
         }
 
         TryPatchGenerateTreasurePostfix();
@@ -101,14 +104,16 @@ public partial class PatchClass : BasicPatch<Settings>
     {
         try
         {
-            Settings = SettingsContainer.Settings;
+            if (SettingsContainer.Settings != null)
+                Settings = SettingsContainer.Settings;
         }
         catch (Exception ex)
         {
             ModManager.Log($"AutoLoot: OnWorldOpen settings load failed ({ex.Message}); keeping prior settings.", ModManager.LogLevel.Warn);
-            Settings ??= new Settings();
         }
 
+        Settings ??= new Settings();
+        NormalizeLootProfilePath(Settings, ModC.ModPath);
         TryPatchGenerateTreasurePostfix();
     }
 

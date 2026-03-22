@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<patches version="0.0.0.0" generator="Haz">
+
+
+<patch name="SplashDisablePattern" value="68 47 00 00 10 8B C8 FF 92 D0 00 00 00 84 C0 0F 84 CB 00 00 00" />
+<patch name="SplashDisableReplace" value="85" />
+<patch name="SplashDisableReplaceOffset" value="10" />
+<patch name="SplashDisableMaxOffset" value="F0000" />
+
+</patches>

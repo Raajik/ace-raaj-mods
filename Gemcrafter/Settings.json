@@ -1,0 +1,26 @@
+{
+  "Enabled": false,
+  "Verbose": true,
+  "EnableImmersiveUseHooks": true,
+  "EnableLootgenGemMagic": true,
+  "MinSpellsOnLootgenGem": 1,
+  "MaxSpellsOnLootgenGem": 1,
+  "GemWcidAllowlist": [],
+  "IncludeCantrips": true,
+  "IncludePortalRecallSummonOnGems": true,
+  "IncludeSpellNameContains": [],
+  "ExcludeSpellNameContains": [
+    "Portal",
+    "Summon",
+    "Recall"
+  ],
+  "CrusherToolWcid": 0,
+  "InfusedPowderWcids": [],
+  "TransferMaxSpellsPerApply": 1,
+  "ExcludeTransferSpellNameContains": [
+    "Portal",
+    "Summon",
+    "Recall"
+  ]
+}
+

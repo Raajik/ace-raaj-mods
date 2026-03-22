@@ -1,6 +1,9 @@
+using Swarmed.Creatures;
+
 namespace Swarmed;
 
 // Configuration for call-for-help reinforcement spawns (landscape vs dungeon, chance, count, health, messages).
+// CreatureEx: random champion spawn replacement (see CreatureFeatures for enabled variant patches).
 public class Settings
 {
     public bool LandscapeEnabled { get; set; } = true;
@@ -8,8 +11,8 @@ public class Settings
     public int LandscapeSpawnMin { get; set; } = 1;
     public int LandscapeSpawnMax { get; set; } = 5;
 
-    public bool DungeonEnabled { get; set; } = false;
-    public float DungeonChance { get; set; } = 0.15f;
+    public bool DungeonEnabled { get; set; } = true;
+    public float DungeonChance { get; set; } = 0.05f;
     public int DungeonSpawnMin { get; set; } = 1;
     public int DungeonSpawnMax { get; set; } = 3;
 
@@ -23,6 +26,42 @@ public class Settings
 
     public float ReinforcementXpBonusMin { get; set; } = 0.75f;
     public float ReinforcementXpBonusMax { get; set; } = 2.0f;
+
+    public double CreatureChance { get; set; } = 0;
+
+    // When true, CreatureEx factory chance uses shard online count: min(CreatureChance + count * bonus, max).
+    public bool CreatureChanceScalesWithOnlinePlayers { get; set; }
+
+    public double CreatureChanceBonusPerOnlinePlayer { get; set; }
+
+    // Cap after scaling; <= 0 treated as 1.0.
+    public double CreatureChanceMaximumAfterScaling { get; set; } = 1.0;
+
+    // Call-for-help landscape/dungeon rolls: same pattern on the active path’s base chance.
+    // Precedence when computing the roll: if ReinforcementChanceScalesWithLandblockPlayers is true and the dying creature has a CurrentLandblock, landblock player count is used; else if ReinforcementChanceScalesWithOnlinePlayers is true, shard-wide online count; else base chance only.
+    public bool ReinforcementChanceScalesWithOnlinePlayers { get; set; }
+
+    public float ReinforcementChanceBonusPerOnlinePlayer { get; set; }
+
+    // Cap after scaling for both online and landblock reinforcement scaling; <= 0 treated as 1f.
+    public float ReinforcementChanceMaximumAfterScaling { get; set; } = 1f;
+
+    // Reinforcement roll: scale base chance by players on the dying creature’s landblock (see precedence above).
+    public bool ReinforcementChanceScalesWithLandblockPlayers { get; set; }
+
+    public float ReinforcementChanceBonusPerLandblockPlayer { get; set; }
+
+    public AuraPulserFeatureSettings AuraPulser { get; set; } = new();
+
+    public CorpseExploiterFeatureSettings CorpseExploiter { get; set; } = new();
+
+    public List<CreatureExType> CreatureFeatures { get; set; } = new()
+    {
+        CreatureExType.Horde,
+    };
+
+    // When true, /cex accepts a substring of the CreatureExType name only if it matches exactly one enum (e.g. "stomp" -> Stomper).
+    public bool AllowPartialCreatureExTypeMatch { get; set; }
 
     // Format string: {0} = creature name. One chosen at random when the event triggers.
     public List<string> CallForHelpMessages { get; set; } = new()
@@ -58,4 +97,22 @@ public class Settings
         "Its death cry echoes—more {0} answer!",
         "The fall of one {0} brings others running!",
     };
+}
+
+public class AuraPulserFeatureSettings
+{
+    public float PulseRadiusMeters { get; set; } = 10f;
+
+    public float PulseIntervalSeconds { get; set; } = 6f;
+
+    public float DamageFractionOfPulserMaxHealth { get; set; } = 0.04f;
+
+    public int MaxPulseTargets { get; set; } = 10;
+}
+
+public class CorpseExploiterFeatureSettings
+{
+    public float FeedRadiusMeters { get; set; } = 12f;
+
+    public float HealFractionOfVictimMaxHealth { get; set; } = 0.08f;
 }

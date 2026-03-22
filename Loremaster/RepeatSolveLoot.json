@@ -90,6 +90,36 @@
   ],
 
   "QuestOverrides": {
+    "LMParchmentTierEasy": {
+      "_comment": "Parchment tier loot — easy (falls back to global Groups if you delete this block)",
+      "Groups": [
+        {
+          "Name": "Parchment Easy",
+          "Weight": 1000,
+          "Wcids": [ 20630 ]
+        }
+      ]
+    },
+    "LMParchmentTierAverage": {
+      "_comment": "Tune weights/WCIDs harder than Easy",
+      "Groups": [
+        {
+          "Name": "Parchment Average",
+          "Weight": 1000,
+          "Wcids": [ 20630 ]
+        }
+      ]
+    },
+    "LMParchmentTierChallenging": {
+      "_comment": "Tune weights/WCIDs harder than Average",
+      "Groups": [
+        {
+          "Name": "Parchment Challenging",
+          "Weight": 1000,
+          "Wcids": [ 20630 ]
+        }
+      ]
+    },
     "PathwardenComplete": {
       "_comment": "Example override — Pathwarden gives better loot on repeats",
       "Groups": [

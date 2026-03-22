@@ -1,13 +1,39 @@
 namespace Loremaster;
 
+using System.Reflection;
 using System.Text.Json;
 
 [HarmonyPatch]
-public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
+public partial class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
 {
+    static readonly string[] EmpyreanAlterationRelocatedCategories =
+    {
+        nameof(EquipPostCreation),
+        nameof(OverrideCheckUseRequirements),
+    };
+
+    // Same instance as Settings — avoids drift between reload paths.
+    internal static Settings NotificationDefaults => Settings;
+
     static FileSystemWatcher? _settingsWatcher;
     static DateTime _lastSettingsReload = DateTime.MinValue;
     const int SettingsReloadDebounceMs = 500;
+
+    // Completion-bonus and parchment XP call GrantXP with amounts already derived from quest design; skip QuestBonus multiplier to avoid double-scaling.
+    static int _questXpMultiplierSuppressDepth;
+
+    internal static void RunWithoutQuestXpMultiplier(Action action)
+    {
+        _questXpMultiplierSuppressDepth++;
+        try
+        {
+            action();
+        }
+        finally
+        {
+            _questXpMultiplierSuppressDepth--;
+        }
+    }
 
     // Start() runs on every mod load — cold boot AND hot-reload.
     // OnWorldOpen() is a one-shot ACE event fired at server startup; if the mod is
@@ -17,6 +43,14 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     {
         base.Start();
         Settings = SettingsContainer.Settings ?? new Settings();
+        RepeatSolveLootLoader.Load(GetModDirectory());
+        TryApplyPortalHasQuestSolvesHooks();
+        RefreshEmpyreanAlterationRelocatedPatches();
+        RefreshParchmentQuestPatches();
+
+        // OnWorldOpen never runs on hot-reload; still recalc anyone online and watch Settings.json.
+        UpdateIngamePlayers();
+        SetupSettingsJsonWatcher();
     }
 
     public override async Task OnWorldOpen()
@@ -24,37 +58,125 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         // SettingsContainer may have reloaded since Start(); refresh the reference.
         Settings = SettingsContainer.Settings ?? new Settings();
 
-        // Load repeat-solve loot tables from RepeatSolveLoot.json
-        // Assembly location is e.g. C:\ACE\Mods\Loremaster\Loremaster.dll
-        var modFolder = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "";
-        RepeatSolveLootLoader.Load(modFolder);
+        // Reload sidecar JSON (OnWorldOpen does not run on mod hot-reload; Start handles that).
+        RepeatSolveLootLoader.Load(GetModDirectory());
 
         // Recalculate QP for all online players on reload/start
         UpdateIngamePlayers();
 
-        // When Settings.json changes, reload and recalc QP for all online players.
-        // Skip watcher if mod folder path is empty (e.g. assembly loaded without a file location).
-        _settingsWatcher?.Dispose();
-        if (!string.IsNullOrEmpty(modFolder) && Directory.Exists(modFolder))
+        SetupSettingsJsonWatcher();
+        RefreshEmpyreanAlterationRelocatedPatches();
+        RefreshParchmentQuestPatches();
+    }
+
+    static void RefreshEmpyreanAlterationRelocatedPatches()
+    {
+        var harmony = Mod.Instance?.Harmony;
+        if (harmony is null)
+            return;
+
+        foreach (var c in EmpyreanAlterationRelocatedCategories)
         {
-            _settingsWatcher = new FileSystemWatcher(modFolder)
+            try
             {
-                Filter = "Settings.json",
-                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size
-            };
-            _settingsWatcher.Changed += OnSettingsFileChanged;
-            _settingsWatcher.EnableRaisingEvents = true;
+                harmony.UnpatchCategory(c);
+            }
+            catch
+            {
+            }
         }
+
+        if (Settings.EnableEquipPostCreation)
+            harmony.PatchCategory(nameof(EquipPostCreation));
+
+        if (Settings.EnableOverrideCheckUseRequirements)
+            harmony.PatchCategory(nameof(OverrideCheckUseRequirements));
+    }
+
+    // When Settings.json changes, reload and recalc QP for all online players.
+    // Skip watcher if mod folder path is empty (e.g. assembly loaded without a file location).
+    void SetupSettingsJsonWatcher()
+    {
+        _settingsWatcher?.Dispose();
+        _settingsWatcher = null;
+
+        var modFolder = GetModDirectory();
+        if (string.IsNullOrEmpty(modFolder) || !Directory.Exists(modFolder))
+            return;
+
+        _settingsWatcher = new FileSystemWatcher(modFolder)
+        {
+            Filter = "Settings.json",
+            NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size
+        };
+        _settingsWatcher.Changed += OnLoremasterSettingsFileChanged;
+        _settingsWatcher.EnableRaisingEvents = true;
+    }
+
+    // Folder containing Loremaster.dll and JSON sidecars (e.g. RepeatSolveLoot.json).
+    // Assembly.Location is empty in some hosting setups; fall back to ModManager.ModPath + assembly name.
+    internal static string GetModDirectory()
+    {
+        try
+        {
+            var asm = typeof(PatchClass).Assembly;
+            var location = asm.Location;
+            if (!string.IsNullOrWhiteSpace(location))
+            {
+                var dir = Path.GetDirectoryName(location);
+                if (!string.IsNullOrEmpty(dir))
+                {
+                    var full = Path.GetFullPath(dir);
+                    if (Directory.Exists(full))
+                        return full;
+                }
+            }
+
+            var name = asm.GetName().Name ?? "Loremaster";
+            var fallback = Path.GetFullPath(Path.Combine(ModManager.ModPath, name));
+            if (Directory.Exists(fallback))
+                return fallback;
+        }
+        catch
+        {
+        }
+
+        return "";
     }
 
     public override void Stop()
     {
         _settingsWatcher?.Dispose();
         _settingsWatcher = null;
+
+        foreach (var c in EmpyreanAlterationRelocatedCategories)
+        {
+            try
+            {
+                ModC.Harmony.UnpatchCategory(c);
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[Loremaster] Stop UnpatchCategory {c}: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory("ParchmentQuestHooks");
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Loremaster] Stop UnpatchCategory ParchmentQuestHooks: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        lock (PortalQuestHookLock)
+            PortalQuestHooksApplied = false;
+
         base.Stop();
     }
 
-    static void OnSettingsFileChanged(object sender, FileSystemEventArgs e)
+    void OnLoremasterSettingsFileChanged(object? sender, FileSystemEventArgs e)
     {
         if ((DateTime.UtcNow - _lastSettingsReload).TotalMilliseconds < SettingsReloadDebounceMs)
             return;
@@ -68,8 +190,11 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             var loaded = JsonSerializer.Deserialize<Settings>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             if (loaded is not null)
             {
+                SettingsContainer.Settings = loaded;
                 Settings = loaded;
                 UpdateIngamePlayers();
+                RefreshEmpyreanAlterationRelocatedPatches();
+                RefreshParchmentQuestPatches();
                 ModManager.Log("[Loremaster] Settings.json reloaded; recalculated QP for all online players.");
             }
         }
@@ -188,9 +313,12 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         "Usage: /qb-inspect <playerName>")]
     public static void HandleAdminInspect(Session session, params string[] parameters)
     {
+        if (session?.Player is not Player admin)
+            return;
+
         if (parameters.Length < 1)
         {
-            session.Player.SendMessage("Usage: /qb-inspect <playerName>");
+            admin.SendMessage("Usage: /qb-inspect <playerName>");
             return;
         }
 
@@ -199,7 +327,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         if (target is null)
         {
-            session.Player.SendMessage($"Player '{targetName}' is not online.");
+            admin.SendMessage($"Player '{targetName}' is not online.");
             return;
         }
 
@@ -208,7 +336,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         var charCount   = target.QuestManager.GetQuests().Count(x => x.HasSolves());
         var accountCount = target.GetAccountUniqueQuestCount();
 
-        session.Player.SendMessage(
+        admin.SendMessage(
             $"[Loremaster Inspect] {target.Name}\n" +
             $"  Stored QP       : {qp}\n" +
             $"  XP Multiplier   : {bonus:P2}\n" +
@@ -222,9 +350,12 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         "Usage: /qb-reset <playerName>")]
     public static void HandleAdminReset(Session session, params string[] parameters)
     {
+        if (session?.Player is not Player admin)
+            return;
+
         if (parameters.Length < 1)
         {
-            session.Player.SendMessage("Usage: /qb-reset <playerName>");
+            admin.SendMessage("Usage: /qb-reset <playerName>");
             return;
         }
 
@@ -233,7 +364,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         if (target is null)
         {
-            session.Player.SendMessage($"Player '{targetName}' is not online.");
+            admin.SendMessage($"Player '{targetName}' is not online.");
             return;
         }
 
@@ -241,7 +372,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         var qp    = target.GetProperty(FakeFloat.QuestBonus) ?? 0;
         var bonus = target.QuestBonus();
 
-        session.Player.SendMessage($"[Loremaster] Reset {target.Name}: {qp} QP → {bonus:P2} XP multiplier.");
+        admin.SendMessage($"[Loremaster] Reset {target.Name}: {qp} QP → {bonus:P2} XP multiplier.");
         target.SendMessage($"[Loremaster] Your quest bonus has been recalculated by an admin: {qp} QP → {bonus:P2}.");
     }
 
@@ -366,6 +497,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (previousSolves == 0 && solves != 0)
         {
             var quest = instance.GetQuest(QuestManager.GetQuestName(questFormat));
+            if (quest is null)
+                return;
 
             // Quest Point increment
             player.IncQuestPoints(quest.Value());
@@ -410,12 +543,15 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     [HarmonyPatch(typeof(Player), nameof(Player.GrantXP), new Type[] { typeof(long), typeof(XpType), typeof(ShareType) })]
     public static void PreGrantXP(ref long amount, XpType xpType, ShareType shareType, ref Player __instance)
     {
+        if (_questXpMultiplierSuppressDepth > 0)
+            return;
+
         var bonus = __instance.QuestBonus();
         var total = (long)(amount * bonus);
 
         var notify = xpType == XpType.Kill  && __instance.Notify(LMBool.NotifyKillXp)
                   || xpType == XpType.Quest && __instance.Notify(LMBool.NotifyQuestXp);
-        if (notify)
+        if (notify && __instance.Session != null)
             __instance.SendMessage($"Earned {total:N0} XP! ({amount:N0} * {bonus:P0})");
 
         amount = total;
@@ -430,7 +566,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         var notify = xpType == XpType.Kill  && __instance.Notify(LMBool.NotifyKillLuminance)
                   || xpType == XpType.Quest && __instance.Notify(LMBool.NotifyQuestLuminance);
-        if (notify)
+        if (notify && __instance.Session != null)
             __instance.SendMessage($"Earned {total:N0} luminance! ({amount:N0} * {bonus:P0})");
 
         amount = total;

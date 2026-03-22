@@ -7,6 +7,7 @@ description: In the ACEmulator-Mods repository, treat all conversations as ACE m
 
 - Always assume this repository is for **ACE mod development** targeting ACEmulator with **ACE.BaseMod** and **Harmony**.
 - Apply the behavior and guidance from the `ace-mod` skill automatically, even if the user does not explicitly invoke `/ace-mod`. Full skill content: `.cursor/skills/ace-mod/SKILL.md`.
+- **mcp2cli (co-active):** While following any project skill from `.cursor/skills/` (`ace-mod`, `ace-build`, `ace-log`, `ace-mod-team`, `doc`), if the task involves **MCP servers**, **OpenAPI/REST** specs, **GraphQL** endpoints, **MCP tool discovery or invocation**, or **CLI/skill wrappers for external APIs**, also read and follow `.cursor/skills/mcp2cli/SKILL.md` as if the user invoked `/mcp2cli`. Prefer `uvx mcp2cli` for `--list`, `<command> --help`, and execution per that skill.
 - Favor:
   - Keeping source projects under `C:\Users\jeremy\source\repos\ACEmulator-Mods\...`
   - Output paths pointing into `C:\ACE\Mods\<ModName>\`.
@@ -14,8 +15,9 @@ description: In the ACEmulator-Mods repository, treat all conversations as ACE m
 
 ## Consolidated mods in this repo
 
-- Treat as first-class mods any project with a `.csproj` directly under `ACEmulator-Mods`. Known mods include:
-  - `AethericWeaver`, `LeyLineLedger`, `Numbersmith`, `Loremaster`, `Overtinked`, `Swarmed`, `QOL`, `CHANGERaise`, `CHANGEExpansion`, `CHANGEEasyEnlightenment`
+- Treat as first-class mods any project with a `.csproj` directly under `ACEmulator-Mods` (one folder per deployable mod). Known gameplay mods include:
+  - `AethericWeaver`, `ChallengeModes`, `AureatePath`, `AutoLoot`, `EmpyreanAlteration`, `Gemcrafter`, `LeyLineLedger`, `Loremaster`, `Numbersmith`, `Overtinked`, `QOL`, `Swarmed` (Swiftmend healing kits are part of **QOL**)
+- Also present for tooling/QA (not typical server mods): `AceModQa`, `tools/DecalQaRunner`, `tools/LinearSync`, `tools/AceServerStringRef`
 - When the user asks to build or rebuild mods in this repo:
   - Discover all `.csproj` files within the repo (no `../` segments) and build each, or
   - Use the `/ace-build` skill to build every mod and summarize results.

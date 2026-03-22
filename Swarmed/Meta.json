@@ -1,7 +1,7 @@
 {
   "Name": "Swarmed",
   "Author": "",
-  "Description": "Controls NPC spawn rates: when a mob is killed it may emote a call for help and spawn 1-5 similar reinforcements (50% health, same XP/loot). Separate settings for landscape (default on) vs dungeon (default off).",
+  "Description": "Monster mod: optional CreatureEx champion variants (factory roll, FakeInt 10029, /cex) plus call-for-help reinforcements on kill. Reinforcements are separate for landscape vs dungeon; CreatureEx deaths never call for help. Optional scaling of CreatureEx and reinforcement roll chances by shard online player count (Settings). Admins: /swarmed debug. Defaults: dungeon reinforcements on at 5% chance.",
   "Version": "1.0",
   "Enabled": true,
   "HotReload": true,

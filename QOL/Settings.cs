@@ -12,6 +12,14 @@ public enum Features
     VendorsBuyEverything,
     QuestgiverAuras,
     Stackable,
+    SwiftmendHealingKits,
+    PetAttackSelected,
+    PetMessageDamage,
+    PetStow,
+    SummonCreatureAsPet,
+    PetSummonMultiple,
+    PetEx,
+    PetExShareDamage,
 }
 
 public class Settings
@@ -28,6 +36,20 @@ public class Settings
     public bool EnableVendorsBuyEverything { get; set; } = true;
     public bool EnableQuestgiverAuras { get; set; } = true;
     public bool EnableStackable { get; set; } = true;
+
+    // Former Swiftmend mod: healing kits target self + HoT (manual Healer hook; see SwiftmendHealingKits.cs).
+    public bool EnableSwiftmend { get; set; } = true;
+
+    // Pet features were moved from EmpyreanEchoes into QOL (Harmony categories match QOL feature enum names).
+    public bool EnablePetAttackSelected { get; set; } = true;
+    public bool EnablePetMessageDamage { get; set; } = true;
+    public bool EnablePetStow { get; set; } = true;
+    public bool EnableSummonCreatureAsPet { get; set; } = true;
+    public bool EnablePetSummonMultiple { get; set; } = true;
+    public bool EnablePetEx { get; set; } = true;
+    public bool EnablePetExShareDamage { get; set; } = true;
+
+    public bool EnableOfflineSwear { get; set; } = true;
 
     [JsonPropertyName("// MaxSpecCredits")]
     public string MaxSpecCreditsDoc { get; } = "Total specialisation credits a player may spend. Vanilla cap is 70. Set to 9999 to make it effectively unlimited.";
@@ -53,4 +75,26 @@ public class Settings
 
     // Extra stackable item categories and max stack size
     public StackableSettings Stackable { get; set; } = new();
+
+    // Healing kit HoT tuning (merged from Swiftmend)
+    public SwiftmendSettings Swiftmend { get; set; } = new();
+}
+
+public class SwiftmendSettings
+{
+    public double HotDurationSeconds { get; set; } = 30.0;
+
+    public double HotTickSeconds { get; set; } = 3.0;
+
+    public double BaseSkillPercentPerTick { get; set; } = 0.03;
+
+    public double SpecializedMultiplier { get; set; } = 2.0;
+
+    public bool EnableHealthKits { get; set; } = true;
+
+    public bool EnableStaminaKits { get; set; } = true;
+
+    public bool EnableManaKits { get; set; } = true;
+
+    public bool EnableDebugMessages { get; set; } = false;
 }

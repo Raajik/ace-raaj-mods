@@ -1,4 +1,4 @@
-﻿namespace QOL;
+namespace QOL;
 
 [HarmonyPatchCategory(nameof(Features.Recklessness))]
 public class Recklessness
@@ -50,8 +50,12 @@ public class Recklessness
 
         if (skill.Current < attackSkill.Current)
         {
-            var scale = (float)skill.Current / attackSkill.Current;
-            damageRating = (int)Math.Round(damageRating * scale);
+            double attackCurrent = attackSkill.Current;
+            if (attackCurrent > 0.0)
+            {
+                float scale = (float)(skill.Current / attackCurrent);
+                damageRating = (int)Math.Round(damageRating * scale);
+            }
         }
 
         // The damage rating adjustment for incoming damage is also adjusted proportinally if your Recklessness skill

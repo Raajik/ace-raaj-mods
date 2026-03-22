@@ -1,4 +1,4 @@
-﻿///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 //File: UTLFileExtraBlockManager.cs
 //
 //Description: A class for VTClassic files to allow arbitrary length- and type- delimited
@@ -56,8 +56,7 @@ namespace AutoLoot.Lib.VTClassic
         {
             try
             {
-                //Add the current handler types
-                //Todo: fix uTank ref
+                // Legacy uTank-only block handlers (e.g. SalvageCombine) are not registered in this port.
                 //AddHandlerType(typeof(UTLBlockHandlers.UTLBlock_SalvageCombine));
             }
             catch (Exception exx)
@@ -75,8 +74,7 @@ namespace AutoLoot.Lib.VTClassic
         }
         public void CreateDefaultBlocks()
         {
-            //Create the blocks that aren't here
-            //Todo: fix uTank ref
+            //Create the blocks that aren't here (uTank SalvageCombine and similar blocks omitted in ACE port).
             //TryAddDefaultBlock(new UTLBlockHandlers.UTLBlock_SalvageCombine());
         }
 

@@ -11,7 +11,7 @@ namespace Numbersmith.Patches;
                                     // Mod multiplier
         };
 
-        static Func<float, float> func;
+        static Func<float, float> func = null!;
         #endregion
 
         #region Start / Stop
@@ -30,11 +30,14 @@ namespace Numbersmith.Patches;
         [HarmonyPatch(typeof(Player), nameof(Player.GetPowerMod), new Type[] { typeof(WorldObject) })]
         public static bool PreGetPowerMod(WorldObject weapon, ref Player __instance, ref float __result)
         {
+            if (func is null)
+                return true;
+
             //1f for ranged
             if (weapon is null || weapon.IsRanged)
                 __result = 1.0f;
-
-            __result = func(__instance.PowerLevel);
+            else
+                __result = func(__instance.PowerLevel);
 
             return false;
         }

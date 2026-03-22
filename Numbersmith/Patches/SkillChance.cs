@@ -15,7 +15,7 @@ public class SkillChance : AngouriMathPatch
                                 // 0-1 chance of success
     };
 
-    static Func<int, int, float, double> func;
+    static Func<int, int, float, double> func = null!;
     #endregion
 
     #region Start / Stop
@@ -34,6 +34,9 @@ public class SkillChance : AngouriMathPatch
     [HarmonyPatch(typeof(SkillCheck), nameof(SkillCheck.GetSkillChance), new Type[] { typeof(int), typeof(int), typeof(float) })]
     public static bool PreGetSkillChance(int skill, int difficulty, float factor, ref double __result)
     {
+        if (func is null)
+            return true;
+
         var chance = func(skill, difficulty, factor);
 
         //Don't think the clamp is actually necessary for the way it is used

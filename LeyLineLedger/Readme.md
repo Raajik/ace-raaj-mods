@@ -2,7 +2,13 @@
 
 This mod adds common banking options for items, currency, and luminance.
 
+### `/bank` and `/b` (primary flow)
 
+- No args or `list` — show pyreals, luminance, and configured bank items.
+- `deposit` / `d` — deposit loose pyreals/trade notes and **available** luminance into the bank.
+- `withdraw pyreals <amount>` / `w p <amount>` — withdraw pyreals (trade-note mix). `withdraw pyreals all` / `w p a` withdraws all banked pyreals.
+- `withdraw luminance <amount>` / `w l <amount>` — move **banked** luminance into a tradable gem (any positive amount, or `all` / `a`). Default gem weenie is **7897** (Black Garnet); set `LuminanceGemWeenieClassId` to `0` to disable, or change it if your world DB uses another id. The gem credits **banked** luminance when used, not spendable luminance.
+- `transfer pyreals <amount> <character name>` / `t p ...` — transfer banked pyreals (online or offline target).
 
 The verbs available are currently:
 

@@ -35,7 +35,8 @@ public static class InventoryHelpers
     {
         if (player is null) return false;
 
-        if (amount < 1)
+        // amount == -1 means "take all" (see TryConsume* with int.MaxValue below).
+        if (amount != -1 && amount < 1)
         {
             ModManager.Log($"Invalid amount of items to take: {amount} of WCID {weenieClassId}", ModManager.LogLevel.Warn);
             return false;
@@ -50,15 +51,16 @@ public static class InventoryHelpers
             var itemTaken = DatabaseManager.World.GetCachedWeenie(weenieClassId);
             if (itemTaken != null)
             {
-                var amt = amount == -1 ? "all" : amount.ToString();
-                var msg = $"You hand over {amount} of your {itemTaken.GetPluralName()}.";
+                var amtLabel = amount == -1 ? "all" : amount.ToString();
+                var msg = $"You hand over {amtLabel} of your {itemTaken.GetPluralName()}.";
 
-                // Send the message to the player's client
-                player.Session.Network.EnqueueSend(new GameMessageSystemChat(msg, ChatMessageType.Broadcast));
-                return true;
+                player.Session?.Network?.EnqueueSend(new GameMessageSystemChat(msg, ChatMessageType.Broadcast));
             }
+
+            return true;
         }
-        return true;
+
+        return false;
     }
 
     /// <summary>

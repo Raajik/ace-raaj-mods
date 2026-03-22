@@ -6,10 +6,15 @@ public static class LoremasterExtensions
     // Quest Point helpers
     // ─────────────────────────────────────────────────────────────────────────
 
-    public static float Value(this CharacterPropertiesQuestRegistry quest) =>
-        PatchClass.Settings.QuestBonuses.TryGetValue(quest.QuestName, out var points)
+    public static float Value(this CharacterPropertiesQuestRegistry quest)
+    {
+        if (PatchClass.Settings is null)
+            return 0f;
+
+        return PatchClass.Settings.QuestBonuses.TryGetValue(quest.QuestName, out var points)
             ? points
             : PatchClass.Settings.DefaultPoints;
+    }
 
     public static void UpdateQuestPoints(this Player player)
     {
@@ -48,12 +53,16 @@ public static class LoremasterExtensions
 
         var solvedQuestNames = GetAccountUniqueQuestNames(player, accountId.Value);
 
+        var settings = PatchClass.Settings;
+        if (settings is null)
+            return 0f;
+
         float total = 0;
         foreach (var questName in solvedQuestNames)
         {
-            total += PatchClass.Settings.QuestBonuses.TryGetValue(questName, out var points)
+            total += settings.QuestBonuses.TryGetValue(questName, out var points)
                 ? points
-                : PatchClass.Settings.DefaultPoints;
+                : settings.DefaultPoints;
         }
         return total;
     }
@@ -98,8 +107,12 @@ public static class LoremasterExtensions
 
         foreach (var onlinePlayer in PlayerManager.GetAllOnline())
         {
-            if (onlinePlayer.Account?.AccountId != accountId) continue;
-            foreach (var quest in onlinePlayer.QuestManager.GetQuests().Where(x => x.HasSolves()))
+            if (onlinePlayer.Account?.AccountId != accountId)
+                continue;
+            var qm = onlinePlayer.QuestManager;
+            if (qm is null)
+                continue;
+            foreach (var quest in qm.GetQuests().Where(x => x.HasSolves()))
                 solvedQuestNames.Add(quest.QuestName);
         }
 
@@ -126,9 +139,32 @@ public static class LoremasterExtensions
     // Per-player notification helpers
     // ─────────────────────────────────────────────────────────────────────────
 
-    // Returns the player's personal preference for a notify flag. NotifyQuest defaults to true; others to false.
-    public static bool Notify(this Player player, FakeBool flag) =>
-        player.GetProperty(flag) ?? (flag == LMBool.NotifyQuest);
+    // Returns the player's personal preference for a notify flag. If unset: NotifyQuest (QP) defaults true;
+    // kill/quest XP and luminance defaults come from Loremaster Settings.json (NotifyKillXpDefault, etc.).
+    public static bool Notify(this Player player, FakeBool flag)
+    {
+        var configured = player.GetProperty(flag);
+        if (configured.HasValue)
+            return configured.Value;
+
+        if (flag == LMBool.NotifyQuest)
+            return true;
+
+        var s = PatchClass.Settings;
+        if (s is null)
+            return false;
+
+        if (flag == LMBool.NotifyKillXp)
+            return s.NotifyKillXpDefault;
+        if (flag == LMBool.NotifyQuestXp)
+            return s.NotifyQuestXpDefault;
+        if (flag == LMBool.NotifyKillLuminance)
+            return s.NotifyKillLuminanceDefault;
+        if (flag == LMBool.NotifyQuestLuminance)
+            return s.NotifyQuestLuminanceDefault;
+
+        return false;
+    }
 
     // Toggles a notify flag and confirms to the player. Returns the new state.
     public static bool ToggleNotify(this Player player, FakeBool flag, string label)
@@ -198,7 +234,8 @@ public static class LoremasterExtensions
     /// </summary>
     public static long GetCompletionBonusXp(string questName, Player player)
     {
-        if (!PatchClass.Settings.EnableCompletionBonusXp) return 0;
+        if (PatchClass.Settings is null || !PatchClass.Settings.EnableCompletionBonusXp)
+            return 0;
 
         var multiplier = PatchClass.Settings.CompletionBonusXpOverrides.TryGetValue(questName, out var overrideMultiplier)
             ? overrideMultiplier
@@ -218,7 +255,10 @@ public static class LoremasterExtensions
         var bonusXp = GetCompletionBonusXp(questName, player);
         if (bonusXp > 0)
         {
-            player.GrantXP(bonusXp, XpType.Quest, ShareType.None);
+            PatchClass.RunWithoutQuestXpMultiplier(() =>
+            {
+                player.GrantXP(bonusXp, XpType.Quest, ShareType.None);
+            });
             if (player.Notify(LMBool.NotifyQuestXp))
                 player.SendMessage($"[Loremaster] Completion bonus for {questName}: {bonusXp:N0} XP!");
         }
@@ -291,20 +331,22 @@ public static class LoremasterExtensions
 
     public static void CheckAndBroadcastMilestone(this Player player, int previousCount, int newCount)
     {
-        if (!PatchClass.Settings.EnableMilestoneBroadcasts) return;
+        var settings = PatchClass.Settings;
+        if (settings is null || !settings.EnableMilestoneBroadcasts)
+            return;
 
-        foreach (var threshold in PatchClass.Settings.MilestoneThresholds)
+        foreach (var threshold in settings.MilestoneThresholds)
         {
             if (previousCount < threshold && newCount >= threshold)
             {
-                var bonusQp = PatchClass.Settings.MilestoneBonusQPOverrides.TryGetValue(threshold, out var qp)
+                var bonusQp = settings.MilestoneBonusQPOverrides.TryGetValue(threshold, out var qp)
                     ? qp
-                    : (PatchClass.Settings.MilestoneBonusQPPercent / 100f) * PatchClass.Settings.MilestoneBonusQPBase;
+                    : (settings.MilestoneBonusQPPercent / 100f) * settings.MilestoneBonusQPBase;
                 if (bonusQp > 0)
                     player.IncQuestPoints(bonusQp);
 
-                var message = string.Format(PatchClass.Settings.MilestoneBroadcastFormat,
-                    player.Name, Ordinal(threshold), (int)bonusQp);
+                var message = string.Format(settings.MilestoneBroadcastFormat,
+                    player.Name, Ordinal(threshold), bonusQp);
                 foreach (var online in PlayerManager.GetAllOnline())
                     online.SendMessage(message, ChatMessageType.Broadcast);
                 ModManager.Log($"[Loremaster] Milestone broadcast: {message}");
@@ -326,10 +368,28 @@ public static class LoremasterExtensions
     }
 }
 
+// Single active parchment: template row (1-based) + progress. Cooldown Unix seconds on 12100.
+internal static class LMParchmentInt
+{
+    internal const PropertyInt ActiveTemplate = (PropertyInt)12020;
+
+    internal const PropertyInt Progress = (PropertyInt)12021;
+
+    // Rolled explore destination when ExploreLandblockRawPool is used (0 = use template ExploreLandblockRaw).
+    internal const PropertyInt ExploreTargetLandblockRaw = (PropertyInt)12022;
+
+    // Rolled kill target when KillTargetCreatureWcidPool is used and TargetCreatureWcid is 0.
+    internal const PropertyInt RuntimeKillTargetWcid = (PropertyInt)12023;
+
+    internal const PropertyInt64 CooldownUntilUnix = (PropertyInt64)12100;
+}
+
 // Per-player notify preference IDs (FakeBool 11000–11004, safe Loremaster range).
 // Stored on the character — persist across sessions, toggled via /qb <flag>.
 internal static class LMBool
 {
+    internal const FakeBool ParchmentVendorContract = (FakeBool)11015; // temp listing on bartender vendor
+
     internal const FakeBool NotifyQuest          = (FakeBool)11000; // QP gains/losses
     internal const FakeBool NotifyKillXp         = (FakeBool)11001; // kill XP boost
     internal const FakeBool NotifyQuestXp        = (FakeBool)11002; // quest XP boost

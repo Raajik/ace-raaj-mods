@@ -11,8 +11,11 @@ public class RecipeManagerEx
     // Prefix: handles use-object-on-target for crafting. Checks busy/combat, gets recipe, verifies requirements (via Overtinked), gets chance, and starts animation; returns false to skip original.
     [HarmonyPrefix]
     [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.UseObjectOnTarget), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(bool) })]
-    public static bool PreUseObjectOnTarget(Player player, WorldObject source, WorldObject target, bool confirmed, ref RecipeManager __instance)
+    public static bool PreUseObjectOnTarget(Player player, WorldObject source, WorldObject target, bool confirmed)
     {
+        if (player?.Session?.Network == null)
+            return false;
+
         var allowCraftInCombat = PropertyManager.GetBool("allow_combat_mode_crafting").Item;
 
         if (CheckBusy(player, allowCraftInCombat))
@@ -52,13 +55,13 @@ public class RecipeManagerEx
             return false;
         }
 
-        StartCraftAnimation(player, source, target, confirmed, allowCraftInCombat, recipe, percentSuccess);
+        StartCraftAnimation(player, source, target, confirmed, allowCraftInCombat, recipe, percentSuccess.Value);
 
         return false;
     }
 
     // Builds the craft action chain: optional combat drop, clap motion, then either success dialog or HandleRecipe.
-    private static void StartCraftAnimation(Player player, WorldObject source, WorldObject target, bool confirmed, bool allowCraftInCombat, Recipe recipe, double? percentSuccess)
+    private static void StartCraftAnimation(Player player, WorldObject source, WorldObject target, bool confirmed, bool allowCraftInCombat, Recipe recipe, double percentSuccess)
     {
         var showDialog = RecipeManager.HasDifficulty(recipe) && player.GetCharacterOption(CharacterOption.UseCraftingChanceOfSuccessDialog);
 
@@ -92,12 +95,12 @@ public class RecipeManagerEx
 
         if (showDialog && !confirmed)
         {
-            actionChain.AddAction(player, () => RecipeManager.ShowDialog(player, source, target, recipe, percentSuccess.Value));
+            actionChain.AddAction(player, () => RecipeManager.ShowDialog(player, source, target, recipe, percentSuccess));
             actionChain.AddAction(player, () => player.IsBusy = false);
         }
         else
         {
-            actionChain.AddAction(player, () => RecipeManager.HandleRecipe(player, source, target, recipe, percentSuccess.Value));
+            actionChain.AddAction(player, () => RecipeManager.HandleRecipe(player, source, target, recipe, percentSuccess));
 
             actionChain.AddAction(player, () =>
             {

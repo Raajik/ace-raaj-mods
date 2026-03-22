@@ -14,6 +14,15 @@ namespace AutoLoot;
 /// </summary>
 public class Settings
 {
+    // When true, logs PostGenerateTreasure entry and early-return reasons to Ace_Log (verbose; disable after debugging).
+    public bool DebugLogging { get; set; }
+
+    // When true, looted pyreal stacks and trade notes are credited to banked pyreals (PropertyInt64) instead of inventory.
+    public bool DepositLootedCurrencyToBank { get; set; } = true;
+
+    // Must match LeyLineLedger Settings.CashProperty when using that mod (default 39999).
+    public int BankCashProperty { get; set; } = 39999;
+
     /// <summary>
     /// The folder path where .utl loot profile files are stored.
     ///

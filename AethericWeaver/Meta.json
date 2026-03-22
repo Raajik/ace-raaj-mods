@@ -1,8 +1,8 @@
 {
   "Name": "AethericWeaver",
   "Author": "",
-  "Description": "AethericWeaver enables customization and extension of spells and equipment sets via spreadsheet-driven definitions and Harmony patches.",
-  "Version": "1.0",
+  "Description": "IN TESTING — main spell/set customization and related hooks are off while InTesting is true in Settings.json. Spreadsheet-driven spells and equipment sets when enabled.",
+  "Version": "1.0-testing",
   "Enabled": true,
   "HotReload": true,
   "RegisterCommands": true,

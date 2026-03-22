@@ -56,10 +56,10 @@ internal static class Animations
 
 public class AnimationSettings
 {
-    // Delay in seconds between each /die broadcast message. Set to 0 to fire them all instantly.
+    // Seconds between each /die (HandleSuicide) broadcast step. Lower = faster death RP; retail pacing discussions often reference ~18s total for long recall-adjacent sequences — tune here and via AnimationSpeeds instead of expecting vanilla MotionTable timings.
     public float DieSeconds { get; set; } = 0.0f;
 
-    // Overrides animation playback length by MotionCommand. Set to 0f to skip entirely.
+    // Per-motion overrides for MotionTable.GetAnimationLength. Keys are MotionCommands (e.g. LifestoneRecall). Value 0f skips that animation. Recall-related motions are listed below by default; adjust to match desired retail-like timing.
     // See: https://github.com/ACEmulator/ACE/blob/master/Source/ACE.Entity/Enum/MotionCommand.cs
     public Dictionary<MotionCommand, float> AnimationSpeeds { get; set; } = new()
     {

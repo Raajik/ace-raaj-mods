@@ -1,3 +1,4 @@
+using System.Linq;
 using ACE.Database;
 using ACE.DatLoader.FileTypes;
 using AethericWeaver;
@@ -9,14 +10,64 @@ namespace AethericWeaver;
 [HarmonyPatch]
 public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
 {
-    public override async Task OnWorldOpen() {
-        Settings = SettingsContainer.Settings;
-        SetupSpells(); 
+    public override void Start()
+    {
+        base.Start();
+        Settings = SettingsContainer.Settings ?? new Settings();
+        RefreshFakeSpellChainPatches();
+    }
+
+    public override async Task OnWorldOpen()
+    {
+        Settings = SettingsContainer.Settings ?? new Settings();
+        RefreshFakeSpellChainPatches();
+
+        if (Settings.InTesting)
+        {
+            ModManager.Log("AethericWeaver: InTesting is true — spell spreadsheet, CustomSpells, set overrides, and magic/foci Harmony hooks are inactive. Set InTesting to false in Settings.json when ready.");
+            return;
+        }
+
+        SetupSpells();
+    }
+
+    public override void Stop()
+    {
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(FakeSpellChain));
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"AethericWeaver: FakeSpellChain unpatch in Stop: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        base.Stop();
+    }
+
+    void RefreshFakeSpellChainPatches()
+    {
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(FakeSpellChain));
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"AethericWeaver: FakeSpellChain unpatch in Refresh: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        if (Settings is null || Settings.InTesting || !Settings.EnableFakeSpellChain)
+            return;
+
+        ModC.Harmony.PatchCategory(nameof(FakeSpellChain));
     }
 
     // Applies spreadsheet overrides, inline CustomSpells, and equipment set overrides
     private static void SetupSpells()
     {
+        if (Settings is null)
+            return;
+
         if (Settings.AutoloadSpreadsheet)
             LoadSpellSpreadsheet();
 
@@ -37,10 +88,14 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             try
             {
                 //Get and verify spell copies
-                var dbSpell = DatabaseManager.World.GetCachedSpell(template).Clone();
+                var cachedSpell = DatabaseManager.World.GetCachedSpell(template);
+                if (cachedSpell is null)
+                    continue;
+
+                var dbSpell = cachedSpell.Clone();
                 var spellBase = new Spell(template)._spellBase.Clone();
 
-                if (dbSpell is null || spellBase is null)
+                if (spellBase is null)
                     continue;
 
                 customSpell.Apply(spellBase, dbSpell);
@@ -66,6 +121,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     // Loads the configured spreadsheet and applies its customizations, optionally informing a player
     private static void LoadSpellSpreadsheet(Player? player = null)
     {
+        if (Settings is null)
+            return;
+
         var sw = Stopwatch.StartNew();
         var spells = SpellCustomization.ParseCustomizations();
 
@@ -80,6 +138,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     // Replaces equipment set tiers with definitions from Settings.Sets
     private static void OverrideSpellSets()
     {
+        if (Settings is null)
+            return;
+
         try
         {
             foreach (var setOverride in Settings.Sets)
@@ -93,10 +154,13 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                     DatManager.PortalDat.SpellTable.SpellSet.Add(key, datSet);
                 }
 
+                var tierList = setOverride.Value;
+                if (tierList is null || tierList.Count == 0)
+                    continue;
+
                 //Order overriding sets by tier
-                var tiers = setOverride.Value.OrderBy(x => x.NumEquipped);
-                var start = tiers.FirstOrDefault().NumEquipped;
-                var end = tiers.LastOrDefault().NumEquipped;
+                var tiers = tierList.OrderBy(x => x.NumEquipped).ToList();
+                var end = tiers.Max(x => x.NumEquipped);
 
                 //Clear sets
                 datSet.SpellSetTiers.Clear();
@@ -106,7 +170,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 foreach (var tier in tiers)
                 {
                     //Make and add SpellSetTier
-                    SpellSetTiers sst = new() { Spells = tier.Spells.Select(x => (uint)x).ToList() };
+                    var spellIds = (tier.Spells ?? Enumerable.Empty<SpellId>()).Select(x => (uint)x).ToList();
+                    SpellSetTiers sst = new() { Spells = spellIds };
                     datSet.SpellSetTiers.TryAdd(tier.NumEquipped, sst);
                 }
 
@@ -128,13 +193,21 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             return;
         }
 
-        ModManager.Log($"Replaced {Settings.Sets.Count} EquipmentSets with a combined {Settings.Sets.Sum(x => x.Value.Count())} tiers and {Settings.Sets.Sum(x => x.Value.Sum(s => s.Spells.Count))} set spells");
+        ModManager.Log($"Replaced {Settings.Sets.Count} EquipmentSets with a combined {Settings.Sets.Sum(x => x.Value?.Count ?? 0)} tiers and {Settings.Sets.Sum(x => x.Value?.Sum(s => s.Spells?.Count ?? 0) ?? 0)} set spells");
     }
  
 
     [CommandHandler("loadspells", AccessLevel.Developer, CommandHandlerFlag.None)]
     public static void HandleLoadSpellSpreadsheet(Session session, params string[] parameters)
     {
+        if (Settings is null || Settings.InTesting)
+        {
+            var msg = "AethericWeaver loadspells: disabled while InTesting is true in Settings.json.";
+            ModManager.Log(msg);
+            session?.Player?.SendMessage(msg);
+            return;
+        }
+
         LoadSpellSpreadsheet(session?.Player);
     }
 
@@ -155,7 +228,14 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             sc.Add(custom);
         }
 
-        var path = Path.Combine(Mod.Instance.ModPath, "Dump.xlsx");
+        var modPath = Mod.Instance?.ModPath;
+        if (string.IsNullOrWhiteSpace(modPath))
+        {
+            ModManager.Log("AethericWeaver spelldump: Mod.Instance.ModPath is unavailable.", ModManager.LogLevel.Warn);
+            return;
+        }
+
+        var path = Path.Combine(modPath, "Dump.xlsx");
 
         ExcelMapper excel = new() { CreateMissingHeaders = true, IgnoreNestedTypes = true };
         excel.SetupCustomSpellMappings();
@@ -203,13 +283,16 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     // Returns the last appraised WorldObject for the given session, if any
     public static WorldObject? GetLastAppraisedObject(Session session)
     {
-        var targetID = session.Player.RequestedAppraisalTarget;
+        if (session?.Player is not Player player)
+            return null;
+
+        var targetID = player.RequestedAppraisalTarget;
         if (targetID == null)
         {
             return null;
         }
 
-        var target = session.Player.FindObject(targetID.Value, Player.SearchLocations.Everywhere, out _, out _, out _);
+        var target = player.FindObject(targetID.Value, Player.SearchLocations.Everywhere, out _, out _, out _);
         if (target == null)
         {
             return null;
@@ -242,43 +325,70 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     [HarmonyPatch(typeof(Creature), nameof(Creature.GetCreatureSkill), new Type[] { typeof(MagicSchool) })]
     public static bool PreGetCreatureSkill(MagicSchool skill, ref Creature __instance, ref CreatureSkill __result)
     {
+        if (Settings is null || Settings.InTesting)
+            return true;
+
         //if (__instance is Player player) 
         //    player.SendMessage($"Casting {player?.CurrentSpell?.Name} - {player.LastSuccessCast_School}");
         //Debugger.Break();
 
-        __result = skill switch
+        switch (skill)
         {
-            MagicSchool.CreatureEnchantment => __instance.GetCreatureSkill(Skill.CreatureEnchantment),
-            MagicSchool.WarMagic => __instance.GetCreatureSkill(Skill.WarMagic),
-            MagicSchool.ItemEnchantment => __instance.GetCreatureSkill(Skill.ItemEnchantment),
-            MagicSchool.LifeMagic => __instance.GetCreatureSkill(Skill.LifeMagic),
-            MagicSchool.VoidMagic => __instance.GetCreatureSkill(Skill.VoidMagic),
-            MagicSchool x when x <= (MagicSchool)Skill.Summoning => __instance.GetCreatureSkill((Skill)x),
-            _ => __instance.GetCreatureSkill(Skill.CreatureEnchantment),
-        };
+            case MagicSchool.CreatureEnchantment:
+                __result = __instance.GetCreatureSkill(Skill.CreatureEnchantment);
+                return false;
+            case MagicSchool.WarMagic:
+                __result = __instance.GetCreatureSkill(Skill.WarMagic);
+                return false;
+            case MagicSchool.ItemEnchantment:
+                __result = __instance.GetCreatureSkill(Skill.ItemEnchantment);
+                return false;
+            case MagicSchool.LifeMagic:
+                __result = __instance.GetCreatureSkill(Skill.LifeMagic);
+                return false;
+            case MagicSchool.VoidMagic:
+                __result = __instance.GetCreatureSkill(Skill.VoidMagic);
+                return false;
+            default:
+                if (skill <= (MagicSchool)Skill.Summoning)
+                {
+                    __result = __instance.GetCreatureSkill((Skill)skill);
+                    return false;
+                }
 
-        return false;
+                return true;
+        }
     }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), nameof(Player.HasFoci), new Type[] { typeof(MagicSchool) })]
     public static bool PreHasFoci(MagicSchool school, ref Player __instance, ref bool __result)
     {
-        __result = school switch
+        if (Settings is null || Settings.InTesting)
+            return true;
+
+        // Infused magic augs waive the physical focus item for that school.
+        if (school switch
+            {
+                MagicSchool.WarMagic => __instance.AugmentationInfusedWarMagic > 0,
+                MagicSchool.LifeMagic => __instance.AugmentationInfusedLifeMagic > 0,
+                MagicSchool.ItemEnchantment => __instance.AugmentationInfusedItemMagic > 0,
+                MagicSchool.CreatureEnchantment => __instance.AugmentationInfusedCreatureMagic > 0,
+                MagicSchool.VoidMagic => __instance.AugmentationInfusedVoidMagic > 0,
+                _ => false,
+            })
         {
-            MagicSchool.WarMagic => __instance.AugmentationInfusedWarMagic > 0,
-            MagicSchool.LifeMagic => __instance.AugmentationInfusedLifeMagic > 0,
-            MagicSchool.ItemEnchantment => __instance.AugmentationInfusedItemMagic > 0,
-            MagicSchool.CreatureEnchantment => __instance.AugmentationInfusedCreatureMagic > 0,
-            MagicSchool.VoidMagic => __instance.AugmentationInfusedVoidMagic > 0,
-            _ => false
-        };
+            __result = true;
+            return false;
+        }
 
         if (Player.FociWCIDs.TryGetValue(school, out var wcid))
+        {
             __result = __instance.Inventory.Values.FirstOrDefault(i => i.WeenieClassId == wcid) != null;
-        else __result = true;
-        
-        return false;
+            return false;
+        }
+
+        return true;
     }
 
 }

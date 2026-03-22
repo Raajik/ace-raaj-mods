@@ -3,6 +3,12 @@ namespace AethericWeaver;
 // Settings loaded from Settings.json used by AethericWeaver
 public class Settings
 {
+    // When true, spreadsheet/set overrides are skipped and gameplay Harmony hooks defer to vanilla (mod still loads).
+    public bool InTesting { get; set; }
+
+    // Originally in EmpyreanEchoes (FakeSpellChain). Inactive while InTesting is true.
+    public bool EnableFakeSpellChain { get; set; } = false;
+
     // When true, the spell spreadsheet is applied automatically on world open
     public bool AutoloadSpreadsheet { get; set; } = true;
     // Path to the Excel file containing spell customizations

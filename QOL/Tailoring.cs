@@ -1,4 +1,4 @@
-﻿namespace QOL;
+namespace QOL;
 
 [HarmonyPatchCategory(nameof(Features.Tailoring))]
 public class Tailoring
@@ -29,7 +29,7 @@ public class Tailoring
         // verify not retained item
         else if (target.Retained)
         {
-            player.Session.Network.EnqueueSend(new GameMessageSystemChat("You must use Sandstone Salvage to remove the retained property before tailoring.", ChatMessageType.Craft));
+            player.Session?.Network?.EnqueueSend(new GameMessageSystemChat("You must use Sandstone Salvage to remove the retained property before tailoring.", ChatMessageType.Craft));
             __result = WeenieError.YouDoNotPassCraftingRequirements;
         }
 

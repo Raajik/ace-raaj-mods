@@ -2,31 +2,100 @@
 namespace LeyLineLedger;
 
 [HarmonyPatch]
-public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
+public partial class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
 {
-    const bool UsePrettyBankFormatting = true;
+    static readonly bool UsePrettyBankFormatting = true;
+
+    // Debit/DirectDeposit must patch from Start() as well as OnWorldOpen(): if the mod loads after the world
+    // is already up, OnWorldOpen never runs and vendors still use vanilla CoinValue (inventory only) while
+    // /bank reads the banked PropertyInt64 directly.
+    public override void Start()
+    {
+        base.Start();
+        ApplyConditionalHarmonyCategories();
+    }
 
     public override async Task OnWorldOpen()
     {
-        Settings = SettingsContainer.Settings;
+        ApplyConditionalHarmonyCategories();
+    }
+
+    void ApplyConditionalHarmonyCategories()
+    {
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(Debit));
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger] Unpatch Debit before re-apply: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(DirectDeposit));
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger] Unpatch DirectDeposit before re-apply: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(DeathBankPenalty));
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger] Unpatch DeathBankPenalty before re-apply: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
+            Settings = SettingsContainer.Settings ?? new Settings();
+        }
+        catch
+        {
+            Settings ??= new Settings();
+        }
 
         if (Settings.VendorsUseBank)
             ModC.Harmony.PatchCategory(nameof(Debit));
 
         if (Settings.DirectDeposit)
             ModC.Harmony.PatchCategory(nameof(DirectDeposit));
+
+        if (Settings.DeathBankPyrealPercent > 0)
+            ModC.Harmony.PatchCategory(nameof(DeathBankPenalty));
     }
 
     public override void Stop()
     {
-        base.Stop();
-
-        if (Settings.VendorsUseBank)
+        try
+        {
             ModC.Harmony.UnpatchCategory(nameof(Debit));
+        }
+        catch
+        {
+        }
 
-        if (Settings.DirectDeposit)
+        try
+        {
             ModC.Harmony.UnpatchCategory(nameof(DirectDeposit));
-}
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(DeathBankPenalty));
+        }
+        catch
+        {
+        }
+
+        base.Stop();
+    }
 
     static string Currencies => string.Join(", ", Settings.Currencies.Select(x => x.Name));
     static string Commands => string.Join(", ", Enum.GetNames<Transaction>());
@@ -90,7 +159,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             return;
         }
 
-        //Withdraw shorthand: /bank withdraw pyreals <amount> or /b w p <amount>
+        //Withdraw shorthand: /bank withdraw pyreals <amount> or /b w p <amount>; luminance gem: withdraw luminance <amount> or w l <amount>
         if (verbToken.Equals("withdraw", StringComparison.OrdinalIgnoreCase) ||
             verbToken.Equals("w", StringComparison.OrdinalIgnoreCase))
         {
@@ -112,15 +181,22 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
             if (parameters.Length < 3)
             {
-                player.SendMessage("Usage: /bank withdraw pyreals <amount>");
+                player.SendMessage("Usage: /bank withdraw pyreals <amount> | withdraw luminance <amount> | shorthand /b w p <amt> | /b w l <amt>");
                 return;
             }
 
             var currencyToken = parameters[1];
+            if (currencyToken.Equals("luminance", StringComparison.OrdinalIgnoreCase) ||
+                currencyToken.Equals("l", StringComparison.OrdinalIgnoreCase))
+            {
+                BankExtensions.WithdrawLuminanceGem(session, parameters[2]);
+                return;
+            }
+
             if (!currencyToken.Equals("pyreals", StringComparison.OrdinalIgnoreCase) &&
                 !currencyToken.Equals("p", StringComparison.OrdinalIgnoreCase))
             {
-                player.SendMessage("Usage: /bank withdraw pyreals <amount>");
+                player.SendMessage("Usage: /bank withdraw pyreals <amount> | withdraw luminance <amount> | shorthand /b w p <amt> | /b w l <amt>");
                 return;
             }
 
@@ -179,7 +255,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         //Fallback to legacy item-based List/Give/Take handling
         if (!parameters.TryParseCommand(out var verb, out var name, out var amount, out var wildcardAmount))
         {
-            player.SendMessage("Usage: /bank [list | deposit | withdraw pyreals <amount> | transfer ...]");
+            player.SendMessage("Usage: /bank [list | deposit | withdraw pyreals <amount> | withdraw luminance <amount> | transfer ...]");
             return;
         }
 
@@ -309,8 +385,11 @@ public static class BankExtensions
         {
             if (!player.TryRemoveFromInventoryWithNetworking(item.Guid, out var consumed, Player.RemoveFromInventoryAction.ConsumeItem))
             {
-                total -= consumed.Value ?? 0;
-                itemCount--;
+                if (consumed != null)
+                {
+                    total -= consumed.Value ?? 0;
+                    itemCount--;
+                }
             }
         }
 
@@ -339,7 +418,8 @@ public static class BankExtensions
 
         if (player.SpendLuminance(available))
         {
-            player.IncBanked(PatchClass.Settings.LuminanceProperty, (int)available);
+            long lum = available > long.MaxValue ? long.MaxValue : (long)available;
+            player.IncBanked(PatchClass.Settings.LuminanceProperty, lum);
             player.SendMessage($"Stored {available} luminance.  You now have {player.GetBanked(PatchClass.Settings.LuminanceProperty):N0}.");
         }
     }
@@ -375,24 +455,105 @@ public static class BankExtensions
         }
 
         var target = PlayerManager.GetOnlinePlayer(targetName);
-        if (target is null)
+        if (target is not null)
         {
-            player.SendMessage($"Character '{targetName}' is not online.");
+            if (target.Guid == player.Guid)
+            {
+                player.SendMessage("You cannot transfer to yourself.");
+                return;
+            }
+
+            player.IncBanked(PatchClass.Settings.CashProperty, -amount);
+            target.IncBanked(PatchClass.Settings.CashProperty, amount);
+            target.UpdateCoinValue();
+
+            player.SendMessage($"Transferred {amount:N0} pyreals to {target.Name}. You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} banked.");
+            target.SendMessage($"{player.Name} has transferred {amount:N0} pyreals to you. You have {target.GetBanked(PatchClass.Settings.CashProperty):N0} banked.");
             return;
         }
 
-        if (target.Guid == player.Guid)
+        if (!TryTransferPyrealsToOfflinePlayer(player, amount, targetName.Trim(), out var offlineError))
         {
-            player.SendMessage("You cannot transfer to yourself.");
+            player.SendMessage(offlineError ?? "Transfer failed.");
             return;
         }
 
-        player.IncBanked(PatchClass.Settings.CashProperty, -amount);
-        target.IncBanked(PatchClass.Settings.CashProperty, amount);
-        target.UpdateCoinValue();
+        player.SendMessage($"Transferred {amount:N0} pyreals to {targetName.Trim()}. They are offline; the balance will update when they next log in. You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} banked.");
+    }
 
-        player.SendMessage($"Transferred {amount:N0} pyreals to {target.Name}. You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} banked.");
-        target.SendMessage($"{player.Name} has transferred {amount:N0} pyreals to you. You have {target.GetBanked(PatchClass.Settings.CashProperty):N0} banked.");
+    // Credits an offline character's banked pyreals (shard BiotaPropertiesInt64). Debits sender before SaveChanges; refunds on DB failure.
+    static bool TryTransferPyrealsToOfflinePlayer(Player sender, long amount, string targetName, out string? error)
+    {
+        error = null;
+        var cashProp = PatchClass.Settings.CashProperty;
+        var propU = (ushort)cashProp;
+        bool senderDebited = false;
+
+        try
+        {
+            using var context = new ShardDbContext();
+            var key = targetName.ToLowerInvariant();
+
+            var targetChar = context.Character.FirstOrDefault(c =>
+                !c.IsDeleted && c.Name.ToLower() == key);
+
+            if (targetChar is null)
+            {
+                error = "No matching character was found for that name.";
+                return false;
+            }
+
+            if (targetChar.Id == sender.Character.Id)
+            {
+                error = "You cannot transfer to yourself.";
+                return false;
+            }
+
+            var row = context.BiotaPropertiesInt64.FirstOrDefault(p =>
+                p.ObjectId == targetChar.Id && p.Type == propU);
+
+            var newBalance = (row?.Value ?? 0L) + amount;
+            if (row is null)
+            {
+                context.BiotaPropertiesInt64.Add(new BiotaPropertiesInt64
+                {
+                    ObjectId = targetChar.Id,
+                    Type = propU,
+                    Value = newBalance,
+                });
+            }
+            else
+            {
+                row.Value = newBalance;
+            }
+
+            sender.IncBanked(cashProp, -amount);
+            senderDebited = true;
+            sender.UpdateCoinValue();
+
+            context.SaveChanges();
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger] Offline pyreal transfer failed: {ex}", ModManager.LogLevel.Error);
+            error = "Transfer failed (database error). Your balance was not changed.";
+            if (senderDebited)
+            {
+                try
+                {
+                    sender.IncBanked(cashProp, amount);
+                    sender.UpdateCoinValue();
+                }
+                catch (Exception refundEx)
+                {
+                    ModManager.Log($"[LeyLineLedger] Offline transfer refund failed: {refundEx}", ModManager.LogLevel.Error);
+                }
+            }
+
+            return false;
+        }
+        ModManager.Log($"[LeyLineLedger] {sender.Name} transferred {amount:N0} pyreals to offline character '{targetName}'.", ModManager.LogLevel.Info);
+        return true;
     }
 
     public static void WithdrawCurrency(Session session, string currencyName, string amountToken)
@@ -439,6 +600,72 @@ public static class BankExtensions
         {
             player.SendMessage($"Failed to withdraw {amount} {singleCurrency.Name} for {singleCost:N0}.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");
         }
+    }
+
+    public static void WithdrawLuminanceGem(Session session, string amountToken)
+    {
+        var player = session.Player;
+        if (player is null)
+            return;
+
+        var settings = PatchClass.Settings;
+        if (settings.LuminanceGemWeenieClassId == 0)
+        {
+            player.SendMessage("Luminance gem withdrawal is disabled (LuminanceGemWeenieClassId is 0).");
+            return;
+        }
+
+        long amount;
+        if (amountToken.Equals("all", StringComparison.OrdinalIgnoreCase) ||
+            amountToken.Equals("a", StringComparison.OrdinalIgnoreCase))
+        {
+            amount = player.GetBanked(settings.LuminanceProperty);
+            if (amount <= 0)
+            {
+                player.SendMessage("You have no banked luminance to withdraw.");
+                return;
+            }
+        }
+        else if (!long.TryParse(amountToken, out amount) || amount <= 0)
+        {
+            player.SendMessage("Specify a positive amount or \"all\" to withdraw banked luminance into a gem.");
+            return;
+        }
+
+        long banked = player.GetBanked(settings.LuminanceProperty);
+        if (banked < amount)
+        {
+            player.SendMessage($"Insufficient banked luminance: {amount:N0} > {banked:N0}.");
+            return;
+        }
+
+        var obj = WorldObjectFactory.CreateNewWorldObject(settings.LuminanceGemWeenieClassId);
+        if (obj is not Gem gem)
+        {
+            player.SendMessage("LuminanceGemWeenieClassId must be a Gem-type weenie. Change it in LeyLineLedger Settings.json.");
+            ModManager.Log($"[LeyLineLedger] LuminanceGemWeenieClassId {settings.LuminanceGemWeenieClassId} created {obj?.GetType().Name ?? "null"}.", ModManager.LogLevel.Error);
+            return;
+        }
+
+        try
+        {
+            gem.MaxStackSize = 1;
+            gem.StackSize = 1;
+        }
+        catch
+        {
+        }
+
+        gem.SetProperty((PropertyInt64)settings.LuminanceGemStoredAmountProperty, amount);
+
+        if (!player.TryCreateInInventoryWithNetworking(gem))
+        {
+            player.SendMessage("You do not have enough pack space to withdraw a luminance gem.");
+            return;
+        }
+
+        player.IncBanked(settings.LuminanceProperty, -amount);
+        player.SendMessage($"Withdrew {amount:N0} banked luminance into a gem. Banked luminance: {player.GetBanked(settings.LuminanceProperty):N0}.");
     }
 
     public static void WithdrawPyreals(Session session, long totalPyreals)
@@ -535,7 +762,7 @@ public static class BankExtensions
         //Set defaults
         amount = 1;
         verb = 0;
-        name = null;
+        name = string.Empty;
         wildcardAmount = false;
 
         //Debugger.Break();

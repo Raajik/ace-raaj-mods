@@ -6,11 +6,50 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 {
     private static List<AngouriMathPatch> enabledPatches = new();
 
+    // Formula patches must apply from Start() as well as OnWorldOpen(): if the mod loads after the world is
+    // already up, OnWorldOpen never runs and no PatchCategory calls occur. Tear down before re-applying so a
+    // normal boot (Start then OnWorldOpen) does not stack duplicate Harmony prefixes.
+    public override void Start()
+    {
+        base.Start();
+        ApplyFormulaPatches();
+        ApplyRelocatedGameplayPatches();
+    }
+
     public override async Task OnWorldOpen()
     {
-        Settings = SettingsContainer.Settings;
+        ApplyFormulaPatches();
+        ApplyRelocatedGameplayPatches();
+    }
+
+    void TearDownFormulaPatches()
+    {
+        foreach (var patch in enabledPatches)
+        {
+            try
+            {
+                ModC.Harmony.UnpatchCategory(patch.GetType().Name);
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[Numbersmith] Unpatch {patch.GetType().Name}: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+
+            patch.Shutdown();
+        }
 
         enabledPatches.Clear();
+    }
+
+    void ApplyFormulaPatches()
+    {
+        TearDownFormulaPatches();
+
+        Settings = SettingsContainer.Settings ?? new Settings();
+
+        if (Settings.Formulas is null || Settings.Formulas.Count == 0)
+            Settings.Formulas = new Settings().Formulas;
+
         bool defaultFormulaUsed = false;
 
         var sb = new StringBuilder("[Numbersmith] Loaded patches:\n");
@@ -56,12 +95,42 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
     public override void Stop()
     {
+        TearDownFormulaPatches();
+        TearDownRelocatedGameplayPatches();
         base.Stop();
+    }
 
-        //Shutdown/unpatch everything on settings change to support repatching by category
-        foreach (var patch in enabledPatches)
+    void TearDownRelocatedGameplayPatches()
+    {
+        foreach (var name in RelocatedGameplayCategories)
         {
-            patch.Shutdown();
+            try
+            {
+                ModC.Harmony.UnpatchCategory(name);
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[Numbersmith] Unpatch {name}: {ex.Message}", ModManager.LogLevel.Warn);
+            }
         }
+    }
+
+    static readonly string[] RelocatedGameplayCategories =
+    {
+        nameof(LifeMagicElementalMod),
+        nameof(DamageOverTimeConversion),
+    };
+
+    void ApplyRelocatedGameplayPatches()
+    {
+        TearDownRelocatedGameplayPatches();
+
+        Settings = SettingsContainer.Settings ?? new Settings();
+
+        if (Settings.EnableLifeMagicElementalMod)
+            ModC.Harmony.PatchCategory(nameof(LifeMagicElementalMod));
+
+        if (Settings.EnableDamageOverTimeConversion)
+            ModC.Harmony.PatchCategory(nameof(DamageOverTimeConversion));
     }
 }

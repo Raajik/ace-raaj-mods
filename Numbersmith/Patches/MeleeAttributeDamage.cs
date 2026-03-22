@@ -13,7 +13,7 @@ public class MeleeAttributeDamage : AngouriMathPatch
         ["n"] = MType.Int,  // # connections
     };
 
-    static Func<int, int, float> func;
+    static Func<int, int, float> func = null!;
     #endregion
 
     #region Start / Stop
@@ -32,9 +32,6 @@ public class MeleeAttributeDamage : AngouriMathPatch
     [HarmonyPatch(typeof(Creature), nameof(Creature.GetAttributeMod), new Type[] { typeof(WorldObject) })]
     public static bool PreGetAttributeMod(WorldObject weapon, ref Creature __instance, ref float __result)
     {
-        //In the process of changing settings func will be null
-        //if (func is null) return true;
-
         if (__instance is Player player)
         {
             //Only melee
@@ -42,6 +39,9 @@ public class MeleeAttributeDamage : AngouriMathPatch
             if (isBow) return true;
 
             var attribute = isBow || weapon?.WeaponSkill == Skill.FinesseWeapons ? __instance.Coordination : __instance.Strength;
+
+            if (func is null)
+                return true;
 
             __result = func((int)attribute.Current, player.ActiveConnections());
             //SkillFormula.GetAttributeMod((int)attribute.Current, isBow);

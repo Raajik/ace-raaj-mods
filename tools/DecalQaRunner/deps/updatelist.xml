@@ -1,0 +1,20 @@
+<updatelist version="1.0.0.0" generator="cms">
+
+<file type="xml" localname="memlocs.xml" remotename="https://decaldev.com/updatelist/memlocs.xml?a" version=""/>
+
+<file type="xml" localname="messages.xml" remotename="https://decaldev.com/updatelist/messages.xml?a" version=""/>
+
+<file type="xml" localname="killbit.xml" remotename="https://decaldev.com/updatelist/killbit.xml?a" version=""/>
+
+<file type="xml" localname="clientpatches.xml" remotename="https://decaldev.com/updatelist/clientpatches.xml?a" version=""/>
+
+<file type="xml" localname="decalplugins.xml" remotename="https://decaldev.com/updatelist/decalplugins.xml?a" version=""/>
+
+
+<!--
+  <file type="xml" localname="clientpatches.xml" remotename="http://www.decaldev.com/updates/clientpatches.xml?a" version=""/>
+
+  <file type="dll" localname="decalnet.dll" remotename="http://www.decaldev.com/updates/DecalNet.dll?a" version="2.9.7.4"><requirement file="denagent.exe" version="2.9.6.4"/></file>
+-->
+
+</updatelist>

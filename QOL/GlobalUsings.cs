@@ -1,4 +1,4 @@
-﻿global using ACE.Common;
+global using ACE.Common;
 global using ACE.Common.Extensions;
 global using ACE.Database.Models.Shard;
 global using ACE.DatLoader;
@@ -7,6 +7,7 @@ global using ACE.Entity;
 global using ACE.Entity.Enum;
 global using ACE.Entity.Enum.Properties;
 global using ACE.Entity.Models;
+global using Biota = ACE.Entity.Models.Biota;
 
 global using ACE.Server.Command;
 global using ACE.Server.Entity;

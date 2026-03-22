@@ -1,4 +1,4 @@
-﻿namespace EasyEnlightenment;
+namespace AureatePath;
 
 [HarmonyPatchCategory(nameof(WieldRequirements))]
 public class WieldRequirements

@@ -27,7 +27,7 @@ public class StringRequirement
 {
     // The compiled regex, populated by Initialize(). Kept private because the Regex
     // object is created from the public Value string and shouldn't be set externally.
-    // Todo: consider making this readonly (requires refactoring to a constructor-based approach)
+    // Future extension: readonly semantics would need a constructor-based setup instead of init from rule text.
     Regex? _regex { get; set; }
 
     /// <summary>
@@ -78,6 +78,14 @@ public class StringRequirement
     /// </summary>
     public void Initialize()
     {
-        _regex = new Regex(Value, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        try
+        {
+            _regex = new Regex(Value ?? "", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        }
+        catch (ArgumentException ex)
+        {
+            ModManager.Log($"[AutoLoot] Invalid StringRequirement regex '{Value}': {ex.Message}", ModManager.LogLevel.Warn);
+            _regex = new Regex("^\\b$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        }
     }
 }

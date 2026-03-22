@@ -1,28 +1,50 @@
 # QOL
 
-A combined ACEmulator server mod providing a suite of convenience and balance enhancements. Each feature is independently toggleable via the `Patches` list in `Settings.json`.
+A combined ACEmulator server mod providing a suite of convenience and balance enhancements. Each feature is independently toggleable via **`Enable*`** booleans in `Settings.json` (and `EnableOfflineSwear` for `/offlineswear`).
 
 ---
 
 ## Enabling Features
 
-Add or remove entries from the `Patches` array to control which features are active. Any feature not listed here will make no changes to the server.
-
-```json
-"Patches": [
-  "animations",
-  "augmentations",
-  "defaults",
-  "fellowships",
-  "permanentobjects",
-  "recklessness",
-  "tailoring"
-]
-```
+Set each `EnableAnimations`, `EnableAugmentations`, `EnableSwiftmend`, etc. to `true` or `false`. When a flag is `false`, that feature’s Harmony category (and any dedicated hooks, such as the Swiftmend Healer patch) is not applied.
 
 ---
 
 ## Features
+
+### Swiftmend (healing kits)
+
+Merged from the former **Swiftmend** mod. Healing kits always apply to **self** (use-on-target is redirected). After use, a heal-over-time runs for `HotDurationSeconds`, ticking every `HotTickSeconds`. Per-tick amounts scale with **Healing** skill; **Specialized** Healing multiplies by `SpecializedMultiplier`.
+
+```json
+"EnableSwiftmend": true,
+"Swiftmend": {
+  "HotDurationSeconds": 15.0,
+  "HotTickSeconds": 1.0,
+  "BaseSkillPercentPerTick": 0.025,
+  "SpecializedMultiplier": 2.0,
+  "EnableHealthKits": true,
+  "EnableStaminaKits": true,
+  "EnableManaKits": true,
+  "EnableDebugMessages": false
+}
+```
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `EnableSwiftmend` | bool | `true` | Master toggle; when `false`, the Healer hook is removed and behavior returns to stock. |
+| `HotDurationSeconds` | double | `30` | Total HoT window in seconds. |
+| `HotTickSeconds` | double | `3` | Seconds between vital ticks. |
+| `BaseSkillPercentPerTick` | double | `0.03` | Fraction of Healing skill applied per tick (before specialization multiplier). |
+| `SpecializedMultiplier` | double | `2` | Multiplier when Healing is specialized. |
+| `EnableHealthKits` / `EnableStaminaKits` / `EnableManaKits` | bool | `true` | Kit name heuristics (health / stamina / mana). |
+| `EnableDebugMessages` | bool | `false` | Extra log and player chat debug. |
+
+**Migrating from the Swiftmend mod:** Remove the `Swiftmend` folder from `Mods`. Copy values from old `Swiftmend/Settings.json` into QOL’s `Swiftmend` object and set `EnableSwiftmend: true`. Drop the old top-level `"Enabled"` field — use `EnableSwiftmend` instead.
+
+Harmony category name: **`SwiftmendHealingKits`** (manual prefix on `Healer.HandleActionUseOnTarget`; registered when `EnableSwiftmend` is true).
+
+---
 
 ### Animations
 

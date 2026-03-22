@@ -65,7 +65,7 @@ public class Rule
         if (!SatisfiesStringRequirements(item))
             return false;
 
-        // Todo: additional requirement types (object class, spell count, etc.) could be added here
+        // Future extension: additional requirement types (object class, spell count, etc.) could be added here.
 
         return true;
     }

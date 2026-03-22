@@ -1,0 +1,33 @@
+{
+  "Enabled": false,
+  "EnableArcaneLore": true,
+  "EnableManaConversion": true,
+  "EnableAssessCreaturePerson": true,
+  "EnableDeception": true,
+  "EnableDualWield": true,
+  "EnableLeadershipLoyalty": true,
+  "ProficiencyXpMultiplier": 1.0,
+  "ArcaneLoreXpPerMana": 0.01,
+  "ManaConversionXpPerMana": 0.01,
+  "AssessXpPerIdentify": 50.0,
+  "DeceptionXpPerSneakAttack": 25.0,
+  "DualWieldXpPerAttack": 10.0,
+  "LeadershipLoyaltyXpPerMinute": 15.0,
+  "LeadershipLoyaltyTickSeconds": 60,
+  "EnableBonusSkillCredits": true,
+  "EnableMasteryTiers": true,
+  "EnableAttributeVitalEfficiency": true,
+  "AttributeVitalEfficiencyMultiplier": 1.05,
+  "SkillCreditMilestoneLevels": [ 50, 100, 150, 200, 275 ],
+  "TitleMilestoneLevels": [ 50, 100, 200, 275 ],
+  "TitleMilestoneNames": [
+    "OSRS Enjoyer",
+    "Aptitude Adept",
+    "Master of Practice",
+    "Aptitude Paragon"
+  ],
+  "MasteryTierSkillCounts": [ 5, 10, 20 ],
+  "IronmanHardcoreEnabled": false,
+  "HardcoreSecondsBetweenDeathAllowed": 60.0,
+  "HardcoreStartingLives": 5
+}

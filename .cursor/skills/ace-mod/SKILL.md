@@ -3,6 +3,10 @@ name: ace-mod
 description: Expert ACE mod development using ACE.BaseMod and Harmony. Use when building or modifying ACE mods in this repo or when the user invokes /ace-mod.
 ---
 
+## Co-active skill: mcp2cli
+
+Whenever this work involves **MCP servers**, **OpenAPI/REST** specs, **GraphQL** endpoints, or **CLI or skill generation for external APIs**, read and follow `.cursor/skills/mcp2cli/SKILL.md` in addition to this skill (same scope as `/mcp2cli`). Prefer `uvx mcp2cli` for discovery and execution per that file.
+
 # ACE Mod Development Skill
 
 You are an expert in ACEmulator (ACE) mod development using ACE.BaseMod and Harmony. The user is a beginner — always explain clearly, define jargon, and provide complete working code rather than fragments.
@@ -56,6 +60,8 @@ public class Mod : BasicMod
 ```
 
 ### 2. PatchClass.cs — All Logic Goes Here
+
+> **Harmony patch placement (current BaseMod / .NET 10):** `[HarmonyPrefix]` / `[HarmonyPostfix]` on a **different** type than the one passed to `Setup(..., new PatchClass(this))` is often **never applied** (silent failure). Put patches on **`PatchClass`** — use `public partial class PatchClass` and extra files like `PatchClass.Loot.cs` if needed. Types marked **`[HarmonyPatchCategory]`** are fine: they are applied when code calls `ModC.Harmony.PatchCategory(...)`. For ACE methods whose **instance parameter is not `ref`** in core, a prefix using `ref Player __instance` (etc.) may fail to bind; align with the real signature or use a **manual** `ModC.Harmony.Patch` with `(Healer __instance, object[] __args)` when you must rewrite arguments.
 
 > **Critical:** Do NOT use C# primary constructor syntax for PatchClass. `OnWorldOpen` does not
 > fire reliably before players issue their first command, and **if the mod is hot-reloaded after
@@ -189,7 +195,8 @@ This is the battle-tested configuration. Read all the comments — several of th
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <!-- This repo targets ACE's current net10 builds -->
+    <TargetFramework>net10.0</TargetFramework>
     <NoWarn>0436;1073;8509</NoWarn>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -741,6 +748,22 @@ static bool IsQuestGiver(Creature creature)
 player.GrantXP(1_000_000, XpType.Quest, ShareType.None);
 ```
 
+---
+
+## Usage XP from Item Mana Drain (ChallengeModes / usage-skills)
+
+Some skills should gain “usage/proficiency” progress from **equipped item mana drain** (e.g. items with “Mana Cost: 1 point per 20 seconds”), not only from spellcasting.
+
+### Key findings (ACE build differences)
+- In some ACE builds, `CreatureSkill` does **not** expose a writable `Experience`/`Proficiency` property publicly (you may only see `ExperienceSpent` / `ExperienceLeft`).
+- Awarding via `Proficiency.OnSuccessUse(...)` can be **throttled** by `PropertiesSkill.LastUsedTime` and `PropertiesSkill.ResistanceAtLastCheck`, resulting in “ticks once then never again” unless those values allow the next award.
+
+### Practical pattern
+- **Detect actual mana drain** by sampling equipped items’ `ItemCurMana` and summing decreases over time.
+- Convert drained mana into “difficulty/pp” using a per-mana multiplier.
+- To make passive drain award repeatedly, set `PropertiesSkill.LastUsedTime = 0` and `PropertiesSkill.ResistanceAtLastCheck = 0` before invoking `Proficiency.OnSuccessUse(player, creatureSkill, difficulty)`.
+- If you have a mod that blocks `HandleActionRaiseSkill` for manual XP spending (e.g. ChallengeModes usage-based skills), use a **thread-local depth counter** (not a bool) to bypass the block during internal awards.
+
 ### Create and give an item by WCID
 ```csharp
 var item = WorldObjectFactory.CreateNewWorldObject(273); // 273 = Pyreal
@@ -865,6 +888,7 @@ public override async Task OnWorldOpen()
 | `ModManager.ModPath` points to wrong folder | `ModManager.ModPath` returns `C:\ACE\Mods` (the parent), not your mod's folder. Append your mod name: `Path.Combine(ModManager.ModPath, "YourModName", ...)` or use `Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)` |
 | Loot rule needs ratio/runtime check | VTClassic `.utl` can only compare one property to a fixed constant — implement ratio or player-state checks as C# filters in your patch, not in a `.utl` file |
 | Can't get Player from GenerateTreasure | Use `killer.TryGetPetOwnerOrAttacker() is not Player player` — handles both direct kills and pet kills |
+| Quest-item perk chat missing when looting into a side pack | Postfix only **`Player.TryAddToInventory`** or wrong `__instance` type when ACE adds to a **nested container** | Postfix **`Container.TryAddToInventory`** (5 params) and resolve looter with **`Container` chain → `Player`** (pattern: `Overtinked/ContainerRootPlayer.cs`) |
 
 ---
 
@@ -886,54 +910,77 @@ public override async Task OnWorldOpen()
 
 When working in the **ACEmulator-Mods** repository:
 
-- **Build list:** Discover all `.csproj` files under the repo (e.g. AethericWeaver, LeyLineLedger, Numbersmith, Loremaster, Overtinked, Swarmed, QOL, CHANGERaise, CHANGEExpansion, CHANGEEasyEnlightenment). Use `/ace-build` or build each mod in its own directory with `dotnet build`.
+- **Documentation loop:** When we discover a durable new pattern/gotcha, invoke `/doc` to (a) write a paste-ready “Findings” summary and (b) update this `ace-mod` skill so future work benefits.
+- **Build list:** Discover all gameplay `.csproj` files under the repo (e.g. `AethericWeaver`, `ChallengeModes`, `AureatePath`, `AutoLoot`, `EmpyreanAlteration`, `Gemcrafter`, `LeyLineLedger`, `Loremaster`, `Numbersmith`, `Overtinked`, `QOL`, `Swarmed`). **QOL** also owns **pet** Harmony features (moved from the retired EmpyreanEchoes mod): `EnablePetAttackSelected`, `EnablePetMessageDamage`, `EnablePetStow`, `EnableSummonCreatureAsPet`, `EnablePetSummonMultiple`, `EnablePetEx`, `EnablePetExShareDamage` (share-damage patches apply only when `PetEx` is enabled). Healing-kit Swiftmend: `EnableSwiftmend`. Use `/ace-build` or build each mod in its own directory with `dotnet build`. Add `AceModQa` / `tools/*` only if the user wants QA or tooling builds.
 - **Settings + hot-reload:** Prefer loading settings in both **Start()** and **OnWorldOpen()** so that after a hot-reload (when OnWorldOpen never runs), Settings is still set. Use `Settings = SettingsContainer.Settings ?? new Settings();` in both.
 - **Nullable and safety:** Use nullable reference types and guard command handlers with `if (session?.Player is not Player p) return;` so code is safe during load/unload or console-invoked commands.
 - **System.Drawing.Common:** If a mod or dependency needs it, pin `System.Drawing.Common` (e.g. `Version="8.0.0"`) to avoid conflicts with ACE server binaries.
+- **ACE.Shared + layout:** Gameplay mods here target **`net10.0`** and usually reference the local **`ACE.Shared` project** (`ProjectReference` to `..\..\ACE.Shared\ACE.Shared.csproj`) alongside NuGet `ACEmulator.ACE.Shared` / server DLL `Reference` entries—**copy an existing mod’s `.csproj`** in this repo rather than assuming NuGet-only ACE.Shared (the generic template earlier in this skill favors NuGet when `ACE.Shared` is not on disk).
+- **No `EmpyreanEchoes` project:** The **EmpyreanEchoes** mod folder was **removed**. Behavior split across **EmpyreanAlteration** (mutator pipeline, loot hooks, fake-property features, `LootGrowthItem`, `ItemLevelUpGrowth`, Slayer/ShinyPet mutators), **Swarmed** (CreatureEx, call-for-help only—**no** `ProjectReference` to EmpyreanAlteration), **QOL** (pet Harmony toggles), **ChallengeModes** (`BonusStatsEnabled`, ironman/hardcore), **Numbersmith** / **Loremaster** / **AethericWeaver** (relocated category patches—see each mod’s `Settings.cs` comments). Root **README.md** summarizes the map; avoid new docs that tell operators to install EmpyreanEchoes.
+
+### EmpyreanAlteration (mutators & features)
+
+- **PatchClass:** Uses `BasicPatch<Settings>` with **`new static Settings Settings`**, **`RefreshAll()`** on `Start` / `OnStartSuccess` / `OnWorldOpen`, **`MutatorHooks.SetupMutators` / `ShutdownMutators`**, category patching for **`AlterationFeature`** (`Settings.Features`) and optional **`ItemLevelUpGrowth`**. Match this lifecycle when adding EA features.
+- **Mutator classes:** All live under **`EmpyreanAlteration.Mutators`** (public or internal class name = JSON **`Mutation`** string, e.g. `"Slayer"`, `"LootGrowthItem"`). **`MutatorHelpers`** resolves `EmpyreanAlteration.Mutators.{Mutation}` across loaded assemblies—**no secondary namespace**; servers need **only** EmpyreanAlteration enabled for those mutators (not Swarmed).
+- **Loot vs Overtinked:** **`LootGrowthItem`** sets **`FakeBool.GrowthItem`** on drops; Overtinked quest init skips those items to avoid double configuration.
+- **LINQ / extensions:** If **`ToHashSet()`** is ambiguous (`ACE.Database.ShardDatabaseOfflineTools` vs `System.Linq.Enumerable`), use **`new HashSet<T>(collection)`**. If **`TryGetRandom` on arrays** clashes with **`ACE.Shared.Helpers.RandomExtensions`**, call **`AugmentHelper.TryGetRandom(array, out value)`** (static-style) from **EmpyreanAlteration**.
+
+### Cross-mod Harmony categories (relocated from old EmpyreanEchoes)
+
+- **Loremaster** toggles **`EquipPostCreation`** and **`OverrideCheckUseRequirements`**; implementations and `[HarmonyPatchCategory]` types live in **EmpyreanAlteration**—Loremaster calls `Harmony.PatchCategory` / `UnpatchCategory` by **class name string** when its settings enable those flags.
+- **Numbersmith** toggles **`EnableLifeMagicElementalMod`**, **`EnableDamageOverTimeConversion`** (same idea: patch types may live in Numbersmith; categories align with historical names—check each mod).
+- **AureatePath** skill/attribute augments that depend on **`Creature.GetBonus`** require **ChallengeModes** **`BonusStatsEnabled`**.
 
 ### Quest item tinkering & leveling (Overtinked)
 
-- **Quest item detection:** Instead of hard-coding WCIDs, centralize detection in a helper like `IsQuestItem(WorldObject item)` that checks:
-  - `PropertyBool.Quest == true` when available, and
-  - Fallback heuristics such as `Attuned == true && Bonded == true && Value == 0` for reward-style items.
-- **Hook point:** Use a **Postfix** on `WorldObjectFactory.CreateNewWorldObject(uint weenieClassId)` to run on all new items, then immediately filter to quest items and tag them so initialization only happens once.
-- **Workmanship seeding:** Use `Traverse.Create(wo).Property("Workmanship")` helpers (e.g. `GetWorkmanship` / `SetWorkmanship`) to:
-  - Leave any existing workmanship unchanged, and
-  - Otherwise roll a random value in a configurable `[QuestItemWorkmanshipMin, QuestItemWorkmanshipMax]` band so quest rewards are tinkering-eligible.
-- **Initial effects:** On creation, apply **one** initial tinkering-style effect for quest items:
-  - Prefer element-appropriate rending imbues (e.g. `ImbuedEffectType.FireRending` for fire weapons),
-  - Otherwise roll a slayer (`PropertyInt.SlayerCreatureType` + `PropertyFloat.SlayerDamageBonus`) or a small numeric boost via a salvage-style helper (e.g. `Damage`, `ArmorLevel`, `ArmorModVsX`).
-  - Guard with a lightweight custom property (IDs > 40000) so the same quest item instance is never re-rolled.
-- **Quest item leveling:** Reuse ACE’s built-in item XP:
-  - On creation, set `ItemXpStyle`, `ItemBaseXp`, `ItemMaxLevel`, `ItemTotalXp = 0` and tag with a custom `FakeBool` (e.g. `QuestGrowthItem`) plus an optional category `FakeInt`.
-  - Add a Prefix on `Player.OnItemLevelUp(WorldObject item, int prevItemLevel)` that:
-    - Returns unless the quest-growth tag is present and `FakeBool.GrowthItem` (from CHANGEExpansion) is **not** set, and
-    - For every level between `prevItemLevel + 1` and `item.ItemLevel`, rolls and applies one additional effect (imbue, slayer, or salvage-like), always skipping effects that would have no impact (e.g. pierce rending on a pure fire weapon).
+- **Split:** **Overtinked** owns quest-time init, item XP curve patches, and `OnItemLevelUp` growth. **Loot-time** item XP / pre-imbue for mutator pipeline drops is in **EmpyreanAlteration** (`LootGrowthItem` mutator via `MutatorHooks` on `LootGenerationFactory.CreateAndMutateWcid`). All mutator implementations (including `Slayer`, `ShinyPet`) live in **EmpyreanAlteration.Mutators** so servers do not need **Swarmed** for those features. **Swarmed** is only CreatureEx / call-for-help gameplay.
+- **Where to edit what (Overtinked):**
+  - `Overtinked/ItemLevelingEngine.cs`: per-level outcomes (imbues, salvage-style bonuses, fallback behavior) and aggregated growth accounting.
+  - `Overtinked/SpellGrowthHelper.cs`: spell/cantrip pools, spell-line rules (no downgrades), and add/upgrade behavior.
+  - `Overtinked/OvertinkedItemLevelingHarmony.cs`: gated by `EnableItemLevelingHooks` — **`Container.TryAddToInventory`** postfix + root-`Player` resolution for quest init/chat on nested packs, item XP curve, `OnItemLevelUp` (no loot factory postfix here).
+  - `Overtinked/PatchClass.cs`: recipe/tinkering helpers; item growth logic (`ApplyCatchUpGrowth`, quest init) called from categorized patches.
+- **Quest item detection (current heuristic):**
+  - Quest-growth items are treated as “equippable reward items with **no default workmanship**” (workmanship \(= 0\)), rather than relying on `Value == 0`.
+  - This avoids needing huge WCID allowlists and handles many NPC reward patterns.
+- **Loot growth initialization:** Use **EmpyreanAlteration** `LootGrowthItem` (`EnableLootItemLeveling` / `EnableLootItemPreImbue` in EA `Settings.json`) so loot factory mutators apply before inventory; avoid enabling both that and a duplicate loot init elsewhere.
+- **Level-up handling hook:** Use a Prefix on `Player.OnItemLevelUp(WorldObject item, int prevItemLevel)` to apply Overtinked growth for both quest and loot items.
+- **Catch-up & aggregation (important):**
+  - XP can jump multiple levels at once, so growth must be applied for **every missed level**.
+  - For big jumps, suppress per-level spam and send **one aggregated summary** (imbues, tinkers, spells/cantrips, fallback stats).
+  - Use a “last applied level” custom `PropertyInt` (IDs > 40000) to avoid bricking items if a prior run missed applying effects.
+- **Spell growth correctness:**
+  - Never add a lower-tier spell if a higher-tier exists in the same line (e.g. do not add *Blood Drinker I* if the item already has *Blood Drinker VI*).
+  - Cantrips remain separate and may coexist with normal buffs, as intended.
+- **Guaranteed-per-level outcome:** When an outcome roll is a no-op, re-roll a few times (capped) before falling back so “leveled up but got nothing” is extremely rare.
+- **Quest-item perk chat:** Overtinked postfixes **`Container.TryAddToInventory`** and resolves the root **`Player`** via the container chain so loot into nested packs gets `InitializeQuestWorldObject` with notify (see `Overtinked/ContainerRootPlayer.cs`). Factory-only paths without ever entering a player-owned container remain edge cases.
+- **Why `Player.TryAddToInventory` alone is wrong for “loot into pack” chat:** ACE often calls **`container.TryAddToInventory(...)`** on a **nested pack** (`this` is a `Container`, not `Player`). A postfix that only binds `Player` as `__instance` never runs for that receiver—or mis-binds. Patch **`typeof(Container)`** with the full **5-parameter** signature `(WorldObject, out Container, int, bool, bool)` and walk **`WorldObject.Container`** until you hit a **`Player`** (see `Overtinked/ContainerRootPlayer.cs`).
+- **Cleaving / Nether Rending combat (custom imbues):** `Overtinked/CleavingNetherImbueCombat.cs` postfixes **`Player.DamageTarget(Creature, WorldObject)`** under the same **`RecipeManagerCategory`** as **`BleedImbueCombat`** (so it respects `EnableRecipeManagerPatch`). Cleaving applies splash **`TakeDamage`** to nearby **`Creature`**s (not another `DamageTarget` call); use a **`[ThreadStatic]`** guard so splash damage does not re-enter cleave logic. Nether adds **`DamageType.Nether`** on the **primary** target only. Config: **`CleavingImbueCombatConfig`** / **`NetherRendingImbueCombatConfig`** in `NewImbueConfig.cs` + `Settings.json`. For candidates in the same landblock, **`Landblock.GetWorldObjectsForPhysicsHandling()`** returns **`ICollection<WorldObject>`** (iterate and filter by distance / `Creature` / `Attackable`).
 
-### Loot-generated item leveling & pre-imbues (CHANGEExpansion)
+### Loot-generated item leveling & pre-imbues (EmpyreanAlteration vs Overtinked)
 
-- **Mutator-based hook:** For loot-generated items, prefer CHANGEExpansion’s `Mutator` pipeline over patching ACE core directly:
-  - Implement `LootGrowthItem : Mutator` and wire it via `Mutation.LootGrowthItem` in `Enums/Mutation.cs` and `Settings.Mutators`.
-  - Run it on `MutationEvent.Containers` so it sees loot from both creature corpses and generators.
-- **Eligibility rules:** In `LootGrowthItem.TryMutateLoot`:
-  - Skip items that already have levels (`item.HasItemLevel`) or are tagged `FakeBool.GrowthItem` (standard Growth items),
-  - Restrict to a configurable set of equippable `WeenieType`s (weapons, armor, jewelry, cloaks),
-  - Optionally require zero existing imbues when rolling pre-imbues.
-- **Loot item leveling:** When enabled:
-  - Compute XP cost with a tier-scaled curve (e.g. `LootItemXpBase * Math.Pow(LootItemXpScale, profile.Tier - 1)`),
-  - Set `ItemXpStyle`, `ItemTotalXp`, `ItemMaxLevel` in a `[LootItemMaxLevelMin, LootItemMaxLevelMax]` range, and `ItemBaseXp`,
-  - Tag items with new `FakeBool` / `FakeInt` values (IDs > 40000) such as `LootGrowthItem`, `LootGrowthTier`, and `LootOriginalItemType`.
-- **OnItemLevelUp for loot:** Add a dedicated Prefix (e.g. `ItemLevelUpLootGrowth`) on `Player.OnItemLevelUp` that:
-  - Returns unless `FakeBool.LootGrowthItem == true` and `FakeBool.GrowthItem != true`,
-  - For each new level, applies a small but meaningful gain:
-    - Prefer adding an element-appropriate rending imbue if not already present,
-    - Otherwise apply a small `Damage` bump to weapons/casters or `ArmorLevel` bump to armor/clothing,
-    - Optionally also roll slayer mods or salvage-style armor modifiers if you need more variety.
-- **Low-chance pre-imbues:** Inside `LootGrowthItem` (or a separate mutator), implement a configurable `LootItemPreImbueChance`:
-  - Roll once per eligible item with `Random.Shared.NextDouble() <= LootItemPreImbueChance`,
-  - For clear elemental weapons, set `item.ImbuedEffect |= ImbuedEffectType.*Rending` matching `DamageType`,
-  - Ensure you never apply more than one pre-imbue per item by checking `item.ImbuedEffect` (and any custom-imbue tags) first.
-- **Safety and balance:** Always:
-  - Respect existing Growth items and rares by checking `HasItemLevel` / `FakeBool.GrowthItem` before assigning new systems,
-  - Keep default loot XP and per-level gains **below or comparable** to rares so these systems feel rewarding but not overpowering,
-  - Expose all major knobs (feature toggles, XP curve, level ranges, pre-imbue chance) in `Settings` so server admins can tune behavior without code changes.
+- **Overtinked** owns quest-time item XP init (inventory hook) and all item XP curve / level-up growth behavior when `EnableItemLevelingHooks` is on.
+- **EmpyreanAlteration** owns the **LootGrowthItem** mutator (`EnableLootItemLeveling`, `EnableLootItemPreImbue`) on the loot factory path. Keep Overtinked from re-initializing the same drops (it no longer patches `CreateAndMutateWcid` for XP); tune loot caps in EA settings (`LootItemMaxLevelMin` / `LootItemMaxLevelMax`, etc.).
+
+### Production safety (null, LINQ, reflection, settings)
+
+Findings from cross-mod review and fixes in this repo — apply when writing patches, commands, and JSON-driven settings.
+
+| Area | Pitfall | Fix |
+|---|---|---|
+| **Settings.json** | `Dictionary<K, List<T>>` values or nested lists deserialize as **null**; LINQ on null throws. | Skip when `value is null` or `Count == 0`; null-coalesce collections before `OrderBy` / `foreach`. |
+| **DTO list fields** | e.g. `List<SpellId> Spells` on a tier row can be null. | `(tier.Spells ?? Enumerable.Empty<SpellId>())` (or build empty `List<uint>`) before `Select`. |
+| **LINQ endpoints** | `FirstOrDefault` / `LastOrDefault` on **empty** sequence of **reference** types → null; **struct** → default (still risky if you chain `.Member` without intent). | After non-empty guard, prefer `Min`/`Max` on a known key (e.g. tier index) or materialize then index. |
+| **ACE / mod APIs** | Methods like `Spawn()` return **null**; `foreach` on null throws. | `if (spawns is null) return;` or `foreach (x in spawns ?? Array.Empty<...>())`. |
+| **Empty lookups** | `dict.OrderBy(...).FirstOrDefault()` on an **empty** dictionary → `default(KeyValuePair<,>)`; using `.Key`/`.Value` can be wrong for reference keys. | If `dict.Count == 0`, bail with a player message; optional defensive check on key before using distance/display. |
+| **Shared ACE lists** | e.g. `RecipeManager.TinkeringDifficulty.Last()` on **empty** list → throws. | `if (list.Count == 0) { log; return; }` before `Last()` / indexing. |
+| **Divisors** | `Health.MaxValue` (or similar) can be **0** during edge initialization → divide-by-zero in derived properties. | `baseDivisor = Math.Max(1u, vital.MaxValue)` (match uint/int types). |
+| **Reflection** | `MethodInfo.Invoke` failures surface as **`TargetInvocationException`**; real cause is **`InnerException`**. | `catch (TargetInvocationException ex)` → log `ex.InnerException ?? ex` (ModManager); return false / skip path as appropriate. |
+| **Commands** | `session.Player` can be null (timing, console). | Immediately `if (player is null) return;` before any `GetProperty` / `SendMessage`. |
+| **Static Settings** | `PatchClass.Settings` or `Settings.Items` may be null if misconfigured. | `PatchClass.Settings?.Items?.Where(...).FirstOrDefault()` so `.Where` never runs on null. |
+| **Hot-path config** | `settings.SubSection ?? new SubSection()` **allocates every call**. | `private static readonly SubSection DefaultSub = new();` and `?? DefaultSub` **only if** nothing in the pipeline mutates that shared instance. |
+| **Player messages** | C# **`{value:P2}`** already formats as a percent with a **%** sign. | Do not append an extra `"%"` in the same string. |
+| **Dual settings fields** | Two statics (`Settings` + `NotificationDefaults`) updated on file reload can drift or look “non-atomic” to readers. | Single source of truth: e.g. `internal static Settings NotificationDefaults => Settings;` and assign **`Settings` only** on reload. |
+| **`ToHashSet()` ambiguous (CS0121)** | `ACE.Database` adds an extension with the same shape as **`Enumerable.ToHashSet`**. | Prefer **`new HashSet<T>(source)`** or **`System.Linq.Enumerable.ToHashSet(source)`** with explicit qualification. |
+| **`TryGetRandom` on `T[]` ambiguous** | **`EmpyreanAlteration.AugmentHelper`** vs **`ACE.Shared` `RandomExtensions`** both extend arrays. | Call **`AugmentHelper.TryGetRandom(array, out var x)`** as a static method invocation (or pick one extension via `using` discipline). |
+
+**EmpyreanAlteration feature toggles:** Types use `[HarmonyPatchCategory(nameof(AlterationFeature.X))]`; `EmpyreanAlteration/PatchClass.cs` calls `Harmony.PatchCategory(feature.ToString())` only for entries in **`Settings.Features`**. Incomplete or experimental behavior should either stay **out** of the default feature list, match comments to shipped behavior, or add an explicit settings gate — there is no separate `[ActivePatch]` attribute in this repo’s mods.

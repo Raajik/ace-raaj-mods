@@ -72,6 +72,21 @@ Default loot table:
 
 ---
 
+### Barkeeper parchment quests (`BarkeeperParchments`)
+
+Optional side quests started by **using** a configured **Gem** or **Book** weenie (`ParchmentActivation` per template, default `Gem`). Gems share the normal `Gem.UseGem` hook — avoid WCID clashes with LeyLineLedger luminance gems. **Book** starters use `Book.ActOnUse`: the book is **consumed** and the read UI is skipped (no duplicate “read without consuming” exploit).
+
+- **One active contract** per character. `/lmparchment` lists it; `/lmparchment abandon` clears it. `CooldownSeconds` (default `0`) gates how often a new parchment can be started after consuming one.
+- **Bartenders:** each configured bartender vendor WCID (`BartenderContractBoards`) exposes **five** contract rows (`OfferTemplateRow0Based` indices into `ParchmentTemplates`) in the vendor buy list. You cannot buy another contract while one is already active.
+- **Town Criers:** `TownCrierWeenieClassIds` lists NPC WCIDs; using one completes **Explore** (must be in the target landblock) and **Fetch** (requires the proof item in pack; item is consumed). **Kill** contracts still complete on kills in the field.
+- **Kinds:** `Kill` (credit on kills), `Explore` (Town Crier in target landblock), `Fetch` (proof item + Town Crier).
+- **Procedural pools (v1):** `ExploreLandblockRawPool` — if non-empty, one landblock raw id is rolled when the contract starts and stored on the character (turn-in and guidance use that id; `ExploreLandblockRaw` is optional when the pool is set). `KillTargetCreatureWcidPool` — when `TargetCreatureWcid` is `0` and the pool is non-empty, one target WCID is rolled at start; kills of other creatures do not count. Fixed `TargetCreatureWcid` still ignores the pool.
+- **Tier:** `Easy`, `Average`, or `Challenging` — rolls bonus XP as a random fraction of **XP to next level** between the min/max pairs in settings, then always rolls **repeat-style loot** via `GrantRepeatSolveLoot` using quest keys `LMParchmentTierEasy`, `LMParchmentTierAverage`, `LMParchmentTierChallenging` (configure in `RepeatSolveLoot.json` → `QuestOverrides`). Tier XP stacks with normal completion bonuses if you also set `CompletionQuestStamp` and tune `CompletionBonusXpOverrides`.
+- **Same WCID, different text:** optional `TemplateMatchInscription` must match `PropertyString.Inscription` on the used item. List specific rows **before** a same-WCID row with an empty inscription (catch-all).
+- **Explore directions:** optional `ExploreOutdoorCoordsText`, `ExploreDungeonName`, `ExploreEntranceCoordsText` override auto text; otherwise the mod uses `LandblockManager` + `IsDungeon` + optional `ExploreAnchorLoc` (LOC string) for a short hint. When a pool picked a destination, auto text uses the **rolled** landblock raw id.
+
+---
+
 ### Milestone Broadcasts
 
 When a player's account reaches a configured milestone of unique quests solved, a message is broadcast server-wide and an optional bonus QP reward is granted.
@@ -97,13 +112,19 @@ When enabled, quest repeat cooldowns are reduced by the same percentage as the p
 - Optional cap via `QuestCooldownReductionCap` (0–1). Default is 0.95 (95% max reduction); set `null` for uncapped.
 - Effective wait time = full repeat time × (1 − reduction).
 
-**Permanent flag quests:** Add quest names to `PermanentFlagQuests` when they are used as one-time flags (e.g. portal or dungeon entry). For those quests, once a player has completed them at least once, they are always considered eligible; cooldown reduction does not apply. Use internal quest names (case-sensitive, see Quests.txt). Default is an empty list.
+**Portal / short-timer quests:** ACE portals with a `QuestRestriction` require `HasQuest` and **not** `CanSolve` — you must still be inside the post-completion window. Shortening `MinDelta` makes `CanSolve` true early and produces *"You completed the quest this portal requires too long ago!"* By default, cooldown reduction **only** applies when the world quest's `MinDelta` is **greater** than `QuestCooldownReductionOnlyIfMinDeltaExceedsSeconds` (86400 = 24h). Set to `0` to disable that safeguard (all quests get reduction; portal hubs may break again).
+
+**Permanent flag quests:** Add internal quest names to `PermanentFlagQuests` to skip cooldown reduction for those quests regardless of `MinDelta` (vanilla timer). Also used by the optional `HasQuestSolves` hook for emotes. Case-sensitive (see Quests.txt).
 
 ---
 
 ### Per-Player Notification Preferences
 
-Quest QP gain/loss notifications are on by default; other notifications are opt-in. All are toggled per character and persist across sessions. No server-wide setting controls these — each player configures their own. QP messages use a formatted style similar to the LeyLineLedger bank output (==== Quest Points ==== header).
+**QP messages (`/qb NotifyQuest`):** On by default when a character has never toggled it (same as before).
+
+**Kill / quest XP and luminance multiplier lines:** Default for **new** behavior is controlled in **`Settings.json`**: `NotifyKillXpDefault`, `NotifyQuestXpDefault`, `NotifyKillLuminanceDefault`, `NotifyQuestLuminanceDefault` (all default **`true`**). If a character has **never** used `/qb Notify…` for that flag, these JSON values apply. As soon as a player toggles a flag, their choice is stored on the character and overrides the JSON until they toggle again.
+
+All toggles persist across sessions. QP messages use a formatted style similar to the LeyLineLedger bank output (==== Quest Points ==== header).
 
 | Command | What it toggles |
 |---|---|
@@ -194,7 +215,8 @@ Loot tables are configured in `RepeatSolveLoot.json`. See that file for document
 |---|---|---|---|
 | `EnableQuestCooldownReduction` | bool | `true` | Reduce quest repeat timers by the same % as the player's XP bonus. |
 | `QuestCooldownReductionCap` | float? | `0.95` | Cap on reduction (0–1). Default 95% max; set `null` for uncapped. |
-| `PermanentFlagQuests` | list | `[]` | Quest names that act as one-time flags (e.g. portal entry). Once completed, player is always eligible; cooldown reduction does not apply. Case-sensitive. |
+| `QuestCooldownReductionOnlyIfMinDeltaExceedsSeconds` | int | `86400` | Only apply reduction if world `MinDelta` > this (seconds). `0` = no filter. Protects short portal-flag timers. |
+| `PermanentFlagQuests` | list | see `Settings.json` | Quest names that skip cooldown reduction (vanilla `GetNextSolveTime`). Case-sensitive. |
 
 ---
 

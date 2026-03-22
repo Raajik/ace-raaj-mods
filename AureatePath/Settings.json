@@ -1,9 +1,24 @@
 {
-  // Placeholder settings file for AureatePath.
-  // The default values and full behavior are defined in Settings.cs; this template is provided
-  // so you can pre-ship a config file and document any overrides you care about.
-  //
-  // To tweak AureatePath, add keys here that match properties on the Settings class.
-  // Any properties you omit will keep their C# defaults.
+  "LevelReq": 275,
+  "MaxEnlightenments": 5,
+  "RequireSocietyMaster": true,
+  "RequireAllLuminanceAuras": true,
+  "RemoveSociety": true,
+  "RemoveLuminance": true,
+  "RemoveAetheria": true,
+  "RemoveAttributes": true,
+  "RemoveSkills": true,
+  "RemoveLevel": true,
+  "SkillCreditAmount": 1,
+  "SkillCreditInterval": 5,
+  "SkipNormalBroadcast": false,
+  "SkipResetCertificate": false,
+  "MaxLumBase": 1000000,
+  "MaxLumPerEnlightenment": 500000,
+  "PatchWieldRequirements": true,
+  "BaseLumAugmentationsRequired": 65,
+  "LumAugmentationsRequiredPerEnlightenment": 0,
+  "RequireMinimumPerLumAugContributor": false,
+  "LumAugMinimumPerContributor": 1,
+  "ShowLumAugVerificationCounts": false
 }
-

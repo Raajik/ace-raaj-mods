@@ -111,7 +111,7 @@ public static class SpreadsheetExtensions
         excel.AddMapping<SpellCustomization>(nameof(b.Position), p => p.Position)
             .SetCellUsing<Position>((c, o) =>
             {
-                //Todo: check if LOCString is a Realms thing
+                // Position.ToLOCString() is the standard ACE serialization for cells (works for non-Realms; Realms builds use the same Position API where compiled).
                 if (o == null || o.LandblockId == default) c.SetCellValue("");
                 else c.SetCellValue(o.ToLOCString());
             })
@@ -140,6 +140,9 @@ public static class SpreadsheetExtensions
     public static bool TryParseCellEnum<T>(object cellValue, out T parsed, bool requireDefined = false) where T : struct, Enum
     {
         parsed = default;
+
+        if (cellValue is null)
+            return false;
 
         //Make sure the cell has a string value and add a special case where 'null' is ignored?
         //if ((cellValue is not string stringValue)) //|| String.Equals(stringValue, "null", StringComparison.InvariantCultureIgnoreCase))
@@ -177,9 +180,12 @@ public static class SpreadsheetExtensions
             return false;
         //throw new FormatException("Input string is not in the correct format for a Vector3.");
 
-        float x = float.Parse(components[0]);
-        float y = float.Parse(components[1]);
-        float z = float.Parse(components[2]);
+        if (!float.TryParse(components[0].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float x))
+            return false;
+        if (!float.TryParse(components[1].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float y))
+            return false;
+        if (!float.TryParse(components[2].Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out float z))
+            return false;
 
         result = new Vector3(x, y, z);
 
@@ -223,7 +229,11 @@ public static class SpreadsheetExtensions
         if (value is not string input || string.IsNullOrEmpty(input))
             return false;
 
-        return input.TryParsePosition(out result);
+        if (!input.TryParsePosition(out var pos) || pos is null)
+            return false;
+
+        result = pos;
+        return true;
     }
 
     public static string Serialize(this Vector3 vector) => $"{vector.X},{vector.Y},{vector.Z}";

@@ -1,11 +1,13 @@
+using System.Reflection;
+
 namespace Numbersmith;
 
 public partial class AngouriPatchSettings
 {
     //public PatchType Type { get; set; }
-    public string PatchType { get; set; }
+    public string PatchType { get; set; } = "";
     public bool Enabled { get; set; } = false;
-    public string Formula { get; set; }
+    public string Formula { get; set; } = "";
 
     public AngouriPatchSettings() { }
 
@@ -24,20 +26,15 @@ public partial class AngouriPatchSettings
 
     public AngouriMathPatch CreatePatch()
     {
-        var type = Type.GetType($"Numbersmith.Patches.{PatchType}");
+        var fqtn = $"Numbersmith.Patches.{PatchType}";
+        var type = Assembly.GetExecutingAssembly().GetType(fqtn);
 
         if (type is null)
-        {
-            Debugger.Break();
-            throw new Exception();
-        }
+            throw new InvalidOperationException($"Numbersmith: formula patch type '{fqtn}' not found. Check Settings.json Formulas[].PatchType spelling.");
 
         var patch = Activator.CreateInstance(type);
         if (patch is not AngouriMathPatch angouriPatch)
-        {
-            Debugger.Break();
-            throw new Exception();
-        }
+            throw new InvalidOperationException($"Numbersmith: type '{fqtn}' must inherit AngouriMathPatch.");
 
         //If the formula is missing from the settings use the default of the patch, otherwise set the patch's formula to the settings value
         if (string.IsNullOrWhiteSpace(Formula))

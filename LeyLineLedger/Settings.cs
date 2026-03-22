@@ -24,7 +24,21 @@ public class Settings
 
 
     public int LuminanceProperty { get; set; } = 39998;
+    // Must match AutoLoot Settings.BankCashProperty when AutoLoot deposits looted currency to the bank (default 39999).
     public int CashProperty { get; set; } = 39999;
+
+    // /bank withdraw luminance — creates a Gem carrying banked luminance (PropertyInt64 below). 0 disables withdrawal.
+    // Default 7897 is Black Garnet in stock ACE world data (Gem weenie); change if your DB uses a different id.
+    public uint LuminanceGemWeenieClassId { get; set; } = 7897;
+
+    // Biota PropertyInt64 on the gem storing how much banked luminance it credits on use. Pick an unused id for your shard.
+    public int LuminanceGemStoredAmountProperty { get; set; } = 45213;
+
+    // 0 = no bank loss on death. Otherwise floor(banked * percent / 100) pyreals removed from bank (no physical coin drop).
+    public int DeathBankPyrealPercent { get; set; } = 0;
+
+    // 0 = unlimited. When > 0, caps the pyreals removed per death (after percent is applied).
+    public long DeathBankPyrealMaxLossPerDeath { get; set; } = 0;
 
     public List<CurrencyItem> Currencies { get; set; } = new()
     {

@@ -1,7 +1,7 @@
 {
   "Name": "Overtinked",
   "Author": "",
-  "Description": "Extends tinkering limits: configurable max tinker attempts and imbue effects. Based on the Tinkering sample by aquafir (ACE.BaseMod).",
+  "Description": "Extended tinkering (max tries, imbue count, difficulty steps), custom salvage and imbue rules, failure redesign, and item XP curves with loot/quest init for equippables. Based on the Tinkering sample by aquafir (ACE.BaseMod).",
   "Version": "1.0",
   "Enabled": true,
   "HotReload": true,

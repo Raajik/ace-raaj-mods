@@ -66,3 +66,8 @@ Each of these can be controlled independently in your settings:
 - WeaponCriticalChance
 - WeaponMagicCritFrequency
 
+### Implementation notes
+
+- On startup, `PatchClass.ApplyFormulaPatches` fills any patch entry with a blank `Formula` from defaults and rewrites `Settings.json` so those defaults persist.
+- **LevelCost** total XP per level uses a precomputed `cumulativeTotals` array (`ulong[]`), rebuilt in `LevelCost.Start()` for levels `1..MaxLevel`. Arbitrary AngouriMath formulas have no general closed-form sum, so the precomputed array is the supported approach.
+

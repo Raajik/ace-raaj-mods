@@ -1,0 +1,49 @@
+# Posts a Linear comment per mapped mod when files under that mod change (see tools/LinearSync).
+# Repository secrets (Settings -> Secrets -> Actions):
+#   LINEAR_API_KEY  Personal API key (Linear -> Settings -> API)
+#   LINEAR_TEAM     Team key or name matching your Linear workspace
+name: Linear sync
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  linear-sync:
+    if: ${{ secrets.LINEAR_API_KEY != '' && secrets.LINEAR_TEAM != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Write linear-sync.config.json
+        env:
+          LINEAR_SYNC_TEAM: ${{ secrets.LINEAR_TEAM }}
+        run: |
+          python3 << 'PY'
+          import json
+          import os
+          cfg = {
+              "team": os.environ["LINEAR_SYNC_TEAM"],
+              "baseRef": "origin/main",
+              "repoBranch": "main",
+              "excludeModFolders": ["tools", "AceModQa"],
+          }
+          with open("linear-sync.config.json", "w", encoding="utf-8") as f:
+              json.dump(cfg, f, indent=2)
+              f.write("\n")
+          PY
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: LinearSync push
+        env:
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+        run: dotnet run --project tools/LinearSync -- push

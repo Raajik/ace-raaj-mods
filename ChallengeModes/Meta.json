@@ -1,0 +1,10 @@
+{
+  "Name": "ChallengeModes",
+  "Author": "",
+  "Description": "Challenge and progression hub: former Aptitude (usage-based skills), alternate attribute/vital/skill spend, extended character level table, optional bonus stats, optional Ironman/hardcore death rules (Settings IronmanHardcoreEnabled). Commands: /cm aptitude|levels|refund; /iron, /ironmen, /uniron when Ironman is enabled.",
+  "Version": "1.0",
+  "Enabled": false,
+  "HotReload": true,
+  "RegisterCommands": true,
+  "ACEVersion": "0.0"
+}

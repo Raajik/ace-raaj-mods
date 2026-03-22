@@ -38,9 +38,9 @@ public class PlayerPrefs
 
     /// <summary>
     /// Whether the Unknown Scrolls filter is active.
-    /// When on, any scroll dropped by a monster that the player has not yet
-    /// learned is automatically looted. Already-known spells are skipped.
-    /// Toggled with /autoloot scrolls.
+    /// When on, unknown spell scrolls on corpses are learned when the character can read them
+    /// (same rules as using the scroll); otherwise they are looted to inventory. Already-known
+    /// spells are skipped. Toggled with /autoloot scrolls.
     /// </summary>
     public bool UnknownScrollsEnabled { get; set; } = false;
 

@@ -1,0 +1,10 @@
+{
+  "Name": "EmpyreanAlteration",
+  "Author": "",
+  "Description": "Empyrean-style alteration: mutator hooks (including Slayer and ShinyPet), loot-time item XP (LootGrowthItem), opt-in Harmony features, and item level-up growth. Replaces the retired EmpyreanEchoes mod.",
+  "Version": "0.2",
+  "Enabled": false,
+  "HotReload": true,
+  "RegisterCommands": true,
+  "ACEVersion": "0.0"
+}

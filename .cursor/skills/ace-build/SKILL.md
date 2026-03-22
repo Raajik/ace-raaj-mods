@@ -3,6 +3,10 @@ name: ace-build
 description: Run dotnet build for all mod projects inside the ACEmulator-Mods repository. Use when the user types /ace-build or asks to rebuild all mods for this repo.
 ---
 
+## Co-active skill: mcp2cli
+
+Whenever this work involves **MCP servers**, **OpenAPI/REST** specs, **GraphQL** endpoints, or **CLI or skill generation for external APIs**, read and follow `.cursor/skills/mcp2cli/SKILL.md` in addition to this skill (same scope as `/mcp2cli`). Prefer `uvx mcp2cli` for discovery and execution per that file.
+
 # ACE Mod Build Helper
 
 ## When to use this skill
@@ -21,14 +25,12 @@ Use this skill in this repository when:
 ## Step-by-step instructions
 
 1. **Identify mod projects**
-   - Assume each mod lives in its own subdirectory under this repo (for example `AutoLoot`, `AethericWeaver`, `LeyLineLedger`, `Numbersmith`, etc).
-   - Look for `.csproj` files whose paths are **within** `ACEmulator-Mods` (no `../` segments). Include `AutoLoot/AutoLoot.csproj` when the AutoLoot folder exists.
-   - **Skip** any project whose directory name starts with `CHANGE` (see below). Do not run `dotnet build` for those.
+   - Assume each mod lives in its own subdirectory under this repo (for example `AutoLoot`, `AureatePath`, `LeyLineLedger`, `Numbersmith`, etc).
+   - Look for `.csproj` files whose paths are **within** `ACEmulator-Mods` (no `../` segments).
+   - **Primary targets:** gameplay mods at repo root (one folder per deployable mod). See step 4 for the canonical list.
+   - **Optional:** `AceModQa/` and `tools/*` (e.g. `DecalQaRunner`, `LinearSync`, `AceServerStringRef`) — build only if the user asks for a full tree, QA, or tooling build.
 
-2. **Excluded projects (placeholder / work-in-progress mods)**
-   - Skip any mod in a folder **prefixed with `CHANGE`** (e.g. `CHANGEExpansion`, `CHANGERaise`, `CHANGEEasyEnlightenment`). These are placeholder mods; do not build them.
-
-3. **Build each project**
+2. **Build each project**
    - For each `.csproj` file you identify:
      - Run the `Shell` tool with:
        - `working_directory`: the directory that contains the `.csproj`.
@@ -36,7 +38,7 @@ Use this skill in this repository when:
        - A generous `block_until_ms` (for example, 600000 or higher) so the build can complete.
    - You may build multiple projects in parallel with the `parallel` tool wrapper when appropriate.
 
-4. **Commit and push after successful builds**
+3. **Commit and push after successful builds**
    - After all targeted projects build successfully:
      - Run `git status` (in the repo root) and confirm there are no unexpected changes.
      - Stage changes with `git add .` (or a narrower path if appropriate).
@@ -46,19 +48,22 @@ Use this skill in this repository when:
        - `git push`
    - Skip commit/push if there are no changes to commit, or if any build failed.
 
-5. **Current known project layout**
-   - Always include **AutoLoot** when present. Mod projects inside this repo include (build these):
-     - `AutoLoot/AutoLoot.csproj`
+4. **Current known project layout (gameplay mods)**
+   - Build these when the user wants “all mods” (each folder is a deployable server mod):
      - `AethericWeaver/AethericWeaver.csproj`
+     - `ChallengeModes/ChallengeModes.csproj`
+     - `AureatePath/AureatePath.csproj`
+     - `AutoLoot/AutoLoot.csproj`
+     - `EmpyreanAlteration/EmpyreanAlteration.csproj`
+     - `Gemcrafter/Gemcrafter.csproj`
      - `LeyLineLedger/LeyLineLedger.csproj`
      - `Loremaster/Loremaster.csproj`
      - `Numbersmith/Numbersmith.csproj`
      - `Overtinked/Overtinked.csproj`
      - `QOL/QOL.csproj`
      - `Swarmed/Swarmed.csproj`
-   - Do **not** build any project in a directory whose name starts with `CHANGE` (placeholder mods).
 
-6. **Reporting results**
+5. **Reporting results**
    - After running the builds, summarize succinctly:
      - Which mod projects built successfully.
      - Which failed, along with the first relevant error message for each failure.

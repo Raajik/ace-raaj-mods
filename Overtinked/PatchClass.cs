@@ -2,25 +2,118 @@ using ACE.Database.Models.World;
 
 namespace Overtinked;
 
-// Overtinked Harmony patches: extends RecipeManager.TinkeringDifficulty from settings, overrides VerifyRequirements
-// to use Overtinked limits (MaxTries, MaxImbueEffects), and applies imbue by dataId in TryMutate.
-[HarmonyPatch]
-public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
+// Overtinked: recipe/tinkering logic lives here; item XP / loot init patches use HarmonyPatchCategory(ItemLevelingHarmonyCategory).
+// RecipeManager / Creature rating patches run only when Settings.RecipeManagerCategory is patched (see OnWorldOpen).
+[HarmonyPatchCategory(Settings.RecipeManagerCategory)]
+public partial class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
 {
     // Static reference for use in static patch methods (e.g. PreTryMutate).
+    // Must be set from Start() as well as OnWorldOpen(): if the mod loads after the world is already up,
+    // OnWorldOpen never runs and item level-ups would see null here and skip all growth effects.
     internal static Settings? CurrentSettings;
+
+    static bool _itemLevelingCategoryPatched;
+
+    public override void Start()
+    {
+        base.Start();
+        RefreshSettingsAndSalvageLookup();
+    }
 
     public override async Task OnWorldOpen()
     {
-        Settings = SettingsContainer.Settings;
-        CurrentSettings = Settings;
+        RefreshSettingsAndSalvageLookup();
 
-        // Build salvage lookup and extend tinkering difficulty table.
-        SalvageEffectApplier.BuildLookup(Settings);
+        // Extend tinkering difficulty table (world is up; safe to mutate RecipeManager list).
         ModifyTinkering();
 
-        if (Settings.EnableRecipeManagerPatch)
-            ModC.Harmony.PatchCategory(Settings.RecipeManagerCategory);
+        if (Settings?.EnableRecipeManagerPatch == true)
+            ModC.Harmony.PatchCategory(Overtinked.Settings.RecipeManagerCategory);
+        await Task.CompletedTask;
+    }
+
+    public override void Stop()
+    {
+        try
+        {
+            ModC.Harmony.UnpatchCategory(Settings.RecipeManagerCategory);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Overtinked] Unpatch {Settings.RecipeManagerCategory}: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        if (_itemLevelingCategoryPatched)
+        {
+            try
+            {
+                ModC.Harmony.UnpatchCategory(Settings.ItemLevelingHarmonyCategory);
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[Overtinked] Unpatch {Settings.ItemLevelingHarmonyCategory}: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+
+            _itemLevelingCategoryPatched = false;
+        }
+
+        RestoreTinkering();
+        SpellGrowthHelper.ResetPoolsForUnload();
+        CurrentSettings = null;
+        base.Stop();
+    }
+
+    void RefreshSettingsAndSalvageLookup()
+    {
+        try
+        {
+            Settings = SettingsContainer.Settings ?? new Settings();
+        }
+        catch
+        {
+            Settings ??= new Settings();
+        }
+
+        Settings cfg = Settings ?? new Settings();
+        Settings = cfg;
+        CurrentSettings = cfg;
+        SalvageEffectApplier.BuildLookup(cfg);
+
+        if (cfg.ItemXpCurveMode == ItemXpCurveMode.CharacterTable && cfg.ItemXpVirtualCharacterLevel > 12)
+        {
+            ModManager.Log(
+                $"[Overtinked] ItemXpVirtualCharacterLevel={cfg.ItemXpVirtualCharacterLevel} uses large character XP chunks per item level; progression will be slow. Lower (e.g. 3–10) or reduce ItemXpCharacterCurveMultiplier for faster items.",
+                ModManager.LogLevel.Info);
+        }
+
+        if (cfg.ItemXpCurveMode == ItemXpCurveMode.Geometric && cfg.ItemXpGeometricMultiplierPerStep <= 1.0)
+        {
+            ModManager.Log(
+                "[Overtinked] ItemXpGeometricMultiplierPerStep must be > 1; progression would stall. Curve math clamps low multipliers until Settings are fixed.",
+                ModManager.LogLevel.Warn);
+        }
+
+        ApplyItemLevelingHarmonyCategory(cfg);
+    }
+
+    void ApplyItemLevelingHarmonyCategory(Settings cfg)
+    {
+        if (cfg.EnableItemLevelingHooks && !_itemLevelingCategoryPatched)
+        {
+            ModC.Harmony.PatchCategory(Settings.ItemLevelingHarmonyCategory);
+            _itemLevelingCategoryPatched = true;
+        }
+        else if (!cfg.EnableItemLevelingHooks && _itemLevelingCategoryPatched)
+        {
+            try
+            {
+                ModC.Harmony.UnpatchCategory(Settings.ItemLevelingHarmonyCategory);
+            }
+            catch
+            {
+            }
+            _itemLevelingCategoryPatched = false;
+        }
     }
 
     // Snapshot of default TinkeringDifficulty; can be used to restore on shutdown.
@@ -34,7 +127,16 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     // Appends extra difficulty steps so RecipeManager has one entry per allowed tinker (up to MaxTries), scaled by Settings.Scale.
     private void ModifyTinkering()
     {
+        if (Settings is null)
+            return;
+
         var diffs = RecipeManager.TinkeringDifficulty.Count;
+        if (diffs == 0)
+        {
+            ModManager.Log("Overtinked: RecipeManager.TinkeringDifficulty is empty; skipping difficulty extension.", ModManager.LogLevel.Warn);
+            return;
+        }
+
         var last = RecipeManager.TinkeringDifficulty.Last();
         var toAdd = Math.Max(0, Settings.MaxTries - diffs);
         var steps = Enumerable.Range(diffs, toAdd)
@@ -47,7 +149,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     // Prefix: replaces RecipeManager.VerifyRequirements. Uses Settings.MaxTries for NumTimesTinkered and Settings.MaxImbueEffects for ImbuedEffect; delegates other requirement types to RecipeManager.
     [HarmonyPrefix]
     [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.VerifyRequirements), new Type[] { typeof(Recipe), typeof(Player), typeof(WorldObject), typeof(RequirementType) })]
-    public static bool PreVerifyRequirements(Recipe recipe, Player player, WorldObject obj, RequirementType reqType, ref RecipeManager __instance, ref bool __result)
+    public static bool PreVerifyRequirements(Recipe recipe, Player player, WorldObject obj, RequirementType reqType, ref bool __result)
     {
         #region Setup
         __result = true;
@@ -78,10 +180,17 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 value = obj.GetProperty((PropertyInt)requirement.Stat) ?? 0;
             }
 
+            var ov = CurrentSettings;
+            if (ov is null)
+            {
+                __result = RecipeManager.VerifyRequirement(player, (CompareType)requirement.Enum, normalized, Convert.ToDouble(requirement.Value), requirement.Message);
+                continue;
+            }
+
             __result = propInt switch
             {
-                PropertyInt.NumTimesTinkered => comp.Compare(Settings.MaxTries - 1, value ?? 0, player, requirement.Message) ? __result : false,
-                PropertyInt.ImbuedEffect => comp.Compare(Settings.MaxImbueEffects - 1, BitOperations.PopCount((uint)(value ?? 0)), player, requirement.Message) ? __result : false,
+                PropertyInt.NumTimesTinkered => comp.Compare(ov.MaxTries - 1, value ?? 0, player, requirement.Message) ? __result : false,
+                PropertyInt.ImbuedEffect => comp.Compare(ov.MaxImbueEffects - 1, BitOperations.PopCount((uint)(value ?? 0)), player, requirement.Message) ? __result : false,
                 _ => RecipeManager.VerifyRequirement(player, (CompareType)requirement.Enum, normalized, Convert.ToDouble(requirement.Value), requirement.Message),
             };
             continue;
@@ -156,7 +265,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     // Prefix: custom salvage rules, new imbues (Bleed/Cleaving/Nether), buffed jewelry, or standard imbue by dataId; otherwise run original.
     [HarmonyPrefix]
     [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.TryMutate), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(uint), typeof(HashSet<uint>) })]
-    public static bool PreTryMutate(Player player, WorldObject source, WorldObject target, Recipe recipe, uint dataId, HashSet<uint> modified, ref RecipeManager __instance, ref bool __result)
+    public static bool PreTryMutate(Player player, WorldObject source, WorldObject target, Recipe recipe, uint dataId, HashSet<uint> modified, ref bool __result)
     {
         Settings? s = CurrentSettings;
         if (s == null)
@@ -240,7 +349,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     // Prefix: when EnableFailureRedesign and our roll fails, apply opposite effect (numeric) or +1 Workmanship (imbue), or let original run.
     [HarmonyPrefix]
     [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.HandleRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(double) })]
-    public static bool PreHandleRecipe(Player player, WorldObject source, WorldObject target, Recipe recipe, double percentSuccess, ref RecipeManager __instance)
+    public static bool PreHandleRecipe(Player player, WorldObject source, WorldObject target, Recipe recipe, double percentSuccess)
     {
         Settings? s = CurrentSettings;
         if (s == null || (!s.EnableFailureRedesign && !s.EnableDefaultImbueFailureWorkmanship))
@@ -308,7 +417,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         int rolled = primaryMin == primaryMax ? primaryMin : Random.Shared.Next(primaryMin, primaryMax + 1);
         string stat = buffed.PrimaryStat ?? "";
         if (string.IsNullOrEmpty(stat))
-            return true;
+            return false;
         // Map friendly names to ACE PropertyInt (exact name depends on server; adjust if needed).
         string propName = stat switch { "MaxHealth" => "HealthCapacity", "MaxStamina" => "StaminaCapacity", "MaxMana" => "ManaCapacity", _ => stat };
         if (Enum.TryParse<PropertyInt>(propName, ignoreCase: true, out var prop))
@@ -327,8 +436,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
     // Postfix: add Damage Rating from buffed jewelry secondary (e.g. 5% of MaxStamina or MaxMana per equipped item).
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(Player), nameof(Player.GetDamageRating), new Type[] { typeof(int) })]
-    public static void PostGetDamageRating(Player __instance, int damageRating, ref float __result)
+    [HarmonyPatch(typeof(Creature), nameof(Creature.GetDamageRating), new Type[] { typeof(int) })]
+    public static void PostGetDamageRating(Creature __instance, int damageRating, ref float __result)
     {
         if (__instance?.EquippedObjects == null)
             return;
@@ -351,14 +460,16 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     }
 
     // Quest-item tagging properties (use IDs above 40000 to avoid collisions).
-    private static readonly PropertyBool QuestGrowthItemBool = (PropertyBool)40100;
+    internal static readonly PropertyBool QuestGrowthItemBool = (PropertyBool)40100;
     private static readonly PropertyBool QuestItemInitializedBool = (PropertyBool)40101;
     private static readonly PropertyInt QuestItemCategoryInt = (PropertyInt)40102;
+    // Tracks last item level for which Overtinked growth ran (catch-up / no double-apply). Use a dedicated id:
+    // 40110 is reserved in-repo by Swarmed (as PropertyFloat on creatures); keep Int props off that slot to avoid confusion/imports.
+    private static readonly PropertyInt OvertinkedLastAppliedItemLevelInt = (PropertyInt)40150;
 
-    // Postfix: run on all new WorldObject creations; quest items are initialized here.
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(WorldObjectFactory), nameof(WorldObjectFactory.CreateNewWorldObject), new Type[] { typeof(uint) })]
-    public static void PostCreateNewWorldObject(uint weenieClassId, ref WorldObject __result)
+    // Helper: run quest-item initialization for a newly created WorldObject.
+    // Call from inventory creation postfixes with the receiving player so initial imbue/slayer/salvage grants send chat.
+    public static void InitializeQuestWorldObject(WorldObject __result, Player? notifyPlayer = null)
     {
         if (__result == null)
             return;
@@ -381,18 +492,64 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (s.EnableQuestItemWorkmanship)
             InitializeQuestItemWorkmanship(__result, s);
 
-        if (s.EnableQuestItemInitialEffects)
-            ApplyInitialQuestItemEffects(__result, s);
-
+        // Configure XP and max level before rolling initial salvage/imbue text that references ItemMaxLevel.
         if (s.EnableQuestItemLeveling)
             InitializeQuestItemXp(__result, s);
+
+        if (s.EnableQuestItemInitialEffects)
+            ApplyInitialQuestItemEffects(__result, s, notifyPlayer);
+    }
+
+    // Shared shape for quest init and loot ItemXp init: weapons, all clothing, or anything with a non-zero equip mask.
+    private static bool IsEquippableShapeForOvertinkedInit(WorldObject item)
+    {
+        if (item == null)
+            return false;
+
+        WeenieType type = item.WeenieType;
+
+        if (type == WeenieType.MeleeWeapon || type == WeenieType.MissileLauncher || type == WeenieType.Caster || type == WeenieType.Clothing)
+            return true;
+
+        EquipMask? validLoc = item.ValidLocations;
+        return validLoc.HasValue && validLoc.Value != 0;
+    }
+
+    // Cloaks use stock ACE item-level / overlay behavior; skip Overtinked init.
+    private static bool IsCloakItem(WorldObject item)
+    {
+        if (item == null)
+            return false;
+
+        EquipMask? loc = item.ValidLocations;
+        if (loc.HasValue && (loc.Value & EquipMask.Cloak) != 0)
+            return true;
+
+        string name = item.Name ?? string.Empty;
+        return name.Contains("cloak", StringComparison.OrdinalIgnoreCase);
     }
 
     // Central predicate for whether a WorldObject should be treated as a quest item.
     private static bool IsQuestItem(WorldObject item)
     {
-        // Currently conservative: treat no items as quest items by default in builds where explicit quest flags are unavailable.
-        return false;
+        if (item == null)
+            return false;
+
+        // Never treat existing growth / leveled items as quest items to avoid double systems.
+        if (item.HasItemLevel)
+            return false;
+
+        bool? growth = item.GetProperty(FakeBool.GrowthItem);
+        if (growth == true)
+            return false;
+
+        if (IsCloakItem(item))
+            return false;
+
+        // Weenie templates often ship ItemBaseXp + ItemMaxLevel (e.g. 1 / 1) without being real rare loot.
+        // HasItemLevel already excludes stock rare / item-level gear; do not also exclude stub stats here.
+
+        return IsEquippableShapeForOvertinkedInit(item);
     }
 
     private static void InitializeQuestItemWorkmanship(WorldObject item, Settings s)
@@ -418,63 +575,127 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (item.HasItemLevel)
             return;
 
-        // Avoid double-dipping with CHANGEExpansion growth items.
+        // Avoid double-dipping with EmpyreanAlteration GrowthItem (FakeBool.GrowthItem) items.
         bool? isGrowthItem = item.GetProperty(FakeBool.GrowthItem);
         if (isGrowthItem == true)
             return;
 
-        int minLevel = s.QuestItemMaxLevelMin;
-        int maxLevel = s.QuestItemMaxLevelMax;
-        if (minLevel > maxLevel)
-            (minLevel, maxLevel) = (maxLevel, minLevel);
-
-        int maxItemLevel = minLevel == maxLevel ? minLevel : Random.Shared.Next(minLevel, maxLevel + 1);
-        if (maxItemLevel <= 0)
-            return;
-
-        long baseXp = s.QuestItemXpBase;
-        if (baseXp <= 0)
-            baseXp = 1_000_000;
-
-        item.ItemXpStyle = ItemXpStyle.ScalesWithLevel;
+        int tierForCap = s.QuestItemMaxLevelTier > 0 ? s.QuestItemMaxLevelTier : 1;
+        ItemLevelingInit.ConfigureItemXp(item, s, tierForCap);
         item.ItemTotalXp = 0;
-        item.ItemMaxLevel = maxItemLevel;
-        item.ItemBaseXp = baseXp;
 
         // Tag as a quest-growth item and store a simple category hint by WeenieType.
         item.SetProperty(QuestGrowthItemBool, true);
         item.SetProperty(QuestItemCategoryInt, (int)item.WeenieType);
     }
 
-    // Prefix: when a quest-growth item levels up, grant an additional quest-item effect per level.
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Player), nameof(Player.OnItemLevelUp), new Type[] { typeof(WorldObject), typeof(int) })]
-    public static void PreOnItemLevelUpQuestItems(WorldObject item, int prevItemLevel, ref Player __instance)
+    internal static void ApplyCatchUpGrowth(WorldObject item, int prevItemLevel, int currentLevel, bool questGrowth, Player player, Settings s)
     {
-        if (item == null)
-            return;
+        // Failsafe: if XP jumps cause multiple levels, or if prior runs missed applying perks,
+        // always apply perks for every level between (lastApplied+1) and currentLevel, in order.
+        int lastApplied = item.GetProperty(OvertinkedLastAppliedItemLevelInt) ?? prevItemLevel;
+        if (lastApplied < 0)
+            lastApplied = 0;
 
-        Settings? s = CurrentSettings;
-        if (s == null || !s.EnableQuestItemLeveling)
-            return;
-
-        // Only handle items tagged as quest-growth and not standard growth items.
-        bool? questGrowth = item.GetProperty(QuestGrowthItemBool);
-        if (questGrowth != true)
-            return;
-
-        bool? growthItem = item.GetProperty(FakeBool.GrowthItem);
-        if (growthItem == true)
-            return;
-
-        int currentLevel = item.ItemLevel ?? 0;
-        if (currentLevel <= prevItemLevel)
-            return;
-
-        for (int level = prevItemLevel + 1; level <= currentLevel; level++)
+        // Stale DB, other tooling, or a prior bug can leave lastApplied > currentLevel so start skips the whole loop.
+        int? maxLv = item.ItemMaxLevel;
+        if (lastApplied > currentLevel || (maxLv > 0 && lastApplied > maxLv.Value))
         {
-            ApplyQuestItemLevelUpEffect(item, level, __instance, s);
+            int? badStored = item.GetProperty(OvertinkedLastAppliedItemLevelInt);
+            ModManager.Log(
+                $"[Overtinked] Resetting last-applied item level tracker for {item.Name} ({item.WeenieClassId}): stored={badStored} prev={prevItemLevel} current={currentLevel} max={maxLv}",
+                ModManager.LogLevel.Warn);
+            lastApplied = prevItemLevel;
+            item.RemoveProperty(OvertinkedLastAppliedItemLevelInt);
         }
+
+        int start = Math.Max(prevItemLevel, lastApplied) + 1;
+        if (start > currentLevel)
+            return;
+
+        int delta = currentLevel - prevItemLevel;
+        // Only collapse chat when many levels land in one tick; delta==5 was too aggressive (no per-line detail).
+        bool summarize = delta >= 12;
+        var summary = summarize ? new ItemLevelingEngine.GrowthSummary() : null;
+
+        for (int level = start; level <= currentLevel; level++)
+        {
+            ModManager.Log($"[Overtinked] OnItemLevelUp: {item.Name} ({item.WeenieClassId}) level {level}/{item.ItemMaxLevel} questGrowth={questGrowth}", ModManager.LogLevel.Info);
+
+            if (questGrowth)
+                ApplyQuestItemLevelUpEffect(item, level, player, s);
+
+            bool applied = ItemLevelingEngine.ApplyLevelUp(item, player, level, s, emitMessages: !summarize, summary: summary, maxAttempts: 4);
+            if (!applied)
+            {
+                ModManager.Log($"[Overtinked] No growth effect applied: {item.Name} ({item.WeenieClassId}) type={item.WeenieType} level {level}/{item.ItemMaxLevel}", ModManager.LogLevel.Warn);
+            }
+            if (summary != null)
+                summary.LevelsApplied++;
+
+            // Record progress even if effects were no-ops to prevent infinite retry loops.
+            item.SetProperty(OvertinkedLastAppliedItemLevelInt, level);
+        }
+
+        if (summarize && summary != null)
+        {
+            string msg = BuildCatchUpSummaryMessage(item, delta, summary);
+            player.SendMessage(msg);
+        }
+    }
+
+    private static string BuildCatchUpSummaryMessage(WorldObject item, int delta, ItemLevelingEngine.GrowthSummary summary)
+    {
+        List<string> parts = new();
+
+        if (summary.Imbues.Count > 0)
+        {
+            string imbues = string.Join(", ", summary.Imbues
+                .OrderByDescending(k => k.Value)
+                .ThenBy(k => k.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(k => k.Value == 1 ? k.Key : $"{k.Value} {k.Key}"));
+            parts.Add($"imbues ({imbues})");
+        }
+
+        if (summary.Salvage.Count > 0)
+        {
+            string salvage = string.Join(", ", summary.Salvage
+                .OrderByDescending(k => k.Value.count)
+                .ThenBy(k => k.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(k =>
+                {
+                    if (k.Value.count <= 1)
+                        return $"{k.Key} ({k.Value.totalValue})";
+                    return $"{k.Value.count} {k.Key} ({k.Value.totalValue} total)";
+                }));
+            parts.Add($"tinkers ({salvage})");
+        }
+
+        if (summary.Spells.Count > 0)
+        {
+            string spells = string.Join(", ", summary.Spells
+                .OrderByDescending(k => k.Value)
+                .ThenBy(k => k.Key, StringComparer.OrdinalIgnoreCase)
+                .Select(k => k.Value == 1 ? k.Key : $"{k.Value}x {k.Key}"));
+            parts.Add($"spells/cantrips ({spells})");
+        }
+
+        if (summary.DamageGained > 0)
+            parts.Add($"+{summary.DamageGained} Damage");
+        if (summary.ArmorLevelGained > 0)
+            parts.Add($"+{summary.ArmorLevelGained} Armor Level");
+        if (summary.MaxManaGained > 0)
+            parts.Add($"+{summary.MaxManaGained} Max Mana");
+        if (summary.ValueReductions > 0)
+            parts.Add($"{summary.ValueReductions} value reductions");
+
+        string tail = parts.Count > 0 ? string.Join("; ", parts) : "no changes (unexpected)";
+
+        // Note: we intentionally avoid calling out "no effect" rolls unless everything truly failed.
+        if (parts.Count == 0 && summary.NoEffectRolls > 0)
+            tail = $"no changes after {summary.NoEffectRolls} attempts (unexpected)";
+
+        return $"[Overtinked] {item.Name} leveled up {delta} times and gained {tail}.";
     }
 
     private static void ApplyQuestItemLevelUpEffect(WorldObject item, int level, Player player, Settings s)
@@ -493,31 +714,64 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         int roll = Random.Shared.Next(0, totalWeight);
 
         bool applied = false;
+        string effectKind = "None";
+        string? detailLine = null;
 
         if (roll < imbueWeight)
         {
             applied = TryApplyInitialImbue(item, cfg, s);
+            if (applied) effectKind = "Imbue";
         }
         else
         {
             roll -= imbueWeight;
             if (roll < slayerWeight)
             {
-                applied = TryApplyInitialSlayer(item);
+                applied = TryApplyInitialSlayer(item, out detailLine);
+                if (applied) effectKind = "Slayer";
             }
             else
             {
                 roll -= slayerWeight;
                 if (roll < salvageWeight)
-                    TryApplyInitialSalvageBoost(item);
+                {
+                    applied = TryApplyInitialSalvageBoost(item, out detailLine);
+                    effectKind = "StatBoost";
+                }
             }
         }
 
         if (applied)
-            player.SendMessage($"Your {item.NameWithMaterial} grows stronger at level {level}/{item.ItemMaxLevel}.");
+            player.SendMessage(FormatQuestItemPerkMessage(item, level, effectKind, detailLine, isInitialGrant: false));
     }
 
-    private static void ApplyInitialQuestItemEffects(WorldObject item, Settings s)
+    private static string FormatQuestItemPerkMessage(WorldObject item, int levelForText, string effectKind, string? detailLine, bool isInitialGrant)
+    {
+        int maxLv = item.ItemMaxLevel ?? 0;
+        string head = maxLv > 0
+            ? (isInitialGrant
+                ? $"{item.NameWithMaterial} begins at level {levelForText}/{maxLv}"
+                : $"{item.NameWithMaterial} has reached level {levelForText}/{maxLv}")
+            : (isInitialGrant
+                ? $"{item.NameWithMaterial} begins growing stronger"
+                : $"{item.NameWithMaterial} grows stronger at level {levelForText}");
+
+        return effectKind switch
+        {
+            "Imbue" => $"{head} and gains a new imbue.",
+            "Slayer" => string.IsNullOrWhiteSpace(detailLine)
+                ? $"{head} and gains a new slayer bonus."
+                : $"{head} and now has {detailLine}.",
+            "StatBoost" => string.IsNullOrWhiteSpace(detailLine)
+                ? $"{head} and gains a small stat boost."
+                : $"{head}: {detailLine}.",
+            _ => $"{head}.",
+        };
+    }
+
+    // Loot-growth item effects now delegated to ItemLevelingEngine.
+
+    private static void ApplyInitialQuestItemEffects(WorldObject item, Settings s, Player? notifyPlayer)
     {
         QuestItemEffectSettings cfg = s.QuestItemEffects ?? new QuestItemEffectSettings();
 
@@ -530,32 +784,50 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             return;
 
         int roll = Random.Shared.Next(0, totalWeight);
+        bool applied = false;
+        string effectKind = "None";
+        string? detailLine = null;
 
         if (roll < imbueWeight)
         {
             if (TryApplyInitialImbue(item, cfg, s))
-                return;
-            roll -= imbueWeight;
+            {
+                applied = true;
+                effectKind = "Imbue";
+            }
+            else
+                roll -= imbueWeight;
         }
         else
-        {
             roll -= imbueWeight;
+
+        if (!applied)
+        {
+            if (roll < slayerWeight)
+            {
+                if (TryApplyInitialSlayer(item, out detailLine))
+                {
+                    applied = true;
+                    effectKind = "Slayer";
+                }
+                else
+                    roll -= slayerWeight;
+            }
+            else
+                roll -= slayerWeight;
         }
 
-        if (roll < slayerWeight)
+        if (!applied && roll < salvageWeight)
         {
-            if (TryApplyInitialSlayer(item))
-                return;
-            roll -= slayerWeight;
-        }
-        else
-        {
-            roll -= slayerWeight;
+            applied = TryApplyInitialSalvageBoost(item, out detailLine);
+            if (applied)
+                effectKind = "StatBoost";
         }
 
-        if (roll < salvageWeight)
+        if (applied && notifyPlayer != null)
         {
-            TryApplyInitialSalvageBoost(item);
+            int displayLevel = Math.Max(1, item.ItemLevel ?? 0);
+            notifyPlayer.SendMessage(FormatQuestItemPerkMessage(item, displayLevel, effectKind, detailLine, isInitialGrant: true));
         }
     }
 
@@ -605,8 +877,10 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         return false;
     }
 
-    private static bool TryApplyInitialSlayer(WorldObject item)
+    private static bool TryApplyInitialSlayer(WorldObject item, out string? detailLine)
     {
+        detailLine = null;
+
         // Simple default: only weapons roll slayer.
         if (item.WeenieType != WeenieType.MeleeWeapon && item.WeenieType != WeenieType.MissileLauncher && item.WeenieType != WeenieType.Caster)
             return false;
@@ -621,11 +895,14 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         item.SetProperty(PropertyInt.SlayerCreatureType, (int)chosen);
         item.SetProperty(PropertyFloat.SlayerDamageBonus, 1.0f);
 
+        detailLine = $"Slayer vs {chosen}";
         return true;
     }
 
-    private static void TryApplyInitialSalvageBoost(WorldObject item)
+    private static bool TryApplyInitialSalvageBoost(WorldObject item, out string? effectDescription)
     {
+        effectDescription = null;
+
         string kind = item.WeenieType switch
         {
             WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster => "Damage",
@@ -643,6 +920,11 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         int value = SalvageEffectApplier.RollValue(rule);
         SalvageEffectApplier.ApplyEffect(item, rule, value, isFailure: false);
+        effectDescription = SalvageEffectApplier.GetEffectDescription(rule, value, isFailure: false);
+        if (string.IsNullOrWhiteSpace(effectDescription))
+            effectDescription = $"gains a {kind} bonus (+{value})";
+
+        return true;
     }
 
     private static int GetWorkmanship(WorldObject wo)

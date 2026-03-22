@@ -16,7 +16,7 @@ public class NetherRating : AngouriMathPatch
     };
 
     //Function parsed from formula used in patches
-    static Func<double, int, int> func;
+    static Func<double, int, int> func = null!;
     #endregion
 
     #region Start / Stop

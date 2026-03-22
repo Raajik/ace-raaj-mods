@@ -27,7 +27,7 @@ public class Debit
         __instance.CoinValue = coins;
 
         if (sendUpdateMessageIfChanged)
-            __instance.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(__instance, PropertyInt.CoinValue, __instance.CoinValue ?? 0));
+            __instance.Session?.Network?.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(__instance, PropertyInt.CoinValue, __instance.CoinValue ?? 0));
         return false;
     }
 
@@ -47,14 +47,14 @@ public class Debit
         __instance.Writer.Write(vendor.Guid.Full);
 
         // the types of items vendor will purchase
-        __instance.Writer.Write((uint)vendor.MerchandiseItemTypes);
-        __instance.Writer.Write((uint)vendor.MerchandiseMinValue);
-        __instance.Writer.Write((uint)vendor.MerchandiseMaxValue);
+        __instance.Writer.Write((uint)vendor.MerchandiseItemTypes.GetValueOrDefault());
+        __instance.Writer.Write((uint)vendor.MerchandiseMinValue.GetValueOrDefault());
+        __instance.Writer.Write((uint)vendor.MerchandiseMaxValue.GetValueOrDefault());
 
         __instance.Writer.Write(Convert.ToUInt32(vendor.DealMagicalItems ?? false));
 
-        __instance.Writer.Write((float)vendor.BuyPrice);
-        __instance.Writer.Write((float)vendor.SellPrice);
+        __instance.Writer.Write((float)vendor.BuyPrice.GetValueOrDefault());
+        __instance.Writer.Write((float)vendor.SellPrice.GetValueOrDefault());
 
         // the wcid of the alternate currency
         __instance.Writer.Write(vendor.AlternateCurrency ?? 0);
@@ -63,13 +63,13 @@ public class Debit
         if (vendor.AlternateCurrency != null)
         {
             var altCurrency = DatabaseManager.World.GetCachedWeenie(vendor.AlternateCurrency.Value);
-            var pluralName = altCurrency.GetPluralName();
+            var pluralName = altCurrency?.GetPluralName() ?? "items";
 
             // the total amount of alternate currency the player currently has
             var altCurrencyInInventory = (uint)session.Player.GetNumInventoryItemsOfWCID(vendor.AlternateCurrency.Value);
 
             //!!ADD BANKED AMOUNT
-            var banked = PatchClass.Settings.Items.Where(x => x.Id == vendor.AlternateCurrency.Value).FirstOrDefault();
+            var banked = PatchClass.Settings?.Items?.Where(x => x.Id == vendor.AlternateCurrency.Value).FirstOrDefault();
             if (banked is not null)
                 altCurrencyInInventory += (uint)session.Player.GetBanked(banked.Prop);
 
@@ -119,7 +119,7 @@ public class Debit
     //Rework spend currency to take from the bank first
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), nameof(Player.SpendCurrency), new Type[] { typeof(uint), typeof(uint), typeof(bool) })]
-    public static bool PreSpendCurrency(uint currentWcid, uint amount, bool destroy, ref Player __instance, ref List<WorldObject> __result)
+    public static bool PreSpendCurrency(uint currentWcid, uint amount, bool destroy, ref Player __instance, ref List<WorldObject>? __result)
     {
         if (currentWcid == 0 || amount == 0)
         {
@@ -143,7 +143,7 @@ public class Debit
         }
         else
         {
-            var bankEntry = PatchClass.Settings.Items.Where(x => x.Id == currentWcid).FirstOrDefault();
+            var bankEntry = PatchClass.Settings?.Items?.Where(x => x.Id == currentWcid).FirstOrDefault();
             if (bankEntry is not null)
             {
                 //Get amount banked
@@ -238,7 +238,7 @@ public class Debit
             //log.Error($"[VENDOR] {Name}.FinalizeBuyTransaction({vendor.Name}) - couldn't add {item.Name} ({item.Guid}) to player inventory after validation, this shouldn't happen!");
         }
 
-        __instance.Session.Network.EnqueueSend(new GameMessageSound(__instance.Guid, Sound.PickUpItem));
+        __instance.Session?.Network?.EnqueueSend(new GameMessageSound(__instance.Guid, Sound.PickUpItem));
 
         if (PropertyManager.GetBool("player_receive_immediate_save").Item)
             __instance.RushNextPlayerSave(5);
@@ -318,12 +318,15 @@ public class Debit
 
         if (itemsToReceive.PlayerExceedsLimits)
         {
-            if (itemsToReceive.PlayerExceedsAvailableBurden)
-                player.Session.Network.EnqueueSend(new GameEventCommunicationTransientString(player.Session, "You are too encumbered to buy that!"));
-            else if (itemsToReceive.PlayerOutOfInventorySlots)
-                player.Session.Network.EnqueueSend(new GameEventCommunicationTransientString(player.Session, "You do not have enough pack space to buy that!"));
-            else if (itemsToReceive.PlayerOutOfContainerSlots)
-                player.Session.Network.EnqueueSend(new GameEventCommunicationTransientString(player.Session, "You do not have enough container slots to buy that!"));
+            if (player.Session?.Network is not null)
+            {
+                if (itemsToReceive.PlayerExceedsAvailableBurden)
+                    player.Session.Network.EnqueueSend(new GameEventCommunicationTransientString(player.Session, "You are too encumbered to buy that!"));
+                else if (itemsToReceive.PlayerOutOfInventorySlots)
+                    player.Session.Network.EnqueueSend(new GameEventCommunicationTransientString(player.Session, "You do not have enough pack space to buy that!"));
+                else if (itemsToReceive.PlayerOutOfContainerSlots)
+                    player.Session.Network.EnqueueSend(new GameEventCommunicationTransientString(player.Session, "You do not have enough container slots to buy that!"));
+            }
 
             __result = false;
             return false;
@@ -389,7 +392,7 @@ public class Debit
 
             //!!ADD BANKED AMOUNT
             var wcid = __instance.AlternateCurrency.Value;
-            var banked = PatchClass.Settings.Items.Where(x => x.Id == wcid).FirstOrDefault();
+            var banked = PatchClass.Settings?.Items?.Where(x => x.Id == wcid).FirstOrDefault();
             if (banked is not null)
                 playerAltCurrency += (int)player.GetBanked(banked.Prop);
 

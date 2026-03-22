@@ -99,6 +99,9 @@ public class ValueRequirement
     /// </summary>
     public bool VerifyRequirement(double? prop)
     {
+        long propBits = (long)(prop ?? 0d);
+        long maskBits = (long)TargetValue;
+
         return Type switch
         {
             CompareType.GreaterThan      => (prop ?? 0) > TargetValue,
@@ -110,9 +113,9 @@ public class ValueRequirement
             CompareType.NotEqualNotExist => prop == null || prop.Value != TargetValue, // true if missing OR not equal
             CompareType.NotExist         => prop is null,                               // true only if property is absent
             CompareType.Exist            => prop is not null,                           // true only if property is present
-            CompareType.NotHasBits       => ((int)(prop ?? 0) & (int)TargetValue) == 0,             // none of the target bits are set
-            CompareType.HasBits          => ((int)(prop ?? 0) & (int)TargetValue) == (int)TargetValue, // all target bits are set
-            _ => true, // unknown compare type — default to "pass" so it doesn't silently block everything
+            CompareType.NotHasBits       => (propBits & maskBits) == 0,
+            CompareType.HasBits          => (propBits & maskBits) == maskBits,
+            _ => false,
         };
     }
 }

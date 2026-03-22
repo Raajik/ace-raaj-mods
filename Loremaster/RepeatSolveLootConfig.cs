@@ -50,10 +50,20 @@ public static class RepeatSolveLootLoader
     /// </summary>
     public static void Load(string modFolderPath)
     {
-        var path = Path.Combine(modFolderPath, "RepeatSolveLoot.json");
+        if (string.IsNullOrWhiteSpace(modFolderPath))
+        {
+            ModManager.Log(
+                "[Loremaster] RepeatSolveLoot.json not loaded: mod folder path is empty (Assembly.Location unset and Mods\\Loremaster not found). Repeat-solve loot disabled.",
+                ModManager.LogLevel.Warn);
+            _config = null;
+            return;
+        }
+
+        var path = Path.GetFullPath(Path.Combine(modFolderPath.Trim(), "RepeatSolveLoot.json"));
         if (!File.Exists(path))
         {
-            ModManager.Log($"[Loremaster] RepeatSolveLoot.json not found at {path} — repeat loot disabled.", ModManager.LogLevel.Warn);
+            var level = PatchClass.Settings.EnableRepeatSolveLoot ? ModManager.LogLevel.Warn : ModManager.LogLevel.Info;
+            ModManager.Log($"[Loremaster] RepeatSolveLoot.json not found at {path} — repeat loot disabled.", level);
             _config = null;
             return;
         }

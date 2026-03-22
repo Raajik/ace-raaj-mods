@@ -14,7 +14,7 @@ public class GrantExperience : AngouriMathPatch
     };
 
     //Function parsed from formula used in patches
-    static Func<long, int, int, long> func;
+    static Func<long, int, int, long> func = null!;
     #endregion
 
     #region Start / Stop

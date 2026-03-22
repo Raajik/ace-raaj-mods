@@ -14,7 +14,7 @@ namespace Numbersmith.Patches
                                     // Difficulty for skill check
         };
 
-        static Func<int, int, int> func;
+        static Func<int, int, int> func = null!;
         #endregion
 
         #region Start / Stop
@@ -33,6 +33,9 @@ namespace Numbersmith.Patches
         [HarmonyPatch(typeof(Healer), nameof(Healer.DoSkillCheck), new Type[] { typeof(Player), typeof(Player), typeof(uint), typeof(int) }, new ArgumentType[] { ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Normal, ArgumentType.Ref })]
         public static bool PreDoSkillCheck(Player healer, Player target, uint missingVital, int difficulty, ref Healer __instance, ref bool __result)
         {
+            if (func is null)
+                return true;
+
             // skill check:
             // (healing skill + healing kit boost) * trainedMod
             // vs. damage * 2 * combatMod

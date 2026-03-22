@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
-		<NoWarn>0436;1073;8509</NoWarn>
+		<TargetFramework>net10.0</TargetFramework>
+		<NoWarn>0436;1073;8509;MSB3277</NoWarn>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<OutputPath>C:\ACE\Mods\$(AssemblyName)</OutputPath>
@@ -57,7 +57,8 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Lib.Harmony" Version="2.3.3" ExcludeAssets="runtime" />
-		<PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+		<PackageReference Include="System.Drawing.Common" Version="8.0.8" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="2.1.13" />
 	</ItemGroup>
 
 	<ItemGroup>

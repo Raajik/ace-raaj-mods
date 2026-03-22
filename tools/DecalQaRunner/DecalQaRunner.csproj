@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>DecalQaRunner</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Decal assemblies are not on NuGet. Copy these DLLs into tools/DecalQaRunner/deps/. -->
+    <Reference Include="Decal.Adapter">
+      <HintPath>deps\Decal.Adapter.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+</Project>
+

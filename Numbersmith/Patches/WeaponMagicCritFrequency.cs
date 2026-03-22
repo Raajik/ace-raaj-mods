@@ -15,7 +15,7 @@ public class MagicWeaponCriticalChance : AngouriMathPatch
                                 // Critical chance for the attack weapon
     };
 
-    static Func<float, float, float, int, float> func;
+    static Func<float, float, float, int, float> func = null!;
     #endregion
 
     #region Start / Stop
@@ -49,6 +49,9 @@ public class MagicWeaponCriticalChance : AngouriMathPatch
         var max = Math.Max(critRate, criticalStrikeMod);
 
         var rating = wielder.GetCritRating();
+
+        if (func is null)
+            return true;
 
         __result = func(max, critRate, criticalStrikeMod, rating);
 

@@ -1,9 +1,6 @@
 # QOL – TODO
 
-Outstanding work and ideas for the QOL mod. (Source: PatchClass.cs, Fellowships.cs.)
+No open backlog.
 
-- **PatchClass.cs (line 97)**  
-  (OptimShi) Actual animation length is longer than in retail (18.4s).
-
-- **Fellowships.cs (line 208)**  
-  Decide “stop at max?” behavior.
+- **Recall / animation timing** — See `AnimationSettings` in [`Animations.cs`](Animations.cs) (`AnimationSpeeds`, `DieSeconds`).
+- **Fellowship stop-at-max** — Implemented; see `FellowshipSettings` in [`Fellowships.cs`](Fellowships.cs).

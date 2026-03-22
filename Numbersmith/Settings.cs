@@ -36,4 +36,9 @@ public class Settings
 
     // When true, Numbersmith logs a summary of which patches were loaded and which formulas are active.
     public bool Verbose { get; set; } = false;
+
+    // Originally in EmpyreanEchoes; Harmony categories still match these class names.
+    public bool EnableLifeMagicElementalMod { get; set; } = false;
+
+    public bool EnableDamageOverTimeConversion { get; set; } = false;
 }

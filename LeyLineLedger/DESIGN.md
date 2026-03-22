@@ -77,27 +77,26 @@ LeyLineLedger is a character-based bank mod for ACEmulator. Each character has a
 
 ---
 
-## 5.1 Possible future feature – AutoLoot integration
+## 5.1 AutoLoot integration
 
-- When an AutoLoot-style mod is present and LeyLineLedger is enabled, **looted pyreals** could be deposited directly into the bank instead of as physical coin stacks in the player’s inventory.
-- Detection: check for the presence/enabled state of the AutoLoot mod (e.g. via Mod metadata or a shared interface) and gate this behavior behind a LeyLineLedger setting (e.g. `AutoLootDepositsToBank`).
-- Behavior: on loot resolution, before adding pyreals/trade notes to inventory, call `IncCash(amount)` on the owning player and suppress creation of physical pyreal stacks when the setting is active. Non-pyreal loot remains unchanged and continues to use AutoLoot’s existing rules.
+- The **AutoLoot** mod can deposit looted pyreals/trade notes into the same `PropertyInt64` bank slot LeyLineLedger uses. Configure AutoLoot’s `DepositLootedCurrencyToBank` (default true) and `BankCashProperty` (default `39999`, matching LeyLineLedger `CashProperty`). No LeyLineLedger-side switch is required unless you add one later for cross-mod detection.
 
 ---
 
 ## 6. Death Penalty Adjustment (no coin explosion)
 
-- **Default:** No pyreals drop on death. Patch `Player.GetNumCoinsDropped` so the default behavior is `__result = 0` (no physical coins dropped). `DeathPenalty` only enforces the `MaxCoinsDropped` cap (default 0 = no physical drops).
-- **Possible future feature – optional bank penalty (not currently implemented):** A setting (e.g. `DeathBankPyrealPercent`) could remove a **percentage of banked pyreals** on death. When `DeathBankPyrealPercent` > 0 (e.g. 10 = 10%): (1) no physical coins would be dropped (`GetNumCoinsDropped` remains 0 or capped), (2) the server could deduct `(banked pyreals * percent / 100)` from the character's bank (PropertyInt64 cash). Example: 0 = no bank penalty, 10 = 10% of banked pyreals lost on death. Implementation details are left as a future extension to the death penalty patch (e.g. compute the amount from `GetCash() * percent / 100` and call `IncCash(-amount)` on the player when integrating with the actual death flow).
+- **Default:** No pyreals drop on death. Patch `Player.GetNumCoinsDropped` enforces the `MaxCoinsDropped` cap (default 0 = no physical drops).
+- **Optional bank penalty (implemented):** `DeathBankPyrealPercent` (0–100, 0 = off) removes `floor(banked * percent / 100)` pyreals from the bank on each death (no physical coin creation). Optional `DeathBankPyrealMaxLossPerDeath` (> 0) caps the loss per death. Applied in a Harmony postfix on `Player.OnDeath`.
 
 ---
 
-## 7. Planned: Luminance withdrawal gems
+## 7. Luminance withdrawal gems (implemented)
 
-- **Planned command:** `/bank withdraw luminance <amount>` (and shorthand like `/b w l <amount>`) will convert a portion of a character's **banked luminance** into a **luminance gem** item (or similar gem-like token).
-- **Usage:** The gem can be traded to another player. When that player **uses** the gem, the mod will consume the item and credit the gem's luminance value directly into the **recipient's banked luminance** (same PropertyInt64 as normal luminance bank), not as spendable "available luminance".
-- **Limits:** Exact WCID, stack behavior, and amount caps are intentionally left configurable via Settings (e.g. a `LuminanceGem` entry and max-per-gem value). By default the feature is **off**; servers can enable it by configuring the gem WCID and enabling the command.
-- **Integration:** Implementation will mirror pyreal withdraw behavior (bank → item), but write to `Settings.LuminanceProperty` instead of `Settings.CashProperty` when the gem is consumed. Vendor and direct-deposit flows are unaffected.
+- **Command:** `/bank withdraw luminance <amount>` and `/b w l <amount>`. Use `all` or `a` instead of an amount to withdraw all banked luminance into one gem.
+- **Behavior:** Debits **banked** luminance (`Settings.LuminanceProperty`), creates one **Gem** stack (size 1) whose `Settings.LuminanceGemStoredAmountProperty` holds the amount. Tradeable like any item.
+- **Use:** When a player uses that gem, a Harmony prefix on `Gem.UseGem` consumes it and credits the stored amount to **banked** luminance (not spendable “available” luminance). Vanilla gem effects for that weenie are skipped for gems carrying this payload.
+- **Settings:** `LuminanceGemWeenieClassId` (default **7897**, Black Garnet in stock ACE world data — must be a **Gem** weenie; override if your DB differs). Set to **0** to disable withdrawal. `LuminanceGemStoredAmountProperty` is the `PropertyInt64` key on the item (default **45213**); choose an unused id if it conflicts on your shard.
+- **Integration:** Vendor and direct-deposit flows are unchanged.
 
 ## 8. Technical Notes
 
@@ -114,8 +113,9 @@ LeyLineLedger is a character-based bank mod for ACEmulator. Each character has a
 | File | Purpose |
 |-----|--------|
 | `Mod.cs` | Mod entry; register patch class. |
-| `PatchClass.cs` | Settings load; **single** `/bank` (and `/b`) command handler; subcommands: list, deposit, transfer, withdraw; optional `/lum`/`/cash` if kept for compatibility. |
-| `Settings.cs` | DirectDeposit, VendorsUseBank, MaxCoinsDropped, DeathBankPyrealPercent, CashProperty, LuminanceProperty, Currencies (withdrawal order), optional Keys and CustomItems (disabled by default; placeholders). |
+| `PatchClass.cs` | Settings load; **single** `/bank` (and `/b`) command handler; subcommands: list, deposit, transfer, withdraw (pyreals + luminance gem); optional `/lum`/`/cash` if kept for compatibility. |
+| `PatchClass.LuminanceGem.cs` | Harmony on `Gem.UseGem` for luminance bank gems. |
+| `Settings.cs` | As above, plus luminance gem WCID and stored-amount PropertyInt64. |
 | `Debit.cs` | Vendor buy: use bank first; vendor UI coin display capped to int32. |
 | `DirectDeposit.cs` | Vendor sell: deposit to bank; `/ddt` toggle. |
 | `DeathPenalty.cs` | Death: default no physical drop; optional DeathBankPyrealPercent (deduct % of banked pyreals). |

@@ -118,7 +118,7 @@ public static class WorldObjectExtensions
             case IntValueKey.Type:          return (int)wo.WeenieType;
             case IntValueKey.Icon:          return (int)wo.IconId;
             case IntValueKey.Container:     return wo.ContainerId.HasValue ? (int)wo.ContainerId.Value : defaultValue;
-            case IntValueKey.Landblock:     return (int)wo.CurrentLandblock.Id.Raw;
+            case IntValueKey.Landblock:     return wo.CurrentLandblock is { } lb ? (int)lb.Id.Raw : defaultValue;
             case IntValueKey.ItemSlots:     return wo.ItemCapacity.HasValue ? wo.ItemCapacity.Value : defaultValue;
             case IntValueKey.PackSlots:     return wo.ContainerCapacity.HasValue ? wo.ContainerCapacity.Value : defaultValue;
             case IntValueKey.StackCount:    return wo.StackSize.HasValue ? wo.StackSize.Value : defaultValue;
@@ -142,7 +142,7 @@ public static class WorldObjectExtensions
             case IntValueKey.Category:      return (int)wo.ItemType;
             case IntValueKey.Behavior:      return wo.RadarBehavior.HasValue ? (int)wo.RadarBehavior.Value : defaultValue;
             case IntValueKey.MagicDef:      return wo.WeaponMagicDefense.HasValue ? (int)wo.WeaponMagicDefense.Value : defaultValue;
-            case IntValueKey.SpellCount:    return wo.Biota.PropertiesSpellBook.Count;
+            case IntValueKey.SpellCount:    return wo.Biota?.PropertiesSpellBook?.Count ?? 0;
             case IntValueKey.WeapSpeed:     return wo.WeaponTime.HasValue ? wo.WeaponTime.Value : defaultValue;
             case IntValueKey.EquipSkill:    return wo.UseRequiresSkillLevel.HasValue ? wo.UseRequiresSkillLevel.Value : defaultValue;
             case IntValueKey.DamageType:    return (int)wo.W_DamageType;

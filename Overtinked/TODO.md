@@ -1,11 +1,8 @@
 # Overtinked – TODO
 
-Outstanding work and future features for the Overtinked mod. (Source: Readme.)
+## Done (recent)
 
-## Combat logic for custom imbues
+- **Cleaving / Nether combat** — See `NewImbueConfig.cs` (`CleavingImbueCombatConfig`, `NetherRendingImbueCombatConfig`) and `CleavingNetherImbueCombat.cs`. `Settings.json` mirrors tunables.
+- **Quest-item perk chat** — `Container.TryAddToInventory` postfix for nested-pack / corpse loot.
 
-- **Cleaving imbue – combat**  
-  Apply cleave/splash to nearby targets when a weapon has the Cleaving flag (stored via `OvertinkedImbueStore`). Add config for radius and damage fraction.
-
-- **Nether Rending imbue – combat**  
-  Apply a nether-themed bonus (e.g. extra nether damage or Nether Rating interaction) when a weapon has the Nether Rending flag. Add config.
+No open backlog; tune via `Settings.json` (splash caps, `CanDamage` gate, Nether multipliers / soft cap, etc.).

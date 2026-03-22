@@ -1,0 +1,21 @@
+{
+  "Enabled": false,
+  "Verbose": false,
+  "ItemLevelUpGrowthEnabled": true,
+  "GrowthAugments": {
+    "MeleeWeapon": "Weapon",
+    "Caster": "Weapon",
+    "MissileLauncher": "Weapon"
+  },
+  "GrowthFixedLevelAugments": {
+    "MeleeWeapon": {
+      "1": "RendAll"
+    },
+    "Caster": {
+      "1": "RendAll"
+    },
+    "MissileLauncher": {
+      "1": "RendAll"
+    }
+  }
+}

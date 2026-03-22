@@ -1,4 +1,4 @@
-namespace EasyEnlightenment;
+namespace AureatePath;
 
 public class Settings
 {
@@ -40,13 +40,17 @@ public class Settings
     public bool PatchWieldRequirements { get; set; } = true;
     //public PropertyInt WieldRequirementEnlightenments => (PropertyInt)29999;
 
+    // Minimum sum of LumAug* tier counts (see PatchClass.LumAugmentationCreditContributors), not raw luminance currency.
     public int BaseLumAugmentationsRequired { get; set; } = 65;
+
+    // Added to the required sum per current Enlightenment level (0 = same threshold every time).
     public int LumAugmentationsRequiredPerEnlightenment { get; set; } = 0;
 
-    // Raise-leveling settings
-    public int MaxLevel { get; set; } = 9999;
-    public int CreditInterval { get; set; } = 10;
-    public LevelCost LevelCost { get; set; } = new(1_000_000_000u, 1_000_000_000u, 0, -276, growthType: GrowthType.Linear);
+    // When true, each luminance aug line in LumAugmentationCreditContributors must be at least LumAugMinimumPerContributor (stricter than sum-only).
+    public bool RequireMinimumPerLumAugContributor { get; set; }
 
-    public AlternateLevelingSettings AlternateLeveling { get; set; } = new();
+    public int LumAugMinimumPerContributor { get; set; } = 1;
+
+    // When verification fails, send a second line with tier sum vs required (helps tune BaseLumAugmentationsRequired).
+    public bool ShowLumAugVerificationCounts { get; set; }
 }

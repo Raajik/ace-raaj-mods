@@ -13,7 +13,7 @@ namespace Numbersmith.Patches;
                                 // % of armor ignored, min 0%, max 60%
         };
 
-        static Func<int, float> func;
+        static Func<int, float> func = null!;
         #endregion
 
         #region Start / Stop
@@ -36,6 +36,9 @@ namespace Numbersmith.Patches;
                 return true;
 
             var baseSkill = GetBaseSkillImbued(skill);
+            if (func is null)
+                return true;
+
             __result = func(baseSkill);
 
             return false;

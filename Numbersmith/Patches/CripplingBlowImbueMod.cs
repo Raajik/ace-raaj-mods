@@ -14,7 +14,7 @@ namespace Numbersmith.Patches;
                                 // increases the critical damage multiplier, additive
         };
 
-        static Func<int, int, float> func;
+        static Func<int, int, float> func = null!;
         #endregion
 
         #region Start / Stop
@@ -34,6 +34,9 @@ namespace Numbersmith.Patches;
         public static bool PreGetCripplingBlowMod(CreatureSkill skill, ref WorldObject __instance, ref float __result)
         {
             var baseSkill = GetBaseSkillImbued(skill);
+            if (func is null)
+                return true;
+
             __result = func(baseSkill, (int)GetImbuedSkillType(skill));
 
             //Check for a min?

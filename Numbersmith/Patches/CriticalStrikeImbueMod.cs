@@ -15,7 +15,7 @@ public class CriticalStrikeImbueMod : AngouriMathPatch
                             // Crit chance, floor of .05/.1 for ranged/melee
     };
 
-    static Func<int, int, float> func;
+    static Func<int, int, float> func = null!;
     #endregion
 
     #region Start / Stop
@@ -40,6 +40,9 @@ public class CriticalStrikeImbueMod : AngouriMathPatch
         //Mod=.5
         var skillType = GetImbuedSkillType(skill);
         var baseSkill = GetBaseSkillImbued(skill);
+
+        if (func is null)
+            return true;
 
         __result = func(baseSkill, (int)skillType);
 

@@ -12,7 +12,7 @@ namespace Numbersmith.Patches;
                                 // Modified damage taken by player
         };
 
-        static Func<int, int, int> func;
+        static Func<int, int, int> func = null!;
         #endregion
 
         #region Start / Stop
@@ -31,6 +31,9 @@ namespace Numbersmith.Patches;
         [HarmonyPatch(typeof(Player), nameof(Player.TakeDamage), new Type[] { typeof(WorldObject), typeof(DamageType), typeof(float), typeof(BodyPart), typeof(bool), typeof(AttackConditions) })]
         public static void PostTakeDamage(WorldObject source, DamageType damageType, float _amount, BodyPart bodyPart, bool crit, AttackConditions attackConditions, ref Player __instance, ref int __result)
         {
+            if (func is null)
+                return;
+
             __result = func(__result, __instance.ActiveConnections());
         }
         #endregion

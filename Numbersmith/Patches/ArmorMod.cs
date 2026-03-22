@@ -12,7 +12,7 @@ public class ArmorMod : AngouriMathPatch
                                 // Converts AL from an additive linear value to a scaled damage multiplier
     };
 
-    static Func<float, float> func;
+    static Func<float, float> func = null!;
     #endregion
 
     #region Start / Stop
@@ -31,6 +31,9 @@ public class ArmorMod : AngouriMathPatch
     [HarmonyPatch(typeof(SkillFormula), nameof(SkillFormula.CalcArmorMod), new Type[] { typeof(float) })]
     public static bool PreCalcArmorMod(float armorLevel, ref float __result)
     {
+        if (func is null)
+            return true;
+
         __result = func(armorLevel);
 
         //Return false to override

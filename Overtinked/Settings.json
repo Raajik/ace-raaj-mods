@@ -1,22 +1,75 @@
 {
-  // Maximum tinkers allowed per item (NumTimesTinkered). Recipe checks use MaxTries - 1.
   "MaxTries": 50,
-  // Difficulty step added for each extra tinker tier when extending RecipeManager.TinkeringDifficulty.
   "Scale": 0.5,
-  // Maximum number of imbues allowed on an item (bit-count of ImbuedEffect flags).
   "MaxImbueEffects": 5,
-  // When true, uses Overtinked's custom tinkering flow for RecipeManager.UseObjectOnTarget.
   "EnableRecipeManagerPatch": true,
-  // When true, failed numeric tinkers apply the opposite effect (e.g. -Damage) instead of destroying the item.
+  "EnableItemLevelingHooks": true,
   "EnableFailureRedesign": true,
-  // When true, failed imbue tinkers add +1 Workmanship (up to a cap of 10) instead of destroying the item.
   "EnableDefaultImbueFailureWorkmanship": true,
-  // When true, send chat messages to the player when a custom salvage/imbue effect is applied.
   "ShowPlayerSalvageMessage": true,
-  // Per-salvage numeric effects. Use both WCIDs for quest-reward pairs (e.g. Iron 20986; Steel 20993 and 29581).
+  "EnableQuestItemWorkmanship": true,
+  "EnableQuestItemInitialEffects": true,
+  "EnableQuestItemLeveling": true,
+  "QuestItemWorkmanshipMin": 4,
+  "QuestItemWorkmanshipMax": 8,
+  "QuestItemXpBase": 10000,
+  "QuestItemXpScale": 1.2,
+  "QuestItemMaxLevelMin": 3,
+  "QuestItemMaxLevelMax": 8,
+  "UseFixedGlobalItemMaxLevel": false,
+  "GlobalItemMaxLevel": 100,
+  "GlobalItemXpPlayerScale": 2.0,
+  "LootItemMaxLevelTierBias": 1.5,
+  "QuestItemMaxLevelTier": 1,
+  "ItemXpGeometricFirstLevelTotal": 25000,
+  "ItemXpGeometricMultiplierPerStep": 1.25,
+  "UseTierScaledItemMaxLevel": true,
+  "ItemMaxLevelsPerTreasureTier": 5,
+  "ItemXpCurveMode": "Geometric",
+  "ItemXpVirtualCharacterLevel": 6,
+  "ItemXpCharacterCurveMultiplier": 1.0,
+  "ItemXpDummyBaseXp": 1,
+  "QuestItemEffects": {
+    "AllowStandardImbues": true,
+    "AllowCustomImbues": true,
+    "AllowSlayer": true,
+    "AllowSalvageLikeBoosts": true,
+    "ImbueWeight": 3,
+    "SlayerWeight": 2,
+    "SalvageWeight": 1
+  },
+  "SpellGrowth": {
+    "Enabled": true,
+    "AutoPopulateFromDat": true,
+    "SpellOutcomeWeight": 2,
+    "CantripOutcomeWeight": 1,
+    "SpellUpgradeChance": 0.35,
+    "CantripUpgradeChance": 0.5,
+    "WeaponSpellIds": [],
+    "ArmorOrJewelrySpellIds": [],
+    "GenericSpellIds": [],
+    "WeaponSpellNameContains": [
+      "Blood Drinker",
+      "Heart Seeker",
+      "Defender",
+      "Heavy Weapon Mastery",
+      "Light Weapon Mastery",
+      "Finesse Weapon Mastery"
+    ],
+    "ArmorOrJewelrySpellNameContains": [
+      "Bludgeoning Protection",
+      "Slashing Protection",
+      "Piercing Protection",
+      "Acid Protection",
+      "Flame Protection",
+      "Frost Protection",
+      "Lightning Protection"
+    ],
+    "CantripLines": []
+  },
   "SalvageRules": [
     {
-      "Wcids": [ 20986 ],
+      "Wcids": [20986],
       "Name": "Iron",
       "EffectKind": "Damage",
       "MinValue": 1,
@@ -25,106 +78,106 @@
       "Enabled": true
     },
     {
-      "Wcids": [ 20993, 29581 ],
+      "Wcids": [20993, 29581],
       "Name": "Steel",
       "EffectKind": "ArmorLevel",
       "MinValue": 20,
-      "MaxValue": 20,
+      "MaxValue": 100,
       "FixedValue": null,
       "Enabled": true
     },
     {
-      "Wcids": [ 20985, 29576 ],
+      "Wcids": [20985, 29576],
       "Name": "Granite",
       "EffectKind": "DamageVariance",
       "MinValue": 20,
-      "MaxValue": 20,
+      "MaxValue": 100,
       "FixedValue": null,
       "Enabled": true
     },
     {
-      "Wcids": [ 20989 ],
+      "Wcids": [20989],
       "Name": "Oak",
       "EffectKind": "WeaponSpeed",
       "MinValue": 50,
-      "MaxValue": 50,
+      "MaxValue": 250,
       "FixedValue": null,
       "Enabled": true
     },
     {
-      "Wcids": [ 20981 ],
+      "Wcids": [20981],
       "Name": "Armoredillo Hide",
       "EffectKind": "ArmorModVsAcid",
       "MinValue": 40,
-      "MaxValue": 40,
+      "MaxValue": 200,
       "FixedValue": null,
       "Enabled": true
     },
     {
-      "Wcids": [ 20982 ],
+      "Wcids": [20982],
       "Name": "Bronze",
       "EffectKind": "ArmorModVsSlash",
       "MinValue": 20,
-      "MaxValue": 20,
+      "MaxValue": 100,
       "FixedValue": null,
       "Enabled": true
     },
     {
-      "Wcids": [ 20983 ],
+      "Wcids": [20983],
       "Name": "Ceramic",
       "EffectKind": "ArmorModVsFire",
       "MinValue": 40,
-      "MaxValue": 40,
+      "MaxValue": 200,
       "FixedValue": null,
       "Enabled": true
     },
     {
-      "Wcids": [ 21061 ],
+      "Wcids": [21061],
       "Name": "Marble",
       "EffectKind": "ArmorModVsBludgeon",
       "MinValue": 20,
+      "MaxValue": 100,
+      "FixedValue": null,
+      "Enabled": true
+    },
+    {
+      "Wcids": [20991],
+      "Name": "Reedshark Hide",
+      "EffectKind": "ArmorModVsElectric",
+      "MinValue": 40,
+      "MaxValue": 200,
+      "FixedValue": null,
+      "Enabled": true
+    },
+    {
+      "Wcids": [20995],
+      "Name": "Wool",
+      "EffectKind": "ArmorModVsCold",
+      "MinValue": 40,
+      "MaxValue": 200,
+      "FixedValue": null,
+      "Enabled": true
+    },
+    {
+      "Wcids": [21042],
+      "Name": "Brass",
+      "EffectKind": "WeaponDefense",
+      "MinValue": 1,
+      "MaxValue": 5,
+      "FixedValue": null,
+      "Enabled": true
+    },
+    {
+      "Wcids": [20988],
+      "Name": "Mahogany",
+      "EffectKind": "DamageMod",
+      "MinValue": 4,
       "MaxValue": 20,
       "FixedValue": null,
       "Enabled": true
     },
     {
-      "Wcids": [ 20991 ],
-      "Name": "Reedshark Hide",
-      "EffectKind": "ArmorModVsElectric",
-      "MinValue": 40,
-      "MaxValue": 40,
-      "FixedValue": null,
-      "Enabled": true
-    },
-    {
-      "Wcids": [ 20995 ],
-      "Name": "Wool",
-      "EffectKind": "ArmorModVsCold",
-      "MinValue": 40,
-      "MaxValue": 40,
-      "FixedValue": null,
-      "Enabled": true
-    },
-    {
-      "Wcids": [ 21042 ],
-      "Name": "Brass",
-      "EffectKind": "WeaponDefense",
-      "MinValue": 1,
-      "MaxValue": 1,
-      "FixedValue": null,
-      "Enabled": true
-    },
-    {
-      "Wcids": [ 20988 ],
-      "Name": "Mahogany",
-      "EffectKind": "DamageMod",
-      "MinValue": 4,
-      "MaxValue": 4,
-      "FixedValue": null,
-      "Enabled": true
-    },
-    {
-      "Wcids": [ 20994 ],
+      "Wcids": [20994],
       "Name": "Velvet",
       "EffectKind": "WeaponOffense",
       "MinValue": 1,
@@ -133,40 +186,47 @@
       "Enabled": true
     },
     {
-      "Wcids": [ 21050 ],
+      "Wcids": [21050],
       "Name": "Green Garnet",
       "EffectKind": "DamageMod",
       "MinValue": 1,
-      "MaxValue": 1,
+      "MaxValue": 5,
       "FixedValue": null,
       "Enabled": true
     }
   ],
-  // Serpentine (21075). Stacking Bleed DoT; DamagePerTick × stacks applied every TickIntervalSeconds.
   "BleedImbue": {
-    "SalvageWcids": [ 21075 ],
+    "SalvageWcids": [21075],
     "Name": "Bleed",
     "Enabled": true,
     "DamagePerTick": 1,
     "MaxStacks": 10,
     "TickIntervalSeconds": 1.0
   },
-  // Tiger Eye (21081). Cleaving-style custom imbue hook; behavior is defined in combat patches.
   "CleavingImbue": {
-    "SalvageWcids": [ 21081 ],
+    "SalvageWcids": [21081],
     "Name": "Cleaving",
-    "Enabled": true
+    "Enabled": true,
+    "SplashRadiusMeters": 5.0,
+    "SplashDamageFraction": 0.35,
+    "MaxSplashTargets": 8,
+    "SplashRespectCanDamageGate": true,
+    "SplashDamagePlayerVictims": true,
+    "SplashDamageCapPerTarget": 0.0
   },
-  // Onyx (21064). Nether Rending-style custom imbue hook; behavior is defined in combat patches.
   "NetherRendingImbue": {
-    "SalvageWcids": [ 21064 ],
+    "SalvageWcids": [21064],
     "Name": "Nether Rending",
-    "Enabled": true
+    "Enabled": true,
+    "NetherDamageFraction": 0.25,
+    "MaxNetherBonusDamage": 0.0,
+    "NetherBonusVsCreaturesMultiplier": 1.0,
+    "NetherBonusVsPlayersMultiplier": 1.0,
+    "NetherBonusSoftCap": 0.0
   },
-  // Replace default jewelry imbues with stronger ranges (e.g. Hematite +25–50 HP, optional secondary bonuses).
   "BuffedImbueRules": [
     {
-      "Wcids": [ 21053 ],
+      "Wcids": [21053],
       "Name": "Hematite",
       "PrimaryStat": "MaxHealth",
       "PrimaryMin": 25,
@@ -177,7 +237,7 @@
       "Enabled": false
     },
     {
-      "Wcids": [ 21060 ],
+      "Wcids": [21060],
       "Name": "Malachite",
       "PrimaryStat": "MaxStamina",
       "PrimaryMin": 25,
@@ -188,7 +248,7 @@
       "Enabled": false
     },
     {
-      "Wcids": [ 21058 ],
+      "Wcids": [21058],
       "Name": "Lavender Jade",
       "PrimaryStat": "MaxMana",
       "PrimaryMin": 25,

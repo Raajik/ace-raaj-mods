@@ -1,21 +1,16 @@
 # Swarmed – TODO
 
-Outstanding work and ideas for the Swarmed mod.
+## Current behavior
 
-## Implemented
+- **Call for help:** Separate toggles and roll chances for **landscape** (`LandscapeEnabled`, `LandscapeChance`, spawn min/max) and **dungeon** (`DungeonEnabled`, `DungeonChance`, spawn min/max). Defaults are in `Settings.cs`; sample `Settings.json` may override (e.g. landscape chance 0.15).
+- **Reinforcement stats:** New spawns roll HP between `ReinforcementHealthMin`–`ReinforcementHealthMax` × caller max HP, and visual scale between `ReinforcementScaleMin`–`ReinforcementScaleMax` × caller scale.
+- **XP tuning:** `ReinforcementXpBonusMin` / `ReinforcementXpBonusMax` bias reinforcement kill XP.
+- **CreatureEx champions:** `CreatureFeatures` lists which `CreatureExType` variants can replace normal spawns (when `CreatureChance` / feature hooks apply). `/cex` spawns a specific type for testing; optional `AllowPartialCreatureExTypeMatch` allows a unique substring match on the enum name.
+- **Messaging:** `CallForHelpMessages` — random `{0}` template when reinforcements trigger.
+- **Admin debug:** `/swarmed debug` — last call-for-help evaluation and session counters.
 
-### 1. Call-for-help chance: configurable, separate for landscape and dungeon
+## Future ideas
 
-- The "call for help" chance is **configurable** and **separate** for landscape vs dungeon (`LandscapeChance`, `DungeonChance`).
-- **Defaults:** both set to **15%** (0.15) in Settings and Settings.json.
-
-### 2. Reinforcement health: 30–70% of original max HP
-
-- Reinforcements get health in a **random range** per spawn using `ReinforcementHealthMin` (default 0.3) and `ReinforcementHealthMax` (default 0.7).
-- Example: 100/100 HP original → each reinforcement gets 30/30–70/70 HP (rolled per spawn).
-
-### 3. Variable reinforcement size: 10–80% of original
-
-- Reinforcement **size** uses `ObjScale`: each spawn gets a random scale in `ReinforcementScaleMin`–`ReinforcementScaleMax` (defaults 0.1–0.8) times the original creature’s scale.
-
-## Ideas (future)
+- **Online density (implemented):** optional scaling of `CreatureChance` and reinforcement roll chances by **shard-wide** online player count (`CreatureChanceScalesWithOnlinePlayers` / `ReinforcementChanceScalesWithOnlinePlayers` + bonus/cap in `Settings`).
+- **Reinforcement per-landblock (implemented):** `ReinforcementChanceScalesWithLandblockPlayers` / `ReinforcementChanceBonusPerLandblockPlayer` — uses players on the dying creature’s landblock; takes precedence over shard-online reinforcement scaling when enabled and `CurrentLandblock` is present. Same cap as `ReinforcementChanceMaximumAfterScaling`.
+- **CreatureEx per-landblock:** not implemented — `WorldObjectFactory.CreateWorldObject` has no landblock context; would need a post-placement ACE hook.

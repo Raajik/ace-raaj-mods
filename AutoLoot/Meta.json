@@ -1,7 +1,7 @@
 {
   "Name": "AutoLoot",
   "Author": "",
-  "Description": "This is an example metadata file for a non-existent mod.",
+  "Description": "Corpse autoloot: server .utl profiles, optional vendor-trash and unknown-scroll passes; per-player toggles via /autoloot.",
   "Version": "1.0",
   "Enabled": true,
   "HotReload": true,

@@ -1,4 +1,4 @@
-﻿///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 //File: LootRules.cs
 //
 //Description: The old-style Virindi Tank loot rule system.
@@ -1840,7 +1840,7 @@ namespace AutoLoot.Lib.VTClassic
 
         public override bool Match(WorldObject id, Player player)
         {
-            // TODO: palette stuff
+            // Palette-based color rules are not implemented in this ACE port; returning false avoids silent incorrect matches.
             return false;
             /*
             double ht, st, vt;
@@ -1984,7 +1984,7 @@ namespace AutoLoot.Lib.VTClassic
 
         public override bool Match(WorldObject id, Player player)
         {
-            // TODO: palette stuff
+            // Palette-based color rules are not implemented in this ACE port; returning false avoids silent incorrect matches.
             return false;
             /*
             double ht, st, vt;
@@ -2118,7 +2118,7 @@ namespace AutoLoot.Lib.VTClassic
 
         public override bool Match(WorldObject id, Player player)
         {
-            // TODO: palette stuff
+            // Palette-based color rules are not implemented in this ACE port; returning false avoids silent incorrect matches.
             return false;
             /*
             double ht, st, vt;
@@ -2228,7 +2228,7 @@ namespace AutoLoot.Lib.VTClassic
 
         public override bool Match(WorldObject id, Player player)
         {
-            // TODO: palette stuff
+            // Palette-based color rules are not implemented in this ACE port; returning false avoids silent incorrect matches.
             return false;
             /*
             if (id.Palettes.Count <= Slot) return false;

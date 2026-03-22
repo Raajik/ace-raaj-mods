@@ -1,87 +1,42 @@
 
-namespace EasyEnlightenment;
+namespace AureatePath;
 
 [HarmonyPatch]
 public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
 {
     private const int ENLIGHTENMENT_WCID = 53412;
 
-    static List<ulong> storedCosts = new();
-    static List<uint> storedCredits = new();
-
     public override async Task OnWorldOpen()
     {
-        Settings = SettingsContainer.Settings;
+        var cfg = SettingsContainer.Settings ?? new Settings();
+        Settings = cfg;
 
-        while (true)
+        var deadline = DateTime.UtcNow.AddMinutes(10);
+        while (WorldManager.WorldStatus != WorldManager.WorldStatusState.Open)
         {
-            if (WorldManager.WorldStatus == WorldManager.WorldStatusState.Open)
+            if (DateTime.UtcNow > deadline)
+            {
+                ModManager.Log("[AureatePath] OnWorldOpen: world did not reach Open within 10 minutes; continuing anyway.", ModManager.LogLevel.Warn);
                 break;
+            }
 
             await Task.Delay(1000);
         }
 
-        if (Settings.AlternateLeveling.Enabled)
-        {
-            ModC.Harmony.PatchCategory(nameof(AlternateLeveling));
-            ModC.Container.RegisterCommandCategory(nameof(AlternateLeveling));
-        }
-
-        if (Settings.PatchWieldRequirements)
+        if (cfg.PatchWieldRequirements)
         {
             ModC.Harmony.PatchCategory(nameof(WieldRequirements));
         }
-
-        storedCosts = DatManager.PortalDat.XpTable.CharacterLevelXPList.ToList();
-        storedCredits = DatManager.PortalDat.XpTable.CharacterLevelSkillCreditList.ToList();
-
-        SetMaxLevel();
-    }
-
-    public override void Stop()
-    {
-        base.Stop();
-
-        if (ModC.State == ModState.Running)
-        {
-            RestoreMaxLevel();
-        }
-    }
-
-    static void SetMaxLevel()
-    {
-        RestoreMaxLevel();
-
-        for (var i = DatManager.PortalDat.XpTable.CharacterLevelXPList.Count; i <= Settings.MaxLevel; i++)
-        {
-            var cost = DatManager.PortalDat.XpTable.CharacterLevelXPList.Last() + (ulong)Settings.LevelCost.GetCost(i);
-            var credits = (uint)(i % Settings.CreditInterval == 0 ? 1 : 0);
-            DatManager.PortalDat.XpTable.CharacterLevelXPList.Add(cost);
-            DatManager.PortalDat.XpTable.CharacterLevelSkillCreditList.Add(credits);
-        }
-
-        ModManager.Log($"Set max level to {Settings.MaxLevel}");
-    }
-
-    static async void RestoreMaxLevel()
-    {
-        if (storedCosts.Count == 0 || storedCredits.Count == 0)
-            return;
-
-        DatManager.PortalDat.XpTable.CharacterLevelXPList.Clear();
-        DatManager.PortalDat.XpTable.CharacterLevelXPList.AddRange(storedCosts);
-        DatManager.PortalDat.XpTable.CharacterLevelSkillCreditList.Clear();
-        DatManager.PortalDat.XpTable.CharacterLevelSkillCreditList.AddRange(storedCredits);
-
-        ModManager.Log($"Restored max level to {DatManager.PortalDat.XpTable.CharacterLevelXPList.Count}");
     }
 
     [CommandHandler("newlum", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0)]
     public static void HandleMeta(Session session, params string[] parameters)
     {
         var player = session.Player;
+        if (player is null)
+            return;
 
-        if (player.GetProperty(FakeBool.UsingNewLuminance) ?? true)
+        if (player.GetProperty(FakeBool.UsingNewLuminance) ?? false)
         {
             player.SendMessage($"You're already using the new enlightenment system.");
             return;
@@ -100,53 +55,77 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     [CommandHandler("fixee", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0)]
     public static void HandleFix(Session session, params string[] parameters)
     {
-        ApplyBonuses(session.Player);
+        if (session.Player is not Player p)
+            return;
+
+        ApplyBonuses(p);
     }
 
     static void ApplyBonuses(Player player)
     {
+        if (Settings is not { } s)
+            return;
+
         //PRESUMES NO OTHER BONUSES TO SET PROPS
         var e = player.Enlightenment;
 
         //Custom props
-        foreach (var prop in Settings.IntAugments)
+        if (s.IntAugments != null)
         {
-            var current = player.GetProperty(prop.Key) ?? 0;
-            //var value = prop.Key.ToString().StartsWith("Lum") ? player.Enlightenment * prop.Value : current + prop.Value;
-            var value = player.Enlightenment * prop.Value;
-            player.UpdateProperty(player, prop.Key, value, true);
-            player.SendMessage($"You've been awarded {value} {prop.Key}");
+            foreach (var prop in s.IntAugments)
+            {
+                var current = player.GetProperty(prop.Key) ?? 0;
+                //var value = prop.Key.ToString().StartsWith("Lum") ? player.Enlightenment * prop.Value : current + prop.Value;
+                var value = player.Enlightenment * prop.Value;
+                player.UpdateProperty(player, prop.Key, value, true);
+                player.SendMessage($"You've been awarded {value} {prop.Key}");
+            }
         }
-        foreach (var prop in Settings.FloatAugments)
+
+        if (s.FloatAugments != null)
         {
-            var current = player.GetProperty(prop.Key) ?? 0;
-            //var value = prop.Key.ToString().StartsWith("Lum") ? player.Enlightenment * prop.Value : current + prop.Value;
-            var value = player.Enlightenment * prop.Value;
-            player.UpdateProperty(player, prop.Key, value, true);
-            player.SendMessage($"You've been awarded {value} {prop.Key}");
+            foreach (var prop in s.FloatAugments)
+            {
+                var current = player.GetProperty(prop.Key) ?? 0;
+                //var value = prop.Key.ToString().StartsWith("Lum") ? player.Enlightenment * prop.Value : current + prop.Value;
+                var value = player.Enlightenment * prop.Value;
+                player.UpdateProperty(player, prop.Key, value, true);
+                player.SendMessage($"You've been awarded {value} {prop.Key}");
+            }
         }
 
         //Bonuses enabled with Expansion
-        foreach (var prop in Settings.SkillAugments)
+        if (s.SkillAugments != null)
         {
-            var value = prop.Value * player.Enlightenment;
-            player.SetBonus(prop.Key, value);
-            player.SendUpdated(prop.Key);
-            player.SendMessage($"You've been awarded {value} {prop.Key}");
+            foreach (var prop in s.SkillAugments)
+            {
+                var value = prop.Value * player.Enlightenment;
+                player.SetBonus(prop.Key, value);
+                player.SendUpdated(prop.Key);
+                player.SendMessage($"You've been awarded {value} {prop.Key}");
+            }
         }
-        foreach (var prop in Settings.AttributeAugments)
+
+        if (s.AttributeAugments != null)
         {
-            var value = prop.Value * player.Enlightenment;
-            player.SetBonus(prop.Key, value);
-            player.SendUpdated(prop.Key);
-            player.SendMessage($"You've been awarded {value} {prop.Key}");
+            foreach (var prop in s.AttributeAugments)
+            {
+                var value = prop.Value * player.Enlightenment;
+                player.SetBonus(prop.Key, value);
+                player.SendUpdated(prop.Key);
+                player.SendMessage($"You've been awarded {value} {prop.Key}");
+            }
         }
-        foreach (var prop in Settings.VitalAugments)
+
+        if (s.VitalAugments != null)
         {
-            var value = prop.Value * player.Enlightenment;
-            player.SetBonus(prop.Key, value);
-            player.SendUpdated(prop.Key);
-            player.SendMessage($"You've been awarded {value} {prop.Key}");
+            foreach (var prop in s.VitalAugments)
+            {
+                var value = prop.Value * player.Enlightenment;
+                player.SetBonus(prop.Key, value);
+                player.SendUpdated(prop.Key);
+                player.SendMessage($"You've been awarded {value} {prop.Key}");
+            }
         }
     }
 
@@ -155,17 +134,20 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     [HarmonyPatch(typeof(Enlightenment), nameof(Enlightenment.RemoveAbility), new Type[] { typeof(Player) })]
     public static bool PreRemoveAbility(Player player, ref Enlightenment __instance)
     {
-        if (Settings.RemoveSociety)
+        if (Settings is not { } s)
+            return true;
+
+        if (s.RemoveSociety)
             Enlightenment.RemoveSociety(player);
-        if (Settings.RemoveLuminance)
+        if (s.RemoveLuminance)
             Enlightenment.RemoveLuminance(player);
-        if (Settings.RemoveAetheria)
+        if (s.RemoveAetheria)
             Enlightenment.RemoveAetheria(player);
-        if (Settings.RemoveAttributes)
+        if (s.RemoveAttributes)
             Enlightenment.RemoveAttributes(player);
-        if (Settings.RemoveSkills)
+        if (s.RemoveSkills)
             Enlightenment.RemoveSkills(player);
-        if (Settings.RemoveLevel)
+        if (s.RemoveLevel)
             Enlightenment.RemoveLevel(player);
 
         return false;
@@ -192,7 +174,11 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             //}
             else
             {
-                __result = new ActivationResult(new GameEventCommunicationTransientString(player.Session, $"Sneaking in the 'ol enlightenment here."));
+                if (player.Session != null)
+                    __result = new ActivationResult(new GameEventCommunicationTransientString(player.Session, $"Sneaking in the 'ol enlightenment here."));
+                else
+                    __result = new ActivationResult(true);
+
                 Enlightenment.HandleEnlightenment(activator, player);
             }
             return false;
@@ -206,10 +192,14 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     [HarmonyPatch(typeof(Enlightenment), nameof(Enlightenment.AddPerks), new Type[] { typeof(WorldObject), typeof(Player) })]
     public static bool PreAddPerks(WorldObject npc, Player player, ref Enlightenment __instance)
     {
-        player.Enlightenment += 1;
-        player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(player, PropertyInt.Enlightenment, player.Enlightenment));
+        if (Settings is not { } s)
+            return true;
 
-        if (Settings.SkipNormalBroadcast)
+        player.Enlightenment += 1;
+        player.Session?.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(player, PropertyInt.Enlightenment, player.Enlightenment));
+
+        // Vanilla broadcast is skipped (return false below); show personal lines unless operator opts out.
+        if (!s.SkipNormalBroadcast)
         {
             player.SendMessage("You have become enlightened and view the world with new eyes.", ChatMessageType.Broadcast);
             player.SendMessage("Your available skill credits have been adjusted.", ChatMessageType.Broadcast);
@@ -246,7 +236,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 break;
         }
 
-        if (!Settings.SkipResetCertificate)
+        if (!s.SkipResetCertificate && npc is not null)
             player.GiveFromEmote(npc, Enlightenment.AttributeResetCertificate, 1);
 
         var msg = $"{player.Name} has achieved the {lvl} level of Enlightenment!";
@@ -257,15 +247,20 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         //Custom props
         ApplyBonuses(player);
 
-        //Credits
-        var creditsOwed = player.Enlightenment / Settings.SkillCreditInterval * Settings.SkillCreditAmount;
-        player.AddSkillCredits(player.Enlightenment / Settings.SkillCreditInterval * Settings.SkillCreditAmount);
-        player.SendMessage($"You've been awarded {creditsOwed} skill credits.");
+        // Credits (interval <= 0 would divide by zero; skip grant and warn once)
+        if (s.SkillCreditInterval > 0)
+        {
+            var creditsOwed = player.Enlightenment / s.SkillCreditInterval * s.SkillCreditAmount;
+            player.AddSkillCredits(creditsOwed);
+            player.SendMessage($"You've been awarded {creditsOwed} skill credits.");
+        }
+        else
+            player.SendMessage("Skill credit interval is not configured (> 0); no skill credits granted this enlightenment.");
 
         //Max lum
         if (player.MaximumLuminance is not null)
         {
-            var maxLuminance = Settings.MaxLumBase + Settings.MaxLumPerEnlightenment * player.Enlightenment;
+            var maxLuminance = s.MaxLumBase + s.MaxLumPerEnlightenment * player.Enlightenment;
             player.MaximumLuminance = maxLuminance;
             player.SendMessage($"Your luminance is now {maxLuminance}");
 
@@ -281,58 +276,78 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     {
         __result = true;
 
-        if (player.Level < Settings.LevelReq)
+        if (Settings is not { } s)
+            return true;
+
+        if (player.Level < s.LevelReq)
         {
-            player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You must be level 275 for enlightenment.", ChatMessageType.Broadcast));
+            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You must be level {s.LevelReq} for enlightenment.", ChatMessageType.Broadcast));
             __result = false;
         }
-        else if (Settings.RequireAllLuminanceAuras && !VerifyLumAugs(player))
+        else if (s.RequireAllLuminanceAuras && !TryEvaluateLumAugs(player, s, out var lumSum, out var lumReq))
         {
-            player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You must have all luminance auras for enlightenment.", ChatMessageType.Broadcast));
+            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You must have all luminance auras for enlightenment.", ChatMessageType.Broadcast));
+            if (s.ShowLumAugVerificationCounts)
+                player.SendMessage($"Luminance aura tier total: {lumSum:N0} (required {lumReq:N0}).");
             __result = false;
         }
 
-        else if (Settings.RequireSocietyMaster && !Enlightenment.VerifySocietyMaster(player))
+        else if (s.RequireSocietyMaster && !Enlightenment.VerifySocietyMaster(player))
         {
-            player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You must be a Master of one of the Societies of Dereth for enlightenment.", ChatMessageType.Broadcast));
+            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You must be a Master of one of the Societies of Dereth for enlightenment.", ChatMessageType.Broadcast));
             __result = false;
         }
 
         else if (player.GetFreeInventorySlots() < 25)
         {
-            player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You must have at least 25 free inventory slots in your main pack for enlightenment.", ChatMessageType.Broadcast));
+            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You must have at least 25 free inventory slots in your main pack for enlightenment.", ChatMessageType.Broadcast));
             __result = false;
         }
 
-        else if (player.Enlightenment >= Settings.MaxEnlightenments)
+        else if (player.Enlightenment >= s.MaxEnlightenments)
         {
-            player.Session.Network.EnqueueSend(new GameMessageSystemChat($"You have already reached the maximum enlightenment level!", ChatMessageType.Broadcast));
+            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You have already reached the maximum enlightenment level!", ChatMessageType.Broadcast));
             __result = false;
         }
 
         return false;
     }
 
-    //Override lum check for minimums
-    //Todo: improve this
-    public static bool VerifyLumAugs(Player player)//, ref Enlightenment __instance, ref bool __result)
+    // Sums configured luminance augmentation tiers (not “total luminance spent”); pass requires sum >= BaseLumAugmentationsRequired + Enlightenment * LumAugmentationsRequiredPerEnlightenment.
+    static readonly Func<Player, int>[] LumAugmentationCreditContributors =
     {
-        //Have all luminance auras(crafting aura included) except the 2 skill credit auras. (20 million total luminance)
-        var lumAugCredits = 0;
+        p => p.LumAugAllSkills,
+        p => p.LumAugSurgeChanceRating,
+        p => p.LumAugCritDamageRating,
+        p => p.LumAugCritReductionRating,
+        p => p.LumAugDamageRating,
+        p => p.LumAugDamageReductionRating,
+        p => p.LumAugItemManaUsage,
+        p => p.LumAugItemManaGain,
+        p => p.LumAugHealingRating,
+        p => p.LumAugSkilledCraft,
+        p => p.LumAugSkilledSpec,
+    };
 
-        lumAugCredits += player.LumAugAllSkills;
-        lumAugCredits += player.LumAugSurgeChanceRating;
-        lumAugCredits += player.LumAugCritDamageRating;
-        lumAugCredits += player.LumAugCritReductionRating;
-        lumAugCredits += player.LumAugDamageRating;
-        lumAugCredits += player.LumAugDamageReductionRating;
-        lumAugCredits += player.LumAugItemManaUsage;
-        lumAugCredits += player.LumAugItemManaGain;
-        lumAugCredits += player.LumAugHealingRating;
-        lumAugCredits += player.LumAugSkilledCraft;
-        lumAugCredits += player.LumAugSkilledSpec;
+    public static bool VerifyLumAugs(Player player) =>
+        Settings is not { } s ? false : TryEvaluateLumAugs(player, s, out _, out _);
 
-        return lumAugCredits >= Settings.BaseLumAugmentationsRequired + player.Enlightenment * Settings.LumAugmentationsRequiredPerEnlightenment;
+    static bool TryEvaluateLumAugs(Player player, Settings s, out int sum, out int required)
+    {
+        sum = 0;
+        long reqLong = (long)s.BaseLumAugmentationsRequired + (long)player.Enlightenment * s.LumAugmentationsRequiredPerEnlightenment;
+        required = reqLong > int.MaxValue ? int.MaxValue : (int)reqLong;
+
+        foreach (var part in LumAugmentationCreditContributors)
+        {
+            int v = part(player);
+            if (s.RequireMinimumPerLumAugContributor && v < s.LumAugMinimumPerContributor)
+                return false;
+
+            sum += v;
+        }
+
+        return sum >= required;
     }
 }
 

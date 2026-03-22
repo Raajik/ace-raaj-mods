@@ -1,4 +1,6 @@
-﻿## EasyEnlightenment
+## AureatePath
+
+*(Documentation previously titled “EasyEnlightenment”; same mod folder and assembly.)*
 
 Adds flexibility to enlightenments.
 
@@ -7,7 +9,7 @@ Adds flexibility to enlightenments.
     * `IntAugments` 
     * `FloatAugments`
 
-  * Bonuses that require `Expansion` with the `BonusStats` Feature enabled
+  * Bonuses that require **ChallengeModes** with **`BonusStatsEnabled`** (adds `Creature.GetBonus` on top of init/starting values)
     * `SkillAugments`
     * `AttributeAugments`
     * `VitalAugments`

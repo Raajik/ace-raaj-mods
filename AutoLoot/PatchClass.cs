@@ -12,10 +12,13 @@ namespace AutoLoot;
 /// apply them when the mod loads.
 /// </summary>
 [HarmonyPatch]
-public class PatchClass : BasicPatch<Settings>
+public partial class PatchClass : BasicPatch<Settings>
 {
-    // Patches and command handlers live in AutoLoot.cs.
-    // See AutoLoot.cs for the main /autoloot command and the GenerateTreasure patch.
+    // PlayerEnterWorld postfix: PatchClass.Harmony.cs (attribute). GenerateTreasure: applied manually in Start()
+    // via AccessTools so it still binds if the method is non-public or discovery order changes (net10 / ACE updates).
+
+    static readonly object GenerateTreasurePatchLock = new();
+    static bool GenerateTreasurePostfixPatched;
 
     /// <summary>
     /// Constructor. Called immediately when ACE loads the mod.
@@ -27,8 +30,67 @@ public class PatchClass : BasicPatch<Settings>
     /// </summary>
     public PatchClass(BasicMod mod, string settingsName = "Settings.json") : base(mod, settingsName)
     {
-        try { Settings ??= SettingsContainer.Settings; }
-        catch { Settings ??= new Settings(); }
+        try
+        {
+            Settings ??= SettingsContainer.Settings;
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"AutoLoot: constructor settings load failed ({ex.Message}); using defaults.", ModManager.LogLevel.Warn);
+            Settings ??= new Settings();
+        }
+    }
+
+    public override void Start()
+    {
+        base.Start();
+        try
+        {
+            Settings ??= SettingsContainer.Settings;
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"AutoLoot: Start settings load failed ({ex.Message}); using defaults.", ModManager.LogLevel.Warn);
+            Settings ??= new Settings();
+        }
+
+        TryPatchGenerateTreasurePostfix();
+    }
+
+    void TryPatchGenerateTreasurePostfix()
+    {
+        lock (GenerateTreasurePatchLock)
+        {
+            if (GenerateTreasurePostfixPatched)
+                return;
+
+            try
+            {
+                MethodInfo? target = AccessTools.Method(typeof(Creature), "GenerateTreasure",
+                    new Type[] { typeof(DamageHistoryInfo), typeof(Corpse) });
+
+                if (target == null)
+                {
+                    ModManager.Log("AutoLoot: Creature.GenerateTreasure(DamageHistoryInfo, Corpse) not found; autoloot corpse hook disabled.", ModManager.LogLevel.Error);
+                    return;
+                }
+
+                MethodInfo? postfix = AccessTools.Method(typeof(PatchClass), nameof(PostGenerateTreasure));
+                if (postfix == null)
+                {
+                    ModManager.Log("AutoLoot: PostGenerateTreasure method not found.", ModManager.LogLevel.Error);
+                    return;
+                }
+
+                ModC.Harmony.Patch(target, postfix: new HarmonyMethod(postfix));
+                GenerateTreasurePostfixPatched = true;
+                ModManager.Log("AutoLoot: GenerateTreasure postfix applied (manual Harmony.Patch).", ModManager.LogLevel.Info);
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"AutoLoot: GenerateTreasure manual patch failed: {ex}", ModManager.LogLevel.Error);
+            }
+        }
     }
 
     /// <summary>
@@ -37,8 +99,43 @@ public class PatchClass : BasicPatch<Settings>
     /// </summary>
     public override async Task OnWorldOpen()
     {
-        try { Settings = SettingsContainer.Settings; }
-        catch { Settings ??= new Settings(); }
+        try
+        {
+            Settings = SettingsContainer.Settings;
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"AutoLoot: OnWorldOpen settings load failed ({ex.Message}); keeping prior settings.", ModManager.LogLevel.Warn);
+            Settings ??= new Settings();
+        }
+
+        TryPatchGenerateTreasurePostfix();
+    }
+
+    public override void Stop()
+    {
+        lock (GenerateTreasurePatchLock)
+        {
+            if (GenerateTreasurePostfixPatched)
+            {
+                try
+                {
+                    MethodInfo? target = AccessTools.Method(typeof(Creature), "GenerateTreasure",
+                        new Type[] { typeof(DamageHistoryInfo), typeof(Corpse) });
+                    MethodInfo? postfix = AccessTools.Method(typeof(PatchClass), nameof(PostGenerateTreasure));
+                    if (target != null && postfix != null)
+                        ModC.Harmony.Unpatch(target, postfix);
+                }
+                catch (Exception ex)
+                {
+                    ModManager.Log($"AutoLoot: GenerateTreasure unpatch on Stop: {ex.Message}", ModManager.LogLevel.Warn);
+                }
+
+                GenerateTreasurePostfixPatched = false;
+            }
+        }
+
+        base.Stop();
     }
 }
 

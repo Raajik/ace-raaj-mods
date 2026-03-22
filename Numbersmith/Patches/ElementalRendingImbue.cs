@@ -15,7 +15,7 @@ public class ElementalRendingImbue : AngouriMathPatch
                             // Elemental rending damage multiplier
     };
 
-    static Func<int, int, float> func;
+    static Func<int, int, float> func = null!;
     #endregion
 
     #region Start / Stop
@@ -37,6 +37,9 @@ public class ElementalRendingImbue : AngouriMathPatch
         // elemental rending cap, equivalent to level 6 vuln
         //        public static float MaxRendingMod = 2.5f;
         var baseSkill = GetBaseSkillImbued(skill);
+        if (func is null)
+            return true;
+
         __result = func(baseSkill, (int)GetImbuedSkillType(skill));
 
         //Don't clamp but set a floor

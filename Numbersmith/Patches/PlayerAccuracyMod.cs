@@ -12,7 +12,7 @@ public class PlayerAccuracyMod : AngouriMathPatch
         ["n"] = MType.Int,      // # connections
     };
 
-    static Func<float, int, float> func;
+    static Func<float, int, float> func = null!;
     #endregion
 
     #region Start / Stop
@@ -31,6 +31,9 @@ public class PlayerAccuracyMod : AngouriMathPatch
     [HarmonyPatch(typeof(Player), nameof(Player.GetAccuracyMod), new Type[] { typeof(WorldObject) })]
     public static bool PreGetAccuracyMod(WorldObject weapon, ref Player __instance, ref float __result)
     {
+        if (func is null)
+            return true;
+
         if (weapon != null && weapon.IsRanged)
             __result = func(__instance.AccuracyLevel, __instance.ActiveConnections());
         else

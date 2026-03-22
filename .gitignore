@@ -24,3 +24,11 @@ project.assets.json
 PublicizedAssemblies/
 project.nuget.cache
 .claude/
+
+# Local env / sync config (never commit API keys)
+.env.local
+.env.*.local
+linear-sync.config.json
+
+# Symlinks / directory junctions (machine-local; Git has no "ignore symlinks" rule — list each path)
+ACE-Server/

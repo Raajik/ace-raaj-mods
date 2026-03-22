@@ -32,6 +32,9 @@ public class Fellowships
         if (inviter == null || newMember == null)
             return false;
 
+        if (inviter.Session?.Network == null)
+            return false;
+
         if (S.Settings.Fellowship.SendDetails)
         {
             var details = $"\n{inviter.Name} wants to add {newMember.Name} to {__instance.FellowshipName}.\nShareXP: {GetFellowshipShare(__instance.GetFellowshipMembers().Count + 1)}";
@@ -102,7 +105,8 @@ public class Fellowships
     [HarmonyPatch(typeof(Fellowship), nameof(Fellowship.AddConfirmedMember), new Type[] { typeof(Player), typeof(Player), typeof(bool) })]
     public static bool PreAddConfirmedMember(Player inviter, Player player, bool response, ref Fellowship __instance)
     {
-        if (inviter == null || inviter.Session == null || inviter.Session.Player == null || player == null) return false;
+        if (inviter == null || inviter.Session?.Network == null || inviter.Session.Player == null || player == null)
+            return false;
 
         if (!response)
         {
@@ -126,12 +130,18 @@ public class Fellowships
         var fellowshipMembers = __instance.GetFellowshipMembers();
 
         foreach (var member in fellowshipMembers.Values.Where(i => i.Guid != player.Guid))
+        {
+            if (member.Session?.Network == null)
+                continue;
             member.Session.Network.EnqueueSend(new GameEventFellowshipUpdateFellow(member.Session, player, __instance.ShareXP));
+        }
 
         if (__instance.ShareLoot)
         {
             foreach (var member in fellowshipMembers.Values.Where(i => i.Guid != player.Guid))
             {
+                if (member.Session?.Network == null || player.Session?.Network == null)
+                    continue;
                 member.Session.Network.EnqueueSend(new GameMessageSystemChat($"{player.Name} has given you permission to loot his or her kills.", ChatMessageType.Broadcast));
                 member.Session.Network.EnqueueSend(new GameMessageSystemChat($"{player.Name} may now loot your kills.", ChatMessageType.Broadcast));
 
@@ -216,9 +226,11 @@ public class FellowshipSettings
 {
     // Sends a message to inviter and new member showing fellowship name and XP share % on invite
     public bool SendDetails { get; set; } = true;
+
+    // Hard cap on fellowship size for this mod’s invite loop (ACE may enforce its own cap separately).
     public int MaxMembers { get; set; } = 30;
 
-    // When true, /fship stops inviting after reaching MaxMembers
+    // When true, /fship invite-all stops issuing new invites once FellowshipMembers.Count >= MaxMembers (retail-like “full fellow” behavior).
     public bool StopAtMaxFellowshipInvite { get; set; } = true;
 
     // When true, bypasses the server's "busy" check and auto-accepts fellowship invites without the usual busy rejection

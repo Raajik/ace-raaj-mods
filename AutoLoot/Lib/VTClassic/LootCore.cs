@@ -1,4 +1,4 @@
-﻿///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 //File: LootCore.cs
 //
 //Description: The core of the VTClassic Virindi Tank Loot Plugin, implementing
@@ -193,7 +193,7 @@ namespace AutoLoot.Lib.VTClassic
                 ExceptionHandler(ex);
             }
 
-            //Todo: fix uTank ref
+            // Original uTank plugin returned LootPluginInfo; AutoLoot does not register as a uTank host — no plugin metadata needed.
             return null;
             //return new uTank2.LootPlugins.LootPluginInfo("utl");
         }

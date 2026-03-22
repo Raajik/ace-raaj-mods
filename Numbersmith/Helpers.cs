@@ -18,7 +18,7 @@ public static class AngouriHelpers
     var t = $$"""
     public static bool TryGetFunction<T1, TResult>(this string formula, out Func<T1, TResult> func, params string[] names)
     {
-        func = null;
+        func = null!;
 
         if (names.Length != 1)
             return false;
@@ -28,7 +28,7 @@ public static class AngouriHelpers
             func = formula.CompileFriendly().Compile<T1, TResult>(names[0]);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return false;
         }
@@ -43,9 +43,9 @@ t = $$"""
             func = formula.Compile<Func<T1, TResult>>(new CompilationProtocol(), typeof(TResult), typesAndNames);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            func = null;
+            func = null!;
             return false;
         }
     }
@@ -69,7 +69,7 @@ sb.ToString()
     //Variable names in parameters
     private static bool TryGetFunction<T1, TResult>(this string formula, out Func<T1, TResult> func, params string[] names)
     {
-        func = null;
+        func = null!;
 
         if (names.Length != 1)
             return false;
@@ -79,14 +79,14 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<T1, TResult>(names[0]);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return false;
         }
     }
     private static bool TryGetFunction<T1, T2, TResult>(this string formula, out Func<T1, T2, TResult> func, params string[] names)
     {
-        func = null;
+        func = null!;
 
         if (names.Length != 2)
             return false;
@@ -96,14 +96,14 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<T1, T2, TResult>(names[0], names[1]);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return false;
         }
     }
     private static bool TryGetFunction<T1, T2, T3, TResult>(this string formula, out Func<T1, T2, T3, TResult> func, params string[] names)
     {
-        func = null;
+        func = null!;
 
         if (names.Length != 3)
             return false;
@@ -113,14 +113,14 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<T1, T2, T3, TResult>(names[0], names[1], names[2]);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return false;
         }
     }
     private static bool TryGetFunction<T1, T2, T3, T4, TResult>(this string formula, out Func<T1, T2, T3, T4, TResult> func, params string[] names)
     {
-        func = null;
+        func = null!;
 
         if (names.Length != 4)
             return false;
@@ -130,14 +130,14 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<T1, T2, T3, T4, TResult>(names[0], names[1], names[2], names[3]);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return false;
         }
     }
     private static bool TryGetFunction<T1, T2, T3, T4, T5, TResult>(this string formula, out Func<T1, T2, T3, T4, T5, TResult> func, params string[] names)
     {
-        func = null;
+        func = null!;
 
         if (names.Length != 5)
             return false;
@@ -147,14 +147,14 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<T1, T2, T3, T4, T5, TResult>(names[0], names[1], names[2], names[3], names[4]);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return false;
         }
     }
     private static bool TryGetFunction<T1, T2, T3, T4, T5, T6, TResult>(this string formula, out Func<T1, T2, T3, T4, T5, T6, TResult> func, params string[] names)
     {
-        func = null;
+        func = null!;
 
         if (names.Length != 6)
             return false;
@@ -164,14 +164,14 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<T1, T2, T3, T4, T5, T6, TResult>(names[0], names[1], names[2], names[3], names[4], names[5]);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return false;
         }
     }
     private static bool TryGetFunction<T1, T2, T3, T4, T5, T6, T7, TResult>(this string formula, out Func<T1, T2, T3, T4, T5, T6, T7, TResult> func, params string[] names)
     {
-        func = null;
+        func = null!;
 
         if (names.Length != 7)
             return false;
@@ -181,14 +181,14 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<T1, T2, T3, T4, T5, T6, T7, TResult>(names[0], names[1], names[2], names[3], names[4], names[5], names[6]);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return false;
         }
     }
     private static bool TryGetFunction<T1, T2, T3, T4, T5, T6, T7, T8, TResult>(this string formula, out Func<T1, T2, T3, T4, T5, T6, T7, T8, TResult> func, params string[] names)
     {
-        func = null;
+        func = null!;
 
         if (names.Length != 8)
             return false;
@@ -198,7 +198,7 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<T1, T2, T3, T4, T5, T6, T7, T8, TResult>(names[0], names[1], names[2], names[3], names[4], names[5], names[6], names[7]);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return false;
         }
@@ -211,9 +211,9 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<Func<T1, TResult>>(new CompilationProtocol(), typeof(TResult), typesAndNames);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            func = null;
+            func = null!;
             return false;
         }
     }
@@ -224,9 +224,9 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<Func<T1, T2, TResult>>(new CompilationProtocol(), typeof(TResult), typesAndNames);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            func = null;
+            func = null!;
             return false;
         }
     }
@@ -237,9 +237,9 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<Func<T1, T2, T3, TResult>>(new CompilationProtocol(), typeof(TResult), typesAndNames);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            func = null;
+            func = null!;
             return false;
         }
     }
@@ -250,9 +250,9 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<Func<T1, T2, T3, T4, TResult>>(new CompilationProtocol(), typeof(TResult), typesAndNames);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            func = null;
+            func = null!;
             return false;
         }
     }
@@ -263,9 +263,9 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<Func<T1, T2, T3, T4, T5, TResult>>(new CompilationProtocol(), typeof(TResult), typesAndNames);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            func = null;
+            func = null!;
             return false;
         }
     }
@@ -276,9 +276,9 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<Func<T1, T2, T3, T4, T5, T6, TResult>>(new CompilationProtocol(), typeof(TResult), typesAndNames);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            func = null;
+            func = null!;
             return false;
         }
     }
@@ -289,9 +289,9 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<Func<T1, T2, T3, T4, T5, T6, T7, TResult>>(new CompilationProtocol(), typeof(TResult), typesAndNames);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            func = null;
+            func = null!;
             return false;
         }
     }
@@ -302,9 +302,9 @@ sb.ToString()
             func = formula.CompileFriendly().Compile<Func<T1, T2, T3, T4, T5, T6, T7, T8, TResult>>(new CompilationProtocol(), typeof(TResult), typesAndNames);
             return true;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            func = null;
+            func = null!;
             return false;
         }
     }

@@ -14,7 +14,7 @@ namespace Numbersmith.Patches;
                                     // Returns the critical chance for the caster weapon
         };
 
-        static Func<float, float, float, int, float> func;
+        static Func<float, float, float, int, float> func = null!;
         #endregion
 
         #region Start / Stop
@@ -44,6 +44,9 @@ namespace Numbersmith.Patches;
             var max = Math.Max(critRate, criticalStrikeBonus);
 
             var rating = wielder is null ? 1 : wielder.GetCritRating();
+
+            if (func is null)
+                return true;
 
             __result = func(max, critRate, criticalStrikeBonus, rating);
 

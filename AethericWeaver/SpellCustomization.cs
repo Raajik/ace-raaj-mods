@@ -113,7 +113,7 @@ namespace AethericWeaver;
     [FormulaResult]
     public ACE.Entity.Position? Position { get; set; }
 
-    static Settings Settings => PatchClass.Settings;
+    static Settings? SettingsOrNull => PatchClass.Settings;
 
     public SpellCustomization() { }
     public SpellCustomization(
@@ -432,10 +432,22 @@ namespace AethericWeaver;
     // Loads SpellCustomization rows using Spreadsheet path from Settings
     public static List<SpellCustomization> ParseCustomizations()
     {
-        if (TryGetSpreadsheet(Settings.Spreadsheet, out var excel))
+        var path = ResolveSpellSpreadsheetPath();
+        if (TryGetSpreadsheet(path, out var excel))
             return ParseCustomizations(excel);
 
         return new();
+    }
+
+    static string ResolveSpellSpreadsheetPath()
+    {
+        var modPath = Mod.Instance?.ModPath ?? ".";
+        var configured = SettingsOrNull?.Spreadsheet;
+        if (string.IsNullOrWhiteSpace(configured))
+            return Path.Combine(modPath, "Spells.xlsx");
+        if (Path.IsPathRooted(configured))
+            return configured;
+        return Path.Combine(modPath, configured);
     }
 
     // Loads SpellCustomization rows from an ExcelMapper instance

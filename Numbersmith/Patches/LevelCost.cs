@@ -12,12 +12,12 @@ public class LevelCost : AngouriMathPatch
     };
 
     //Function parsed from formula used in patches
-    static Func<long, int> func;
+    static Func<long, int> func = null!;
     //Approach using Math.Net that can interpolate from existing costs
     //static Barycentric interpolation;
-    //Todo: Use an array sized to max level?
-    static Dictionary<uint, ulong> totalCosts = new();
-    static MethodInfo updateXpVitaeMethod;
+    // cumulativeTotals[level] = sum of CostOfLevel for 1..level (O(1) TotalLevelCost). Rebuilt in Start().
+    static ulong[] cumulativeTotals = Array.Empty<ulong>();
+    static MethodInfo updateXpVitaeMethod = null!;
     #endregion
 
     #region Start / Stop
@@ -41,8 +41,7 @@ public class LevelCost : AngouriMathPatch
             ModManager.Log("[Numbersmith] Error accessing private Player method 'UpdateXpVitae'");
         }
 
-        //Reset total cost cache
-        totalCosts.Clear();
+        RebuildCumulativeTotals();
 
         //Interpolate level costs from dats
         //try
@@ -89,6 +88,7 @@ public class LevelCost : AngouriMathPatch
         //DatManager.PortalDat.XpTable.CharacterLevelXPList.AddRange(originalXpTable);
         //DatManager.PortalDat.XpTable.CharacterLevelSkillCreditList.AddRange(originalCreditTable);
     }
+
     #endregion
 
     #region Commands
@@ -122,22 +122,26 @@ public class LevelCost : AngouriMathPatch
             return;
         if (parameters.Length < 2 || !uint.TryParse(parameters[1], out var range))
             return;
+        if (session.Player is not { } player)
+            return;
 
         var sb = new StringBuilder("Level costs: \n");
 
-        uint max = Math.Min(GetMaxLevel(session.Player), low + range);
+        uint max = Math.Min(GetMaxLevel(player), low + range);
         for (uint i = low; i < max; i++)
         {
-            var credits = GetLevelSkillCredits(session.Player, (int)i);
-            sb.Append($"  {i}: {CostOfLevel(session.Player, i),-20:N0}{TotalLevelCost(session.Player, i),-20:N0}  {(credits > 0 ? credits + " credit" : "")}\n");
+            var credits = GetLevelSkillCredits(player, (int)i);
+            sb.Append($"  {i}: {CostOfLevel(player, i),-20:N0}{TotalLevelCost(player, i),-20:N0}  {(credits > 0 ? credits + " credit" : "")}\n");
         }
-        session?.Player?.SendMessage(sb.ToString());
+        player.SendMessage(sb.ToString());
     }
 
     [CommandHandler("resetlevel", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld, 0)]
     public static void HandleResetLevel(Session session, params string[] parameters)
     {
-        var p = session?.Player;
+        if (session?.Player is not { } p)
+            return;
+
         p.Level = 1;
         p.TotalExperience = 0;
         p.AvailableExperience = 0;
@@ -145,7 +149,7 @@ public class LevelCost : AngouriMathPatch
         var xp = new GameMessagePrivateUpdatePropertyInt64(p, PropertyInt64.AvailableExperience, p.AvailableExperience ?? 0);
         var totalXp = new GameMessagePrivateUpdatePropertyInt64(p, PropertyInt64.TotalExperience, p.TotalExperience ?? 0);
         var level = new GameMessagePrivateUpdatePropertyInt(p, PropertyInt.Level, p.Level ?? 1);
-        session.Network.EnqueueSend(xp, totalXp, level);
+        session.Network?.EnqueueSend(xp, totalXp, level);
     }
     #endregion
 
@@ -154,7 +158,7 @@ public class LevelCost : AngouriMathPatch
     /// <summary>
     /// Cost for a given level
     /// </summary>
-    static long CostOfLevel(Player player, uint level)
+    static long CostOfLevel(Player? player, uint level)
     {
         ulong cost = long.MaxValue;
         if (level < 0 || level > GetMaxLevel(player))
@@ -181,36 +185,53 @@ public class LevelCost : AngouriMathPatch
         if (level < 0 || level > GetMaxLevel(player))
             return ulong.MaxValue;
 
-        //Todo: Better ways to implement this (closed-form), but this should work with just LevelCost implemented?
-        if (totalCosts.ContainsKey(level))
-            return totalCosts[level];
+        // No general closed-form for arbitrary AngouriMath formulas; precomputed cumulativeTotals (see RebuildCumulativeTotals).
+        if (level >= cumulativeTotals.Length)
+            return ulong.MaxValue;
 
-        //Fill in total costs up to requested level
-        ulong cost = 0;
-        for (uint i = 1; i <= level; i++)
-        {
-            cost += (ulong)CostOfLevel(player, i);
-            totalCosts.TryAdd(i, cost);
-        }
-        return cost;
+        return cumulativeTotals[level];
     }
 
     /// <summary>
     /// Remaining experience a given player needs to reach a given level
     /// </summary>
-    static long CostToLevel(Player player, uint level) => CostOfLevel(player, level) - player.TotalExperience.Value;
+    static long CostToLevel(Player player, uint level) =>
+        CostOfLevel(player, level) - (player.TotalExperience ?? 0);
     //GetMaxLevel is static and is nulled when called for proficiency.  Would require some thought for per-player max levels
-    static uint GetMaxLevel(Player player) => player is null ? PatchClass.Settings.MaxLevel : PatchClass.Settings.MaxLevel;
-    static uint GetLevelSkillCredits(Player player) => GetLevelSkillCredits(player, player.Level ?? 0);
+    static uint GetMaxLevel(Player? player) => PatchClass.Settings?.MaxLevel ?? 275;
+    static uint GetLevelSkillCredits(Player? player)
+    {
+        if (player is null)
+            return 0;
+
+        return GetLevelSkillCredits(player, player.Level ?? 0);
+    }
     static uint GetLevelSkillCredits(Player player, int level)
     {
         //Use player table for skill credits if available
         var xpTable = DatManager.PortalDat.XpTable;
-        if (level < xpTable.CharacterLevelSkillCreditList.Count)
-            return xpTable.CharacterLevelSkillCreditList[level];
+        var creditsList = xpTable?.CharacterLevelSkillCreditList;
+        if (creditsList is not null && level < creditsList.Count)
+            return creditsList[level];
 
         //Otherwise default to a credit every 10 levels
         return level % 10 == 0 ? 1u : 0;
+    }
+
+    static void RebuildCumulativeTotals()
+    {
+        var settings = PatchClass.Settings;
+        if (settings is null)
+            return;
+
+        var max = settings.MaxLevel;
+        cumulativeTotals = new ulong[max + 1];
+        ulong sum = 0;
+        for (uint i = 1; i <= max; i++)
+        {
+            sum += (ulong)CostOfLevel(null, i);
+            cumulativeTotals[i] = sum;
+        }
     }
 
     #endregion
@@ -220,6 +241,9 @@ public class LevelCost : AngouriMathPatch
     [HarmonyPatch(typeof(Player), nameof(Player.IsMaxLevel), MethodType.Getter)]
     public static bool PreGet_IsMaxLevel(ref Player __instance, ref bool __result)
     {
+        if (__instance is null)
+            return true;
+
         __result = __instance.Level >= GetMaxLevel(__instance);
 
         //Return false to override
@@ -230,6 +254,9 @@ public class LevelCost : AngouriMathPatch
     [HarmonyPatch(typeof(Player), "UpdateXpAndLevel", new Type[] { typeof(long), typeof(XpType) })]
     public static bool PreUpdateXpAndLevel(long amount, XpType xpType, ref Player __instance)
     {
+        if (__instance is null)
+            return true;
+
         var maxLevel = GetMaxLevel(__instance);
         var maxLevelXp = TotalLevelCost(__instance, maxLevel);
 
@@ -237,7 +264,7 @@ public class LevelCost : AngouriMathPatch
         {
             var addAmount = amount;
 
-            var amountLeftToEnd = (long)maxLevelXp - __instance.TotalExperience ?? 0;
+            var amountLeftToEnd = (long)maxLevelXp - (__instance.TotalExperience ?? 0);
             if (amount > amountLeftToEnd)
                 addAmount = amountLeftToEnd;
 
@@ -246,14 +273,14 @@ public class LevelCost : AngouriMathPatch
 
             var xpTotalUpdate = new GameMessagePrivateUpdatePropertyInt64(__instance, PropertyInt64.TotalExperience, __instance.TotalExperience ?? 0);
             var xpAvailUpdate = new GameMessagePrivateUpdatePropertyInt64(__instance, PropertyInt64.AvailableExperience, __instance.AvailableExperience ?? 0);
-            __instance.Session.Network.EnqueueSend(xpTotalUpdate, xpAvailUpdate);
+            __instance.Session?.Network?.EnqueueSend(xpTotalUpdate, xpAvailUpdate);
 
             //CheckForLevelup();
             PreCheckForLevelup(ref __instance);
         }
 
         if (xpType == XpType.Quest)
-            __instance.Session.Network.EnqueueSend(new GameMessageSystemChat($"You've earned {amount:N0} experience.", ChatMessageType.Broadcast));
+            __instance.Session?.Network?.EnqueueSend(new GameMessageSystemChat($"You've earned {amount:N0} experience.", ChatMessageType.Broadcast));
 
         if (__instance.HasVitae && xpType != XpType.Allegiance)
             updateXpVitaeMethod?.Invoke(__instance, new object[] { amount });
@@ -285,6 +312,9 @@ public class LevelCost : AngouriMathPatch
     [HarmonyPatch(typeof(Player), nameof(Player.GetRemainingXP), new Type[] { typeof(uint) })]
     public static bool PreGetRemainingXP(uint level, ref Player __instance, ref long? __result)
     {
+        if (__instance is null)
+            return true;
+
         var maxLevel = GetMaxLevel(__instance);
         if (level < 1 || level > maxLevel)
             __result = null;
@@ -302,6 +332,9 @@ public class LevelCost : AngouriMathPatch
     [HarmonyPatch(typeof(Player), nameof(Player.GetRemainingXP), new Type[] { })]
     public static bool PreGetRemainingXP(ref Player __instance, ref ulong __result)
     {
+        if (__instance is null)
+            return true;
+
         uint level = (uint)(__instance.Level ?? 0);
         __result = __instance.Level >= GetMaxLevel(__instance) ? 0 :
             (ulong)CostToLevel(__instance, level + 1);
@@ -423,14 +456,14 @@ public class LevelCost : AngouriMathPatch
             if (__instance.AllegianceNode != null)
                 __instance.AllegianceNode.OnLevelUp();
 
-            __instance.Session.Network.EnqueueSend(levelUp);
+            __instance.Session?.Network?.EnqueueSend(levelUp);
 
             __instance.SetMaxVitals();
 
             // play level up effect
             __instance.PlayParticleEffect(PlayScript.LevelUp, __instance.Guid);
 
-            __instance.Session.Network.EnqueueSend(new GameMessageSystemChat(message, ChatMessageType.Advancement), currentCredits);
+            __instance.Session?.Network?.EnqueueSend(new GameMessageSystemChat(message, ChatMessageType.Advancement), currentCredits);
         }
 
         //Return false to override
@@ -469,7 +502,7 @@ public class LevelCost : AngouriMathPatch
 
     //    if (difficulty_check || time_check)
     //    {
-    //        // todo: not independent variables?
+    //        // (If re-enabling this block) difficulty_check and time_check are separate gates; timeScale only applies when time_check is false.
     //        // always scale if timeDiff < FullTime?
     //        var timeScale = 1.0f;
     //        if (!time_check)

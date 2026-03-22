@@ -8,9 +8,13 @@ public static class SalvageEffectApplier
 
     public static void BuildLookup(Settings settings)
     {
-        var dict = new Dictionary<uint, SalvageTinkerRule>();
-        if (settings.SalvageRules == null)
+        if (settings.SalvageRules == null || settings.SalvageRules.Count == 0)
+        {
+            _ruleByWcid = null;
             return;
+        }
+
+        var dict = new Dictionary<uint, SalvageTinkerRule>();
         foreach (SalvageTinkerRule rule in settings.SalvageRules)
         {
             if (!rule.Enabled || rule.Wcids == null)

@@ -13,7 +13,7 @@ public class PlayerTakeDamageOverTime : AngouriMathPatch
                                 // Modified damage taken by player
     };
 
-    static Func<float, int, int> func;
+    static Func<float, int, int> func = null!;
     #endregion
 
     #region Start / Stop
@@ -32,6 +32,9 @@ public class PlayerTakeDamageOverTime : AngouriMathPatch
     [HarmonyPatch(typeof(Player), nameof(Player.TakeDamageOverTime), new Type[] { typeof(float), typeof(DamageType) })]
     public static bool PreTakeDamageOverTime(ref float _amount, DamageType damageType, ref Player __instance)
     {
+        if (func is null)
+            return true;
+
         _amount = func(_amount, __instance.ActiveConnections());
 
         //Return true to execute original

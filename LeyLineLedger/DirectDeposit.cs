@@ -8,7 +8,8 @@ public class DirectDeposit
     [CommandHandler("ddt", AccessLevel.Player, CommandHandlerFlag.RequiresWorld)]
     public static void HandleBank(Session session, params string[] parameters)
     {
-        var player = session.Player;
+        if (session?.Player is not Player player)
+            return;
 
         var dd = player.GetProperty(FakeBool.BankUsesDirectDeposit) ?? true;
 
@@ -21,7 +22,7 @@ public class DirectDeposit
     [HarmonyPatch(typeof(Player), nameof(Player.HandleActionSellItem), new Type[] { typeof(uint), typeof(List<ItemProfile>) })]
     public static bool PreHandleActionSellItem(uint vendorGuid, List<ItemProfile> itemProfiles, ref Player __instance)
     {
-        if (__instance is null || __instance.GetProperty(FakeBool.BankUsesDirectDeposit) == false)
+        if (__instance is null || __instance.Session?.Network == null || __instance.GetProperty(FakeBool.BankUsesDirectDeposit) == false)
             return true;
 
         if (__instance.IsBusy)
@@ -51,7 +52,7 @@ public class DirectDeposit
 
         if (sellList.Count == 0)
         {
-            __instance.Session.Network.EnqueueSend(new GameEventInventoryServerSaveFailed(__instance.Session, __instance.Guid.Full));
+            __instance.Session!.Network.EnqueueSend(new GameEventInventoryServerSaveFailed(__instance.Session, __instance.Guid.Full));
             __instance.SendUseDoneEvent();
             return false;
         }

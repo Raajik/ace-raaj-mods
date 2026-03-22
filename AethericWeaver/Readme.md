@@ -41,6 +41,8 @@ The below renames "Strength Self I", lowers it to 5 before updating the `Templat
 
 ### Spreadsheet
 
+The mod ships with `Spells.xlsx` containing **example** tier IX and X spells (custom spell IDs **70001–70118**): core attribute/regen/armor/protection lines plus **Armor Self** IX/X and **skill** buffs (all incantation-tier `*MasterySelf8`, expertise, sprint, fealty, arcanum salvaging, etc.—see `Tools/SpellSheetGen/Program.cs`). Values follow the same retail-style VII→VIII step pattern as the original examples; tune per line in Excel as needed. Regenerate from source with `dotnet run --project Tools/SpellSheetGen/SpellSheetGen.csproj -c Release` (requires `ACE.Entity.dll` at `C:\ACE\Server` per `SpellSheetGen.csproj`). New numeric IDs may require matching client/dat work for icons in some setups.
+
 If `AutoloadSpreadsheet` is true, a valid Excel spreadsheet set with `Spreadsheet` will be applied when starting.  This may be done manually with the `/loadspells` command.
 
 

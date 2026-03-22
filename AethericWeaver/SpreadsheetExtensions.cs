@@ -16,9 +16,9 @@ public static class SpreadsheetExtensions
         //SpellId Template
         excel.AddMapping<SpellCustomization>(nameof(b.Template), p => p.Template)
             .SetPropertyUsing(cellValue => TryParseCellEnum<SpellId>(cellValue, out var parsed) ? parsed : null);
-        //SpellId Id
+        //SpellId Id (allow numeric cells for custom spell IDs not present on SpellId enum)
         excel.AddMapping<SpellCustomization>(nameof(b.Id), p => p.Id)
-            .SetPropertyUsing(cellValue => TryParseCellEnum<SpellId>(cellValue, out var parsed) ? parsed : null);
+            .SetPropertyUsing(cellValue => TryParseCellEnum<SpellId>(cellValue, out var parsed, false) ? parsed : null);
         //MagicSchool School
         excel.AddMapping<SpellCustomization>(nameof(b.School), p => p.School)
             .SetPropertyUsing(cellValue => TryParseCellEnum<MagicSchool>(cellValue, out var parsed, false) ? parsed : null);

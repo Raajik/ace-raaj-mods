@@ -19,6 +19,9 @@ internal static class ParchmentActiveState
         Set(player, 0, 0);
         player.RemoveProperty(LMParchmentInt.ExploreTargetLandblockRaw);
         player.RemoveProperty(LMParchmentInt.RuntimeKillTargetWcid);
+        player.RemoveProperty(LMParchmentInt.RuntimeKillTargetRare);
+        player.RemoveProperty(LMParchmentInt.RuntimeFetchItemWcid);
+        player.RemoveProperty(LMParchmentInt.RuntimeFetchItemCount);
     }
 
     internal static ParchmentTemplateSettings? ResolveTemplate(int templateIndex1Based)

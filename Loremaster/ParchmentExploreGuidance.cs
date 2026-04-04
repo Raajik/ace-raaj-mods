@@ -2,6 +2,20 @@ namespace Loremaster;
 
 internal static class ParchmentExploreGuidance
 {
+    // Single-line summary for chat (start/status); avoids paragraph breaks.
+    internal static string BuildOneLine(Player player, ParchmentTemplateSettings t)
+    {
+        var s = Build(player, t);
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            var raw = ParchmentContractRuntime.GetResolvedExploreLandblockRaw(player, t);
+            return $"destination landblock 0x{raw:X8}";
+        }
+
+        var one = string.Join(" ", s.Split(new[] { ' ', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries));
+        return one.Length > 180 ? string.Concat(one.AsSpan(0, 177), "…") : one;
+    }
+
     internal static string Build(Player player, ParchmentTemplateSettings t)
     {
         uint raw = ParchmentContractRuntime.GetResolvedExploreLandblockRaw(player, t);

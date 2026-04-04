@@ -41,7 +41,7 @@ Most mods use `ProjectReference Include="..\..\ACE.Shared\ACE.Shared.csproj"`, s
 
 ## Backlog
 
-Future mod and feature ideas: [MOD_IDEAS.md](MOD_IDEAS.md).
+Tracked work and future mod ideas: [PLAN.md](PLAN.md) (including [greenfield concepts](PLAN.md#greenfield-concepts)).
 
 ## License and credits
 

@@ -80,10 +80,47 @@ Optional side quests started by **using** a configured **Gem** or **Book** weeni
 - **Bartenders:** each configured bartender vendor WCID (`BartenderContractBoards`) exposes **five** contract rows (`OfferTemplateRow0Based` indices into `ParchmentTemplates`) in the vendor buy list. You cannot buy another contract while one is already active.
 - **Town Criers:** `TownCrierWeenieClassIds` lists NPC WCIDs; using one completes **Explore** (must be in the target landblock) and **Fetch** (requires the proof item in pack; item is consumed). **Kill** contracts still complete on kills in the field.
 - **Kinds:** `Kill` (credit on kills), `Explore` (Town Crier in target landblock), `Fetch` (proof item + Town Crier).
-- **Procedural pools (v1):** `ExploreLandblockRawPool` — if non-empty, one landblock raw id is rolled when the contract starts and stored on the character (turn-in and guidance use that id; `ExploreLandblockRaw` is optional when the pool is set). `KillTargetCreatureWcidPool` — when `TargetCreatureWcid` is `0` and the pool is non-empty, one target WCID is rolled at start; kills of other creatures do not count. Fixed `TargetCreatureWcid` still ignores the pool.
+- **Legacy uniform pools:** `ExploreLandblockRawPool` (`List<uint>`) — one landblock raw id rolled at start. `KillTargetCreatureWcidPool` — when `TargetCreatureWcid` is `0`, one creature WCID rolled at start. Fixed `TargetCreatureWcid` ignores pools.
+- **Weighted pools (take precedence when non-empty):**
+  - `ExploreLandblockWeightedPool` — objects `{ "LandblockRaw", "Weight", "Rare" }`. Non-rare `Weight` is clamped to **25–100** when rolling; **rare** entries skip that clamp (keep weights low for fun). **At most one** `Rare: true` row per pool.
+  - `KillTargetWeightedPool` — `{ "CreatureWcid", "Weight", "Rare" }`. Same rules. If the rolled target is **rare** and `KillCount > 1`, the contract effectively requires **1** kill for that target.
+  - `FetchItemWeightedPool` — `{ "Wcid", "Weight", "Rare", "StackMin", "StackMax" }`. At start, rolls WCID and a stack count in `[StackMin, StackMax]` (inclusive). Town Crier consumes that many from inventory. Same rare/weight rules; **at most one** `Rare` per pool.
+- **Fetch legacy:** `FetchItemWcid` + count `1` when `FetchItemWeightedPool` is empty.
+- **Player-facing text:** `/lmparchment` and contract start lines use **weenie names** where possible (fallback `WCID nnnnn`); explore uses a **single-line** destination summary plus “use a Town Crier there.”
 - **Tier:** `Easy`, `Average`, or `Challenging` — rolls bonus XP as a random fraction of **XP to next level** between the min/max pairs in settings, then always rolls **repeat-style loot** via `GrantRepeatSolveLoot` using quest keys `LMParchmentTierEasy`, `LMParchmentTierAverage`, `LMParchmentTierChallenging` (configure in `RepeatSolveLoot.json` → `QuestOverrides`). Tier XP stacks with normal completion bonuses if you also set `CompletionQuestStamp` and tune `CompletionBonusXpOverrides`.
 - **Same WCID, different text:** optional `TemplateMatchInscription` must match `PropertyString.Inscription` on the used item. List specific rows **before** a same-WCID row with an empty inscription (catch-all).
 - **Explore directions:** optional `ExploreOutdoorCoordsText`, `ExploreDungeonName`, `ExploreEntranceCoordsText` override auto text; otherwise the mod uses `LandblockManager` + `IsDungeon` + optional `ExploreAnchorLoc` (LOC string) for a short hint. When a pool picked a destination, auto text uses the **rolled** landblock raw id.
+
+**Sample `ParchmentTemplates` snippets** (replace WCIDs with your shard; rare mob example is intentionally low weight):
+
+```json
+{
+  "Kind": "Kill",
+  "Tier": "Easy",
+  "TargetCreatureWcid": 0,
+  "KillCount": 5,
+  "KillTargetWeightedPool": [
+    { "CreatureWcid": 12345, "Weight": 80, "Rare": false },
+    { "CreatureWcid": 12346, "Weight": 70, "Rare": false },
+    { "CreatureWcid": 99901, "Weight": 3, "Rare": true }
+  ]
+}
+```
+
+```json
+{
+  "Kind": "Fetch",
+  "Tier": "Easy",
+  "FetchItemWcid": 0,
+  "FetchItemWeightedPool": [
+    { "Wcid": 20001, "Weight": 90, "Rare": false, "StackMin": 2, "StackMax": 5 },
+    { "Wcid": 20002, "Weight": 90, "Rare": false, "StackMin": 3, "StackMax": 8 },
+    { "Wcid": 30001, "Weight": 40, "Rare": false, "StackMin": 1, "StackMax": 1 }
+  ]
+}
+```
+
+Use small `StackMin`/`StackMax` for shop commodities and `1`/`1` for full salvage bags. Expand the pool over time without code changes.
 
 ---
 

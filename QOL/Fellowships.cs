@@ -224,19 +224,29 @@ public class Fellowships
 
 public class FellowshipSettings
 {
-    // Sends a message to inviter and new member showing fellowship name and XP share % on invite
+    [JsonPropertyName("// SendDetails")]
+    public string SendDetailsDoc { get; } = "On invite, send fellowship name and resulting XP share % to inviter and recruit.";
+
     public bool SendDetails { get; set; } = true;
 
-    // Hard cap on fellowship size for this mod’s invite loop (ACE may enforce its own cap separately).
+    [JsonPropertyName("// MaxMembers")]
+    public string MaxMembersDoc { get; } = "Target max fellowship size for this mod’s invite logic (ACE may enforce a separate cap).";
+
     public int MaxMembers { get; set; } = 30;
 
-    // When true, /fship invite-all stops issuing new invites once FellowshipMembers.Count >= MaxMembers (retail-like “full fellow” behavior).
+    [JsonPropertyName("// StopAtMaxFellowshipInvite")]
+    public string StopAtMaxFellowshipInviteDoc { get; } = "When true, /fship stops inviting once the fellowship reaches MaxMembers.";
+
     public bool StopAtMaxFellowshipInvite { get; set; } = true;
 
-    // When true, bypasses the server's "busy" check and auto-accepts fellowship invites without the usual busy rejection
+    [JsonPropertyName("// IgnoreBusy")]
+    public string IgnoreBusyDoc { get; } = "When true, skip busy checks and force-accept invites (useful for automated /fship).";
+
     public bool IgnoreBusy { get; set; } = true;
 
-    // When true, all members receive FlatSharePercent instead of the per-count SharePercent table
+    [JsonPropertyName("// OverrideSharePercent")]
+    public string OverrideSharePercentDoc { get; } = "When true, every member uses FlatSharePercent; when false, use SharePercent by member count.";
+
     public bool OverrideSharePercent { get; set; } = true;
 
     [JsonPropertyName("// FlatSharePercent")]

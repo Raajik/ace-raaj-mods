@@ -84,16 +84,31 @@ internal static class Defaults
 
 public class DefaultsSettings
 {
+    [JsonPropertyName("// Int64Defaults")]
+    public string Int64DefaultsDoc { get; } = "Map PropertyInt64 to default long; applied on first assignment when the player had no prior value.";
+
     public Dictionary<PropertyInt64, long> Int64Defaults { get; set; } = new()
     {
         [PropertyInt64.MaximumLuminance] = 1_000_000_000,
     };
+
+    [JsonPropertyName("// IntDefaults")]
+    public string IntDefaultsDoc { get; } = "Map PropertyInt to default int on first assignment.";
+
     public Dictionary<PropertyInt, int> IntDefaults { get; set; } = new()
     {
     };
+
+    [JsonPropertyName("// FloatDefaults")]
+    public string FloatDefaultsDoc { get; } = "Map PropertyFloat to default float on first assignment.";
+
     public Dictionary<PropertyFloat, float> FloatDefaults { get; set; } = new()
     {
     };
+
+    [JsonPropertyName("// BoolDefaults")]
+    public string BoolDefaultsDoc { get; } = "Map PropertyBool to default bool on first assignment.";
+
     public Dictionary<PropertyBool, bool> BoolDefaults { get; set; } = new()
     {
     };

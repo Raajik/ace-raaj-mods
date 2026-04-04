@@ -46,15 +46,17 @@ internal static class ParchmentTownCrier
 
         if (string.Equals(kind, "Fetch", StringComparison.OrdinalIgnoreCase))
         {
-            if (player.GetNumInventoryItemsOfWCID(template.FetchItemWcid) <= 0)
+            var (needWcid, needCount) = ParchmentContractRuntime.GetResolvedFetch(player, template);
+            if (player.GetNumInventoryItemsOfWCID(needWcid) < needCount)
             {
-                player.SendMessage("You do not have the required proof in your pack.");
+                player.SendMessage(
+                    $"You need {needCount}× {ParchmentDisplayNames.WeenieName(needWcid)} in your pack.");
                 return;
             }
 
-            if (!player.TryConsumeFromInventoryWithNetworking(template.FetchItemWcid, 1))
+            if (!player.TryConsumeFromInventoryWithNetworking(needWcid, needCount))
             {
-                player.SendMessage("Could not remove the required item from your pack.");
+                player.SendMessage("Could not remove the required items from your pack.");
                 return;
             }
 

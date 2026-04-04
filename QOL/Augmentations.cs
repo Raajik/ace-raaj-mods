@@ -41,16 +41,19 @@ public class Augmentations
 
 public class AugmentationSettings
 {
-    // When true, each attribute aug (Strength, Endurance, etc.) can be stacked to its own cap
-    // independently, ignoring the shared attribute group limit.
+    [JsonPropertyName("// IgnoreSharedAttribute")]
+    public string IgnoreSharedAttributeDoc { get; } = "When true, attribute augs ignore the shared attribute group cap.";
+
     public bool IgnoreSharedAttribute { get; set; } = false;
 
-    // When true, each resist aug (ResistFire, ResistCold, etc.) can be stacked to its own cap
-    // independently, ignoring the shared resist group limit.
+    [JsonPropertyName("// IgnoreSharedResist")]
+    public string IgnoreSharedResistDoc { get; } = "When true, resist augs ignore the shared resist group cap.";
+
     public bool IgnoreSharedResist { get; set; } = false;
 
-    // Per-type caps written into AugmentationDevice.MaxAugs on startup.
-    // Only types listed here are overridden — omit a type to leave it at its default.
+    [JsonPropertyName("// MaxAugs")]
+    public string MaxAugsDoc { get; } = "Per AugmentationType cap merged into AugmentationDevice.MaxAugs at startup; omitted types keep ACE defaults.";
+
     public Dictionary<AugmentationType, int> MaxAugs { get; set; } = new()
     {
         // ── Attributes (shared group unless IgnoreSharedAttribute = true) ──

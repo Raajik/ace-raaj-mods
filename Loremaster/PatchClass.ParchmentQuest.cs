@@ -117,16 +117,21 @@ public partial class PatchClass
     {
         if (string.Equals(t.Kind, "Kill", StringComparison.OrdinalIgnoreCase))
         {
+            var need = ParchmentContractRuntime.GetEffectiveKillCount(player, t);
             uint wcid = ParchmentContractRuntime.GetResolvedKillTargetWcid(player, t);
             if (wcid != 0)
-                return $"{t.Tier} Kill: {prog} / {t.KillCount} kills (WCID {wcid}).";
-            return $"{t.Tier} Kill: {prog} / {t.KillCount} kills.";
+                return $"{t.Tier} Kill: {prog} / {need} — {ParchmentDisplayNames.WeenieName(wcid)}.";
+            return $"{t.Tier} Kill: {prog} / {need} — any valid creature.";
         }
 
         if (string.Equals(t.Kind, "Explore", StringComparison.OrdinalIgnoreCase))
-            return $"{t.Tier} Explore → {ParchmentExploreGuidance.Build(player, t)} — report to a Town Crier at the destination.";
+            return $"{t.Tier} Explore: {ParchmentExploreGuidance.BuildOneLine(player, t)} — stand there and use a Town Crier.";
         if (string.Equals(t.Kind, "Fetch", StringComparison.OrdinalIgnoreCase))
-            return $"{t.Tier} Fetch: need WCID {t.FetchItemWcid} in pack, then use a Town Crier.";
+        {
+            var (wcid, cnt) = ParchmentContractRuntime.GetResolvedFetch(player, t);
+            return $"{t.Tier} Fetch: need {cnt}× {ParchmentDisplayNames.WeenieName(wcid)} in pack, then use a Town Crier.";
+        }
+
         return $"{t.Tier} (unknown kind)";
     }
 }

@@ -381,6 +381,14 @@ internal static class LMParchmentInt
     // Rolled kill target when KillTargetCreatureWcidPool is used and TargetCreatureWcid is 0.
     internal const PropertyInt RuntimeKillTargetWcid = (PropertyInt)12023;
 
+    // 1 when RuntimeKillTargetWcid is a rare pool entry (caps effective KillCount to 1).
+    internal const PropertyInt RuntimeKillTargetRare = (PropertyInt)12024;
+
+    // Fetch contract: rolled WCID and stack when FetchItemWeightedPool is used.
+    internal const PropertyInt RuntimeFetchItemWcid = (PropertyInt)12025;
+
+    internal const PropertyInt RuntimeFetchItemCount = (PropertyInt)12026;
+
     internal const PropertyInt64 CooldownUntilUnix = (PropertyInt64)12100;
 }
 

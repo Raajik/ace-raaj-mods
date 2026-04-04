@@ -178,6 +178,40 @@ public class BartenderContractBoardSettings
     public List<int> OfferTemplateRow0Based { get; set; } = new();
 }
 
+// Weighted explore destination; non-rare Weight is clamped to 25–100 when rolling. At most one Rare entry per template pool.
+public class ParchmentExplorePoolEntry
+{
+    public uint LandblockRaw { get; set; }
+
+    public int Weight { get; set; } = 50;
+
+    public bool Rare { get; set; }
+}
+
+// Weighted kill target when TargetCreatureWcid is 0. Same weight/rare rules as explore.
+public class ParchmentKillPoolEntry
+{
+    public uint CreatureWcid { get; set; }
+
+    public int Weight { get; set; } = 50;
+
+    public bool Rare { get; set; }
+}
+
+// Weighted fetch requirement; StackMin/StackMax inclusive roll at contract start. Legacy FetchItemWcid when this list is empty.
+public class ParchmentFetchPoolEntry
+{
+    public uint Wcid { get; set; }
+
+    public int Weight { get; set; } = 50;
+
+    public bool Rare { get; set; }
+
+    public int StackMin { get; set; } = 1;
+
+    public int StackMax { get; set; } = 1;
+}
+
 public class ParchmentTemplateSettings
 {
     // Weenie of the parchment item. Use ParchmentActivation Gem (default) or Book; must not match LeyLineLedger luminance gem WCIDs on your shard when using gems.
@@ -201,6 +235,9 @@ public class ParchmentTemplateSettings
     // Kill: when TargetCreatureWcid is 0 and this pool is non-empty, one WCID is rolled at contract start (specific hunts). Ignored when TargetCreatureWcid is non-zero.
     public List<uint> KillTargetCreatureWcidPool { get; set; } = new();
 
+    // Kill: weighted pool (takes precedence over KillTargetCreatureWcidPool when non-empty).
+    public List<ParchmentKillPoolEntry> KillTargetWeightedPool { get; set; } = new();
+
     public int KillCount { get; set; } = 1;
 
     // Explore: player must use a Town Crier while standing in this landblock (raw id). Ignored as the turn-in target when ExploreLandblockRawPool is non-empty (a destination is rolled at start).
@@ -208,6 +245,9 @@ public class ParchmentTemplateSettings
 
     // Explore: if non-empty, one landblock raw id is chosen at contract start and stored on the player (overrides ExploreLandblockRaw for turn-in and guidance).
     public List<uint> ExploreLandblockRawPool { get; set; } = new();
+
+    // Explore: weighted pool (takes precedence over ExploreLandblockRawPool when non-empty).
+    public List<ParchmentExplorePoolEntry> ExploreLandblockWeightedPool { get; set; } = new();
 
     // Optional LOC/0x cell string for auto guidance (ACE TryParsePosition). Used when manual explore strings are absent.
     public string? ExploreAnchorLoc { get; set; }
@@ -219,8 +259,11 @@ public class ParchmentTemplateSettings
 
     public string? ExploreEntranceCoordsText { get; set; }
 
-    // Fetch: item WCID consumed from inventory when reporting to a Town Crier.
+    // Fetch: item WCID consumed from inventory when reporting to a Town Crier (legacy when FetchItemWeightedPool is empty).
     public uint FetchItemWcid { get; set; }
+
+    // Fetch: weighted WCID + stack count (takes precedence when non-empty).
+    public List<ParchmentFetchPoolEntry> FetchItemWeightedPool { get; set; } = new();
 
     // Optional: quest stamp passed to QuestManager.Update when the parchment completes (same format as retail scripts).
     public string? CompletionQuestStamp { get; set; }

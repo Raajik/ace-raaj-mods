@@ -85,22 +85,134 @@ public static class ParchmentQuestHooks
 
                 break;
             case "explore":
-                bool explorePool = t.ExploreLandblockRawPool is { Count: > 0 };
-                if (t.ExploreLandblockRaw == 0 && !explorePool)
+                bool exploreLegacyPool = t.ExploreLandblockRawPool is { Count: > 0 };
+                bool exploreWeighted = t.ExploreLandblockWeightedPool is { Count: > 0 };
+                if (t.ExploreLandblockRaw == 0 && !exploreLegacyPool && !exploreWeighted)
                 {
-                    error = "Explore needs ExploreLandblockRaw or a non-empty ExploreLandblockRawPool";
+                    error = "Explore needs ExploreLandblockRaw, ExploreLandblockRawPool, or ExploreLandblockWeightedPool";
                     return false;
                 }
 
+                if (!ValidateExploreWeightedPool(t, out error))
+                    return false;
                 break;
             case "fetch":
-                if (t.FetchItemWcid == 0)
+                bool fetchLegacy = t.FetchItemWcid != 0;
+                bool fetchWeighted = t.FetchItemWeightedPool is { Count: > 0 };
+                if (!fetchLegacy && !fetchWeighted)
                 {
-                    error = "FetchItemWcid is required";
+                    error = "Fetch needs FetchItemWcid or a non-empty FetchItemWeightedPool";
                     return false;
                 }
 
+                if (!ValidateFetchWeightedPool(t, out error))
+                    return false;
                 break;
+        }
+
+        if (k == "kill" && !ValidateKillWeightedPool(t, out error))
+            return false;
+
+        return true;
+    }
+
+    static bool ValidateExploreWeightedPool(ParchmentTemplateSettings t, out string? error)
+    {
+        error = null;
+        var list = t.ExploreLandblockWeightedPool;
+        if (list is not { Count: > 0 })
+            return true;
+
+        var rare = 0;
+        for (var i = 0; i < list.Count; i++)
+        {
+            var e = list[i];
+            if (e.LandblockRaw == 0)
+            {
+                error = $"ExploreLandblockWeightedPool[{i}]: LandblockRaw must be non-zero";
+                return false;
+            }
+
+            if (e.Rare)
+                rare++;
+            else if (e.Weight != 0 && (e.Weight < 25 || e.Weight > 100))
+                ModManager.Log($"[Loremaster] ExploreLandblockWeightedPool[{i}]: non-rare Weight {e.Weight} will be clamped to 25–100 when rolling.", ModManager.LogLevel.Warn);
+        }
+
+        if (rare > 1)
+        {
+            error = "ExploreLandblockWeightedPool: at most one entry may have Rare=true";
+            return false;
+        }
+
+        return true;
+    }
+
+    static bool ValidateKillWeightedPool(ParchmentTemplateSettings t, out string? error)
+    {
+        error = null;
+        var list = t.KillTargetWeightedPool;
+        if (list is not { Count: > 0 })
+            return true;
+
+        var rare = 0;
+        for (var i = 0; i < list.Count; i++)
+        {
+            var e = list[i];
+            if (e.CreatureWcid == 0)
+            {
+                error = $"KillTargetWeightedPool[{i}]: CreatureWcid must be non-zero";
+                return false;
+            }
+
+            if (e.Rare)
+                rare++;
+            else if (e.Weight != 0 && (e.Weight < 25 || e.Weight > 100))
+                ModManager.Log($"[Loremaster] KillTargetWeightedPool[{i}]: non-rare Weight {e.Weight} will be clamped to 25–100 when rolling.", ModManager.LogLevel.Warn);
+        }
+
+        if (rare > 1)
+        {
+            error = "KillTargetWeightedPool: at most one entry may have Rare=true";
+            return false;
+        }
+
+        return true;
+    }
+
+    static bool ValidateFetchWeightedPool(ParchmentTemplateSettings t, out string? error)
+    {
+        error = null;
+        var list = t.FetchItemWeightedPool;
+        if (list is not { Count: > 0 })
+            return true;
+
+        var rare = 0;
+        for (var i = 0; i < list.Count; i++)
+        {
+            var e = list[i];
+            if (e.Wcid == 0)
+            {
+                error = $"FetchItemWeightedPool[{i}]: Wcid must be non-zero";
+                return false;
+            }
+
+            if (e.StackMin < 1 || e.StackMax < 1 || e.StackMin > e.StackMax)
+            {
+                error = $"FetchItemWeightedPool[{i}]: need 1 <= StackMin <= StackMax";
+                return false;
+            }
+
+            if (e.Rare)
+                rare++;
+            else if (e.Weight != 0 && (e.Weight < 25 || e.Weight > 100))
+                ModManager.Log($"[Loremaster] FetchItemWeightedPool[{i}]: non-rare Weight {e.Weight} will be clamped to 25–100 when rolling.", ModManager.LogLevel.Warn);
+        }
+
+        if (rare > 1)
+        {
+            error = "FetchItemWeightedPool: at most one entry may have Rare=true";
+            return false;
         }
 
         return true;
@@ -109,16 +221,27 @@ public static class ParchmentQuestHooks
     static string DefaultStartText(Player player, ParchmentTemplateSettings t)
     {
         uint killWcid = ParchmentContractRuntime.GetResolvedKillTargetWcid(player, t);
+        var needKills = ParchmentContractRuntime.GetEffectiveKillCount(player, t);
         return NormalizeKind(t.Kind) switch
         {
             "kill" => killWcid != 0
-                ? $"Parchment ({t.Tier}): slay {t.KillCount} of a specific creature (WCID {killWcid})."
-                : $"Parchment ({t.Tier}): slay {t.KillCount} creature(s). Progress updates on kills.",
-            "explore" => $"Parchment ({t.Tier}) — exploration:\n{ParchmentExploreGuidance.Build(player, t)}",
+                ? $"[{t.Tier}] Hunt: slay {needKills}× {ParchmentDisplayNames.WeenieName(killWcid)} (anywhere that counts)."
+                : $"[{t.Tier}] Hunt: slay {needKills} creature(s) that grant you kill credit.",
+            "explore" =>
+                $"[{t.Tier}] Explore: go to {ParchmentExploreGuidance.BuildOneLine(player, t)}. Use a Town Crier while standing there to finish.",
             "fetch" =>
-                $"Parchment ({t.Tier}): bring item WCID {t.FetchItemWcid}, then report to a Town Crier.",
+                FetchStartLine(player, t),
             _ => "Parchment quest started."
         };
+    }
+
+    static string FetchStartLine(Player player, ParchmentTemplateSettings t)
+    {
+        var (wcid, cnt) = ParchmentContractRuntime.GetResolvedFetch(player, t);
+        var name = ParchmentDisplayNames.WeenieName(wcid);
+        return cnt <= 1
+            ? $"[{t.Tier}] Fetch: bring 1× {name} to any configured Town Crier (they take the item)."
+            : $"[{t.Tier}] Fetch: bring {cnt}× {name} to any configured Town Crier (they take the stack).";
     }
 
     // Completes the player's single active parchment (Explore/Fetch via Town Crier, Kill via kill count).
@@ -310,9 +433,10 @@ public static class ParchmentQuestHooks
         var prog = ParchmentActiveState.GetProgress(killer) + 1;
         killer.SetProperty(LMParchmentInt.Progress, prog);
 
-        if (prog >= template.KillCount)
+        var need = ParchmentContractRuntime.GetEffectiveKillCount(killer, template);
+        if (prog >= need)
             CompleteParchment(killer);
         else
-            killer.SendMessage($"Parchment: {prog} / {template.KillCount} kills.");
+            killer.SendMessage($"Parchment: {prog} / {need} kills.");
     }
 }

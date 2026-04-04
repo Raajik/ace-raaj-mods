@@ -78,25 +78,37 @@ internal static class Stackable
 
 public class StackableSettings
 {
-    // Maximum items per stack for non-native stackable types (max 65535).
+    [JsonPropertyName("// MaxStackSize")]
+    public string MaxStackSizeDoc { get; } = "Stack size for types this mod makes stackable (max 65535).";
+
     public ushort MaxStackSize { get; set; } = 100;
 
     [JsonPropertyName("// StackableTypes")]
-    public string StackableTypesDoc { get; } = "Per-type toggles for extra stackable item categories. Set a value to true to make that WeenieType stackable, or false to leave it unmodified.";
+    public string StackableTypesDoc { get; } = "Reference list of WeenieTypes considered for stacking; paired Enable* flags gate each category.";
 
-    // When true, generic quest letters, lore pages, and other Book-type items can stack.
+    [JsonPropertyName("// EnableBooks")]
+    public string EnableBooksDoc { get; } = "Allow Book-type items to stack when EnableStackable is true.";
+
     public bool EnableBooks { get; set; } = true;
 
-    // When true, all Key-type items (keys, keyrings, etc.) can stack.
+    [JsonPropertyName("// EnableKeys")]
+    public string EnableKeysDoc { get; } = "Allow Key-type items to stack.";
+
     public bool EnableKeys { get; set; } = true;
 
-    // When true, Generic-type collectibles (mob heads, trophies, misc quest items) can stack.
+    [JsonPropertyName("// EnableGeneric")]
+    public string EnableGenericDoc { get; } = "Allow Generic-type collectibles to stack.";
+
     public bool EnableGeneric { get; set; } = true;
 
-    // When true, Lockpick-type items can stack.
+    [JsonPropertyName("// EnableLockpicks")]
+    public string EnableLockpicksDoc { get; } = "Allow Lockpick-type items to stack.";
+
     public bool EnableLockpicks { get; set; } = true;
 
-    // When true, Scroll-type items (learnable spells, skill scrolls) can stack.
+    [JsonPropertyName("// EnableScrolls")]
+    public string EnableScrollsDoc { get; } = "Allow Scroll-type items to stack.";
+
     public bool EnableScrolls { get; set; } = true;
 
     // Backing list to surface the effective types in Settings.json for reference.

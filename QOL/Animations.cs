@@ -56,8 +56,14 @@ internal static class Animations
 
 public class AnimationSettings
 {
+    [JsonPropertyName("// DieSeconds")]
+    public string DieSecondsDoc { get; } = "Seconds between each /die (HandleSuicide) speech step. 0 = minimal delay. Does not use MotionTable.";
+
     // Seconds between each /die (HandleSuicide) broadcast step. Lower = faster death RP; retail pacing discussions often reference ~18s total for long recall-adjacent sequences — tune here and via AnimationSpeeds instead of expecting vanilla MotionTable timings.
     public float DieSeconds { get; set; } = 0.0f;
+
+    [JsonPropertyName("// AnimationSpeeds")]
+    public string AnimationSpeedsDoc { get; } = "Per-motion length overrides for MotionTable.GetAnimationLength(MotionCommand). Value 0 = skip that animation. Keys are MotionCommand enum names. Does not consider MotionStance—same motion uses one length everywhere. See ACE MotionCommand.cs.";
 
     // Per-motion overrides for MotionTable.GetAnimationLength. Keys are MotionCommands (e.g. LifestoneRecall). Value 0f skips that animation. Recall-related motions are listed below by default; adjust to match desired retail-like timing.
     // See: https://github.com/ACEmulator/ACE/blob/master/Source/ACE.Entity/Enum/MotionCommand.cs
@@ -68,5 +74,18 @@ public class AnimationSettings
         [MotionCommand.LifestoneRecall]          = 0f,
         [MotionCommand.MarketplaceRecall]        = 0f,
         [MotionCommand.PKArenaRecall]            = 0f,
+        [MotionCommand.Pickup]                   = 0f,
+        [MotionCommand.StoreInBackpack]          = 0f,
+        [MotionCommand.Pickup5]                  = 0f,
+        [MotionCommand.Pickup10]                 = 0f,
+        [MotionCommand.Pickup15]                 = 0f,
+        [MotionCommand.Pickup20]                 = 0f,
+        [MotionCommand.NonCombat]                = 0f,
+        [MotionCommand.HandCombat]               = 0f,
+        [MotionCommand.BowCombat]                = 0f,
+        [MotionCommand.CrossbowCombat]           = 0f,
+        [MotionCommand.SkillHealSelf]            = 0f,
+        [MotionCommand.SkillHealOther]           = 0f,
+        [MotionCommand.Reload]                   = 0f,
     };
 }

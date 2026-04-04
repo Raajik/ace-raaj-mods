@@ -1,4 +1,5 @@
 {
+  "// About": "Optional keys starting with // are human-readable docs from Settings.cs (same names as JsonPropertyName). Safe to delete; servers ignore them if not deserialized.",
   "EnableAnimations": true,
   "EnableAugmentations": true,
   "EnableDefaults": true,
@@ -36,7 +37,20 @@
       "HouseRecall": 0.0,
       "LifestoneRecall": 0.0,
       "MarketplaceRecall": 0.0,
-      "PKArenaRecall": 0.0
+      "PKArenaRecall": 0.0,
+      "Pickup": 0.0,
+      "StoreInBackpack": 0.0,
+      "Pickup5": 0.0,
+      "Pickup10": 0.0,
+      "Pickup15": 0.0,
+      "Pickup20": 0.0,
+      "NonCombat": 0.0,
+      "HandCombat": 0.0,
+      "BowCombat": 0.0,
+      "CrossbowCombat": 0.0,
+      "SkillHealSelf": 0.0,
+      "SkillHealOther": 0.0,
+      "Reload": 0.0
     }
   },
   "Defaults": {

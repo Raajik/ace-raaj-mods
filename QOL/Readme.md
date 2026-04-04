@@ -6,7 +6,7 @@ A combined ACEmulator server mod providing a suite of convenience and balance en
 
 ## Enabling Features
 
-Set each `EnableAnimations`, `EnableAugmentations`, `EnableSwiftmend`, etc. to `true` or `false`. When a flag is `false`, that feature’s Harmony category (and any dedicated hooks, such as the Swiftmend Healer patch) is not applied.
+Set each `EnableAnimations`, `EnableAugmentations`, `EnableSwiftmend`, etc. to `true` or `false`. When a flag is `false`, that feature’s Harmony category (and any dedicated hooks, such as the Swiftmend Healer patch) is not applied. Optional `// …` string keys in `Settings.json` (mirroring `Settings.cs`) describe each toggle and nested object; they are safe to omit.
 
 ---
 
@@ -48,7 +48,9 @@ Harmony category name: **`SwiftmendHealingKits`** (manual prefix on `Healer.Hand
 
 ### Animations
 
-Controls animation playback speed for certain actions. When a motion has an entry in `AnimationSpeeds`, that speed is used instead of the value from the motion table.
+Controls animation playback speed for certain actions. When a motion has an entry in `AnimationSpeeds`, that value is returned from `MotionTable.GetAnimationLength(MotionCommand)` instead of the dat value. **`0.0` skips that animation** (no table lookup time). The patch does **not** consider `MotionStance`—the same `MotionCommand` uses one length in every stance.
+
+**`Settings.json` documentation:** Keys starting with `//` (for example `// EnableAnimations`) are optional human-readable strings from `Settings.cs`; you can remove them. Real settings use normal property names.
 
 ```json
 "Animations": {
@@ -58,17 +60,30 @@ Controls animation playback speed for certain actions. When a motion has an entr
     "HouseRecall": 0.0,
     "LifestoneRecall": 0.0,
     "MarketplaceRecall": 0.0,
-    "PKArenaRecall": 0.0
+    "PKArenaRecall": 0.0,
+    "Pickup": 0.0,
+    "StoreInBackpack": 0.0,
+    "Pickup5": 0.0,
+    "Pickup10": 0.0,
+    "Pickup15": 0.0,
+    "Pickup20": 0.0,
+    "NonCombat": 0.0,
+    "HandCombat": 0.0,
+    "BowCombat": 0.0,
+    "CrossbowCombat": 0.0,
+    "SkillHealSelf": 0.0,
+    "SkillHealOther": 0.0,
+    "Reload": 0.0
   }
 }
 ```
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `DieSeconds` | float | `0.0` | Delay in seconds between each stage of the `/die` suicide sequence |
-| `AnimationSpeeds` | Dictionary | (see above) | Map of [MotionCommand](https://github.com/ACEmulator/ACE/blob/master/Source/ACE.Entity/Enum/MotionCommand.cs) → speed override. Set to `0.0` to skip the animation entirely |
+| `DieSeconds` | float | `0.0` | Delay in seconds between each stage of the `/die` suicide sequence (separate from `MotionTable`) |
+| `AnimationSpeeds` | Dictionary | (see above) | [MotionCommand](https://github.com/ACEmulator/ACE/blob/master/Source/ACE.Entity/Enum/MotionCommand.cs) → duration in seconds. **Recalls:** hometown, house, lifestone, marketplace, PK arena. **Loot:** `Pickup`, `StoreInBackpack`, `Pickup5`–`Pickup20`. **Combat mode:** `NonCombat`, `HandCombat`; missile: `BowCombat`, `CrossbowCombat` (add other weapon stances if needed). **Healing:** `SkillHealSelf`, `SkillHealOther` (first aid); kits may use other motions—add by name if you need to tune them. **Reload:** `Reload` (bows/crossbows). |
 
-> **Note:** Only animations that transition from `null` to a set value are intercepted. Things like `/mp` (magic prayer) and attack frame timing are not currently covered.
+> **Note:** Only motions queried through this `GetAnimationLength` overload are affected. If an action still feels slow, check ACE for other motions (e.g. `Eat`/`Drink`/`MagicHeal`) and add them to the dictionary.
 
 ---
 
@@ -165,6 +180,7 @@ Expands and customizes the fellowship system, including member cap, XP sharing, 
 "Fellowship": {
   "SendDetails": true,
   "MaxMembers": 30,
+  "StopAtMaxFellowshipInvite": true,
   "IgnoreBusy": false,
   "OverrideSharePercent": true,
   "FlatSharePercent": 1.0,
@@ -187,6 +203,7 @@ Expands and customizes the fellowship system, including member cap, XP sharing, 
 |---|---|---|---|
 | `SendDetails` | bool | `true` | When enabled, both the inviter and the recruit receive a chat message on invite showing the fellowship name and resulting XP share percentage |
 | `MaxMembers` | int | `30` | Maximum number of members allowed in a fellowship (vanilla cap is 9) |
+| `StopAtMaxFellowshipInvite` | bool | `true` | When `true`, `/fship` stops inviting once the fellowship reaches `MaxMembers` |
 | `IgnoreBusy` | bool | `false` | When `true`, bypasses the `IsBusy` check and force-accepts invites without a confirmation popup — useful for server-side bulk recruitment |
 | `OverrideSharePercent` | bool | `true` | When `true`, all members always receive `FlatSharePercent` regardless of fellowship size, ignoring the `SharePercent` table |
 | `FlatSharePercent` | double | `1.0` | The flat XP share multiplier used when `OverrideSharePercent` is enabled (`1.0` = 100%) |
@@ -286,7 +303,20 @@ Full example with all defaults:
       "HouseRecall": 0.0,
       "LifestoneRecall": 0.0,
       "MarketplaceRecall": 0.0,
-      "PKArenaRecall": 0.0
+      "PKArenaRecall": 0.0,
+      "Pickup": 0.0,
+      "StoreInBackpack": 0.0,
+      "Pickup5": 0.0,
+      "Pickup10": 0.0,
+      "Pickup15": 0.0,
+      "Pickup20": 0.0,
+      "NonCombat": 0.0,
+      "HandCombat": 0.0,
+      "BowCombat": 0.0,
+      "CrossbowCombat": 0.0,
+      "SkillHealSelf": 0.0,
+      "SkillHealOther": 0.0,
+      "Reload": 0.0
     }
   },
   "Defaults": {
@@ -298,6 +328,7 @@ Full example with all defaults:
   "Fellowship": {
     "SendDetails": true,
     "MaxMembers": 30,
+    "StopAtMaxFellowshipInvite": true,
     "IgnoreBusy": false,
     "OverrideSharePercent": true,
     "FlatSharePercent": 1.0,

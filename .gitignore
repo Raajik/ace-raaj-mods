@@ -43,3 +43,6 @@ linear-sync.config.json
 
 # Symlinks / directory junctions (machine-local; Git has no "ignore symlinks" rule — list each path)
 ACE-Server/
+
+# Local ACE.Server drop for reference (not part of this repo)
+ACE.Server-v1.76.4751/

@@ -79,7 +79,7 @@ Ideas only—not active tasks until you schedule them (often harder than tuning 
 - **Bank transfer** — Done. `/bank transfer pyreals` supports online targets (`PlayerManager`) and offline targets (shard `Character` + `BiotaPropertiesInt64` for `Settings.CashProperty`). Sender debited only after offline DB update succeeds.
 - **AutoLoot integration** — Satisfied in-repo: default `CashProperty` (39999) matches AutoLoot `BankCashProperty`; documented in `Settings.cs`. If you change one, change the other.
 - **Death bank penalty** — Done. `DeathBankPyrealPercent` (0 = off) and optional `DeathBankPyrealMaxLossPerDeath` in `Settings.json`.
-- **Luminance withdrawal gems** — Done. `/bank withdraw luminance` / `/b w l`; see `DESIGN.md` §7 and `Settings.LuminanceGemWeenieClassId` / `LuminanceGemStoredAmountProperty`.
+- **Luminance withdrawal gems** — Done. `/bank withdraw luminance` / `/b w l`; see `LeyLineLedger/Readme.md` (Luminance gems) and `Settings.LuminanceGemWeenieClassId` / `LuminanceGemStoredAmountProperty`.
 
 ### AureatePath
 

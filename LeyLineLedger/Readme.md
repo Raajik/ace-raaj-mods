@@ -1,79 +1,102 @@
-## LeyLineLedger
+# LeyLineLedger
 
-This mod adds common banking options for items, currency, and luminance.
+Character-based banking for ACEmulator: **pyreals**, **luminance**, and configured **bank items** (optional keys/custom items via `Settings.Items`). Deposit, withdraw, and transfer pyreals to another character by name. Vendor buy can debit the bank first; vendor sell can deposit proceeds. Death behavior is configurable (no physical coin drops by default, optional bank penalty).
 
-### `/bank` and `/b` (primary flow)
+---
 
-- No args or `list` — show pyreals, luminance, and configured bank items.
-- `deposit` / `d` — deposit loose pyreals/trade notes and **available** luminance into the bank.
-- `withdraw pyreals <amount>` / `w p <amount>` — withdraw pyreals (trade-note mix). `withdraw pyreals all` / `w p a` withdraws all banked pyreals.
-- `withdraw luminance <amount>` / `w l <amount>` — move **banked** luminance into a tradable gem (any positive amount, or `all` / `a`). Default gem weenie is **7897** (Black Garnet); set `LuminanceGemWeenieClassId` to `0` to disable, or change it if your world DB uses another id. The gem credits **banked** luminance when used, not spendable luminance.
-- `transfer pyreals <amount> <character name>` / `t p ...` — transfer banked pyreals (online or offline target).
+## Bank model
 
-The verbs available are currently:
+| Currency / item | Storage | Notes |
+|-----------------|---------|--------|
+| Pyreals | `PropertyInt64` (`CashProperty`) | No realistic cap; client display is capped around int32 for vendor UI |
+| Luminance | `PropertyInt64` (`LuminanceProperty`) | Banked luminance is separate from spendable luminance until you withdraw via gem |
+| Configured items | Per-item `PropertyInt64` in `Settings.Items` | Optional; e.g. MMD count (WCID 20630), custom bank goods |
 
-* `list` - print current status
-* `give`
-* `take`
+State lives on the **player biota** (no extra DB tables for the bank itself). **Pyreal transfer** resolves the target character by name (case-insensitive, not deleted); online targets are credited immediately, offline targets via biota save.
 
+---
 
+## Commands
 
-The available commands are:
+Registered handlers: **`/bank`** and **`/b`** (same parser). **`/ddt`** toggles per-player direct deposit when `DirectDeposit` is enabled (see `DirectDeposit.cs`).
 
-* `/bank <verb> [name|id [amount=1|*]]`
-  * Bankable `Items` can be defined in the `Settings.json` with a name, WCID, and Id to use to store them as a `PropertyInt64` 
-  * `/bank list` prints bankable items, with the amount stored and held
-  * `/bank store [name|id [amount=1|*]]` stores a specified amount or all available of an `Item` matching part of the name or all of the ID
-  * `/bank take [name|id [amount=1|*]]` does the opposite of store
-* `/cash <verb> [name]`
-  * `Currencies` items can be defined in `Settings.json` with a name, WCID, and cost.  Deposited items do not use these values.
-  * `/cash list` prints balance along with items available for stored currency
-  * `/cash give` deposits all pyreals and Trade Notes
-  * `/cash take [name] [amount=1]` withdraws an amount of the named item
-* `/lum <verb>`
-  * `/lum give` deposits all
-  * `/lum take` withdraws enough to hit max if available
+### Summary and deposit
 
+| Usage | Effect |
+|-------|--------|
+| `/bank` or `/bank list` | Show pyreals (and MMD count if configured), luminance, and configured bank items |
+| `/bank deposit` or `/b d` | Deposit loose pyreals/trade notes and **available** luminance into the bank |
 
+### Withdraw
 
+| Usage | Effect |
+|-------|--------|
+| `/bank withdraw pyreals <amount>` or `/b w p <amount>` | Withdraw pyreals; prefers higher denominations via `Settings.Currencies` |
+| `/bank withdraw all` or `/b w a` | Withdraw **all** banked pyreals (same as `w p all`) |
+| `/bank withdraw luminance <amount>` or `/b w l <amount>` | Debit **banked** luminance, create a gem stack holding the amount (`all` / `a` = all banked) |
 
+**Luminance gems:** Default gem WCID is **7897** (Black Garnet); set `LuminanceGemWeenieClassId` to `0` to disable withdrawal, or change it if your world uses another **Gem** weenie. The gem stores the amount on `LuminanceGemStoredAmountProperty` (default **45213**); using the gem credits **banked** luminance (vanilla gem effect for that payload is skipped). See `PatchClass.LuminanceGem.cs` / `Gem.UseGem` patch.
 
+### Transfer
 
+| Usage | Effect |
+|-------|--------|
+| `/bank transfer pyreals <amount> <character name>` or `/b t p <amount> <name>` | Transfer banked pyreals; `<amount>` may be `all` / `a` |
 
-### Settings
+**Note:** Only **pyreal** transfer is implemented; there is no `/bank transfer luminance` in the current handler.
 
-* `DirectDeposit` will cause coin sales to be added to the bank instead of using pyreal stacks
-  * `/ddt` will toggle a players use of this feature in case the server wants it enabled but a player does not
-* `VendorsUseBank` will use banked items to complete the transaction first
-* `ExcessSetToMax` will reduce a quantity exceeding the max to the max amount
-* `MaxCoinsDropped` caps the amount of pyreals lost on death if >= 0 (default 0 disables physical pyreal drops)
+### Legacy item verbs (configured `Settings.Items`)
 
+After the modern subcommands, remaining tokens are parsed as **list** / **give** / **take** for named bank items (partial name or WCID): deposit or withdraw stacks, subject to `ExcessSetToMax` and inventory checks.
 
+---
 
+## Vendor integration
 
+- **Debit (`Debit.cs`):** If `VendorsUseBank`, purchases spend **bank first**, then carried currency. Coin display for vendors is capped so the client does not overflow int32.
+- **Direct deposit (`DirectDeposit.cs`):** If `DirectDeposit`, vendor sale proceeds go to the bank; `/ddt` lets a player opt out per character when the server default is on.
 
+---
 
+## AutoLoot
 
-### Demos
+**AutoLoot** can deposit looted pyreals/trade notes into the same bank slot: set `DepositLootedCurrencyToBank` and align `BankCashProperty` with LeyLineLedger’s `CashProperty` (often **39999**).
 
-https://github.com/aquafir/ACE.BaseMod/assets/83029060/57d40ac2-2998-4fac-8bd5-af64ba281192
+---
 
+## Death
 
+- **`MaxCoinsDropped`:** Caps physical pyreals dropped on death; default **0** means no coin explosion from the mod’s death patch.
+- **`DeathBankPyrealPercent`:** Optional **0–100**; on death, removes a percentage of **banked** pyreals (no physical coins). Optional **`DeathBankPyrealMaxLossPerDeath`** caps the loss per death. Patched when percent &gt; 0 (`DeathBankPenalty`).
 
-https://github.com/aquafir/ACE.BaseMod/assets/83029060/09161459-0ed1-4a43-9c4c-c41b81f6142c
+---
 
+## Settings (high level)
 
+See **`Settings.json`** / **`Settings.cs`** for full lists. Commonly tuned:
 
-https://github.com/aquafir/ACE.BaseMod/assets/83029060/fbee854d-5859-4b1b-9594-073891ed3e7d
+| Area | Examples |
+|------|-----------|
+| Bank slots | `CashProperty`, `LuminanceProperty`, `Items` (WCID + `PropertyInt64` per item) |
+| Vendors | `VendorsUseBank`, `DirectDeposit` |
+| Death | `MaxCoinsDropped`, `DeathBankPyrealPercent`, `DeathBankPyrealMaxLossPerDeath` |
+| Luminance gem | `LuminanceGemWeenieClassId`, `LuminanceGemStoredAmountProperty` |
+| Withdrawals | `Currencies` (denominations / withdrawal order) |
 
+---
 
+## Technical notes
 
-https://github.com/aquafir/ACE.BaseMod/assets/83029060/fa47f292-5065-4d75-ae87-4d9cfe811697
+- **Transfers:** Shard DB character lookup by name; offline biota update for targets not online.
+- **Reload:** `Debit` / `DirectDeposit` / `DeathBankPenalty` categories are applied from `Start` and `OnWorldOpen` so vendor patches apply even if the mod loads after the world is already up.
 
+---
 
+## Demos
 
-https://github.com/aquafir/ACE.BaseMod/assets/83029060/f7932ee2-1dd6-440a-b5d7-057b9b9f2c9b
-
-
-
-https://github.com/aquafir/ACE.BaseMod/assets/83029060/692a2488-0a27-4f04-9a11-566495c17a77
+- https://github.com/aquafir/ACE.BaseMod/assets/83029060/57d40ac2-2998-4fac-8bd5-af64ba281192
+- https://github.com/aquafir/ACE.BaseMod/assets/83029060/09161459-0ed1-4a43-9c4c-c41b81f6142c
+- https://github.com/aquafir/ACE.BaseMod/assets/83029060/fbee854d-5859-4b1b-9594-073891ed3e7d
+- https://github.com/aquafir/ACE.BaseMod/assets/83029060/fa47f292-5065-4d75-ae87-4d9cfe811697
+- https://github.com/aquafir/ACE.BaseMod/assets/83029060/f7932ee2-1dd6-440a-b5d7-057b9b9f2c9b
+- https://github.com/aquafir/ACE.BaseMod/assets/83029060/692a2488-0a27-4f04-9a11-566495c17a77

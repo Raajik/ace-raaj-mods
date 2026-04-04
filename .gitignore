@@ -11,6 +11,7 @@ x86/
 *.user
 *.userosscache
 *.suo
+*.sln.docobj
 .vs/
 *.dll
 *.pdb
@@ -24,6 +25,16 @@ project.assets.json
 PublicizedAssemblies/
 project.nuget.cache
 .claude/
+
+# IDE / OS / packages (consolidated from per-mod ignores)
+.idea/
+*.rsuser
+packages/
+*.nupkg
+Thumbs.db
+.DS_Store
+desktop.ini
+secrets.json
 
 # Local env / sync config (never commit API keys)
 .env.local

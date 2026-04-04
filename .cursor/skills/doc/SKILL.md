@@ -41,7 +41,7 @@ Avoid documenting:
 
 2. **Choose the correct destination**
    - If it’s a general ACE/BaseMod workflow rule → add/adjust a section in `ace-mod/SKILL.md`.
-   - If it’s narrow to one mod (e.g. Overtinked-only behavior) → add under `## Patterns from ACEmulator-Mods repo` (or create a new short subsection there).
+   - If it’s narrow to one mod (e.g. Overtinked-only behavior) → add under `## Patterns from ace-raaj-mods repo` (or create a new short subsection there).
    - If it’s large/verbose → create a one-level-deep reference file next to the skill (e.g. `.cursor/skills/ace-mod/<topic>.md`) and link to it from `ace-mod/SKILL.md`.
 
 3. **Edit `ace-mod/SKILL.md` safely**

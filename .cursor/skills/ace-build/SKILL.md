@@ -1,6 +1,6 @@
 ---
 name: ace-build
-description: Run dotnet build for all mod projects inside the ACEmulator-Mods repository. Use when the user types /ace-build or asks to rebuild all mods for this repo.
+description: Run dotnet build for all mod projects inside the ace-raaj-mods repository. Use when the user types /ace-build or asks to rebuild all mods for this repo.
 ---
 
 ## Co-active skill: mcp2cli
@@ -14,19 +14,19 @@ Whenever this work involves **MCP servers**, **OpenAPI/REST** specs, **GraphQL**
 Use this skill in this repository when:
 
 - The user types `/ace-build`.
-- The user asks to "build all mods" or "rebuild all current mods" within the `ACEmulator-Mods` repo.
+- The user asks to "build all mods" or "rebuild all current mods" within the `ace-raaj-mods` repo.
 
 ## Core behavior
 
-- Treat the workspace root as the `ACEmulator-Mods` repository root.
-- Build every mod project that lives **inside this repo** (including `LeyLineLedger` and `Numbersmith`, which now live under `ACEmulator-Mods`).
+- Treat the workspace root as the `ace-raaj-mods` repository root.
+- Build every mod project that lives **inside this repo** (including `LeyLineLedger` and `Numbersmith`, which now live under `ace-raaj-mods`).
 - Use `dotnet build` so that normal restore and compilation behavior runs.
 
 ## Step-by-step instructions
 
 1. **Identify mod projects**
    - Assume each mod lives in its own subdirectory under this repo (for example `AutoLoot`, `AureatePath`, `LeyLineLedger`, `Numbersmith`, etc).
-   - Look for `.csproj` files whose paths are **within** `ACEmulator-Mods` (no `../` segments).
+   - Look for `.csproj` files whose paths are **within** this repository root / workspace (no `../` segments).
    - **Primary targets:** gameplay mods at repo root (one folder per deployable mod). See step 4 for the canonical list.
    - **Optional:** `AceModQa/` and `tools/*` (e.g. `DecalQaRunner`, `LinearSync`, `AceServerStringRef`) — build only if the user asks for a full tree, QA, or tooling build.
 

@@ -1,4 +1,4 @@
-# ACEmulator-Mods
+# ace-raaj-mods
 
 A bundle of ACE (Asheron's Call Emulator) mods. These are customized/updated versions meant to be built and used with [ACE.BaseMod](https://github.com/aquafir/ACE.BaseMod) or a compatible ACE server setup.
 
@@ -34,8 +34,8 @@ The former **Swiftmend** mod (healing kits → self + HoT) now ships inside **QO
 These projects reference `ACE.Shared` and the ACE server assemblies. To build:
 
 1. Clone or open the parent solution that contains **ACE.Shared** (e.g. [ACE.BaseMod](https://github.com/aquafir/ACE.BaseMod)).
-2. Place this repo’s contents at `ACEmulator-Mods` in that solution (i.e. so the path is `ACE.BaseMod/ACEmulator-Mods/`).
-3. Open the main solution and build the ACEmulator-Mods projects, or build them from the command line with the working directory set to the parent repo.
+2. Place this repo’s contents at `ace-raaj-mods` in that solution (i.e. so the path is `ACE.BaseMod/ace-raaj-mods/`).
+3. Open the main solution and build the ace-raaj-mods projects, or build them from the command line with the working directory set to the parent repo.
 
 Most mods use `ProjectReference Include="..\..\ACE.Shared\ACE.Shared.csproj"`, so the folder must live two levels below the repo root that contains `ACE.Shared`. `LeyLineLedger` can also be built against the official `ACEmulator.ACE.Shared` / `ACRealms.ACE.Shared` NuGet packages without the local `ACE.Shared` project.
 

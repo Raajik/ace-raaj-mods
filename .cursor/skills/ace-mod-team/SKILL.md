@@ -29,7 +29,7 @@ If the `/ace-mod` request is a genuinely tiny, single focused change (for exampl
 
 ## Core Principles
 
-- **Project context**: This skill is for the `ACEmulator-Mods` repo and assumes:
+- **Project context**: This skill is for the `ace-raaj-mods` repo and assumes:
   - Mods follow the `ACE.BaseMod` + Harmony patterns
   - The `ace-mod` skill is available and should be applied for domain-specific decisions
 - **Parallelism**: Use the `Task` tool to launch **multiple subagents in parallel** when:
@@ -45,7 +45,7 @@ If the `/ace-mod` request is a genuinely tiny, single focused change (for exampl
 When appropriate, use these roles via the `Task` tool:
 
 - **Explorer (subagent_type: explore, model: fast)**
-  - Job: Quickly search the `ACEmulator-Mods` repo to:
+  - Job: Quickly search the `ace-raaj-mods` repo to:
     - Locate relevant mods, patch classes, and settings
     - Find existing examples of similar behavior
   - Use when:
@@ -65,7 +65,7 @@ When appropriate, use these roles via the `Task` tool:
     - Run `dotnet build` for specific mod projects
     - Use the `/ace-build` skill pattern when the user wants to build all mods
   - Notes:
-    - Only run builds in `c:\Users\jeremy\source\repos\ACEmulator-Mods`
+    - Only run builds in this repo’s workspace root (e.g. `c:\Users\jeremy\source\repos\ace-raaj-mods` on Windows)
     - Avoid long-running watchers; builds should terminate promptly
 
 - **Log Analyst (subagent_type: generalPurpose or explore, model: fast)**

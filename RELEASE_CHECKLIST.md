@@ -1,4 +1,4 @@
-# Release checklist (ACEmulator-Mods)
+# Release checklist (ace-raaj-mods)
 
 Use this when you’re about to ship a new build / test drop of one or more mods.
 

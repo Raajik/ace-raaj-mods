@@ -141,7 +141,7 @@ internal static class Program
     private static void PrintHelp()
     {
         Console.WriteLine("""
-            LinearSync — post git changes to Linear issue comments (ACEmulator-Mods).
+            LinearSync — post git changes to Linear issue comments (ace-raaj-mods).
 
             Usage:
               dotnet run --project tools/LinearSync -- [push] [--include-uncommitted] [--config path]
@@ -296,7 +296,7 @@ internal static class Program
     private static string BuildBootstrapDescription(string repoRoot, string mod, ModMeta? meta, SyncConfig config)
     {
         var sb = new System.Text.StringBuilder();
-        sb.AppendLine("ACE mod tracked from ACEmulator-Mods workspace.");
+        sb.AppendLine("ACE mod tracked from ace-raaj-mods workspace.");
         sb.AppendLine();
         sb.AppendLine("## Meta");
         if (meta is null)

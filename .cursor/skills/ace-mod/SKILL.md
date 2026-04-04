@@ -906,9 +906,9 @@ public override async Task OnWorldOpen()
 
 ---
 
-## Patterns from ACEmulator-Mods repo
+## Patterns from ace-raaj-mods repo
 
-When working in the **ACEmulator-Mods** repository:
+When working in the **ace-raaj-mods** repository:
 
 - **Documentation loop:** When we discover a durable new pattern/gotcha, invoke `/doc` to (a) write a paste-ready “Findings” summary and (b) update this `ace-mod` skill so future work benefits.
 - **Build list:** Discover all gameplay `.csproj` files under the repo (e.g. `AethericWeaver`, `ChallengeModes`, `AureatePath`, `AutoLoot`, `EmpyreanAlteration`, `Gemcrafter`, `LeyLineLedger`, `Loremaster`, `Numbersmith`, `Overtinked`, `QOL`, `Swarmed`). **QOL** also owns **pet** Harmony features (moved from the retired EmpyreanEchoes mod): `EnablePetAttackSelected`, `EnablePetMessageDamage`, `EnablePetStow`, `EnableSummonCreatureAsPet`, `EnablePetSummonMultiple`, `EnablePetEx`, `EnablePetExShareDamage` (share-damage patches apply only when `PetEx` is enabled). Healing-kit Swiftmend: `EnableSwiftmend`. Use `/ace-build` or build each mod in its own directory with `dotnet build`. Add `AceModQa` / `tools/*` only if the user wants QA or tooling builds.

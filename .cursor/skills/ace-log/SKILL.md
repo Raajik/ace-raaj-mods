@@ -16,7 +16,7 @@ This skill helps troubleshoot ACE server issues by reading `Ace_Log.txt` (and re
 The agent can only read files that are inside the current repo workspace. To allow log access, expose your ACE server folder inside the repo using a junction (recommended):
 
 ```cmd
-cd C:\Users\jeremy\source\repos\ACEmulator-Mods
+cd C:\Users\jeremy\source\repos\ace-raaj-mods
 mklink /J ACE-Server C:\ACE\Server
 ```
 

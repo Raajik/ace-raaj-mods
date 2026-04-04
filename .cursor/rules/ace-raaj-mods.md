@@ -1,21 +1,21 @@
 ---
-name: acemulator-mods-default-ace-mod
-description: In the ACEmulator-Mods repository, treat all conversations as ACE mod development by default, using ACE.BaseMod and Harmony patterns and the ace-mod guidance.
+name: ace-raaj-mods-default-ace-mod
+description: In the ace-raaj-mods repository, treat all conversations as ACE mod development by default, using ACE.BaseMod and Harmony patterns and the ace-mod guidance.
 ---
 
-## Project-wide defaults for ACEmulator-Mods
+## Project-wide defaults for ace-raaj-mods
 
 - Always assume this repository is for **ACE mod development** targeting ACEmulator with **ACE.BaseMod** and **Harmony**.
 - Apply the behavior and guidance from the `ace-mod` skill automatically, even if the user does not explicitly invoke `/ace-mod`. Full skill content: `.cursor/skills/ace-mod/SKILL.md`.
 - **mcp2cli (co-active):** While following any project skill from `.cursor/skills/` (`ace-mod`, `ace-build`, `ace-log`, `ace-mod-team`, `doc`), if the task involves **MCP servers**, **OpenAPI/REST** specs, **GraphQL** endpoints, **MCP tool discovery or invocation**, or **CLI/skill wrappers for external APIs**, also read and follow `.cursor/skills/mcp2cli/SKILL.md` as if the user invoked `/mcp2cli`. Prefer `uvx mcp2cli` for `--list`, `<command> --help`, and execution per that skill.
 - Favor:
-  - Keeping source projects under `C:\Users\jeremy\source\repos\ACEmulator-Mods\...`
+  - Keeping source projects under `C:\Users\jeremy\source\repos\ace-raaj-mods\...` (or your workspace root on Linux/WSL)
   - Output paths pointing into `C:\ACE\Mods\<ModName>\`.
   - Using `BasicMod`, `BasicPatch<TSettings>`, and JSON-backed `Settings` classes.
 
 ## Consolidated mods in this repo
 
-- Treat as first-class mods any project with a `.csproj` directly under `ACEmulator-Mods` (one folder per deployable mod). Known gameplay mods include:
+- Treat as first-class mods any project with a `.csproj` directly under the repo root (one folder per deployable mod). Known gameplay mods include:
   - `AethericWeaver`, `ChallengeModes`, `AureatePath`, `AutoLoot`, `EmpyreanAlteration`, `Gemcrafter`, `LeyLineLedger`, `Loremaster`, `Numbersmith`, `Overtinked`, `QOL`, `Swarmed` (Swiftmend healing kits are part of **QOL**)
 - Also present for tooling/QA (not typical server mods): `AceModQa`, `tools/DecalQaRunner`, `tools/LinearSync`, `tools/AceServerStringRef`
 - When the user asks to build or rebuild mods in this repo:
@@ -28,7 +28,7 @@ description: In the ACEmulator-Mods repository, treat all conversations as ACE m
   - `working_directory` set to the specific mod folder (for example `AethericWeaver`, `LeyLineLedger`, `Numbersmith`).
   - Output paths configured in each `.csproj` to `C:\ACE\Mods\$(AssemblyName)`.
 - When the user runs `/ace-build` in this repo:
-  - Discover all `.csproj` files **within** `ACEmulator-Mods` (no `../` segments).
+  - Discover all `.csproj` files **within** this repository root (no `../` segments).
   - Build each mod project and summarize results (success, warnings, first error per failure).
 
 ## Patterns learned from this project

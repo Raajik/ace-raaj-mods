@@ -1,48 +1,36 @@
 # ace-raaj-mods
 
-A bundle of ACE (Asheron's Call Emulator) mods. These are customized/updated versions meant to be built and used with [ACE.BaseMod](https://github.com/aquafir/ACE.BaseMod) or a compatible ACE server setup.
+Server-side mods for **[ACEmulator](https://github.com/ACEmulator/ACE)** using **[ACE.BaseMod](https://github.com/aquafir/ACE.BaseMod)** and Harmony. Each folder under this repo is a deployable mod (DLL + `Meta.json` + settings).
 
-## Mods in this repo
+## Gameplay mods
 
-Gameplay mods (one folder per deployable mod):
+| Mod | What it does | `Meta.json` |
+|-----|----------------|-------------|
+| **AethericWeaver** | Spreadsheet-driven custom spells and equipment sets. Main customization hooks stay off while `InTesting` is true in `Settings.json`. | Enabled |
+| **AureatePath** | Enlightenment and wield-path tuning, Raise-style alternate leveling hooks, XP curve control, and related `/raise` augmentation commands. | Enabled |
+| **AutoLoot** | Corpse autoloot via server `.utl` profiles; optional vendor-trash and unknown-scroll passes; `/autoloot` toggles. | Enabled |
+| **ChallengeModes** | Challenge hub: `/cm` flows for SSF, hardcore, alternate leveling, aptitude (WIP), milestone XP/luminance. SSF/hardcore load with the mod; players opt in in-game. | Enabled |
+| **EmpyreanAlteration** | Mutator pipeline (loot / corpse / generator), loot-time item XP (`LootGrowthItem`), Slayer/ShinyPet-style mutators, optional Harmony extras and item growth on level-up. | **Disabled** |
+| **Gemcrafter** | Gem loot upgrades and mortar-based equipment infusion (in testing). | **Disabled** |
+| **LeyLineLedger** | Banking and ledger for items, pyreals/trade notes, and luminance (`/bank`, `/cash`, `/lum`, vendor integration). | Enabled |
+| **Loremaster** | Quest progress bonuses, first-solve rewards, milestones, portal/repeat-solve hooks, optional barkeeper parchment contracts (see `Settings.json`). | Enabled |
+| **Numbersmith** | Formula-driven balance (AngouriMath): damage, crits, healing, XP, level costs, and more via configurable expressions. | Enabled |
+| **Overtinked** | Extended tinkering (tries, imbues, salvage rules, custom imbues), item XP curves, quest/loot init for equippables, and level-up growth hooks. | Enabled |
+| **QOL** | Toggleable convenience patches: recall speeds, aug caps, fellowships, tailoring, vendors, stackables, swear filter, questgiver auras, and **Swiftmend** (healing-kit self + HoT via `EnableSwiftmend`), plus pet-related toggles. | Enabled |
+| **Swarmed** | CreatureEx champion variants (`/cex`, factory roll) and call-for-help reinforcements; separate landscape vs dungeon behavior and optional online-player scaling. | Enabled |
 
-- **AethericWeaver** — Spreadsheet-driven custom spells and equipment sets; main hooks gated while `InTesting` is true in `Settings.json`.
-- **ChallengeModes** — Usage-based skills (former Aptitude), alternate spend on attributes/vitals/skills, extended character level cap, optional bonus stats; `/cm` hub plus legacy `/aptitude`, `/levels`, `/refund`. **Disabled** in `Meta.json` by default.
-- **AureatePath** — Enlightenment flexibility and wield checks. Alternate leveling and XP-table extension moved to **ChallengeModes**.
-- **AutoLoot** — Corpse autoloot using server `.utl` profiles plus optional vendor-trash and unknown-scroll passes.
-- **EmpyreanAlteration** — Mutator pipeline (loot/corpse/generator hooks), loot-time item XP / pre-imbue (`LootGrowthItem`), mutators including **Slayer** and **ShinyPet**, opt-in Harmony features (fake properties, combat extras, item growth on level-up), and shared alteration settings. **Disabled** in `Meta.json` by default until you configure it.
-- **Gemcrafter** — Gem loot upgrades and mortar-based equipment infusion; **disabled** in `Meta.json` by default (in testing).
-- **LeyLineLedger** — Banking and ledger for items, pyreals/trade notes, and luminance (`/bank`, `/cash`, `/lum`, vendor hooks).
-- **Loremaster** — Quest progress bonuses, first-solve rewards, milestones, and related portal/repeat-solve hooks.
-- **Numbersmith** — Formula-driven balance (AngouriMath) for damage, crits, healing, XP, level cost, and more.
-- **Overtinked** — Extended tinkering (max tries, imbues, salvage rules, custom imbues) and **item XP curves**, quest-time item leveling init, and `OnItemLevelUp` growth (loot factory XP init is owned by **EmpyreanAlteration** when you use `LootGrowthItem`).
-- **QOL** — Toggleable convenience patches (recall animation speeds, augmentation caps, fellowships, tailoring, vendors, stackables, offline swear filter, **healing-kit Swiftmend/HoT** via `EnableSwiftmend`, **pet behavior** via `EnablePet*` / `EnableSummonCreatureAsPet`, etc.). Pet features previously lived in the retired **EmpyreanEchoes** mod.
-- **Swarmed** — CreatureEx champion variants (factory roll, FakeInt 10029, `/cex`) and call-for-help reinforcements on kill.
+Enable or disable each mod in its **`Meta.json`** before deployment. **`Settings.json`** (per mod) controls behavior and feature flags.
 
-**Support / tools (not server mods):** `AceModQa/` (shared QA helpers), `tools/` (e.g. DecalQaRunner, LinearSync, AceServerStringRef).
+## Repo layout (non-mods)
 
-### Retired names (historical)
+| Path | Role |
+|------|------|
+| `AceModQa/` | Shared QA / test helpers referenced by some projects |
+| `tools/` | Utilities (e.g. DecalQaRunner, LinearSync, AceServerStringRef) — not loaded as server mods |
 
-Older docs referred to **CHANGEBank**, **CHANGEBalance**, **CHANGERaise**, **CHANGECustomSpells**, **CHANGEExpansion**, and **CHANGEEasyEnlightenment**. The current mods above replace those concepts (e.g. LeyLineLedger for banking, Numbersmith for balance, AureatePath for raise/enlightenment paths, AethericWeaver for custom spells, **EmpyreanAlteration** for the expansion-style alteration/mutator layer). The **EmpyreanEchoes** mod folder was retired; its behavior was split into **EmpyreanAlteration**, **Swarmed**, **QOL** (pets), **ChallengeModes** (bonus stats, ironman/hardcore), and other mods listed above.
+## Credits
 
-### Merged mods (historical)
+- Mod loading and patterns follow **[ACE.BaseMod](https://github.com/aquafir/ACE.BaseMod)** by **[aquafir](https://github.com/aquafir)**.
+- **Overtinked** extends the Tinkering sample from that project (see mod `Meta.json`).
 
-The former **Swiftmend** mod (healing kits → self + HoT) now ships inside **QOL** as `EnableSwiftmend` and the `Swiftmend` settings object. Remove any old `Mods/Swiftmend` folder when upgrading.
-
-## Building
-
-These projects reference `ACE.Shared` and the ACE server assemblies. To build:
-
-1. Clone or open the parent solution that contains **ACE.Shared** (e.g. [ACE.BaseMod](https://github.com/aquafir/ACE.BaseMod)).
-2. Place this repo’s contents at `ace-raaj-mods` in that solution (i.e. so the path is `ACE.BaseMod/ace-raaj-mods/`).
-3. Open the main solution and build the ace-raaj-mods projects, or build them from the command line with the working directory set to the parent repo.
-
-Most mods use `ProjectReference Include="..\..\ACE.Shared\ACE.Shared.csproj"`, so the folder must live two levels below the repo root that contains `ACE.Shared`. `LeyLineLedger` can also be built against the official `ACEmulator.ACE.Shared` / `ACRealms.ACE.Shared` NuGet packages without the local `ACE.Shared` project.
-
-## Backlog
-
-Tracked work and future mod ideas: [PLAN.md](PLAN.md) (including [greenfield concepts](PLAN.md#greenfield-concepts)).
-
-## License and credits
-
-Per-mod credits are in each mod’s Readme and Meta.json. Overtinked is based on the Tinkering sample by aquafir (ACE.BaseMod).
+Per-mod notes and authors may also appear in each mod’s own readme and `Meta.json`.

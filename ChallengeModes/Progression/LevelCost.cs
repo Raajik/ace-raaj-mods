@@ -1,3 +1,5 @@
+using System.Linq;
+
 namespace ChallengeModes.Progression;
 
 public class LevelCost
@@ -22,7 +24,7 @@ public class LevelCost
         n += Offset;
         return GrowthType switch
         {
-            GrowthType.Polynomial => Enumerable.Range((int)x, (int)n).Sum(step => GetCost(step)),
+            GrowthType.Polynomial => SumPolynomialCosts(x, n),
             _ => GetTotalCost(x + n) - GetTotalCost(x),
         };
     }
@@ -34,7 +36,7 @@ public class LevelCost
         {
             GrowthType.Linear => (long)((n + 1) * C + (Rate / 2) * n * (n + 1)),
             GrowthType.Exponential => (long)(Rate == 1 ? C * (n + 1) : C * ((1 - Math.Pow(Rate, n + 1)) / (1 - Rate))),
-            GrowthType.Polynomial => Enumerable.Range(0, (int)n + 1).Select(step => GetCost(step)).Sum(),
+            GrowthType.Polynomial => SumPolynomialCosts(0, n + 1),
             _ => 0,
         };
     }
@@ -50,6 +52,31 @@ public class LevelCost
             _ => 0,
         };
     }
+
+    // Avoids (int) overflow from Enumerable.Range when spans are huge; uses fast path when safe.
+    long SumPolynomialCosts(long startInclusive, long stepCount)
+    {
+        if (stepCount <= 0)
+            return 0;
+
+        if (startInclusive >= 0 && stepCount <= int.MaxValue && startInclusive <= (long)int.MaxValue - stepCount + 1)
+        {
+            try
+            {
+                return Enumerable.Range((int)startInclusive, (int)stepCount).Sum(step => GetCost(step));
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                // fall through
+            }
+        }
+
+        long sum = 0;
+        for (long i = 0; i < stepCount; i++)
+            sum += GetCost(startInclusive + i);
+
+        return sum;
+    }
 }
 
 public enum GrowthType
@@ -58,4 +85,3 @@ public enum GrowthType
     Exponential,
     Polynomial,
 }
-

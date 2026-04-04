@@ -2,15 +2,27 @@ namespace AureatePath;
 
 public class Settings
 {
-    // EasyEnlightenment settings
+    // Minimum character level for the next enlightenment = LevelReq + (current Enlightenment * LevelReqPerEnlightenment).
     public int LevelReq { get; set; } = 275;
-    public int MaxEnlightenments { get; set; } = 5;
+
+    // Added per enlightenment already completed (0 = flat LevelReq only).
+    public int LevelReqPerEnlightenment { get; set; } = 1;
+
+    // 0 = no cap; otherwise max enlightenments allowed (current count before next must be < this).
+    public int MaxEnlightenments { get; set; } = 0;
+
     public bool RequireSocietyMaster { get; set; } = true;
     public bool RequireAllLuminanceAuras { get; set; } = true;
 
-    public bool RemoveSociety { get; set; } = true;
-    public bool RemoveLuminance { get; set; } = true;
-    public bool RemoveAetheria { get; set; } = true;
+    // 1-based: society master is checked when attempting this enlightenment number onward (e.g. 26 => after 25 completes).
+    public int SocietyMasterRequirementFromEnlightenment { get; set; } = 26;
+
+    // 1-based: lum-aug tier sum gate applies when attempting this enlightenment onward (e.g. 11 => after 10 completes).
+    public int LumAugRequirementFromEnlightenment { get; set; } = 11;
+
+    public bool RemoveSociety { get; set; } = false;
+    public bool RemoveLuminance { get; set; } = false;
+    public bool RemoveAetheria { get; set; } = false;
     public bool RemoveAttributes { get; set; } = true;
     public bool RemoveSkills { get; set; } = true;
     public bool RemoveLevel { get; set; } = true;
@@ -34,10 +46,22 @@ public class Settings
     public int SkillCreditInterval { get; set; } = 5;
     public bool SkipNormalBroadcast { get; set; } = false;
     public bool SkipResetCertificate { get; set; } = false;
-    public long MaxLumBase { get; set; } = 1000000;
-    public long MaxLumPerEnlightenment { get; set; } = 500000;
+    public long MaxLumBase { get; set; } = long.MaxValue;
+    public long MaxLumPerEnlightenment { get; set; } = 0;
 
     public bool PatchWieldRequirements { get; set; } = true;
+
+    // Primary flow: /enlighten and /enl. If false, HandleEnlightenment runs immediately after eligibility checks.
+    public bool EnlightenmentRequiresConfirmation { get; set; } = true;
+
+    // When true, WCID 53412 may still trigger enlightenment like stock (in addition to the command).
+    public bool AllowEnlightenmentViaEnlightenmentObject { get; set; } = false;
+
+    // After enlightening, zero out GrantXP amounts with ShareType.Allegiance for this many minutes (patron pass-up).
+    public bool SuppressAllegiancePassupXpAfterEnlightenment { get; set; } = true;
+
+    public int AllegiancePassupXpSuppressMinutes { get; set; } = 5;
+
     //public PropertyInt WieldRequirementEnlightenments => (PropertyInt)29999;
 
     // Minimum sum of LumAug* tier counts (see PatchClass.LumAugmentationCreditContributors), not raw luminance currency.

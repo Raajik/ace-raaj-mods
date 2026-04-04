@@ -8,19 +8,10 @@ public class Settings
     // Special skill usage XP (to be wired in later)
     public bool EnableArcaneLore { get; set; } = true;
     public bool EnableManaConversion { get; set; } = true;
-    public bool EnableAssessCreaturePerson { get; set; } = true;
-    public bool EnableDeception { get; set; } = true;
-    public bool EnableDualWield { get; set; } = true;
-    public bool EnableLeadershipLoyalty { get; set; } = true;
 
     public float ProficiencyXpMultiplier { get; set; } = 1.0f;
     public float ArcaneLoreXpPerMana { get; set; } = 0.01f;
     public float ManaConversionXpPerMana { get; set; } = 0.01f;
-    public float AssessXpPerIdentify { get; set; } = 50f;
-    public float DeceptionXpPerSneakAttack { get; set; } = 25f;
-    public float DualWieldXpPerAttack { get; set; } = 10f;
-    public float LeadershipLoyaltyXpPerMinute { get; set; } = 15f;
-    public int LeadershipLoyaltyTickSeconds { get; set; } = 60;
 
     // Rewards
     public bool EnableBonusSkillCredits { get; set; } = true;
@@ -42,8 +33,11 @@ public class Settings
     // Adds Creature.GetBonus on top of InitLevel / StartingValue (BonusStats lived in EmpyreanEchoes; now here).
     public bool BonusStatsEnabled { get; set; } = true;
 
-    // Ironman item/social restrictions + hardcore death rules (moved from EmpyreanEchoes into ChallengeModes).
-    public bool IronmanHardcoreEnabled { get; set; } = false;
     public float HardcoreSecondsBetweenDeathAllowed { get; set; } = 60;
     public int HardcoreStartingLives { get; set; } = 5;
+
+    // Challenge rewards (any active /cm challenge). Applied after Loremaster QP multiplier when present.
+    public bool ChallengeRewardsEnabled { get; set; } = true;
+    public List<int> ChallengeMilestoneLevels { get; set; } = new() { 50, 126, 200, 275 };
+    public float BonusPerMilestonePercentPerChallenge { get; set; } = 1f;
 }

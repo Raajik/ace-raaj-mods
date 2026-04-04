@@ -552,6 +552,10 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         return IsEquippableShapeForOvertinkedInit(item);
     }
 
+    // PlayerFactory and other pre-login paths may have a Player before Session/Network exists; SendMessage NREs if called too early.
+    private static bool CanSendPlayerChat(Player? player) =>
+        player != null && player.Session?.Network != null;
+
     private static void InitializeQuestItemWorkmanship(WorldObject item, Settings s)
     {
         int current = GetWorkmanship(item);
@@ -637,7 +641,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             item.SetProperty(OvertinkedLastAppliedItemLevelInt, level);
         }
 
-        if (summarize && summary != null)
+        if (summarize && summary != null && CanSendPlayerChat(player))
         {
             string msg = BuildCatchUpSummaryMessage(item, delta, summary);
             player.SendMessage(msg);
@@ -741,7 +745,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             }
         }
 
-        if (applied)
+        if (applied && CanSendPlayerChat(player))
             player.SendMessage(FormatQuestItemPerkMessage(item, level, effectKind, detailLine, isInitialGrant: false));
     }
 
@@ -824,10 +828,10 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 effectKind = "StatBoost";
         }
 
-        if (applied && notifyPlayer != null)
+        if (applied && CanSendPlayerChat(notifyPlayer))
         {
             int displayLevel = Math.Max(1, item.ItemLevel ?? 0);
-            notifyPlayer.SendMessage(FormatQuestItemPerkMessage(item, displayLevel, effectKind, detailLine, isInitialGrant: true));
+            notifyPlayer!.SendMessage(FormatQuestItemPerkMessage(item, displayLevel, effectKind, detailLine, isInitialGrant: true));
         }
     }
 
@@ -945,8 +949,12 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     private static void SetWorkmanship(WorldObject wo, int value)
     {
         var t = Traverse.Create(wo).Property("Workmanship");
-        if (t.PropertyExists())
-            t.SetValue(value);
+        if (!t.PropertyExists())
+            return;
+
+        // ACE WorldObject.Workmanship is float?; reflection rejects int (see CharacterCreate / TryAddToInventory stack).
+        float f = value;
+        t.SetValue(f);
     }
 
     // Maps recipe mutation dataIds to ImbuedEffectType flags so we can set target.ImbuedEffect when the recipe applies an imbue.

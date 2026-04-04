@@ -40,7 +40,7 @@ public static class HardcoreMode
         player.Character.DeleteTime = (ulong)Time.GetUnixTime();
         player.Character.IsDeleted = true;
         player.CharacterChangesDetected = true;
-        player.Session.LogOffPlayer(true);
+        player.Session?.LogOffPlayer(true);
         PlayerManager.HandlePlayerDelete(player.Character.Id);
 
         var damagerName = lastDamager?.Name ?? "unknown";

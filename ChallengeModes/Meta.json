@@ -1,9 +1,9 @@
 {
   "Name": "ChallengeModes",
   "Author": "",
-  "Description": "Challenge and progression hub: former Aptitude (usage-based skills), alternate attribute/vital/skill spend, extended character level table, optional bonus stats, optional Ironman/hardcore death rules (Settings IronmanHardcoreEnabled). Commands: /cm aptitude|levels|refund; /iron, /ironmen, /uniron when Ironman is enabled.",
+  "Description": "Challenge hub: /cm-only commands for SSF, hardcore, alternate leveling, aptitude (WIP), milestone XP/luminance rewards. SSF/hardcore hooks load with Enabled; players opt in via /cm. Settings: AlternateLeveling, BonusStats, ChallengeRewardsEnabled. No /iron /aptitude top-level commands.",
   "Version": "1.0",
-  "Enabled": false,
+  "Enabled": true,
   "HotReload": true,
   "RegisterCommands": true,
   "ACEVersion": "0.0"

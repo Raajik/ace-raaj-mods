@@ -1,6 +1,7 @@
 namespace AethericWeaver;
 
-// Settings loaded from Settings.json used by AethericWeaver
+// Settings loaded from Settings.json used by AethericWeaver.
+// Shipped JSON may omit Spreadsheet, CustomSpells, and Sets; defaults below apply. Before setting InTesting false in production, set spreadsheet paths and review CustomSpells/Sets.
 public class Settings
 {
     // When true, spreadsheet/set overrides are skipped and gameplay Harmony hooks defer to vanilla (mod still loads).

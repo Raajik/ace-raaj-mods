@@ -1,24 +1,59 @@
 {
+  // Base character level for the next enlightenment; effective level required also adds Enlightenment * LevelReqPerEnlightenment.
   "LevelReq": 275,
-  "MaxEnlightenments": 5,
+  // Extra required levels per enlightenment already completed (1 => 275, then 276, 277, ...).
+  "LevelReqPerEnlightenment": 1,
+  // 0 = unlimited enlightenments; set > 0 to cap (must stay below cap to attempt another).
+  "MaxEnlightenments": 0,
+  // When true, society master is required only from SocietyMasterRequirementFromEnlightenment onward (1-based enlightenment number).
   "RequireSocietyMaster": true,
+  // When true, lum-aug tier sum gate applies only from LumAugRequirementFromEnlightenment onward.
   "RequireAllLuminanceAuras": true,
-  "RemoveSociety": true,
-  "RemoveLuminance": true,
-  "RemoveAetheria": true,
+  // First enlightenment number (1-based) that requires society master (default 26 => after 25 completed).
+  "SocietyMasterRequirementFromEnlightenment": 26,
+  // First enlightenment number (1-based) that requires lum-aug tiers (default 11 => after 10 completed).
+  "LumAugRequirementFromEnlightenment": 11,
+  // If true, strip society standing on enlightenment (endless defaults leave society intact).
+  "RemoveSociety": false,
+  // If true, strip luminance investment on enlightenment.
+  "RemoveLuminance": false,
+  // If true, strip aetheria on enlightenment.
+  "RemoveAetheria": false,
+  // If true, reset attributes on enlightenment.
   "RemoveAttributes": true,
+  // If true, reset skills on enlightenment.
   "RemoveSkills": true,
+  // If true, reset level on enlightenment.
   "RemoveLevel": true,
+  // Skill credits granted each time: (Enlightenment / SkillCreditInterval) * SkillCreditAmount (integer division).
   "SkillCreditAmount": 1,
   "SkillCreditInterval": 5,
+  // If true, skip the three personal enlightenment broadcast lines to the player.
   "SkipNormalBroadcast": false,
+  // If true, do not grant the attribute reset certificate from the NPC emote.
   "SkipResetCertificate": false,
-  "MaxLumBase": 1000000,
-  "MaxLumPerEnlightenment": 500000,
+  // Sets MaximumLuminance to this plus (Enlightenment * MaxLumPerEnlightenment); long.MaxValue = effectively no cap.
+  "MaxLumBase": 9223372036854775807,
+  // Added to max luminance cap per enlightenment count (0 = no growth per enlightenment).
+  "MaxLumPerEnlightenment": 0,
+  // When true, load Harmony patches for ItemWieldRequirementEnlightenments (FakeInt) on wield checks.
   "PatchWieldRequirements": true,
+  // If true, /enlighten and /enl show a client Yes/No confirmation before applying enlightenment.
+  "EnlightenmentRequiresConfirmation": true,
+  // If true, WCID 53412 may still start enlightenment (vanilla object). Command flow works regardless.
+  "AllowEnlightenmentViaEnlightenmentObject": false,
+  // If true, for AllegiancePassupXpSuppressMinutes after each enlightenment, ShareType.Allegiance GrantXP to this player is zeroed (vassal pass-up pause).
+  "SuppressAllegiancePassupXpAfterEnlightenment": true,
+  // Duration of pass-up suppression; 0 disables the window registration.
+  "AllegiancePassupXpSuppressMinutes": 5,
+  // Minimum sum of LumAug* tier counts across configured properties (not raw luminance currency).
   "BaseLumAugmentationsRequired": 65,
+  // Extra required tier sum per current enlightenment (0 keeps a flat threshold while the gate is active).
   "LumAugmentationsRequiredPerEnlightenment": 0,
+  // If true, every lum-aug contributor line must be at least LumAugMinimumPerContributor (stricter than sum-only).
   "RequireMinimumPerLumAugContributor": false,
+  // Minimum per line when RequireMinimumPerLumAugContributor is true.
   "LumAugMinimumPerContributor": 1,
+  // If true, on lum-aug failure also send tier sum vs required (tuning aid).
   "ShowLumAugVerificationCounts": false
 }

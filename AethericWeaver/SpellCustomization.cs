@@ -226,8 +226,13 @@ namespace AethericWeaver;
     // Creates a SpellCustomization snapshot from an existing Spell
     public SpellCustomization(Spell spell)
     {
+        if (spell is null)
+            throw new ArgumentNullException(nameof(spell));
+
         var sb = spell._spellBase;
-        var db = spell._spell; ;
+        var db = spell._spell;
+        if (sb is null || db is null)
+            throw new ArgumentException("Spell must have loaded spell base and database row.", nameof(spell));
 
         Template = (SpellId)db.Id;
         Id = (SpellId?)db.Id;

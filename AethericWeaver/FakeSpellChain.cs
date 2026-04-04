@@ -13,6 +13,9 @@ internal static class FakeSpellChain
         if (__instance.ProjectileSource is not Player player)
             return;
 
+        if (__instance.Spell is null)
+            return;
+
         var chainCount = __instance.GetProperty(FakeInt.SpellChainCount) ?? 0;
         chainCount++;
         if (chainCount > 5)

@@ -4,7 +4,7 @@ namespace AureatePath;
 public class WieldRequirements
 {
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(Player), "CheckWieldRequirements", new Type[] { typeof(WorldObject) })]
+    [HarmonyPatch(typeof(Player), nameof(Player.CheckWieldRequirements), new Type[] { typeof(WorldObject) })]
     public static bool PreCheckWieldRequirements(WorldObject item, ref Player __instance, ref WeenieError __result)
     {
         var req = item.GetProperty(FakeInt.ItemWieldRequirementEnlightenments);

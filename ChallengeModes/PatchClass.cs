@@ -11,7 +11,12 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 {
     static readonly ConcurrentDictionary<uint, bool> EnabledByGuid = new();
     static readonly ConcurrentDictionary<uint, bool> PermanentlyOptedOutByGuid = new();
-    static readonly ConcurrentDictionary<uint, bool> LoadedPlayers = new();
+    static readonly ConcurrentDictionary<uint, bool> AlternateLevelingEnabledByGuid = new();
+    static readonly ConcurrentDictionary<uint, bool> SsfDeclinedByGuid = new();
+    static readonly ConcurrentDictionary<uint, bool> HardcoreDeclinedByGuid = new();
+    static readonly ConcurrentDictionary<uint, bool> AlternateLevelingDeclinedByGuid = new();
+    // Last UTC write-time ticks applied from prefs JSON per character; re-read when file changes or after load failure.
+    static readonly ConcurrentDictionary<uint, long> PrefsLoadedFromFileTicks = new();
     static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
     internal static readonly ConcurrentDictionary<uint, float> ArcaneLoreManaRemainderByGuid = new();
     internal static readonly ConcurrentDictionary<uint, float> ManaConversionManaRemainderByGuid = new();
@@ -19,9 +24,12 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     internal static readonly ConcurrentDictionary<uint, bool> EquippedItemManaMonitorRunningByGuid = new();
     internal static MethodInfo? ProficiencyOnSuccessUseMethod;
 
+    static bool _proficiencyMethodMissingLogged;
+
     static bool _aptitudeCategoryPatched;
     static bool _alternateLevelingCategoryPatched;
-    static bool _ironmanHardcoreCategoryPatched;
+    static bool _ssfHardcoreCategoryPatched;
+    static bool _challengeRewardsCategoryPatched;
 
     static List<ulong> _storedXpTableCosts = new();
     static List<uint> _storedXpTableCredits = new();
@@ -64,11 +72,18 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         EnabledByGuid.Clear();
         PermanentlyOptedOutByGuid.Clear();
-        LoadedPlayers.Clear();
+        AlternateLevelingEnabledByGuid.Clear();
+        SsfDeclinedByGuid.Clear();
+        HardcoreDeclinedByGuid.Clear();
+        AlternateLevelingDeclinedByGuid.Clear();
+        PrefsLoadedFromFileTicks.Clear();
         ArcaneLoreManaRemainderByGuid.Clear();
         ManaConversionManaRemainderByGuid.Clear();
         LastEquippedItemManaByPlayerGuid.Clear();
         EquippedItemManaMonitorRunningByGuid.Clear();
+
+        SsfMode.ClearPoiCache();
+        _proficiencyMethodMissingLogged = false;
 
         base.Stop();
     }
@@ -91,20 +106,36 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             }
         }
 
-        if (_ironmanHardcoreCategoryPatched)
+        if (_ssfHardcoreCategoryPatched)
         {
             try
             {
-                ModC.Harmony.UnpatchCategory(nameof(IronmanMode));
+                ModC.Harmony.UnpatchCategory(nameof(SsfMode));
                 ModC.Harmony.UnpatchCategory(nameof(HardcoreMode));
             }
             catch (Exception ex)
             {
-                ModManager.Log($"[ChallengeModes] Unpatch Ironman/Hardcore: {ex.Message}", ModManager.LogLevel.Warn);
+                ModManager.Log($"[ChallengeModes] Unpatch SSF/Hardcore: {ex.Message}", ModManager.LogLevel.Warn);
             }
             finally
             {
-                _ironmanHardcoreCategoryPatched = false;
+                _ssfHardcoreCategoryPatched = false;
+            }
+        }
+
+        if (_challengeRewardsCategoryPatched)
+        {
+            try
+            {
+                ModC.Harmony.UnpatchCategory(nameof(ChallengeRewards));
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[ChallengeModes] Unpatch ChallengeRewards: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+            finally
+            {
+                _challengeRewardsCategoryPatched = false;
             }
         }
 
@@ -145,7 +176,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (wantAlternateHooks && !_alternateLevelingCategoryPatched)
         {
             ModC.Harmony.PatchCategory(nameof(AlternateLeveling));
-            ModC.Container.RegisterCommandCategory(nameof(AlternateLeveling));
             _alternateLevelingCategoryPatched = true;
         }
         else if (!wantAlternateHooks && _alternateLevelingCategoryPatched)
@@ -162,27 +192,32 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             _alternateLevelingCategoryPatched = false;
         }
 
-        var wantIronHard = Settings.IronmanHardcoreEnabled;
-        if (wantIronHard && !_ironmanHardcoreCategoryPatched)
+        // SSF/hardcore patches load with the mod; per-player rules are gated by /cm (Ironman/Hardcore flags).
+        if (!_ssfHardcoreCategoryPatched)
         {
-            ModC.Harmony.PatchCategory(nameof(IronmanMode));
+            ModC.Harmony.PatchCategory(nameof(SsfMode));
             ModC.Harmony.PatchCategory(nameof(HardcoreMode));
-            ModC.Container.RegisterCommandCategory(nameof(IronmanMode));
-            _ironmanHardcoreCategoryPatched = true;
+            _ssfHardcoreCategoryPatched = true;
         }
-        else if (!wantIronHard && _ironmanHardcoreCategoryPatched)
+
+        var wantRewards = Settings.ChallengeRewardsEnabled;
+        if (wantRewards && !_challengeRewardsCategoryPatched)
+        {
+            ModC.Harmony.PatchCategory(nameof(ChallengeRewards));
+            _challengeRewardsCategoryPatched = true;
+        }
+        else if (!wantRewards && _challengeRewardsCategoryPatched)
         {
             try
             {
-                ModC.Harmony.UnpatchCategory(nameof(IronmanMode));
-                ModC.Harmony.UnpatchCategory(nameof(HardcoreMode));
+                ModC.Harmony.UnpatchCategory(nameof(ChallengeRewards));
             }
             catch (Exception ex)
             {
-                ModManager.Log($"[ChallengeModes] Unpatch Ironman/Hardcore (toggle off): {ex.Message}", ModManager.LogLevel.Warn);
+                ModManager.Log($"[ChallengeModes] Unpatch ChallengeRewards (toggle off): {ex.Message}", ModManager.LogLevel.Warn);
             }
 
-            _ironmanHardcoreCategoryPatched = false;
+            _challengeRewardsCategoryPatched = false;
         }
     }
 
@@ -250,46 +285,215 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
     static void EnsureLoaded(Player player)
     {
-        if (player?.Guid == null) return;
-        if (!LoadedPlayers.TryAdd(player.Guid.Full, true))
+        if (player?.Guid == null)
             return;
 
+        var g = player.Guid.Full;
         var path = GetPlayerDataPath(player);
+
         if (!File.Exists(path))
+        {
+            PrefsLoadedFromFileTicks.TryRemove(g, out _);
+            return;
+        }
+
+        long writeTicks;
+        try
+        {
+            writeTicks = File.GetLastWriteTimeUtc(path).Ticks;
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[ChallengeModes] Player prefs stat failed for {player.Name}: {ex.Message}", ModManager.LogLevel.Warn);
+            return;
+        }
+
+        if (PrefsLoadedFromFileTicks.TryGetValue(g, out var applied) && applied == writeTicks)
             return;
 
         try
         {
             var json = File.ReadAllText(path);
             var prefs = JsonSerializer.Deserialize<ChallengeModesPlayerPrefs>(json);
-            if (prefs == null) return;
+            if (prefs == null)
+            {
+                ModManager.Log($"[ChallengeModes] Player prefs deserialize returned null for {player.Name}.", ModManager.LogLevel.Warn);
+                PrefsLoadedFromFileTicks.TryRemove(g, out _);
+                return;
+            }
 
-            EnabledByGuid[player.Guid.Full] = prefs.Enabled;
-            PermanentlyOptedOutByGuid[player.Guid.Full] = prefs.PermanentlyOptedOut;
+            EnabledByGuid[g] = prefs.Enabled;
+            PermanentlyOptedOutByGuid[g] = prefs.PermanentlyOptedOut;
+            AlternateLevelingEnabledByGuid[g] = prefs.AlternateLevelingEnabled;
+            SsfDeclinedByGuid[g] = prefs.SsfPermanentlyDeclined;
+            HardcoreDeclinedByGuid[g] = prefs.HardcorePermanentlyDeclined;
+            AlternateLevelingDeclinedByGuid[g] = prefs.AlternateLevelingPermanentlyDeclined;
+            PrefsLoadedFromFileTicks[g] = writeTicks;
         }
         catch (Exception ex)
         {
-            ModManager.Log($"[ChallengeModes] Aptitude prefs load failed for {player.Name}: {ex.Message}", ModManager.LogLevel.Warn);
+            ModManager.Log($"[ChallengeModes] Player prefs load failed for {player.Name}: {ex.Message}", ModManager.LogLevel.Warn);
+            PrefsLoadedFromFileTicks.TryRemove(g, out _);
         }
     }
 
+    public static void EnsurePrefsLoaded(Player player) => EnsureLoaded(player);
+
     static void SavePrefs(Player player)
     {
-        if (player?.Guid == null) return;
+        if (player?.Guid == null)
+            return;
+
         try
         {
+            var g = player.Guid.Full;
             var prefs = new ChallengeModesPlayerPrefs
             {
-                Enabled = EnabledByGuid.GetOrAdd(player.Guid.Full, false),
-                PermanentlyOptedOut = PermanentlyOptedOutByGuid.GetOrAdd(player.Guid.Full, false),
+                Enabled = EnabledByGuid.GetOrAdd(g, false),
+                PermanentlyOptedOut = PermanentlyOptedOutByGuid.GetOrAdd(g, false),
+                AlternateLevelingEnabled = AlternateLevelingEnabledByGuid.GetOrAdd(g, false),
+                SsfPermanentlyDeclined = SsfDeclinedByGuid.GetOrAdd(g, false),
+                HardcorePermanentlyDeclined = HardcoreDeclinedByGuid.GetOrAdd(g, false),
+                AlternateLevelingPermanentlyDeclined = AlternateLevelingDeclinedByGuid.GetOrAdd(g, false),
             };
             var path = GetPlayerDataPath(player);
             File.WriteAllText(path, JsonSerializer.Serialize(prefs, JsonOptions));
+            try
+            {
+                PrefsLoadedFromFileTicks[g] = File.GetLastWriteTimeUtc(path).Ticks;
+            }
+            catch
+            {
+                PrefsLoadedFromFileTicks.TryRemove(g, out _);
+            }
         }
         catch (Exception ex)
         {
-            ModManager.Log($"[ChallengeModes] Aptitude prefs save failed for {player.Name}: {ex.Message}", ModManager.LogLevel.Warn);
+            ModManager.Log($"[ChallengeModes] Player prefs save failed for {player.Name}: {ex.Message}", ModManager.LogLevel.Warn);
         }
+    }
+
+    public static bool IsAlternateLevelingEnabled(Player? player)
+    {
+        if (player?.Guid == null || Settings == null || !Settings.Enabled)
+            return false;
+
+        if (!Settings.AlternateLeveling.Enabled)
+            return false;
+
+        EnsureLoaded(player);
+        var g = player.Guid.Full;
+        if (AlternateLevelingDeclinedByGuid.GetOrAdd(g, false))
+            return false;
+
+        if (EnabledByGuid.GetOrAdd(g, false))
+            return false;
+
+        return AlternateLevelingEnabledByGuid.GetOrAdd(g, false);
+    }
+
+    public static bool GetAlternateLevelingEnabledRaw(Player player)
+    {
+        if (player?.Guid == null)
+            return false;
+
+        EnsureLoaded(player);
+        return AlternateLevelingEnabledByGuid.GetOrAdd(player.Guid.Full, false);
+    }
+
+    public static bool IsSsfDeclined(Player player)
+    {
+        EnsureLoaded(player);
+        return SsfDeclinedByGuid.GetOrAdd(player.Guid.Full, false);
+    }
+
+    public static bool IsHardcoreDeclined(Player player)
+    {
+        EnsureLoaded(player);
+        return HardcoreDeclinedByGuid.GetOrAdd(player.Guid.Full, false);
+    }
+
+    public static bool IsAlternateLevelingDeclined(Player player)
+    {
+        EnsureLoaded(player);
+        return AlternateLevelingDeclinedByGuid.GetOrAdd(player.Guid.Full, false);
+    }
+
+    public static void SetAlternateLevelingEnabled(Player player, bool value)
+    {
+        EnsureLoaded(player);
+        AlternateLevelingEnabledByGuid[player.Guid.Full] = value;
+        SavePrefs(player);
+    }
+
+    public static void SetAlternateLevelingDeclined(Player player, bool value)
+    {
+        EnsureLoaded(player);
+        AlternateLevelingDeclinedByGuid[player.Guid.Full] = value;
+        SavePrefs(player);
+    }
+
+    public static void SetSsfDeclined(Player player, bool value)
+    {
+        EnsureLoaded(player);
+        SsfDeclinedByGuid[player.Guid.Full] = value;
+        SavePrefs(player);
+    }
+
+    public static void SetHardcoreDeclined(Player player, bool value)
+    {
+        EnsureLoaded(player);
+        HardcoreDeclinedByGuid[player.Guid.Full] = value;
+        SavePrefs(player);
+    }
+
+    public static bool HasAlternateLevelsSpent(Player player)
+    {
+        foreach (PropertyAttribute a in Enum.GetValues<PropertyAttribute>())
+        {
+            if (player.GetLevel(a) > 0 || player.GetCost(a) > 0)
+                return true;
+        }
+
+        foreach (PropertyAttribute2nd v in Enum.GetValues<PropertyAttribute2nd>())
+        {
+            if (!v.ToString().StartsWith("Max"))
+                continue;
+
+            if (player.GetLevel(v) > 0 || player.GetCost(v) > 0)
+                return true;
+        }
+
+        foreach (Skill s in Enum.GetValues<Skill>())
+        {
+            if (player.GetLevel(s) > 0 || player.GetCost(s) > 0)
+                return true;
+        }
+
+        return false;
+    }
+
+    public static int CountActiveChallengeTracks(Player player)
+    {
+        if (player?.Guid == null)
+            return 0;
+
+        EnsureLoaded(player);
+        int n = 0;
+        if (player.GetProperty(FakeBool.Ironman) == true)
+            n++;
+        if (player.GetProperty(FakeBool.Hardcore) == true)
+            n++;
+
+        // Aptitude and alternate leveling are mutually exclusive; count at most one progression slot.
+        if (IsAptitudeEnabled(player) || IsAlternateLevelingEnabled(player))
+            n++;
+        return n;
+    }
+
+    public static bool PlayerHasActiveChallenge(Player? player)
+    {
+        return player != null && CountActiveChallengeTracks(player) > 0;
     }
 
     // Cross-mod: other mods (e.g. AutoLoot) can call this to gate Aptitude-only features.
@@ -322,10 +526,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         return pp;
     }
 
-    [CommandHandler("aptitude", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
-        "Toggle Aptitude mode (skills only via usage; XP for attributes/vitals only). Activate at level 1 only; disabling is permanent. Also: /cm aptitude …",
-        "Usage: /aptitude [on | off]")]
-    public static void HandleAptitude(Session session, params string[] parameters)
+    public static void CmHandleAptitude(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
             return;
@@ -338,11 +539,11 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (parameters.Length == 0)
         {
             if (permanentlyOptedOut)
-                player.SendMessage("Aptitude is permanently disabled on this character (you previously turned it off).");
+                player.SendMessage("Aptitude is permanently disabled on this character (you previously used /cm off aptitude).");
             else if (enabled)
-                player.SendMessage("Aptitude is ON. Skills can only be raised through usage; spend XP on attributes and vitals only. Use /aptitude off to disable (permanent).");
+                player.SendMessage("Aptitude is ON. Skills via usage; spend XP on attributes/vitals. Use /cm off aptitude to disable (permanent).");
             else
-                player.SendMessage("Aptitude is OFF. Use /aptitude on to enable (only at level 1; once off, you cannot turn it back on).");
+                player.SendMessage("Aptitude is OFF. Use /cm aptitude on at level 1 to enable (once off, you cannot turn it back on).");
             return;
         }
 
@@ -371,22 +572,24 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             }
             if (player.Level != 1)
             {
-                player.SendMessage("Aptitude can only be activated on a new character (level 1).");
+                player.SendMessage("Aptitude can only be activated at character level 1.");
+                return;
+            }
+            if (AlternateLevelingEnabledByGuid.GetOrAdd(guid, false))
+            {
+                player.SendMessage("Aptitude cannot be combined with alternate leveling. Use /cm off alternateleveling first (requires /cm refund if you spent alternate levels; that opt-out is permanent).");
                 return;
             }
             EnabledByGuid[guid] = true;
             SavePrefs(player);
-            player.SendMessage("Aptitude is now ON. Skills can only be raised through usage; use your XP on attributes and vitals.");
+            player.SendMessage("Aptitude is now ON. Skills only through usage; use XP on attributes and vitals.");
             return;
         }
 
-        player.SendMessage("Usage: /aptitude [on | off]");
+        player.SendMessage("Usage: /cm aptitude [on | off]");
     }
 
-    [CommandHandler("aptitudemana", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
-        "Debug: show equipped item mana drain detection for Aptitude.",
-        "Usage: /aptitudemana")]
-    public static void HandleAptitudeMana(Session session, params string[] parameters)
+    public static void CmHandleAptitudeMana(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
             return;
@@ -416,7 +619,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             lastByItemGuid[itemGuid] = cur;
         }
 
-        player.SendMessage($"[Aptitude] Equipped mana items: {lines.Count}. Drained since last /aptitudemana: {drainedNow}.");
+        player.SendMessage($"[Aptitude] Equipped mana items: {lines.Count}. Drained since last /cm debug mana: {drainedNow}.");
         foreach (string line in lines.Take(10))
             player.SendMessage($"[Aptitude] {line}");
 
@@ -424,10 +627,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             player.SendMessage($"[Aptitude] (+{lines.Count - 10} more)");
     }
 
-    [CommandHandler("aptitudeskilldebug", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
-        "Debug: dump skill/proficiency fields for a skill (default ArcaneLore).",
-        "Usage: /aptitudeskilldebug [SkillName]")]
-    public static void HandleAptitudeSkillDebug(Session session, params string[] parameters)
+    public static void CmHandleAptitudeSkillDebug(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
             return;
@@ -452,10 +652,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             DumpNumericProps(player, "PropertiesSkill", props);
     }
 
-    [CommandHandler("aptitudeawardtest", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
-        "Debug: attempt to award PP to a skill (default ArcaneLore, default 10).",
-        "Usage: /aptitudeawardtest [SkillName] [pp]")]
-    public static void HandleAptitudeAwardTest(Session session, params string[] parameters)
+    public static void CmHandleAptitudeAwardTest(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
             return;
@@ -616,7 +813,15 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             return;
 
         if (ProficiencyOnSuccessUseMethod == null)
+        {
+            if (!_proficiencyMethodMissingLogged)
+            {
+                _proficiencyMethodMissingLogged = true;
+                ModManager.Log("[ChallengeModes] Aptitude: Proficiency.OnSuccessUse not resolved; skill-usage PP awards are disabled until ACE API matches.", ModManager.LogLevel.Warn);
+            }
+
             return;
+        }
 
         var props = AccessTools.Property(creatureSkill.GetType(), "PropertiesSkill")?.GetValue(creatureSkill)
                  ?? AccessTools.Field(creatureSkill.GetType(), "PropertiesSkill")?.GetValue(creatureSkill);
@@ -809,6 +1014,9 @@ public static class AptitudePatches
         if (player?.Guid == null)
             return;
 
+        if (PatchClass.Settings is not { Enabled: true })
+            return;
+
         if (!PatchClass.EquippedItemManaMonitorRunningByGuid.TryAdd(player.Guid.Full, true))
             return;
 
@@ -822,7 +1030,7 @@ public static class AptitudePatches
         {
             foreach (MethodInfo method in AccessTools.GetDeclaredMethods(typeof(Proficiency)))
             {
-                if (method.Name != "OnSuccessUse")
+                if (method.Name != nameof(Proficiency.OnSuccessUse))
                     continue;
 
                 ParameterInfo[] parms = method.GetParameters();
@@ -871,7 +1079,7 @@ public static class AptitudePatches
         {
             foreach (MethodInfo method in AccessTools.GetDeclaredMethods(typeof(Player)))
             {
-                if (method.Name != "DoCastSpell_Inner")
+                if (method.Name != nameof(Player.DoCastSpell_Inner))
                     continue;
 
                 ParameterInfo[] parms = method.GetParameters();

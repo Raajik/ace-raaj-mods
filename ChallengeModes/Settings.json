@@ -1,19 +1,10 @@
 {
-  "Enabled": false,
+  "Enabled": true,
   "EnableArcaneLore": true,
   "EnableManaConversion": true,
-  "EnableAssessCreaturePerson": true,
-  "EnableDeception": true,
-  "EnableDualWield": true,
-  "EnableLeadershipLoyalty": true,
   "ProficiencyXpMultiplier": 1.0,
   "ArcaneLoreXpPerMana": 0.01,
   "ManaConversionXpPerMana": 0.01,
-  "AssessXpPerIdentify": 50.0,
-  "DeceptionXpPerSneakAttack": 25.0,
-  "DualWieldXpPerAttack": 10.0,
-  "LeadershipLoyaltyXpPerMinute": 15.0,
-  "LeadershipLoyaltyTickSeconds": 60,
   "EnableBonusSkillCredits": true,
   "EnableMasteryTiers": true,
   "EnableAttributeVitalEfficiency": true,
@@ -27,7 +18,9 @@
     "Aptitude Paragon"
   ],
   "MasteryTierSkillCounts": [ 5, 10, 20 ],
-  "IronmanHardcoreEnabled": false,
   "HardcoreSecondsBetweenDeathAllowed": 60.0,
-  "HardcoreStartingLives": 5
+  "HardcoreStartingLives": 5,
+  "ChallengeRewardsEnabled": true,
+  "ChallengeMilestoneLevels": [ 50, 126, 200, 275 ],
+  "BonusPerMilestonePercentPerChallenge": 1.0
 }

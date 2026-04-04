@@ -1,11 +1,9 @@
 namespace ChallengeModes.Progression;
 
-[CommandCategory(nameof(AlternateLeveling))]
-public class AlternateLevelingCommands
+public static class AlternateLevelingCommands
 {
     const int Spacing = -20;
 
-    [CommandHandler("levels", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0)]
     public static void HandleLevels(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
@@ -52,7 +50,6 @@ public class AlternateLevelingCommands
         player.SendMessage(sb.ToString());
     }
 
-    [CommandHandler("refund", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0)]
     public static void HandleRefund(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
@@ -78,6 +75,9 @@ public class AlternateLevelingCommands
 
         foreach (var attr in Enum.GetValues<PropertyAttribute2nd>().OrderBy(x => x.ToString()))
         {
+            if (!attr.ToString().StartsWith("Max") || !player.TryGetVitalCost(attr, out _))
+                continue;
+
             var total = player.GetCost(attr);
             if (total <= 0)
                 continue;

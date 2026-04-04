@@ -6,6 +6,16 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 {
     private const int ENLIGHTENMENT_WCID = 53412;
 
+    static bool _wieldRequirementsPatched;
+    static bool _passupSuppressPatched;
+
+    public override void Init()
+    {
+        SettingsContainer = new CommentPreservingJsonSettings(SettingsPath);
+        SettingsContainer.SettingsChanged += SettingsChanged;
+        Start();
+    }
+
     public override async Task OnWorldOpen()
     {
         var cfg = SettingsContainer.Settings ?? new Settings();
@@ -26,39 +36,142 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (cfg.PatchWieldRequirements)
         {
             ModC.Harmony.PatchCategory(nameof(WieldRequirements));
+            _wieldRequirementsPatched = true;
         }
+
+        ModC.Harmony.PatchCategory(nameof(PassupSuppress));
+        _passupSuppressPatched = true;
     }
 
-    [CommandHandler("newlum", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0)]
-    public static void HandleMeta(Session session, params string[] parameters)
+    public override void Stop()
+    {
+        if (_wieldRequirementsPatched)
+        {
+            try
+            {
+                ModC.Harmony.UnpatchCategory(nameof(WieldRequirements));
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[AureatePath] Unpatch WieldRequirements: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+            finally
+            {
+                _wieldRequirementsPatched = false;
+            }
+        }
+
+        if (_passupSuppressPatched)
+        {
+            try
+            {
+                ModC.Harmony.UnpatchCategory(nameof(PassupSuppress));
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[AureatePath] Unpatch PassupSuppress: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+            finally
+            {
+                _passupSuppressPatched = false;
+            }
+        }
+
+        base.Stop();
+    }
+
+    [CommandHandler("enlighten", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0)]
+    public static void HandleEnlighten(Session session, params string[] parameters)
+    {
+        HandleEnlightenCore(session);
+    }
+
+    [CommandHandler("enl", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0)]
+    public static void HandleEnl(Session session, params string[] parameters)
+    {
+        HandleEnlightenCore(session);
+    }
+
+    static void HandleEnlightenCore(Session session)
     {
         var player = session.Player;
         if (player is null)
             return;
 
-        if (player.GetProperty(FakeBool.UsingNewLuminance) ?? false)
-        {
-            player.SendMessage($"You're already using the new enlightenment system.");
+        var s = Settings ?? new Settings();
+        if (!VerifyEnlightenmentEligibility(player, s))
             return;
+
+        if (s.EnlightenmentRequiresConfirmation)
+        {
+            var text = BuildEnlightenmentConfirmText(s);
+            if (!player.ConfirmationManager.EnqueueSend(new Confirmation_Enlightenment(player.Guid), text))
+                player.SendMessage("You already have a confirmation dialog open.", ChatMessageType.Broadcast);
         }
-
-        var oldEnlightenment = player.Enlightenment;
-        player.Enlightenment = 0;
-
-        for (var i = 0; i < oldEnlightenment; i++)
-            Enlightenment.AddPerks(null, player);
-
-        player.SendMessage($"You're on the new system with {oldEnlightenment} enlightenments.");
-        player.SetProperty(FakeBool.UsingNewLuminance, true);
+        else
+            Enlightenment.HandleEnlightenment(null, player);
     }
 
-    [CommandHandler("fixee", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0)]
-    public static void HandleFix(Session session, params string[] parameters)
+    internal static string BuildEnlightenmentConfirmText(Settings s)
     {
-        if (session.Player is not Player p)
-            return;
+        var parts = new List<string>();
+        if (s.RemoveLevel)
+            parts.Add("your level will be reset to 1");
+        if (s.RemoveAttributes)
+            parts.Add("your attributes will be reset");
+        if (s.RemoveSkills)
+            parts.Add("your skills will be reset");
+        if (s.RemoveLuminance)
+            parts.Add("your luminance and luminance auras will be removed");
+        if (s.RemoveSociety)
+            parts.Add("your society standing will be removed");
+        if (s.RemoveAetheria)
+            parts.Add("your aetheria progress will be reset");
 
-        ApplyBonuses(p);
+        if (parts.Count == 0)
+            return "Do you wish to enlighten?";
+
+        return "If you continue, " + string.Join(", ", parts) + ". Do you wish to enlighten?";
+    }
+
+    internal static bool VerifyEnlightenmentEligibility(Player player, Settings s)
+    {
+        long requiredLevel = (long)s.LevelReq + (long)player.Enlightenment * s.LevelReqPerEnlightenment;
+        if (player.Level < requiredLevel)
+        {
+            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You must be level {requiredLevel} for enlightenment.", ChatMessageType.Broadcast));
+            return false;
+        }
+
+        var lumGateIndex = Math.Max(1, s.LumAugRequirementFromEnlightenment) - 1;
+        if (s.RequireAllLuminanceAuras && player.Enlightenment >= lumGateIndex && !TryEvaluateLumAugs(player, s, out var lumSum, out var lumReq))
+        {
+            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You must have all luminance auras for enlightenment.", ChatMessageType.Broadcast));
+            if (s.ShowLumAugVerificationCounts)
+                player.SendMessage($"Luminance aura tier total: {lumSum:N0} (required {lumReq:N0}).");
+            return false;
+        }
+
+        var societyGateIndex = Math.Max(1, s.SocietyMasterRequirementFromEnlightenment) - 1;
+        if (s.RequireSocietyMaster && player.Enlightenment >= societyGateIndex && !Enlightenment.VerifySocietyMaster(player))
+        {
+            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You must be a Master of one of the Societies of Dereth for enlightenment.", ChatMessageType.Broadcast));
+            return false;
+        }
+
+        if (player.GetFreeInventorySlots() < 25)
+        {
+            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You must have at least 25 free inventory slots in your main pack for enlightenment.", ChatMessageType.Broadcast));
+            return false;
+        }
+
+        if (s.MaxEnlightenments > 0 && player.Enlightenment >= s.MaxEnlightenments)
+        {
+            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You have already reached the maximum enlightenment level!", ChatMessageType.Broadcast));
+            return false;
+        }
+
+        return true;
     }
 
     static void ApplyBonuses(Player player)
@@ -67,15 +180,11 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             return;
 
         //PRESUMES NO OTHER BONUSES TO SET PROPS
-        var e = player.Enlightenment;
-
         //Custom props
         if (s.IntAugments != null)
         {
             foreach (var prop in s.IntAugments)
             {
-                var current = player.GetProperty(prop.Key) ?? 0;
-                //var value = prop.Key.ToString().StartsWith("Lum") ? player.Enlightenment * prop.Value : current + prop.Value;
                 var value = player.Enlightenment * prop.Value;
                 player.UpdateProperty(player, prop.Key, value, true);
                 player.SendMessage($"You've been awarded {value} {prop.Key}");
@@ -86,8 +195,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         {
             foreach (var prop in s.FloatAugments)
             {
-                var current = player.GetProperty(prop.Key) ?? 0;
-                //var value = prop.Key.ToString().StartsWith("Lum") ? player.Enlightenment * prop.Value : current + prop.Value;
                 var value = player.Enlightenment * prop.Value;
                 player.UpdateProperty(player, prop.Key, value, true);
                 player.SendMessage($"You've been awarded {value} {prop.Key}");
@@ -160,27 +267,17 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         //Handle activator custom
         if (__instance.WeenieClassId == ENLIGHTENMENT_WCID)
         {
+            if (Settings is not { } objS || !objS.AllowEnlightenmentViaEnlightenmentObject)
+                return true;
+
             if (activator is not Player player)
-                __result = new ActivationResult(true);
-            //else if (player.Level < Settings.LevelReq)
-            //{
-            //    __result = new ActivationResult(new GameEventCommunicationTransientString(player.Session, "You do not meet the requiremenets for Enlightenment."));
+                return true;
 
-            //    player.SendMessage($"Requirements:\n" +
-            //        $"Over level {Settings.LevelReq}\n" +
-            //        $"Under {Settings.MaxEnlightenments} enlightenments\n" +
-            //        $"Require Society Master? {Settings.RequireSocietyMaster}\n" +
-            //        $"All luminance? {Settings.RequireAllLuminanceAuras}");
-            //}
-            else
-            {
-                if (player.Session != null)
-                    __result = new ActivationResult(new GameEventCommunicationTransientString(player.Session, $"Sneaking in the 'ol enlightenment here."));
-                else
-                    __result = new ActivationResult(true);
+            if (player.Session is null)
+                return true;
 
-                Enlightenment.HandleEnlightenment(activator, player);
-            }
+            __result = new ActivationResult(new GameEventCommunicationTransientString(player.Session, $"Sneaking in the 'ol enlightenment here."));
+            Enlightenment.HandleEnlightenment(activator, player);
             return false;
         }
 
@@ -257,15 +354,29 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         else
             player.SendMessage("Skill credit interval is not configured (> 0); no skill credits granted this enlightenment.");
 
-        //Max lum
+        // Max lum (checked arithmetic so huge Enlightenment * Per does not wrap silently)
         if (player.MaximumLuminance is not null)
         {
-            var maxLuminance = s.MaxLumBase + s.MaxLumPerEnlightenment * player.Enlightenment;
+            long maxLuminance;
+            try
+            {
+                checked
+                {
+                    maxLuminance = s.MaxLumBase + s.MaxLumPerEnlightenment * (long)player.Enlightenment;
+                }
+            }
+            catch (OverflowException)
+            {
+                maxLuminance = long.MaxValue;
+            }
+
             player.MaximumLuminance = maxLuminance;
             player.SendMessage($"Your luminance is now {maxLuminance}");
 
             player.UpdateProperty(player, PropertyInt64.MaximumLuminance, maxLuminance);
         }
+
+        PassupSuppress.RegisterWindow(player, s);
 
         return false;
     }
@@ -279,37 +390,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (Settings is not { } s)
             return true;
 
-        if (player.Level < s.LevelReq)
-        {
-            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You must be level {s.LevelReq} for enlightenment.", ChatMessageType.Broadcast));
-            __result = false;
-        }
-        else if (s.RequireAllLuminanceAuras && !TryEvaluateLumAugs(player, s, out var lumSum, out var lumReq))
-        {
-            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You must have all luminance auras for enlightenment.", ChatMessageType.Broadcast));
-            if (s.ShowLumAugVerificationCounts)
-                player.SendMessage($"Luminance aura tier total: {lumSum:N0} (required {lumReq:N0}).");
-            __result = false;
-        }
-
-        else if (s.RequireSocietyMaster && !Enlightenment.VerifySocietyMaster(player))
-        {
-            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You must be a Master of one of the Societies of Dereth for enlightenment.", ChatMessageType.Broadcast));
-            __result = false;
-        }
-
-        else if (player.GetFreeInventorySlots() < 25)
-        {
-            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You must have at least 25 free inventory slots in your main pack for enlightenment.", ChatMessageType.Broadcast));
-            __result = false;
-        }
-
-        else if (player.Enlightenment >= s.MaxEnlightenments)
-        {
-            player.Session?.Network.EnqueueSend(new GameMessageSystemChat($"You have already reached the maximum enlightenment level!", ChatMessageType.Broadcast));
-            __result = false;
-        }
-
+        __result = VerifyEnlightenmentEligibility(player, s);
         return false;
     }
 

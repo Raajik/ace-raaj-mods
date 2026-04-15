@@ -2,8 +2,14 @@ namespace EmpyreanAlteration;
 
 public partial class Settings
 {
+    [JsonPropertyName("// MutatorPath")]
+    public string MutatorPathDoc { get; init; } = "Folder under the mod containing mutator type implementations; computed at runtime from ModPath.";
+
     // Mutator configuration
     public string MutatorPath => Path.Combine(Mod.Instance.ModPath, "Mutators");
+
+    [JsonPropertyName("// Mutators")]
+    public string MutatorsDoc { get; init; } = "Registered mutator definitions (mutation name, events, odds, targets).";
 
     public List<MutatorSettings> Mutators { get; set; } =
         new()
@@ -24,6 +30,9 @@ public partial class Settings
             },
         };
 
+    [JsonPropertyName("// GrowthAugments")]
+    public string GrowthAugmentsDoc { get; init; } = "Maps WeenieType to AugmentGroup name on GrowthItem level-up.";
+
     // GrowthItem mutator settings
     public Dictionary<WeenieType, string> GrowthAugments { get; set; } = new()
     {
@@ -31,6 +40,9 @@ public partial class Settings
         [WeenieType.Caster] = nameof(AugmentGroup.Weapon),
         [WeenieType.MissileLauncher] = nameof(AugmentGroup.Weapon),
     };
+
+    [JsonPropertyName("// GrowthFixedLevelAugments")]
+    public string GrowthFixedLevelAugmentsDoc { get; init; } = "Per WeenieType, fixed item level → Augment granted.";
 
     public Dictionary<WeenieType, Dictionary<int, Augment>> GrowthFixedLevelAugments { get; set; } = new()
     {
@@ -48,27 +60,71 @@ public partial class Settings
         }
     };
 
+    [JsonPropertyName("// GrowthTierLevelRange")]
+    public string GrowthTierLevelRangeDoc { get; init; } = "Treasure tier → allowed item level range for growth rolls.";
+
     public Dictionary<int, IntRange> GrowthTierLevelRange { get; set; } =
         Enumerable.Range(1, 8).ToDictionary(x => x, x => Range.Int(x * 2 - 1, x * 2 + 3));
 
+    [JsonPropertyName("// GrowthXpBase")]
+    public string GrowthXpBaseDoc { get; init; } = "Base XP for growth-style item leveling.";
+
     public long GrowthXpBase { get; set; } = 10_000;
 
+    [JsonPropertyName("// GrowthXpScaleByTier")]
+    public string GrowthXpScaleByTierDoc { get; init; } = "XP scale multiplier per treasure tier for growth items.";
+
     public double GrowthXpScaleByTier { get; set; } = 1.2;
+
+    [JsonPropertyName("// EnableLootItemLeveling")]
+    public string EnableLootItemLevelingDoc { get; init; } = "LootGrowthItem: enable loot-time item XP initialization.";
 
     // LootGrowthItem mutator: loot-time item XP init and optional pre-imbues (replaces former Overtinked loot init).
     public bool EnableLootItemLeveling { get; set; } = false;
 
+    [JsonPropertyName("// EnableLootItemPreImbue")]
+    public string EnableLootItemPreImbueDoc { get; init; } = "LootGrowthItem: roll pre-imbues on eligible loot.";
+
     public bool EnableLootItemPreImbue { get; set; } = false;
+
+    [JsonPropertyName("// LootItemXpBase")]
+    public string LootItemXpBaseDoc { get; init; } = "Base XP for loot-time item leveling.";
 
     public long LootItemXpBase { get; set; } = 10_000;
 
+    [JsonPropertyName("// LootItemXpScale")]
+    public string LootItemXpScaleDoc { get; init; } = "XP scale for loot-time item leveling.";
+
     public double LootItemXpScale { get; set; } = 1.2;
 
-    public int LootItemMaxLevelMin { get; set; } = 2;
+    [JsonPropertyName("// LootItemMaxLevelMin")]
+    public string LootItemMaxLevelMinDoc { get; init; } = "Minimum rolled max level for loot growth items.";
 
-    public int LootItemMaxLevelMax { get; set; } = 6;
+    public int LootItemMaxLevelMin { get; set; } = 5;
+
+    [JsonPropertyName("// LootItemMaxLevelMax")]
+    public string LootItemMaxLevelMaxDoc { get; init; } = "Maximum rolled max level for loot growth items.";
+
+    public int LootItemMaxLevelMax { get; set; } = 250;
+
+    [JsonPropertyName("// LootItemMaxLevelRollPower")]
+    public string LootItemMaxLevelRollPowerDoc { get; init; } = "Loot/GrowthItem max-level rolls: exponent p in w=U^p; p>1 favors lower caps. 1.0 = uniform between LootItemMaxLevelMin and LootItemMaxLevelMax.";
+
+    public double LootItemMaxLevelRollPower { get; set; } = 2.2;
+
+    [JsonPropertyName("// LootItemMaxLevelTierBias")]
+    public string LootItemMaxLevelTierBiasDoc { get; init; } =
+        "On higher treasure tiers, relaxes max-level roll skew slightly (quest rolls and loot cap rolls).";
+
+    public double LootItemMaxLevelTierBias { get; set; } = 1.5;
+
+    [JsonPropertyName("// LootItemPreImbueChance")]
+    public string LootItemPreImbueChanceDoc { get; init; } = "Chance to apply a pre-imbue on eligible loot.";
 
     public double LootItemPreImbueChance { get; set; } = 0.02;
+
+    [JsonPropertyName("// LootItemLevelingEligibleWeenieTypes")]
+    public string LootItemLevelingEligibleWeenieTypesDoc { get; init; } = "Weenie types that may receive loot-time item XP / pre-imbues.";
 
     public WeenieType[] LootItemLevelingEligibleWeenieTypes { get; set; } =
     {
@@ -77,6 +133,9 @@ public partial class Settings
         WeenieType.Caster,
         WeenieType.Clothing,
     };
+
+    [JsonPropertyName("// ItemTypeEquipmentSets")]
+    public string ItemTypeEquipmentSetsDoc { get; init; } = "Maps treasure item type to equipment set group for set mutators.";
 
     // Set mutator settings
     public Dictionary<TreasureItemType_Orig, EquipmentSetGroup> ItemTypeEquipmentSets { get; set; } = new()
@@ -87,8 +146,14 @@ public partial class Settings
         [TreasureItemType_Orig.Jewelry] = EquipmentSetGroup.Cloak,
     };
 
+    [JsonPropertyName("// Slayers")]
+    public string SlayersDoc { get; init; } = "CreatureTypeGroup name used as default slayer pool.";
+
     // Slayer mutator settings
     public string Slayers { get; set; } = nameof(CreatureTypeGroup.Popular);
+
+    [JsonPropertyName("// SlayerPower")]
+    public string SlayerPowerDoc { get; init; } = "Treasure tier → slayer power multiplier.";
 
     public Dictionary<int, float> SlayerPower { get; set; } = new()
     {
@@ -102,6 +167,9 @@ public partial class Settings
         [7] = 4f,
         [8] = 4.5f,
     };
+
+    [JsonPropertyName("// ProcOnSpells")]
+    public string ProcOnSpellsDoc { get; init; } = "SpellGroup name limiting which spells can proc on-hit effects.";
 
     // ProcOnHit / proc settings
     public string ProcOnSpells { get; set; } = nameof(SpellGroup.CloakOnly);

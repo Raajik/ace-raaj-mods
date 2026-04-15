@@ -2,7 +2,7 @@ using ACE.Database.Models.World;
 
 namespace Overtinked;
 
-// Overtinked: recipe/tinkering logic lives here; item XP / loot init patches use HarmonyPatchCategory(ItemLevelingHarmonyCategory).
+// Overtinked: recipe/tinkering logic lives here. Quest item XP and level-up growth are handled by EmpyreanAlteration.
 // RecipeManager / Creature rating patches run only when Settings.RecipeManagerCategory is patched (see OnWorldOpen).
 [HarmonyPatchCategory(Settings.RecipeManagerCategory)]
 public partial class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
@@ -12,12 +12,22 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     // OnWorldOpen never runs and item level-ups would see null here and skip all growth effects.
     internal static Settings? CurrentSettings;
 
-    static bool _itemLevelingCategoryPatched;
-
     public override void Start()
     {
         base.Start();
         RefreshSettingsAndSalvageLookup();
+
+        if (Settings?.EnableQuestItemInventoryInit == true)
+        {
+            try
+            {
+                ModC.Harmony.PatchCategory(Settings.OvertinkedQuestInventoryCategory);
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[Overtinked] PatchCategory {Settings.OvertinkedQuestInventoryCategory}: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+        }
     }
 
     public override async Task OnWorldOpen()
@@ -43,22 +53,16 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             ModManager.Log($"[Overtinked] Unpatch {Settings.RecipeManagerCategory}: {ex.Message}", ModManager.LogLevel.Warn);
         }
 
-        if (_itemLevelingCategoryPatched)
+        try
         {
-            try
-            {
-                ModC.Harmony.UnpatchCategory(Settings.ItemLevelingHarmonyCategory);
-            }
-            catch (Exception ex)
-            {
-                ModManager.Log($"[Overtinked] Unpatch {Settings.ItemLevelingHarmonyCategory}: {ex.Message}", ModManager.LogLevel.Warn);
-            }
-
-            _itemLevelingCategoryPatched = false;
+            ModC.Harmony.UnpatchCategory(Settings.OvertinkedQuestInventoryCategory);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Overtinked] Unpatch {Settings.OvertinkedQuestInventoryCategory}: {ex.Message}", ModManager.LogLevel.Warn);
         }
 
         RestoreTinkering();
-        SpellGrowthHelper.ResetPoolsForUnload();
         CurrentSettings = null;
         base.Stop();
     }
@@ -79,41 +83,6 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         CurrentSettings = cfg;
         SalvageEffectApplier.BuildLookup(cfg);
 
-        if (cfg.ItemXpCurveMode == ItemXpCurveMode.CharacterTable && cfg.ItemXpVirtualCharacterLevel > 12)
-        {
-            ModManager.Log(
-                $"[Overtinked] ItemXpVirtualCharacterLevel={cfg.ItemXpVirtualCharacterLevel} uses large character XP chunks per item level; progression will be slow. Lower (e.g. 3–10) or reduce ItemXpCharacterCurveMultiplier for faster items.",
-                ModManager.LogLevel.Info);
-        }
-
-        if (cfg.ItemXpCurveMode == ItemXpCurveMode.Geometric && cfg.ItemXpGeometricMultiplierPerStep <= 1.0)
-        {
-            ModManager.Log(
-                "[Overtinked] ItemXpGeometricMultiplierPerStep must be > 1; progression would stall. Curve math clamps low multipliers until Settings are fixed.",
-                ModManager.LogLevel.Warn);
-        }
-
-        ApplyItemLevelingHarmonyCategory(cfg);
-    }
-
-    void ApplyItemLevelingHarmonyCategory(Settings cfg)
-    {
-        if (cfg.EnableItemLevelingHooks && !_itemLevelingCategoryPatched)
-        {
-            ModC.Harmony.PatchCategory(Settings.ItemLevelingHarmonyCategory);
-            _itemLevelingCategoryPatched = true;
-        }
-        else if (!cfg.EnableItemLevelingHooks && _itemLevelingCategoryPatched)
-        {
-            try
-            {
-                ModC.Harmony.UnpatchCategory(Settings.ItemLevelingHarmonyCategory);
-            }
-            catch
-            {
-            }
-            _itemLevelingCategoryPatched = false;
-        }
     }
 
     // Snapshot of default TinkeringDifficulty; can be used to restore on shutdown.
@@ -315,6 +284,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (!imbueDataIDs.TryGetValue(dataId, out var imbueEffect))
             return true;
 
+        LesserImbueUpgrade.ApplyStrips(target, imbueEffect, s.EnableLesserImbueUpgradeToFull);
+
         target.ImbuedEffect |= imbueEffect;
 
         if (RecipeManager.incItemTinkered.Contains(dataId))
@@ -459,16 +430,14 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         __result *= (float)(1.0 + bonusRating / 100.0);
     }
 
-    // Quest-item tagging properties (use IDs above 40000 to avoid collisions).
-    internal static readonly PropertyBool QuestGrowthItemBool = (PropertyBool)40100;
+    // Quest-item one-time tinkering init (workmanship + initial effects). Item XP and level-up growth live in EmpyreanAlteration.
     private static readonly PropertyBool QuestItemInitializedBool = (PropertyBool)40101;
-    private static readonly PropertyInt QuestItemCategoryInt = (PropertyInt)40102;
-    // Tracks last item level for which Overtinked growth ran (catch-up / no double-apply). Use a dedicated id:
-    // 40110 is reserved in-repo by Swarmed (as PropertyFloat on creatures); keep Int props off that slot to avoid confusion/imports.
-    private static readonly PropertyInt OvertinkedLastAppliedItemLevelInt = (PropertyInt)40150;
 
-    // Helper: run quest-item initialization for a newly created WorldObject.
-    // Call from inventory creation postfixes with the receiving player so initial imbue/slayer/salvage grants send chat.
+    // Must match EmpyreanAlteration.QuestItemGrowthProperties.EAQuestItemWorkmanshipInitBool (40107).
+    private static readonly PropertyBool EmpyreanQuestWorkmanshipInitBool = (PropertyBool)40107;
+
+    // Helper: optional quest-item init on first pack add (workmanship + initial effects). Off by default; tinkering uses RecipeManager only.
+    // Call from inventory postfixes when EnableQuestItemInventoryInit is true.
     public static void InitializeQuestWorldObject(WorldObject __result, Player? notifyPlayer = null)
     {
         if (__result == null)
@@ -476,6 +445,9 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         Settings? s = CurrentSettings;
         if (s == null)
+            return;
+
+        if (!s.EnableQuestItemInventoryInit)
             return;
 
         // Only operate on items that we consider to be quest items.
@@ -487,17 +459,13 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (alreadyInit == true)
             return;
 
-        __result.SetProperty(QuestItemInitializedBool, true);
-
         if (s.EnableQuestItemWorkmanship)
             InitializeQuestItemWorkmanship(__result, s);
 
-        // Configure XP and max level before rolling initial salvage/imbue text that references ItemMaxLevel.
-        if (s.EnableQuestItemLeveling)
-            InitializeQuestItemXp(__result, s);
-
         if (s.EnableQuestItemInitialEffects)
             ApplyInitialQuestItemEffects(__result, s, notifyPlayer);
+
+        __result.SetProperty(QuestItemInitializedBool, true);
     }
 
     // Shared shape for quest init and loot ItemXp init: weapons, all clothing, or anything with a non-zero equip mask.
@@ -558,6 +526,9 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
     private static void InitializeQuestItemWorkmanship(WorldObject item, Settings s)
     {
+        if (item.GetProperty(EmpyreanQuestWorkmanshipInitBool) == true)
+            return;
+
         int current = GetWorkmanship(item);
         if (current > 0)
             return;
@@ -574,181 +545,6 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         SetWorkmanship(item, rolled);
     }
 
-    private static void InitializeQuestItemXp(WorldObject item, Settings s)
-    {
-        if (item.HasItemLevel)
-            return;
-
-        // Avoid double-dipping with EmpyreanAlteration GrowthItem (FakeBool.GrowthItem) items.
-        bool? isGrowthItem = item.GetProperty(FakeBool.GrowthItem);
-        if (isGrowthItem == true)
-            return;
-
-        int tierForCap = s.QuestItemMaxLevelTier > 0 ? s.QuestItemMaxLevelTier : 1;
-        ItemLevelingInit.ConfigureItemXp(item, s, tierForCap);
-        item.ItemTotalXp = 0;
-
-        // Tag as a quest-growth item and store a simple category hint by WeenieType.
-        item.SetProperty(QuestGrowthItemBool, true);
-        item.SetProperty(QuestItemCategoryInt, (int)item.WeenieType);
-    }
-
-    internal static void ApplyCatchUpGrowth(WorldObject item, int prevItemLevel, int currentLevel, bool questGrowth, Player player, Settings s)
-    {
-        // Failsafe: if XP jumps cause multiple levels, or if prior runs missed applying perks,
-        // always apply perks for every level between (lastApplied+1) and currentLevel, in order.
-        int lastApplied = item.GetProperty(OvertinkedLastAppliedItemLevelInt) ?? prevItemLevel;
-        if (lastApplied < 0)
-            lastApplied = 0;
-
-        // Stale DB, other tooling, or a prior bug can leave lastApplied > currentLevel so start skips the whole loop.
-        int? maxLv = item.ItemMaxLevel;
-        if (lastApplied > currentLevel || (maxLv > 0 && lastApplied > maxLv.Value))
-        {
-            int? badStored = item.GetProperty(OvertinkedLastAppliedItemLevelInt);
-            ModManager.Log(
-                $"[Overtinked] Resetting last-applied item level tracker for {item.Name} ({item.WeenieClassId}): stored={badStored} prev={prevItemLevel} current={currentLevel} max={maxLv}",
-                ModManager.LogLevel.Warn);
-            lastApplied = prevItemLevel;
-            item.RemoveProperty(OvertinkedLastAppliedItemLevelInt);
-        }
-
-        int start = Math.Max(prevItemLevel, lastApplied) + 1;
-        if (start > currentLevel)
-            return;
-
-        int delta = currentLevel - prevItemLevel;
-        // Only collapse chat when many levels land in one tick; delta==5 was too aggressive (no per-line detail).
-        bool summarize = delta >= 12;
-        var summary = summarize ? new ItemLevelingEngine.GrowthSummary() : null;
-
-        for (int level = start; level <= currentLevel; level++)
-        {
-            ModManager.Log($"[Overtinked] OnItemLevelUp: {item.Name} ({item.WeenieClassId}) level {level}/{item.ItemMaxLevel} questGrowth={questGrowth}", ModManager.LogLevel.Info);
-
-            if (questGrowth)
-                ApplyQuestItemLevelUpEffect(item, level, player, s);
-
-            bool applied = ItemLevelingEngine.ApplyLevelUp(item, player, level, s, emitMessages: !summarize, summary: summary, maxAttempts: 4);
-            if (!applied)
-            {
-                ModManager.Log($"[Overtinked] No growth effect applied: {item.Name} ({item.WeenieClassId}) type={item.WeenieType} level {level}/{item.ItemMaxLevel}", ModManager.LogLevel.Warn);
-            }
-            if (summary != null)
-                summary.LevelsApplied++;
-
-            // Record progress even if effects were no-ops to prevent infinite retry loops.
-            item.SetProperty(OvertinkedLastAppliedItemLevelInt, level);
-        }
-
-        if (summarize && summary != null && CanSendPlayerChat(player))
-        {
-            string msg = BuildCatchUpSummaryMessage(item, delta, summary);
-            player.SendMessage(msg);
-        }
-    }
-
-    private static string BuildCatchUpSummaryMessage(WorldObject item, int delta, ItemLevelingEngine.GrowthSummary summary)
-    {
-        List<string> parts = new();
-
-        if (summary.Imbues.Count > 0)
-        {
-            string imbues = string.Join(", ", summary.Imbues
-                .OrderByDescending(k => k.Value)
-                .ThenBy(k => k.Key, StringComparer.OrdinalIgnoreCase)
-                .Select(k => k.Value == 1 ? k.Key : $"{k.Value} {k.Key}"));
-            parts.Add($"imbues ({imbues})");
-        }
-
-        if (summary.Salvage.Count > 0)
-        {
-            string salvage = string.Join(", ", summary.Salvage
-                .OrderByDescending(k => k.Value.count)
-                .ThenBy(k => k.Key, StringComparer.OrdinalIgnoreCase)
-                .Select(k =>
-                {
-                    if (k.Value.count <= 1)
-                        return $"{k.Key} ({k.Value.totalValue})";
-                    return $"{k.Value.count} {k.Key} ({k.Value.totalValue} total)";
-                }));
-            parts.Add($"tinkers ({salvage})");
-        }
-
-        if (summary.Spells.Count > 0)
-        {
-            string spells = string.Join(", ", summary.Spells
-                .OrderByDescending(k => k.Value)
-                .ThenBy(k => k.Key, StringComparer.OrdinalIgnoreCase)
-                .Select(k => k.Value == 1 ? k.Key : $"{k.Value}x {k.Key}"));
-            parts.Add($"spells/cantrips ({spells})");
-        }
-
-        if (summary.DamageGained > 0)
-            parts.Add($"+{summary.DamageGained} Damage");
-        if (summary.ArmorLevelGained > 0)
-            parts.Add($"+{summary.ArmorLevelGained} Armor Level");
-        if (summary.MaxManaGained > 0)
-            parts.Add($"+{summary.MaxManaGained} Max Mana");
-        if (summary.ValueReductions > 0)
-            parts.Add($"{summary.ValueReductions} value reductions");
-
-        string tail = parts.Count > 0 ? string.Join("; ", parts) : "no changes (unexpected)";
-
-        // Note: we intentionally avoid calling out "no effect" rolls unless everything truly failed.
-        if (parts.Count == 0 && summary.NoEffectRolls > 0)
-            tail = $"no changes after {summary.NoEffectRolls} attempts (unexpected)";
-
-        return $"[Overtinked] {item.Name} leveled up {delta} times and gained {tail}.";
-    }
-
-    private static void ApplyQuestItemLevelUpEffect(WorldObject item, int level, Player player, Settings s)
-    {
-        QuestItemEffectSettings cfg = s.QuestItemEffects ?? new QuestItemEffectSettings();
-
-        // For level-ups, slightly bias further toward imbues and slayer.
-        int imbueWeight = (cfg.AllowStandardImbues || cfg.AllowCustomImbues) ? cfg.ImbueWeight + 1 : 0;
-        int slayerWeight = cfg.AllowSlayer ? cfg.SlayerWeight + 1 : 0;
-        int salvageWeight = cfg.AllowSalvageLikeBoosts ? cfg.SalvageWeight : 0;
-
-        int totalWeight = Math.Max(0, imbueWeight) + Math.Max(0, slayerWeight) + Math.Max(0, salvageWeight);
-        if (totalWeight == 0)
-            return;
-
-        int roll = Random.Shared.Next(0, totalWeight);
-
-        bool applied = false;
-        string effectKind = "None";
-        string? detailLine = null;
-
-        if (roll < imbueWeight)
-        {
-            applied = TryApplyInitialImbue(item, cfg, s);
-            if (applied) effectKind = "Imbue";
-        }
-        else
-        {
-            roll -= imbueWeight;
-            if (roll < slayerWeight)
-            {
-                applied = TryApplyInitialSlayer(item, out detailLine);
-                if (applied) effectKind = "Slayer";
-            }
-            else
-            {
-                roll -= slayerWeight;
-                if (roll < salvageWeight)
-                {
-                    applied = TryApplyInitialSalvageBoost(item, out detailLine);
-                    effectKind = "StatBoost";
-                }
-            }
-        }
-
-        if (applied && CanSendPlayerChat(player))
-            player.SendMessage(FormatQuestItemPerkMessage(item, level, effectKind, detailLine, isInitialGrant: false));
-    }
-
     private static string FormatQuestItemPerkMessage(WorldObject item, int levelForText, string effectKind, string? detailLine, bool isInitialGrant)
     {
         int maxLv = item.ItemMaxLevel ?? 0;
@@ -762,7 +558,9 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         return effectKind switch
         {
-            "Imbue" => $"{head} and gains a new imbue.",
+            "Imbue" => string.IsNullOrWhiteSpace(detailLine)
+                ? $"{head} and gains a new imbue."
+                : $"{head} and gains {detailLine}.",
             "Slayer" => string.IsNullOrWhiteSpace(detailLine)
                 ? $"{head} and gains a new slayer bonus."
                 : $"{head} and now has {detailLine}.",
@@ -772,8 +570,6 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             _ => $"{head}.",
         };
     }
-
-    // Loot-growth item effects now delegated to ItemLevelingEngine.
 
     private static void ApplyInitialQuestItemEffects(WorldObject item, Settings s, Player? notifyPlayer)
     {
@@ -794,10 +590,11 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         if (roll < imbueWeight)
         {
-            if (TryApplyInitialImbue(item, cfg, s))
+            if (TryApplyInitialImbue(item, cfg, s, out string? imbueDetail))
             {
                 applied = true;
                 effectKind = "Imbue";
+                detailLine = imbueDetail;
             }
             else
                 roll -= imbueWeight;
@@ -835,8 +632,9 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
     }
 
-    private static bool TryApplyInitialImbue(WorldObject item, QuestItemEffectSettings cfg, Settings s)
+    private static bool TryApplyInitialImbue(WorldObject item, QuestItemEffectSettings cfg, Settings s, out string? detailLine)
     {
+        detailLine = null;
         int? damageTypeInt = item.GetProperty(PropertyInt.DamageType);
         DamageType damageType = damageTypeInt.HasValue ? (DamageType)damageTypeInt.Value : DamageType.Undef;
 
@@ -848,12 +646,14 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             DamageType.Fire => ImbuedEffectType.FireRending,
             DamageType.Pierce => ImbuedEffectType.PierceRending,
             DamageType.Slash => ImbuedEffectType.SlashRending,
+            DamageType.Bludgeon => ImbuedEffectType.BludgeonRending,
             _ => null,
         };
 
         if (cfg.AllowStandardImbues && chosen.HasValue)
         {
             item.ImbuedEffect |= chosen.Value;
+            detailLine = DescribeStandardImbue(chosen.Value);
             return true;
         }
 
@@ -862,23 +662,41 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             if (s.BleedImbue?.Enabled == true)
             {
                 OvertinkedImbueStore.Add(item.Guid.Full, OvertinkedImbueFlags.Bleed);
+                detailLine = "Bleed";
                 return true;
             }
 
             if (s.CleavingImbue?.Enabled == true)
             {
                 OvertinkedImbueStore.Add(item.Guid.Full, OvertinkedImbueFlags.Cleaving);
+                detailLine = "Cleaving";
                 return true;
             }
 
             if (s.NetherRendingImbue?.Enabled == true)
             {
                 OvertinkedImbueStore.Add(item.Guid.Full, OvertinkedImbueFlags.NetherRending);
+                detailLine = "Nether Rending";
                 return true;
             }
         }
 
         return false;
+    }
+
+    private static string DescribeStandardImbue(ImbuedEffectType t)
+    {
+        return t switch
+        {
+            ImbuedEffectType.AcidRending => "Acid Rending",
+            ImbuedEffectType.ColdRending => "Cold Rending",
+            ImbuedEffectType.ElectricRending => "Electric Rending",
+            ImbuedEffectType.FireRending => "Fire Rending",
+            ImbuedEffectType.PierceRending => "Pierce Rending",
+            ImbuedEffectType.SlashRending => "Slash Rending",
+            ImbuedEffectType.BludgeonRending => "Bludgeon Rending",
+            _ => t.ToString(),
+        };
     }
 
     private static bool TryApplyInitialSlayer(WorldObject item, out string? detailLine)
@@ -975,4 +793,10 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         [0x38000040] = ImbuedEffectType.SlashRending,
         [0x38000041] = ImbuedEffectType.Spellbook,
     };
+
+    // Quest / inventory init only; item XP init and level-up growth are owned by EmpyreanAlteration when enabled there.
+    public static void RunItemInitAfterInventorySuccess(WorldObject item, Player player)
+    {
+        InitializeQuestWorldObject(item, player);
+    }
 }

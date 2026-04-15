@@ -52,7 +52,7 @@ internal class LootGrowthItem : Mutator
             PatchClass.Settings.LootItemMaxLevelMin,
             PatchClass.Settings.LootItemMaxLevelMax);
 
-        if (!ItemLeveling.ApplyItemLevelProfile(item, profile.Tier, profileSettings))
+        if (!ItemLeveling.ApplyItemLevelProfile(item, profile.Tier, profileSettings, PatchClass.Settings))
             return false;
 
         item.SetProperty(FakeBool.GrowthItem, true);

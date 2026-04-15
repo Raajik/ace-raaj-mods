@@ -16,7 +16,7 @@ internal class GrowthItem : Mutator
             PatchClass.Settings.GrowthTierLevelRange.TryGetValue(profile.Tier, out var range) ? range.Min : 1,
             PatchClass.Settings.GrowthTierLevelRange.TryGetValue(profile.Tier, out range) ? range.Max : 1);
 
-        if (!ItemLeveling.ApplyItemLevelProfile(item, profile.Tier, profileSettings))
+        if (!ItemLeveling.ApplyItemLevelProfile(item, profile.Tier, profileSettings, PatchClass.Settings))
             return false;
 
         //Store item tier

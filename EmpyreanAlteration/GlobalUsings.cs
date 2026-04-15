@@ -2,6 +2,7 @@ global using ACE.Common;
 global using ACE.Database;
 global using ACE.Database.Models.Shard;
 global using ACE.Database.Models.World;
+global using ACE.DatLoader;
 global using ACE.DatLoader.Entity.AnimationHooks;
 global using ACE.Entity;
 global using ACE.Entity.Enum;

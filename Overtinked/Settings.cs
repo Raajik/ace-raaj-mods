@@ -1,16 +1,72 @@
 namespace Overtinked;
 
-// Item XP curve: AceGeometric = stock ACE ExperienceSystem. CharacterTable = dat CharacterLevelXPList. Geometric = first-level total + per-step multiplier (Overtinked).
-public enum ItemXpCurveMode
-{
-    AceGeometric,
-    CharacterTable,
-    Geometric,
-}
-
 // Overtinked configuration. Controls max tinker attempts, difficulty scaling, imbue limits, salvage rules, and failure behavior.
 public class Settings
 {
+    [JsonPropertyName("// Overtinked")]
+    public string RootDoc { get; init; } = "Reading order: every // key is documentation; the following keys are real settings in the same order. Constants (RecipeManagerCategory, etc.) are not serialized. Nested objects use // lines first, then values (same order).";
+
+    [JsonPropertyName("// MaxTries")]
+    public string MaxTriesDoc { get; init; } = "Max number of tinkers allowed per item (recipe check uses MaxTries - 1).";
+
+    [JsonPropertyName("// Scale")]
+    public string ScaleDoc { get; init; } = "Difficulty step between each extra tinker tier.";
+
+    [JsonPropertyName("// MaxImbueEffects")]
+    public string MaxImbueEffectsDoc { get; init; } = "Max imbue effects allowed on an item (checked via bit count of ImbuedEffect).";
+
+    [JsonPropertyName("// EnableRecipeManagerPatch")]
+    public string EnableRecipeManagerPatchDoc { get; init; } = "When true, patches RecipeManager.UseObjectOnTarget (and related) for tinkering flow.";
+
+    [JsonPropertyName("// SalvageRules")]
+    public string SalvageRulesDoc { get; init; } = "Per-salvage tinker rules (random or fixed). Include both WCIDs for quest-reward pairs. Each array element: // keys first, then values.";
+
+    [JsonPropertyName("// EnableFailureRedesign")]
+    public string EnableFailureRedesignDoc { get; init; } = "When true, failed tinkers apply the opposite effect instead of destroying the item.";
+
+    [JsonPropertyName("// EnableDefaultImbueFailureWorkmanship")]
+    public string EnableDefaultImbueFailureWorkmanshipDoc { get; init; } = "When true, failed imbue tinkers add +1 Workmanship instead of destroying the item, capped at 10.";
+
+    [JsonPropertyName("// BleedImbue")]
+    public string BleedImbueDoc { get; init; } = "Bleed imbue (e.g. Serpentine 21075). Apply SalvageWcids with both IDs for dual-WCID items. Inside: // lines first, then values.";
+
+    [JsonPropertyName("// CleavingImbue")]
+    public string CleavingImbueDoc { get; init; } = "Cleaving imbue (e.g. Tiger Eye 21081). Inside: // lines first, then values.";
+
+    [JsonPropertyName("// NetherRendingImbue")]
+    public string NetherRendingImbueDoc { get; init; } = "Nether Rending imbue (e.g. Onyx 21064). Inside: // lines first, then values.";
+
+    [JsonPropertyName("// BuffedImbueRules")]
+    public string BuffedImbueRulesDoc { get; init; } = "Buffed jewelry imbues (Hematite HP, Malachite, Lavender Jade, etc.). Each array element: // keys first, then values.";
+
+    [JsonPropertyName("// ShowPlayerSalvageMessage")]
+    public string ShowPlayerSalvageMessageDoc { get; init; } = "When true, send the player a short message when a custom salvage/imbue is applied.";
+
+    [JsonPropertyName("// EnableLesserImbueUpgradeToFull")]
+    public string EnableLesserImbueUpgradeToFullDoc { get; init; } =
+        "When true (default), before OR-ing the new imbue bit, strip the weaker effect on the item: Armor Cleaving (IgnoreArmor) for Sunstone; Biting Strike (CriticalFrequency) for Black Opal; Crushing Blow-style crit mult (CriticalMultiplier) for Fire Opal; quest Resistance Cleaving (ResistanceModifierType + ResistanceModifier) when upgrading to the matching elemental/physical rending imbue.";
+
+    [JsonPropertyName("// EnableQuestItemInventoryInit")]
+    public string EnableQuestItemInventoryInitDoc { get; init; } =
+        "When true, postfixes Container.TryAddToInventory and runs quest-item workmanship / initial effects on eligible gear when it enters a player pack (loot, quest rewards, etc.). Default false: Overtinked only affects manual tinkering (RecipeManager). Item leveling lives in EmpyreanAlteration.";
+
+    [JsonPropertyName("// EnableQuestItemWorkmanship")]
+    public string EnableQuestItemWorkmanshipDoc { get; init; } =
+        "When EnableQuestItemInventoryInit is true: roll workmanship on first inventory add so plain quest/loot gear can be tinkered.";
+
+    [JsonPropertyName("// EnableQuestItemInitialEffects")]
+    public string EnableQuestItemInitialEffectsDoc { get; init; } =
+        "When EnableQuestItemInventoryInit is true: roll optional initial imbue/slayer/salvage-style perks on that first add.";
+
+    [JsonPropertyName("// QuestItemWorkmanshipMin")]
+    public string QuestItemWorkmanshipMinDoc { get; init; } = "Minimum workmanship rolled for quest items when EnableQuestItemWorkmanship is true.";
+
+    [JsonPropertyName("// QuestItemWorkmanshipMax")]
+    public string QuestItemWorkmanshipMaxDoc { get; init; } = "Maximum workmanship rolled for quest items when EnableQuestItemWorkmanship is true.";
+
+    [JsonPropertyName("// QuestItemEffects")]
+    public string QuestItemEffectsDoc { get; init; } = "Global knobs for initial quest-item effects. Inside QuestItemEffects: // lines first, then values.";
+
     // Max number of tinkers allowed per item (recipe check uses MaxTries - 1).
     public int MaxTries { get; set; } = 50;
 
@@ -23,11 +79,8 @@ public class Settings
     // Harmony patch category for RecipeManager patches; keep distinct from other tinkering mods.
     public const string RecipeManagerCategory = "OvertinkedRecipeManagerPatch";
 
-    // Loot init, inventory quest init, item XP curve, and OnItemLevelUp growth — off = salvage/tinkering only.
-    public const string ItemLevelingHarmonyCategory = "OvertinkedItemLeveling";
-
-    // When false, only uncategorized/salvage flow applies (RecipeManager category still follows EnableRecipeManagerPatch).
-    public bool EnableItemLevelingHooks { get; set; } = false;
+    // Quest workmanship + initial effects on successful inventory adds (not item XP; that is EmpyreanAlteration).
+    public const string OvertinkedQuestInventoryCategory = "OvertinkedQuestInventory";
 
     // When true, patches RecipeManager.UseObjectOnTarget (and related) for tinkering flow.
     public bool EnableRecipeManagerPatch { get; set; } = true;
@@ -56,133 +109,50 @@ public class Settings
     // When true, send the player a short message when a custom salvage/imbue is applied.
     public bool ShowPlayerSalvageMessage { get; set; } = true;
 
-    // When true, quest items are given workmanship on creation so they can be tinkered like standard lootgen items.
+    // When true, strip weaker fixed stats / quest fields before applying the matching imbue (see LesserImbueUpgrade).
+    public bool EnableLesserImbueUpgradeToFull { get; set; } = true;
+
+    // When true, hook inventory adds for optional quest-item workmanship + initial effects (see EnableQuestItemWorkmanship / EnableQuestItemInitialEffects).
+    public bool EnableQuestItemInventoryInit { get; set; }
+
+    // When true (and EnableQuestItemInventoryInit), quest items are given workmanship on first add so they can be tinkered like standard lootgen items.
     public bool EnableQuestItemWorkmanship { get; set; } = true;
 
-    // When true, quest items roll initial tinkering-style effects (imbues/slayers/salvage-like boosts) on creation.
+    // When true (and EnableQuestItemInventoryInit), quest items roll initial tinkering-style effects on first add.
     public bool EnableQuestItemInitialEffects { get; set; } = true;
-
-    // When true, quest items are initialized with item XP and can level up similarly to growth/rare items.
-    public bool EnableQuestItemLeveling { get; set; } = true;
 
     // Minimum and maximum workmanship rolled for quest items when EnableQuestItemWorkmanship is true.
     public int QuestItemWorkmanshipMin { get; set; } = 4;
     public int QuestItemWorkmanshipMax { get; set; } = 8;
 
-    // Base XP per quest-item level and global XP scale; aligns with EmpyreanAlteration growth-style loot settings when both are used.
-    public long QuestItemXpBase { get; set; } = 10_000;
-    public double QuestItemXpScale { get; set; } = 1.2;
-
-    // Rolled cap for quest-given items only (InitializeQuestItemXp → ItemLevelingRolls.RollQuestItemMaxLevel). Ignored for loot drops.
-    public int QuestItemMaxLevelMin { get; set; } = 3;
-    public int QuestItemMaxLevelMax { get; set; } = 8;
-
-    // When true, ItemMaxLevel uses GlobalItemMaxLevel when > 0 for quest rolls.
-    public bool UseFixedGlobalItemMaxLevel { get; set; } = false;
-
-    // Fallback fixed cap when UseFixedGlobalItemMaxLevel is true (or when min/max invalid).
-    public int GlobalItemMaxLevel { get; set; } = 100;
-
-    // Legacy geometric curve: scales ItemBaseXp (still used when ItemXpCurveMode is AceGeometric).
-    public double GlobalItemXpPlayerScale { get; set; } = 2.0;
-
-    // Skews rolled max toward the top of the quest min..max range (RollQuestItemMaxLevel).
-    public double LootItemMaxLevelTierBias { get; set; } = 1.5;
-
-    // Tier passed into max-level roll for quest-given items (no TreasureDeath in inventory init).
-    public int QuestItemMaxLevelTier { get; set; } = 1;
-
-    // Geometric: total XP to reach level 1 (from 0). Each further level adds XP scaled by ItemXpGeometricMultiplierPerStep on the first-level amount (see ItemXpCurve).
-    public long ItemXpGeometricFirstLevelTotal { get; set; } = 25_000;
-
-    // Per-level growth: XP to go from L to L+1 equals firstStep * mult^L (0-based exponent on the step); cumulative totals use the geometric series.
-    public double ItemXpGeometricMultiplierPerStep { get; set; } = 1.25;
-
-    // When true, ItemMaxLevel = tier * ItemMaxLevelsPerTreasureTier (clamped by QuestItemMaxLevelMax). When false, use random rolls in ItemLevelingRolls (quest init only).
-    public bool UseTierScaledItemMaxLevel { get; set; } = true;
-
-    // Tier 1 => max level 5, tier 2 => 10, etc., before QuestItemMaxLevelMax ceiling (quest init only).
-    public int ItemMaxLevelsPerTreasureTier { get; set; } = 5;
-
-    // Character XP table–based item leveling (requires ItemXpCurvePatches).
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public ItemXpCurveMode ItemXpCurveMode { get; set; } = ItemXpCurveMode.Geometric;
-
-    // Anchors which character XP "chunks" each item level uses: step 1 ~= table[virtualLevel]-table[virtualLevel-1].
-    // High values (15–20+) use huge per-level totals (same bracket as leveling a character at those levels) — item XP will barely move.
-    // Use ~3–10 for normal play; raise only if you want very slow item progression.
-    public int ItemXpVirtualCharacterLevel { get; set; } = 6;
-
-    // Multiplies each character per-level delta applied to item steps.
-    public double ItemXpCharacterCurveMultiplier { get; set; } = 1.0;
-
-    // Dummy base XP when using CharacterTable or Geometric (ACE requires ItemBaseXp > 0 for HasItemLevel); curve math uses ItemXpGeometric* / portal table, not this value.
-    public long ItemXpDummyBaseXp { get; set; } = 1;
-
     // Global knobs for initial quest-item effects; favors imbues, then slayers, then salvage-like boosts.
     public QuestItemEffectSettings QuestItemEffects { get; set; } = new();
-
-    // Spell and cantrip growth for item level-ups.
-    public SpellGrowthSettings SpellGrowth { get; set; } = new();
-}
-
-public class SpellGrowthSettings
-{
-    public bool Enabled { get; set; } = true;
-
-    // When true and explicit ID lists are empty, auto-populate spell and cantrip pools from DatManager.PortalDat.SpellTable by name matching.
-    public bool AutoPopulateFromDat { get; set; } = true;
-
-    // Relative weights when choosing a spell vs a cantrip outcome.
-    public int SpellOutcomeWeight { get; set; } = 2;
-    public int CantripOutcomeWeight { get; set; } = 1;
-
-    // Unused: spell/cantrip growth always tries upgrades before new lines (retained for JSON compatibility).
-    public double SpellUpgradeChance { get; set; } = 0.35;
-    public double CantripUpgradeChance { get; set; } = 0.50;
-
-    // When non-empty, replaces auto weapon spell pools (no weapon-type allow-list is applied to these IDs).
-    public List<int> WeaponSpellIds { get; set; } = new();
-    public List<int> ArmorOrJewelrySpellIds { get; set; } = new();
-    public List<int> GenericSpellIds { get; set; } = new();
-
-    // Name fragments used for auto-population (case-insensitive).
-    public List<string> WeaponSpellNameContains { get; set; } = new()
-    {
-        "Blood Drinker",
-        "Heart Seeker",
-        "Defender",
-        "Heavy Weapon Mastery",
-        "Light Weapon Mastery",
-        "Finesse Weapon Mastery",
-    };
-
-    public List<string> ArmorOrJewelrySpellNameContains { get; set; } = new()
-    {
-        "Bludgeoning Protection",
-        "Slashing Protection",
-        "Piercing Protection",
-        "Acid Protection",
-        "Flame Protection",
-        "Frost Protection",
-        "Lightning Protection",
-    };
-
-    // Cantrip lines are ordered tiers; the helper will add base tier then upgrade upward.
-    public List<CantripLine> CantripLines { get; set; } = new();
-}
-
-public class CantripLine
-{
-    public string Name { get; set; } = "";
-
-    // Ordered tiers: Minor -> Moderate -> Major -> Epic -> Legendary, etc.
-    public List<int> TierIds { get; set; } = new();
 }
 
 // High-level quest-item effect configuration. Keeps v1 simple with global weights and flags.
 public class QuestItemEffectSettings
 {
+    [JsonPropertyName("// AllowStandardImbues")]
+    public string AllowStandardImbuesDoc { get; init; } = "Allow standard imbues (ImbuedEffectType flags) to roll on quest items.";
+
+    [JsonPropertyName("// AllowCustomImbues")]
+    public string AllowCustomImbuesDoc { get; init; } = "Allow Overtinked custom imbues (Bleed/Cleaving/Nether Rending) to roll where appropriate.";
+
+    [JsonPropertyName("// AllowSlayer")]
+    public string AllowSlayerDoc { get; init; } = "Allow slayer mods (SlayerCreatureType / SlayerDamageBonus) to roll on quest items.";
+
+    [JsonPropertyName("// AllowSalvageLikeBoosts")]
+    public string AllowSalvageLikeBoostsDoc { get; init; } = "Allow small numeric boosts using SalvageEffectApplier (Damage, ArmorLevel, ArmorModVsX, etc.).";
+
+    [JsonPropertyName("// ImbueWeight")]
+    public string ImbueWeightDoc { get; init; } = "Relative weight when picking initial imbue effects.";
+
+    [JsonPropertyName("// SlayerWeight")]
+    public string SlayerWeightDoc { get; init; } = "Relative weight when picking slayer outcomes.";
+
+    [JsonPropertyName("// SalvageWeight")]
+    public string SalvageWeightDoc { get; init; } = "Relative weight when picking salvage-like boosts.";
+
     // Allow standard imbues (ImbuedEffectType flags) to roll on quest items.
     public bool AllowStandardImbues { get; set; } = true;
 

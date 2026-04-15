@@ -2,23 +2,13 @@ namespace EmpyreanAlteration;
 
 public static class ItemLeveling
 {
-    public static bool ApplyItemLevelProfile(WorldObject item, int tier, ItemLevelProfile profile)
+    public static bool ApplyItemLevelProfile(WorldObject item, int tier, ItemLevelProfile profile, Settings? capRollSettings = null)
     {
         if (item is null)
             return false;
 
-        // Enforce a strict eligibility filter so only real gear can level.
-        // Allowed: weapons and armor/clothing; plus name-based jewelry/trinket/shield detection.
-        WeenieType weenieType = item.WeenieType;
-        bool isDirectAllowed = weenieType == WeenieType.MeleeWeapon
-            || weenieType == WeenieType.MissileLauncher
-            || weenieType == WeenieType.Caster
-            || weenieType == WeenieType.Clothing;
-
-        string name = item.Name ?? string.Empty;
-        bool isNameEquip = IsGenericEquipableByName(name);
-
-        if (!isDirectAllowed && !isNameEquip)
+        // Same equippable shape as quest inventory leveling (weapons, clothing, or any non-zero ValidLocations).
+        if (!ItemLevelingEligibility.IsEquippableGearShape(item))
             return false;
 
         if (item.HasItemLevel)
@@ -39,7 +29,11 @@ public static class ItemLeveling
         if (minLevel > maxLevel)
             (minLevel, maxLevel) = (maxLevel, minLevel);
 
-        int maxItemLevel = minLevel == maxLevel ? minLevel : Random.Shared.Next(minLevel, maxLevel + 1);
+        int maxItemLevel;
+        if (capRollSettings != null && minLevel < maxLevel)
+            maxItemLevel = ItemLevelingRolls.RollLootItemMaxLevel(tier, minLevel, maxLevel, capRollSettings);
+        else
+            maxItemLevel = minLevel == maxLevel ? minLevel : Random.Shared.Next(minLevel, maxLevel + 1);
         if (maxItemLevel <= 0)
             return false;
 
@@ -48,28 +42,11 @@ public static class ItemLeveling
         item.ItemMaxLevel = maxItemLevel;
         item.ItemBaseXp = xpCost;
 
+        if (capRollSettings is not null)
+            ItemLevelingStartXp.ApplyStartingXpForLevel1Display(item, capRollSettings);
+
+        ItemLevelingPresentation.ApplyMaxLevelIconOverlayForXpItem(item);
+
         return true;
-    }
-
-    private static bool IsGenericEquipableByName(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name))
-            return false;
-
-        string n = name;
-
-        // Jewelry / trinket heuristics.
-        if (n.Contains("Ring", StringComparison.OrdinalIgnoreCase)) return true;
-        if (n.Contains("Bracelet", StringComparison.OrdinalIgnoreCase)) return true;
-        if (n.Contains("Necklace", StringComparison.OrdinalIgnoreCase)) return true;
-        if (n.Contains("Amulet", StringComparison.OrdinalIgnoreCase)) return true;
-        if (n.Contains("Pendant", StringComparison.OrdinalIgnoreCase)) return true;
-        if (n.Contains("Charm", StringComparison.OrdinalIgnoreCase)) return true;
-        if (n.Contains("Trinket", StringComparison.OrdinalIgnoreCase)) return true;
-
-        // Shields are armor.
-        if (n.Contains("Shield", StringComparison.OrdinalIgnoreCase)) return true;
-
-        return false;
     }
 }

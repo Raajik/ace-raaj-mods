@@ -2,6 +2,61 @@ namespace EmpyreanAlteration;
 
 public partial class Settings
 {
+    [JsonPropertyName("// EmpyreanAlteration")]
+    public string RootDoc { get; init; } = "Reading order: every // key is documentation; the following keys are real settings in the same order. Shipped JSON may list only a subset; other properties use C# defaults until added.";
+
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } =
+        "Master toggle for EmpyreanAlteration mutator and alteration features (default true). When false, mutators and quest item leveling patches do not apply.";
+
+    [JsonPropertyName("// Verbose")]
+    public string VerboseDoc { get; init; } = "When true, extra logging for mutator and alteration diagnostics.";
+
+    [JsonPropertyName("// Features")]
+    public string FeaturesDoc { get; init; } = "Which alteration feature groups are active (AlterationFeature enum values).";
+
+    [JsonPropertyName("// ItemLevelUpGrowthEnabled")]
+    public string ItemLevelUpGrowthEnabledDoc { get; init; } = "When true, applies GrowthAugments / GrowthFixedLevelAugments / AugmentGroups when items with GrowthItem level up.";
+
+    [JsonPropertyName("// BonusCaps")]
+    public string BonusCapsDoc { get; init; } = "Min/max caps for fake int/float property bonuses (PropertyBonusSettings).";
+
+    [JsonPropertyName("// CloakProcRate")]
+    public string CloakProcRateDoc { get; init; } = "Base proc rate for cloak mutator effects (0.0–1.0).";
+
+    [JsonPropertyName("// AetheriaProcRate")]
+    public string AetheriaProcRateDoc { get; init; } = "Base proc rate for aetheria-related effects.";
+
+    [JsonPropertyName("// LootProfilePath")]
+    public string LootProfilePathDoc { get; init; } = "Directory for loot profile JSON; computed at runtime from mod path if not overridden.";
+
+    [JsonPropertyName("// LootProfileUseUsername")]
+    public string LootProfileUseUsernameDoc { get; init; } = "When true, per-player loot profile files use the account or character username.";
+
+    [JsonPropertyName("// SpellSettings")]
+    public string SpellSettingsDoc { get; init; } = "Splash/split spell behavior tuning (SpellSettings).";
+
+    [JsonPropertyName("// Odds")]
+    public string OddsDoc { get; init; } = "Named odds tables (OddsGroup keys) used by mutators.";
+
+    [JsonPropertyName("// TargetGroups")]
+    public string TargetGroupsDoc { get; init; } = "Named treasure item type sets mutators use for targeting.";
+
+    [JsonPropertyName("// WeenieTypeGroups")]
+    public string WeenieTypeGroupsDoc { get; init; } = "Named WeenieType sets for mutator targeting.";
+
+    [JsonPropertyName("// CreatureTypeGroups")]
+    public string CreatureTypeGroupsDoc { get; init; } = "Named CreatureType sets (e.g. slayer pools).";
+
+    [JsonPropertyName("// EquipmentSetGroups")]
+    public string EquipmentSetGroupsDoc { get; init; } = "Named equipment set groups for set mutators.";
+
+    [JsonPropertyName("// SpellGroups")]
+    public string SpellGroupsDoc { get; init; } = "Named spell ID groups (e.g. cloak-only) for proc configuration.";
+
+    [JsonPropertyName("// AugmentGroups")]
+    public string AugmentGroupsDoc { get; init; } = "Named augment lists referenced by GrowthAugments and similar.";
+
     public bool Enabled { get; set; } = true;
 
     public bool Verbose { get; set; }

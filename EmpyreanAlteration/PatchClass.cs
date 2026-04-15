@@ -51,6 +51,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             ModManager.Log($"[EmpyreanAlteration] Stop UnpatchAll: {ex.Message}", ModManager.LogLevel.Warn);
         }
 
+        SpellGrowthHelper.ResetPoolsForUnload();
+
         base.Stop();
     }
 
@@ -68,6 +70,17 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         {
             ModManager.Log($"[EmpyreanAlteration] Unpatch ItemLevelUpGrowth: {ex.Message}", ModManager.LogLevel.Warn);
         }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory(QuestItemGrowthHarmony.Category);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[EmpyreanAlteration] Unpatch QuestItemGrowth: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        QuestGrowthSalvageEffectApplier.BuildLookup(Settings.QuestGrowthSalvageRules);
 
         MutatorHooks.ShutdownMutators();
 
@@ -88,6 +101,20 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (!Settings.Enabled)
             return;
 
+        if (Settings.ItemXpCurveMode == ItemXpCurveMode.CharacterTable && Settings.ItemXpVirtualCharacterLevel > 12)
+        {
+            ModManager.Log(
+                $"[EmpyreanAlteration] ItemXpVirtualCharacterLevel={Settings.ItemXpVirtualCharacterLevel} uses large character XP chunks per item level; progression will be slow. Lower (e.g. 3–10) or reduce ItemXpCharacterCurveMultiplier for faster items.",
+                ModManager.LogLevel.Info);
+        }
+
+        if (Settings.ItemXpCurveMode == ItemXpCurveMode.Geometric && Settings.ItemXpGeometricMultiplierPerStep <= 1.0)
+        {
+            ModManager.Log(
+                "[EmpyreanAlteration] ItemXpGeometricMultiplierPerStep must be > 1; progression would stall. Curve math clamps low multipliers until Settings are fixed.",
+                ModManager.LogLevel.Warn);
+        }
+
         MutatorHooks.SetupMutators();
 
         if (Settings.ItemLevelUpGrowthEnabled)
@@ -99,6 +126,18 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             catch (Exception ex)
             {
                 ModManager.Log($"[EmpyreanAlteration] PatchCategory ItemLevelUpGrowth: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+        }
+
+        if (Settings.EnableQuestItemLeveling)
+        {
+            try
+            {
+                ModC.Harmony.PatchCategory(QuestItemGrowthHarmony.Category);
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[EmpyreanAlteration] PatchCategory QuestItemGrowth: {ex.Message}", ModManager.LogLevel.Warn);
             }
         }
 

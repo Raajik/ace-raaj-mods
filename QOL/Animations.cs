@@ -82,12 +82,7 @@ public class AnimationSettings
         [MotionCommand.Pickup10] = 0f,
         [MotionCommand.Pickup15] = 0f,
         [MotionCommand.Pickup20] = 0f,
-        [MotionCommand.NonCombat] = 0f,
-        [MotionCommand.HandCombat] = 0f,
-        [MotionCommand.BowCombat] = 0f,
-        [MotionCommand.CrossbowCombat] = 0f,
         [MotionCommand.SkillHealSelf] = 0f,
         [MotionCommand.SkillHealOther] = 0f,
-        [MotionCommand.Reload] = 0f,
     };
 }

@@ -31,6 +31,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 harmony.Patch(spec, postfix: new HarmonyMethod(typeof(PatchClass), nameof(PostGetTotalSpecializedCredits)));
             else
                 ModManager.Log("QOL: SkillAlterationDevice.GetTotalSpecializedCredits(Player) not found; max-spec patch skipped.", ModManager.LogLevel.Warn);
+
+            VendorPackBurdenRelief.TryApplyHarmony(harmony);
         }
         catch (Exception ex)
         {
@@ -43,7 +45,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         base.Start();
         Settings = SettingsContainer.Settings ?? new Settings();
         RegisterEnabledPatchCategories();
-        SwiftmendHealingKits.RefreshHealerHook(ModC.Harmony, Settings.EnableSwiftmend);
         CollectorsAcceptAll.Initialize();
         ApplyWorldOpenSideEffects();
     }
@@ -51,7 +52,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     public override async Task OnWorldOpen()
     {
         Settings = SettingsContainer.Settings ?? new Settings();
-        SwiftmendHealingKits.RefreshHealerHook(ModC.Harmony, Settings.EnableSwiftmend);
         ApplyWorldOpenSideEffects();
     }
 
@@ -98,8 +98,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             enabledFeatures.Add(Features.QuestgiverAuras);
         if (Settings.EnableStackable)
             enabledFeatures.Add(Features.Stackable);
-        if (Settings.EnableSwiftmend)
-            enabledFeatures.Add(Features.SwiftmendHealingKits);
         if (Settings.EnablePetAttackSelected)
             enabledFeatures.Add(Features.PetAttackSelected);
         if (Settings.EnablePetMessageDamage)
@@ -116,13 +114,18 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             enabledFeatures.Add(Features.PetExShareDamage);
         if (Settings.EnableCollectorsAcceptAll)
             enabledFeatures.Add(Features.CollectorsAcceptAll);
+        if (Settings.EnablePortalsStripNoRecall)
+            enabledFeatures.Add(Features.PortalsStripNoRecall);
+        if (Settings.EnableTownNetworkToll)
+            enabledFeatures.Add(Features.TownNetworkToll);
+        if (Settings.EnableVendorPackBurdenRelief)
+            enabledFeatures.Add(Features.VendorPackBurdenRelief);
 
         ModC.RegisterPatchCategories(enabledFeatures.ToArray());
     }
 
     public override void Stop()
     {
-        SwiftmendHealingKits.RemoveHealerHookOnModStop(ModC.Harmony);
         _qolCommandCategoriesRegistered = false;
 
         base.Stop();
@@ -137,6 +140,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     public static bool PreHandleActionTeleToMarketPlace(Player __instance)
     {
         if (__instance?.Session?.Network == null)
+            return false;
+
+        if (!TownNetworkToll.TryDebitMarketplaceRecall(__instance))
             return false;
 
         if (__instance.IsOlthoiPlayer)

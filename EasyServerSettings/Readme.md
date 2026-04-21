@@ -19,10 +19,10 @@ If your ACE build removes or renames a key, `Modify*` returns false for that key
 
 The **`Presets/`** folder contains copyable JSON files if you want to reset to known defaults:
 
-- **`Raaj.json`** - Raaj's preferred settings
-- **`VanillaRetail.json`** - ACE default values
+- **`Raaj.json`** — full canonical profile for this project: it is kept in sync with the repo root **`Settings.json`** (same keys, comments, and values). Use it to restore Raaj defaults on a deployed server or after local edits.
+- **`VanillaRetail.json`** — ACE-oriented baseline values for comparison.
 
-To reset: copy a preset file's contents into `Settings.json`.
+To reset: copy **`Presets/Raaj.json`** over **`Settings.json`** in the mod output folder (or pull the latest `Settings.json` from this repo).
 
 ## Settings (`Settings.json`)
 

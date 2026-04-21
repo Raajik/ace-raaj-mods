@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 
 namespace AureatePath;
 
@@ -8,6 +9,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
     static bool _wieldRequirementsPatched;
     static bool _passupSuppressPatched;
+
+    // Captured at start of enlightenment strip (PreRemoveAbility); consumed when perks apply (PreAddPerks) to contribute level/10000 to the shared Loremaster pool (FakeFloat 11012).
+    static readonly ConcurrentDictionary<uint, int> _levelBeforeEnlightenmentByGuid = new();
 
     public override async Task OnWorldOpen()
     {
@@ -136,6 +140,22 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             return false;
         }
 
+        if (s.EnableHighEnlightenmentQuestBonusRequirement
+            && player.Enlightenment >= s.HighEnlightenmentQuestBonusFromCompletedCount)
+        {
+            var stepsPastGate = player.Enlightenment - (s.HighEnlightenmentQuestBonusFromCompletedCount - 1);
+            var requiredQb = s.HighEnlightenmentQuestBonusBase + s.HighEnlightenmentQuestBonusPerStep * stepsPastGate;
+            var qb = player.GetProperty(FakeFloat.QuestBonus) ?? 0f;
+            if (qb < requiredQb)
+            {
+                var nextOrdinal = player.Enlightenment + 1;
+                player.Session?.Network.EnqueueSend(new GameMessageSystemChat(
+                    $"You must have at least {requiredQb:0.##} total quest bonus (QB) for your {nextOrdinal}{OrdinalSuffix(nextOrdinal)} enlightenment (you have {qb:0.##} QB).",
+                    ChatMessageType.Broadcast));
+                return false;
+            }
+        }
+
         var lumGateIndex = Math.Max(1, s.LumAugRequirementFromEnlightenment) - 1;
         if (s.RequireAllLuminanceAuras && player.Enlightenment >= lumGateIndex && !TryEvaluateLumAugs(player, s, out var lumSum, out var lumReq))
         {
@@ -165,6 +185,20 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         }
 
         return true;
+    }
+
+    static string OrdinalSuffix(int n)
+    {
+        var mod100 = n % 100;
+        if (mod100 >= 11 && mod100 <= 13)
+            return "th";
+        return (n % 10) switch
+        {
+            1 => "st",
+            2 => "nd",
+            3 => "rd",
+            _ => "th",
+        };
     }
 
     static void ApplyBonuses(Player player)
@@ -237,6 +271,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (Settings is not { } s)
             return true;
 
+        if (player?.Guid != null)
+            _levelBeforeEnlightenmentByGuid[player.Guid.Full] = player.Level ?? 1;
+
         if (s.RemoveSociety)
             Enlightenment.RemoveSociety(player);
         if (s.RemoveLuminance)
@@ -284,6 +321,17 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     {
         if (Settings is not { } s)
             return true;
+
+        var g = player.Guid.Full;
+        if (_levelBeforeEnlightenmentByGuid.TryRemove(g, out var capLevel))
+        {
+            var delta = capLevel / 10000f;
+            if (delta > 0f)
+            {
+                var cur = (float)(player.GetProperty(SharedXpPoolIds.EnlightenmentPoolBonus) ?? 0f);
+                player.SetProperty(SharedXpPoolIds.EnlightenmentPoolBonus, cur + delta);
+            }
+        }
 
         player.Enlightenment += 1;
         player.Session?.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(player, PropertyInt.Enlightenment, player.Enlightenment));

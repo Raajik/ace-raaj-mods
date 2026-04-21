@@ -43,6 +43,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\SharedLoot\SharedLoot.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Reference Include="ACE.Adapter">
 			<HintPath>$(ACEPath)\ACE.Adapter.dll</HintPath>
 			<Private>False</Private>
@@ -94,7 +98,7 @@
 		<None Update="Settings.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="RepeatSolveLoot.json">
+		<None Update="LootConfig.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>

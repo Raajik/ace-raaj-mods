@@ -28,14 +28,8 @@ public static class FletchingBonus { }
 [HarmonyPatchCategory(nameof(Features.HealingSkill))]
 public static class HealingBonus { }
 
-[HarmonyPatchCategory(nameof(Features.LeadershipSkill))]
-public static class LeadershipBonus { }
-
 [HarmonyPatchCategory(nameof(Features.LockpickSkill))]
 public static class LockpickBonus { }
-
-[HarmonyPatchCategory(nameof(Features.LoyaltySkill))]
-public static class LoyaltyBonus { }
 
 [HarmonyPatchCategory(nameof(Features.ManaConversionSkill))]
 public static class ManaConversionBonus

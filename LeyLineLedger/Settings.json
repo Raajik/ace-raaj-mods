@@ -119,6 +119,14 @@
       "Id": 48746,
       "Prop": 40113,
       "VariantWeenieClassIds": [48747, 48748, 48749, 48750, 48914, 51558, 51586, 51648, 51954, 51963, 52010, 72048, 72338, 72474, 72600, 72628, 72635, 72669, 72807, 87168]
+    },
+    {
+      "// Name": "Writ of Refuge (bankable stack)",
+      "// Id": "Weenie class id (WCID) of the bankable stack item.",
+      "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
+      "Name": "Writ of Refuge",
+      "Id": 11710,
+      "Prop": 40114
     }
   ],
   "ExcessSetToMax": true,
@@ -128,6 +136,27 @@
   "LuminanceGemStoredAmountProperty": 45213,
   "DeathBankPyrealPercent": 0,
   "DeathBankPyrealMaxLossPerDeath": 0,
+  "SalvageBank": {
+    "// Enabled": "When true, /bank salvage lists or deposits salvage units per DepositRules.",
+    "// BankedUnitsProperty": "Character PropertyInt64 for banked salvage work units.",
+    "// DepositRules": "WCID → units per item consumed from inventory (full stacks).",
+    "Enabled": true,
+    "BankedUnitsProperty": 40200,
+    "DepositRules": []
+  },
+  "HouseStorage": {
+    "// Enabled": "When true, /house upgrade storage debits MMD + Writ from bank with confirmation.",
+    "// BonusSlotsProperty": "PropertyInt total bonus slots purchased (for external hooks).",
+    "// TierIndexProperty": "PropertyInt number of tier purchases.",
+    "// Tiers": "Per row: SlotsAdded, MmdFromBank, WritFromBank.",
+    "Enabled": true,
+    "BonusSlotsProperty": 40115,
+    "TierIndexProperty": 40116,
+    "Tiers": [
+      { "// SlotsAdded": "Extra inventory slots this upgrade represents.", "// MmdFromBank": "MMD bank debit.", "// WritFromBank": "Writ bank debit.", "SlotsAdded": 5, "MmdFromBank": 1, "WritFromBank": 0 },
+      { "// SlotsAdded": "Extra inventory slots this upgrade represents.", "// MmdFromBank": "MMD bank debit.", "// WritFromBank": "Writ bank debit.", "SlotsAdded": 5, "MmdFromBank": 1, "WritFromBank": 1 }
+    ]
+  },
   "Currencies": [
     {
       "// Name": "Short label or code for this denomination (informational).",

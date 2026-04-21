@@ -1,0 +1,10 @@
+{
+  "Name": "Xenology",
+  "Author": "ace-raaj-mods",
+  "Description": "Species kill ledger, Xenology XP, hunt events, damage scaling, and loot synergy.",
+  "Version": "0.1.0",
+  "Enabled": true,
+  "HotReload": true,
+  "RegisterCommands": true,
+  "ACEVersion": "0.0"
+}

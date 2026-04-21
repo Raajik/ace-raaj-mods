@@ -10,6 +10,8 @@ public static class CmCommands
 {
     const string HelpList =
         "/cm list | status | ssf | hardcore | hardcoressf | alternateleveling | aptitude\n" +
+        "/cm chaos on | off | status   (multiplies Loremaster /qb factor; boosts Swarmed reinforcements when Swarmed is configured)\n" +
+        "/cm quit   (confirm; leave all modes, enlightenment-style penalties, shared XP pool +level/10000)\n" +
         "/cm off <ssf|hardcore|hardcoressf|alternateleveling|aptitude>\n" +
         "/cm levels | refund   (alternate leveling only)\n" +
         "/cm ssf online\n" +
@@ -62,6 +64,12 @@ public static class CmCommands
             case "aptitude":
                 PatchClass.CmHandleAptitude(session, tail);
                 break;
+            case "chaos":
+                CmChaos.Handle(player, tail);
+                break;
+            case "quit":
+                CmQuit.TryEnqueueConfirmation(player);
+                break;
             case "off":
                 HandleOff(player, tail);
                 break;
@@ -105,7 +113,7 @@ public static class CmCommands
             "alternateleveling — Custom attr/vital/skill spend (/cm levels, /cm refund)\n" +
             "aptitude — WIP: skills via usage; attributes/vitals via XP (see /cm aptitude)\n" +
             "You may stack ssf + hardcore + (aptitude OR alternate leveling) — aptitude and alternate leveling are exclusive.\n" +
-            "Rewards apply when any mode is active (server Settings).");
+            "Milestone skill credits and permanent XP/luminance % require a challenge mode active when you level; after that, the % applies always (server Settings).");
     }
 
     static void SendStatus(Player player)
@@ -222,7 +230,7 @@ public static class CmCommands
         player.SendMessage($"SSF + hardcore are ON. Lives: {s.HardcoreStartingLives}; at least {s.HardcoreSecondsBetweenDeathAllowed}s between deaths for life loss.");
     }
 
-    static void RefreshChallengeRadar(Player player)
+    internal static void RefreshChallengeRadar(Player player)
     {
         var ssf = player.GetProperty(FakeBool.Ironman) == true;
         var hc = player.GetProperty(FakeBool.Hardcore) == true;

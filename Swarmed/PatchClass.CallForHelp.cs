@@ -67,6 +67,14 @@ public partial class PatchClass
                 settings,
                 OnlinePlayerDensity.LandblockPlayerCount(deathLb))
             : OnlinePlayerDensity.EffectiveReinforcementChance(baseChance, settings);
+
+        if (killerPlayer != null && settings.ChaosModeReinforcementChanceScale > 0f)
+        {
+            var chaosF = killerPlayer.GetProperty((FakeFloat)11013);
+            if (chaosF is double cf && cf > 1.01)
+                chance = Math.Min(1f, chance * settings.ChaosModeReinforcementChanceScale * ((float)cf / 3f));
+        }
+
         int spawnMin = landscape ? settings.LandscapeSpawnMin : settings.DungeonSpawnMin;
         int spawnMax = landscape ? settings.LandscapeSpawnMax : settings.DungeonSpawnMax;
 

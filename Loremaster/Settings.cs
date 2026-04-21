@@ -72,8 +72,12 @@ public class Settings
     };
 
     [JsonPropertyName("// EnableRepeatSolveLoot")]
-    public string EnableRepeatSolveLootDoc { get; init; } = "When true, award weighted random loot on repeat solves (2nd+); tables in RepeatSolveLoot.json.";
+    public string EnableRepeatSolveLootDoc { get; init; } = "When true, award loot on repeat solves (2nd+) from LootConfig.json (same table as BetterChestLoot by default).";
     public bool EnableRepeatSolveLoot { get; set; } = true;
+
+    [JsonPropertyName("// LootConfigPath")]
+    public string LootConfigPathDoc { get; init; } = "Optional path to LootConfig.json. Empty = Mods/Loremaster/LootConfig.json.";
+    public string LootConfigPath { get; set; } = "";
 
     [JsonPropertyName("// EnableMilestoneBroadcasts")]
     public string EnableMilestoneBroadcastsDoc { get; init; } = "Broadcast server-wide when an account hits a milestone unique-quest count.";
@@ -118,8 +122,12 @@ public class Settings
     public bool BypassPortalMaxLevelRestriction { get; set; } = false;
 
     [JsonPropertyName("// EnlightenmentBonusPercentPer")]
-    public string EnlightenmentBonusPercentPerDoc { get; init; } = "Per enlightenment, multiplier += this/100 applied as (1 + enlightenment × EnlightenmentBonusPercentPer / 100). 0 = no enlight term in the product.";
+    public string EnlightenmentBonusPercentPerDoc { get; init; } = "When UseEnlightenmentPoolForXpMultiplier is false: multiplier uses (1 + enlightenment × EnlightenmentBonusPercentPer / 100). When true, this linear term is ignored.";
     public float EnlightenmentBonusPercentPer { get; set; } = 0f;
+
+    [JsonPropertyName("// UseEnlightenmentPoolForXpMultiplier")]
+    public string UseEnlightenmentPoolForXpMultiplierDoc { get; init; } = "When true, the enlightenment term is (1 + LMFloat.EnlightenmentPoolBonus) from AureatePath/ChallengeModes contributions (level/10000 each); when false, use EnlightenmentBonusPercentPer × enlightenment count instead.";
+    public bool UseEnlightenmentPoolForXpMultiplier { get; set; } = true;
 
     [JsonPropertyName("// EnableQuestCooldownReduction")]
     public string EnableQuestCooldownReductionDoc { get; init; } = "Scale repeat cooldowns using CooldownReductionPerQuestPoint × total QP (capped by QuestCooldownReductionCap).";
@@ -167,6 +175,14 @@ public class Settings
     [JsonPropertyName("// EnableTrophyBurdenXp")]
     public string EnableTrophyBurdenXpDoc { get; init; } = "Award bonus XP when turning in trophies based on item burden (5% of burden = 1% of level XP).";
     public bool EnableTrophyBurdenXp { get; set; } = false;
+
+    [JsonPropertyName("// TrophyQualityBonusChance")]
+    public string TrophyQualityBonusChanceDoc { get; init; } = "Per turn-in: chance (0–1) for a Quality specimen — 2× burden XP. Independent of Pristine.";
+    public double TrophyQualityBonusChance { get; set; } = 0.10;
+
+    [JsonPropertyName("// TrophyPristineBonusChance")]
+    public string TrophyPristineBonusChanceDoc { get; init; } = "Per turn-in: chance (0–1) for a Pristine specimen — 3× burden XP. Stacks with Quality (6× if both).";
+    public double TrophyPristineBonusChance { get; set; } = 0.05;
 
     [JsonPropertyName("// TrophyCollectorWcids")]
     public string TrophyCollectorWcidsDoc { get; init; } = "WCIDs of trophy collector NPCs that accept items via Give emote.";
@@ -320,7 +336,7 @@ public class ParchmentTemplateSettings
     public string Kind { get; set; } = "Kill";
 
     [JsonPropertyName("// Tier")]
-    public string TierDoc { get; init; } = "Easy, Average, or Challenging — XP band and RepeatSolveLoot key.";
+    public string TierDoc { get; init; } = "Easy, Average, or Challenging — XP band; parchment loot uses LootConfig.json (default: beside Loremaster).";
     public string Tier { get; set; } = "Easy";
 
     [JsonPropertyName("// TargetCreatureWcid")]

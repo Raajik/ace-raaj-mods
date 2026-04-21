@@ -149,6 +149,12 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         var verbToken = parameters[0];
 
+        if (verbToken.Equals("salvage", StringComparison.OrdinalIgnoreCase))
+        {
+            BankSalvage.Handle(session, parameters);
+            return;
+        }
+
         //Deposit shorthand: /bank deposit or /b d
         if (verbToken.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
             verbToken.Equals("d", StringComparison.OrdinalIgnoreCase))

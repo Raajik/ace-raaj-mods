@@ -23,29 +23,8 @@ public class Settings
     [JsonPropertyName("// ManaConversionXpPerMana")]
     public string ManaConversionXpPerManaDoc { get; init; } = "Mana Conversion XP per mana spent (when enabled).";
 
-    [JsonPropertyName("// EnableBonusSkillCredits")]
-    public string EnableBonusSkillCreditsDoc { get; init; } = "Grant bonus skill credits at milestone character levels.";
-
-    [JsonPropertyName("// EnableMasteryTiers")]
-    public string EnableMasteryTiersDoc { get; init; } = "Enable mastery tier progression from trained/specialized skill counts.";
-
-    [JsonPropertyName("// EnableAttributeVitalEfficiency")]
-    public string EnableAttributeVitalEfficiencyDoc { get; init; } = "Toggle attribute/vital efficiency bonus from aptitude-style rules.";
-
-    [JsonPropertyName("// AttributeVitalEfficiencyMultiplier")]
-    public string AttributeVitalEfficiencyMultiplierDoc { get; init; } = "Multiplier for attribute/vital efficiency when that feature is on.";
-
-    [JsonPropertyName("// SkillCreditMilestoneLevels")]
-    public string SkillCreditMilestoneLevelsDoc { get; init; } = "Character levels at which bonus skill credits are awarded (if EnableBonusSkillCredits).";
-
-    [JsonPropertyName("// TitleMilestoneLevels")]
-    public string TitleMilestoneLevelsDoc { get; init; } = "Levels at which milestone titles are applied (paired with TitleMilestoneNames).";
-
-    [JsonPropertyName("// TitleMilestoneNames")]
-    public string TitleMilestoneNamesDoc { get; init; } = "Title strings for each TitleMilestoneLevels entry (same length as that list).";
-
-    [JsonPropertyName("// MasteryTierSkillCounts")]
-    public string MasteryTierSkillCountsDoc { get; init; } = "Skill count thresholds for successive mastery tiers.";
+    [JsonPropertyName("// FutureAptitude")]
+    public string FutureAptitudeDoc { get; init; } = "Reserved toggles for future aptitude systems (mastery tiers, attr/vital efficiency, etc.); not wired yet.";
 
     [JsonPropertyName("// MaxLevel")]
     public string MaxLevelDoc { get; init; } = "Extended character level cap (PortalDat XP table); merged from former AureatePath.";
@@ -68,14 +47,53 @@ public class Settings
     [JsonPropertyName("// HardcoreStartingLives")]
     public string HardcoreStartingLivesDoc { get; init; } = "Starting life count for hardcore mode.";
 
-    [JsonPropertyName("// ChallengeRewardsEnabled")]
-    public string ChallengeRewardsEnabledDoc { get; init; } = "Apply challenge milestone rewards when any /cm challenge is active (after Loremaster QP multiplier when present).";
+    [JsonPropertyName("// ChallengeMilestoneRewardsEnabled")]
+    public string ChallengeMilestoneRewardsEnabledDoc { get; init; } = "One-time skill credits + permanent XP/lum % at ChallengeMilestoneLevels while a challenge is active at level-up; after Loremaster QP multiplier.";
 
     [JsonPropertyName("// ChallengeMilestoneLevels")]
-    public string ChallengeMilestoneLevelsDoc { get; init; } = "Levels for challenge reward milestones.";
+    public string ChallengeMilestoneLevelsDoc { get; init; } = "Character levels for skill-credit milestones; one credit per active mode (SSF, hardcore, alternate, aptitude) per level, each mode once forever.";
 
-    [JsonPropertyName("// BonusPerMilestonePercentPerChallenge")]
-    public string BonusPerMilestonePercentPerChallengeDoc { get; init; } = "Bonus percent per milestone per active challenge.";
+    [JsonPropertyName("// ChallengeMilestonePercentEach")]
+    public string ChallengeMilestonePercentEachDoc { get; init; } = "Skill-credit message / bookkeeping; milestone XP/lum % uses ChallengeBonusPercentPerLevel × furthest level per segment.";
+
+    [JsonPropertyName("// ChallengeBonusPercentPerLevel")]
+    public string ChallengeBonusPercentPerLevelDoc { get; init; } = "XP/luminance bonus percent per character level toward the current 300-level segment (e.g. 0.01 = 0.01% per level, level 60 => 0.6%).";
+
+    [JsonPropertyName("// ChallengeBonusSegmentCapLevel")]
+    public string ChallengeBonusSegmentCapLevelDoc { get; init; } = "Character level that completes one segment (banks cap × percent per level; resets in-run progress so you can stack again).";
+
+    [JsonPropertyName("// ChallengeModeDefaultTitles")]
+    public string ChallengeModeDefaultTitlesDoc { get; init; } = "Future wishlist: nameplate titles when activating /cm modes (ACE CharacterTitle is dat-only; not wired). Precedence if implemented: SSF+HC > SSF > HC > alternate > aptitude.";
+
+    [JsonPropertyName("// CmQuitRequiresConfirmation")]
+    public string CmQuitRequiresConfirmationDoc { get; init; } = "When true, /cm quit shows a Yes/No dialog before applying penalties and clearing modes.";
+
+    [JsonPropertyName("// CmQuitUnequipAll")]
+    public string CmQuitUnequipAllDoc { get; init; } = "When true, /cm quit de-equips all worn items into the main pack before attribute/skill/level strips.";
+
+    [JsonPropertyName("// CmQuitRemoveLevel")]
+    public string CmQuitRemoveLevelDoc { get; init; } = "When true, /cm quit calls Enlightenment.RemoveLevel (same family as AureatePath enlightenment).";
+
+    [JsonPropertyName("// CmQuitRemoveAttributes")]
+    public string CmQuitRemoveAttributesDoc { get; init; } = "When true, /cm quit calls Enlightenment.RemoveAttributes.";
+
+    [JsonPropertyName("// CmQuitRemoveSkills")]
+    public string CmQuitRemoveSkillsDoc { get; init; } = "When true, /cm quit calls Enlightenment.RemoveSkills.";
+
+    [JsonPropertyName("// CmQuitRemoveLuminance")]
+    public string CmQuitRemoveLuminanceDoc { get; init; } = "When true, /cm quit calls Enlightenment.RemoveLuminance.";
+
+    [JsonPropertyName("// CmQuitRemoveSociety")]
+    public string CmQuitRemoveSocietyDoc { get; init; } = "When true, /cm quit calls Enlightenment.RemoveSociety.";
+
+    [JsonPropertyName("// CmQuitRemoveAetheria")]
+    public string CmQuitRemoveAetheriaDoc { get; init; } = "When true, /cm quit calls Enlightenment.RemoveAetheria.";
+
+    [JsonPropertyName("// ChaosQuestBonusMultiplier")]
+    public string ChaosQuestBonusMultiplierDoc { get; init; } = "FakeFloat 11013 factor applied to Loremaster QuestBonus() when /cm chaos on (e.g. 4 = 4× QP factor contribution).";
+
+    [JsonPropertyName("// ChaosRequiresActiveChallenge")]
+    public string ChaosRequiresActiveChallengeDoc { get; init; } = "When true, only characters with an active /cm mode may toggle chaos.";
 
     public bool Enabled { get; set; } = false;
 
@@ -86,14 +104,7 @@ public class Settings
     public float ArcaneLoreXpPerMana { get; set; } = 0.01f;
     public float ManaConversionXpPerMana { get; set; } = 0.01f;
 
-    public bool EnableBonusSkillCredits { get; set; } = true;
-    public bool EnableMasteryTiers { get; set; } = true;
-    public bool EnableAttributeVitalEfficiency { get; set; } = true;
-    public float AttributeVitalEfficiencyMultiplier { get; set; } = 1.05f;
-    public List<int> SkillCreditMilestoneLevels { get; set; } = new() { 50, 100, 150, 200, 275 };
-    public List<int> TitleMilestoneLevels { get; set; } = new() { 50, 100, 200, 275 };
-    public List<string> TitleMilestoneNames { get; set; } = new() { "OSRS Enjoyer", "Aptitude Adept", "Master of Practice", "Aptitude Paragon" };
-    public List<int> MasteryTierSkillCounts { get; set; } = new() { 5, 10, 20 };
+    public FutureAptitudeFeatures FutureAptitude { get; set; } = new();
 
     public int MaxLevel { get; set; } = 9999;
     public int CreditInterval { get; set; } = 10;
@@ -106,7 +117,35 @@ public class Settings
     public float HardcoreSecondsBetweenDeathAllowed { get; set; } = 60;
     public int HardcoreStartingLives { get; set; } = 5;
 
-    public bool ChallengeRewardsEnabled { get; set; } = true;
-    public List<int> ChallengeMilestoneLevels { get; set; } = new() { 50, 126, 200, 275 };
-    public float BonusPerMilestonePercentPerChallenge { get; set; } = 1f;
+    public bool ChallengeMilestoneRewardsEnabled { get; set; } = true;
+
+    public List<int> ChallengeMilestoneLevels { get; set; } = new() { 50, 100, 150, 200, 225, 250, 275, 300 };
+
+    public float ChallengeMilestonePercentEach { get; set; } = 1f;
+
+    public float ChallengeBonusPercentPerLevel { get; set; } = 0.01f;
+
+    public int ChallengeBonusSegmentCapLevel { get; set; } = 300;
+
+    public ChallengeModeDefaultTitles ChallengeModeDefaultTitles { get; set; } = new();
+
+    public bool CmQuitRequiresConfirmation { get; set; } = true;
+
+    public bool CmQuitUnequipAll { get; set; } = true;
+
+    public bool CmQuitRemoveLevel { get; set; } = true;
+
+    public bool CmQuitRemoveAttributes { get; set; } = true;
+
+    public bool CmQuitRemoveSkills { get; set; } = true;
+
+    public bool CmQuitRemoveLuminance { get; set; } = false;
+
+    public bool CmQuitRemoveSociety { get; set; } = false;
+
+    public bool CmQuitRemoveAetheria { get; set; } = false;
+
+    public float ChaosQuestBonusMultiplier { get; set; } = 4f;
+
+    public bool ChaosRequiresActiveChallenge { get; set; } = true;
 }

@@ -157,6 +157,10 @@ public class Settings
         "Its death cry echoes—more {0} answer!",
         "The fall of one {0} brings others running!",
     };
+
+    [JsonPropertyName("// ChaosModeReinforcementChanceScale")]
+    public string ChaosModeReinforcementChanceScaleDoc { get; init; } = "When the killing player has chaos active (FakeFloat 11013 > 1), multiply reinforcement chance by this × (chaosFactor ÷ 3), capped at 1. Set 0 to disable.";
+    public float ChaosModeReinforcementChanceScale { get; set; } = 1.5f;
 }
 
 public class AuraPulserFeatureSettings

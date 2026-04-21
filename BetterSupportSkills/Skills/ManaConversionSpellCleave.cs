@@ -98,7 +98,7 @@ internal static class ManaConversionSpellCleave
             if (!player.IsInvalidTarget(spell, cleaveTarget))
             {
                 ModManager.Log($"[BSS ManaConv] Casting on {cleaveTarget.Name} at {dist:F1}m", ModManager.LogLevel.Info);
-                __instance.TryCastSpell_WithRedirects(spell, cleaveTarget, itemCaster, weapon, isWeaponSpell, fromProc);
+                BssPlayerPaidSpellCast.TryCastSpellWithRedirects_PlayerMana(player, spell, cleaveTarget);
             }
         }
     }

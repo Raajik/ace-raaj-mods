@@ -11,12 +11,12 @@ namespace Loremaster;
 internal static class TrophyBurdenXp
 {
     private static readonly ConcurrentDictionary<uint, bool> TrophyCollectors = new();
-    private const bool EnableDebug = false;
 
     private static void DebugLog(string msg)
     {
-        if (EnableDebug)
-            ModManager.Log($"[LM TrophyXp] {msg}", ModManager.LogLevel.Info);
+#if LM_TROPHY_BURDEN_XP_DEBUG
+        ModManager.Log($"[LM TrophyXp] {msg}", ModManager.LogLevel.Info);
+#endif
     }
 
     public static void Initialize()
@@ -64,14 +64,47 @@ internal static class TrophyBurdenXp
         }
 
         double percentOfLevel = (burden / 100.0) * 0.15;
-        var bonusXp = (long)(xpToNext * percentOfLevel);
+        var baseBonusXp = (long)(xpToNext * percentOfLevel);
 
-        DebugLog($"{player.Name} turned in {item.Name} (burden={burden}), awarding {bonusXp} bonus XP ({percentOfLevel * 100:F2}% of level)");
+        var qc = Math.Clamp(settings.TrophyQualityBonusChance, 0.0, 1.0);
+        var pc = Math.Clamp(settings.TrophyPristineBonusChance, 0.0, 1.0);
+        var rolledQuality = qc > 0 && ThreadSafeRandom.Next(0.0f, 1.0f) < (float)qc;
+        var rolledPristine = pc > 0 && ThreadSafeRandom.Next(0.0f, 1.0f) < (float)pc;
+
+        var mult = 1;
+        if (rolledQuality)
+            mult *= 2;
+        if (rolledPristine)
+            mult *= 3;
+
+        var bonusXp = (long)Math.Min((double)baseBonusXp * mult, long.MaxValue);
+
+        DebugLog($"{player.Name} turned in {item.Name} (burden={burden}), base={baseBonusXp}, mult={mult}, awarding {bonusXp}");
 
         if (bonusXp > 0)
         {
             player.GrantXP(bonusXp, XpType.Quest, ShareType.None);
-            player.SendMessage($"[Loremaster] Trophy burden bonus: +{bonusXp:N0} XP ({percentOfLevel * 100:F2}% of level)");
+
+            var itemName = string.IsNullOrWhiteSpace(item.Name) ? "Trophy" : item.Name.Trim();
+            var prefix = "";
+            if (rolledQuality && rolledPristine)
+                prefix = "Exceptional pristine ";
+            else if (rolledPristine)
+                prefix = "Pristine ";
+            else if (rolledQuality)
+                prefix = "Quality ";
+
+            var pctDisplay = percentOfLevel * mult * 100.0;
+            var yieldNote = mult switch
+            {
+                1 => "",
+                2 => " — double yield",
+                3 => " — triple yield",
+                6 => " — exceptional specimen (×6)",
+                _ => "",
+            };
+
+            player.SendMessage($"[Loremaster] {prefix}{itemName} turned in for +{bonusXp:N0} XP (~{pctDisplay:F2}% of level{yieldNote}).");
         }
     }
 }

@@ -16,8 +16,10 @@
   "// EnableRepeatQuestPoints": "Repeat solves can add QP to the extra pool at most once per quest per RepeatQuestPointCooldownSeconds.",
   "// RepeatQuestPointCooldownSeconds": "Seconds between repeat-QP awards for the same quest (default 10h).",
   "// BypassPortalMaxLevelRestriction": "When true, portal max-level requirement is bypassed (ACE use_portal_max_level_requirement forced off for that check).",
-  "// EnlightenmentBonusPercentPer": "Per enlightenment: multiplier includes (1 + enlightenment × EnlightenmentBonusPercentPer / 100). 0 = no enlight term.",
-  "// EnableRepeatSolveLoot": "When true, award weighted random loot on repeat solves (2nd+); tables in RepeatSolveLoot.json.",
+  "// EnlightenmentBonusPercentPer": "When UseEnlightenmentPoolForXpMultiplier is false: (1 + enlightenment × EnlightenmentBonusPercentPer / 100). Ignored when the pool drives the enlight term.",
+  "// UseEnlightenmentPoolForXpMultiplier": "When true, enlight term is (1 + FakeFloat 11012) from enlightenment /cm quit (level/10000 each); when false, use EnlightenmentBonusPercentPer linear term.",
+  "// EnableRepeatSolveLoot": "When true, award loot on repeat solves (2nd+) using Loremaster/LootConfig.json (same default pool as BetterChestLoot).",
+  "// LootConfigPath": "Optional path to LootConfig.json; empty = Mods/Loremaster/LootConfig.json.",
   "// EnableMilestoneBroadcasts": "Broadcast server-wide when an account hits a milestone unique-quest count.",
   "// MilestoneThresholds": "Account-wide unique quest counts that trigger milestone broadcasts and bonus QP.",
   "// MilestoneBonusQPPercent": "Bonus QP formula: (MilestoneBonusQPPercent / 100) × MilestoneBonusQPBase unless overridden.",
@@ -64,7 +66,9 @@
   "RepeatQuestPointCooldownSeconds": 36000,
   "BypassPortalMaxLevelRestriction": false,
   "EnlightenmentBonusPercentPer": 0,
+  "UseEnlightenmentPoolForXpMultiplier": true,
   "EnableRepeatSolveLoot": true,
+  "LootConfigPath": "",
   "EnableMilestoneBroadcasts": true,
   "MilestoneThresholds": [
     25, 50, 100, 250, 500, 750, 1000,
@@ -113,6 +117,10 @@
   },
   "// EnableTrophyBurdenXp": "Award bonus XP when turning in trophies based on item burden (5% of burden = 1% of level XP).",
   "EnableTrophyBurdenXp": true,
+  "// TrophyQualityBonusChance": "Per turn-in: chance (0–1) for Quality specimen — 2× burden XP. Independent of Pristine.",
+  "TrophyQualityBonusChance": 0.10,
+  "// TrophyPristineBonusChance": "Per turn-in: chance (0–1) for Pristine specimen — 3× burden XP; stacks with Quality (6× if both).",
+  "TrophyPristineBonusChance": 0.05,
   "// TrophyCollectorWcids": "WCIDs of trophy collector NPCs that accept items via Give emote.",
   "TrophyCollectorWcids": [3917, 3918, 3919, 3920, 3921, 3922, 3923, 11343, 11348, 21338, 24215]
 }

@@ -12,7 +12,6 @@ public enum Features
     VendorsBuyEverything,
     QuestgiverAuras,
     Stackable,
-    SwiftmendHealingKits,
     PetAttackSelected,
     PetMessageDamage,
     PetStow,
@@ -21,6 +20,9 @@ public enum Features
     PetEx,
     PetExShareDamage,
     CollectorsAcceptAll,
+    PortalsStripNoRecall,
+    TownNetworkToll,
+    VendorPackBurdenRelief,
 }
 
 public class Settings
@@ -67,10 +69,6 @@ public class Settings
     [JsonPropertyName("// EnableStackable")]
     public string EnableStackableDoc { get; init; } = "Raise stack limits and enable stacking for selected WeenieTypes (books, keys, etc.) per the Stackable object.";
     public bool EnableStackable { get; set; } = true;
-
-    [JsonPropertyName("// EnableSwiftmend")]
-    public string EnableSwiftmendDoc { get; init; } = "Healing kits apply self-heal plus heal-over-time; timing and kit categories are in the Swiftmend object below.";
-    public bool EnableSwiftmend { get; set; } = true;
 
     [JsonPropertyName("// EnablePetAttackSelected")]
     public string EnablePetAttackSelectedDoc { get; init; } = "Pet attacks match the player’s selected target where applicable.";
@@ -121,6 +119,26 @@ public class Settings
         22642, 28717, 34145,
     };
 
+    [JsonPropertyName("// EnablePortalsStripNoRecall")]
+    public string EnablePortalsStripNoRecallDoc { get; init; } = "When a portal spawns, clear PortalBitmask.NoRecall on its PortalBitmask so secondary portal recall and tie behavior can use that destination.";
+    public bool EnablePortalsStripNoRecall { get; set; } = true;
+
+    [JsonPropertyName("// EnableTownNetworkToll")]
+    public string EnableTownNetworkTollDoc { get; init; } = "When true, Town Network–matched portals debit banked pyreals (see TownNetworkToll) after ACE portal checks; insufficient funds can block or drain all bank per InsufficientFundsMode.";
+    public bool EnableTownNetworkToll { get; set; } = false;
+
+    [JsonPropertyName("// EnableVendorPackBurdenRelief")]
+    public string EnableVendorPackBurdenReliefDoc { get; init; } = "When true, wearing a configured vendor pack WCID multiplies total encumbrance by VendorPackBurdenMultiplier (e.g. 0.95 = 5% less burden display/cap math via Creature.GetEncumbrance patch).";
+    public bool EnableVendorPackBurdenRelief { get; set; } = false;
+
+    [JsonPropertyName("// VendorPackBurdenMultiplier")]
+    public string VendorPackBurdenMultiplierDoc { get; init; } = "Applied to encumbrance when any listed pack is equipped (multiplicative once).";
+    public double VendorPackBurdenMultiplier { get; set; } = 0.95;
+
+    [JsonPropertyName("// VendorPackBurdenWcids")]
+    public string VendorPackBurdenWcidsDoc { get; init; } = "Item WCIDs treated as vendor packs for burden relief (e.g. 166, 136).";
+    public List<uint> VendorPackBurdenWcids { get; set; } = new() { 166, 136 };
+
     [JsonPropertyName("// MaxSpecCredits")]
     public string MaxSpecCreditsDoc { get; init; } = "Total specialisation credits a player may spend. Vanilla cap is 70. Set to 9999 to make it effectively unlimited.";
     public int MaxSpecCredits { get; set; } = 9999;
@@ -153,42 +171,71 @@ public class Settings
     public string StackableSectionDoc { get; init; } = "MaxStackSize caps stacks for types this mod makes stackable. Enable* flags gate Book/Key/Generic/Lockpick/Scroll. StackableTypes lists WeenieType names; types can also be added for edge cases—IsEnabledType uses toggles first, then membership in this list. Inside Stackable: // lines first, then values (same order).";
     public StackableSettings Stackable { get; set; } = new();
 
-    [JsonPropertyName("// Swiftmend")]
-    public string SwiftmendSectionDoc { get; init; } = "Heal-over-time after using kits: duration, tick interval, skill-based healing per tick, specialization multiplier, per-kit-type toggles, optional debug spam. Inside Swiftmend: // lines first, then values (same order).";
-    public SwiftmendSettings Swiftmend { get; set; } = new();
+    [JsonPropertyName("// TownNetworkToll")]
+    public string TownNetworkTollSectionDoc { get; init; } = "Bank PropertyInt64 for pyreals (align with LeyLineLedger CashProperty / AutoLoot), level-based fees, Loremaster QP discount from FakeFloat.QuestBonus, portal matching (substring / WCID / landblock). Inside TownNetworkToll: // lines first, then values (same order).";
+    public TownNetworkTollSettings TownNetworkToll { get; set; } = new();
 }
 
-public class SwiftmendSettings
+public enum TownNetworkPortalMatchMode
 {
-    [JsonPropertyName("// HotDurationSeconds")]
-    public string HotDurationSecondsDoc { get; init; } = "Total HoT duration in seconds after using a kit.";
-    public double HotDurationSeconds { get; set; } = 30.0;
+    Substring,
+    WcidList,
+    Combined,
+}
 
-    [JsonPropertyName("// HotTickSeconds")]
-    public string HotTickSecondsDoc { get; init; } = "Seconds between each HoT vital tick.";
-    public double HotTickSeconds { get; set; } = 3.0;
+public enum TownNetworkInsufficientFundsMode
+{
+    Block,
+    DrainAll,
+}
 
-    [JsonPropertyName("// BaseSkillPercentPerTick")]
-    public string BaseSkillPercentPerTickDoc { get; init; } = "Fraction of Healing skill applied to vitals each tick (before specialization multiplier).";
-    public double BaseSkillPercentPerTick { get; set; } = 0.03;
+public class TownNetworkTollSettings
+{
+    [JsonPropertyName("// BankCashProperty")]
+    public string BankCashPropertyDoc { get; init; } = "PropertyInt64 id for banked pyreals (default 39999; match LeyLineLedger/AutoLoot).";
+    public int BankCashProperty { get; set; } = 39999;
 
-    [JsonPropertyName("// SpecializedMultiplier")]
-    public string SpecializedMultiplierDoc { get; init; } = "Multiplier applied to tick healing when Healing is specialized.";
-    public double SpecializedMultiplier { get; set; } = 2.0;
+    [JsonPropertyName("// LevelSplit")]
+    public string LevelSplitDoc { get; init; } = "Characters with Level below this pay FeeBelowLevel; at or above pay FeeAtOrAboveLevel.";
+    public int LevelSplit { get; set; } = 50;
 
-    [JsonPropertyName("// EnableHealthKits")]
-    public string EnableHealthKitsDoc { get; init; } = "Apply Swiftmend behavior to health kit items (name heuristics).";
-    public bool EnableHealthKits { get; set; } = true;
+    [JsonPropertyName("// FeeBelowLevel")]
+    public string FeeBelowLevelDoc { get; init; } = "Base toll in pyreals before QP discount when Level < LevelSplit.";
+    public long FeeBelowLevel { get; set; } = 50_000;
 
-    [JsonPropertyName("// EnableStaminaKits")]
-    public string EnableStaminaKitsDoc { get; init; } = "Apply Swiftmend behavior to stamina kits.";
-    public bool EnableStaminaKits { get; set; } = true;
+    [JsonPropertyName("// FeeAtOrAboveLevel")]
+    public string FeeAtOrAboveLevelDoc { get; init; } = "Base toll in pyreals before QP discount when Level >= LevelSplit.";
+    public long FeeAtOrAboveLevel { get; set; } = 250_000;
 
-    [JsonPropertyName("// EnableManaKits")]
-    public string EnableManaKitsDoc { get; init; } = "Apply Swiftmend behavior to mana kits.";
-    public bool EnableManaKits { get; set; } = true;
+    [JsonPropertyName("// QpPerThousandForDiscountStep")]
+    public string QpPerThousandForDiscountStepDoc { get; init; } = "Each full block of this much FakeFloat.QuestBonus (Loremaster QP) applies DiscountPercentPerStep to the fee (multiplicative stack, uncapped toward 0 cost).";
+    public int QpPerThousandForDiscountStep { get; set; } = 1000;
 
-    [JsonPropertyName("// EnableDebugMessages")]
-    public string EnableDebugMessagesDoc { get; init; } = "Extra player/log output for Swiftmend diagnostics.";
-    public bool EnableDebugMessages { get; set; } = false;
+    [JsonPropertyName("// DiscountPercentPerStep")]
+    public string DiscountPercentPerStepDoc { get; init; } = "Fraction subtracted per step (e.g. 0.05 = 5% off per 1000 QP at default step size).";
+    public double DiscountPercentPerStep { get; set; } = 0.05;
+
+    [JsonPropertyName("// MatchMode")]
+    public string MatchModeDoc { get; init; } = "Substring: Name/AppraisalPortalDestination contains NameSubstring. WcidList: WeenieClassId in Wcids (non-empty list). Combined: substring OR (non-empty Wcids match) OR (non-empty LandblockIds match).";
+    public TownNetworkPortalMatchMode MatchMode { get; set; } = TownNetworkPortalMatchMode.Combined;
+
+    [JsonPropertyName("// NameSubstring")]
+    public string NameSubstringDoc { get; init; } = "Case-insensitive substring for TN portals (e.g. Town Network). Used in Substring and Combined modes.";
+    public string NameSubstring { get; set; } = "Town Network";
+
+    [JsonPropertyName("// Wcids")]
+    public string WcidsDoc { get; init; } = "Optional portal WeenieClassIds that count as TN (used in WcidList or Combined when non-empty).";
+    public List<uint> Wcids { get; set; } = new();
+
+    [JsonPropertyName("// LandblockIds")]
+    public string LandblockIdsDoc { get; init; } = "Optional landblock ids (ushort as JSON numbers) where the portal stands; used in Combined when non-empty.";
+    public List<ushort> LandblockIds { get; set; } = new();
+
+    [JsonPropertyName("// ChargeMarketplaceRecall")]
+    public string ChargeMarketplaceRecallDoc { get; init; } = "When true, /market-style recall (HandleActionTeleToMarketPlace) uses the same toll and debit before teleport.";
+    public bool ChargeMarketplaceRecall { get; set; } = true;
+
+    [JsonPropertyName("// InsufficientFundsMode")]
+    public string InsufficientFundsModeDoc { get; init; } = "Block: cannot use portal if bank < computed fee. DrainAll: if 0 < bank < fee, debit entire bank and allow travel.";
+    public TownNetworkInsufficientFundsMode InsufficientFundsMode { get; set; } = TownNetworkInsufficientFundsMode.Block;
 }

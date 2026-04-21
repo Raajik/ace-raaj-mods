@@ -90,7 +90,11 @@ public static class LoremasterExtensions
     {
         if (PatchClass.Settings is null) return 1.0;
         var qp = player.GetProperty(FakeFloat.QuestBonus) ?? 0;
-        return 1.0 + qp * PatchClass.Settings.BonusPerQuestPoint / 100.0;
+        var baseFactor = 1.0 + qp * PatchClass.Settings.BonusPerQuestPoint / 100.0;
+        var chaos = player.GetProperty(LMFloat.ChaosQuestBonusMultiplier);
+        if (chaos is double cd && cd > 1.001)
+            return baseFactor * cd;
+        return baseFactor;
     }
 
     // Sum of Item XP Boost on equipped items; Empyrean-style (1 + sum) multiplier factor.
@@ -100,6 +104,20 @@ public static class LoremasterExtensions
         foreach (var w in player.EquippedObjects.Values)
             sum += w.GetProperty(FakeFloat.ItemXpBoost) ?? 0f;
         return 1.0 + sum;
+    }
+
+    // Enlightenment term: either (1 + pooled FakeFloat 11012) or linear (1 + enlightenment × EnlightenmentBonusPercentPer / 100), controlled by Settings.
+    public static double GetEnlightenmentMultiplierFactor(this Player player)
+    {
+        var s = PatchClass.Settings;
+        if (s is null) return 1.0;
+        if (s.UseEnlightenmentPoolForXpMultiplier)
+        {
+            var pool = player.GetProperty(LMFloat.EnlightenmentPoolBonus) ?? 0f;
+            return Math.Max(0.0, 1.0 + pool);
+        }
+
+        return Math.Max(0.0, 1.0 + player.Enlightenment * (s.EnlightenmentBonusPercentPer / 100.0));
     }
 
     // Full multiplicative chain: base retention × QP × equipment × augments × enlightenment × challenge mode.
@@ -112,7 +130,7 @@ public static class LoremasterExtensions
         var qpF = player.QuestBonus();
         var eqF = Math.Max(0.0, player.GetEquipmentXpMultiplierFactor());
         var augF = Math.Max(0.0, s.AugmentXpMultiplier);
-        var enF = Math.Max(0.0, 1.0 + player.Enlightenment * (s.EnlightenmentBonusPercentPer / 100.0));
+        var enF = Math.Max(0.0, player.GetEnlightenmentMultiplierFactor());
         var cmF = Math.Max(0.0, s.ChallengeModeXpMultiplier);
 
         return baseF * qpF * eqF * augF * enF * cmF;
@@ -301,20 +319,14 @@ public static class LoremasterExtensions
     {
         if (!PatchClass.Settings.EnableRepeatSolveLoot) return;
 
-        var pool = RepeatSolveLootLoader.GetPool(questName);
-        if (pool.Count == 0) return;
-
-        var wcid = PickFromPool(pool);
-        if (wcid == 0) return;
-
-        var capturedWcid = wcid;
+        var cfg = LootConfigStore.GetLoadedOrDefault();
         var chain = new ActionChain();
         chain.AddAction(player, () =>
         {
-            var item = WorldObjectFactory.CreateNewWorldObject(capturedWcid);
+            var item = LootRoller.TryCreateRandomItem(cfg);
             if (item is null)
             {
-                ModManager.Log($"[Loremaster] Failed to create repeat-loot item WCID {capturedWcid} for {player.Name}", ModManager.LogLevel.Warn);
+                ModManager.Log($"[Loremaster] Repeat-loot roll produced no item for {player.Name} (quest {questName}).", ModManager.LogLevel.Warn);
                 return;
             }
 
@@ -330,23 +342,6 @@ public static class LoremasterExtensions
             }
         });
         chain.EnqueueChain();
-    }
-
-    private static uint PickFromPool(List<(uint Wcid, int Weight)> pool)
-    {
-        var totalWeight = pool.Sum(e => e.Weight);
-        if (totalWeight <= 0) return 0;
-
-        var roll = Random.Shared.Next(totalWeight);
-        var cumulative = 0;
-        foreach (var (wcid, weight) in pool)
-        {
-            cumulative += weight;
-            if (roll < cumulative)
-                return wcid;
-        }
-
-        return pool[^1].Wcid; // fallback (should never reach here)
     }
 
     public static bool TryAwardRepeatQuestPoints(this Player player, string questName, float questPointValue)
@@ -402,7 +397,7 @@ public static class LoremasterExtensions
         var qpF = player.QuestBonus();
         var eqF = player.GetEquipmentXpMultiplierFactor();
         var augF = Math.Max(0.0, s.AugmentXpMultiplier);
-        var enF = Math.Max(0.0, 1.0 + player.Enlightenment * (s.EnlightenmentBonusPercentPer / 100.0));
+        var enF = Math.Max(0.0, player.GetEnlightenmentMultiplierFactor());
         var cmF = Math.Max(0.0, s.ChallengeModeXpMultiplier);
         var totalF = player.GetTotalXpMultiplier();
 
@@ -418,7 +413,13 @@ public static class LoremasterExtensions
         sb.AppendLine($"Quest Points: +{qpDeltaPct:0.##}% of base XP ({qp:0.##} QP × {s.BonusPerQuestPoint}% per QP)");
         sb.AppendLine($"Equipment: +{eqDeltaPct:0.##}%");
         sb.AppendLine($"Augments: +{augDeltaPct:0.##}%");
-        sb.AppendLine($"Enlightenment: +{enDeltaPct:0.##}%");
+        if (s.UseEnlightenmentPoolForXpMultiplier)
+        {
+            var pool = player.GetProperty(LMFloat.EnlightenmentPoolBonus) ?? 0f;
+            sb.AppendLine($"Enlightenment pool: +{enDeltaPct:0.##}% (pool +{pool:0.####} from level/10000 contributions)");
+        }
+        else
+            sb.AppendLine($"Enlightenment: +{enDeltaPct:0.##}% ({player.Enlightenment} × {s.EnlightenmentBonusPercentPer}% per enlightenment)");
         sb.AppendLine($"Challenge Mode Bonuses: +{cmDeltaPct:0.##}%");
         sb.AppendLine("===============");
         sb.AppendLine($"Total XP Multiplier: {totalF * 100.0:0.##}%");

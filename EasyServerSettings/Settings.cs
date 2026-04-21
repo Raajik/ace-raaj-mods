@@ -89,7 +89,7 @@ public class Settings
     public int MaxCharsPerAccount { get; set; } = 20;
 
     [JsonPropertyName("// CharDeleteTime")]
-    public string CharDeleteTimeDoc { get; set; } = "Days before character can be deleted";
+    public string CharDeleteTimeDoc { get; set; } = "Seconds before a deleted character slot can be reused (ACE char_delete_time; not days)";
     public int CharDeleteTime { get; set; } = 30;
 
     [JsonPropertyName("// Fastbuff")]
@@ -199,4 +199,28 @@ public class Settings
     [JsonPropertyName("// VoidPvpModifier")]
     public string VoidPvpModifierDoc { get; set; } = "Void PVP damage modifier";
     public double VoidPvpModifier { get; set; } = 0.5;
+
+    [JsonPropertyName("// ShardBooleansChat")]
+    public string ShardBooleansChatDoc { get; set; } = "Global chat: channel disables, echo/reject behavior, per-channel server logging, and chat gates. Applied before top-level keys; top-level overrides the same ACE key.";
+    public Dictionary<string, bool>? ShardBooleansChat { get; set; }
+
+    [JsonPropertyName("// ShardBooleansGameplay")]
+    public string ShardBooleansGameplayDoc { get; set; } = "Retail movement/consumption quirks, combat pets, fellow recruitment/KT rules, gateway ties, advocate fane, house hook/account limits, and dispel/item combat toggles.";
+    public Dictionary<string, bool>? ShardBooleansGameplay { get; set; }
+
+    [JsonPropertyName("// ShardBooleansWorldLoot")]
+    public string ShardBooleansWorldLootDoc { get; set; } = "Creatures, corpses, equipment set IDs, lootgen legacy mode, encounters, olthoi play, pyreals on death, spell components, salvage, and related world rules.";
+    public Dictionary<string, bool>? ShardBooleansWorldLoot { get; set; }
+
+    [JsonPropertyName("// ShardBooleansClientUi")]
+    public string ShardBooleansClientUiDoc { get; set; } = "Client/UI messaging, chess/report UI, spell FX, vendor generator, taboo filter, and similar presentation toggles.";
+    public Dictionary<string, bool>? ShardBooleansClientUi { get; set; }
+
+    [JsonPropertyName("// ShardLongsExtra")]
+    public string ShardLongsExtraDoc { get; set; } = "Long shard properties not covered by the typed fields above (chat gates, corpse spam, subscription tier, mansion rank, rare timers, summoning cap, teleport fix). Applied before top-level longs.";
+    public Dictionary<string, long>? ShardLongsExtra { get; set; }
+
+    [JsonPropertyName("// ShardDoublesExtra")]
+    public string ShardDoublesExtraDoc { get; set; } = "Double shard properties not covered by typed XP/loot/cantrip/vitae/PK angle/encounter fields (luminance, PVP magic scalars, PK grace/respite, quest rate, vendor rotation, unlocker window, chess AI time). Applied before top-level doubles.";
+    public Dictionary<string, double>? ShardDoublesExtra { get; set; }
 }

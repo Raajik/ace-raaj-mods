@@ -72,21 +72,11 @@ When `BypassPortalMaxLevelRestriction` is true, ACE’s portal **max level** che
 
 ### Repeat Solve Bonus Loot
 
-On every repeat solve (second completion onward) of a quest, one item from a weighted loot table is delivered to the player's inventory. If the inventory is full, the item drops at their feet with a notification.
+On every repeat solve (second completion onward) of a quest, one item is rolled from the loot pool in **`Mods/Loremaster/LootConfig.json`** (same file and tier chances **BetterChestLoot** uses by default). If the inventory is full, the item drops at their feet with a notification.
 
-- Loot tables are defined in `RepeatSolveLoot.json` using weighted groups of WCIDs.
-- All items within a group are equally likely; the group Weight controls its frequency relative to other groups.
-- Per-quest overrides are supported — a specific quest can have its own loot table that replaces the global one entirely.
-- Groups with `Weight: 0` are disabled but remain in the file for reference.
-- Disabled by default; set `EnableRepeatSolveLoot: true` in Settings.json and add `RepeatSolveLoot.json` to enable.
-
-Default loot table:
-
-| Group | Weight | Contents |
-|---|---|---|
-| Currency | 1000 | Trade Note (250,000) |
-| Salvage - Common | 800 | Granite, Iron, Mahogany, Steel, Ivory, Leather, Sandstone |
-| Foolproof Gems | 100 | All 13 foolproof gem types |
+- Edit **rarity weights** (`extremelyRareChance`, `rareChance`, `uncommonChance`) and **tier item lists** (`common` / `uncommon` / `rare` / `extremelyRare`) in that JSON beside the Loremaster mod folder; both mods read it at startup and reload when the file changes.
+- Optional `LootConfigPath` in Loremaster or BetterChestLoot `Settings.json` overrides the default `LootConfig.json` location.
+- Toggle with `EnableRepeatSolveLoot` in Loremaster `Settings.json`.
 
 ---
 
@@ -105,7 +95,7 @@ Optional side quests started by **using** a configured **Gem** or **Book** weeni
   - `FetchItemWeightedPool` — `{ "Wcid", "Weight", "Rare", "StackMin", "StackMax" }`. At start, rolls WCID and a stack count in `[StackMin, StackMax]` (inclusive). Town Crier consumes that many from inventory. Same rare/weight rules; **at most one** `Rare` per pool.
 - **Fetch legacy:** `FetchItemWcid` + count `1` when `FetchItemWeightedPool` is empty.
 - **Player-facing text:** `/lmparchment` and contract start lines use **weenie names** where possible (fallback `WCID nnnnn`); explore uses a **single-line** destination summary plus “use a Town Crier there.”
-- **Tier:** `Easy`, `Average`, or `Challenging` — rolls bonus XP as a random fraction of **XP to next level** between the min/max pairs in settings, then always rolls **repeat-style loot** via `GrantRepeatSolveLoot` using quest keys `LMParchmentTierEasy`, `LMParchmentTierAverage`, `LMParchmentTierChallenging` (configure in `RepeatSolveLoot.json` → `QuestOverrides`). Tier XP stacks with normal completion bonuses if you also set `CompletionQuestStamp` and tune `CompletionBonusXpOverrides`.
+- **Tier:** `Easy`, `Average`, or `Challenging` — rolls bonus XP as a random fraction of **XP to next level** between the min/max pairs in settings, then rolls loot from the same **`LootConfig.json`** pool as repeat solves (`GrantRepeatSolveLoot`). Tier XP stacks with normal completion bonuses if you also set `CompletionQuestStamp` and tune `CompletionBonusXpOverrides`.
 - **Same WCID, different text:** optional `TemplateMatchInscription` must match `PropertyString.Inscription` on the used item. List specific rows **before** a same-WCID row with an empty inscription (catch-all).
 - **Explore directions:** optional `ExploreOutdoorCoordsText`, `ExploreDungeonName`, `ExploreEntranceCoordsText` override auto text; otherwise the mod uses `LandblockManager` + `IsDungeon` + optional `ExploreAnchorLoc` (LOC string) for a short hint. When a pool picked a destination, auto text uses the **rolled** landblock raw id.
 
@@ -254,9 +244,8 @@ All settings live in `Settings.json` in the mod folder. The file is auto-generat
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `EnableRepeatSolveLoot` | bool | `false` | Master toggle for repeat-solve item rewards. |
-
-Loot tables are configured in `RepeatSolveLoot.json`. See that file for documentation on the weight system and per-quest overrides.
+| `EnableRepeatSolveLoot` | bool | `true` | Master toggle for repeat-solve item rewards (uses `Mods/Loremaster/LootConfig.json` by default). |
+| `LootConfigPath` | string | `""` | Optional path to `LootConfig.json`; empty = `Mods/Loremaster/LootConfig.json`. |
 
 ### Milestone Broadcasts
 
@@ -280,17 +269,13 @@ Loot tables are configured in `RepeatSolveLoot.json`. See that file for document
 
 ---
 
-## RepeatSolveLoot.json
+## LootConfig.json (with BetterChestLoot)
 
-The loot table file supports a flexible weighted group system. Groups with `Weight: 0` are disabled. The effective drop chance for a single item is:
+**BetterChestLoot** uses the same `LootConfig.json` by default (`Mods/Loremaster/LootConfig.json`). The JSON root defines **tier probabilities** (`extremelyRareChance`, `rareChance`, `uncommonChance`; remainder goes to `common`) and four tier buckets, each with `items` (WCIDs) and optional `stackSizeChance` for double stacks.
 
-```
-GroupWeight / TotalPoolWeight / ItemsInGroup
-```
+Repo path: `Loremaster/LootConfig.json` (copies next to `Loremaster.dll` on build).
 
-Per-quest overrides are defined under `QuestOverrides` keyed by internal quest name. When a quest has an override, its groups replace the global groups entirely for that quest.
-
-Suggested weight tiers:
+Suggested relative frequency for *tiers* (adjust to taste):
 
 | Tier | Weight |
 |---|---|

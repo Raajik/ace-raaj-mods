@@ -225,36 +225,36 @@ public class Fellowships
 public class FellowshipSettings
 {
     [JsonPropertyName("// SendDetails")]
-    public string SendDetailsDoc { get; } = "On invite, send fellowship name and resulting XP share % to inviter and recruit.";
+    public string SendDetailsDoc { get; init; } = "On invite, send fellowship name and resulting XP share % to inviter and recruit.";
 
     public bool SendDetails { get; set; } = true;
 
     [JsonPropertyName("// MaxMembers")]
-    public string MaxMembersDoc { get; } = "Target max fellowship size for this mod’s invite logic (ACE may enforce a separate cap).";
+    public string MaxMembersDoc { get; init; } = "Target max fellowship size for this mod’s invite logic (ACE may enforce a separate cap).";
 
     public int MaxMembers { get; set; } = 30;
 
     [JsonPropertyName("// StopAtMaxFellowshipInvite")]
-    public string StopAtMaxFellowshipInviteDoc { get; } = "When true, /fship stops inviting once the fellowship reaches MaxMembers.";
+    public string StopAtMaxFellowshipInviteDoc { get; init; } = "When true, /fship stops inviting once the fellowship reaches MaxMembers.";
 
     public bool StopAtMaxFellowshipInvite { get; set; } = true;
 
     [JsonPropertyName("// IgnoreBusy")]
-    public string IgnoreBusyDoc { get; } = "When true, skip busy checks and force-accept invites (useful for automated /fship).";
+    public string IgnoreBusyDoc { get; init; } = "When true, skip busy checks and force-accept invites (useful for automated /fship).";
 
     public bool IgnoreBusy { get; set; } = true;
 
     [JsonPropertyName("// OverrideSharePercent")]
-    public string OverrideSharePercentDoc { get; } = "When true, every member uses FlatSharePercent; when false, use SharePercent by member count.";
+    public string OverrideSharePercentDoc { get; init; } = "When true, every member uses FlatSharePercent; when false, XP share comes from SharePercent by member count (and DefaultShare for larger groups).";
 
     public bool OverrideSharePercent { get; set; } = true;
 
     [JsonPropertyName("// FlatSharePercent")]
-    public string FlatShareDoc { get; } = "XP share fraction applied to all members when OverrideSharePercent is true. 1.0 = 100%, 0.5 = 50%.";
+    public string FlatShareDoc { get; init; } = "XP share fraction applied to all members when OverrideSharePercent is true. 1.0 = 100%, 0.5 = 50%.";
     public double FlatSharePercent { get; set; } = 1.0;
 
     [JsonPropertyName("// SharePercent")]
-    public string SharePercentDoc { get; } = "Per-member-count XP share table used when OverrideSharePercent is false. Keys are fellowship sizes, values are fractions (0.0–1.0).";
+    public string SharePercentDoc { get; init; } = "Used when OverrideSharePercent is false. Each key is fellowship member count (integer). Value is XP share fraction (0.0–1.0) for that size. If count exceeds all keys, DefaultShare applies.";
     public Dictionary<int, double> SharePercent { get; set; } = new()
     {
         [1] = 1.0,
@@ -269,7 +269,7 @@ public class FellowshipSettings
     };
 
     [JsonPropertyName("// DefaultShare")]
-    public string DefaultShareDoc { get; } = "XP share fraction for fellowships larger than the highest key in SharePercent. 0.0 = no share beyond the table.";
+    public string DefaultShareDoc { get; init; } = "XP share fraction for fellowships larger than the highest key in SharePercent. 0.0 = no share beyond the table.";
     public double DefaultShare { get; set; } = 0;
 
     //public long EvenShareLevel { get; set; } = 50;  //fellowship_even_share_level

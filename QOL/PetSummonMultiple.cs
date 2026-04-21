@@ -325,9 +325,10 @@ public static class PetSummonMultiple
         playerPets.Remove(__instance.Guid.Full);
     }
 
+    // Player.Teleport(Position, bool) — postfix args are only __instance so Harmony injects reliably.
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(Player), nameof(Player.Teleport), new Type[] { typeof(Position), typeof(bool), typeof(bool) })]
-    public static void PostTeleport(Position newPosition, bool teleportingFromInstance, bool fromPortal, ref Player __instance)
+    [HarmonyPatch(typeof(Player), nameof(Player.Teleport), new Type[] { typeof(Position), typeof(bool) })]
+    public static void PostTeleport(Player __instance)
     {
         //Destroy pets on teleport
         if (!playerPets.TryGetValue(__instance.Guid.Full, out var pets))

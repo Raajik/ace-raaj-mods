@@ -18,6 +18,12 @@ public class Debit
         foreach (var coinStack in __instance.GetInventoryItemsOfTypeWeenieType(WeenieType.Coin))
             banked += coinStack.Value ?? 0;
 
+        foreach (var o in __instance.AllItems())
+        {
+            if (PeaPyrealWcids.IsPea(o.WeenieClassId))
+                banked += PeaPyrealWcids.GetPyrealValue(o);
+        }
+
         //Cap at max int
         int coins = banked > int.MaxValue ? int.MaxValue : (int)banked;
 
@@ -169,10 +175,15 @@ public class Debit
                 __result = null;
                 return false;
             }
+
+            SpendPeasForPyrealAmount(__instance, ref amount);
+            __instance.UpdateCoinValue();
         }
+
         if (destroy)
         {
-            __instance.TryConsumeFromInventoryWithNetworking(currentWcid, (int)amount);
+            if (amount > 0)
+                __instance.TryConsumeFromInventoryWithNetworking(currentWcid, (int)amount);
         }
         else
         {
@@ -412,5 +423,58 @@ public class Debit
 
         __result = true;
         return false;
+    }
+
+    // Pays part of a pyreal-denominated cost from pea stacks (Value × stack) before coin stacks are consumed.
+    static void SpendPeasForPyrealAmount(Player player, ref uint amount)
+    {
+        if (amount == 0)
+            return;
+
+        long rem = amount;
+        var peas = player.AllItems()
+            .Where(o => PeaPyrealWcids.IsPea(o.WeenieClassId) && PeaPyrealWcids.GetPyrealValue(o) > 0)
+            .OrderBy(o => PeaPyrealWcids.GetPyrealValue(o))
+            .ToList();
+
+        foreach (var item in peas)
+        {
+            if (rem <= 0)
+                break;
+
+            long stackVal = PeaPyrealWcids.GetPyrealValue(item);
+            if (stackVal <= 0)
+                continue;
+
+            if (stackVal <= rem)
+            {
+                var n = item.StackSize ?? 1;
+                if (!player.TryConsumeFromInventoryWithNetworking(item, n))
+                    continue;
+
+                rem -= stackVal;
+                continue;
+            }
+
+            long unit = item.Value ?? 0;
+            if (unit <= 0)
+                continue;
+
+            int stackSize = item.StackSize ?? 1;
+            var need = (int)Math.Min(stackSize, (int)((rem + unit - 1) / unit));
+            if (need <= 0)
+                continue;
+
+            if (!player.TryConsumeFromInventoryWithNetworking(item, need))
+                continue;
+
+            rem -= (long)need * unit;
+            if (rem < 0)
+                rem = 0;
+
+            break;
+        }
+
+        amount = rem <= 0 ? 0 : (uint)Math.Min(rem, uint.MaxValue);
     }
 }

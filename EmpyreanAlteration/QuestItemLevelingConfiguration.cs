@@ -23,6 +23,28 @@ internal static class QuestItemLevelingConfiguration
                 baseXp = (long)(baseXp * Math.Pow(tierScale, tierForMaxLevelRoll - 1));
         }
 
+        switch (s.ItemXpCurveMode)
+        {
+            case ItemXpCurveMode.Geometric:
+                maxLevel = ItemXpCurve.ClampItemMaxLevelForGeometric(
+                    s.ItemXpGeometricFirstLevelTotal,
+                    s.ItemXpGeometricMultiplierPerStep,
+                    maxLevel);
+                break;
+            case ItemXpCurveMode.CharacterTable:
+            {
+                int tableCount = DatManager.PortalDat?.XpTable?.CharacterLevelXPList?.Count ?? 0;
+                maxLevel = ItemXpCurve.ClampItemMaxLevelForCharacterTable(s.ItemXpVirtualCharacterLevel, tableCount, maxLevel);
+                break;
+            }
+            default:
+            {
+                ulong baseU = (ulong)Math.Max(1L, baseXp);
+                maxLevel = ExperienceSystemItemXpSafe.ClampItemMaxLevelForDoublingBase(baseU, maxLevel);
+                break;
+            }
+        }
+
         item.ItemXpStyle = ItemXpStyle.ScalesWithLevel;
         item.ItemMaxLevel = maxLevel;
         item.ItemBaseXp = baseXp;

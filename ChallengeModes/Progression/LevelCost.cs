@@ -4,6 +4,21 @@ namespace ChallengeModes.Progression;
 
 public class LevelCost
 {
+    [JsonPropertyName("// C")]
+    public string CDoc { get; init; } = "Base cost constant (meaning depends on GrowthType: linear base, exponential base, polynomial base term).";
+
+    [JsonPropertyName("// Rate")]
+    public string RateDoc { get; init; } = "Growth rate / exponent parameter (linear slope per step, exponential base, polynomial power).";
+
+    [JsonPropertyName("// Coefficient")]
+    public string CoefficientDoc { get; init; } = "Polynomial coefficient (used when GrowthType is Polynomial).";
+
+    [JsonPropertyName("// Offset")]
+    public string OffsetDoc { get; init; } = "Index offset applied before cost formulas.";
+
+    [JsonPropertyName("// GrowthType")]
+    public string GrowthTypeDoc { get; init; } = "Linear (0), Exponential (1), or Polynomial (2).";
+
     public double C { get; set; }
     public double Rate { get; set; }
     public double Coefficient { get; set; }

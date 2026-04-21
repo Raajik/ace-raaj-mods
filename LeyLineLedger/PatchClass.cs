@@ -155,6 +155,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         {
             BankExtensions.DepositAllCash(session);
             BankExtensions.DepositAllLuminance(session);
+            BankExtensions.DepositAllItems(session);
 
             return;
         }
@@ -319,6 +320,111 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
     }
 
+    // Pulls from inventory across canonical Id then VariantWeenieClassIds until 'amount' is satisfied.
+    // Uses AllItems() + equipped stacks so nested containers (e.g. key rings) match BetterKeys and /bank deposit all.
+    public static int TryDepositIncludingVariants(Player player, BankItem item, int amount)
+    {
+        if (amount <= 0)
+            return 0;
+
+        int remaining = amount;
+        int credited = 0;
+
+        foreach (uint wcid in BuildBankItemWcidOrder(item))
+        {
+            while (remaining > 0)
+            {
+                WorldObject? stack = FindNextStackForWcid(player, wcid);
+                if (stack == null)
+                    break;
+
+                int stackSize = (int)(stack.StackSize ?? 1);
+                int take = Math.Min(remaining, stackSize);
+                if (!TryConsumeStackPortion(player, stack, take))
+                    break;
+
+                credited += take;
+                remaining -= take;
+            }
+
+            if (remaining <= 0)
+                break;
+        }
+
+        return credited;
+    }
+
+    static List<uint> BuildBankItemWcidOrder(BankItem item)
+    {
+        List<uint> order = new List<uint> { item.Id };
+        if (item.VariantWeenieClassIds is not { Count: > 0 })
+            return order;
+
+        foreach (uint v in item.VariantWeenieClassIds)
+        {
+            if (v == 0 || v == item.Id)
+                continue;
+
+            if (!order.Contains(v))
+                order.Add(v);
+        }
+
+        return order;
+    }
+
+    static WorldObject? FindNextStackForWcid(Player player, uint wcid)
+    {
+        foreach (WorldObject wo in player.AllItems())
+        {
+            if (wo.WeenieClassId == wcid)
+                return wo;
+        }
+
+        foreach (WorldObject wo in player.GetEquippedObjectsOfWCID(wcid))
+            return wo;
+
+        return null;
+    }
+
+    static bool TryConsumeStackPortion(Player player, WorldObject stack, int take)
+    {
+        if (take <= 0)
+            return false;
+
+        if (player.TryConsumeFromInventoryWithNetworking(stack, take))
+            return true;
+
+        return player.TryConsumeFromEquippedObjectsWithNetworking(stack, take);
+    }
+
+    // Stack counts across nested containers (AllItems) and equipped; avoids undercount vs GetNumInventoryItemsOfWCID-only.
+    public static int CountBankableWcid(Player player, uint wcid)
+    {
+        HashSet<uint> seen = new HashSet<uint>();
+        int n = 0;
+
+        foreach (WorldObject wo in player.AllItems())
+        {
+            if (wo.WeenieClassId != wcid)
+                continue;
+
+            if (!seen.Add(wo.Guid.Full))
+                continue;
+
+            n += (int)(wo.StackSize ?? 1);
+        }
+
+        foreach (WorldObject wo in player.GetEquippedObjectsOfWCID(wcid))
+        {
+            if (!seen.Add(wo.Guid.Full))
+                continue;
+
+            n += (int)(wo.StackSize ?? 1);
+        }
+
+        return n;
+    }
+
     //Take items from the vault
     public static void HandleWithdraw(Player player, BankItem item, int amount)
     {
@@ -340,14 +446,15 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
     public static void HandleDeposit(Player player, BankItem item, int amount)
     {
-        if (player.TryTakeItems(item.Id, amount))
+        int deposited = TryDepositIncludingVariants(player, item, amount);
+        if (deposited == amount)
         {
             player.IncBanked(item.Prop, amount);
             player.SendMessage($"Deposited {amount:N0} {item.Name}. {player.GetBanked(item.Prop)} banked, {player.GetNumInventoryItemsOfWCID(item.Id):N0} held");
             return;
         }
 
-        player.SendMessage($"Unable to deposit {amount:N0}.  You have {player.GetNumInventoryItemsOfWCID(item.Id):N0} {item.Name}");
+        player.SendMessage($"Unable to deposit {amount:N0}.  You have {player.GetNumInventoryItemsOfWCID(item.Id):N0} {item.Name} (canonical)");
     }
 }
 
@@ -365,19 +472,66 @@ public static class BankExtensions
     public static void IncBanked(this Player player, int prop, long amount) =>
         player.SetProperty((PropertyInt64)prop, player.GetBanked(prop) + amount);
 
+    public static void DepositAllItems(Session session)
+    {
+        Player player = session.Player;
+        if (player is null)
+            return;
+
+        if (PatchClass.Settings.Items is not { Count: > 0 })
+            return;
+
+        foreach (BankItem item in PatchClass.Settings.Items)
+        {
+            if (item == null || item.Id == 0)
+                continue;
+
+            // Items like MMD are still fine; if you don't want them swept, remove them from Items.
+            int totalHeld = PatchClass.CountBankableWcid(player, item.Id);
+            if (item.VariantWeenieClassIds is { Count: > 0 })
+            {
+                foreach (uint wcid in item.VariantWeenieClassIds)
+                {
+                    if (wcid == 0 || wcid == item.Id)
+                        continue;
+
+                    totalHeld += PatchClass.CountBankableWcid(player, wcid);
+                }
+            }
+
+            if (totalHeld <= 0)
+                continue;
+
+            int deposited = PatchClass.TryDepositIncludingVariants(player, item, totalHeld);
+            if (deposited <= 0)
+                continue;
+
+            player.IncBanked(item.Prop, deposited);
+            player.SendMessage($"Deposited {deposited:N0} {item.Name}. {player.GetBanked(item.Prop)} banked, {player.GetNumInventoryItemsOfWCID(item.Id):N0} held");
+        }
+    }
+
     public static void DepositAllCash(Session session)
     {
         var player = session.Player;
         if (player is null)
             return;
 
-        var cashItems = player.AllItems().Where(x => x.WeenieClassId == Player.coinStackWcid || x.WeenieClassName.StartsWith("tradenote"));
+        // Coin stacks and tradenotes: ACE uses stack Value as total pyreals for that stack (same as AutoLoot coin path).
+        // Peas: pyreals = (Value per unit × stack size) via PeaPyrealWcids.
+        var cashItems = player.AllItems().Where(x =>
+            x.WeenieClassId == Player.coinStackWcid ||
+            x.WeenieClassName.StartsWith("tradenote", StringComparison.OrdinalIgnoreCase) ||
+            PeaPyrealWcids.IsPea(x.WeenieClassId)).ToList();
+
         long total = 0;
         var itemCount = 0;
 
         foreach (var item in cashItems)
         {
-            total += item.Value ?? 0;
+            total += PeaPyrealWcids.IsPea(item.WeenieClassId)
+                ? PeaPyrealWcids.GetPyrealValue(item)
+                : item.Value ?? 0;
             itemCount++;
         }
 
@@ -387,7 +541,9 @@ public static class BankExtensions
             {
                 if (consumed != null)
                 {
-                    total -= consumed.Value ?? 0;
+                    total -= PeaPyrealWcids.IsPea(consumed.WeenieClassId)
+                        ? PeaPyrealWcids.GetPyrealValue(consumed)
+                        : consumed.Value ?? 0;
                     itemCount--;
                 }
             }

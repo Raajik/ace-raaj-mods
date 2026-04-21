@@ -142,32 +142,41 @@ From now on, use this workflow for every ACE mod in this repo:
   - Keep it small and focused on likely-tuned knobs; rely on C# defaults for everything else.  
   - BaseMod will still auto-create `Settings.json` from `Settings.cs` on first run if the file is missing, but in this repo we prefer to pre-create it so admins can read/tweak settings before first boot.
 
-- **Document settings in two places:**
-  1. **Inline JSON comments** in `Settings.json`  
-     - Use `//` comments **on the line above** each key.  
-     - Each comment should state in plain language: what the setting changes, the expected type/range, and any sentinel values (e.g. `0` disables, `-1` = unlimited).  
-     - Example:
-       ```jsonc
-       // Chance for reinforcements to spawn when a creature dies (0.0–1.0). 0 disables spawns.
-       "LandscapeChance": 0.15,
-       ```
-  2. A **`### Settings` section in the mod's `Readme.md`**  
-     - Group settings by feature area (e.g. "Quest XP", "Loot Growth", "Tinkering", "QoL").  
-     - For each key, list: name, type, default, and a one–two sentence, player-facing description.  
-     - Use this when inline comments would become too long or when behavior depends on multiple keys.
+### Default `Settings.json` layout: documentation band, then values band (this repo)
 
-- **Let Settings.cs remain the source of truth.**  
+**Use this layout for all new and updated shipped `Settings.json` files** when settings are documented via **string keys** (valid JSON — not JSONC). BaseMod-style mods map those keys with `[JsonPropertyName("// SettingName")]` to `string` properties on `Settings` / nested settings types (see **QOL** `Settings.json` + `Settings.cs`).
+
+- **Per object (root `Settings` and every nested object):**  
+  1. **First block:** every documentation string key, contiguous — e.g. `"// FeatureToggles"`, each `"// Enable*"`, `"// MaxSpecCredits"`, each section intro `"// Animations"`, … then inside `"Animations"` all `"// DieSeconds"`, `"// AnimationSpeeds"`, etc.  
+  2. **Second block:** every real setting in **the same order** as its matching `//` key (same name without the `//` prefix).  
+- **Reading guide:** Put a one-line convention in the top doc key (e.g. `// FeatureToggles`): that all `//` keys above the values block describe the following properties in order; repeat a short “inside *Section*: `//` lines first, then values (same order)” on each **section** intro string when helpful.  
+- **Why:** Admins skim all explanations, then edit one dense block of toggles/numbers/objects without alternating doc/value lines. `System.Text.Json` does not depend on key order.
+
+**C#:** Keep `string` doc properties with defaults that match the shipped JSON so missing keys still deserialize sensibly. When you add a setting, add both the `//` doc key (in the doc band) and the value (in the values band), and the matching `[JsonPropertyName]` + property in code.
+
+**Nested collections** (e.g. `AnimationSpeeds`, `MaxAugs`): The object’s doc band ends with the `//` line for that dictionary/object; the values band includes the actual ` { ... } ` payload. No per-entry `//` keys inside pure enum-key dictionaries unless you add explicit wrapper properties.
+
+**Optional alternative (not the default here):** If a mod ships **JSONC** or editor-only comments *above* each key, you may keep comment-per-key style — but **ace-raaj-mods** BaseMod projects should prefer the two-band + `//` string-key pattern for consistency.
+
+### Readme and source of truth
+
+- A **`### Settings` section in the mod's `Readme.md`**  
+  - Group settings by feature area (e.g. "Quest XP", "Loot Growth", "Tinkering", "QoL").  
+  - For each key, list: name, type, default, and a one–two sentence, player-facing description.  
+  - Use this when inline JSON docs would become too long or when behavior depends on multiple keys.
+
+- **Let `Settings.cs` remain the source of truth.**  
   - All defaults live in `Settings.cs`.  
   - `Settings.json` is a documented override layer; values you omit fall back to the C# defaults.  
   - When you add a new property in `Settings.cs`, also update:
-    - The shipped `Settings.json` template with a commented example/default.  
-    - The mod's `Readme.md` `Settings` table/section.
+    - The shipped `Settings.json` template (doc band + values band, correct order).  
+    - The mod's `Readme.md` `Settings` table/section when operators need extra context.
 
 - **For nested/advanced settings:**
-  - Keep JSON comments high-level and move detailed behavior to the Readme.  
+  - Keep JSON doc strings high-level; move long behavior notes to the Readme.  
   - For large collections (e.g. loot tables, mutator lists), document the shape and a small example in Readme, and ship a sane, minimally noisy default in JSON.
 
-Following this pattern ensures every mod is self-documenting: admins can open `Settings.json` and immediately understand the knobs, and Readmes provide the deeper context and examples.
+Following this pattern keeps every mod self-documenting: admins open `Settings.json`, read the doc bands, then tune the value bands; Readmes carry deeper context and examples.
 
 ### 4. Meta.json
 ```json
@@ -911,12 +920,23 @@ public override async Task OnWorldOpen()
 When working in the **ace-raaj-mods** repository:
 
 - **Documentation loop:** When we discover a durable new pattern/gotcha, invoke `/doc` to (a) write a paste-ready “Findings” summary and (b) update this `ace-mod` skill so future work benefits.
-- **Build list:** Discover all gameplay `.csproj` files under the repo (e.g. `AethericWeaver`, `ChallengeModes`, `AureatePath`, `AutoLoot`, `EmpyreanAlteration`, `Gemcrafter`, `LeyLineLedger`, `Loremaster`, `Numbersmith`, `Overtinked`, `QOL`, `Swarmed`). **QOL** also owns **pet** Harmony features (moved from the retired EmpyreanEchoes mod): `EnablePetAttackSelected`, `EnablePetMessageDamage`, `EnablePetStow`, `EnableSummonCreatureAsPet`, `EnablePetSummonMultiple`, `EnablePetEx`, `EnablePetExShareDamage` (share-damage patches apply only when `PetEx` is enabled). Healing-kit Swiftmend: `EnableSwiftmend`. Use `/ace-build` or build each mod in its own directory with `dotnet build`. Add `AceModQa` / `tools/*` only if the user wants QA or tooling builds.
+- **Settings.json documentation layout:** Shipped templates use the **documentation band, then values band** pattern (see **Settings & documentation workflow** above). Reference implementation: **`QOL/Settings.json`** + **`QOL/Settings.cs`** (`[JsonPropertyName("// …")]` doc strings).
+- **Build list:** Discover all gameplay `.csproj` files under the repo (e.g. `AethericWeaver`, `ChallengeModes`, `AureatePath`, `AutoLoot`, `EmpyreanAlteration`, `EasyServerSettings`, `Gemcrafter`, `LeyLineLedger`, `Loremaster`, `Numbersmith`, `Overtinked`, `QOL`, `Swarmed`). **QOL** also owns **pet** Harmony features (moved from the retired EmpyreanEchoes mod): `EnablePetAttackSelected`, `EnablePetMessageDamage`, `EnablePetStow`, `EnableSummonCreatureAsPet`, `EnablePetSummonMultiple`, `EnablePetEx`, `EnablePetExShareDamage` (share-damage patches apply only when `PetEx` is enabled). Healing-kit Swiftmend: `EnableSwiftmend`. Use `/ace-build` or build each mod in its own directory with `dotnet build`. Add `AceModQa` / `tools/*` only if the user wants QA or tooling builds.
 - **Settings + hot-reload:** Prefer loading settings in both **Start()** and **OnWorldOpen()** so that after a hot-reload (when OnWorldOpen never runs), Settings is still set. Use `Settings = SettingsContainer.Settings ?? new Settings();` in both.
 - **Nullable and safety:** Use nullable reference types and guard command handlers with `if (session?.Player is not Player p) return;` so code is safe during load/unload or console-invoked commands.
 - **System.Drawing.Common:** If a mod or dependency needs it, pin `System.Drawing.Common` (e.g. `Version="8.0.0"`) to avoid conflicts with ACE server binaries.
 - **ACE.Shared + layout:** Gameplay mods here target **`net10.0`** and usually reference the local **`ACE.Shared` project** (`ProjectReference` to `..\..\ACE.Shared\ACE.Shared.csproj`) alongside NuGet `ACEmulator.ACE.Shared` / server DLL `Reference` entries—**copy an existing mod’s `.csproj`** in this repo rather than assuming NuGet-only ACE.Shared (the generic template earlier in this skill favors NuGet when `ACE.Shared` is not on disk).
 - **No `EmpyreanEchoes` project:** The **EmpyreanEchoes** mod folder was **removed**. Behavior split across **EmpyreanAlteration** (mutator pipeline, loot hooks, fake-property features, `LootGrowthItem`, `ItemLevelUpGrowth`, Slayer/ShinyPet mutators), **Swarmed** (CreatureEx, call-for-help only—**no** `ProjectReference` to EmpyreanAlteration), **QOL** (pet Harmony toggles), **ChallengeModes** (`BonusStatsEnabled`, ironman/hardcore), **Numbersmith** / **Loremaster** / **AethericWeaver** (relocated category patches—see each mod’s `Settings.cs` comments). Root **README.md** summarizes the map; avoid new docs that tell operators to install EmpyreanEchoes.
+
+### LeyLineLedger + AutoLoot (banked pyreals, pea WCIDs)
+
+- **Shared WCID list (no project-to-project DLL reference):** Put a single file at repo root **`Shared/PeaPyrealWcids.cs`** in namespace **`AceRaajMods.Shared`**. It holds a `HashSet<uint>` of pea WCIDs, **`IsPea(uint wcid)`**, and **`GetPyrealValue(WorldObject item)`** = `(long)(item.Value ?? 0) * (item.StackSize ?? 1)` (per-unit `Value` × stack count, same as AutoLoot’s coin formula).
+- **Wire it into two mods:** In each mod’s `.csproj`, add  
+  `<Compile Include="..\Shared\PeaPyrealWcids.cs" Link="Shared\PeaPyrealWcids.cs" />`  
+  (path relative to the mod folder). Add **`global using AceRaajMods.Shared;`** to that mod’s **`GlobalUsings.cs`**.
+- **AutoLoot** (`AutoLoot/Autoloot.cs`): Extend **`TryBankCurrency`** so when **`DepositLootedCurrencyToBank`** is true, pea stacks credit **`BankCashProperty`** like coin stacks / tradenotes, then **`UpdateCoinValue()`**. Loot summary lines that aggregate **“Pyreals (banked)”** should use **`GetPyrealValue(removed)`** for peas (not `Value * qty` twice).
+- **LeyLineLedger** (`LeyLineLedger/PatchClass.cs`, **`DepositAllCash`**): Treat items as cash-like if coin stack, tradenote name prefix, or **`IsPea`**. For **peas**, add **`GetPyrealValue(item)`** to the deposit total; for **coins / tradenotes**, keep the existing **`item.Value ?? 0`** per item (ACE pyreal stacks use **`Value` as the stack’s total pyreals**—do not multiply by `StackSize` again for that path). On failed remove, subtract the same value you added for that item type.
+- **LeyLineLedger vendor / `CoinValue`** (`LeyLineLedger/Debit.cs`): In **`PreUpdateCoinValue`**, after summing bank + `WeenieType.Coin` stacks, add a pass over **`player.AllItems()`** and add **`GetPyrealValue(o)`** for pea WCIDs so affordability matches nested containers. In **`PreSpendCurrency`** (pyreal **`coinStackWcid`** path): after bank debit and the **`amount > CoinValue`** check, call **`SpendPeasForPyrealAmount`** (smallest stacks first: full stacks, then one partial stack via **`TryConsumeFromInventoryWithNetworking(item, n)`**), then **`UpdateCoinValue()`**, then **`TryConsumeFromInventoryWithNetworking(coinStackWcid, (int)amount)`** for the remainder (skip if `amount` is 0). **`BankCashProperty`** in AutoLoot must match LeyLineLedger **`CashProperty`** when both are used (default **39999** in shipped settings).
 
 ### EmpyreanAlteration (mutators & features)
 
@@ -952,14 +972,14 @@ When working in the **ace-raaj-mods** repository:
   - Never add a lower-tier spell if a higher-tier exists in the same line (e.g. do not add *Blood Drinker I* if the item already has *Blood Drinker VI*).
   - Cantrips remain separate and may coexist with normal buffs, as intended.
 - **Guaranteed-per-level outcome:** When an outcome roll is a no-op, re-roll a few times (capped) before falling back so “leveled up but got nothing” is extremely rare.
-- **Quest-item perk chat:** Overtinked postfixes **`Container.TryAddToInventory`** and resolves the root **`Player`** via the container chain so loot into nested packs gets `InitializeQuestWorldObject` with notify (see `Overtinked/ContainerRootPlayer.cs`). Factory-only paths without ever entering a player-owned container remain edge cases.
+- **Quest-item perk chat (optional):** When **`EnableQuestItemInventoryInit`** is true in Overtinked, it postfixes **`Container.TryAddToInventory`** and resolves the root **`Player`** via the container chain so nested packs get `InitializeQuestWorldObject` with notify (see `Overtinked/ContainerRootPlayer.cs`). Default is **off**; manual tinkering uses **`RecipeManager`** only. Quest item XP / level-up growth is **EmpyreanAlteration** (`EnableQuestItemLeveling`).
 - **Why `Player.TryAddToInventory` alone is wrong for “loot into pack” chat:** ACE often calls **`container.TryAddToInventory(...)`** on a **nested pack** (`this` is a `Container`, not `Player`). A postfix that only binds `Player` as `__instance` never runs for that receiver—or mis-binds. Patch **`typeof(Container)`** with the full **5-parameter** signature `(WorldObject, out Container, int, bool, bool)` and walk **`WorldObject.Container`** until you hit a **`Player`** (see `Overtinked/ContainerRootPlayer.cs`).
 - **Cleaving / Nether Rending combat (custom imbues):** `Overtinked/CleavingNetherImbueCombat.cs` postfixes **`Player.DamageTarget(Creature, WorldObject)`** under the same **`RecipeManagerCategory`** as **`BleedImbueCombat`** (so it respects `EnableRecipeManagerPatch`). Cleaving applies splash **`TakeDamage`** to nearby **`Creature`**s (not another `DamageTarget` call); use a **`[ThreadStatic]`** guard so splash damage does not re-enter cleave logic. Nether adds **`DamageType.Nether`** on the **primary** target only. Config: **`CleavingImbueCombatConfig`** / **`NetherRendingImbueCombatConfig`** in `NewImbueConfig.cs` + `Settings.json`. For candidates in the same landblock, **`Landblock.GetWorldObjectsForPhysicsHandling()`** returns **`ICollection<WorldObject>`** (iterate and filter by distance / `Creature` / `Attackable`).
 
 ### Loot-generated item leveling & pre-imbues (EmpyreanAlteration vs Overtinked)
 
-- **Overtinked** owns quest-time item XP init (inventory hook) and all item XP curve / level-up growth behavior when `EnableItemLevelingHooks` is on.
-- **EmpyreanAlteration** owns the **LootGrowthItem** mutator (`EnableLootItemLeveling`, `EnableLootItemPreImbue`) on the loot factory path. Keep Overtinked from re-initializing the same drops (it no longer patches `CreateAndMutateWcid` for XP); tune loot caps in EA settings (`LootItemMaxLevelMin` / `LootItemMaxLevelMax`, etc.).
+- **EmpyreanAlteration** owns quest-time item XP init (`EnableQuestItemLeveling`), custom XP curves, catch-up growth, and **LootGrowthItem** (`EnableLootItemLeveling`, `EnableLootItemPreImbue`) on the loot factory path. Tune loot caps in EA settings (`LootItemMaxLevelMin` / `LootItemMaxLevelMax`, etc.).
+- **Overtinked** optional **`EnableQuestItemInventoryInit`**: legacy workmanship / initial perk rolls on first pack add; default **off** so Overtinked is tinkering-only (`RecipeManager`).
 
 ### Production safety (null, LINQ, reflection, settings)
 

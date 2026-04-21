@@ -20,8 +20,9 @@ global using ACE.Server.Network.GameEvent.Events;
 global using ACE.Server.Network.GameMessages.Messages;
 global using ACE.Server.Network;
 global using ACE.Server.Physics;
-global using ACE.Server.WorldObjects.Entity;
 global using ACE.Server.WorldObjects;
+global using ACE.Server.WorldObjects.Entity;
+global using ACE.Server.WorldObjects.Managers;
 #if REALM
 global using ACE.Server.Realms;
 global using Session = ACE.Server.Network.ISession;

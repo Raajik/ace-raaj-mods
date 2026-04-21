@@ -7,6 +7,11 @@ internal static class QuestItemGrowthHarmony
 {
     internal const string Category = "EmpyreanAlterationQuestItemGrowth";
 
+    // ExperienceSystem + ItemXpCurveContext patches must run for loot GrowthItem appraisal when EnableLootItemLeveling
+    // is true even if EnableQuestItemLeveling is false; otherwise the client XP bar / level math is wrong or hidden.
+    internal static bool IsItemXpCurveHarmonyEnabled(Settings? s) =>
+        s is { Enabled: true } && (s.EnableQuestItemLeveling || s.EnableLootItemLeveling);
+
     static bool PrepareContainerPostfix()
     {
         return TargetMethodContainerTryAddToInventory() != null;
@@ -106,25 +111,30 @@ internal static class QuestItemGrowthItemXpCurveHarmony
     [HarmonyPatch(typeof(ExperienceSystem), nameof(ExperienceSystem.ItemTotalXPToLevel))]
     public static bool PrefixItemTotalXPToLevel(ulong gainedXP, ulong baseXP, int maxLevel, ItemXpStyle xpScheme, ref int __result)
     {
-        WorldObject? item = ItemXpCurveContext.Current;
-        Settings? s = PatchClass.Settings;
-        if (item == null || s == null || xpScheme != ItemXpStyle.ScalesWithLevel)
+        if (xpScheme != ItemXpStyle.ScalesWithLevel)
             return true;
 
-        if (ItemXpCurve.ShouldUseGeometric(item, s))
+        WorldObject? item = ItemXpCurveContext.Current;
+        Settings? s = PatchClass.Settings;
+
+        if (item != null && s != null && ItemXpCurve.ShouldUseGeometric(item, s))
         {
             __result = ItemXpCurve.ItemLevelFromTotalXpGeometric((long)gainedXP, s.ItemXpGeometricFirstLevelTotal, s.ItemXpGeometricMultiplierPerStep, maxLevel);
             return false;
         }
 
-        if (!ItemXpCurve.ShouldUseCharacterTable(item, s))
-            return true;
+        if (item != null && s != null && ItemXpCurve.ShouldUseCharacterTable(item, s))
+        {
+            IReadOnlyList<ulong>? table = DatManager.PortalDat?.XpTable?.CharacterLevelXPList;
+            if (table == null || table.Count == 0)
+                return true;
 
-        IReadOnlyList<ulong>? table = DatManager.PortalDat?.XpTable?.CharacterLevelXPList;
-        if (table == null || table.Count == 0)
-            return true;
+            __result = ItemXpCurve.ItemLevelFromTotalXp((long)gainedXP, table, s.ItemXpVirtualCharacterLevel, s.ItemXpCharacterCurveMultiplier, maxLevel);
+            return false;
+        }
 
-        __result = ItemXpCurve.ItemLevelFromTotalXp((long)gainedXP, table, s.ItemXpVirtualCharacterLevel, s.ItemXpCharacterCurveMultiplier, maxLevel);
+        int safeMax = ExperienceSystemItemXpSafe.ClampItemMaxLevelForDoublingBase(Math.Max(1ul, baseXP), maxLevel);
+        __result = ExperienceSystemItemXpSafe.ItemTotalXpToLevelScalesWithLevelAce(gainedXP, baseXP, safeMax);
         return false;
     }
 
@@ -132,25 +142,30 @@ internal static class QuestItemGrowthItemXpCurveHarmony
     [HarmonyPatch(typeof(ExperienceSystem), nameof(ExperienceSystem.ItemLevelToTotalXP))]
     public static bool PrefixItemLevelToTotalXP(int itemLevel, ulong baseXP, int maxLevel, ItemXpStyle xpScheme, ref ulong __result)
     {
-        WorldObject? item = ItemXpCurveContext.Current;
-        Settings? s = PatchClass.Settings;
-        if (item == null || s == null || xpScheme != ItemXpStyle.ScalesWithLevel)
+        if (xpScheme != ItemXpStyle.ScalesWithLevel)
             return true;
 
-        if (ItemXpCurve.ShouldUseGeometric(item, s))
+        WorldObject? item = ItemXpCurveContext.Current;
+        Settings? s = PatchClass.Settings;
+
+        if (item != null && s != null && ItemXpCurve.ShouldUseGeometric(item, s))
         {
             __result = ItemXpCurve.TotalXpToReachItemLevelGeometric(itemLevel, s.ItemXpGeometricFirstLevelTotal, s.ItemXpGeometricMultiplierPerStep, maxLevel);
             return false;
         }
 
-        if (!ItemXpCurve.ShouldUseCharacterTable(item, s))
-            return true;
+        if (item != null && s != null && ItemXpCurve.ShouldUseCharacterTable(item, s))
+        {
+            IReadOnlyList<ulong>? table = DatManager.PortalDat?.XpTable?.CharacterLevelXPList;
+            if (table == null || table.Count == 0)
+                return true;
 
-        IReadOnlyList<ulong>? table = DatManager.PortalDat?.XpTable?.CharacterLevelXPList;
-        if (table == null || table.Count == 0)
-            return true;
+            __result = ItemXpCurve.TotalXpToReachItemLevel(itemLevel, table, s.ItemXpVirtualCharacterLevel, s.ItemXpCharacterCurveMultiplier, maxLevel);
+            return false;
+        }
 
-        __result = ItemXpCurve.TotalXpToReachItemLevel(itemLevel, table, s.ItemXpVirtualCharacterLevel, s.ItemXpCharacterCurveMultiplier, maxLevel);
+        int safeMax = ExperienceSystemItemXpSafe.ClampItemMaxLevelForDoublingBase(Math.Max(1ul, baseXP), maxLevel);
+        __result = ExperienceSystemItemXpSafe.ItemLevelToTotalXpScalesWithLevelAce(itemLevel, baseXP, safeMax);
         return false;
     }
 }
@@ -167,13 +182,25 @@ internal static class QuestItemGrowthOnItemLevelUpHarmony
             return;
 
         Settings? s = PatchClass.Settings;
-        if (s == null || !s.Enabled || !s.EnableQuestItemLeveling)
+        if (s == null || !s.Enabled)
             return;
 
-        if (item.GetProperty(QuestItemGrowthProperties.QuestGrowthItemBool) != true)
+        // Quest rewards: QuestGrowthItemBool. LootGrowthItem: GrowthItem + QuestGrowthTreasureTierInt (container GrowthItem
+        // mutator sets FakeInt.GrowthTier but does not set 40151, so it does not enter this path).
+        bool questGrowthPath = item.GetProperty(QuestItemGrowthProperties.QuestGrowthItemBool) == true;
+        bool lootGrowthPath = item.GetProperty(FakeBool.GrowthItem) == true
+            && item.GetProperty(QuestItemGrowthProperties.QuestGrowthTreasureTierInt).HasValue
+            && item.GetProperty(QuestItemGrowthProperties.QuestGrowthItemBool) != true;
+        if (!questGrowthPath && !lootGrowthPath)
             return;
 
-        bool questGrowth = true;
+        if (questGrowthPath && !s.EnableQuestItemLeveling)
+            return;
+
+        if (lootGrowthPath && !s.EnableLootItemLeveling)
+            return;
+
+        bool questGrowth = questGrowthPath;
 
         int currentLevel = item.ItemLevel ?? 0;
         if (currentLevel <= prevItemLevel)
@@ -199,7 +226,7 @@ internal static class ItemXpCurveContextWorldObjectPatches
     [HarmonyPatch(typeof(WorldObject), nameof(WorldObject.ItemTotalXp), MethodType.Getter)]
     public static void PreItemTotalXpGetter(WorldObject __instance)
     {
-        if (!PatchClass.Settings.Enabled || !PatchClass.Settings.EnableQuestItemLeveling)
+        if (!QuestItemGrowthHarmony.IsItemXpCurveHarmonyEnabled(PatchClass.Settings))
             return;
 
         ItemXpCurveContext.Enter(__instance);
@@ -209,22 +236,17 @@ internal static class ItemXpCurveContextWorldObjectPatches
     [HarmonyPatch(typeof(WorldObject), nameof(WorldObject.ItemTotalXp), MethodType.Getter)]
     public static void FinalItemTotalXpGetter()
     {
-        if (!PatchClass.Settings.Enabled || !PatchClass.Settings.EnableQuestItemLeveling)
+        if (!QuestItemGrowthHarmony.IsItemXpCurveHarmonyEnabled(PatchClass.Settings))
             return;
 
         ItemXpCurveContext.Leave();
-    }
-
-    static bool PrepareItemBaseXpGetter()
-    {
-        return AccessTools.PropertyGetter(typeof(WorldObject), nameof(WorldObject.ItemBaseXp)) != null;
     }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(WorldObject), nameof(WorldObject.ItemBaseXp), MethodType.Getter)]
     public static void PreItemBaseXpGetter(WorldObject __instance)
     {
-        if (!PatchClass.Settings.Enabled || !PatchClass.Settings.EnableQuestItemLeveling)
+        if (!QuestItemGrowthHarmony.IsItemXpCurveHarmonyEnabled(PatchClass.Settings))
             return;
 
         ItemXpCurveContext.Enter(__instance);
@@ -234,7 +256,7 @@ internal static class ItemXpCurveContextWorldObjectPatches
     [HarmonyPatch(typeof(WorldObject), nameof(WorldObject.ItemBaseXp), MethodType.Getter)]
     public static void FinalItemBaseXpGetter()
     {
-        if (!PatchClass.Settings.Enabled || !PatchClass.Settings.EnableQuestItemLeveling)
+        if (!QuestItemGrowthHarmony.IsItemXpCurveHarmonyEnabled(PatchClass.Settings))
             return;
 
         ItemXpCurveContext.Leave();
@@ -260,7 +282,7 @@ internal static class AppraiseItemXpCurveContextPatches
     [HarmonyPatch(typeof(AppraiseInfo), "BuildProfile", new[] { typeof(WorldObject), typeof(Player), typeof(bool) })]
     static void PrefixAppraiseBuildProfile(WorldObject wo, Player examiner, bool success)
     {
-        if (!PatchClass.Settings.Enabled || !PatchClass.Settings.EnableQuestItemLeveling || wo is null)
+        if (!QuestItemGrowthHarmony.IsItemXpCurveHarmonyEnabled(PatchClass.Settings) || wo is null)
             return;
 
         ItemXpCurveContext.Enter(wo);

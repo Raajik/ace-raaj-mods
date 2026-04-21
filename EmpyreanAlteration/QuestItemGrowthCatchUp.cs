@@ -28,14 +28,19 @@ internal static class QuestItemGrowthCatchUp
             return;
 
         int delta = currentLevel - prevItemLevel;
-        bool summarize = delta >= 12;
+        int summarizeAt = Math.Max(1, s.QuestGrowthCatchUpSummarizeMinLevels);
+        bool summarize = delta >= summarizeAt;
         QuestItemGrowthLevelEngine.GrowthSummary? summary = summarize ? new QuestItemGrowthLevelEngine.GrowthSummary() : null;
 
         for (int level = start; level <= currentLevel; level++)
         {
-            ModManager.Log(
-                $"[EmpyreanAlteration] OnItemLevelUp: {item.Name} ({item.WeenieClassId}) level {level}/{item.ItemMaxLevel} questGrowth={questGrowth}",
-                ModManager.LogLevel.Info);
+            // Big catch-ups already send one player summary; skip per-level Info spam on the server console.
+            if (!summarize)
+            {
+                ModManager.Log(
+                    $"[EmpyreanAlteration] OnItemLevelUp: {item.Name} ({item.WeenieClassId}) level {level}/{item.ItemMaxLevel} questGrowth={questGrowth}",
+                    ModManager.LogLevel.Info);
+            }
 
             bool applied = QuestItemGrowthLevelEngine.ApplyLevelUp(item, player, level, s, emitMessages: !summarize, summary: summary, maxAttempts: 4);
             if (!applied)
@@ -123,6 +128,18 @@ internal static class QuestItemGrowthCatchUp
             parts.Add($"+{summary.MinorCritDamageRatingCount} Crit Damage Rating (minor)");
         if (summary.ArmorLevelGained > 0)
             parts.Add($"+{summary.ArmorLevelGained} Armor Level");
+        if (summary.GearDamageRatingSteps > 0)
+            parts.Add($"+{summary.GearDamageRatingSteps} Damage Rating (gear)");
+        if (summary.GearCritDamageRatingSteps > 0)
+            parts.Add($"+{summary.GearCritDamageRatingSteps} Crit Damage Rating (gear)");
+        if (summary.GearDamageResistRatingSteps > 0)
+            parts.Add($"+{summary.GearDamageResistRatingSteps} Damage Resist Rating");
+        if (summary.GearCritDamageResistRatingSteps > 0)
+            parts.Add($"+{summary.GearCritDamageResistRatingSteps} Crit Damage Resist Rating");
+        if (summary.GearHealingBoostRatingGained > 0)
+            parts.Add($"+{summary.GearHealingBoostRatingGained} Healing Boost Rating");
+        if (summary.GearVitalityRatingGained > 0)
+            parts.Add($"+{summary.GearVitalityRatingGained} Vitality Rating");
         if (summary.MaxManaGained > 0)
             parts.Add($"+{summary.MaxManaGained} Max Mana");
         if (summary.ValueReductions > 0)
@@ -133,6 +150,7 @@ internal static class QuestItemGrowthCatchUp
         if (parts.Count == 0 && summary.NoEffectRolls > 0)
             tail = $"no changes after {summary.NoEffectRolls} attempts (unexpected)";
 
-        return $"[EmpyreanAlteration] {item.Name} leveled up {delta} times and gained {tail}.";
+        string name = item.Name ?? "item";
+        return $"Your {name} gained {delta} levels at once. Combined effect: {tail}.";
     }
 }

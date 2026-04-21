@@ -53,10 +53,10 @@ public class QuestgiverAuras
 public class QuestgiverAuraSettings
 {
     [JsonPropertyName("// AegisWcid")]
-    public string AegisWcidDoc { get; } = "WCID of the Aegis item equipped to quest-giver NPCs. Sanguinary Aegis options: 23356=Blue, 23357=Green, 23358=Pink, 23359=Red, 23360=White. Golden Flame: 35982.";
+    public string AegisWcidDoc { get; init; } = "WCID of the Aegis item equipped to quest-giver NPCs. Sanguinary Aegis options: 23356=Blue, 23357=Green, 23358=Pink, 23359=Red, 23360=White. Golden Flame: 35982.";
     public uint AegisWcid { get; set; } = 23357;
 
     [JsonPropertyName("// DebugLogging")]
-    public string DebugLoggingDoc { get; } = "When true, logs a WARN line each time an aura Aegis is created and equipped to a quest-giver NPC. Intended for debugging only.";
+    public string DebugLoggingDoc { get; init; } = "When true, logs a WARN line each time an aura Aegis is created and equipped. For troubleshooting only.";
     public bool DebugLogging { get; set; } = false;
 }

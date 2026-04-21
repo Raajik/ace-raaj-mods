@@ -54,6 +54,10 @@
 
 
 	<ItemGroup>
+		<Compile Include="..\Shared\PeaPyrealWcids.cs" Link="Shared\PeaPyrealWcids.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Compile Remove=".template.config\**" />
 		<EmbeddedResource Remove=".template.config\**" />
 		<None Remove=".template.config\**" />

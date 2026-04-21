@@ -35,6 +35,7 @@ global using HarmonyLib;
 global using System.Linq;
 global using System.Numerics;
 global using System.Text;
+global using System.Text.Json.Serialization;
 
 global using Biota = ACE.Entity.Models.Biota;
 global using Weenie = ACE.Entity.Models.Weenie;

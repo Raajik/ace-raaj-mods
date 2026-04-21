@@ -1,0 +1,26 @@
+{
+  "common": {
+    "items": [
+      { "wcid": 2626, "name": "Trade Note (50,000)", "stackSize": 1 },
+      { "wcid": 2627, "name": "Trade Note (100,000)", "stackSize": 1 },
+      { "wcid": 7377, "name": "Trade Note (75,000)", "stackSize": 1 },
+      { "wcid": 20628, "name": "Trade Note (150,000)", "stackSize": 1 },
+      { "wcid": 20629, "name": "Trade Note (200,000)", "stackSize": 1 },
+      { "wcid": 20630, "name": "Trade Note (250,000)", "stackSize": 1 },
+      { "wcid": 6058, "name": "Dark Shard", "stackSize": 1 },
+      { "wcid": 6059, "name": "Dark Sliver", "stackSize": 1 },
+      { "wcid": 6060, "name": "Dark Speck", "stackSize": 1 },
+      { "wcid": 6055, "name": "Cracked Shard", "stackSize": 1 },
+      { "wcid": 6056, "name": "Small Shard", "stackSize": 1 },
+      { "wcid": 6057, "name": "Tiny Shard", "stackSize": 1 },
+      { "wcid": 6353, "name": "Pyreal Mote", "stackSize": 1 },
+      { "wcid": 6355, "name": "Pyreal Sliver", "stackSize": 1 },
+      { "wcid": 6876, "name": "Sturdy Iron Key", "stackSize": 1 },
+      { "wcid": 45876, "name": "Scarlet Red Letter", "stackSize": 1 },
+      { "wcid": 45875, "name": "Lucky Gold Letter", "stackSize": 1 },
+      { "wcid": 44711, "name": "Lesser Stamina Kit", "stackSize": 1 },
+      { "wcid": 44713, "name": "Lesser Mana Kit", "stackSize": 1 }
+    ],
+    "stackSizeChance": 0.2
+  }
+}

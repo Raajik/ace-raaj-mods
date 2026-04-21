@@ -44,6 +44,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         Settings = SettingsContainer.Settings ?? new Settings();
         RegisterEnabledPatchCategories();
         SwiftmendHealingKits.RefreshHealerHook(ModC.Harmony, Settings.EnableSwiftmend);
+        CollectorsAcceptAll.Initialize();
         ApplyWorldOpenSideEffects();
     }
 
@@ -113,6 +114,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             enabledFeatures.Add(Features.PetEx);
         if (Settings.EnablePetExShareDamage && Settings.EnablePetEx)
             enabledFeatures.Add(Features.PetExShareDamage);
+        if (Settings.EnableCollectorsAcceptAll)
+            enabledFeatures.Add(Features.CollectorsAcceptAll);
 
         ModC.RegisterPatchCategories(enabledFeatures.ToArray());
     }

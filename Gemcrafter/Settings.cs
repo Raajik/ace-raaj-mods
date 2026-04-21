@@ -2,32 +2,51 @@ namespace Gemcrafter;
 
 public class Settings
 {
-	public bool Enabled { get; set; } = true;
-	public bool Verbose { get; set; } = false;
+	[JsonPropertyName("// Gemcrafter")]
+	public string GemcrafterDoc { get; init; } = "Reading order: every // key is documentation; real settings follow in the same order. Toggles and lists through ExcludeTransferSpellNameContains.";
 
-	// Immersive item-on-item UX (tool->gem, powder->equipment) by patching generic use handler.
-	// If patching fails on your ACE build, Gemcrafter will automatically fall back to /gemcrush and /gemapply commands.
+	[JsonPropertyName("// Enabled")]
+	public string EnabledDoc { get; init; } = "Master switch for Gemcrafter patches and behavior.";
+	public bool Enabled { get; set; } = false;
+
+	[JsonPropertyName("// Verbose")]
+	public string VerboseDoc { get; init; } = "Extra logging for diagnostics.";
+	public bool Verbose { get; set; } = true;
+
+	[JsonPropertyName("// EnableImmersiveUseHooks")]
+	public string EnableImmersiveUseHooksDoc { get; init; } = "Immersive item-on-item UX (tool→gem, powder→equipment) via generic use handler. If patching fails, Gemcrafter falls back to /gemcrush and /gemapply.";
 	public bool EnableImmersiveUseHooks { get; set; } = true;
 
-	// Lootgen gem behavior
+	[JsonPropertyName("// EnableLootgenGemMagic")]
+	public string EnableLootgenGemMagicDoc { get; init; } = "Lootgen gem behavior: roll spells onto qualifying gems.";
 	public bool EnableLootgenGemMagic { get; set; } = true;
 
-	// First version: guarantee at least one spell; you can expand later to allow multi-roll.
+	[JsonPropertyName("// MinSpellsOnLootgenGem")]
+	public string MinSpellsOnLootgenGemDoc { get; init; } = "Minimum spells on a lootgen-tinkering gem (first version often matches Max).";
 	public int MinSpellsOnLootgenGem { get; set; } = 1;
+
+	[JsonPropertyName("// MaxSpellsOnLootgenGem")]
+	public string MaxSpellsOnLootgenGemDoc { get; init; } = "Maximum spells on a lootgen-tinkering gem.";
 	public int MaxSpellsOnLootgenGem { get; set; } = 1;
 
-	// If set, only these WCIDs will be treated as lootgen tinkering gems.
-	// Leave empty to use a conservative heuristic (ItemType.Gem + not already magical).
+	[JsonPropertyName("// GemWcidAllowlist")]
+	public string GemWcidAllowlistDoc { get; init; } = "If non-empty, only these WCIDs count as lootgen tinkering gems. Empty = heuristic (ItemType.Gem + not already magical).";
 	public List<uint> GemWcidAllowlist { get; set; } = new();
 
-	// Spell pool build
+	[JsonPropertyName("// IncludeCantrips")]
+	public string IncludeCantripsDoc { get; init; } = "Include cantrip-tier spells when building the spell pool.";
 	public bool IncludeCantrips { get; set; } = true;
 
-	// Allow these spells to appear on gems, but they are still excluded from transfer by default.
+	[JsonPropertyName("// IncludePortalRecallSummonOnGems")]
+	public string IncludePortalRecallSummonOnGemsDoc { get; init; } = "Allow portal/recall/summon-class spells in the gem pool; transfer can still exclude them separately.";
 	public bool IncludePortalRecallSummonOnGems { get; set; } = true;
 
-	// Name filters applied while building the pool from dat
+	[JsonPropertyName("// IncludeSpellNameContains")]
+	public string IncludeSpellNameContainsDoc { get; init; } = "If non-empty, only spells whose names contain one of these substrings are candidates (pool filter).";
 	public List<string> IncludeSpellNameContains { get; set; } = new();
+
+	[JsonPropertyName("// ExcludeSpellNameContains")]
+	public string ExcludeSpellNameContainsDoc { get; init; } = "Spell names containing any of these substrings are excluded from the pool (unless overridden by include rules).";
 	public List<string> ExcludeSpellNameContains { get; set; } = new()
 	{
 		"Portal",
@@ -35,13 +54,20 @@ public class Settings
 		"Recall",
 	};
 
-	// Crush/apply
-	public uint CrusherToolWcid { get; set; } = 0; // Configure to the Mortar & Pestle WCID on your shard.
-	public List<uint> InfusedPowderWcids { get; set; } = new(); // One or more base-game powder WCIDs to reuse.
+	[JsonPropertyName("// CrusherToolWcid")]
+	public string CrusherToolWcidDoc { get; init; } = "Mortar & Pestle (or crush tool) WCID for immersive crush flow; 0 until configured for your shard.";
+	public uint CrusherToolWcid { get; set; } = 0;
 
+	[JsonPropertyName("// InfusedPowderWcids")]
+	public string InfusedPowderWcidsDoc { get; init; } = "Base-game powder WCIDs to treat as infused powder for apply flows.";
+	public List<uint> InfusedPowderWcids { get; set; } = new();
+
+	[JsonPropertyName("// TransferMaxSpellsPerApply")]
+	public string TransferMaxSpellsPerApplyDoc { get; init; } = "Max spells moved from gem to equipment per apply.";
 	public int TransferMaxSpellsPerApply { get; set; } = 1;
 
-	// Portal/recall/summon are excluded from transfer by default.
+	[JsonPropertyName("// ExcludeTransferSpellNameContains")]
+	public string ExcludeTransferSpellNameContainsDoc { get; init; } = "Spells whose names match these substrings are not transferred to equipment by default.";
 	public List<string> ExcludeTransferSpellNameContains { get; set; } = new()
 	{
 		"Portal",
@@ -49,4 +75,3 @@ public class Settings
 		"Recall",
 	};
 }
-

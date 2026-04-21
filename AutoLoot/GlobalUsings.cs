@@ -78,6 +78,8 @@ global using ACE.Shared;
 global using ACE.Shared.Helpers;
 global using ACE.Shared.Mods;
 
+global using AceRaajMods.Shared;
+
 // ── AutoLoot internal ────────────────────────────────────────────────────────
 // Makes the VTClassic (VirindiTank-compatible) loot library available everywhere
 // in this project without needing a "using AutoLoot.Lib.VTClassic;" in each file.

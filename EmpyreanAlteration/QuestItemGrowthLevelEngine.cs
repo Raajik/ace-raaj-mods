@@ -6,6 +6,15 @@ internal static class QuestItemGrowthLevelEngine
     private const double WeaponImbueChanceWhenNone = 0.8;
     private const double WeaponExtraImbueChance = 0.1;
 
+    // After at least one imbue (ImbuedEffect != 0), prefer adding spells until the spellbook has this many entries.
+    private const int PrioritizeSpellsUntilSpellBookCount = 4;
+
+    private static int GetSpellBookCount(WorldObject item) =>
+        item?.Biota?.PropertiesSpellBook?.Count ?? 0;
+
+    private static bool ShouldPrioritizeSpellsOverImbueAndSalvage(WorldObject item) =>
+        item != null && item.ImbuedEffect != 0 && GetSpellBookCount(item) < PrioritizeSpellsUntilSpellBookCount;
+
     internal sealed class GrowthSummary
     {
         internal int LevelsApplied;
@@ -25,6 +34,12 @@ internal static class QuestItemGrowthLevelEngine
         internal int MinorCritDamageRatingCount;
         internal int MinorDamageRatingCount;
         internal int WeaponMeleeVarianceTightenSteps;
+        internal int GearDamageRatingSteps;
+        internal int GearCritDamageRatingSteps;
+        internal int GearDamageResistRatingSteps;
+        internal int GearCritDamageResistRatingSteps;
+        internal int GearHealingBoostRatingGained;
+        internal int GearVitalityRatingGained;
 
         internal void AddImbue(string imbueName)
         {
@@ -61,10 +76,11 @@ internal static class QuestItemGrowthLevelEngine
         if (item == null || player == null)
             return false;
 
-        // Basic category routing; jewelry is detected primarily by name.
+        // Category routing: jewelry by name; shields before weapons (shields are often MeleeWeapon + Shield).
         WeenieType type = item.WeenieType;
         string name = item.Name ?? string.Empty;
         bool isJewelry = IsJewelry(name);
+        bool isShield = QuestGrowthItemHelpers.IsShield(item);
 
         if (maxAttempts < 1)
             maxAttempts = 1;
@@ -75,11 +91,13 @@ internal static class QuestItemGrowthLevelEngine
             applied =
                 isJewelry
                     ? TryApplyJewelryLevelUp(item, player, level, settings, emitMessages, summary)
-                    : type is WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster
-                        ? TryApplyWeaponLevelUp(item, player, level, settings, emitMessages, summary)
-                        : type == WeenieType.Clothing
-                            ? TryApplyArmorLevelUp(item, player, level, settings, emitMessages, summary)
-                            : false;
+                    : isShield
+                        ? TryApplyShieldLevelUp(item, player, level, settings, emitMessages, summary)
+                        : type is WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster
+                            ? TryApplyWeaponLevelUp(item, player, level, settings, emitMessages, summary)
+                            : type == WeenieType.Clothing
+                                ? TryApplyArmorLevelUp(item, player, level, settings, emitMessages, summary)
+                                : false;
 
             if (applied)
                 break;
@@ -95,6 +113,7 @@ internal static class QuestItemGrowthLevelEngine
             applied = true;
         }
 
+        QuestGrowthItemHelpers.EnsureAttunedIfLeveled(item, level);
         return applied;
     }
 
@@ -123,9 +142,15 @@ internal static class QuestItemGrowthLevelEngine
 
     private static bool TryApplyWeaponLevelUp(WorldObject item, Player player, int level, Settings settings, bool emitMessages, GrowthSummary? summary)
     {
-        // 1) Imbues, 2) weapon ladder + stat + minor (WeaponQuestGrowth), or legacy spell growth, 3) salvage-like bonuses.
-        if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary))
-            return true;
+        // Normally: 1) Imbues, 2) weapon ladder + stat + minor (WeaponQuestGrowth), or legacy spell growth, 3) salvage-like bonuses.
+        // After one imbue and while spellbook has fewer than four entries: spells/stat/minor/salvage/utility first; defer further imbues until spell cap or no other effect.
+        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item);
+
+        if (!prioritizeSpells)
+        {
+            if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary))
+                return true;
+        }
 
         if (settings.WeaponQuestGrowth is { Enabled: true })
         {
@@ -142,7 +167,14 @@ internal static class QuestItemGrowthLevelEngine
             if (WeaponQuestGrowth.TryApplyMinorOutcome(item, player, level, settings, emitMessages, summary, out _))
                 return true;
         }
-        else if (SpellGrowthHelper.TryApplySpellGrowth(item, player, level, settings, emitMessages, out string? spellDesc))
+        else if (SpellGrowthHelper.TryApplySpellGrowth(
+                     item,
+                     player,
+                     level,
+                     settings,
+                     emitMessages,
+                     out string? spellDesc,
+                     SpellGrowthHelper.GetWeaponSpellCategory(item)))
         {
             if (summary != null && !string.IsNullOrWhiteSpace(spellDesc))
                 summary.AddSpell(spellDesc);
@@ -151,6 +183,12 @@ internal static class QuestItemGrowthLevelEngine
 
         if (TryApplySalvageLikeBonus(item, player, level, settings, forWeapons: true, emitMessages, summary))
             return true;
+
+        if (QuestGrowthUtilityHelper.TryApplyUtility(item, player, level, settings, emitMessages, summary))
+            return true;
+
+        if (prioritizeSpells)
+            return TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary);
 
         return false;
     }
@@ -162,19 +200,182 @@ internal static class QuestItemGrowthLevelEngine
 
     private static bool TryApplyArmorLevelUp(WorldObject item, Player player, int level, Settings settings, bool emitMessages, GrowthSummary? summary)
     {
-        // 1) Try a defensive imbue / effect first.
-        if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary))
-            return true;
+        // 1) Try a defensive imbue / effect first (skipped while prioritizing spell fill after first imbue).
+        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item);
 
-        if (SpellGrowthHelper.TryApplySpellGrowth(item, player, level, settings, emitMessages, out string? spellDesc))
+        if (!prioritizeSpells)
+        {
+            if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary))
+                return true;
+        }
+
+        if (SpellGrowthHelper.TryApplySpellGrowth(
+                item,
+                player,
+                level,
+                settings,
+                emitMessages,
+                out string? spellDesc,
+                SpellGrowthCategory.ArmorClothing))
         {
             if (summary != null && !string.IsNullOrWhiteSpace(spellDesc))
                 summary.AddSpell(spellDesc);
             return true;
         }
 
+        if (ArmorJewelryRatingGrowth.TryApply(
+                item,
+                player,
+                level,
+                settings,
+                ArmorJewelryRatingGrowth.RatingSlotKind.NonJewelryClothing,
+                emitMessages,
+                summary))
+            return true;
+
+        if (TryApplyArmorSteelOrRandomProtection(item, player, level, settings, emitMessages, summary))
+            return true;
+
         if (TryApplySalvageLikeBonus(item, player, level, settings, forWeapons: false, emitMessages, summary))
             return true;
+
+        if (QuestGrowthUtilityHelper.TryApplyUtility(item, player, level, settings, emitMessages, summary))
+            return true;
+
+        if (prioritizeSpells)
+            return TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary);
+
+        return false;
+    }
+
+    private static bool TryApplyArmorSteelOrRandomProtection(
+        WorldObject item,
+        Player player,
+        int level,
+        Settings settings,
+        bool emitMessages,
+        GrowthSummary? summary)
+    {
+        if (item.WeenieType != WeenieType.Clothing)
+            return false;
+        if (IsJewelry(item.Name ?? string.Empty))
+            return false;
+
+        ArmorClothingGrowthSettings ag = settings.ArmorClothingGrowth;
+
+        if (Random.Shared.NextDouble() < ag.SteelArmorLevelChance)
+        {
+            int delta = ag.SteelArmorLevelDelta;
+            if (delta == 0)
+                delta = 20;
+
+            int before = item.ArmorLevel ?? 0;
+            item.ArmorLevel = before + delta;
+            summary?.ArmorLevelGained += delta;
+            if (emitMessages)
+                player.SendMessage(
+                    $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{delta} Armor Level ({before} \u2192 {before + delta}) (steel-like).");
+            return true;
+        }
+
+        if (Random.Shared.NextDouble() >= ag.RandomArmorModChance)
+            return false;
+
+        int minV = ag.RandomArmorModMin;
+        int maxV = ag.RandomArmorModMax;
+        if (minV > maxV)
+            (minV, maxV) = (maxV, minV);
+
+        int v = minV == maxV ? minV : Random.Shared.Next(minV, maxV + 1);
+        float add = v / 100f;
+
+        int pick = Random.Shared.Next(0, 8);
+        string label;
+        switch (pick)
+        {
+            case 0:
+                item.ArmorModVsSlash = (item.ArmorModVsSlash ?? 1f) + add;
+                label = "Slashing";
+                break;
+            case 1:
+                item.ArmorModVsPierce = (item.ArmorModVsPierce ?? 1f) + add;
+                label = "Piercing";
+                break;
+            case 2:
+                item.ArmorModVsBludgeon = (item.ArmorModVsBludgeon ?? 1f) + add;
+                label = "Bludgeoning";
+                break;
+            case 3:
+                item.ArmorModVsAcid = (item.ArmorModVsAcid ?? 1f) + add;
+                label = "Acid";
+                break;
+            case 4:
+                item.ArmorModVsFire = (item.ArmorModVsFire ?? 1f) + add;
+                label = "Fire";
+                break;
+            case 5:
+                item.ArmorModVsCold = (item.ArmorModVsCold ?? 1f) + add;
+                label = "Cold";
+                break;
+            case 6:
+                item.ArmorModVsElectric = (item.ArmorModVsElectric ?? 1f) + add;
+                label = "Electric";
+                break;
+            default:
+                item.ArmorModVsSlash = (item.ArmorModVsSlash ?? 1f) + add;
+                label = "Slashing";
+                break;
+        }
+
+        summary?.AddSalvage("ProtectionGrowth", v);
+        if (emitMessages)
+            player.SendMessage(
+                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{add:F2} vs {label} protection.");
+        return true;
+    }
+
+    private static bool TryApplyShieldLevelUp(WorldObject item, Player player, int level, Settings settings, bool emitMessages, GrowthSummary? summary)
+    {
+        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item);
+
+        if (!prioritizeSpells)
+        {
+            if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary))
+                return true;
+        }
+
+        if (SpellGrowthHelper.TryApplySpellGrowth(
+                item,
+                player,
+                level,
+                settings,
+                emitMessages,
+                out string? spellDesc,
+                SpellGrowthCategory.Shield))
+        {
+            if (summary != null && !string.IsNullOrWhiteSpace(spellDesc))
+                summary.AddSpell(spellDesc);
+            return true;
+        }
+
+        if (ArmorJewelryRatingGrowth.TryApply(
+                item,
+                player,
+                level,
+                settings,
+                ArmorJewelryRatingGrowth.RatingSlotKind.Shield,
+                emitMessages,
+                summary))
+            return true;
+
+        if (TryApplySalvageLikeBonus(item, player, level, settings, forWeapons: false, emitMessages, summary))
+            return true;
+
+        if (QuestGrowthUtilityHelper.TryApplyUtility(item, player, level, settings, emitMessages, summary))
+            return true;
+
+        if (prioritizeSpells)
+            return TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary);
 
         return false;
     }
@@ -187,18 +388,47 @@ internal static class QuestItemGrowthLevelEngine
     private static bool TryApplyJewelryLevelUp(WorldObject item, Player player, int level, Settings settings, bool emitMessages, GrowthSummary? summary)
     {
         // Jewelry: strongly prefer an imbue if none exists, then spells/cantrips, then fall back to defensive/utility salvage-like tweaks.
-        if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: false, emitMessages, summary))
-            return true;
+        // After one imbue and while spellbook has fewer than four entries: spells and other effects before further imbues.
+        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item);
 
-        if (SpellGrowthHelper.TryApplySpellGrowth(item, player, level, settings, emitMessages, out string? spellDesc))
+        if (!prioritizeSpells)
+        {
+            if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: false, emitMessages, summary))
+                return true;
+        }
+
+        if (SpellGrowthHelper.TryApplySpellGrowth(
+                item,
+                player,
+                level,
+                settings,
+                emitMessages,
+                out string? spellDesc,
+                SpellGrowthCategory.Jewelry))
         {
             if (summary != null && !string.IsNullOrWhiteSpace(spellDesc))
                 summary.AddSpell(spellDesc);
             return true;
         }
 
+        if (ArmorJewelryRatingGrowth.TryApply(
+                item,
+                player,
+                level,
+                settings,
+                ArmorJewelryRatingGrowth.RatingSlotKind.Jewelry,
+                emitMessages,
+                summary))
+            return true;
+
         if (TryApplySalvageLikeBonus(item, player, level, settings, forWeapons: false, emitMessages, summary, preferJewelry: true))
             return true;
+
+        if (QuestGrowthUtilityHelper.TryApplyUtility(item, player, level, settings, emitMessages, summary))
+            return true;
+
+        if (prioritizeSpells)
+            return TryGrantImbue(item, player, level, settings, isArmorOrWeapon: false, emitMessages, summary);
 
         return false;
     }
@@ -222,6 +452,17 @@ internal static class QuestItemGrowthLevelEngine
 
     private static void ApplyMinimalFallback(WorldObject item, Player player, int level, bool emitMessages, GrowthSummary? summary)
     {
+        if (QuestGrowthItemHelpers.IsShield(item))
+        {
+            int beforeS = item.ArmorLevel ?? 0;
+            int afterS = beforeS + 1;
+            item.ArmorLevel = afterS;
+            summary?.ArmorLevelGained += 1;
+            if (emitMessages)
+                player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Armor Level ({beforeS} \u2192 {afterS}).");
+            return;
+        }
+
         if (item.WeenieType == WeenieType.MeleeWeapon || item.WeenieType == WeenieType.MissileLauncher || item.WeenieType == WeenieType.Caster)
         {
             int before = item.Damage ?? 0;
@@ -283,7 +524,8 @@ internal static class QuestItemGrowthLevelEngine
     private static bool TryGrantImbue(WorldObject item, Player player, int level, Settings settings, bool isArmorOrWeapon, bool emitMessages, GrowthSummary? summary)
     {
         WeenieType wt = item.WeenieType;
-        bool isQuestWeapon = wt is WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster;
+        bool isQuestWeapon = (wt is WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster)
+            && !QuestGrowthItemHelpers.IsShield(item);
         if (isArmorOrWeapon && isQuestWeapon && settings.WeaponQuestGrowth is { Enabled: true })
             return TryGrantWeaponQuestGrowthImbue(item, player, level, settings, emitMessages, summary);
 
@@ -318,6 +560,23 @@ internal static class QuestItemGrowthLevelEngine
 
     private static ImbuedEffectType? PickImbueForItem(WorldObject item, ImbuedEffectType existing, bool isArmorOrWeapon)
     {
+        if (QuestGrowthItemHelpers.IsShield(item))
+        {
+            ImbuedEffectType[] shieldPool =
+            {
+                ImbuedEffectType.MagicDefense,
+                ImbuedEffectType.MeleeDefense,
+                ImbuedEffectType.MissileDefense,
+            };
+
+            ImbuedEffectType[] remainingShield = shieldPool.Where(p => (existing & p) == 0).ToArray();
+            if (remainingShield.Length == 0)
+                return null;
+
+            int sidx = Random.Shared.Next(0, remainingShield.Length);
+            return remainingShield[sidx];
+        }
+
         int? damageTypeInt = item.GetProperty(PropertyInt.DamageType);
         DamageType damageType = damageTypeInt.HasValue ? (DamageType)damageTypeInt.Value : DamageType.Undef;
 
@@ -346,9 +605,6 @@ internal static class QuestItemGrowthLevelEngine
                     ImbuedEffectType.CriticalStrike,
                     ImbuedEffectType.CripplingBlow,
                     ImbuedEffectType.ArmorRending,
-                    ImbuedEffectType.MagicDefense,
-                    ImbuedEffectType.MeleeDefense,
-                    ImbuedEffectType.MissileDefense,
                 }
             : type == WeenieType.Clothing
                 ? new[]
@@ -437,9 +693,6 @@ internal static class QuestItemGrowthLevelEngine
             ImbuedEffectType.CriticalStrike,
             ImbuedEffectType.CripplingBlow,
             ImbuedEffectType.ArmorRending,
-            ImbuedEffectType.MagicDefense,
-            ImbuedEffectType.MeleeDefense,
-            ImbuedEffectType.MissileDefense,
         };
 
         ImbuedEffectType[] remaining = pool.Where(p => (existing & p) == 0).ToArray();

@@ -24,21 +24,31 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
     void TearDownFormulaPatches()
     {
-        foreach (var patch in enabledPatches)
+        try
         {
-            try
-            {
-                ModC.Harmony.UnpatchCategory(patch.GetType().Name);
-            }
-            catch (Exception ex)
-            {
-                ModManager.Log($"[Numbersmith] Unpatch {patch.GetType().Name}: {ex.Message}", ModManager.LogLevel.Warn);
-            }
+            if (enabledPatches.Count == 0)
+                return;
+                
+            var patchesToRemove = enabledPatches.ToList();
+            enabledPatches.Clear();
 
-            patch.Shutdown();
+            foreach (var patch in patchesToRemove)
+            {
+                try
+                {
+                    ModC.Harmony.UnpatchCategory(patch.GetType().Name);
+                    patch.Shutdown();
+                }
+                catch (Exception ex)
+                {
+                    ModManager.Log($"[Numbersmith] Unpatch {patch.GetType().Name}: {ex.Message}", ModManager.LogLevel.Warn);
+                }
+            }
         }
-
-        enabledPatches.Clear();
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Numbersmith] TearDownFormulaPatches failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
     }
 
     void ApplyFormulaPatches()

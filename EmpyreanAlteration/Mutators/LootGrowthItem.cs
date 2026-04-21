@@ -1,3 +1,5 @@
+using EmpyreanAlteration;
+
 namespace EmpyreanAlteration.Mutators;
 
 // LootGrowthItem: initializes loot-generated items with item XP and optional pre-imbues.
@@ -20,8 +22,15 @@ internal class LootGrowthItem : Mutator
         if (item.GetProperty(FakeBool.GrowthItem) == true)
             return false;
 
-        // Require an eligible equippable WeenieType.
-        if (!PatchClass.Settings.LootItemLevelingEligibleWeenieTypes.Contains(item.WeenieType))
+        // Non-empty list filters by WeenieType; null or [] means "any equippable gear shape" (empty JSON [] would
+        // otherwise make Contains fail for every item and hide all loot XP bars).
+        WeenieType[] eligible = PatchClass.Settings.LootItemLevelingEligibleWeenieTypes;
+        if (eligible is { Length: > 0 })
+        {
+            if (!eligible.Contains(item.WeenieType))
+                return false;
+        }
+        else if (!ItemLevelingEligibility.IsEquippableGearShape(item))
             return false;
 
         bool mutated = false;
@@ -56,6 +65,12 @@ internal class LootGrowthItem : Mutator
             return false;
 
         item.SetProperty(FakeBool.GrowthItem, true);
+
+        // Tier/category for QuestItemGrowthLevelEngine (WeaponQuestGrowth spell tier, etc.). Do not set QuestGrowthItemBool
+        // here: that flag is for quest inventory init and has been observed to break client XP bars on fresh loot.
+        // OnItemLevelUp runs catch-up when GrowthItem is true and QuestGrowthTreasureTierInt is set (loot/quest init only).
+        item.SetProperty(QuestItemGrowthProperties.QuestItemCategoryInt, (int)item.WeenieType);
+        item.SetProperty(QuestItemGrowthProperties.QuestGrowthTreasureTierInt, profile.Tier);
 
         return true;
     }

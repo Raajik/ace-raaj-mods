@@ -22,3 +22,4 @@ global using ACE.Shared.Mods;
 global using HarmonyLib;
 global using Spell = ACE.Server.Entity.Spell;
 global using System.Text;
+global using System.Text.Json.Serialization;

@@ -1,0 +1,11 @@
+{
+  "EnableRandomLootDrops": false,
+  "LootDropChance": 0.05,
+  "DropFromMonsters": true,
+  "DropFromChests": true,
+  "LootMinItems": 1,
+  "LootMaxItems": 3,
+  "Tier1LootDropWeight": 60,
+  "Tier2LootDropWeight": 30,
+  "Tier3LootDropWeight": 10
+}

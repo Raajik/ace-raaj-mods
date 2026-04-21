@@ -8,20 +8,28 @@ An ACE (Asheron's Call Emulator) server mod branched from [QuestBonus](https://g
 
 ### Quest Points and XP Multiplier
 
-Every quest you solve earns Quest Points (QP). Your accumulated QP converts into a persistent multiplier applied to all XP and luminance gains:
+Every quest you solve earns Quest Points (QP). Kill and quest XP from ACE are scaled by a **multiplicative** chain (defaults tune early progression):
 
 ```
-Multiplier = 1 + (QuestPoints x BonusPerQuestPoint / 100)
+Total = (StandardBaseXpRetentionPercent / 100)
+      × (1 + QuestPoints × BonusPerQuestPoint / 100)
+      × (1 + sum of Item XP Boost on equipped items)
+      × AugmentXpMultiplier
+      × (1 + Enlightenment × EnlightenmentBonusPercentPer / 100)
+      × ChallengeModeXpMultiplier
 ```
 
-Example with the default `BonusPerQuestPoint` of `0.5`:
+Default `StandardBaseXpRetentionPercent` is `25` (you keep 25% of raw ACE XP before other terms, i.e. −75% versus “full vanilla” for that layer). Default `BonusPerQuestPoint` is `0.1` (each QP adds 0.001 to the QP factor). Example QP factor only:
 
-| Quest Points | XP Multiplier |
+| Quest Points | QP factor (1 + QP × 0.001) |
 |---|---|
-| 0 QP | 1.00x |
-| 100 QP | 1.50x |
-| 200 QP | 2.00x |
-| 50 QP | 1.25x |
+| 0 QP | 1.00× |
+| 100 QP | 1.10× |
+| 1000 QP | 2.00× |
+
+Use `/qb` for the **multiplicative** breakdown only (Base XP block, one line per chat line). `/qb list` shows the quest table then the same block. Use `/topqb` for the top 10 characters by stored QP, your QP, and global rank.
+
+Luminance uses the same chain when `ApplyStandardBaseXpScaleToLuminance` is true; when false, only the QP factor (`QuestBonus`) applies to luminance (legacy behavior).
 
 Individual quests can be weighted in `Settings.json`. A quest set to `0` is tracked but awards no QP — useful for suppressing timers, stipends, or other low-value quests.
 
@@ -40,15 +48,25 @@ When `UseAccountWideQuests` is `true` (default), Quest Points and the XP multipl
 
 ### Completion Bonus XP
 
-On each quest solve (first and repeat), when enabled, the player receives a flat XP grant in addition to the ongoing multiplier.
+On each quest solve (first and repeat), when enabled, the player receives a one-shot XP grant (then the ongoing QP multiplier applies to that grant like any other quest XP).
 
-- The bonus scales with the player's current level: `multiplier × (XP needed for next level)`.
-- Global default multiplier is set via `DefaultCompletionBonusXpMultiplier` (default 30% of level-up cost).
-- Per-quest overrides are supported via `CompletionBonusXpOverrides`.
-- Set a quest's multiplier to `0` to suppress the bonus for that specific quest.
-- Can be disabled entirely with `EnableCompletionBonusXp: false`.
+- **Unlisted** quests: fraction of next-level XP = `DefaultCompletionBonusXpMultiplier + (QuestPoints × CompletionBonusPerQuestPoint / 100)` (defaults: `0` + QP-scaled term).
+- **Listed** in `CompletionBonusXpOverrides`: that value is the **absolute** completion fraction for that quest (same meaning as the old default multiplier field). Use `0` to suppress.
+- Disable entirely with `EnableCompletionBonusXp: false`.
 
-Note: the completion bonus goes through the normal `GrantXP` path, so it is also subject to the ongoing QP multiplier.
+### Repeat Quest Points
+
+When `EnableRepeatQuestPoints` is true, repeat solves can add that quest’s QP to an **extra** pool at most once per quest per `RepeatQuestPointCooldownSeconds` (default 10 hours), persisted per character. Total stored QP = unique-quest sum + extra (milestones + repeat awards).
+
+### Quest cooldown reduction
+
+When `EnableQuestCooldownReduction` is true, repeat cooldown wait is scaled by  
+`1 − min(cap, QuestPoints × CooldownReductionPerQuestPoint / 100)`  
+(independent of `BonusPerQuestPoint`; cap via `QuestCooldownReductionCap`).
+
+### Portal max level
+
+When `BypassPortalMaxLevelRestriction` is true, ACE’s portal **max level** check (`use_portal_max_level_requirement`) is effectively disabled so high-level characters may use portals that would otherwise block them.
 
 ---
 
@@ -195,8 +213,8 @@ Earned 426,711 XP! (300,501 * 142%)
 
 | Command | Description |
 |---|---|
-| `/qb-inspect <name>` | Shows stored QP, XP multiplier, character quest count, and account-wide unique count for an online player. |
-| `/qb-reset <name>` | Recalculates and re-stores QP for a specific online player. Notifies both admin and player. |
+| `/qb-inspect <name>` | Shows stored QP, total XP multiplier (% of raw), character quest count, and account-wide unique count for an online player. |
+| `/qb-reset <name>` | Recalculates and re-stores QP for a specific online player. Notifies both admin and player with total XP multiplier. |
 | `/qb-resetall` | Recalculates QP for all currently online players. Optional after editing `Settings.json` — the mod also recalculates automatically when the file is saved. |
 
 ---
@@ -209,7 +227,12 @@ All settings live in `Settings.json` in the mod folder. The file is auto-generat
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `BonusPerQuestPoint` | float | `0.5` | Percentage of XP bonus per QP. Formula: `1 + (QP × BonusPerQuestPoint / 100)`. |
+| `StandardBaseXpRetentionPercent` | float | `25` | Percent of raw ACE XP kept before other multipliers (25 = 25% of raw). |
+| `BonusPerQuestPoint` | float | `0.1` | QP factor: `1 + (QP × BonusPerQuestPoint / 100)`. |
+| `AugmentXpMultiplier` | float | `1` | Server-wide augment term in the product (1 = unchanged). |
+| `ChallengeModeXpMultiplier` | float | `1` | Server-wide Challenge Mode term (1 = unchanged). |
+| `ApplyStandardBaseXpScaleToLuminance` | bool | `true` | Use full multiplicative chain for luminance; `false` = QP factor only. |
+| `EnlightenmentBonusPercentPer` | float | `0` | Per enlightenment: includes `(1 + enlight × this / 100)` in the product. |
 | `DefaultPoints` | float | `1.0` | QP awarded for any quest not listed in `QuestBonuses`. Set to `0` to only reward explicitly listed quests. |
 | `QuestBonuses` | dict | see below | Per-quest QP overrides keyed by internal quest name. See `Quests.txt` for all valid names. |
 
@@ -250,7 +273,7 @@ Loot tables are configured in `RepeatSolveLoot.json`. See that file for document
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `EnableQuestCooldownReduction` | bool | `true` | Reduce quest repeat timers by the same % as the player's XP bonus. |
+| `EnableQuestCooldownReduction` | bool | `true` | Reduce quest repeat timers using QP × `CooldownReductionPerQuestPoint` (capped), not the full XP chain. |
 | `QuestCooldownReductionCap` | float? | `0.95` | Cap on reduction (0–1). Default 95% max; set `null` for uncapped. |
 | `QuestCooldownReductionOnlyIfMinDeltaExceedsSeconds` | int | `86400` | Only apply reduction if world `MinDelta` > this (seconds). `0` = no filter. Protects short portal-flag timers. |
 | `PermanentFlagQuests` | list | see `Settings.json` | Quest names that skip cooldown reduction (vanilla `GetNextSolveTime`). Case-sensitive. |

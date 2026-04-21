@@ -1,5 +1,33 @@
 {
-  "// About": "Optional keys starting with // are human-readable docs from Settings.cs (same names as JsonPropertyName). Safe to delete; servers ignore them if not deserialized.",
+  "// FeatureToggles": "Reading order: below this line, every // key is documentation; the next block lists real settings in the same order (toggles and MaxSpecCredits, then each named section object). Each Enable* flag turns one QOL Harmony patch group on or off — false = vanilla ACE for that area only; other features stay as configured.",
+  "// EnableAnimations": "MotionTable length overrides per MotionCommand (Animations.AnimationSpeeds; {} = vanilla) and configurable delay between each /die speech step.",
+  "// EnableAugmentations": "Override augmentation type caps (Augmentation.MaxAugs) and optional IgnoreShared* so attribute or resist augs ignore ACE shared-group caps.",
+  "// EnableDefaults": "When true, default values in the Defaults object apply the first time a listed property is set on a player who had no stored value yet (e.g. new or migrated chars).",
+  "// EnableFellowships": "Raises max fellowship size for this mod’s invite logic, XP share (flat or per-size table), /fship bulk invite, optional busy bypass, StopAtMaxFellowshipInvite.",
+  "// EnablePermanentObjects": "World objects marked with the Permanent fake property survive landblock unload without inventory wipe.",
+  "// EnableRecklessness": "Replaces ACE Recklessness damage scaling with a power-bar window (PowerLow/PowerHigh) and trained/specialized damage rating bonuses configured in the Recklessness object below.",
+  "// EnableTailoring": "Allow society armor as tailoring source/target (removes ACE restriction).",
+  "// EnableVendorsBuyEverything": "Vendors accept buy/sell on item types they would normally refuse.",
+  "// EnableQuestgiverAuras": "Equip quest-giver NPCs (creatures with StampQuest/InqQuest emotes) with an Aegis visual; WCID is QuestgiverAuras.AegisWcid.",
+  "// EnableStackable": "Raise stack limits and enable stacking for selected WeenieTypes (books, keys, etc.) per the Stackable object.",
+  "// EnableSwiftmend": "Healing kits apply self-heal plus heal-over-time; timing and kit categories are in the Swiftmend object below.",
+  "// EnablePetAttackSelected": "Pet attacks match the player’s selected target where applicable.",
+  "// EnablePetMessageDamage": "Route or label combat messages involving pets.",
+  "// EnablePetStow": "Stow/recall pet behavior patches.",
+  "// EnableSummonCreatureAsPet": "Summon-creature spells can create pets with QOL pet rules.",
+  "// EnablePetSummonMultiple": "Allow multiple pets when the pet patches allow it.",
+  "// EnablePetEx": "Extended pet behavior package (PetEx hooks).",
+  "// EnablePetExShareDamage": "Share damage between player and PetEx pet per that feature’s rules.",
+  "// EnableOfflineSwear": "Chat command /offlineswear and related offline-name filter behavior.",
+  "// MaxSpecCredits": "Total specialisation credits a player may spend. Vanilla cap is 70. Use 9999 for effectively unlimited.",
+  "// Animations": "DieSeconds: seconds between each /die broadcast speech step (not MotionTable; 0 = minimal delay). AnimationSpeeds: quoted MotionCommand names → seconds (0 = skip). Shipped preset is all zeros (instant). Use {} for vanilla motion-table lengths. Inside Animations: // lines first, then values (same order).",
+  "// Defaults": "Four dictionaries: keys are ACE property enum names (PropertyInt64, PropertyInt, PropertyFloat, PropertyBool). Values apply only on first assignment when the player had no prior stored value. Empty {} means no defaults for that type. Inside Defaults: // lines first, then values (same order).",
+  "// Fellowship": "SendDetails, MaxMembers, StopAtMaxFellowshipInvite, IgnoreBusy, OverrideSharePercent, FlatSharePercent, SharePercent table, DefaultShare. Inside Fellowship: // lines first, then values (same order).",
+  "// Recklessness": "Power bar window (PowerLow/PowerHigh) and damage rating bonuses while Recklessness is active (trained vs specialized). Inside Recklessness: // lines first, then values (same order).",
+  "// Augmentation": "IgnoreSharedAttribute / IgnoreSharedResist relax ACE group caps. MaxAugs merges per-type caps at startup. Inside Augmentation: // lines first, then values (same order).",
+  "// QuestgiverAuras": "Visual aura for creature quest-givers; AegisWcid must be a valid item WCID. Inside QuestgiverAuras: // lines first, then values (same order).",
+  "// Stackable": "MaxStackSize caps stacks for types this mod makes stackable. Enable* flags gate Book/Key/Generic/Lockpick/Scroll. StackableTypes lists WeenieType names; types can also be added for edge cases—IsEnabledType uses toggles first, then membership in this list. Inside Stackable: // lines first, then values (same order).",
+  "// Swiftmend": "Heal-over-time after using kits: duration, tick interval, skill-based healing per tick, specialization multiplier, per-kit-type toggles, optional debug spam. Inside Swiftmend: // lines first, then values (same order).",
   "EnableAnimations": true,
   "EnableAugmentations": true,
   "EnableDefaults": true,
@@ -18,19 +46,13 @@
   "EnablePetSummonMultiple": true,
   "EnablePetEx": true,
   "EnablePetExShareDamage": true,
-  "Swiftmend": {
-    "HotDurationSeconds": 15.0,
-    "HotTickSeconds": 1.0,
-    "BaseSkillPercentPerTick": 0.025,
-    "SpecializedMultiplier": 2.0,
-    "EnableHealthKits": true,
-    "EnableStaminaKits": true,
-    "EnableManaKits": true,
-    "EnableDebugMessages": false
-  },
   "EnableOfflineSwear": true,
+  "EnableCollectorsAcceptAll": true,
+  "CollectorWcids": [3917, 3918, 3919, 3920, 3921, 3922, 3923, 11343, 11345, 11346, 11347, 11348, 10842, 21338, 24215, 24573, 8402, 8403, 8404, 8155, 8266, 12203, 12204, 12205, 22642, 24859, 28717, 34145],
   "MaxSpecCredits": 9999,
   "Animations": {
+    "// DieSeconds": "Seconds between each /die (HandleSuicide) speech step. 0 = minimal delay. Does not use MotionTable.",
+    "// AnimationSpeeds": "Valid JSON: keys in double quotes (e.g. \"CrossbowCombat\": 0.3). Value = seconds; 0 = skip. Preset below matches old QOL (all instant). Delete keys or set \"AnimationSpeeds\": {} for vanilla timing.",
     "DieSeconds": 0.0,
     "AnimationSpeeds": {
       "AllegianceHometownRecall": 0.0,
@@ -44,16 +66,15 @@
       "Pickup10": 0.0,
       "Pickup15": 0.0,
       "Pickup20": 0.0,
-      "NonCombat": 0.0,
-      "HandCombat": 0.0,
-      "BowCombat": 0.0,
-      "CrossbowCombat": 0.0,
       "SkillHealSelf": 0.0,
       "SkillHealOther": 0.0,
-      "Reload": 0.0
     }
   },
   "Defaults": {
+    "// Int64Defaults": "Map PropertyInt64 name → default long. Example: MaximumLuminance for first-time luminance storage.",
+    "// IntDefaults": "Map PropertyInt name → default int on first assignment.",
+    "// FloatDefaults": "Map PropertyFloat name → default number on first assignment.",
+    "// BoolDefaults": "Map PropertyBool name → default bool on first assignment.",
     "Int64Defaults": {
       "MaximumLuminance": 1000000000
     },
@@ -62,10 +83,18 @@
     "BoolDefaults": {}
   },
   "Fellowship": {
+    "// SendDetails": "On invite, send fellowship name and resulting XP share % to inviter and recruit.",
+    "// MaxMembers": "Target max fellowship size for this mod’s invite logic (ACE may enforce a separate cap).",
+    "// StopAtMaxFellowshipInvite": "When true, /fship stops inviting once the fellowship reaches MaxMembers.",
+    "// IgnoreBusy": "When true, skip busy checks and force-accept invites (useful for automated /fship).",
+    "// OverrideSharePercent": "When true, every member uses FlatSharePercent; when false, XP share comes from SharePercent by member count (and DefaultShare for larger groups).",
+    "// FlatSharePercent": "XP share fraction for all members when OverrideSharePercent is true. 1.0 = 100%, 0.5 = 50%.",
+    "// SharePercent": "Used when OverrideSharePercent is false. Each key is fellowship member count (integer). Value is XP share fraction (0.0–1.0) for that size. If count exceeds all keys, DefaultShare applies.",
+    "// DefaultShare": "XP share fraction when fellowship size is larger than the highest key in SharePercent. 0.0 = no share beyond the table.",
     "SendDetails": true,
     "MaxMembers": 30,
     "StopAtMaxFellowshipInvite": true,
-    "IgnoreBusy": false,
+    "IgnoreBusy": true,
     "OverrideSharePercent": true,
     "FlatSharePercent": 1.0,
     "SharePercent": {
@@ -82,12 +111,19 @@
     "DefaultShare": 0.0
   },
   "Recklessness": {
+    "// PowerLow": "Attack power fraction below which Recklessness provides no bonus. Range 0.0–1.0.",
+    "// PowerHigh": "Attack power fraction above which Recklessness provides no bonus (bar too high). Range 0.0–1.0.",
+    "// RatingTrained": "Damage rating bonus when Recklessness is Trained (scaled down if Recklessness skill is below your active attack skill).",
+    "// RatingSpecialized": "Damage rating bonus when Recklessness is Specialized (same skill scaling as trained).",
     "PowerLow": 0.2,
     "PowerHigh": 0.8,
     "RatingTrained": 10,
     "RatingSpecialized": 20
   },
   "Augmentation": {
+    "// IgnoreSharedAttribute": "When true, attribute augs ignore the shared attribute group cap so each type can stack toward its own MaxAugs limit.",
+    "// IgnoreSharedResist": "When true, resist augs ignore the shared resist group cap.",
+    "// MaxAugs": "Each key is an AugmentationType name (ACE enum). Value = max purchases for that type merged into AugmentationDevice.MaxAugs at startup. Omitted types keep ACE defaults. Strength through Self share one attribute cap unless IgnoreSharedAttribute is true. Resist* types share one resist cap unless IgnoreSharedResist is true.",
     "IgnoreSharedAttribute": false,
     "IgnoreSharedResist": false,
     "MaxAugs": {
@@ -123,14 +159,31 @@
       "FociItem": 1,
       "FociLife": 1,
       "FociWar": 1,
-      "FociVoid": 1
+      "FociVoid": 1,
+      "CritChance": 1,
+      "CritDamage": 1,
+      "Melee": 1,
+      "Missile": 1,
+      "Magic": 1,
+      "Damage": 1,
+      "DamageResist": 1,
+      "AllStats": 1
     }
   },
   "QuestgiverAuras": {
+    "// AegisWcid": "WCID of the Aegis item equipped to quest-giver NPCs. Sanguinary Aegis: 23356=Blue, 23357=Green, 23358=Pink, 23359=Red, 23360=White. Golden Flame: 35982.",
+    "// DebugLogging": "When true, logs a WARN line each time an aura Aegis is created and equipped. For troubleshooting only.",
     "AegisWcid": 23357,
     "DebugLogging": false
   },
   "Stackable": {
+    "// MaxStackSize": "Maximum stack size for items this mod turns into stackables (ACE max 65535).",
+    "// EnableBooks": "Allow Book-type items to stack when EnableStackable is true.",
+    "// EnableKeys": "Allow Key-type items to stack.",
+    "// EnableGeneric": "Allow Generic-type collectibles to stack.",
+    "// EnableLockpicks": "Allow Lockpick-type items to stack.",
+    "// EnableScrolls": "Allow Scroll-type items to stack.",
+    "// StackableTypes": "WeenieType names (ACE enum) that may receive MaxStackSize and merge behavior. Entries here are the usual defaults; each listed type is also controlled by its Enable* flag above when one exists. Add a type name here to include types without a dedicated toggle.",
     "MaxStackSize": 100,
     "EnableBooks": true,
     "EnableKeys": true,
@@ -144,5 +197,23 @@
       "Lockpick",
       "Scroll"
     ]
+  },
+  "Swiftmend": {
+    "// HotDurationSeconds": "Total HoT duration in seconds after using a kit.",
+    "// HotTickSeconds": "Seconds between each HoT vital tick.",
+    "// BaseSkillPercentPerTick": "Fraction of Healing skill applied to vitals each tick (before specialization multiplier).",
+    "// SpecializedMultiplier": "Multiplier applied to tick healing when Healing is specialized.",
+    "// EnableHealthKits": "Apply Swiftmend behavior to health kit items (name heuristics).",
+    "// EnableStaminaKits": "Apply Swiftmend behavior to stamina kits.",
+    "// EnableManaKits": "Apply Swiftmend behavior to mana kits.",
+    "// EnableDebugMessages": "Extra player/log output for Swiftmend diagnostics.",
+    "HotDurationSeconds": 15.0,
+    "HotTickSeconds": 1.0,
+    "BaseSkillPercentPerTick": 0.025,
+    "SpecializedMultiplier": 2.0,
+    "EnableHealthKits": true,
+    "EnableStaminaKits": true,
+    "EnableManaKits": true,
+    "EnableDebugMessages": false
   }
 }

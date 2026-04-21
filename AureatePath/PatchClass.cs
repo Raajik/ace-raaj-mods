@@ -9,13 +9,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     static bool _wieldRequirementsPatched;
     static bool _passupSuppressPatched;
 
-    public override void Init()
-    {
-        SettingsContainer = new CommentPreservingJsonSettings(SettingsPath);
-        SettingsContainer.SettingsChanged += SettingsChanged;
-        Start();
-    }
-
     public override async Task OnWorldOpen()
     {
         var cfg = SettingsContainer.Settings ?? new Settings();

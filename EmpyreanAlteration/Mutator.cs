@@ -47,7 +47,8 @@ public abstract class Mutator
     }
     protected bool CheckWeenieTypeTargets(WorldObject wo)
     {
-        if (WeenieTypeTargets is null)
+        // Empty set means "no filter" (GetMutator uses new HashSet when WeenieTypeTargets key is unset).
+        if (WeenieTypeTargets is null || WeenieTypeTargets.Count == 0)
             return true;
 
         if (wo is null || !WeenieTypeTargets.Contains(wo.WeenieType))

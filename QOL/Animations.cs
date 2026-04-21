@@ -6,17 +6,20 @@ namespace QOL;
 [HarmonyPatchCategory(nameof(Features.Animations))]
 internal static class Animations
 {
-    // Intercepts MotionTable.GetAnimationLength. If the requested MotionCommand has an entry
-    // in AnimationSpeeds, that value is returned instead — set to 0f to skip entirely.
-    // Note: does not factor in MotionStance.
+    // Intercepts the stance-aware MotionTable.GetAnimationLength implementation. Pickup, reload, combat stance,
+    // and recalls (including the 1-arg convenience overload, which delegates here) all flow through this overload.
+    // Keys in AnimationSpeeds match MotionCommand only; MotionStance is ignored. Omitted key = vanilla length.
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(MotionTable), nameof(MotionTable.GetAnimationLength), new Type[] { typeof(MotionCommand) })]
-    public static bool PreGetAnimationLength(MotionCommand motion, ref float __result)
+    [HarmonyPatch(typeof(MotionTable), nameof(MotionTable.GetAnimationLength), new Type[] { typeof(MotionStance), typeof(MotionCommand), typeof(MotionCommand) })]
+    public static bool PreGetAnimationLength(MotionStance stance, MotionCommand motion, MotionCommand currentMotion, ref float __result)
     {
-        if (S.Settings.Animations.AnimationSpeeds.TryGetValue(motion, out __result))
-            return false;   // skip original; use our value
+        if (S.Settings?.Animations != null && S.Settings.Animations.AnimationSpeeds.TryGetValue(motion, out float len))
+        {
+            __result = len;
+            return false;
+        }
 
-        return true;        // fall through to original
+        return true;
     }
 
     // Rewrites the /die sequence to use a configurable delay between each broadcast message.
@@ -57,35 +60,34 @@ internal static class Animations
 public class AnimationSettings
 {
     [JsonPropertyName("// DieSeconds")]
-    public string DieSecondsDoc { get; } = "Seconds between each /die (HandleSuicide) speech step. 0 = minimal delay. Does not use MotionTable.";
+    public string DieSecondsDoc { get; init; } = "Seconds between each /die (HandleSuicide) speech step. 0 = minimal delay. Does not use MotionTable.";
 
     // Seconds between each /die (HandleSuicide) broadcast step. Lower = faster death RP; retail pacing discussions often reference ~18s total for long recall-adjacent sequences — tune here and via AnimationSpeeds instead of expecting vanilla MotionTable timings.
     public float DieSeconds { get; set; } = 0.0f;
 
     [JsonPropertyName("// AnimationSpeeds")]
-    public string AnimationSpeedsDoc { get; } = "Per-motion length overrides for MotionTable.GetAnimationLength(MotionCommand). Value 0 = skip that animation. Keys are MotionCommand enum names. Does not consider MotionStance—same motion uses one length everywhere. See ACE MotionCommand.cs.";
+    public string AnimationSpeedsDoc { get; init; } = "Keys must be quoted ACE MotionCommand names (JSON strings). Value = seconds for that motion (stance ignored). 0 = skip segment. Shipped preset below is all 0 for instant (old QOL behavior). For vanilla motion-table timing, replace the object with {} or remove individual keys. Enum: ACE.Entity.Enum.MotionCommand.";
 
-    // Per-motion overrides for MotionTable.GetAnimationLength. Keys are MotionCommands (e.g. LifestoneRecall). Value 0f skips that animation. Recall-related motions are listed below by default; adjust to match desired retail-like timing.
-    // See: https://github.com/ACEmulator/ACE/blob/master/Source/ACE.Entity/Enum/MotionCommand.cs
+    // See MotionCommand enum: https://github.com/ACEmulator/ACE/blob/master/Source/ACE.Entity/Enum/MotionCommand.cs
     public Dictionary<MotionCommand, float> AnimationSpeeds { get; set; } = new()
     {
         [MotionCommand.AllegianceHometownRecall] = 0f,
-        [MotionCommand.HouseRecall]              = 0f,
-        [MotionCommand.LifestoneRecall]          = 0f,
-        [MotionCommand.MarketplaceRecall]        = 0f,
-        [MotionCommand.PKArenaRecall]            = 0f,
-        [MotionCommand.Pickup]                   = 0f,
-        [MotionCommand.StoreInBackpack]          = 0f,
-        [MotionCommand.Pickup5]                  = 0f,
-        [MotionCommand.Pickup10]                 = 0f,
-        [MotionCommand.Pickup15]                 = 0f,
-        [MotionCommand.Pickup20]                 = 0f,
-        [MotionCommand.NonCombat]                = 0f,
-        [MotionCommand.HandCombat]               = 0f,
-        [MotionCommand.BowCombat]                = 0f,
-        [MotionCommand.CrossbowCombat]           = 0f,
-        [MotionCommand.SkillHealSelf]            = 0f,
-        [MotionCommand.SkillHealOther]           = 0f,
-        [MotionCommand.Reload]                   = 0f,
+        [MotionCommand.HouseRecall] = 0f,
+        [MotionCommand.LifestoneRecall] = 0f,
+        [MotionCommand.MarketplaceRecall] = 0f,
+        [MotionCommand.PKArenaRecall] = 0f,
+        [MotionCommand.Pickup] = 0f,
+        [MotionCommand.StoreInBackpack] = 0f,
+        [MotionCommand.Pickup5] = 0f,
+        [MotionCommand.Pickup10] = 0f,
+        [MotionCommand.Pickup15] = 0f,
+        [MotionCommand.Pickup20] = 0f,
+        [MotionCommand.NonCombat] = 0f,
+        [MotionCommand.HandCombat] = 0f,
+        [MotionCommand.BowCombat] = 0f,
+        [MotionCommand.CrossbowCombat] = 0f,
+        [MotionCommand.SkillHealSelf] = 0f,
+        [MotionCommand.SkillHealOther] = 0f,
+        [MotionCommand.Reload] = 0f,
     };
 }

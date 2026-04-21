@@ -71,18 +71,18 @@ public class Recklessness
 public class RecklessnessSettings
 {
     [JsonPropertyName("// PowerLow")]
-    public string PowerLowDoc { get; } = "Attack power fraction below which Recklessness provides no bonus. Range 0.0–1.0.";
+    public string PowerLowDoc { get; init; } = "Attack power fraction below which Recklessness provides no bonus. Range 0.0–1.0.";
     public float PowerLow { get; set; } = .2f;
 
     [JsonPropertyName("// PowerHigh")]
-    public string PowerHighDoc { get; } = "Attack power fraction at which Recklessness reaches full effectiveness. Range 0.0–1.0.";
+    public string PowerHighDoc { get; init; } = "Attack power fraction above which Recklessness provides no bonus (bar too high). Range 0.0–1.0.";
     public float PowerHigh { get; set; } = .8f;
 
     [JsonPropertyName("// RatingTrained")]
-    public string RatingTrainedDoc { get; } = "Damage rating bonus granted when Recklessness is Trained.";
+    public string RatingTrainedDoc { get; init; } = "Damage rating bonus when Recklessness is Trained (scaled down if Recklessness skill is below your active attack skill).";
     public int RatingTrained { get; set; } = 10;
 
     [JsonPropertyName("// RatingSpecialized")]
-    public string RatingSpecDoc { get; } = "Damage rating bonus granted when Recklessness is Specialized.";
+    public string RatingSpecDoc { get; init; } = "Damage rating bonus when Recklessness is Specialized (same skill scaling as trained).";
     public int RatingSpecialized { get; set; } = 20;
 }

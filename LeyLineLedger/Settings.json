@@ -1,11 +1,261 @@
 {
+  "// LeyLineLedgerSettings": "Reading order: below this line, every // key is documentation; the next block lists real settings in the same order. LeyLineLedger routes vendor trade and pyreals through bank-style PropertyInt64 storage, optional luminance gem withdrawal, death bank tax, and currency denomination tables. Items and Currencies arrays: each element is an object with // lines first, then Name/Id/Prop or Name/Id/Value (same order).",
+  "// VendorsUseBank": "When true, vendor buy/sell uses bank balances instead of only inventory pyreals.",
+  "// DirectDeposit": "When true, incoming currency can deposit directly per mod rules.",
+  "// MaxCoinsDropped": "Cap on physical coin stacks dropped as change; 0 uses mod default behavior.",
+  "// Items": "Non-pyreal bankables: each entry maps a WCID to a character PropertyInt64 for stored amount. Inside each item: // lines first, then Name, Id, Prop (same order).",
+  "// ExcessSetToMax": "When true, amounts above limits are clamped to the cap instead of failing.",
+  "// LuminanceProperty": "Character biota PropertyInt64 id for banked luminance.",
+  "// CashProperty": "Character biota PropertyInt64 id for banked pyreals; align with AutoLoot BankCashProperty if used (default 39999).",
+  "// LuminanceGemWeenieClassId": "/bank withdraw luminance creates this gem WCID carrying banked luminance; 0 disables. Default 7897 is stock ACE Black Garnet.",
+  "// LuminanceGemStoredAmountProperty": "PropertyInt64 on the gem item storing credited luminance on use; pick an unused id for your shard.",
+  "// DeathBankPyrealPercent": "On death, remove floor(banked × percent / 100) pyreals from bank; 0 = no loss.",
+  "// DeathBankPyrealMaxLossPerDeath": "0 = unlimited. When > 0, caps pyreals removed per death after percent.",
+  "// Currencies": "Pyreal denomination table: WCID and Value per unit for making change. Inside each entry: // lines first, then Name, Id, Value (same order).",
   "VendorsUseBank": true,
-  "CashProperty": 39999,
   "DirectDeposit": true,
   "MaxCoinsDropped": 0,
+  "Items": [
+    {
+      "// Name": "Display name for logs and UI (informational).",
+      "// Id": "Weenie class id (WCID) of the bankable stack item.",
+      "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
+      "Name": "MMD",
+      "Id": 20630,
+      "Prop": 40000
+    },
+    {
+      "// Name": "Display name for logs and UI (informational).",
+      "// Id": "Weenie class id (WCID) of the bankable stack item.",
+      "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
+      "Name": "Infused Amber Shard",
+      "Id": 52968,
+      "Prop": 40001
+    },
+    {
+      "// Name": "Display name for logs and UI (informational).",
+      "// Id": "Weenie class id (WCID) of the bankable stack item.",
+      "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
+      "Name": "Small Olthoi Venom Sac",
+      "Id": 36376,
+      "Prop": 40002
+    },
+    {
+      "// Name": "Display name for logs and UI (informational).",
+      "// Id": "Weenie class id (WCID) of the bankable stack item.",
+      "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
+      "Name": "A'nekshay Token",
+      "Id": 44240,
+      "Prop": 40003
+    },
+    {
+      "// Name": "Display name for logs and UI (informational).",
+      "// Id": "Weenie class id (WCID) of the bankable stack item.",
+      "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
+      "Name": "Ornate Gear Marker",
+      "Id": 43142,
+      "Prop": 40004
+    },
+    {
+      "// Name": "Display name for logs and UI (informational).",
+      "// Id": "Weenie class id (WCID) of the bankable stack item.",
+      "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
+      "Name": "Colosseum Coin",
+      "Id": 36518,
+      "Prop": 40005
+    },
+    {
+      "// Name": "Display name for logs and UI (informational).",
+      "// Id": "Weenie class id (WCID) of the bankable stack item.",
+      "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
+      "Name": "Ancient Mhoire Coin",
+      "Id": 35383,
+      "Prop": 40006
+    },
+    {
+      "// Name": "Display name for logs and UI (informational).",
+      "// Id": "Weenie class id (WCID) of the bankable stack item.",
+      "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
+      "Name": "Promissory Note",
+      "Id": 43901,
+      "Prop": 40007
+    },
+    {
+      "// Name": "Display name for logs and UI (informational).",
+      "// Id": "Weenie class id (WCID) of the bankable stack item.",
+      "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
+      "// VariantWeenieClassIds": "Optional. Extra WCIDs removed from inventory and credited to this same Prop when depositing (after canonical Id).",
+      "Name": "Sturdy Iron Keys (Diff <=250)",
+      "Id": 6876,
+      "Prop": 40110,
+      "VariantWeenieClassIds": []
+    },
+    {
+      "// Name": "Display name for logs and UI (informational).",
+      "// Id": "Weenie class id (WCID) of the bankable stack item.",
+      "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
+      "// VariantWeenieClassIds": "Optional. Extra WCIDs removed from inventory and credited to this same Prop when depositing (after canonical Id).",
+      "Name": "Sturdy Steel Keys (Diff <=500)",
+      "Id": 24477,
+      "Prop": 40111,
+      "VariantWeenieClassIds": []
+    },
+    {
+      "// Name": "Display name for logs and UI (informational).",
+      "// Id": "Weenie class id (WCID) of the bankable stack item.",
+      "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
+      "// VariantWeenieClassIds": "Optional. Extra WCIDs removed from inventory and credited to this same Prop when depositing (after canonical Id).",
+      "Name": "Mana Forge Keys (Diff <=750)",
+      "Id": 38456,
+      "Prop": 40112,
+      "VariantWeenieClassIds": [38917, 38918, 38919, 38920]
+    },
+    {
+      "// Name": "Display name for logs and UI (informational).",
+      "// Id": "Weenie class id (WCID) of the bankable stack item.",
+      "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
+      "// VariantWeenieClassIds": "Optional. Extra WCIDs removed from inventory and credited to this same Prop when depositing (after canonical Id).",
+      "Name": "Legendary Keys (Diff <=1000)",
+      "Id": 48746,
+      "Prop": 40113,
+      "VariantWeenieClassIds": [48747, 48748, 48749, 48750, 48914, 51558, 51586, 51648, 51954, 51963, 52010, 72048, 72338, 72474, 72600, 72628, 72635, 72669, 72807, 87168]
+    }
+  ],
   "ExcessSetToMax": true,
+  "LuminanceProperty": 39998,
+  "CashProperty": 39999,
+  "LuminanceGemWeenieClassId": 7897,
+  "LuminanceGemStoredAmountProperty": 45213,
   "DeathBankPyrealPercent": 0,
   "DeathBankPyrealMaxLossPerDeath": 0,
-  "LuminanceGemWeenieClassId": 7897,
-  "LuminanceGemStoredAmountProperty": 45213
+  "Currencies": [
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "Pyreal",
+      "Id": 273,
+      "Value": 1
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "I",
+      "Id": 2621,
+      "Value": 100
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "V",
+      "Id": 2622,
+      "Value": 500
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "X",
+      "Id": 2623,
+      "Value": 1000
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "L",
+      "Id": 2624,
+      "Value": 5000
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "C",
+      "Id": 2625,
+      "Value": 10000
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "D",
+      "Id": 2626,
+      "Value": 50000
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "M",
+      "Id": 2627,
+      "Value": 100000
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "CL",
+      "Id": 7374,
+      "Value": 15000
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "CC",
+      "Id": 7375,
+      "Value": 20000
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "CCL",
+      "Id": 7376,
+      "Value": 25000
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "DCCL",
+      "Id": 7377,
+      "Value": 75000
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "MD",
+      "Id": 20628,
+      "Value": 150000
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "MM",
+      "Id": 20629,
+      "Value": 200000
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "MMD",
+      "Id": 20630,
+      "Value": 250000
+    },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "CashSink",
+      "Id": 40652,
+      "Value": 12500000
+    }
+  ]
 }

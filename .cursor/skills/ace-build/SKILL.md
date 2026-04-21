@@ -55,6 +55,7 @@ Use this skill in this repository when:
      - `AureatePath/AureatePath.csproj`
      - `AutoLoot/AutoLoot.csproj`
      - `EmpyreanAlteration/EmpyreanAlteration.csproj`
+     - `EasyServerSettings/EasyServerSettings.csproj`
      - `Gemcrafter/Gemcrafter.csproj`
      - `LeyLineLedger/LeyLineLedger.csproj`
      - `Loremaster/Loremaster.csproj`

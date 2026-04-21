@@ -1,0 +1,10 @@
+{
+  "Name": "BetterChestLoot",
+  "Author": "",
+  "Description": "Makes chests worth opening by adding guaranteed desirable items like trade notes, salvage bags, healing kits, and rare items.",
+  "Version": "1.0",
+  "Enabled": true,
+  "HotReload": true,
+  "RegisterCommands": false,
+  "ACEVersion": "0.0"
+}

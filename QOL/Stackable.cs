@@ -79,35 +79,35 @@ internal static class Stackable
 public class StackableSettings
 {
     [JsonPropertyName("// MaxStackSize")]
-    public string MaxStackSizeDoc { get; } = "Stack size for types this mod makes stackable (max 65535).";
+    public string MaxStackSizeDoc { get; init; } = "Maximum stack size for items this mod turns into stackables (ACE max 65535).";
 
     public ushort MaxStackSize { get; set; } = 100;
 
     [JsonPropertyName("// StackableTypes")]
-    public string StackableTypesDoc { get; } = "Reference list of WeenieTypes considered for stacking; paired Enable* flags gate each category.";
+    public string StackableTypesDoc { get; init; } = "WeenieType names (ACE enum) that may receive MaxStackSize and merge behavior. Entries here are the usual defaults; each listed type is also controlled by its Enable* flag above when one exists. Add a type name here to include types without a dedicated toggle.";
 
     [JsonPropertyName("// EnableBooks")]
-    public string EnableBooksDoc { get; } = "Allow Book-type items to stack when EnableStackable is true.";
+    public string EnableBooksDoc { get; init; } = "Allow Book-type items to stack when EnableStackable is true.";
 
     public bool EnableBooks { get; set; } = true;
 
     [JsonPropertyName("// EnableKeys")]
-    public string EnableKeysDoc { get; } = "Allow Key-type items to stack.";
+    public string EnableKeysDoc { get; init; } = "Allow Key-type items to stack.";
 
     public bool EnableKeys { get; set; } = true;
 
     [JsonPropertyName("// EnableGeneric")]
-    public string EnableGenericDoc { get; } = "Allow Generic-type collectibles to stack.";
+    public string EnableGenericDoc { get; init; } = "Allow Generic-type collectibles to stack.";
 
     public bool EnableGeneric { get; set; } = true;
 
     [JsonPropertyName("// EnableLockpicks")]
-    public string EnableLockpicksDoc { get; } = "Allow Lockpick-type items to stack.";
+    public string EnableLockpicksDoc { get; init; } = "Allow Lockpick-type items to stack.";
 
     public bool EnableLockpicks { get; set; } = true;
 
     [JsonPropertyName("// EnableScrolls")]
-    public string EnableScrollsDoc { get; } = "Allow Scroll-type items to stack.";
+    public string EnableScrollsDoc { get; init; } = "Allow Scroll-type items to stack.";
 
     public bool EnableScrolls { get; set; } = true;
 

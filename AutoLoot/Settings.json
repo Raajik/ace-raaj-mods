@@ -1,7 +1,15 @@
 {
+  "// AutoLoot": "Reading order: every // key is documentation; real settings follow in the same order. DebugLogging through NoDuplicateNames.",
+  "// DebugLogging": "When true, logs PostGenerateTreasure entry and early-return reasons to Ace_Log (verbose; disable after debugging).",
+  "// DepositLootedCurrencyToBank": "When true, looted pyreal stacks and trade notes are credited to banked pyreals (PropertyInt64) instead of inventory.",
+  "// BankCashProperty": "Must match LeyLineLedger Settings.CashProperty when using that mod (default 39999).",
+  "// LootProfilePath": "Folder for .utl loot profiles. Default empty: PatchClass sets Path.Combine(ModPath, \"LootProfiles\") after load. Override to any server path; /autoloot creates the folder if missing.",
+  "// DefaultProfile": "Profile auto-enabled the first time a player uses /autoloot in a session. Empty string = no profile active by default.",
+  "// NoDuplicateNames": "Name substrings (case-insensitive): if an item matches and the player already has same WCID in inventory, skip loot — reduces quest-timer bypass via stockpiling. Add more fragments as needed.",
   "DebugLogging": false,
   "DepositLootedCurrencyToBank": true,
   "BankCashProperty": 39999,
+  "LootProfilePath": "",
   "DefaultProfile": "PyrealsTradeNotes.utl",
   "NoDuplicateNames": [
     "Pincer",

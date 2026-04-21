@@ -1,12 +1,20 @@
 {
+  "extremelyRareChance": 0.0001,
+  "rareChance": 0.01,
+  "uncommonChance": 0.1,
   "common": {
     "items": [
+      { "wcid": 2621, "name": "Trade Note (100)", "stackSize": 1 },
+      { "wcid": 2622, "name": "Trade Note (500)", "stackSize": 1 },
+      { "wcid": 2623, "name": "Trade Note (1,000)", "stackSize": 1 },
+      { "wcid": 2624, "name": "Trade Note (5,000)", "stackSize": 1 },
+      { "wcid": 2625, "name": "Trade Note (10,000)", "stackSize": 1 },
+      { "wcid": 7374, "name": "Trade Note (15,000)", "stackSize": 1 },
+      { "wcid": 7375, "name": "Trade Note (20,000)", "stackSize": 1 },
+      { "wcid": 7376, "name": "Trade Note (25,000)", "stackSize": 1 },
       { "wcid": 2626, "name": "Trade Note (50,000)", "stackSize": 1 },
       { "wcid": 2627, "name": "Trade Note (100,000)", "stackSize": 1 },
       { "wcid": 7377, "name": "Trade Note (75,000)", "stackSize": 1 },
-      { "wcid": 20628, "name": "Trade Note (150,000)", "stackSize": 1 },
-      { "wcid": 20629, "name": "Trade Note (200,000)", "stackSize": 1 },
-      { "wcid": 20630, "name": "Trade Note (250,000)", "stackSize": 1 },
       { "wcid": 6058, "name": "Dark Shard", "stackSize": 1 },
       { "wcid": 6059, "name": "Dark Sliver", "stackSize": 1 },
       { "wcid": 6060, "name": "Dark Speck", "stackSize": 1 },
@@ -23,7 +31,7 @@
     ],
     "stackSizeChance": 0.2
   },
-"uncommon": {
+  "uncommon": {
     "items": [
       { "wcid": 22449, "name": "Plentiful Healing Kit", "stackSize": 1 },
       { "wcid": 30252, "name": "Medicated Stamina Kit", "stackSize": 1 },
@@ -101,7 +109,10 @@
       { "wcid": 30233, "name": "Zefir's Crystal", "stackSize": 1 },
       { "wcid": 30242, "name": "Ben Ten's Crystal", "stackSize": 1 },
       { "wcid": 30245, "name": "Hieromancer's Crystal", "stackSize": 1 },
-      { "wcid": 30246, "name": "Artist's Crystal", "stackSize": 1 }
+      { "wcid": 30246, "name": "Artist's Crystal", "stackSize": 1 },
+      { "wcid": 20628, "name": "Trade Note (150,000)", "stackSize": 1 },
+      { "wcid": 20629, "name": "Trade Note (200,000)", "stackSize": 1 },
+      { "wcid": 20630, "name": "Trade Note (250,000)", "stackSize": 1 }
     ]
   },
   "rare": {

@@ -104,5 +104,7 @@
     "The {0} falls; from nearby, more close in!",
     "Its death cry echoes—more {0} answer!",
     "The fall of one {0} brings others running!"
-  ]
+  ],
+  "// ChaosModeReinforcementChanceScale": "When killer has chaos (FakeFloat 11013 > 1), multiply reinforcement chance by this × (factor ÷ 3), capped at 1. 0 = off.",
+  "ChaosModeReinforcementChanceScale": 1.5
 }

@@ -29,6 +29,7 @@ public class Settings
         new() { Name = "Colosseum Coin", Id = 36518, Prop = 40005 },
         new() { Name = "Ancient Mhoire Coin", Id = 35383, Prop = 40006 },
         new() { Name = "Promissory Note", Id = 43901, Prop = 40007 },
+        new() { Name = "Writ of Refuge", Id = 11710, Prop = 40114 },
     };
 
     [JsonPropertyName("// ExcessSetToMax")]
@@ -58,6 +59,14 @@ public class Settings
     [JsonPropertyName("// DeathBankPyrealMaxLossPerDeath")]
     public string DeathBankPyrealMaxLossPerDeathDoc { get; init; } = "0 = unlimited. When > 0, caps pyreals removed per death after percent.";
     public long DeathBankPyrealMaxLossPerDeath { get; set; } = 0;
+
+    [JsonPropertyName("// SalvageBank")]
+    public string SalvageBankDoc { get; init; } = "Optional /bank salvage: banked salvage work units (single PropertyInt64) and WCID→units rules for deposit.";
+    public SalvageBankSettings SalvageBank { get; set; } = new();
+
+    [JsonPropertyName("// HouseStorage")]
+    public string HouseStorageDoc { get; init; } = "House storage upgrades: bank-only costs, tier table, PropertyInt bonus slots / tier index.";
+    public HouseStorageSettings HouseStorage { get; set; } = new();
 
     [JsonPropertyName("// Currencies")]
     public string CurrenciesDoc { get; init; } = "Pyreal denomination table: WCID and Value per unit for making change. Inside each entry: // lines first, then Name, Id, Value (same order).";
@@ -101,6 +110,74 @@ public class BankItem
     public string VariantWeenieClassIdsDoc { get; init; } = "Optional. Extra WCIDs removed from inventory and credited to this same Prop when depositing (after canonical Id).";
     [JsonPropertyName("VariantWeenieClassIds")]
     public List<uint> VariantWeenieClassIds { get; set; } = new();
+}
+
+public class SalvageBankSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true, /bank salvage commands are available.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// BankedUnitsProperty")]
+    public string BankedUnitsPropertyDoc { get; init; } = "Character PropertyInt64 storing banked salvage work units.";
+    public int BankedUnitsProperty { get; set; } = 40200;
+
+    [JsonPropertyName("// DepositRules")]
+    public string DepositRulesDoc { get; init; } = "Each rule: inventory items of WeenieClassId consume StackSize×UnitsPerItem and credit banked units.";
+    public List<SalvageDepositRule> DepositRules { get; set; } = new();
+}
+
+public class SalvageDepositRule
+{
+    [JsonPropertyName("// Name")]
+    public string NameDoc { get; init; } = "Display name for messages.";
+    public string Name { get; set; } = "";
+
+    [JsonPropertyName("// WeenieClassId")]
+    public string WeenieClassIdDoc { get; init; } = "Item WCID to salvage into units.";
+    public uint WeenieClassId { get; set; }
+
+    [JsonPropertyName("// UnitsPerItem")]
+    public string UnitsPerItemDoc { get; init; } = "Units credited per stack unit removed (× stack size consumed).";
+    public int UnitsPerItem { get; set; } = 1;
+}
+
+public class HouseStorageSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true, /house upgrade storage (or /housestorage) uses bank debits and tier table.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// BonusSlotsProperty")]
+    public string BonusSlotsPropertyDoc { get; init; } = "PropertyInt: total extra house storage slots granted by this mod (for server wiring / Harmony).";
+    public int BonusSlotsProperty { get; set; } = 40115;
+
+    [JsonPropertyName("// TierIndexProperty")]
+    public string TierIndexPropertyDoc { get; init; } = "PropertyInt: number of storage upgrades purchased.";
+    public int TierIndexProperty { get; set; } = 40116;
+
+    [JsonPropertyName("// Tiers")]
+    public string TiersDoc { get; init; } = "Per upgrade: slots added, MMD and Writ of Refuge debited from LeyLineLedger bank (Props 40000 / writ entry).";
+    public List<HouseStorageTier> Tiers { get; set; } = new()
+    {
+        new HouseStorageTier { SlotsAdded = 5, MmdFromBank = 1, WritFromBank = 0 },
+        new HouseStorageTier { SlotsAdded = 5, MmdFromBank = 1, WritFromBank = 1 },
+    };
+}
+
+public class HouseStorageTier
+{
+    [JsonPropertyName("// SlotsAdded")]
+    public string SlotsAddedDoc { get; init; } = "Extra slots this purchase adds (tracked on character).";
+    public int SlotsAdded { get; set; }
+
+    [JsonPropertyName("// MmdFromBank")]
+    public string MmdFromBankDoc { get; init; } = "MMD units to debit from bank (Prop 40000).";
+    public int MmdFromBank { get; set; }
+
+    [JsonPropertyName("// WritFromBank")]
+    public string WritFromBankDoc { get; init; } = "Writ of Refuge (WCID 11710) units to debit from bank (Prop 40114).";
+    public int WritFromBank { get; set; }
 }
 
 public class CurrencyItem

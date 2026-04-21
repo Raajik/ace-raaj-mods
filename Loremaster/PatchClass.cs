@@ -21,7 +21,9 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     internal static Settings NotificationDefaults => Settings;
 
     static FileSystemWatcher? _settingsWatcher;
+    static FileSystemWatcher? _lootConfigWatcher;
     static DateTime _lastSettingsReload = DateTime.MinValue;
+    static DateTime _lastLootConfigReload = DateTime.MinValue;
     const int SettingsReloadDebounceMs = 500;
 
     // Completion-bonus and parchment XP call GrantXP with amounts already derived from quest design; skip QuestBonus multiplier to avoid double-scaling.
@@ -48,7 +50,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     {
         base.Start();
         Settings = SettingsContainer.Settings ?? new Settings();
-        RepeatSolveLootLoader.Load(GetModDirectory());
+        ReloadLootConfig();
+        EnsureLootConfigFileWatcher();
         TryApplyPortalHasQuestSolvesHooks();
         RefreshEmpyreanAlterationRelocatedPatches();
         RefreshParchmentQuestPatches();
@@ -65,7 +68,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         Settings = SettingsContainer.Settings ?? new Settings();
 
         // Reload sidecar JSON (OnWorldOpen does not run on mod hot-reload; Start handles that).
-        RepeatSolveLootLoader.Load(GetModDirectory());
+        ReloadLootConfig();
+        EnsureLootConfigFileWatcher();
 
         // Recalculate QP for all online players on reload/start
         UpdateIngamePlayers();
@@ -119,7 +123,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         _settingsWatcher.EnableRaisingEvents = true;
     }
 
-    // Folder containing Loremaster.dll and JSON sidecars (e.g. RepeatSolveLoot.json).
+    // Folder containing Loremaster.dll and JSON sidecars (e.g. Settings.json).
     // Assembly.Location is empty in some hosting setups; fall back to ModManager.ModPath + assembly name.
     internal static string GetModDirectory()
     {
@@ -150,10 +154,62 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         return "";
     }
 
+    internal static void ReloadLootConfig()
+    {
+        var path = LootConfigPaths.ResolveLootConfigPath(ModManager.ModPath, Settings?.LootConfigPath);
+        LootConfigStore.TryLoad(path, msg => ModManager.Log(msg, ModManager.LogLevel.Warn), out _);
+    }
+
+    static void EnsureLootConfigFileWatcher()
+    {
+        try
+        {
+            if (_lootConfigWatcher is not null)
+                return;
+
+            var resolved = LootConfigPaths.ResolveLootConfigPath(ModManager.ModPath, Settings?.LootConfigPath);
+            var dir = Path.GetDirectoryName(resolved);
+            if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir))
+                return;
+
+            _lootConfigWatcher = new FileSystemWatcher(dir)
+            {
+                Filter = "LootConfig.json",
+                NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size
+            };
+            _lootConfigWatcher.Changed += OnLootConfigFileChanged;
+            _lootConfigWatcher.EnableRaisingEvents = true;
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Loremaster] Could not watch loot config folder: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    static void OnLootConfigFileChanged(object? sender, FileSystemEventArgs e)
+    {
+        if ((DateTime.UtcNow - _lastLootConfigReload).TotalMilliseconds < SettingsReloadDebounceMs)
+            return;
+        _lastLootConfigReload = DateTime.UtcNow;
+
+        try
+        {
+            ReloadLootConfig();
+            ModManager.Log("[Loremaster] Reloaded LootConfig.json", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Loremaster] LootConfig reload failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
     public override void Stop()
     {
         _settingsWatcher?.Dispose();
         _settingsWatcher = null;
+
+        _lootConfigWatcher?.Dispose();
+        _lootConfigWatcher = null;
 
         foreach (var c in EmpyreanAlterationRelocatedCategories)
         {
@@ -201,6 +257,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 UpdateIngamePlayers();
                 RefreshEmpyreanAlterationRelocatedPatches();
                 RefreshParchmentQuestPatches();
+                ReloadLootConfig();
                 ModManager.Log("[Loremaster] Settings.json reloaded; recalculated QP for all online players.");
             }
         }

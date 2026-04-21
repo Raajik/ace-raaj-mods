@@ -32,6 +32,8 @@ global using Position = ACE.Server.Realms.InstancedPosition;
 
 global using HarmonyLib;
 
+global using SharedLoot;
+
 global using System.Diagnostics;
 global using System.Numerics;
 global using System.Reflection;

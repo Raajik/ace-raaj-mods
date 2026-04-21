@@ -4,29 +4,28 @@ Gives substantial bonuses to often-overlooked secondary skills in Asheron's Call
 
 ## Features
 
-### Healing (Replenish)
+### Healing (Recuperation)
 **Status:** ✅ Implemented  
-**Default:** Enabled
+**Default:** Enabled (`EnableHealing`)
 
-After using any healing kit (in addition to its normal instant effect), applies a Replenish effect that ticks small amounts of ALL vitals (HP, Stamina, Mana) over time.
+Healing kits apply to **self** (use-on-target is redirected to the healer). After the normal instant effect, **Recuperation** runs a heal-over-time whose per-tick vitals depend on **kit name heuristics** (health vs stamina vs mana kits). Per-tick strength scales with **Healing** skill; **Specialized** Healing multiplies by `SpecializedMultiplier`. Formerly shipped as standalone Swiftmend / briefly under QOL; it now lives only here under **`EnableHealing`**.
 
-**Mechanics:**
-- Ticks every 1 second (configurable)
-- Total duration: 15 seconds (configurable)
-- Each tick restores: `HealingSkill × 1%` to all 3 vitals (configurable)
-- **Specialization triples** all restorations (3x multiplier)
-- Continues even if the kit's instant effect was weak
-
-**Settings (in Settings.json):**
+**Settings (in `Settings.json`):**
 ```json
-"Replenish": {
+"EnableHealing": true,
+"Recuperation": {
   "HotDurationSeconds": 15.0,
   "HotTickSeconds": 1.0,
-  "BaseSkillPercentPerTick": 0.01,
-  "SpecializedMultiplier": 3.0,
+  "BaseSkillPercentPerTick": 0.025,
+  "SpecializedMultiplier": 2.0,
+  "EnableHealthKits": true,
+  "EnableStaminaKits": true,
+  "EnableManaKits": true,
   "EnableDebugMessages": false
 }
 ```
+
+**Migrating from QOL or old `Replenish`:** Use the **`Recuperation`** object (replace the old `Replenish` key). Rename **`EnableRecuperation`** in QOL was removed—toggle healing HoT only with **`EnableHealing`** here.
 
 ---
 
@@ -219,7 +218,7 @@ All features can be toggled in `Settings.json`:
 
 ### 2026-04-19
 - Initial release
-- Healing: Swiftmend heal-over-time implemented
+- Healing: Recuperation heal-over-time after healing kits (`Recuperation` settings; `EnableHealing`)
 - Mana Conversion: Spell cleave (+1/+2 targets) implemented
 - Mana Conversion: Equipment mana efficiency (+25%/+50%) implemented
 - Assess Creature: Global DR (+10/+30) and trophy drops

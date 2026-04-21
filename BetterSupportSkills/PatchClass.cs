@@ -61,7 +61,7 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
         
         ModManager.Log($"[BSS] Start() - EnableTrophyDrops={Settings.EnableTrophyDrops}, EnableAssessCreature={Settings.EnableAssessCreature}", ModManager.LogLevel.Info);
         RegisterEnabledPatchCategories();
-        HealingSkillReplenish.RefreshHealerHook(ModC.Harmony, Settings.EnableHealing);
+        RecuperationHoT.RefreshHealerHook(ModC.Harmony, Settings.EnableHealing);
         TryApplyPlayerEnterWorldPatch();
         TryApplyLootPatch();
         TryApplyFoodPatch();
@@ -100,7 +100,7 @@ void TryApplyDamageEventPatch()
     {
         if (DamageEventPatchApplied) return;
         
-        if ((Settings?.EnableAssessCreature == true) || (Settings?.EnableShield == true))
+        if ((Settings?.EnableAssessCreature == true) || (Settings?.EnableShield == true) || (Settings?.EnableDualWield == true))
         {
             try
             {
@@ -121,6 +121,12 @@ void TryApplyDamageEventPatch()
                 {
                     var shieldPostfix = AccessTools.Method(typeof(Skills.ShieldThorns), "PostfixCalculateDamage");
                     ModC.Harmony?.Patch(calculateDamage, null, new HarmonyMethod(shieldPostfix), null);
+                }
+
+                if (Settings.EnableDualWield)
+                {
+                    var dualWieldPostfix = AccessTools.Method(typeof(Skills.DualWieldBuffs), "PostfixCalculateDamageDualWield");
+                    ModC.Harmony?.Patch(calculateDamage, null, new HarmonyMethod(dualWieldPostfix), null);
                 }
 
                 DamageEventPatchApplied = true;
@@ -306,6 +312,10 @@ try
             enabledFeatures.Add(Features.LoyaltySkill);
         if (Settings.EnableManaConversion)
             enabledFeatures.Add(Features.ManaConversionSkill);
+        if (Settings.EnableMagicWithoutManaConversion)
+            enabledFeatures.Add(Features.MagicWithoutMcSkill);
+        if (Settings.EnableMeleeLifeSpellProc)
+            enabledFeatures.Add(Features.MeleeLifeSpellSkill);
         if (Settings.EnableMissileDefense)
             enabledFeatures.Add(Features.MissileDefenseSkill);
         if (Settings.EnableRecklessness)
@@ -322,7 +332,7 @@ try
 
     public override void Stop()
     {
-        HealingSkillReplenish.RemoveHealerHookOnModStop(ModC.Harmony);
+        RecuperationHoT.RemoveHealerHookOnModStop(ModC.Harmony);
         _commandCategoriesRegistered = false;
         base.Stop();
     }
@@ -445,6 +455,14 @@ try
 
             var prefix = AccessTools.Method(typeof(CookingBuffs), "PrefixPlayerEnterWorld");
             ModC.Harmony?.Patch(method, new HarmonyMethod(prefix));
+
+            if (Settings?.EnableMagicWithoutManaConversion == true)
+            {
+                var mcNoPrefix = AccessTools.Method(typeof(Skills.MagicWithoutManaConversion), "PrefixPlayerEnterWorld");
+                if (mcNoPrefix != null)
+                    ModC.Harmony?.Patch(method, new HarmonyMethod(mcNoPrefix));
+            }
+
             PlayerEnterWorldPatchApplied = true;
             ModManager.Log("[BSS] PlayerEnterWorld patch applied", ModManager.LogLevel.Info);
         }

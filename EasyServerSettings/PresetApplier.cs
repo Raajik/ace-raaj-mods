@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace EasyServerSettings;
 
 public static class PresetApplier
@@ -29,6 +27,8 @@ public static class PresetApplier
 
     private static void ApplyDirectSettings(Settings settings, ref int boolOk, ref int boolRej, ref int doubleOk, ref int doubleRej, ref int longOk, ref int longRej)
     {
+        ApplyShardDictionaries(settings, ref boolOk, ref boolRej, ref longOk, ref longRej, ref doubleOk, ref doubleRej);
+
         ModifyDoubleWithLog("xp_modifier", settings.XpModifier, ref doubleOk, ref doubleRej, settings.VerboseLogging);
         ModifyDoubleWithLog("rare_drop_rate_percent", settings.RareDropRate, ref doubleOk, ref doubleRej, settings.VerboseLogging);
         ModifyDoubleWithLog("trophy_drop_rate", settings.TrophyDropRate, ref doubleOk, ref doubleRej, settings.VerboseLogging);
@@ -74,6 +74,44 @@ public static class PresetApplier
         ModifyBoolWithLog("allow_negative_dispel_resist", settings.AllowNegativeDispelResist, ref boolOk, ref boolRej, settings.VerboseLogging);
         ModifyBoolWithLog("allow_negative_rating_curve", settings.AllowNegativeRatingCurve, ref boolOk, ref boolRej, settings.VerboseLogging);
         ModifyBoolWithLog("allow_pkl_bump", settings.AllowPklBump, ref boolOk, ref boolRej, settings.VerboseLogging);
+    }
+
+    private static void ApplyShardDictionaries(Settings settings, ref int boolOk, ref int boolRej, ref int longOk, ref int longRej, ref int doubleOk, ref int doubleRej)
+    {
+        ApplyBoolDict(settings.ShardBooleansChat, settings.VerboseLogging, ref boolOk, ref boolRej);
+        ApplyBoolDict(settings.ShardBooleansGameplay, settings.VerboseLogging, ref boolOk, ref boolRej);
+        ApplyBoolDict(settings.ShardBooleansWorldLoot, settings.VerboseLogging, ref boolOk, ref boolRej);
+        ApplyBoolDict(settings.ShardBooleansClientUi, settings.VerboseLogging, ref boolOk, ref boolRej);
+
+        ApplyLongDict(settings.ShardLongsExtra, settings.VerboseLogging, ref longOk, ref longRej);
+        ApplyDoubleDict(settings.ShardDoublesExtra, settings.VerboseLogging, ref doubleOk, ref doubleRej);
+    }
+
+    private static void ApplyBoolDict(Dictionary<string, bool>? dict, bool verbose, ref int ok, ref int rejected)
+    {
+        if (dict == null)
+            return;
+
+        foreach (KeyValuePair<string, bool> kv in dict)
+            ModifyBoolWithLog(kv.Key, kv.Value, ref ok, ref rejected, verbose);
+    }
+
+    private static void ApplyLongDict(Dictionary<string, long>? dict, bool verbose, ref int ok, ref int rejected)
+    {
+        if (dict == null)
+            return;
+
+        foreach (KeyValuePair<string, long> kv in dict)
+            ModifyLongWithLog(kv.Key, kv.Value, ref ok, ref rejected, verbose);
+    }
+
+    private static void ApplyDoubleDict(Dictionary<string, double>? dict, bool verbose, ref int ok, ref int rejected)
+    {
+        if (dict == null)
+            return;
+
+        foreach (KeyValuePair<string, double> kv in dict)
+            ModifyDoubleWithLog(kv.Key, kv.Value, ref ok, ref rejected, verbose);
     }
 
     private static void ModifyDoubleWithLog(string key, double value, ref int ok, ref int rejected, bool verbose)

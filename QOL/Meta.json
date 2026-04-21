@@ -1,7 +1,7 @@
 {
   "Name": "QOL",
   "Author": "",
-  "Description": "Toggleable quality-of-life patches: recall animation speeds, augmentation caps, character defaults, fellowship rules, tailoring, vendors-buy-all, stackables, questgiver auras, offline swear filter, recklessness, permanent objects, and Swiftmend healing-kit self-target + HoT (EnableSwiftmend).",
+  "Description": "Toggleable quality-of-life patches: recall animation speeds, augmentation caps, character defaults, fellowship rules, tailoring, vendors-buy-all, stackables, questgiver auras, offline swear filter, recklessness, permanent objects, Town Network toll, and pet-related toggles.",
   "Version": "1.0",
   "Enabled": true,
   "HotReload": true,

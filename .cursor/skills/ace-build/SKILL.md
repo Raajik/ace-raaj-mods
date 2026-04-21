@@ -63,6 +63,7 @@ Use this skill in this repository when:
      - `Overtinked/Overtinked.csproj`
      - `QOL/QOL.csproj`
      - `Swarmed/Swarmed.csproj`
+     - `Xenology/Xenology.csproj`
 
 5. **Reporting results**
    - After running the builds, summarize succinctly:

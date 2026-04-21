@@ -10,7 +10,7 @@ public class Settings
     [JsonPropertyName("// LevelReqPerEnlightenment")]
     public string LevelReqPerEnlightenmentDoc { get; set; } = "Extra required levels per enlightenment already completed (1 => 275, then 276, 277, ...).";
 
-    public int LevelReqPerEnlightenment { get; set; } = 1;
+    public int LevelReqPerEnlightenment { get; set; } = 5;
 
     [JsonPropertyName("// MaxEnlightenments")]
     public string MaxEnlightenmentsDoc { get; set; } = "0 = unlimited enlightenments; set > 0 to cap (must stay below cap to attempt another).";
@@ -28,14 +28,34 @@ public class Settings
     public bool RequireAllLuminanceAuras { get; set; } = true;
 
     [JsonPropertyName("// SocietyMasterRequirementFromEnlightenment")]
-    public string SocietyMasterRequirementFromEnlightenmentDoc { get; set; } = "First enlightenment number (1-based) that requires society master (default 26 => after 25 completed).";
+    public string SocietyMasterRequirementFromEnlightenmentDoc { get; set; } = "First enlightenment number (1-based) that requires society master (default 25).";
 
-    public int SocietyMasterRequirementFromEnlightenment { get; set; } = 26;
+    public int SocietyMasterRequirementFromEnlightenment { get; set; } = 25;
 
     [JsonPropertyName("// LumAugRequirementFromEnlightenment")]
-    public string LumAugRequirementFromEnlightenmentDoc { get; set; } = "First enlightenment number (1-based) that requires lum-aug tiers (default 11 => after 10 completed).";
+    public string LumAugRequirementFromEnlightenmentDoc { get; set; } = "First enlightenment number (1-based) that requires lum-aug tiers (default 10).";
 
-    public int LumAugRequirementFromEnlightenment { get; set; } = 11;
+    public int LumAugRequirementFromEnlightenment { get; set; } = 10;
+
+    [JsonPropertyName("// EnableHighEnlightenmentQuestBonusRequirement")]
+    public string EnableHighEnlightenmentQuestBonusRequirementDoc { get; set; } = "When true, characters with completed enlightenments >= HighEnlightenmentQuestBonusFromCompletedCount must have total FakeFloat.QuestBonus at least HighEnlightenmentQuestBonusBase + HighEnlightenmentQuestBonusPerStep * (completed - (HighEnlightenmentQuestBonusFromCompletedCount - 1)) (e.g. 5100 at 50 completed for the 51st attempt when base 5000, step 100).";
+
+    public bool EnableHighEnlightenmentQuestBonusRequirement { get; set; } = true;
+
+    [JsonPropertyName("// HighEnlightenmentQuestBonusFromCompletedCount")]
+    public string HighEnlightenmentQuestBonusFromCompletedCountDoc { get; set; } = "When completed enlightenments (PropertyInt.Enlightenment) is >= this value, the next enlightenment requires the scaled QuestBonus total. Default 50 => 51st enlightenment needs 5100 QB.";
+
+    public int HighEnlightenmentQuestBonusFromCompletedCount { get; set; } = 50;
+
+    [JsonPropertyName("// HighEnlightenmentQuestBonusBase")]
+    public string HighEnlightenmentQuestBonusBaseDoc { get; set; } = "Base quest bonus required at the first gated enlightenment (default 5000; with defaults, 51st enlight total required = 5100 including the per-step term).";
+
+    public float HighEnlightenmentQuestBonusBase { get; set; } = 5000f;
+
+    [JsonPropertyName("// HighEnlightenmentQuestBonusPerStep")]
+    public string HighEnlightenmentQuestBonusPerStepDoc { get; set; } = "Added per completed enlightenment past (HighEnlightenmentQuestBonusFromCompletedCount - 1); 51st needs base + 1×step, 52nd needs base + 2×step, etc.";
+
+    public float HighEnlightenmentQuestBonusPerStep { get; set; } = 100f;
 
     [JsonPropertyName("// RemoveSociety")]
     public string RemoveSocietyDoc { get; set; } = "If true, strip society standing on enlightenment (endless defaults leave society intact).";

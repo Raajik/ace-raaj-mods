@@ -2,49 +2,25 @@
 
 A combined ACEmulator server mod providing a suite of convenience and balance enhancements. Each feature is independently toggleable via **`Enable*`** booleans in `Settings.json` (and `EnableOfflineSwear` for `/offlineswear`).
 
+### Portals — strip NoRecall
+
+When **`EnablePortalsStripNoRecall`** is `true` (default), every **`Portal`** clears the **`PortalBitmask.NoRecall`** bit from **`PropertyInt.PortalBitmask`** as soon as it enters the world. That matches “remove no-recall from portals” for **secondary portal recall** and related rules (`NoTie` uses the same bit in ACE). Other portal bitmask flags (PK restrictions, summon, etc.) are unchanged. Portals that were already loaded before the mod enables or before a hot-reload are not retroactively patched until their landblock respawns them or the server restarts.
+
+### Town Network toll
+
+When **`EnableTownNetworkToll`** is `true`, **`Portal.CheckUseRequirements`** (postfix) and **`Portal.ActOnUse`** (prefix) enforce a banked-pyreal toll for portals that match **`TownNetworkToll`** rules. Bank balance uses **`PropertyInt64`** id **`BankCashProperty`** (default **39999**, same convention as **Loremaster** / **LeyLineLedger** / **AutoLoot**). Base fees are **`FeeBelowLevel`** / **`FeeAtOrAboveLevel`** split by **`LevelSplit`**. **Loremaster** quest points on **`FakeFloat.QuestBonus`** reduce the fee: each full **`QpPerThousandForDiscountStep`** QP applies **`DiscountPercentPerStep`** (multiplicative stack; uncapped toward zero). **`MatchMode`**: `0` = substring on name/appraisal only, `1` = WCID list only, `2` = combined (substring **or** WCID **or** landblock). **`InsufficientFundsMode`**: `0` = block travel if bank &lt; fee; `1` = if `0 &lt; bank &lt; fee`, debit entire bank and allow. Optional **`ChargeMarketplaceRecall`**: apply the same toll to **`HandleActionTeleToMarketPlace`** (`/market`-style recall). Harmony category: **`TownNetworkToll`**.
+
 ---
 
 ## Enabling Features
 
-Set each `EnableAnimations`, `EnableAugmentations`, `EnableSwiftmend`, etc. to `true` or `false`. When a flag is `false`, that feature’s Harmony category (and any dedicated hooks, such as the Swiftmend Healer patch) is not applied. Optional `// …` string keys in `Settings.json` (mirroring `Settings.cs`) describe each toggle and nested object; they are safe to omit.
+Set each `EnableAnimations`, `EnableAugmentations`, `EnableStackable`, etc. to `true` or `false`. When a flag is `false`, that feature’s Harmony category is not applied. Optional `// …` string keys in `Settings.json` (mirroring `Settings.cs`) describe each toggle and nested object; they are safe to omit.
+
+Healing-kit **Recuperation** (heal-over-time after kits) lives in the **BetterSupportSkills** mod (`EnableHealing` and the `Recuperation` settings object there), not in QOL.
 
 ---
 
 ## Features
-
-### Swiftmend (healing kits)
-
-Merged from the former **Swiftmend** mod. Healing kits always apply to **self** (use-on-target is redirected). After use, a heal-over-time runs for `HotDurationSeconds`, ticking every `HotTickSeconds`. Per-tick amounts scale with **Healing** skill; **Specialized** Healing multiplies by `SpecializedMultiplier`.
-
-```json
-"EnableSwiftmend": true,
-"Swiftmend": {
-  "HotDurationSeconds": 15.0,
-  "HotTickSeconds": 1.0,
-  "BaseSkillPercentPerTick": 0.025,
-  "SpecializedMultiplier": 2.0,
-  "EnableHealthKits": true,
-  "EnableStaminaKits": true,
-  "EnableManaKits": true,
-  "EnableDebugMessages": false
-}
-```
-
-| Setting | Type | Default | Description |
-|---|---|---|---|
-| `EnableSwiftmend` | bool | `true` | Master toggle; when `false`, the Healer hook is removed and behavior returns to stock. |
-| `HotDurationSeconds` | double | `30` | Total HoT window in seconds. |
-| `HotTickSeconds` | double | `3` | Seconds between vital ticks. |
-| `BaseSkillPercentPerTick` | double | `0.03` | Fraction of Healing skill applied per tick (before specialization multiplier). |
-| `SpecializedMultiplier` | double | `2` | Multiplier when Healing is specialized. |
-| `EnableHealthKits` / `EnableStaminaKits` / `EnableManaKits` | bool | `true` | Kit name heuristics (health / stamina / mana). |
-| `EnableDebugMessages` | bool | `false` | Extra log and player chat debug. |
-
-**Migrating from the Swiftmend mod:** Remove the `Swiftmend` folder from `Mods`. Copy values from old `Swiftmend/Settings.json` into QOL’s `Swiftmend` object and set `EnableSwiftmend: true`. Drop the old top-level `"Enabled"` field — use `EnableSwiftmend` instead.
-
-Harmony category name: **`SwiftmendHealingKits`** (manual prefix on `Healer.HandleActionUseOnTarget`; registered when `EnableSwiftmend` is true).
-
----
 
 ### Animations
 

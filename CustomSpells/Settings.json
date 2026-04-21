@@ -15,7 +15,9 @@
     { "Template": 5954, "Id": 90000011, "Name": "DF Heal Debuff", "StatModVal": -30, "Duration": 180 },
     { "Template": 5950, "Id": 90000012, "Name": "DF Heal Debuff Sup", "StatModVal": -60, "Duration": 180 },
     { "Template": 5952, "Id": 90000013, "Name": "DF Bleed Trained", "StatModVal": 2, "Duration": 180 },
-    { "Template": 5948, "Id": 90000014, "Name": "DF Bleed Specialized", "StatModVal": 4, "Duration": 180 }
+    { "Template": 5948, "Id": 90000014, "Name": "DF Bleed Specialized", "StatModVal": 4, "Duration": 180 },
+    { "Template": 5622, "Id": 90000017, "Name": "CE +50 (ManaC untrained support)", "StatModVal": 50, "Duration": 86400, "Bitfield": "SelfTargeted" },
+    { "Template": 5652, "Id": 90000018, "Name": "IE +50 (ManaC untrained support)", "StatModVal": 50, "Duration": 86400, "Bitfield": "SelfTargeted" }
   ],
   "Sets": {}
 }

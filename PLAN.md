@@ -4,16 +4,19 @@ Single index of tracked work. **Mod notes below were merged from former per-mod 
 
 ## Progress (recent)
 
-- **Done (no longer in queue below):** LeyLineLedger / AutoLoot `CashProperty` ↔ `BankCashProperty` (39999) verified; QOL `AnimationSpeeds` expansion + `Settings.json` `//` docs + Readme updates (2026-04-04).
+- **Done (no longer in queue below):** LeyLineLedger / AutoLoot `CashProperty` ↔ `BankCashProperty` (39999) verified; QOL `AnimationSpeeds` + `Settings.json` `//` docs + Readme updates (2026-04-04).
 - **Done:** Loremaster barkeeper parchments — weighted explore/kill/fetch pools (rare + 25–100 weight rules, effective kill count for rare targets), stack-based fetch turn-in, concise objective copy with weenie names (2026-04-04).
-- **Ongoing:** AureatePath / Overtinked = operator JSON tuning; maintenance = periodic `rg` / `/mod-audit`. **AethericWeaver** — spell customization failures at startup: log exception in `CustomizeSpells` + verify dat/DB alignment (see [§ AethericWeaver](#aethericweaver)).
+- **Done (2026-04):** QOL **Town Network toll** — `EnableTownNetworkToll`, bank `PropertyInt64` debit, level bands, Loremaster QP discount (`FakeFloat.QuestBonus`), portal matching, optional marketplace recall parity; see `QOL/TownNetworkToll.cs`, `Settings.TownNetworkToll`.
+- **Done (2026-04):** Healing-kit **Recuperation** HoT (self-target + kit-type vital ticks) **removed from QOL**; it lives only in **BetterSupportSkills** (`EnableHealing`, `Recuperation` in `Settings.json`, `Skills/RecuperationHoT.cs`). QOL no longer registers a Healer hook for this.
+- **Ongoing:** AureatePath / Overtinked = operator JSON tuning; maintenance = periodic `rg` / `/mod-audit`. **Xenology** — tune `Settings.json` for hunt intervals, popularity multipliers, and damage caps ([Xenology/Readme.md](Xenology/Readme.md)).
 - **Backlog:** User idea list (**Idea backlog**, 2026-04) + **Idea routing** table captured under [§ Greenfield concepts](#greenfield-concepts) (2026-04-21).
+- **Done (2026-04-21):** **Enlightenment pool + challenge quit + high-enlight QB (AureatePath / Loremaster / ChallengeModes)** — Shared **FakeFloat 11012** cumulative bonus: **+level÷10000** on each **AureatePath** enlightenment (`PreRemoveAbility` captures level; `PreAddPerks` adds to pool) and on **`/cm quit`** (ChallengeModes `CmQuit` / `Confirmation_CmQuit` / `DisableAllChallengeModesForQuit`). **Loremaster** uses **(1 + pool)** for the enlight term when `UseEnlightenmentPoolForXpMultiplier` is true (`GetEnlightenmentMultiplierFactor`). **AureatePath** `VerifyEnlightenmentEligibility` adds **total QB** (`FakeFloat.QuestBonus`) requirement for the **51st+** enlightenment by default: **5000 + 100 × (completed enlightenments − 49)** when completed count ≥ **50** (`EnableHighEnlightenmentQuestBonusRequirement`, `HighEnlightenmentQuestBonusBase`, `HighEnlightenmentQuestBonusPerStep`, `HighEnlightenmentQuestBonusFromCompletedCount`). Defaults also tuned: **LevelReqPerEnlightenment** 5, society/lum gate indices 25 / 10 (see each mod `Settings.json`).
 
 ## Suggested order (simplest → most complex)
 
 Burn down from the top; later items need more design or ACE integration.
 
-1. **AureatePath — JSON tuning only** — No open features. Adjust enlightenment / luminance gates in `Settings.json` / `Settings.cs`: `RequireAllLuminanceAuras`, `BaseLumAugmentationsRequired`, `RequireMinimumPerLumAugContributor`, `ShowLumAugVerificationCounts`, plus scaling level req, enlightenment-index gates, lum aug sum, removes (see mod settings).
+1. **AureatePath — tuning + shipped mechanics** — Core flow includes **enlightenment pool** (11012), **high-enlight QB gate**, eligibility in `VerifyEnlightenmentEligibility`, and existing luminance/society gates. Prefer **`Settings.json`** for gates, level curve, removes, QB formula, and pool-adjacent behavior; see [§ AureatePath](#aureatepath) and [§ Loremaster](#loremaster) / [§ ChallengeModes](#challengemodes) for cross-mod **11012** alignment.
 2. **Overtinked — JSON tuning only** — No open backlog. Tune `Settings.json` (splash caps, `CanDamage` gate, Nether multipliers / soft cap, imbue combat configs in `NewImbueConfig.cs`, etc.).
 3. **Maintenance sweeps** — `rg -i "todo|fixme|hack" --glob "*.cs"` (filter false positives like `Convert.ToDouble`). Before a release, run `/mod-audit` on a mod or a fresh targeted `rg` pass; cleared audit sections below are historical only.
 4. **Loremaster — Barkeeper parchments** — ~~Weighted pools, fetch stacks, messaging~~ **shipped**; tune `Settings.json` / templates on your shard. Spec in [§ Loremaster](#loremaster).
@@ -74,24 +77,29 @@ Default mod homes for discussion; **first implementation pass may move an item**
 | Bank salvage → work 10 bags | **LeyLineLedger** or **new mod** | Bank properties + salvage accounting ([LeyLineLedger/](LeyLineLedger/)). |
 | Spec salvage = auto-salvage | **QOL** or **Gemcrafter** | Generic server autosalvage vs gem-centric pipeline. |
 | Chaos mode (QB + Swarmed escalation) | **ChallengeModes** + **Swarmed** or **new ChaosMode** | Cross-mod settings if split. |
-| XP per species killed | **ChallengeModes** or **Numbersmith** | Per-player species counters. |
+| XP per species killed | **Xenology** (shipped) / **ChallengeModes** or **Numbersmith** | **Xenology** tracks global + per-player species kills, xXP, hunt rotations, and damage/trophy hooks ([Xenology/](Xenology/)). |
 
 ---
 
 ## Merged mod notes (former `TODO.md` content)
 
-### AethericWeaver
-
-- **Spell customization failures at startup** — `ace_server.log` can show many lines like `Failed to customized SpearMasterySelf8 -> 70099` from [AethericWeaver/PatchClass.cs](AethericWeaver/PatchClass.cs) `CustomizeSpells`: the `catch` logs only template/id and **discards the exception**, so the real failure is unknown.
-- **Follow-up: logging** — Log `ex` in that catch (at minimum `ex.Message`; preferably full `ToString()` or stack at `ModManager.LogLevel.Warn`) so the next launch shows whether the failure is e.g. `NullReferenceException` on `_spellBase.Clone()`, `Apply` validation, or dictionary assignment.
-- **Follow-up: investigation** — After the exception is visible: confirm each **template** spell exists in both **world DB spell cache** and **portal.dat `SpellTable`** (dat/DB mismatch can leave `GetCachedSpell` succeeding while `new Spell(template)._spellBase` is null); review [AethericWeaver/Spells.xlsx](AethericWeaver/Spells.xlsx) and `Settings.CustomSpells` for bad enum/formula cells.
-
 ### QOL
 
-- **Recall / animation** — `AnimationSettings` in [QOL/Animations.cs](QOL/Animations.cs): `AnimationSpeeds` includes recalls, loot (`Pickup` / `StoreInBackpack` / `Pickup5`–`20`), combat (`NonCombat`, `HandCombat`, `BowCombat`, `CrossbowCombat`), first aid (`SkillHealSelf` / `SkillHealOther`), `Reload`, plus `DieSeconds` for `/die`. Optional `// …` keys in [QOL/Settings.cs](QOL/Settings.cs) document toggles and nested settings (see Readme).
+- **Recall / animation** — `AnimationSettings` in [QOL/Animations.cs](QOL/Animations.cs): shipped `AnimationSpeeds` defaults align with [QOL/Settings.json](QOL/Settings.json) — recalls, loot pickups (`Pickup` / `StoreInBackpack` / `Pickup5`–`20`), first aid (`SkillHealSelf` / `SkillHealOther`); plus `DieSeconds` for `/die`. Add more `MotionCommand` keys in JSON if you need combat/reload overrides. Optional `// …` keys in [QOL/Settings.cs](QOL/Settings.cs) document toggles and nested settings (see Readme).
+- **Town Network toll** — When `EnableTownNetworkToll` is true, TN-matched portals and optionally `/market` recall debit banked pyreals per `TownNetworkToll` ([QOL/TownNetworkToll.cs](QOL/TownNetworkToll.cs)).
 - **Fellowship stop-at-max** — Implemented; [QOL/Fellowships.cs](QOL/Fellowships.cs) (`FellowshipSettings`).
 
+### BetterSupportSkills
+
+- **Healing (Recuperation)** — Healing-kit HoT and Healer `HandleActionUseOnTarget` hook live here only (`EnableHealing`, `Recuperation` settings, [BetterSupportSkills/Skills/RecuperationHoT.cs](BetterSupportSkills/Skills/RecuperationHoT.cs)); not in QOL.
+
 ### Loremaster
+
+**Enlightenment pool (FakeFloat 11012) — Loremaster ↔ AureatePath ↔ ChallengeModes**
+
+- **Property:** `LMFloat.EnlightenmentPoolBonus` = **11012** (same numeric ID as AureatePath `SharedXpPoolIds` and ChallengeModes `CmFloat`; do not fork the ID per shard without updating all three).
+- **XP / luminance:** When `UseEnlightenmentPoolForXpMultiplier` is **true** (default), the enlight factor is **(1 + pool)** via `GetEnlightenmentMultiplierFactor` / `GetTotalXpMultiplier`; when **false**, the legacy linear term uses `EnlightenmentBonusPercentPer × enlightenment` count.
+- **QB for enlight:** High-enlight **quest bonus floor** is enforced in **AureatePath** `VerifyEnlightenmentEligibility` against **`FakeFloat.QuestBonus`** (Loremaster maintains this total for QP scaling).
 
 **Barkeeper parchments (v2)**
 
@@ -101,7 +109,7 @@ Default mod homes for discussion; **first implementation pass may move an item**
 - **Kill target:** `TargetCreatureWcid` fixed, **or** legacy `KillTargetCreatureWcidPool` (uniform), **or** **`KillTargetWeightedPool`** — `CreatureWcid`, `Weight`, `Rare`. Same rare/weight rules. If the rolled target is **rare** and template `KillCount > 1`, **effective kill count is 1** for that contract (`RuntimeKillTargetRare` on player).
 - **Fetch:** `FetchItemWcid` (legacy, count 1) **or** **`FetchItemWeightedPool`** — `Wcid`, `Weight`, `Rare`, `StackMin` / `StackMax` (rolled at start). Runtime `RuntimeFetchItemWcid` + `RuntimeFetchItemCount` on player; Town Crier consumes that stack.
 - **Objective text:** Short player-facing lines: creature/item **names** where possible (weenie lookup), clear **where** and **what**; avoid raw WCID-only lines except as fallback.
-- Tier XP + `GrantRepeatSolveLoot` keys: `LMParchmentTierEasy` / `Average` / `Challenging` in `RepeatSolveLoot.json`.
+- Tier XP + `GrantRepeatSolveLoot` (keys `LMParchmentTierEasy` / `Average` / `Challenging` — loot uses `Mods/Loremaster/LootConfig.json`, same default as BetterChestLoot).
 - Do not reuse **LeyLineLedger** luminance gem WCIDs for parchment **gems**.
 
 ### Swarmed
@@ -133,7 +141,16 @@ Default mod homes for discussion; **first implementation pass may move an item**
 
 ### AureatePath
 
-- No open feature backlog. Enlightenment luminance checks: `RequireAllLuminanceAuras`, `BaseLumAugmentationsRequired`, `RequireMinimumPerLumAugContributor`, `ShowLumAugVerificationCounts` in `Settings.json` / `Settings.cs`.
+- **Enlightenment pool (11012):** `PreRemoveAbility` records **character level**; `PreAddPerks` adds **level ÷ 10000** to **`SharedXpPoolIds.EnlightenmentPoolBonus`** before incrementing enlightenment (Loremaster reads the same property for the XP multiplier when enabled).
+- **High-enlight QB:** When `EnableHighEnlightenmentQuestBonusRequirement` and completed enlightenments ≥ `HighEnlightenmentQuestBonusFromCompletedCount` (default **50**), require **`FakeFloat.QuestBonus`** ≥ `HighEnlightenmentQuestBonusBase + HighEnlightenmentQuestBonusPerStep × (completed − (FromCompletedCount − 1))` — e.g. **5100** QB for the **51st** enlightenment, **5200** for the **52nd** with defaults **5000** / **100**.
+- **Tuning:** Level curve (`LevelReq`, `LevelReqPerEnlightenment` default **5**), society/lum first-gate indices (**25** / **10**), removes, pass-up suppress, luminance aug sums: `RequireAllLuminanceAuras`, `BaseLumAugmentationsRequired`, `RequireMinimumPerLumAugContributor`, `ShowLumAugVerificationCounts` in `Settings.json` / `Settings.cs`.
+
+### ChallengeModes
+
+- **`/cm quit`:** Exits **all** active challenge tracks with optional **Yes/No** (`CmQuitRequiresConfirmation`); applies **same pool bump** as enlightenment (**+level÷10000** on `CmFloat.EnlightenmentPoolBonus` = **11012**), configurable **`CmQuitRemove*`** strips (delegate to `Enlightenment.Remove*` where applicable), optional **unequip-to-pack**, then **`DisableAllChallengeModesForQuit`** (SSF/HC flags, declined prefs, alternate leveling + aptitude prefs) and **`CmCommands.RefreshChallengeRadar`**. See `CmQuit.cs`, `ConfirmationCmQuit.cs`, `Settings` / `Settings.json`.
+- **Radar:** `RefreshChallengeRadar` is **internal** for use from `CmQuit`.
+- **Milestone XP/lum (`ChallengeMilestoneRewardsEnabled`):** Segment-based bonus via `ChallengeBonusPercentPerLevel` × levels toward `ChallengeBonusSegmentCapLevel`; **`ChallengeRunMaxLevel` (furthest in current segment) never decreases on death** — only segment completion at the cap resets it. Skill credits at `ChallengeMilestoneLevels` are per challenge track (SSF / hardcore / alternate / aptitude), once each per milestone. Detail + manual tests: `ChallengeModes/Readme.md`.
+- **Titles:** `ChallengeModeDefaultTitles` is **wishlist only** (ACE `CharacterTitle` is dat-driven); not applied on `/cm`. See `Features/ChallengeModeTitles.cs`.
 
 ### Overtinked
 
@@ -153,15 +170,15 @@ Default mod homes for discussion; **first implementation pass may move an item**
 
 ## Code review audit backlog — cleared (2026-03-22)
 
-The detailed per-mod audit tables that used to follow (AethericWeaver through Swarmed) tracked **null-safety, Harmony lifecycle, settings reload, divide-by-zero, and formula edge cases**. Those findings have been worked through in the codebase (including Numbersmith `func` null guards and session-safe XP sends, AureatePath OnWorldOpen timeout / luminance requirement overflow / enlightenment activation `Session` checks, Loremaster `OverrideCheckUseRequirements` + settings reload vs `SettingsContainer`, ChallengeModes XP table and Ironman/alt-leveling guards, AutoLoot `GenerateTreasure` unpatch on `Stop`, LeyLineLedger unpatch-before-patch with logged failures, Gemcrafter `TryMutate` hooks applied from `PatchClass`, Overtinked `Stop` logging and stable Harmony category names, etc.).
+The detailed per-mod audit tables that used to follow (multiple mods through Swarmed) tracked **null-safety, Harmony lifecycle, settings reload, divide-by-zero, and formula edge cases**. Those findings have been worked through in the codebase (including Numbersmith `func` null guards and session-safe XP sends, AureatePath OnWorldOpen timeout / luminance requirement overflow / enlightenment activation `Session` checks, Loremaster `OverrideCheckUseRequirements` + settings reload vs `SettingsContainer`, ChallengeModes XP table and Ironman/alt-leveling guards, AutoLoot `GenerateTreasure` unpatch on `Stop`, LeyLineLedger unpatch-before-patch with logged failures, Gemcrafter `TryMutate` hooks applied from `PatchClass`, Overtinked `Stop` logging and stable Harmony category names, etc.).
 
 For a **new** snapshot before a release, run `/mod-audit` on a specific mod or a fresh `rg` pass; do not rely on old line numbers from the removed tables.
 
 ---
 
-## Code review findings — AethericWeaver, AureatePath, ChallengeModes — cleared (2026-03-22)
+## Code review findings — AureatePath, ChallengeModes — cleared (2026-03-22)
 
-The prior snapshot for those three mods (chain projectile null `Spell`; `SpellCustomization(Spell)` validation; `Settings.cs` note for omitted JSON keys; AureatePath `Stop` unpatch for `WieldRequirements` / `PassupSuppress`, enlightenment object use with non-player or null `Session` defers to vanilla, `nameof(Player.CheckWieldRequirements)`, `ApplyBonuses` cleanup; ChallengeModes SSF give message placement, hardcore `Session?.LogOffPlayer`, `/cm refund` vital filter aligned with `/cm levels`, one-time log when `Proficiency.OnSuccessUse` is unresolved, `/cm off hardcoressf` requires an active mode, SSF POI cache cleared on mod `Stop`) is addressed in code.
+The prior snapshot for those mods (AureatePath `Stop` unpatch for `WieldRequirements` / `PassupSuppress`, enlightenment object use with non-player or null `Session` defers to vanilla, `nameof(Player.CheckWieldRequirements)`, `ApplyBonuses` cleanup; ChallengeModes SSF give message placement, hardcore `Session?.LogOffPlayer`, `/cm refund` vital filter aligned with `/cm levels`, one-time log when `Proficiency.OnSuccessUse` is unresolved, `/cm off hardcoressf` requires an active mode, SSF POI cache cleared on mod `Stop`) is addressed in code.
 
 For a **new** snapshot before a release, run `/mod-audit` on a specific mod or a fresh `rg` pass.
 

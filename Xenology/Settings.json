@@ -1,0 +1,19 @@
+{
+  "// XenologySettings": "Documentation keys (//) precede each setting block.",
+  "// EnableXenology": "Master switch for kill tracking, xXP, hunt, and combat hooks.",
+  "EnableXenology": true,
+  "// BottomTenPopularityMultiplier": "Kill credit and kill-XP multiplier for globally least-killed species (bottom 10).",
+  "BottomTenPopularityMultiplier": 10.0,
+  "// HuntIntervalHours": "Hours between hunt rotations.",
+  "HuntIntervalHours": 1.0,
+  "// BaseXenologyXpPerKill": "Base xXP before popularity, hunt, and streak multipliers.",
+  "BaseXenologyXpPerKill": 1.0,
+  "// DamageBonusPerWeightedKill": "Outgoing damage bonus percent per lifetime kill (tune carefully).",
+  "DamageBonusPerWeightedKill": 0.00001,
+  "// DamageBonusCapPercent": "Maximum outgoing damage bonus percent from Xenology.",
+  "DamageBonusCapPercent": 25.0,
+  "// DebounceSaveMilliseconds": "Minimum delay between global species JSON flush to disk.",
+  "DebounceSaveMilliseconds": 2000,
+  "// DenylistWcids": "Species excluded from hunt selection / ranking.",
+  "DenylistWcids": []
+}

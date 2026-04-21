@@ -3,8 +3,10 @@ namespace ChallengeModes;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text.Json;
+using ACE.Database.Models.Shard;
 using ChallengeModes.Features;
 using ChallengeModes.Progression;
+using Microsoft.EntityFrameworkCore;
 
 [HarmonyPatch]
 public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
@@ -200,7 +202,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             _ssfHardcoreCategoryPatched = true;
         }
 
-        var wantRewards = Settings.ChallengeRewardsEnabled;
+        var wantRewards = Settings.ChallengeMilestoneRewardsEnabled;
         if (wantRewards && !_challengeRewardsCategoryPatched)
         {
             ModC.Harmony.PatchCategory(nameof(ChallengeRewards));
@@ -494,6 +496,110 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     public static bool PlayerHasActiveChallenge(Player? player)
     {
         return player != null && CountActiveChallengeTracks(player) > 0;
+    }
+
+    // Used by LeyLineLedger bank transfer gate (offline targets): SSF/HC from shard biota bools; aptitude / alternate leveling from ChallengeModes prefs JSON.
+    public static bool OfflineBiotaHasActiveChallenge(uint biotaId)
+    {
+        try
+        {
+            using var context = new ShardDbContext();
+            ushort ironT = (ushort)FakeBool.Ironman;
+            ushort hcT = (ushort)FakeBool.Hardcore;
+
+            if (context.BiotaPropertiesBool.AsNoTracking().Any(p => p.ObjectId == biotaId && p.Type == ironT && p.Value == true))
+                return true;
+            if (context.BiotaPropertiesBool.AsNoTracking().Any(p => p.ObjectId == biotaId && p.Type == hcT && p.Value == true))
+                return true;
+
+            // Player prefs use the same id as shard Biota.Id / player.Guid.Full (ACE instance id).
+            var modDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
+            var path = Path.Combine(modDir, "Data", "PlayerData", $"{biotaId}.json");
+            if (!File.Exists(path))
+                return false;
+
+            var json = File.ReadAllText(path);
+            var prefs = JsonSerializer.Deserialize<ChallengeModesPlayerPrefs>(json);
+            if (prefs is null)
+                return false;
+
+            return OfflinePrefsIndicateActiveChallenge(prefs);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[ChallengeModes] OfflineBiotaHasActiveChallenge failed: {ex.Message}", ModManager.LogLevel.Warn);
+            return false;
+        }
+    }
+
+    static bool OfflinePrefsIndicateActiveChallenge(ChallengeModesPlayerPrefs prefs)
+    {
+        if (prefs.Enabled)
+            return true;
+
+        if (Settings is null || !Settings.Enabled || !Settings.AlternateLeveling.Enabled)
+            return false;
+
+        if (prefs.AlternateLevelingPermanentlyDeclined)
+            return false;
+
+        return prefs.AlternateLevelingEnabled;
+    }
+
+    public static bool OfflineCharacterNameHasActiveChallenge(string characterName)
+    {
+        if (string.IsNullOrWhiteSpace(characterName))
+            return false;
+
+        try
+        {
+            using var context = new ShardDbContext();
+            var key = characterName.Trim().ToLowerInvariant();
+            var targetChar = context.Character.AsNoTracking().FirstOrDefault(c => !c.IsDeleted && c.Name.ToLower() == key);
+            if (targetChar is null)
+                return false;
+
+            return OfflineBiotaHasActiveChallenge(targetChar.Id);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[ChallengeModes] OfflineCharacterNameHasActiveChallenge failed: {ex.Message}", ModManager.LogLevel.Warn);
+            return false;
+        }
+    }
+
+    // Clears all /cm tracks and prefs after /cm quit (penalties applied separately in CmQuit).
+    public static void DisableAllChallengeModesForQuit(Player player)
+    {
+        if (player?.Guid == null || Settings is null)
+            return;
+
+        EnsureLoaded(player);
+        var g = player.Guid.Full;
+
+        var hadSsf = player.GetProperty(FakeBool.Ironman) == true;
+        var hadHc = player.GetProperty(FakeBool.Hardcore) == true;
+        player.SetProperty(FakeBool.Ironman, false);
+        player.SetProperty(FakeBool.Hardcore, false);
+        if (hadSsf)
+            SsfDeclinedByGuid[g] = true;
+        if (hadHc)
+            HardcoreDeclinedByGuid[g] = true;
+
+        var hadAlt = AlternateLevelingEnabledByGuid.GetOrAdd(g, false) || GetAlternateLevelingEnabledRaw(player);
+        if (hadAlt)
+        {
+            AlternateLevelingEnabledByGuid[g] = false;
+            AlternateLevelingDeclinedByGuid[g] = true;
+        }
+
+        if (EnabledByGuid.GetOrAdd(g, false))
+        {
+            EnabledByGuid[g] = false;
+            PermanentlyOptedOutByGuid[g] = true;
+        }
+
+        SavePrefs(player);
     }
 
     // Cross-mod: other mods (e.g. AutoLoot) can call this to gate Aptitude-only features.

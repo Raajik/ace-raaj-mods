@@ -1,4 +1,20 @@
 {
+  "// Gemcrafter": "Reading order: every // key is documentation; real settings follow in the same order. Toggles and lists through ExcludeTransferSpellNameContains.",
+  "// Enabled": "Master switch for Gemcrafter patches and behavior.",
+  "// Verbose": "Extra logging for diagnostics.",
+  "// EnableImmersiveUseHooks": "Immersive item-on-item UX (tool→gem, powder→equipment) via generic use handler. If patching fails, Gemcrafter falls back to /gemcrush and /gemapply.",
+  "// EnableLootgenGemMagic": "Lootgen gem behavior: roll spells onto qualifying gems.",
+  "// MinSpellsOnLootgenGem": "Minimum spells on a lootgen-tinkering gem (first version often matches Max).",
+  "// MaxSpellsOnLootgenGem": "Maximum spells on a lootgen-tinkering gem.",
+  "// GemWcidAllowlist": "If non-empty, only these WCIDs count as lootgen tinkering gems. Empty = heuristic (ItemType.Gem + not already magical).",
+  "// IncludeCantrips": "Include cantrip-tier spells when building the spell pool.",
+  "// IncludePortalRecallSummonOnGems": "Allow portal/recall/summon-class spells in the gem pool; transfer can still exclude them separately.",
+  "// IncludeSpellNameContains": "If non-empty, only spells whose names contain one of these substrings are candidates (pool filter).",
+  "// ExcludeSpellNameContains": "Spell names containing any of these substrings are excluded from the pool (unless overridden by include rules).",
+  "// CrusherToolWcid": "Mortar & Pestle (or crush tool) WCID for immersive crush flow; 0 until configured for your shard.",
+  "// InfusedPowderWcids": "Base-game powder WCIDs to treat as infused powder for apply flows.",
+  "// TransferMaxSpellsPerApply": "Max spells moved from gem to equipment per apply.",
+  "// ExcludeTransferSpellNameContains": "Spells whose names match these substrings are not transferred to equipment by default.",
   "Enabled": false,
   "Verbose": true,
   "EnableImmersiveUseHooks": true,
@@ -23,4 +39,3 @@
     "Recall"
   ]
 }
-

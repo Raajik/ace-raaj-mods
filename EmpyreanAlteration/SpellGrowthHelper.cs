@@ -1,5 +1,16 @@
 namespace EmpyreanAlteration;
 
+internal enum SpellGrowthCategory
+{
+    WeaponMelee,
+    WeaponMissile,
+    WeaponCaster,
+    Jewelry,
+    ArmorClothing,
+    Shield,
+    Generic,
+}
+
 // Applies spell and cantrip growth to items on level-up using settings-driven spell ID pools.
 internal static partial class SpellGrowthHelper
 {
@@ -11,7 +22,23 @@ internal static partial class SpellGrowthHelper
     private static List<int> _weaponPoolMissile = new();
     private static List<int> _weaponPoolCaster = new();
     private static List<int> _autoArmorJewelry = new();
+    private static List<int> _autoJewelry = new();
+    private static List<int> _autoArmorClothing = new();
+    private static List<int> _autoShield = new();
     private static List<CantripLine> _autoCantripLines = new();
+
+    internal static SpellGrowthCategory GetWeaponSpellCategory(WorldObject item)
+    {
+        if (item == null)
+            return SpellGrowthCategory.WeaponMelee;
+
+        return item.WeenieType switch
+        {
+            WeenieType.MissileLauncher => SpellGrowthCategory.WeaponMissile,
+            WeenieType.Caster => SpellGrowthCategory.WeaponCaster,
+            _ => SpellGrowthCategory.WeaponMelee,
+        };
+    }
 
     // Clears dat-built pools so a reload/unload does not keep stale spell lists across settings or PortalDat changes.
     internal static void ResetPoolsForUnload()
@@ -23,6 +50,9 @@ internal static partial class SpellGrowthHelper
             _weaponPoolMissile = new List<int>();
             _weaponPoolCaster = new List<int>();
             _autoArmorJewelry = new List<int>();
+            _autoJewelry = new List<int>();
+            _autoArmorClothing = new List<int>();
+            _autoShield = new List<int>();
             _autoCantripLines = new List<CantripLine>();
         }
     }
@@ -31,37 +61,27 @@ internal static partial class SpellGrowthHelper
     // Returns true if any change was applied.
     internal static bool TryApplySpellGrowth(WorldObject item, Player player, int level, Settings settings)
     {
-        if (item == null || settings == null)
-            return false;
+        return TryApplySpellGrowth(item, player, level, settings, SpellGrowthCategory.Generic);
+    }
 
-        SpellGrowthSettings cfg = settings.SpellGrowth ?? DefaultSpellGrowth;
-        if (!cfg.Enabled)
-            return false;
-
-        EnsureAutoPools(cfg);
-
-        // Determine category pool
-        List<int> pool = GetCategoryPool(item, cfg);
-        if (pool.Count == 0 && (cfg.CantripLines == null || cfg.CantripLines.Count == 0))
-            return false;
-
-        // Outcome weights: spell vs cantrip
-        int spellW = cfg.SpellOutcomeWeight;
-        int cantripW = cfg.CantripOutcomeWeight;
-        if (spellW < 0) spellW = 0;
-        if (cantripW < 0) cantripW = 0;
-        int total = spellW + cantripW;
-        if (total == 0)
-            return false;
-
-        int roll = Random.Shared.Next(0, total);
-        if (roll < spellW)
-            return TryApplyOrUpgradeSpell(item, player, level, pool, cfg);
-
-        return TryApplyOrUpgradeCantrip(item, player, level, cfg);
+    internal static bool TryApplySpellGrowth(WorldObject item, Player player, int level, Settings settings, SpellGrowthCategory category)
+    {
+        return TryApplySpellGrowth(item, player, level, settings, emitMessages: true, out _, category);
     }
 
     internal static bool TryApplySpellGrowth(WorldObject item, Player player, int level, Settings settings, bool emitMessages, out string? appliedDescription)
+    {
+        return TryApplySpellGrowth(item, player, level, settings, emitMessages, out appliedDescription, SpellGrowthCategory.Generic);
+    }
+
+    internal static bool TryApplySpellGrowth(
+        WorldObject item,
+        Player player,
+        int level,
+        Settings settings,
+        bool emitMessages,
+        out string? appliedDescription,
+        SpellGrowthCategory category)
     {
         appliedDescription = null;
 
@@ -74,7 +94,7 @@ internal static partial class SpellGrowthHelper
 
         EnsureAutoPools(cfg);
 
-        List<int> pool = GetCategoryPool(item, cfg);
+        List<int> pool = GetCategoryPool(item, cfg, category);
         if (pool.Count == 0 && (cfg.CantripLines == null || cfg.CantripLines.Count == 0))
             return false;
 
@@ -93,24 +113,52 @@ internal static partial class SpellGrowthHelper
         return TryApplyOrUpgradeCantrip(item, player, level, cfg, emitMessages, out appliedDescription);
     }
 
-    private static List<int> GetCategoryPool(WorldObject item, SpellGrowthSettings cfg)
+    private static List<int> GetCategoryPool(WorldObject item, SpellGrowthSettings cfg, SpellGrowthCategory category)
     {
-        WeenieType type = item.WeenieType;
-        if (type == WeenieType.MeleeWeapon || type == WeenieType.MissileLauncher || type == WeenieType.Caster)
+        switch (category)
         {
-            if (cfg.WeaponSpellIds != null && cfg.WeaponSpellIds.Count > 0)
-                return cfg.WeaponSpellIds;
-            return type switch
-            {
-                WeenieType.MeleeWeapon => _weaponPoolMelee,
-                WeenieType.MissileLauncher => _weaponPoolMissile,
-                _ => _weaponPoolCaster,
-            };
+            case SpellGrowthCategory.WeaponMelee:
+                if (cfg.WeaponSpellIds != null && cfg.WeaponSpellIds.Count > 0)
+                    return cfg.WeaponSpellIds;
+                return _weaponPoolMelee;
+            case SpellGrowthCategory.WeaponMissile:
+                if (cfg.WeaponSpellIds != null && cfg.WeaponSpellIds.Count > 0)
+                    return cfg.WeaponSpellIds;
+                return _weaponPoolMissile;
+            case SpellGrowthCategory.WeaponCaster:
+                if (cfg.WeaponSpellIds != null && cfg.WeaponSpellIds.Count > 0)
+                    return cfg.WeaponSpellIds;
+                return _weaponPoolCaster;
+            case SpellGrowthCategory.Jewelry:
+                if (cfg.JewelrySpellIds != null && cfg.JewelrySpellIds.Count > 0)
+                    return cfg.JewelrySpellIds;
+                if (_autoJewelry.Count > 0)
+                    return _autoJewelry;
+                if (cfg.ArmorOrJewelrySpellIds != null && cfg.ArmorOrJewelrySpellIds.Count > 0)
+                    return cfg.ArmorOrJewelrySpellIds;
+                return _autoArmorJewelry;
+            case SpellGrowthCategory.ArmorClothing:
+                if (cfg.ArmorClothingSpellIds != null && cfg.ArmorClothingSpellIds.Count > 0)
+                    return cfg.ArmorClothingSpellIds;
+                if (_autoArmorClothing.Count > 0)
+                    return _autoArmorClothing;
+                if (cfg.ArmorOrJewelrySpellIds != null && cfg.ArmorOrJewelrySpellIds.Count > 0)
+                    return cfg.ArmorOrJewelrySpellIds;
+                return _autoArmorJewelry;
+            case SpellGrowthCategory.Shield:
+                if (cfg.ShieldSpellIds != null && cfg.ShieldSpellIds.Count > 0)
+                    return cfg.ShieldSpellIds;
+                if (_autoShield.Count > 0)
+                    return _autoShield;
+                if (cfg.ArmorOrJewelrySpellIds != null && cfg.ArmorOrJewelrySpellIds.Count > 0)
+                    return cfg.ArmorOrJewelrySpellIds;
+                return _autoArmorJewelry;
+            case SpellGrowthCategory.Generic:
+            default:
+                if (cfg.GenericSpellIds != null && cfg.GenericSpellIds.Count > 0)
+                    return cfg.GenericSpellIds;
+                return new List<int>();
         }
-
-        if (type == WeenieType.Clothing)
-            return (cfg.ArmorOrJewelrySpellIds != null && cfg.ArmorOrJewelrySpellIds.Count > 0) ? cfg.ArmorOrJewelrySpellIds : _autoArmorJewelry;
-        return cfg.GenericSpellIds ?? new List<int>();
     }
 
     private static bool TryApplyOrUpgradeSpell(WorldObject item, Player player, int level, List<int> pool, SpellGrowthSettings cfg)
@@ -271,9 +319,16 @@ internal static partial class SpellGrowthHelper
                 _autoArmorJewelry.AddRange(BuildPoolByNameContains(spells, cfg.ArmorOrJewelrySpellNameContains));
                 _autoArmorJewelry = _autoArmorJewelry.Distinct().ToList();
 
+                _autoJewelry = BuildPoolByNameContains(spells, cfg.JewelrySpellNameContains);
+                List<string> armorClothingFrags = (cfg.ArmorClothingSpellNameContains != null && cfg.ArmorClothingSpellNameContains.Count > 0)
+                    ? cfg.ArmorClothingSpellNameContains
+                    : cfg.ArmorOrJewelrySpellNameContains;
+                _autoArmorClothing = BuildPoolByNameContains(spells, armorClothingFrags);
+                _autoShield = BuildPoolByNameContains(spells, cfg.ShieldSpellNameContains);
+
                 _autoCantripLines = BuildDefaultCantripLines(spells);
 
-                ModManager.Log($"[Overtinked] SpellGrowth auto pools: melee={_weaponPoolMelee.Count}, missile={_weaponPoolMissile.Count}, caster={_weaponPoolCaster.Count}, armor/jewelry={_autoArmorJewelry.Count}, cantripLines={_autoCantripLines.Count}", ModManager.LogLevel.Info);
+                ModManager.Log($"[Overtinked] SpellGrowth auto pools: melee={_weaponPoolMelee.Count}, missile={_weaponPoolMissile.Count}, caster={_weaponPoolCaster.Count}, armor/jewelry={_autoArmorJewelry.Count}, jewelry={_autoJewelry.Count}, armorCloth={_autoArmorClothing.Count}, shield={_autoShield.Count}, cantripLines={_autoCantripLines.Count}", ModManager.LogLevel.Info);
             }
             catch (Exception ex)
             {

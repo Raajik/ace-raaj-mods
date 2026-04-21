@@ -37,6 +37,36 @@ public static class ItemLeveling
         if (maxItemLevel <= 0)
             return false;
 
+        ulong baseXpU = (ulong)Math.Max(1L, xpCost);
+        if (capRollSettings != null)
+        {
+            switch (capRollSettings.ItemXpCurveMode)
+            {
+                case ItemXpCurveMode.Geometric:
+                    maxItemLevel = ItemXpCurve.ClampItemMaxLevelForGeometric(
+                        capRollSettings.ItemXpGeometricFirstLevelTotal,
+                        capRollSettings.ItemXpGeometricMultiplierPerStep,
+                        maxItemLevel);
+                    break;
+                case ItemXpCurveMode.CharacterTable:
+                {
+                    int tableCount = DatManager.PortalDat?.XpTable?.CharacterLevelXPList?.Count ?? 0;
+                    maxItemLevel = ItemXpCurve.ClampItemMaxLevelForCharacterTable(
+                        capRollSettings.ItemXpVirtualCharacterLevel,
+                        tableCount,
+                        maxItemLevel);
+                    break;
+                }
+                default:
+                    maxItemLevel = ExperienceSystemItemXpSafe.ClampItemMaxLevelForDoublingBase(baseXpU, maxItemLevel);
+                    break;
+            }
+        }
+        else
+        {
+            maxItemLevel = ExperienceSystemItemXpSafe.ClampItemMaxLevelForDoublingBase(baseXpU, maxItemLevel);
+        }
+
         item.ItemXpStyle = ItemXpStyle.ScalesWithLevel;
         item.ItemTotalXp = 0;
         item.ItemMaxLevel = maxItemLevel;

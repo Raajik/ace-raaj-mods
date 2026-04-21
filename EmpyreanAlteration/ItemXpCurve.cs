@@ -112,4 +112,52 @@ internal static class ItemXpCurve
 
         return level;
     }
+
+    // Largest item level L such that TotalXpToReachItemLevelGeometric(L, ...) still fits in ulong (same closed form as above).
+    internal static int MaxItemMaxLevelForGeometricWithinULong(long firstLevelTotal, double multPerStep)
+    {
+        long first = firstLevelTotal > 0 ? firstLevelTotal : 1;
+        double mult = multPerStep > 1.0001 ? multPerStep : 1.0001;
+
+        int lastGood = 1;
+        const int hardCap = 5_000_000;
+        for (int L = 2; L <= hardCap; L++)
+        {
+            double sum = first * (Math.Pow(mult, L) - 1.0) / (mult - 1.0);
+            if (double.IsNaN(sum) || double.IsInfinity(sum) || sum < 0)
+                return lastGood;
+
+            if (sum >= (double)ulong.MaxValue)
+                return lastGood;
+
+            lastGood = L;
+        }
+
+        return lastGood;
+    }
+
+    internal static int ClampItemMaxLevelForGeometric(long firstLevelTotal, double multPerStep, int rolledMaxLevel)
+    {
+        if (rolledMaxLevel < 1)
+            return 1;
+
+        int cap = MaxItemMaxLevelForGeometricWithinULong(firstLevelTotal, multPerStep);
+        return Math.Min(rolledMaxLevel, cap);
+    }
+
+    // targetIdx = (virtualCharLevel - 1) + itemLevel must stay within CharacterLevelXPList.
+    internal static int ClampItemMaxLevelForCharacterTable(int virtualCharLevel, int tableCount, int rolledMaxLevel)
+    {
+        if (rolledMaxLevel < 1)
+            return 1;
+
+        if (tableCount <= 0 || virtualCharLevel < 1)
+            return rolledMaxLevel;
+
+        int cap = tableCount - virtualCharLevel;
+        if (cap < 1)
+            cap = 1;
+
+        return Math.Min(rolledMaxLevel, cap);
+    }
 }

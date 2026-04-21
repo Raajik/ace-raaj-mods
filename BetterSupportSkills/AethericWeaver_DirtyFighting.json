@@ -1,0 +1,70 @@
+{
+  "// BetterSupportSkills Dirty Fighting Custom Spells": "Add these to AethericWeaver's CustomSpells array in Settings.json",
+  "// Usage": "Copy the CustomSpells array below into AethericWeaver Settings.json, replacing/merging with existing CustomSpells",
+  "// Note": "These override the vanilla DF spells to have doubled values and 180s duration",
+  "CustomSpells": [
+    {
+      "// Template": "DF_Trained_DefenseDebuff (uses existing spell as base)",
+      "Template": 5953,
+      "Id": 50000001,
+      "Name": "Greater Dirty Fighting Defense Debuff",
+      "StatModVal": -20,
+      "Duration": 180
+    },
+    {
+      "// Template": "DF_Specialized_DefenseDebuff",
+      "Template": 5949,
+      "Id": 50000002,
+      "Name": "Superior Dirty Fighting Defense Debuff",
+      "StatModVal": -40,
+      "Duration": 180
+    },
+    {
+      "// Template": "DF_Trained_AttackDebuff",
+      "Template": 5951,
+      "Id": 50000003,
+      "Name": "Greater Dirty Fighting Attack Debuff",
+      "StatModVal": -20,
+      "Duration": 180
+    },
+    {
+      "// Template": "DF_Specialized_AttackDebuff",
+      "Template": 5947,
+      "Id": 50000004,
+      "Name": "Superior Dirty Fighting Attack Debuff",
+      "StatModVal": -40,
+      "Duration": 180
+    },
+    {
+      "// Template": "DF_Trained_HealingDebuff",
+      "Template": 5954,
+      "Id": 50000005,
+      "Name": "Greater Dirty Fighting Heal Debuff",
+      "StatModVal": -30,
+      "Duration": 180
+    },
+    {
+      "// Template": "DF_Specialized_HealingDebuff",
+      "Template": 5950,
+      "Id": 50000006,
+      "Name": "Superior Dirty Fighting Heal Debuff",
+      "StatModVal": -60,
+      "Duration": 180
+    },
+    {
+      "// Template": "DF_Trained_Bleed",
+      "// Note": "Bleed is handled via code in BetterSupportSkills for percentage-based damage",
+      "Template": 5952,
+      "Id": 50000007,
+      "Name": "Greater Dirty Fighting Bleed",
+      "Duration": 180
+    },
+    {
+      "// Template": "DF_Specialized_Bleed",
+      "Template": 5948,
+      "Id": 50000008,
+      "Name": "Superior Dirty Fighting Bleed",
+      "Duration": 180
+    }
+  ]
+}

@@ -20,17 +20,36 @@ public static class LoremasterExtensions
     {
         if (PatchClass.Settings is null || player.QuestManager is null) return;
 
-        var points = PatchClass.Settings.UseAccountWideQuests
+        var basePoints = PatchClass.Settings.UseAccountWideQuests
             ? player.CalculateAccountQuestPoints()
             : player.CalculateQuestPoints();
 
-        player.SetProperty(FakeFloat.QuestBonus, points);
+        var extraProp = player.GetProperty(LMFloat.QuestPointsExtra);
+        float extra;
+        if (extraProp is null)
+        {
+            var oldTotal = (float)(player.GetProperty(FakeFloat.QuestBonus) ?? 0);
+            extra = Math.Max(0f, oldTotal - basePoints);
+            player.SetProperty(LMFloat.QuestPointsExtra, extra);
+        }
+        else
+        {
+            extra = (float)extraProp.Value;
+        }
+
+        player.SetProperty(FakeFloat.QuestBonus, basePoints + extra);
+    }
+
+    // Adds to the persisted extra QP pool (milestones, repeat-solve awards). Call UpdateQuestPoints if needed.
+    public static void AddExtraQuestPoints(this Player player, float amount)
+    {
+        var cur = (float)(player.GetProperty(LMFloat.QuestPointsExtra) ?? 0);
+        player.SetProperty(LMFloat.QuestPointsExtra, cur + amount);
     }
 
     public static void IncQuestPoints(this Player player, float amount)
     {
-        var current = player.GetProperty(FakeFloat.QuestBonus) ?? 0;
-        player.SetProperty(FakeFloat.QuestBonus, current + amount);
+        player.AddExtraQuestPoints(amount);
     }
 
     public static float CalculateQuestPoints(this Player player)
@@ -74,14 +93,38 @@ public static class LoremasterExtensions
         return 1.0 + qp * PatchClass.Settings.BonusPerQuestPoint / 100.0;
     }
 
+    // Sum of Item XP Boost on equipped items; Empyrean-style (1 + sum) multiplier factor.
+    public static double GetEquipmentXpMultiplierFactor(this Player player)
+    {
+        double sum = 0;
+        foreach (var w in player.EquippedObjects.Values)
+            sum += w.GetProperty(FakeFloat.ItemXpBoost) ?? 0f;
+        return 1.0 + sum;
+    }
+
+    // Full multiplicative chain: base retention × QP × equipment × augments × enlightenment × challenge mode.
+    public static double GetTotalXpMultiplier(this Player player)
+    {
+        var s = PatchClass.Settings;
+        if (s is null) return 1.0;
+
+        var baseF = Math.Clamp(s.StandardBaseXpRetentionPercent / 100.0, 0.0, 100.0);
+        var qpF = player.QuestBonus();
+        var eqF = Math.Max(0.0, player.GetEquipmentXpMultiplierFactor());
+        var augF = Math.Max(0.0, s.AugmentXpMultiplier);
+        var enF = Math.Max(0.0, 1.0 + player.Enlightenment * (s.EnlightenmentBonusPercentPer / 100.0));
+        var cmF = Math.Max(0.0, s.ChallengeModeXpMultiplier);
+
+        return baseF * qpF * eqF * augF * enF * cmF;
+    }
+
     // Returns the quest cooldown reduction fraction (0–1). Effective wait = fullRepeatTime * (1 - reduction).
-    // Uses same percentage as XP bonus; optional cap from settings. Returns 0 if feature disabled.
     public static double GetQuestCooldownReduction(this Player player)
     {
         if (PatchClass.Settings is null || !PatchClass.Settings.EnableQuestCooldownReduction)
             return 0;
-        var bonus = player.QuestBonus();
-        var reduction = bonus - 1.0;
+        var qp = player.GetProperty(FakeFloat.QuestBonus) ?? 0;
+        var reduction = qp * PatchClass.Settings.CooldownReductionPerQuestPoint / 100.0;
         if (reduction <= 0) return 0;
         if (PatchClass.Settings.QuestCooldownReductionCap is float cap)
             reduction = Math.Min(reduction, cap);
@@ -183,17 +226,7 @@ public static class LoremasterExtensions
     // Completion bonus helpers
     // ─────────────────────────────────────────────────────────────────────────
 
-    /// <summary>
-    /// Returns the XP needed for the player to gain one more level.
-    ///
-    /// For levels 1–274: reads directly from the vanilla DAT XP table.
-    /// For levels 275+: extrapolates using a quadratic fit to the high-level
-    ///   cost curve (fit over levels 200–274, max error 0.22%).
-    ///   Formula: cost(L) = 1973*L² - 585787*L + 48728021
-    ///   This matches the growth rate the vanilla table was trending toward
-    ///   and is consistent with how most infinite-level servers extend it.
-    /// Returns 0 only if the DAT table is unavailable.
-    /// </summary>
+    // XP needed for the next level (DAT table, then quadratic extrapolation above cap).
     public static long GetXpToNextLevel(this Player player)
     {
         var level = player.Level ?? 1;
@@ -223,30 +256,30 @@ public static class LoremasterExtensions
         return Math.Max(0, (long)cost);
     }
 
-    /// <summary>
-    /// Returns the one-time XP bonus for the first solve of the given quest,
-    /// calculated as a multiplier of the XP the player needs to reach their next level.
-    ///
-    /// Resolution order:
-    ///   1. Feature disabled → 0
-    ///   2. Quest in CompletionBonusXpOverrides → override multiplier × next-level XP
-    ///   3. Otherwise → DefaultCompletionBonusXpMultiplier × next-level XP
-    /// </summary>
     public static long GetCompletionBonusXp(string questName, Player player)
     {
         if (PatchClass.Settings is null || !PatchClass.Settings.EnableCompletionBonusXp)
             return 0;
 
-        var multiplier = PatchClass.Settings.CompletionBonusXpOverrides.TryGetValue(questName, out var overrideMultiplier)
-            ? overrideMultiplier
-            : PatchClass.Settings.DefaultCompletionBonusXpMultiplier;
-
-        if (multiplier <= 0f) return 0;
-
         var xpToNextLevel = player.GetXpToNextLevel();
         if (xpToNextLevel <= 0) return 0;
 
-        return (long)(xpToNextLevel * multiplier);
+        var settings = PatchClass.Settings;
+
+        // Per-quest override is an absolute fraction of next-level XP (same as historical DefaultCompletionBonusXpMultiplier).
+        if (settings.CompletionBonusXpOverrides.TryGetValue(questName, out var overrideFraction))
+        {
+            if (overrideFraction <= 0f) return 0;
+            return (long)(xpToNextLevel * overrideFraction);
+        }
+
+        var qp = player.GetProperty(FakeFloat.QuestBonus) ?? 0;
+        var fraction = settings.DefaultCompletionBonusXpMultiplier
+            + qp * settings.CompletionBonusPerQuestPoint / 100f;
+
+        if (fraction <= 0f) return 0;
+
+        return (long)(xpToNextLevel * fraction);
     }
 
     // Grants the completion bonus XP (first or repeat solve when EnableCompletionBonusXp is true).
@@ -264,11 +297,6 @@ public static class LoremasterExtensions
         }
     }
 
-    /// <summary>
-    /// Rolls the weighted loot pool for the given quest and gives the player one item.
-    /// Called on every repeat solve (2nd, 3rd, etc.) of a quest.
-    /// Pool is resolved from RepeatSolveLoot.json via RepeatSolveLootLoader.
-    /// </summary>
     public static void GrantRepeatSolveLoot(this Player player, string questName)
     {
         if (!PatchClass.Settings.EnableRepeatSolveLoot) return;
@@ -304,10 +332,6 @@ public static class LoremasterExtensions
         chain.EnqueueChain();
     }
 
-    /// <summary>
-    /// Picks one WCID from a flat weighted pool using weighted random selection.
-    /// Returns 0 if the pool is empty or all weights are zero.
-    /// </summary>
     private static uint PickFromPool(List<(uint Wcid, int Weight)> pool)
     {
         var totalWeight = pool.Sum(e => e.Weight);
@@ -323,6 +347,103 @@ public static class LoremasterExtensions
         }
 
         return pool[^1].Wcid; // fallback (should never reach here)
+    }
+
+    public static bool TryAwardRepeatQuestPoints(this Player player, string questName, float questPointValue)
+    {
+        if (PatchClass.Settings is null || !PatchClass.Settings.EnableRepeatQuestPoints)
+            return false;
+        if (questPointValue <= 0)
+            return false;
+
+        var now = (long)Time.GetUnixTime();
+        var cooldown = PatchClass.Settings.RepeatQuestPointCooldownSeconds;
+        if (cooldown <= 0)
+            return false;
+
+        var json = player.GetProperty(LMString.RepeatQuestPointTimestamps);
+        Dictionary<string, long> map;
+        try
+        {
+            map = string.IsNullOrWhiteSpace(json)
+                ? new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase)
+                : JsonSerializer.Deserialize<Dictionary<string, long>>(json!) ?? new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            map = new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        if (map.TryGetValue(questName, out var last) && now - last < cooldown)
+            return false;
+
+        map[questName] = now;
+        player.SetProperty(LMString.RepeatQuestPointTimestamps, JsonSerializer.Serialize(map));
+        player.AddExtraQuestPoints(questPointValue);
+        player.UpdateQuestPoints();
+
+        if (player.Notify(LMBool.NotifyQuest))
+        {
+            player.SendMessage(FormatQpNotification(
+                $"+{questPointValue:0.##} QP repeat award for {questName} (once per {cooldown / 3600.0:0.#} h per quest)"));
+        }
+
+        return true;
+    }
+
+    public static string BuildXpBonusBreakdown(Player player)
+    {
+        var s = PatchClass.Settings;
+        if (s is null)
+            return "";
+
+        player.UpdateQuestPoints();
+        var qp = player.GetProperty(FakeFloat.QuestBonus) ?? 0;
+        var qpF = player.QuestBonus();
+        var eqF = player.GetEquipmentXpMultiplierFactor();
+        var augF = Math.Max(0.0, s.AugmentXpMultiplier);
+        var enF = Math.Max(0.0, 1.0 + player.Enlightenment * (s.EnlightenmentBonusPercentPer / 100.0));
+        var cmF = Math.Max(0.0, s.ChallengeModeXpMultiplier);
+        var totalF = player.GetTotalXpMultiplier();
+
+        var qpDeltaPct = (qpF - 1.0) * 100.0;
+        var eqDeltaPct = (eqF - 1.0) * 100.0;
+        var augDeltaPct = (augF - 1.0) * 100.0;
+        var enDeltaPct = (enF - 1.0) * 100.0;
+        var cmDeltaPct = (cmF - 1.0) * 100.0;
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Base XP: {s.StandardBaseXpRetentionPercent:0.##}%");
+        sb.AppendLine("===============");
+        sb.AppendLine($"Quest Points: +{qpDeltaPct:0.##}% of base XP ({qp:0.##} QP × {s.BonusPerQuestPoint}% per QP)");
+        sb.AppendLine($"Equipment: +{eqDeltaPct:0.##}%");
+        sb.AppendLine($"Augments: +{augDeltaPct:0.##}%");
+        sb.AppendLine($"Enlightenment: +{enDeltaPct:0.##}%");
+        sb.AppendLine($"Challenge Mode Bonuses: +{cmDeltaPct:0.##}%");
+        sb.AppendLine("===============");
+        sb.AppendLine($"Total XP Multiplier: {totalF * 100.0:0.##}%");
+        return sb.ToString();
+    }
+
+    // One chat line per SendMessage with System type avoids the client appending ♪ to each newline-split line.
+    public static void SendMessageLinesAsSystem(Player player, string text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return;
+
+        foreach (var raw in text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var line = raw.TrimEnd().Replace("\u266a", "").TrimEnd();
+            if (line.Length == 0)
+                continue;
+
+            player.SendMessage(line, ChatMessageType.System);
+        }
+    }
+
+    public static void SendXpBonusBreakdown(Player player)
+    {
+        SendMessageLinesAsSystem(player, BuildXpBonusBreakdown(player));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -343,7 +464,10 @@ public static class LoremasterExtensions
                     ? qp
                     : (settings.MilestoneBonusQPPercent / 100f) * settings.MilestoneBonusQPBase;
                 if (bonusQp > 0)
-                    player.IncQuestPoints(bonusQp);
+                {
+                    player.AddExtraQuestPoints(bonusQp);
+                    player.UpdateQuestPoints();
+                }
 
                 var message = string.Format(settings.MilestoneBroadcastFormat,
                     player.Name, Ordinal(threshold), bonusQp);

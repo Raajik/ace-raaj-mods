@@ -1,0 +1,72 @@
+{
+  "EnableAlchemy": true,
+  "Alchemy": {
+    "EchoIntervalTrained": 15.0,
+    "EchoIntervalSpecialized": 10.0,
+    "EchoDuration": 360.0,
+    "PotionDropChance": 0.20,
+    "ExtraPotionRollsTrained": 2,
+    "ExtraPotionRollsSpecialized": 3,
+    "ShowEchoMessages": true
+  },
+  "EnableArcaneLore": true,
+  "ArcaneLore": {
+    "SpellDodgePercentTrained": 0.05,
+    "SpellDodgePercentSpecialized": 0.10
+  },
+  "EnableAssessCreature": true,
+  "EnableCooking": true,
+  "EnableDeception": false,
+  "EnableDirtyFighting": true,
+  "DirtyFighting": {
+    "DebuffDurationSeconds": 180,
+    "AttackDebuffTrained": -20,
+    "AttackDebuffSpecialized": -40,
+    "DefenseDebuffTrained": -20,
+    "DefenseDebuffSpecialized": -40,
+    "HealDebuffTrained": -30,
+    "HealDebuffSpecialized": -60,
+    "BleedPercentTrained": 0.01,
+    "BleedPercentSpecialized": 0.02
+  },
+  "EnableDualWield": false,
+  "EnableFletching": false,
+  "EnableHealing": true,
+  "EnableLeadership": false,
+  "EnableLockpick": false,
+  "EnableLoyalty": false,
+  "EnableManaConversion": true,
+  "EnableMissileDefense": false,
+  "EnableRecklessness": false,
+  "EnableShield": true,
+  "EnableSneakAttack": false,
+  "EnableTrophyDrops": true,
+  "TrophyDrops": {
+    "ExtraRollsTrained": 1,
+    "ExtraRollsSpecialized": 2,
+    "MaxExtraRolls": 10,
+    "BonusTreasureChance": 0.5
+  },
+  "Cooking": {
+    "LegendaryHealthSpell": 6077,
+    "LegendaryStaminaSpell": 6076,
+    "LegendaryManaSpell": 6078,
+    "ProdigalHealthSpell": 3731,
+    "ProdigalStaminaSpell": 3732,
+    "ProdigalManaSpell": 3725
+  },
+  "Replenish": {
+    "HotDurationSeconds": 15.0,
+    "HotTickSeconds": 1.0,
+    "BaseSkillPercentPerTick": 0.01,
+    "SpecializedMultiplier": 3.0,
+    "EnableDebugMessages": false
+  },
+  "ManaConversion": {
+    "CleaveTargetsTrained": 1,
+    "CleaveTargetsSpecialized": 2,
+    "CleaveRange": 15.0,
+    "EquipmentManaEfficiencyTrained": 0.25,
+    "EquipmentManaEfficiencySpecialized": 0.50
+  }
+}

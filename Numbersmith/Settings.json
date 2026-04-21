@@ -1,5 +1,165 @@
 {
+  "// Numbersmith": "Reading order: every // key is documentation; real settings follow in the same order. MaxLevel, Formulas (each entry: // PatchType, // Enabled, // Formula then values), Verbose, optional EmpyreanEchoes-style toggles.",
+  "// MaxLevel": "Maximum character level Numbersmith uses when overriding ACE's XP curve. Does not change other mods' caps.",
+  "// Formulas": "Per-patch AngouriMath overrides. Each object: // keys first, then PatchType, Enabled, Formula. Variable names are documented in each patch class.",
+  "// Verbose": "When true, logs which patches loaded and which formulas are active.",
+  "// EnableLifeMagicElementalMod": "Originally EmpyreanEchoes; Harmony categories still use these class names.",
+  "// EnableDamageOverTimeConversion": "EmpyreanEchoes-style DoT conversion behavior when supported by patches.",
   "MaxLevel": 275,
+  "Formulas": [
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "ArmorMod",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "CripplingBlowImbueMod",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "CriticalStrikeImbueMod",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "ElementalRendingImbue",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "GrantExperience",
+      "Enabled": false,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "HealingDifficulty",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "LevelCost",
+      "Enabled": false,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "MagicWeaponCriticalChance",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "MeleeArmorRending",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "MeleeAttributeDamage",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "MissileArmorRending",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "MissileAttributeDamage",
+      "Enabled": false,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "NetherRating",
+      "Enabled": false,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "PlayerAccuracyMod",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "PlayerPowerMod",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "WeaponCriticalChance",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "SkillChance",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "PlayerTakeDamage",
+      "Enabled": true,
+      "Formula": ""
+    },
+    {
+      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
+      "// Enabled": "When false, this formula patch is not registered at startup.",
+      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
+      "PatchType": "PlayerTakeDamageOverTime",
+      "Enabled": true,
+      "Formula": ""
+    }
+  ],
   "Verbose": false,
   "EnableLifeMagicElementalMod": false,
   "EnableDamageOverTimeConversion": false

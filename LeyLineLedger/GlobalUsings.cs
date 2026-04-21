@@ -45,3 +45,5 @@ global using Microsoft.EntityFrameworkCore;
 global using ACE.Shared;
 global using ACE.Shared.Helpers;
 global using ACE.Shared.Mods;
+
+global using AceRaajMods.Shared;

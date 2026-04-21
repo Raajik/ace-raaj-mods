@@ -85,7 +85,7 @@ internal static class Defaults
 public class DefaultsSettings
 {
     [JsonPropertyName("// Int64Defaults")]
-    public string Int64DefaultsDoc { get; } = "Map PropertyInt64 to default long; applied on first assignment when the player had no prior value.";
+    public string Int64DefaultsDoc { get; init; } = "Map PropertyInt64 name → default long. Example: MaximumLuminance for first-time luminance storage.";
 
     public Dictionary<PropertyInt64, long> Int64Defaults { get; set; } = new()
     {
@@ -93,21 +93,21 @@ public class DefaultsSettings
     };
 
     [JsonPropertyName("// IntDefaults")]
-    public string IntDefaultsDoc { get; } = "Map PropertyInt to default int on first assignment.";
+    public string IntDefaultsDoc { get; init; } = "Map PropertyInt name → default int on first assignment.";
 
     public Dictionary<PropertyInt, int> IntDefaults { get; set; } = new()
     {
     };
 
     [JsonPropertyName("// FloatDefaults")]
-    public string FloatDefaultsDoc { get; } = "Map PropertyFloat to default float on first assignment.";
+    public string FloatDefaultsDoc { get; init; } = "Map PropertyFloat name → default number on first assignment.";
 
     public Dictionary<PropertyFloat, float> FloatDefaults { get; set; } = new()
     {
     };
 
     [JsonPropertyName("// BoolDefaults")]
-    public string BoolDefaultsDoc { get; } = "Map PropertyBool to default bool on first assignment.";
+    public string BoolDefaultsDoc { get; init; } = "Map PropertyBool name → default bool on first assignment.";
 
     public Dictionary<PropertyBool, bool> BoolDefaults { get; set; } = new()
     {

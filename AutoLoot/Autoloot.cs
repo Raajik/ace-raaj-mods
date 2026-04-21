@@ -149,15 +149,20 @@ public class AutoLoot
             return false;
 
         if (item.WeenieClassId != Player.coinStackWcid &&
-            !item.WeenieClassName.StartsWith("tradenote", StringComparison.OrdinalIgnoreCase))
+            !item.WeenieClassName.StartsWith("tradenote", StringComparison.OrdinalIgnoreCase) &&
+            !PeaPyrealWcids.IsPea(item.WeenieClassId))
             return false;
 
-        var valuePer = item.Value ?? 0;
-        if (valuePer <= 0)
-            return false;
+        if (!PeaPyrealWcids.IsPea(item.WeenieClassId))
+        {
+            var valuePer = item.Value ?? 0;
+            if (valuePer <= 0)
+                return false;
+        }
 
-        var stackSize = item.StackSize ?? 1;
-        var totalValue = (long)valuePer * stackSize;
+        var totalValue = PeaPyrealWcids.IsPea(item.WeenieClassId)
+            ? PeaPyrealWcids.GetPyrealValue(item)
+            : (long)(item.Value ?? 0) * (item.StackSize ?? 1);
         if (totalValue <= 0)
             return false;
 
@@ -686,7 +691,9 @@ public static void HandleLoadProfile(ISession session, params string[] parameter
                     if (TryBankCurrency(player, removed))
                     {
                         lootedItems.TryGetValue("Pyreals (banked)", out var existingBanked);
-                        long bankAdd = (long)(removed.Value ?? 0) * qty;
+                        long bankAdd = PeaPyrealWcids.IsPea(removed.WeenieClassId)
+                            ? PeaPyrealWcids.GetPyrealValue(removed)
+                            : (long)(removed.Value ?? 0) * qty;
                         int bankDelta = bankAdd > int.MaxValue ? int.MaxValue : (int)bankAdd;
                         lootedItems["Pyreals (banked)"] = existingBanked + bankDelta;
                         lootedSet.Add(removed);
@@ -733,7 +740,9 @@ public static void HandleLoadProfile(ISession session, params string[] parameter
                         if (TryBankCurrency(player, removed))
                         {
                             lootedItems.TryGetValue("Pyreals (banked)", out var existingBanked);
-                            long bankAddVt = (long)(removed.Value ?? 0) * qty;
+                            long bankAddVt = PeaPyrealWcids.IsPea(removed.WeenieClassId)
+                                ? PeaPyrealWcids.GetPyrealValue(removed)
+                                : (long)(removed.Value ?? 0) * qty;
                             int bankDeltaVt = bankAddVt > int.MaxValue ? int.MaxValue : (int)bankAddVt;
                             lootedItems["Pyreals (banked)"] = existingBanked + bankDeltaVt;
                             lootedSet.Add(removed);

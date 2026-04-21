@@ -46,3 +46,16 @@ ACE-Server/
 
 # Local ACE.Server drop for reference (not part of this repo)
 ACE.Server-v1.76.4751/
+
+# Local ACE source tree (optional clone; not part of this mod repo)
+ACE-1.76.4751/
+
+# Cursor agent plans (machine-local)
+.cursor/plans/
+
+# Scratch file lists from ripgrep / tooling
+all_cs.txt
+cs_files.txt
+
+# WIP mods and experiments (not tracked until promoted out of this folder)
+Work-In-Progress/

@@ -80,7 +80,7 @@ public partial class Settings
     public string EnableLootItemLevelingDoc { get; init; } = "LootGrowthItem: enable loot-time item XP initialization.";
 
     // LootGrowthItem mutator: loot-time item XP init and optional pre-imbues (replaces former Overtinked loot init).
-    public bool EnableLootItemLeveling { get; set; } = false;
+    public bool EnableLootItemLeveling { get; set; } = true;
 
     [JsonPropertyName("// EnableLootItemPreImbue")]
     public string EnableLootItemPreImbueDoc { get; init; } = "LootGrowthItem: roll pre-imbues on eligible loot.";
@@ -117,6 +117,24 @@ public partial class Settings
         "On higher treasure tiers, relaxes max-level roll skew slightly (quest rolls and loot cap rolls).";
 
     public double LootItemMaxLevelTierBias { get; set; } = 1.5;
+
+    [JsonPropertyName("// LootItemMaxLevelSoftCap")]
+    public string LootItemMaxLevelSoftCapDoc { get; init; } =
+        "Loot GrowthItem: most rolls use max level in LootItemMaxLevelMin..min(LootItemMaxLevelMax,this). Values above the soft cap require passing LootItemMaxLevelEliteBandChance, then roll in (softCap..max] with LootItemMaxLevelEliteRollPower (higher level progressively rarer). Set 0 to disable splitting and use a single roll over the full min..max.";
+
+    public int LootItemMaxLevelSoftCap { get; set; } = 50;
+
+    [JsonPropertyName("// LootItemMaxLevelEliteBandChance")]
+    public string LootItemMaxLevelEliteBandChanceDoc { get; init; } =
+        "Per eligible loot item, chance (0–1) to roll the elite band: ItemMaxLevel above LootItemMaxLevelSoftCap. Typical ~0.0003–0.001 (roughly one in a few thousand) so high caps stay a long-term carrot. 0 = never roll above soft cap. 1 = always use elite when max > soft cap.";
+
+    public double LootItemMaxLevelEliteBandChance { get; set; } = 1.0 / 3000.0;
+
+    [JsonPropertyName("// LootItemMaxLevelEliteRollPower")]
+    public string LootItemMaxLevelEliteRollPowerDoc { get; init; } =
+        "Exponent for w=U^w when rolling only within (softCap..max]; higher values make 51–80 much more common than 200+ within elite drops. Tier bias still applies.";
+
+    public double LootItemMaxLevelEliteRollPower { get; set; } = 4.0;
 
     [JsonPropertyName("// LootItemPreImbueChance")]
     public string LootItemPreImbueChanceDoc { get; init; } = "Chance to apply a pre-imbue on eligible loot.";

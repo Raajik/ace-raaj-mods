@@ -42,17 +42,17 @@ public class Augmentations
 public class AugmentationSettings
 {
     [JsonPropertyName("// IgnoreSharedAttribute")]
-    public string IgnoreSharedAttributeDoc { get; } = "When true, attribute augs ignore the shared attribute group cap.";
+    public string IgnoreSharedAttributeDoc { get; init; } = "When true, attribute augs ignore the shared attribute group cap.";
 
     public bool IgnoreSharedAttribute { get; set; } = false;
 
     [JsonPropertyName("// IgnoreSharedResist")]
-    public string IgnoreSharedResistDoc { get; } = "When true, resist augs ignore the shared resist group cap.";
+    public string IgnoreSharedResistDoc { get; init; } = "When true, resist augs ignore the shared resist group cap.";
 
     public bool IgnoreSharedResist { get; set; } = false;
 
     [JsonPropertyName("// MaxAugs")]
-    public string MaxAugsDoc { get; } = "Per AugmentationType cap merged into AugmentationDevice.MaxAugs at startup; omitted types keep ACE defaults.";
+    public string MaxAugsDoc { get; init; } = "Each key is an AugmentationType name (ACE enum). Value = max purchases for that type merged into AugmentationDevice.MaxAugs at startup. Omitted types keep ACE defaults. Strength through Self share one attribute cap unless IgnoreSharedAttribute is true. Resist* types share one resist cap unless IgnoreSharedResist is true.";
 
     public Dictionary<AugmentationType, int> MaxAugs { get; set; } = new()
     {

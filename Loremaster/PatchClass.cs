@@ -3,6 +3,11 @@ namespace Loremaster;
 using System.Reflection;
 using System.Text.Json;
 
+using ACE.Database.Models.Shard;
+using ACE.Server.WorldObjects;
+
+using Microsoft.EntityFrameworkCore;
+
 [HarmonyPatch]
 public partial class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
 {
@@ -47,6 +52,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         TryApplyPortalHasQuestSolvesHooks();
         RefreshEmpyreanAlterationRelocatedPatches();
         RefreshParchmentQuestPatches();
+        TrophyBurdenXp.Initialize();
 
         // OnWorldOpen never runs on hot-reload; still recalc anyone online and watch Settings.json.
         UpdateIngamePlayers();
@@ -209,7 +215,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     // ─────────────────────────────────────────────────────────────────────────
 
     [CommandHandler("qb", AccessLevel.Player, CommandHandlerFlag.RequiresWorld,
-        "Shows your Quest Points and XP multiplier. Type /qb help for all subcommands.")]
+        "Shows the multiplicative XP breakdown (Base XP block). Type /qb help for all subcommands.")]
     public static void HandleQuests(Session session, params string[] parameters)
     {
         var player = session.Player;
@@ -231,19 +237,20 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                         sb.AppendLine($"{quest.QuestName,-35} x{quest.NumTimesCompleted,-4} {pts} QP");
                     }
                     player.UpdateQuestPoints();
-                    var listQp    = player.GetProperty(FakeFloat.QuestBonus) ?? 0;
-                    var listBonus = player.QuestBonus();
+                    var listQp = player.GetProperty(FakeFloat.QuestBonus) ?? 0;
                     sb.AppendLine(new string('-', 50));
-                    sb.AppendLine($"Total: {listQp} QP → {listBonus:P2} XP multiplier");
-                    player.SendMessage(sb.ToString());
+                    sb.AppendLine($"Total: {listQp} QP");
+                    LoremasterExtensions.SendMessageLinesAsSystem(player, sb.ToString());
+                    LoremasterExtensions.SendXpBonusBreakdown(player);
                     return;
 
                 case "help":
                     player.SendMessage(
                         "[Loremaster] /qb subcommands:\n" +
-                        "  /qb               — show Quest Points, XP multiplier, and quest counts\n" +
+                        "  /qb               — multiplicative XP breakdown (Base XP block only)\n" +
                         "  /qb list          — show all quests with completions and QP value\n" +
                         "  /qb help          — show this help message\n" +
+                        "  /topqb            — top 10 by stored QP, your QP, and global rank\n" +
                         "\nToggle personal notifications (per-character, persists across sessions):\n" +
                         "  /qb NotifyAll            — enable or disable all notifications at once\n" +
                         "  /qb NotifyQuest          — QP gains and losses\n" +
@@ -280,27 +287,53 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             }
         }
 
-        // Default: show summary
+        // Default: multiplicative breakdown only (no preamble; line-per-message System avoids ♪ suffixes).
         player.UpdateQuestPoints();
-        var qp        = player.GetProperty(FakeFloat.QuestBonus) ?? 0;
-        var bonus     = player.QuestBonus();
-        var charCount = player.QuestManager?.GetQuests().Count(x => x.HasSolves()) ?? 0;
+        LoremasterExtensions.SendXpBonusBreakdown(player);
+    }
 
-        if (Settings.UseAccountWideQuests)
+    [CommandHandler("topqb", AccessLevel.Player, CommandHandlerFlag.RequiresWorld,
+        "Shows top 10 characters by Quest Points, your QP, and global rank.")]
+    public static void HandleTopQuestPoints(Session session, params string[] parameters)
+    {
+        var player = session.Player;
+        if (player is null) return;
+
+        player.UpdateQuestPoints();
+        var myQp = player.GetProperty(FakeFloat.QuestBonus) ?? 0;
+        var propId = (ushort)FakeFloat.QuestBonus;
+
+        try
         {
-            var accountCount = player.GetAccountUniqueQuestCount();
-            player.SendMessage(
-                $"Quest Points: {qp}\n" +
-                $"XP Multiplier: {bonus:P0}\n" +
-                $"Account-wide: {accountCount} unique quests solved.\n" +
-                $"This character: {charCount} quests.");
+            using var ctx = new ShardDbContext();
+            var top = ctx.BiotaPropertiesFloat.AsNoTracking()
+                .Where(p => p.Type == propId)
+                .Join(ctx.Character.AsNoTracking(), p => p.ObjectId, c => c.Id, (p, c) => new { c.Name, p.Value, c.IsDeleted })
+                .Where(x => !x.IsDeleted)
+                .OrderByDescending(x => x.Value)
+                .Take(10)
+                .ToList();
+
+            var rank = ctx.BiotaPropertiesFloat.AsNoTracking()
+                           .Count(p => p.Type == propId && p.Value > myQp) + 1;
+
+            var sb = new StringBuilder();
+            sb.AppendLine("==== Top Quest Points (top 10) ====");
+            var place = 1;
+            foreach (var row in top)
+            {
+                sb.AppendLine($"  {place,2}. {row.Name,-32} {row.Value,8:0.##} QP");
+                place++;
+            }
+
+            sb.AppendLine("---");
+            sb.AppendLine($"Your QP: {myQp:0.##}  |  Global rank (by stored QP): {rank:N0}");
+            player.SendMessage(sb.ToString());
         }
-        else
+        catch (Exception ex)
         {
-            player.SendMessage(
-                $"Quest Points: {qp}\n" +
-                $"XP Multiplier: {bonus:P0}\n" +
-                $"This character: {charCount} quests.");
+            ModManager.Log($"[Loremaster] /topqb failed: {ex}", ModManager.LogLevel.Error);
+            player.SendMessage("[Loremaster] Could not query leaderboard (see server log).");
         }
     }
 
@@ -332,14 +365,14 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
 
         var qp          = target.GetProperty(FakeFloat.QuestBonus) ?? 0;
-        var bonus       = target.QuestBonus();
+        var totalMult   = target.GetTotalXpMultiplier();
         var charCount   = target.QuestManager.GetQuests().Count(x => x.HasSolves());
         var accountCount = target.GetAccountUniqueQuestCount();
 
         admin.SendMessage(
             $"[Loremaster Inspect] {target.Name}\n" +
             $"  Stored QP       : {qp}\n" +
-            $"  XP Multiplier   : {bonus:P2}\n" +
+            $"  Total XP Mult   : {totalMult * 100.0:0.##}% of raw\n" +
             $"  Char quests     : {charCount}\n" +
             $"  Account unique  : {accountCount}\n" +
             $"  Account-wide    : {Settings.UseAccountWideQuests}");
@@ -369,11 +402,11 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
 
         target.UpdateQuestPoints();
-        var qp    = target.GetProperty(FakeFloat.QuestBonus) ?? 0;
-        var bonus = target.QuestBonus();
+        var qp        = target.GetProperty(FakeFloat.QuestBonus) ?? 0;
+        var totalMult = target.GetTotalXpMultiplier();
 
-        admin.SendMessage($"[Loremaster] Reset {target.Name}: {qp} QP → {bonus:P2} XP multiplier.");
-        target.SendMessage($"[Loremaster] Your quest bonus has been recalculated by an admin: {qp} QP → {bonus:P2}.");
+        admin.SendMessage($"[Loremaster] Reset {target.Name}: {qp} QP → total XP mult {totalMult * 100.0:0.##}% of raw.");
+        target.SendMessage($"[Loremaster] Your quest bonus has been recalculated by an admin: {qp} QP → total XP mult {totalMult * 100.0:0.##}% of raw.");
     }
 
     [CommandHandler("qb-resetall", AccessLevel.Admin, CommandHandlerFlag.None,
@@ -500,14 +533,13 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             if (quest is null)
                 return;
 
-            // Quest Point increment
-            player.IncQuestPoints(quest.Value());
+            player.UpdateQuestPoints();
             if (player.Notify(LMBool.NotifyQuest))
                 player.SendMessage(LoremasterExtensions.FormatQpNotification($"+{quest.Value()} QP from {questFormat}"));
 
             var questName = QuestManager.GetQuestName(questFormat) ?? questFormat;
 
-            // One-time XP + loot bonuses
+            // One-time XP + loot bonuses (QP already reflected in UpdateQuestPoints)
             player.GrantCompletionBonuses(questName);
 
             // Milestone check — get count before and after this solve
@@ -520,6 +552,10 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (previousSolves > 0 && solves > previousSolves)
         {
             var questName = QuestManager.GetQuestName(questFormat) ?? questFormat;
+            var qst = instance.GetQuest(questName);
+            var qpVal = qst?.Value() ?? 0f;
+            player.TryAwardRepeatQuestPoints(questName, qpVal);
+            player.UpdateQuestPoints();
             player.GrantCompletionBonuses(questName);
             player.GrantRepeatSolveLoot(questName);
         }
@@ -536,7 +572,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // XP / Luminance multiplier — applies the ongoing QuestBonus to all gains
+    // XP / Luminance — multiplicative chain (base retention × QP × equipment × augments × enlight × challenge); luminance optional full chain.
     // ─────────────────────────────────────────────────────────────────────────
 
     [HarmonyPrefix]
@@ -546,13 +582,13 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (_questXpMultiplierSuppressDepth > 0)
             return;
 
-        var bonus = __instance.QuestBonus();
-        var total = (long)(amount * bonus);
+        var mult  = __instance.GetTotalXpMultiplier();
+        var total = (long)(amount * mult);
 
         var notify = xpType == XpType.Kill  && __instance.Notify(LMBool.NotifyKillXp)
                   || xpType == XpType.Quest && __instance.Notify(LMBool.NotifyQuestXp);
         if (notify && __instance.Session != null)
-            __instance.SendMessage($"Earned {total:N0} XP! ({amount:N0} * {bonus:P0})");
+            __instance.SendMessage($"Earned {total:N0} XP! ({amount:N0} raw × {mult * 100.0:0.##}% of full vanilla)");
 
         amount = total;
     }
@@ -561,14 +597,30 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     [HarmonyPatch(typeof(Player), nameof(Player.EarnLuminance), new Type[] { typeof(long), typeof(XpType), typeof(ShareType) })]
     public static void PreEarnLuminance(ref long amount, XpType xpType, ShareType shareType, ref Player __instance)
     {
-        var bonus = __instance.QuestBonus();
-        var total = (long)(amount * bonus);
+        var mult = Settings?.ApplyStandardBaseXpScaleToLuminance == true
+            ? __instance.GetTotalXpMultiplier()
+            : __instance.QuestBonus();
+        var total = (long)(amount * mult);
 
         var notify = xpType == XpType.Kill  && __instance.Notify(LMBool.NotifyKillLuminance)
                   || xpType == XpType.Quest && __instance.Notify(LMBool.NotifyQuestLuminance);
         if (notify && __instance.Session != null)
-            __instance.SendMessage($"Earned {total:N0} luminance! ({amount:N0} * {bonus:P0})");
+            __instance.SendMessage($"Earned {total:N0} luminance! ({amount:N0} raw × {mult * 100.0:0.##}% of full vanilla)");
 
         amount = total;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Trophy Burden XP
+    // ─────────────────────────────────────────────────────────────────────────
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Player), nameof(Player.HandleActionGiveObjectRequest), new Type[] { typeof(uint), typeof(uint), typeof(int) })]
+    public static void PreHandleActionGiveObjectRequest(Player __instance, uint targetGuid, uint itemGuid, int amount)
+    {
+        var target = __instance.FindObject(targetGuid, Player.SearchLocations.Landblock, out _, out _, out _) as Container;
+        var item = __instance.FindObject(itemGuid, Player.SearchLocations.MyInventory | Player.SearchLocations.MyEquippedItems, out _, out _, out _);
+
+        TrophyBurdenXp.HandleGiveRequest(__instance, target, item);
     }
 }

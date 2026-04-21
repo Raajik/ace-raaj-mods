@@ -11,6 +11,7 @@ Server-side mods for **[ACEmulator](https://github.com/ACEmulator/ACE)** using *
 | **AutoLoot** | Corpse autoloot via server `.utl` profiles; optional vendor-trash and unknown-scroll passes; `/autoloot` toggles. | Enabled |
 | **ChallengeModes** | Challenge hub: `/cm` flows for SSF, hardcore, alternate leveling, aptitude (WIP), milestone XP/luminance. SSF/hardcore load with the mod; players opt in in-game. | Enabled |
 | **EmpyreanAlteration** | Mutator pipeline (loot / corpse / generator), loot-time item XP (`LootGrowthItem`), Slayer/ShinyPet-style mutators, optional Harmony extras and item growth on level-up. | **Disabled** |
+| **EasyServerSettings** | Applies shard `PropertyManager` preset (SQL mirror: `EasyServerSettings/Sql/ace-shard-settings.sql`) via `ModifyBool`/`Long`/`Double` + `ResyncVariables`; `/essapply` to re-run. | Enabled |
 | **Gemcrafter** | Gem loot upgrades and mortar-based equipment infusion (in testing). | **Disabled** |
 | **LeyLineLedger** | Banking and ledger for items, pyreals/trade notes, and luminance (`/bank`, `/cash`, `/lum`, vendor integration). | Enabled |
 | **Loremaster** | Quest progress bonuses, first-solve rewards, milestones, portal/repeat-solve hooks, optional barkeeper parchment contracts (see `Settings.json`). | Enabled |

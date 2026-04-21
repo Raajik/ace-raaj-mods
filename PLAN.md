@@ -6,7 +6,8 @@ Single index of tracked work. **Mod notes below were merged from former per-mod 
 
 - **Done (no longer in queue below):** LeyLineLedger / AutoLoot `CashProperty` ↔ `BankCashProperty` (39999) verified; QOL `AnimationSpeeds` expansion + `Settings.json` `//` docs + Readme updates (2026-04-04).
 - **Done:** Loremaster barkeeper parchments — weighted explore/kill/fetch pools (rare + 25–100 weight rules, effective kill count for rare targets), stack-based fetch turn-in, concise objective copy with weenie names (2026-04-04).
-- **Ongoing:** AureatePath / Overtinked = operator JSON tuning; maintenance = periodic `rg` / `/mod-audit`.
+- **Ongoing:** AureatePath / Overtinked = operator JSON tuning; maintenance = periodic `rg` / `/mod-audit`. **AethericWeaver** — spell customization failures at startup: log exception in `CustomizeSpells` + verify dat/DB alignment (see [§ AethericWeaver](#aethericweaver)).
+- **Backlog:** User idea list (**Idea backlog**, 2026-04) + **Idea routing** table captured under [§ Greenfield concepts](#greenfield-concepts) (2026-04-21).
 
 ## Suggested order (simplest → most complex)
 
@@ -18,7 +19,7 @@ Burn down from the top; later items need more design or ACE integration.
 4. **Loremaster — Barkeeper parchments** — ~~Weighted pools, fetch stacks, messaging~~ **shipped**; tune `Settings.json` / templates on your shard. Spec in [§ Loremaster](#loremaster).
 5. **Swarmed (deprioritized)** — *CreatureEx per-landblock* is **not on the near-term roadmap**; theoretically possible via post-placement / `EnterWorld` / landblock hooks, but unlikely to receive attention. Landblock-aware **reinforcement** scaling is already implemented (see [§ Swarmed](#swarmed)).
 6. **EmpyreanAlteration — active priority** — Gear or mutators for high-tier effects (e.g. level 9/10 spells). **Design lock:** gate **only** on AureatePath **`ItemWieldRequirementEnlightenments`** (wield / item fake int count)—no additional gates unless policy changes.
-7. **Greenfield concepts** — Uncommitted mod ideas in [§ Greenfield concepts](#greenfield-concepts); start one when you pull it into scope.
+7. **Greenfield concepts** — Uncommitted mod ideas in [§ Greenfield concepts](#greenfield-concepts); start one when you pull it into scope. See **Idea backlog (user list, 2026-04)** there for the latest captured list and **Idea routing** for default mod homes.
 
 ---
 
@@ -30,11 +31,60 @@ Ideas only—not active tasks until you schedule them (often harder than tuning 
 - **Follow through Portals** — Creature behavior: pursue players through portals.
 - **Shared Flags** — Quest flags shared across all characters on one account.
 - **Chat Filter** — ML.NET toxicity classification; shadow-ban or filter toxic chat.
-- **Extra storage** — Additional house storage chest container slots (up to 10 total).
+- **Extra storage (house chests)** — Up to **10** extra backpack-equivalent house storage slots purchased with a mix of **MMDs** and **writs** (extends “additional house storage chest container slots”).
+
+### Idea backlog (user list, 2026-04)
+
+- **Dungeons recallable** — Allow recall from all dungeon landblocks (or configurable list) where vanilla blocks it.
+- **Loremaster Zahir — quest item economy** — Turn in stray quest items for **XP and/or random pyreal rewards**; if an **NPC gave** you an item, allow **handing it back** for **bonus XP** when it is **equipment**, a **housing item**, or **specifically treated healing kits**.
+- **CommonGoals (new mod)** — **Personal loot per killer/player**; **no split XP** when other players help kill (full credit rules TBD).
+- **Burden-% backpacks** — Worn bags that reduce total burden by a configurable **percentage** (balance + stacking rules).
+- **QOL stacking** — Refactor stacking rules to **categories or explicit WCIDs**; current name-based matching breaks **quest objects** and identically named items (bracelets, armor, weapons, etc.).
+- **Custom content WCID base** — Use **101189990** as the starting range for custom weenies/WCIDs shard-wide (document in content pipelines; PLAN is the index of record).
+- **Cantrip perks** — Cantrips grant **skill perks** (gameplay hooks), not only raw skill increases.
+- **Salvage spell gems** — On **salvage success**, roll **random spell gems** into output (candidate: Gemcrafter).
+- **Windsong-style AOE** — AoE spell behavior tied to **martial weapon** plus **War** and/or **Void** magics.
+- **Mana Conversion / Life variants** — **Untrained Mana Conversion** behaves like **War/Void echo or doublecast**; **Life Hecatomb** echoes **×3** with **no HP drain** (major balance pass).
+- **+50 permanent skill bonus** — Certain **creatures or items** grant **+50 permanent** skill (needs persistence and stack rules).
+- **Life + melee AOE** — Life magic with melee could add **AoE drain**; **Raven’s Fury** interaction when specialized.
+- **Bank salvage** — Credit based on **salvage units recovered**: every **100** points → **one** bag at **workmanship 10** (lower workmanship not granted as items but still **counts toward total** salvage credit).
+- **Specialized Salvage → auto-salvage** — Auto-salvage chain when spec salvage (and settings) allow it.
+- **Chaos mode** — **3–5× quest bonus (QB)**; **Swarmed**-style spawns **much more often**; optional escalation to **larger mobs** over time or per event.
+- **Species kill XP** — Increase mob kill **XP** based on **how many of that species** the player has killed (lifetime or sliding window; design TBD).
+
+### Idea routing (advisory)
+
+Default mod homes for discussion; **first implementation pass may move an item** after an ACE spike or shard policy check.
+
+| Idea | Default home | Notes |
+|------|----------------|-------|
+| Dungeons recallable | **New mod or QOL** | Landblock / `@recall` rules; not covered by current QOL recall *animation* tuning ([QOL/Animations.cs](QOL/Animations.cs)). |
+| Zahir turn-in / return-for-XP | **Loremaster** | Fits barkeeper/contract-style hooks; needs custom NPC weenie + interaction design ([Loremaster/](Loremaster/)). |
+| Personal loot + solo XP | **New mod: CommonGoals** | Loot generation + XP split; isolate from AutoLoot/Swarm where possible. |
+| House chest +10 slots, MMD/writ | **Lockboxes / BetterChestLoot / new HouseStorage** | Same theme as **Extra storage (house chests)** above; pick one implementation home when scoped. |
+| Burden-% backpacks | **EmpyreanAlteration** or **Numbersmith** | Item fake properties / augments vs skill tables. |
+| QOL stacking by category/WCID | **QOL** | Regression list: quest items, same-name gear stacks. |
+| WCID 101189990 | **Docs (PLAN + content)** | Optional later: `.cursor/skills/ace-mod/SKILL.md` / mod Readmes. |
+| Cantrip perks | **BetterSupportSkills** or **CustomSpells** | Spell-driven vs proficiency/skill hooks. |
+| Salvage → spell gems | **Gemcrafter** | Salvage mutation / success postfix hooks ([Gemcrafter/](Gemcrafter/)). |
+| Windsong AOE (martial + War/Void) | **CustomSpells** (+ optional **ChallengeModes** gate) | New spell or proc; balance pass. |
+| Mana Conversion / Hecatomb variants | **New mod TBD** or **ChallengeModes** | Large balance surface; may collide with `/cm` XP rules. |
+| +50 perma skill from creature/item | **EmpyreanAlteration** / **AureatePath** | Persistence (character vs account) required before mod choice. |
+| Life + melee AOE / Raven's Fury | **CustomSpells** / **Overtinked** | Spell + combat cross-cutting. |
+| Bank salvage → work 10 bags | **LeyLineLedger** or **new mod** | Bank properties + salvage accounting ([LeyLineLedger/](LeyLineLedger/)). |
+| Spec salvage = auto-salvage | **QOL** or **Gemcrafter** | Generic server autosalvage vs gem-centric pipeline. |
+| Chaos mode (QB + Swarmed escalation) | **ChallengeModes** + **Swarmed** or **new ChaosMode** | Cross-mod settings if split. |
+| XP per species killed | **ChallengeModes** or **Numbersmith** | Per-player species counters. |
 
 ---
 
 ## Merged mod notes (former `TODO.md` content)
+
+### AethericWeaver
+
+- **Spell customization failures at startup** — `ace_server.log` can show many lines like `Failed to customized SpearMasterySelf8 -> 70099` from [AethericWeaver/PatchClass.cs](AethericWeaver/PatchClass.cs) `CustomizeSpells`: the `catch` logs only template/id and **discards the exception**, so the real failure is unknown.
+- **Follow-up: logging** — Log `ex` in that catch (at minimum `ex.Message`; preferably full `ToString()` or stack at `ModManager.LogLevel.Warn`) so the next launch shows whether the failure is e.g. `NullReferenceException` on `_spellBase.Clone()`, `Apply` validation, or dictionary assignment.
+- **Follow-up: investigation** — After the exception is visible: confirm each **template** spell exists in both **world DB spell cache** and **portal.dat `SpellTable`** (dat/DB mismatch can leave `GetCachedSpell` succeeding while `new Spell(template)._spellBase` is null); review [AethericWeaver/Spells.xlsx](AethericWeaver/Spells.xlsx) and `Settings.CustomSpells` for bad enum/formula cells.
 
 ### QOL
 
@@ -93,6 +143,11 @@ Ideas only—not active tasks until you schedule them (often harder than tuning 
 - **Quest-item perk chat** — `Container.TryAddToInventory` postfix for nested-pack / corpse loot.
 
 - No open backlog beyond `Settings.json` tuning (see suggested order item 2).
+
+### EmpyreanAlteration
+
+- **Active priority / design** — See suggested order item 6 (AureatePath `ItemWieldRequirementEnlightenments` gate only).
+- **Settings.json — expand shipped config (backlog)** — Today the repo ships a **minimal** two-band `Settings.json` (Enabled, Verbose, ItemLevelUpGrowthEnabled, GrowthAugments, GrowthFixedLevelAugments); the rest of tuning stays on C# defaults until keys are added. **Future:** optionally grow the file to document **Mutators**, **Odds**, **TargetGroups**, **WeenieTypeGroups**, spell/proc tables, loot-growth knobs, etc., in the same QOL-style `//` doc band + values band—expect a **large** diff and careful ordering across `Settings.cs` / `Settings.Mutators.cs` partials so serialization stays predictable.
 
 ---
 

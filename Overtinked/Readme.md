@@ -6,9 +6,9 @@ Extends tinkering limits and adds configurable salvage behavior: per-salvage rul
 
 ## EmpyreanAlteration and item leveling
 
-**Overtinked** is **tinkering-only** for quest items: workmanship, initial tinkering-style rolls, and salvage/recipe behavior. It sets **`QuestItemInitializedBool` (40101)** after that init so other mods can run afterward.
+**Overtinked** does **not** run quest inventory hooks, item XP, loot growth, or first-add workmanship. Apply salvage and imbues only through **RecipeManager** (tinkering).
 
-**EmpyreanAlteration** owns **quest inventory item XP** (fake properties 40100 / 40102 / 40106 / 40150), **custom item XP curves**, **catch-up growth**, **`OnItemLevelUp` growth** (when **`QuestGrowthItemBool`** is true), and **loot-time** XP via **`GrowthItem`** / **`LootGrowthItem`** mutators. Tune quest leveling in **`EmpyreanAlteration/Settings.json`** (`EnableQuestItemLeveling`, `QuestGrowthSalvageRules`, `SpellGrowth`, curve fields). Items with **`FakeBool.GrowthItem`** use EA loot mutators only; EA’s quest growth path is gated on **`QuestGrowthItemBool`** so the two paths do not fight.
+**EmpyreanAlteration** owns **quest inventory item XP**, **custom item XP curves**, **catch-up growth**, **`OnItemLevelUp` growth**, **loot-time** XP via **`GrowthItem`** / **`LootGrowthItem`**, and optional **quest workmanship** on first add (fake bool **40107**). Tune those in **`EmpyreanAlteration/Settings.json`**.
 
 ---
 
@@ -41,11 +41,6 @@ Edit `Settings.json` in the mod folder (e.g. `C:\ACE\Mods\Overtinked\`).
 | `EnableFailureRedesign` | true | Failed *numeric* tinkers apply opposite effect instead of destroying the item. |
 | `EnableDefaultImbueFailureWorkmanship` | true | Failed *imbue* tinkers add +1 Workmanship (cap 10) instead of destroying the item. |
 | `ShowPlayerSalvageMessage` | true | Send a short chat message when a custom salvage/imbue is applied. |
-| `EnableQuestItemInventoryInit` | **false** | When **true**, postfixes **`Container.TryAddToInventory`** and runs optional workmanship + initial perks on first pack add. Default **false** so Overtinked only affects **manual tinkering** (`RecipeManager`). Item XP / leveling: **EmpyreanAlteration**. |
-
-### Quest items (optional inventory hook)
-
-If **`EnableQuestItemInventoryInit`** is **true**, **`OvertinkedQuestInventoryHarmony`** runs **`InitializeQuestWorldObject`**: workmanship, optional initial effects (`QuestItemEffects`), and sets **`QuestItemInitializedBool` (40101)**. By default this hook is **off**.
 
 ### Salvage rules (`SalvageRules`)
 
@@ -77,8 +72,6 @@ Each entry: **Wcids**, **Name**, **PrimaryStat** (`MaxHealth` / `MaxStamina` / `
 - **RecipeManagerEx.cs** — Craft flow (`UseObjectOnTarget` when `EnableRecipeManagerPatch` is true).
 - **BleedImbueCombat.cs** — Bleed stacking DoT on hit (uses `BleedImbue` config).
 - **CleavingNetherImbueCombat.cs** — Cleaving splash + Nether Rending bonus on `Player.DamageTarget`.
-- **ContainerRootPlayer.cs** — Resolves owning `Player` from a `Container` chain for inventory init.
-- **OvertinkedQuestInventoryHarmony.cs** — Harmony category for quest tinkering: postfix on `Container.TryAddToInventory` → `InitializeQuestWorldObject`.
 - **ImbueSalvageWcids.cs** — Standard imbue WCID list used for failure → Workmanship.
 - **SalvageRule.cs**, **SalvageEffectApplier.cs** — Salvage rule model and effect application.
 - **BuffedImbueRule.cs**, **BuffedJewelrySecondaryStore.cs**, **NewImbueConfig.cs**, **OvertinkedImbueFlags.cs** — Config and storage for buffed imbues, secondary (e.g. Damage Rating from stam/mana), and Bleed/Cleaving/Nether.

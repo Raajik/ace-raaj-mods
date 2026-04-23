@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -41,6 +42,9 @@ public partial class PatchClass : BasicPatch<Settings>
         }
     }
     private static Settings s_settings = new Settings();
+
+    // SelectAProfile runs once per generator profile; runed / multi-profile chests call it many times per fill. We add at most one batch (1..MaxGuaranteedItems) and clear on Chest.Reset so the next restock can add again.
+    static readonly ConcurrentDictionary<uint, byte> s_bclAppliedThisFill = new();
 
     static FileSystemWatcher? _lootConfigWatcher;
     
@@ -191,8 +195,19 @@ if (chest == null)
     }
 
     /// <summary>
-    /// Hook into chest reset to add guaranteed items on respawn.
-    /// Skip locked/keyed chests.
+    /// Clear the "already added BetterChestLoot this fill" flag when the chest resets for a new loot generation.
+    /// </summary>
+    [HarmonyPatch(typeof(Chest), nameof(Chest.Reset))]
+    [HarmonyPrefix]
+    public static void PrefixChestReset(double? resetTimestamp, Chest __instance)
+    {
+        if (__instance is null)
+            return;
+        s_bclAppliedThisFill.TryRemove(__instance.Guid.Full, out _);
+    }
+
+    /// <summary>
+    /// After reset, optional interval tweak (first create only).
     /// </summary>
     [HarmonyPatch(typeof(Chest), nameof(Chest.Reset))]
     [HarmonyPostfix]
@@ -222,9 +237,6 @@ if (chest == null)
             // Set a random reset interval (hardcoded 1-3 seconds for testing)
             double newResetInterval = ThreadSafeRandom.Next(1, 3);
             __instance.ResetInterval = newResetInterval;
-
-            // Add guaranteed items on reset
-            AddGuaranteedItemsToChest(__instance);
         }
         catch (Exception ex)
         {
@@ -273,9 +285,16 @@ if (chest == null)
     /// </summary>
     private static void AddGuaranteedItemsToChest(Chest chest)
     {
+        // One batch per loot fill, even when SelectAProfile runs per generator profile (runed chests).
+        if (!s_bclAppliedThisFill.TryAdd(chest.Guid.Full, 0))
+            return;
+
         int numItemsToAdd = GetRandomNumberOfItems();
         if (numItemsToAdd <= 0)
+        {
+            s_bclAppliedThisFill.TryRemove(chest.Guid.Full, out _);
             return;
+        }
 
         for (int i = 0; i < numItemsToAdd; i++)
         {
@@ -294,13 +313,12 @@ if (chest == null)
     }
 
     /// <summary>
-    /// Gets a random number of guaranteed items to add (1-max guaranteed items).
-    /// Range: 1 to MaxGuaranteedItems (default 1-3)
+    /// Gets a random number of guaranteed items to add (1..MaxGuaranteedItems, typically 1-2).
     /// </summary>
     private static int GetRandomNumberOfItems()
     {
-        // Random between 1 and MaxGuaranteedItems
-        return ThreadSafeRandom.Next(1, Settings.MaxGuaranteedItems + 1);
+        int cap = Math.Max(1, Settings.MaxGuaranteedItems);
+        return ThreadSafeRandom.Next(1, cap + 1);
     }
 
     private static WorldObject? SelectRandomGuaranteedItem(Chest _)

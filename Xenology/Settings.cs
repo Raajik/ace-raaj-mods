@@ -25,8 +25,20 @@ public sealed class Settings
     public string MinGlobalKillsForPopularityBonusDoc { get; init; } = "Require at least this many global kills on a species before popularity tier applies.";
     public long MinGlobalKillsForPopularityBonus { get; set; } = 1;
 
+    [JsonPropertyName("// HuntUseClockSchedule")]
+    public string HuntUseClockScheduleDoc { get; init; } = "When true, hunts use fixed UTC slots (HuntSlotStartMinutes + HuntSlotDurationMinutes), three windows per hour with gaps. When false, HuntIntervalHours rotates from server start.";
+    public bool HuntUseClockSchedule { get; set; } = true;
+
+    [JsonPropertyName("// HuntSlotStartMinutes")]
+    public string HuntSlotStartMinutesDoc { get; init; } = "UTC minute-of-hour when each hunt window begins (e.g. 0, 20, 40 for :00, :20, :40).";
+    public List<int> HuntSlotStartMinutes { get; set; } = new() { 0, 20, 40 };
+
+    [JsonPropertyName("// HuntSlotDurationMinutes")]
+    public string HuntSlotDurationMinutesDoc { get; init; } = "Length of each hunt window in minutes (e.g. 15).";
+    public int HuntSlotDurationMinutes { get; set; } = 15;
+
     [JsonPropertyName("// HuntIntervalHours")]
-    public string HuntIntervalHoursDoc { get; init; } = "Hours between hunt rotations.";
+    public string HuntIntervalHoursDoc { get; init; } = "Hours between hunt rotations when HuntUseClockSchedule is false.";
     public double HuntIntervalHours { get; set; } = 1.0;
 
     [JsonPropertyName("// HuntTargetCount")]
@@ -52,6 +64,50 @@ public sealed class Settings
     [JsonPropertyName("// HuntLeaderboardTopCount")]
     public string HuntLeaderboardTopCountDoc { get; init; } = "How many leaderboard slots receive the hunt bonus.";
     public int HuntLeaderboardTopCount { get; set; } = 10;
+
+    [JsonPropertyName("// HuntGrantLootTableRolls")]
+    public string HuntGrantLootTableRollsDoc { get; init; } = "When true, at hunt end grant random loot rolls from SharedLoot LootConfig (same table as Loremaster repeat-loot / BetterChestLoot).";
+    public bool HuntGrantLootTableRolls { get; set; } = true;
+
+    [JsonPropertyName("// HuntRewardRollsFirstPlace")]
+    public string HuntRewardRollsFirstPlaceDoc { get; init; } = "Loot rolls for 1st place on the hunt leaderboard.";
+    public int HuntRewardRollsFirstPlace { get; set; } = 4;
+
+    [JsonPropertyName("// HuntRewardRollsSecondPlace")]
+    public string HuntRewardRollsSecondPlaceDoc { get; init; } = "Loot rolls for 2nd place.";
+    public int HuntRewardRollsSecondPlace { get; set; } = 3;
+
+    [JsonPropertyName("// HuntRewardRollsThirdPlace")]
+    public string HuntRewardRollsThirdPlaceDoc { get; init; } = "Loot rolls for 3rd place.";
+    public int HuntRewardRollsThirdPlace { get; set; } = 3;
+
+    [JsonPropertyName("// HuntRewardRollsRemainingPlaces")]
+    public string HuntRewardRollsRemainingPlacesDoc { get; init; } = "Loot rolls for 4th place and below when hunt points exceed HuntRewardParticipationMinPoints.";
+    public int HuntRewardRollsRemainingPlaces { get; set; } = 1;
+
+    [JsonPropertyName("// HuntRewardParticipationMinPoints")]
+    public string HuntRewardParticipationMinPointsDoc { get; init; } = "Minimum hunt xXP for 4th+ place to receive HuntRewardRollsRemainingPlaces (top 3 are not gated by this).";
+    public double HuntRewardParticipationMinPoints { get; set; } = 25.0;
+
+    [JsonPropertyName("// HuntGrantPlacementCharacterXp")]
+    public string HuntGrantPlacementCharacterXpDoc { get; init; } = "When true, grant normal character XP at hunt end as a fraction of XP-to-next-level (same basis as Loremaster parchment tier XP).";
+    public bool HuntGrantPlacementCharacterXp { get; set; } = true;
+
+    [JsonPropertyName("// HuntPlacementXpFractionFirst")]
+    public string HuntPlacementXpFractionFirstDoc { get; init; } = "Fraction of XP-to-next-level for 1st place (1.5 = 150%).";
+    public double HuntPlacementXpFractionFirst { get; set; } = 1.5;
+
+    [JsonPropertyName("// HuntPlacementXpFractionSecond")]
+    public string HuntPlacementXpFractionSecondDoc { get; init; } = "Fraction for 2nd place.";
+    public double HuntPlacementXpFractionSecond { get; set; } = 1.0;
+
+    [JsonPropertyName("// HuntPlacementXpFractionThird")]
+    public string HuntPlacementXpFractionThirdDoc { get; init; } = "Fraction for 3rd place.";
+    public double HuntPlacementXpFractionThird { get; set; } = 0.5;
+
+    [JsonPropertyName("// HuntPlacementXpFractionRest")]
+    public string HuntPlacementXpFractionRestDoc { get; init; } = "Fraction for all other participants (4th+).";
+    public double HuntPlacementXpFractionRest { get; set; } = 0.2;
 
     [JsonPropertyName("// HuntWeightByInversePopularity")]
     public string HuntWeightByInversePopularityDoc { get; init; } = "When true, prefer low global-kill species when sampling hunt targets.";
@@ -93,17 +149,49 @@ public sealed class Settings
     public string TrophyChanceCapDoc { get; init; } = "Hard cap on additive trophy probability from Xenology.";
     public double TrophyChanceCap { get; set; } = 0.15;
 
+    [JsonPropertyName("// UseMilestoneXpForTiers")]
+    public string UseMilestoneXpForTiersDoc { get; init; } = "When true, loot tier milestones use Total Xenology xXP (linear progression with multipliers). When false, use raw lifetime kill count.";
+    public bool UseMilestoneXpForTiers { get; set; } = true;
+
+    [JsonPropertyName("// MilestoneXpTier1")]
+    public string MilestoneXpTier1Doc { get; init; } = "Total xXP for +1 loot tier offset (linear tier curve).";
+    public double MilestoneXpTier1 { get; set; } = 100_000;
+
+    [JsonPropertyName("// MilestoneXpTier2")]
+    public string MilestoneXpTier2Doc { get; init; } = "Total xXP for +2 loot tier offset.";
+    public double MilestoneXpTier2 { get; set; } = 500_000;
+
+    [JsonPropertyName("// MilestoneXpTier3")]
+    public string MilestoneXpTier3Doc { get; init; } = "Total xXP for +3 loot tier offset.";
+    public double MilestoneXpTier3 { get; set; } = 1_000_000;
+
     [JsonPropertyName("// MilestoneKillsTier1")]
-    public string MilestoneKillsTier1Doc { get; init; } = "Lifetime kills for +1 effective loot tier offset.";
+    public string MilestoneKillsTier1Doc { get; init; } = "When UseMilestoneXpForTiers is false: lifetime kills for +1 loot tier offset.";
     public long MilestoneKillsTier1 { get; set; } = 100_000;
 
     [JsonPropertyName("// MilestoneKillsTier2")]
-    public string MilestoneKillsTier2Doc { get; init; } = "Lifetime kills for +2 effective loot tier offset.";
+    public string MilestoneKillsTier2Doc { get; init; } = "When UseMilestoneXpForTiers is false: lifetime kills for +2 loot tier offset.";
     public long MilestoneKillsTier2 { get; set; } = 500_000;
 
     [JsonPropertyName("// MilestoneKillsTier3")]
-    public string MilestoneKillsTier3Doc { get; init; } = "Lifetime kills for +3 effective loot tier offset.";
+    public string MilestoneKillsTier3Doc { get; init; } = "When UseMilestoneXpForTiers is false: lifetime kills for +3 loot tier offset.";
     public long MilestoneKillsTier3 { get; set; } = 1_000_000;
+
+    [JsonPropertyName("// RarityGlobalKillsThreshold")]
+    public string RarityGlobalKillsThresholdDoc { get; init; } = "If shard-wide kills for this species are below this, multiply xXP by RarityXpMultiplier (helps under-hunted species). 0 = off.";
+    public long RarityGlobalKillsThreshold { get; set; } = 10_000;
+
+    [JsonPropertyName("// RarityXpMultiplier")]
+    public string RarityXpMultiplierDoc { get; init; } = "Extra xXP when species global kills < RarityGlobalKillsThreshold (stacks with bottom-ten and hunt).";
+    public double RarityXpMultiplier { get; set; } = 1.25;
+
+    [JsonPropertyName("// DamageBonusUsesXenologyXp")]
+    public string DamageBonusUsesXenologyXpDoc { get; init; } = "When true, outgoing damage bonus uses TotalXenologyXp × DamageBonusPerXenologyXp; when false, uses lifetime kills × DamageBonusPerWeightedKill.";
+    public bool DamageBonusUsesXenologyXp { get; set; } = true;
+
+    [JsonPropertyName("// DamageBonusPerXenologyXp")]
+    public string DamageBonusPerXenologyXpDoc { get; init; } = "Damage bonus percent = TotalXenologyXp × this × 100 (before cap), when DamageBonusUsesXenologyXp is true.";
+    public double DamageBonusPerXenologyXp { get; set; } = 0.00001;
 
     [JsonPropertyName("// MaxEffectiveLootTier")]
     public string MaxEffectiveLootTierDoc { get; init; } = "Clamp nominal tier + milestone offset to this maximum.";

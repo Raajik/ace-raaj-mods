@@ -27,6 +27,8 @@ internal static class QuestItemGrowthCatchUp
         if (start > currentLevel)
             return;
 
+        int phantomOffset = item.GetProperty(QuestItemGrowthProperties.QuestGrowthPhantomTierOffsetInt) ?? 0;
+
         int delta = currentLevel - prevItemLevel;
         int summarizeAt = Math.Max(1, s.QuestGrowthCatchUpSummarizeMinLevels);
         bool summarize = delta >= summarizeAt;
@@ -34,15 +36,17 @@ internal static class QuestItemGrowthCatchUp
 
         for (int level = start; level <= currentLevel; level++)
         {
+            int growthTier = QuestGrowthTierMath.GrowthTierForDisplayLevel(level, phantomOffset);
+
             // Big catch-ups already send one player summary; skip per-level Info spam on the server console.
             if (!summarize)
             {
                 ModManager.Log(
-                    $"[EmpyreanAlteration] OnItemLevelUp: {item.Name} ({item.WeenieClassId}) level {level}/{item.ItemMaxLevel} questGrowth={questGrowth}",
+                    $"[EmpyreanAlteration] OnItemLevelUp: {item.Name} ({item.WeenieClassId}) display {level}/{item.ItemMaxLevel} growthTier={growthTier} questGrowth={questGrowth}",
                     ModManager.LogLevel.Info);
             }
 
-            bool applied = QuestItemGrowthLevelEngine.ApplyLevelUp(item, player, level, s, emitMessages: !summarize, summary: summary, maxAttempts: 4);
+            bool applied = QuestItemGrowthLevelEngine.ApplyLevelUp(item, player, growthTier, s, emitMessages: !summarize, summary: summary, maxAttempts: 4);
             if (!applied)
             {
                 ModManager.Log(
@@ -126,6 +130,10 @@ internal static class QuestItemGrowthCatchUp
             parts.Add($"+{summary.MinorDamageRatingCount} Damage Rating (minor)");
         if (summary.MinorCritDamageRatingCount > 0)
             parts.Add($"+{summary.MinorCritDamageRatingCount} Crit Damage Rating (minor)");
+        if (summary.RareWeaponCleavingSteps > 0)
+            parts.Add($"+{summary.RareWeaponCleavingSteps} Cleaving (rare)");
+        if (summary.RareWeaponSurgeSteps > 0)
+            parts.Add($"+{summary.RareWeaponSurgeSteps} surge rating (rare)");
         if (summary.ArmorLevelGained > 0)
             parts.Add($"+{summary.ArmorLevelGained} Armor Level");
         if (summary.GearDamageRatingSteps > 0)

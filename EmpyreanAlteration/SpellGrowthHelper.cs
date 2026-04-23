@@ -115,6 +115,11 @@ internal static partial class SpellGrowthHelper
 
     private static List<int> GetCategoryPool(WorldObject item, SpellGrowthSettings cfg, SpellGrowthCategory category)
     {
+        return InternalGetCategoryPool(item, cfg, category);
+    }
+
+    private static List<int> InternalGetCategoryPool(WorldObject item, SpellGrowthSettings cfg, SpellGrowthCategory category)
+    {
         switch (category)
         {
             case SpellGrowthCategory.WeaponMelee:
@@ -316,15 +321,32 @@ internal static partial class SpellGrowthHelper
                 _weaponPoolMissile = BuildWeaponPool(spells, cfg, WeenieType.MissileLauncher);
                 _weaponPoolCaster = BuildWeaponPool(spells, cfg, WeenieType.Caster);
 
-                _autoArmorJewelry.AddRange(BuildPoolByNameContains(spells, cfg.ArmorOrJewelrySpellNameContains));
-                _autoArmorJewelry = _autoArmorJewelry.Distinct().ToList();
+                if (cfg.RestrictNameContainsToPlayerSpells)
+                {
+                    uint[] playerSpells = Player.PlayerSpellTable;
+                    HashSet<uint> playerSpellSet = new(playerSpells);
+                    _autoArmorJewelry.AddRange(BuildPoolByNameContainsFiltered(spells, cfg.ArmorOrJewelrySpellNameContains, playerSpellSet));
+                    _autoArmorJewelry = _autoArmorJewelry.Distinct().ToList();
 
-                _autoJewelry = BuildPoolByNameContains(spells, cfg.JewelrySpellNameContains);
-                List<string> armorClothingFrags = (cfg.ArmorClothingSpellNameContains != null && cfg.ArmorClothingSpellNameContains.Count > 0)
-                    ? cfg.ArmorClothingSpellNameContains
-                    : cfg.ArmorOrJewelrySpellNameContains;
-                _autoArmorClothing = BuildPoolByNameContains(spells, armorClothingFrags);
-                _autoShield = BuildPoolByNameContains(spells, cfg.ShieldSpellNameContains);
+                    _autoJewelry = BuildPoolByNameContainsFiltered(spells, cfg.JewelrySpellNameContains, playerSpellSet);
+                    List<string> armorClothingFrags = (cfg.ArmorClothingSpellNameContains != null && cfg.ArmorClothingSpellNameContains.Count > 0)
+                        ? cfg.ArmorClothingSpellNameContains
+                        : cfg.ArmorOrJewelrySpellNameContains;
+                    _autoArmorClothing = BuildPoolByNameContainsFiltered(spells, armorClothingFrags, playerSpellSet);
+                    _autoShield = BuildPoolByNameContainsFiltered(spells, cfg.ShieldSpellNameContains, playerSpellSet);
+                }
+                else
+                {
+                    _autoArmorJewelry.AddRange(BuildPoolByNameContains(spells, cfg.ArmorOrJewelrySpellNameContains));
+                    _autoArmorJewelry = _autoArmorJewelry.Distinct().ToList();
+
+                    _autoJewelry = BuildPoolByNameContains(spells, cfg.JewelrySpellNameContains);
+                    List<string> armorClothingFrags = (cfg.ArmorClothingSpellNameContains != null && cfg.ArmorClothingSpellNameContains.Count > 0)
+                        ? cfg.ArmorClothingSpellNameContains
+                        : cfg.ArmorOrJewelrySpellNameContains;
+                    _autoArmorClothing = BuildPoolByNameContains(spells, armorClothingFrags);
+                    _autoShield = BuildPoolByNameContains(spells, cfg.ShieldSpellNameContains);
+                }
 
                 _autoCantripLines = BuildDefaultCantripLines(spells);
 
@@ -350,6 +372,37 @@ internal static partial class SpellGrowthHelper
         foreach (var kvp in spells)
         {
             uint id = kvp.Key;
+            string? name = kvp.Value?.Name;
+            if (string.IsNullOrWhiteSpace(name))
+                continue;
+
+            foreach (string frag in contains)
+            {
+                if (string.IsNullOrWhiteSpace(frag))
+                    continue;
+                if (name.Contains(frag, StringComparison.OrdinalIgnoreCase))
+                {
+                    result.Add((int)id);
+                    break;
+                }
+            }
+        }
+
+        return result.Distinct().ToList();
+    }
+
+    private static List<int> BuildPoolByNameContainsFiltered(Dictionary<uint, ACE.DatLoader.Entity.SpellBase> spells, List<string>? contains, HashSet<uint> playerSpells)
+    {
+        if (contains == null || contains.Count == 0)
+            return new List<int>();
+
+        List<int> result = new();
+        foreach (var kvp in spells)
+        {
+            uint id = kvp.Key;
+            if (!playerSpells.Contains(id))
+                continue;
+
             string? name = kvp.Value?.Name;
             if (string.IsNullOrWhiteSpace(name))
                 continue;
@@ -992,4 +1045,3 @@ internal static partial class SpellGrowthHelper
         return spellId.ToString();
     }
 }
-

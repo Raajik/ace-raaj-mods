@@ -28,6 +28,9 @@ internal static class RecklessnessWeaponCleave
         if (PatchClass.Settings is not { EnableRecklessness: true } settings)
             return;
 
+        if (CleavePlayerState.IsDisabled(__instance.Guid.Full))
+            return;
+
         var reck = __instance.GetCreatureSkill(Skill.Recklessness);
         if (reck.AdvancementClass < SkillAdvancementClass.Trained)
             return;
@@ -58,7 +61,8 @@ internal static class RecklessnessWeaponCleave
         if (baseDamage < 1f)
             return;
 
-        float radius = (float)Math.Clamp(rc.CleaveRangeMeters, 1.0, 60.0);
+        float serverMax = (float)rc.CleaveRangeMeters;
+        float radius = CleavePlayerState.GetRange(__instance.Guid.Full, serverMax);
         float frac = (float)Math.Clamp(rc.SplashDamageFraction, 0.05, 1.0);
         float splash = baseDamage * frac;
 

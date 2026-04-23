@@ -59,6 +59,9 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
             Settings = new Settings();
         }
         
+        var modDir = Path.GetDirectoryName(typeof(PatchClass).Assembly.Location) ?? "";
+        PlayerProfileStore.Initialize(modDir);
+
         ModManager.Log($"[BSS] Start() - EnableTrophyDrops={Settings.EnableTrophyDrops}, EnableAssessCreature={Settings.EnableAssessCreature}", ModManager.LogLevel.Info);
         RegisterEnabledPatchCategories();
         RecuperationHoT.RefreshHealerHook(ModC.Harmony, Settings.EnableHealing);
@@ -337,6 +340,43 @@ try
         base.Stop();
     }
 
+    [CommandHandler("cleave", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
+        "Toggle skill-based cleaving on/off, or set your personal cleave range.",
+        "Usage: /cleave  OR  /cleave range <meters>")]
+    public static void HandleCleave(Session session, params string[] parameters)
+    {
+        if (session?.Player is not Player player)
+            return;
+
+        uint guid = player.Guid.Full;
+
+        var profile = PlayerProfileStore.GetOrCreate(guid);
+
+        if (parameters.Length >= 2 && parameters[0].Equals("range", StringComparison.OrdinalIgnoreCase))
+        {
+            float serverMax = (float)(PatchClass.Settings?.RecklessnessCleave.CleaveRangeMeters
+                              ?? PatchClass.Settings?.ManaConversion.CleaveRange
+                              ?? 15.0);
+            if (!float.TryParse(parameters[1], out float requested) || requested < 0)
+            {
+                player.SendMessage($"Usage: /cleave range <0–{serverMax:F1}>", ChatMessageType.System);
+                return;
+            }
+            float clamped = Math.Clamp(requested, 0f, serverMax);
+            profile.CleaveRange = clamped;
+            Skills.CleavePlayerState.Range[guid] = clamped;
+            PlayerProfileStore.Save(guid, profile);
+            player.SendMessage($"Cleave range set to {clamped:F1}m (server max: {serverMax:F1}m).", ChatMessageType.System);
+            return;
+        }
+
+        bool nowDisabled = !profile.CleaveDisabled;
+        profile.CleaveDisabled = nowDisabled;
+        Skills.CleavePlayerState.Disabled[guid] = nowDisabled;
+        PlayerProfileStore.Save(guid, profile);
+        player.SendMessage(nowDisabled ? "Cleave: OFF" : "Cleave: ON", ChatMessageType.System);
+    }
+
     [CommandHandler("bss", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
         "BetterSupportSkills hub (e.g. list mod commands).", "Usage: /bss commands")]
     public static void HandleBss(Session session, params string[] parameters)
@@ -462,6 +502,10 @@ try
                 if (mcNoPrefix != null)
                     ModC.Harmony?.Patch(method, new HarmonyMethod(mcNoPrefix));
             }
+
+            var profilePostfix = AccessTools.Method(typeof(PlayerProfileStore), "PostfixPlayerEnterWorld");
+            if (profilePostfix != null)
+                ModC.Harmony?.Patch(method, null, new HarmonyMethod(profilePostfix));
 
             PlayerEnterWorldPatchApplied = true;
             ModManager.Log("[BSS] PlayerEnterWorld patch applied", ModManager.LogLevel.Info);

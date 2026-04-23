@@ -44,8 +44,14 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     {
         base.Start();
         Settings = SettingsContainer.Settings ?? new Settings();
+
+        var modDir = Path.GetDirectoryName(typeof(PatchClass).Assembly.Location) ?? "";
+        PlayerProfileStore.Initialize(modDir);
+        Stackable.Initialize(modDir, Settings.Stackable);
+
         RegisterEnabledPatchCategories();
         CollectorsAcceptAll.Initialize();
+        VendorLootRotation.Initialize(Settings);
         ApplyWorldOpenSideEffects();
     }
 
@@ -120,6 +126,21 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             enabledFeatures.Add(Features.TownNetworkToll);
         if (Settings.EnableVendorPackBurdenRelief)
             enabledFeatures.Add(Features.VendorPackBurdenRelief);
+        if (Settings.EnableFullKillXpPerDamager)
+            enabledFeatures.Add(Features.FullKillXpPerDamager);
+        if (Settings.EnableGiveNpcSingleFromStack)
+            enabledFeatures.Add(Features.GiveNpcSingleFromStack);
+        if (Settings.EnableLootEconomyControl)
+        {
+            enabledFeatures.Add(Features.LootEconomyControl);
+            LootEconomyControl.Initialize(Settings);
+        }
+
+        if (Settings.EnableKillXpMessage)
+            enabledFeatures.Add(Features.KillXpMessage);
+
+        if (Settings.EnableBundleGive)
+            enabledFeatures.Add(Features.BundleGive);
 
         ModC.RegisterPatchCategories(enabledFeatures.ToArray());
     }
@@ -228,7 +249,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     }
 
     [CommandHandler("qol", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
-        "QOL hub (e.g. list mod commands).", "Usage: /qol commands")]
+        "QOL hub. Usage: /qol commands | killxp [off|xp|percent|default]", "")]
     public static void HandleQol(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
@@ -236,18 +257,73 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         if (parameters.Length == 0)
         {
-            player.SendMessage("Usage: /qol commands", ChatMessageType.System);
+            player.SendMessage("Usage: /qol commands | killxp [off|xp|percent|default]", ChatMessageType.System);
             return;
         }
 
         var head = parameters[0].Trim().ToLowerInvariant();
+
         if (head == "commands")
         {
             ModCommandsList.SendList(player, session);
             return;
         }
 
-        player.SendMessage($"Unknown /qol subcommand '{head}'. Try: commands.", ChatMessageType.System);
+        if (head == "killxp")
+        {
+            HandleKillXpSub(player, parameters.Length > 1 ? parameters[1] : null);
+            return;
+        }
+
+        player.SendMessage($"Unknown /qol subcommand '{head}'. Try: commands, killxp.", ChatMessageType.System);
+    }
+
+    static void HandleKillXpSub(Player player, string? arg)
+    {
+        uint guid = player.Guid.Full;
+
+        if (arg == null)
+        {
+            KillXpMessage.PlayerPrefs.TryGetValue(guid, out var cur);
+            string desc = cur switch
+            {
+                KillXpDisplayMode.Off     => "OFF",
+                KillXpDisplayMode.Raw     => "xp (raw)",
+                KillXpDisplayMode.Percent => "percent",
+                _                         => "server default",
+            };
+            player.SendMessage($"Kill XP display: {desc}. Use /qol killxp off|xp|percent|default.", ChatMessageType.System);
+            return;
+        }
+
+        KillXpDisplayMode? newMode = arg.Trim().ToLowerInvariant() switch
+        {
+            "off"          => KillXpDisplayMode.Off,
+            "xp" or "raw"  => KillXpDisplayMode.Raw,
+            "percent"      => KillXpDisplayMode.Percent,
+            "default"      => KillXpDisplayMode.ServerDefault,
+            _              => null,
+        };
+
+        if (newMode == null)
+        {
+            player.SendMessage("Usage: /qol killxp [off|xp|percent|default]", ChatMessageType.System);
+            return;
+        }
+
+        KillXpMessage.PlayerPrefs[guid] = newMode.Value;
+        var profile = PlayerProfileStore.GetOrCreate(guid);
+        profile.KillXpMode = newMode.Value;
+        PlayerProfileStore.Save(guid, profile);
+
+        string label = newMode.Value switch
+        {
+            KillXpDisplayMode.Off     => "OFF — kill XP hidden",
+            KillXpDisplayMode.Raw     => "xp — e.g. (48 xp)",
+            KillXpDisplayMode.Percent => "percent — e.g. (0.003%)",
+            _                         => "server default",
+        };
+        player.SendMessage($"Kill XP display: {label}.", ChatMessageType.System);
     }
 
     [CommandHandler("setlum", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Sets luminance to the max if unlocked")]

@@ -55,7 +55,8 @@ public partial class PatchClass
 
         var nominal = __instance.DeathTreasure;
         var data = XenologyRuntime.GetOrLoadPlayer(player.Guid.Full);
-        var milestoneOffset = XenologyRanks.MilestoneLootOffset(data.TotalLifetimeKills, settings);
+        double lootProgress = XenologyRanks.MilestoneProgressForLoot(player, data, settings);
+        var milestoneOffset = XenologyRanks.MilestoneLootTierFromProgress(lootProgress, settings);
         if (milestoneOffset <= 0)
             return;
 
@@ -105,7 +106,8 @@ public partial class PatchClass
             return;
 
         var data = XenologyRuntime.GetOrLoadPlayer(player.Guid.Full);
-        var milestoneOffset = XenologyRanks.MilestoneLootOffset(data.TotalLifetimeKills, settings);
+        double lootProgressPost = XenologyRanks.MilestoneProgressForLoot(player, data, settings);
+        var milestoneOffset = XenologyRanks.MilestoneLootTierFromProgress(lootProgressPost, settings);
 
         var hadTierBumpPending = PendingRestoreDeathTreasureType.ContainsKey(__instance.Guid.Full);
         var skipExtraCreateList = settings.MilestoneApplyDeathTreasureTierBump

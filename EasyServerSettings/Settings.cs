@@ -30,7 +30,7 @@ public class Settings
 
     [JsonPropertyName("// XpModifier")]
     public string XpModifierDoc { get; set; } = "XP multiplier (1.0 = normal, 2.0 = double XP)";
-    public double XpModifier { get; set; } = 1.0;
+    public double XpModifier { get; set; } = 0.01;
 
     [JsonPropertyName("// RareDropRate")]
     public string RareDropRateDoc { get; set; } = "Rare item drop rate (default: 0.04)";
@@ -38,11 +38,11 @@ public class Settings
 
     [JsonPropertyName("// TrophyDropRate")]
     public string TrophyDropRateDoc { get; set; } = "Trophy drop rate multiplier";
-    public double TrophyDropRate { get; set; } = 5.0;
+    public double TrophyDropRate { get; set; } = 3.0;
 
     [JsonPropertyName("// AetheriaDropRate")]
     public string AetheriaDropRateDoc { get; set; } = "Aetheria drop rate";
-    public double AetheriaDropRate { get; set; } = 10.0;
+    public double AetheriaDropRate { get; set; } = 3.0;
 
     [JsonPropertyName("// CantripDropRate")]
     public string CantripDropRateDoc { get; set; } = "General cantrip drop rate scaling (1.0 = normal)";
@@ -66,11 +66,11 @@ public class Settings
 
     [JsonPropertyName("// VitaePenalty")]
     public string VitaePenaltyDoc { get; set; } = "Vitae penalty per death (0.01 = 1%)";
-    public double VitaePenalty { get; set; } = 0.01;
+    public double VitaePenalty { get; set; } = 0.1;
 
     [JsonPropertyName("// VitaePenaltyMax")]
     public string VitaePenaltyMaxDoc { get; set; } = "Maximum vitae penalty cap (0.1 = 10%)";
-    public double VitaePenaltyMax { get; set; } = 0.1;
+    public double VitaePenaltyMax { get; set; } = 0.99;
 
     [JsonPropertyName("// PkServer")]
     public string PkServerDoc { get; set; } = "PK Server mode";
@@ -130,7 +130,7 @@ public class Settings
 
     [JsonPropertyName("// HouseRentEnabled")]
     public string HouseRentEnabledDoc { get; set; } = "Enable house rent system";
-    public bool HouseRentEnabled { get; set; } = false;
+    public bool HouseRentEnabled { get; set; } = true;
 
     [JsonPropertyName("// HousePurchaseRequirements")]
     public string HousePurchaseRequirementsDoc { get; set; } = "Require certain items to purchase houses";
@@ -182,11 +182,11 @@ public class Settings
 
     [JsonPropertyName("// EncounterDelay")]
     public string EncounterDelayDoc { get; set; } = "World encounter spawn delay";
-    public double EncounterDelay { get; set; } = 30.0;
+    public double EncounterDelay { get; set; } = 60.0;
 
     [JsonPropertyName("// EncounterRegenInterval")]
     public string EncounterRegenIntervalDoc { get; set; } = "World encounter regeneration interval";
-    public double EncounterRegenInterval { get; set; } = 30.0;
+    public double EncounterRegenInterval { get; set; } = 60.0;
 
     [JsonPropertyName("// MobAwarenessRange")]
     public string MobAwarenessRangeDoc { get; set; } = "NPC awareness range";

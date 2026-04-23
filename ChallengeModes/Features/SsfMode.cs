@@ -1,5 +1,8 @@
-namespace ChallengeModes.Features;
+using ACE.Database.Models.World;
+using AceRaajMods.Shared;
+using static ACE.Server.WorldObjects.Player;
 
+namespace ChallengeModes.Features;
 [HarmonyPatchCategory(nameof(SsfMode))]
 public static class SsfMode
 {
@@ -52,6 +55,41 @@ public static class SsfMode
         viewer.SendMessage(sb.ToString());
     }
 
+    [ThreadStatic]
+    static bool _ssfRecipeShouldTagResult;
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.HandleRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(double) })]
+    public static void PreHandleRecipeSsfItemTag(Player player, WorldObject source, WorldObject target, Recipe recipe, double successChance)
+    {
+        _ssfRecipeShouldTagResult = false;
+        if (player is null || player.GetProperty(FakeBool.Ironman) != true || target is null)
+            return;
+
+        bool sourceTagged = source is not null && source.GetProperty(FakeBool.Ironman) == true;
+        bool targetTagged = target.GetProperty(FakeBool.Ironman) == true;
+        if (sourceTagged || targetTagged)
+            _ssfRecipeShouldTagResult = true;
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.HandleRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(double) })]
+    public static void PostHandleRecipeSsfItemTag(Player player, WorldObject source, WorldObject target, Recipe recipe, double successChance)
+    {
+        try
+        {
+            if (!_ssfRecipeShouldTagResult)
+                return;
+            if (player is null || player.GetProperty(FakeBool.Ironman) != true || target is null)
+                return;
+            target.SetProperty(FakeBool.Ironman, true);
+        }
+        finally
+        {
+            _ssfRecipeShouldTagResult = false;
+        }
+    }
+
     public static bool TryAdminClearSsf(Session adminSession, string targetNameFragment)
     {
         if (adminSession?.Player is not Player admin)
@@ -91,17 +129,120 @@ public static class SsfMode
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), nameof(Player.TryCreateForGive), new Type[] { typeof(WorldObject), typeof(WorldObject) })]
-    public static void PreTryCreateForGive(WorldObject giver, WorldObject itemBeingGiven, ref Player __instance, ref bool __result)
+    public static bool PreTryCreateForGive(WorldObject giver, WorldObject itemBeingGiven, ref Player __instance, ref bool __result)
     {
         if (__instance is null || itemBeingGiven is null)
-            return;
+            return true;
 
-        if (__instance.GetProperty(FakeBool.Ironman) == true)
+        bool isReceiverSsf = __instance.GetProperty(FakeBool.Ironman) == true;
+        bool isGiverSsf = giver?.GetProperty(FakeBool.Ironman) == true;
+
+        if (isReceiverSsf)
         {
             itemBeingGiven.SetProperty(FakeBool.Ironman, true);
             __instance.SendMessage($"{itemBeingGiven.Name} is now SSF-tagged.");
         }
+
+        bool receiverIsPlayer = __instance is Player;
+        bool giverIsPlayer = giver is Player;
+
+        if (isReceiverSsf && giverIsPlayer)
+        {
+            __instance.SendMessage("SSF players cannot receive items from other players.");
+            __result = false;
+            return false;
+        }
+
+        if (isGiverSsf && receiverIsPlayer)
+        {
+            __instance.SendMessage("SSF players cannot give items to other players.");
+            __result = false;
+            return false;
+        }
+
+        return true;
     }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Player), nameof(Player.TryCreateInInventoryWithNetworking), new Type[] { typeof(WorldObject), typeof(Container) }, new ArgumentType[] { ArgumentType.Normal, ArgumentType.Out })]
+    public static bool PreTryCreateInInventoryWithNetworking(WorldObject item, Container container, ref Player __instance, ref bool __result)
+    {
+        if (__instance is null || __instance.GetProperty(FakeBool.Ironman) != true)
+            return true;
+
+        if (SsfAutolootPickupContext.IsAutolootPickup)
+        {
+            if (item.GetProperty(FakeBool.Ironman) != true)
+                item.SetProperty(FakeBool.Ironman, true);
+        }
+
+        return true;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Player), nameof(Player.HandleActionOpenTradeNegotiations), new Type[] { typeof(uint), typeof(bool) })]
+    public static bool PreHandleActionOpenTradeNegotiations(uint tradePartnerGuid, bool initiator, ref Player __instance)
+    {
+        if (__instance is null)
+            return true;
+
+        if (__instance.GetProperty(FakeBool.Ironman) == true)
+        {
+            __instance.SendMessage("SSF players cannot trade.");
+            return false;
+        }
+
+        return true;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Player), nameof(Player.HandleActionAddToTrade), new Type[] { typeof(uint), typeof(uint) })]
+    public static bool PreHandleActionAddToTrade(uint itemGuid, uint tradeWindowSlotNumber, ref Player __instance)
+    {
+        if (__instance is null)
+            return true;
+
+        if (__instance.GetProperty(FakeBool.Ironman) == true)
+        {
+            __instance.SendMessage("SSF players cannot trade.");
+            return false;
+        }
+
+        return true;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Player), nameof(Player.HandleActionAcceptTrade))]
+    public static bool PreHandleActionAcceptTrade(ref Player __instance)
+    {
+        if (__instance is null)
+            return true;
+
+        if (__instance.GetProperty(FakeBool.Ironman) == true)
+        {
+            __instance.SendMessage("SSF players cannot trade.");
+            return false;
+        }
+
+        return true;
+    }
+
+    // Drop blocking disabled - was causing lockups. Need to find different approach.
+    // [HarmonyPrefix]
+    // [HarmonyPatch(typeof(Player), nameof(Player.HandleActionDropItem), new Type[] { typeof(uint) })]
+    // public static bool PreHandleActionDropItem(uint itemGuid, ref Player __instance)
+    // {
+    //     if (__instance is null)
+    //         return true;
+    //
+    //     if (__instance.GetProperty(FakeBool.Ironman) == true)
+    //     {
+    //         __instance.SendMessage("SSF players cannot drop items. Sell them or give to a town crier or garbage barrel.");
+    //         return false;
+    //     }
+    //
+    //     return true;
+    // }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), nameof(Player.FinalizeBuyTransaction), new Type[] { typeof(Vendor), typeof(List<WorldObject>), typeof(List<WorldObject>), typeof(uint) })]
@@ -121,78 +262,6 @@ public static class SsfMode
             item.SetProperty(FakeBool.Ironman, true);
             __instance.SendMessage($"{item.Name} is now SSF-tagged.");
         }
-    }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Player), nameof(Player.TryCreateInInventoryWithNetworking), new Type[] { typeof(WorldObject), typeof(Container) }, new ArgumentType[] { ArgumentType.Normal, ArgumentType.Out })]
-    public static bool PreTryCreateInInventoryWithNetworking(WorldObject item, Container container, ref Player __instance, ref bool __result)
-    {
-        if (__instance is null || __instance.GetProperty(FakeBool.Ironman) != true)
-            return true;
-
-        if (item.GetProperty(FakeBool.Ironman) != true)
-        {
-            __result = false;
-            __instance.SendMessage($"{item.Name} cannot be picked up: SSF characters may only pick up SSF-tagged items.");
-            return false;
-        }
-
-        return true;
-    }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(WorldObject), nameof(WorldObject.CreateEnchantment), new Type[] { typeof(WorldObject), typeof(WorldObject), typeof(WorldObject), typeof(Spell), typeof(bool), typeof(bool), typeof(bool) })]
-    public static bool PreCreateEnchantment(WorldObject target, WorldObject caster, WorldObject weapon, Spell spell, bool equip, bool fromProc, bool isWeaponSpell, ref WorldObject __instance)
-    {
-        if (caster is null)
-            return true;
-
-        if (target is Player player && player.GetProperty(FakeBool.Ironman) == true && caster.GetProperty(FakeBool.Ironman) != true)
-        {
-            player.SendMessage($"{caster.Name} failed to cast {spell.Name ?? ""} on you.  They are too fleshy for your thaums.");
-
-            if (caster is Player p)
-                p.SendMessage($"Failed to cast {spell.Name ?? ""} on {player.Name}, they lack culture and refinement.");
-
-            return false;
-        }
-
-        return true;
-    }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Player), nameof(Player.IsPledgable), new Type[] { typeof(Player) })]
-    public static bool PreIsPledgable(Player target, ref Player __instance, ref bool __result)
-    {
-        if (__instance is null || target is null)
-            return true;
-
-        if (target.GetProperty(FakeBool.Ironman) == true && __instance.GetProperty(FakeBool.Ironman) != true)
-        {
-            __instance.SendMessage($"You can't swear to {target.Name}, you may as well be different species.");
-            __instance.Session?.Network.EnqueueSend(new GameEventWeenieError(__instance.Session, WeenieError.OlthoiCannotJoinAllegiance));
-            __result = false;
-            return false;
-        }
-
-        return true;
-    }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Player), nameof(Player.FellowshipRecruit), new Type[] { typeof(Player) })]
-    public static bool PreFellowshipRecruit(Player newPlayer, ref Player __instance)
-    {
-        if (__instance is null || newPlayer is null)
-            return true;
-
-        if (newPlayer.GetProperty(FakeBool.Ironman) == true && __instance.GetProperty(FakeBool.Ironman) != true)
-        {
-            __instance.SendMessage($"You can't recruit {newPlayer.Name}, you may as well be different species.");
-            __instance.Session?.Network.EnqueueSend(new GameEventWeenieError(__instance.Session, WeenieError.FellowshipIllegalLevel));
-            return false;
-        }
-
-        return true;
     }
 
     [HarmonyPostfix]

@@ -26,7 +26,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     static DateTime _lastLootConfigReload = DateTime.MinValue;
     const int SettingsReloadDebounceMs = 500;
 
-    // Completion-bonus and parchment XP call GrantXP with amounts already derived from quest design; skip QuestBonus multiplier to avoid double-scaling.
+    // Completion-bonus, parchment, and trophy/level-fraction quest XP call GrantXP with amounts already derived as fractions of next level; skip the retention/QP equipment chain (RunWithoutQuestXpMultiplier) so low StandardBaseXpRetention does not crush them.
     static int _questXpMultiplierSuppressDepth;
 
     internal static void RunWithoutQuestXpMultiplier(Action action)
@@ -301,10 +301,16 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                     LoremasterExtensions.SendXpBonusBreakdown(player);
                     return;
 
+                case "detailed":
+                    player.UpdateQuestPoints();
+                    LoremasterExtensions.SendXpBonusBreakdownDetailed(player);
+                    return;
+
                 case "help":
                     player.SendMessage(
                         "[Loremaster] /qb subcommands:\n" +
                         "  /qb               — multiplicative XP breakdown (Base XP block only)\n" +
+                        "  /qb detailed      — full breakdown: QP + chaos split, Loremaster chain, ChallengeModes milestone (if loaded)\n" +
                         "  /qb list          — show all quests with completions and QP value\n" +
                         "  /qb help          — show this help message\n" +
                         "  /topqb            — top 10 by stored QP, your QP, and global rank\n" +
@@ -590,19 +596,26 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             if (quest is null)
                 return;
 
+            var beforeQp = (float)(player.GetProperty(FakeFloat.QuestBonus) ?? 0f);
             player.UpdateQuestPoints();
+            var afterQp = (float)(player.GetProperty(FakeFloat.QuestBonus) ?? 0f);
             if (player.Notify(LMBool.NotifyQuest))
-                player.SendMessage(LoremasterExtensions.FormatQpNotification($"+{quest.Value()} QP from {questFormat}"));
+            {
+                var delta = afterQp - beforeQp;
+                if (delta > 0.0001f)
+                    player.SendMessage(LoremasterExtensions.FormatQpNotification($"+{delta:0.##} QP from {questFormat}"));
+            }
 
             var questName = QuestManager.GetQuestName(questFormat) ?? questFormat;
 
             // One-time XP + loot bonuses (QP already reflected in UpdateQuestPoints)
             player.GrantCompletionBonuses(questName);
 
-            // Milestone check — get count before and after this solve
-            var prevAccountCount = player.GetAccountUniqueQuestCount() - 1; // just added one
-            var newAccountCount  = prevAccountCount + 1;
-            player.CheckAndBroadcastMilestone(prevAccountCount, newAccountCount);
+            // Achievement check — get count before and after this solve
+if (prevAccountCount < 0) prevAccountCount = 0;
+
+var newAccountCount  = prevAccountCount + 1;
+player.CheckAndBroadcastAchievement(prevAccountCount, newAccountCount);
         }
 
         // ── Repeat solve (previously solved, solve count increased) ─────────

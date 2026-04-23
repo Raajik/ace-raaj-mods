@@ -3,13 +3,17 @@
   "// StandardBaseXpRetentionPercent": "Multiplicative base: percent of raw ACE kill/quest XP kept before QP, equipment, etc. (25 = 25% of raw, i.e. -75% vs full vanilla).",
   "// BonusPerQuestPoint": "Quest Points factor = 1 + (QP × BonusPerQuestPoint / 100), multiplied with base retention and other terms.",
   "// AugmentXpMultiplier": "Multiplicative augment term for /qb and XP (1 = no change).",
-  "// ChallengeModeXpMultiplier": "Multiplicative Challenge Mode term (1 = no change).",
+  "// ChallengeModeXpMultiplier": "GrantXP / luminance chain only (1 = no change). Does not scale stored /qb quest points.",
+  "// ChallengeModeQuestPointsMultiplier": "While /cm challenge active: if not 1, overrides ChallengeModes QuestPointsMultiplierWhileChallengeActive. If 1, Loremaster uses ChallengeModes value (default 2×) then ChallengeModeXpMultiplier when that is not 1.",
   "// ApplyStandardBaseXpScaleToLuminance": "When true, luminance uses the same multiplicative chain as XP; when false, only the QP factor (QuestBonus) applies.",
   "// CooldownReductionPerQuestPoint": "Independent of BonusPerQuestPoint: cooldown reduction uses QP × (CooldownReductionPerQuestPoint / 100), capped by QuestCooldownReductionCap.",
   "// CompletionBonusPerQuestPoint": "Added to DefaultCompletionBonusXpMultiplier for completion bonus fraction (then × per-quest override).",
   "// DefaultPoints": "QP awarded for quests not listed in QuestBonuses; 0 = only explicit QuestBonuses grant QP.",
   "// QuestBonuses": "Per-quest QP overrides (case-sensitive internal quest names). 0 = tracked but no QP; unlisted uses DefaultPoints.",
   "// UseAccountWideQuests": "When true, QP and XP multiplier use unique quests solved across all characters on the account.",
+  "// EnableVitaeCapAchievement": "When true, first time a character reaches VitaeCapThreshold vitae, grant VitaeCapBonusQuestPoints extra QP (one time per character).",
+  "// VitaeCapThreshold": "Vitae fraction (0–1) for the achievement; 0.99 = 99% server cap.",
+  "// VitaeCapBonusQuestPoints": "Extra QP added to the bonus pool when the vitae achievement fires.",
   "// EnableCompletionBonusXp": "Grant one-shot completion bonus XP on each solve; stacks with the ongoing QP multiplier.",
   "// DefaultCompletionBonusXpMultiplier": "Flat fraction of next-level XP before the CompletionBonusPerQuestPoint term; 0 = QP-scaled + overrides only.",
   "// CompletionBonusXpOverrides": "Per-quest absolute fraction of next-level XP when listed; 0 suppresses. Unlisted uses Default + QP term.",
@@ -41,6 +45,7 @@
   "BonusPerQuestPoint": 0.1,
   "AugmentXpMultiplier": 1,
   "ChallengeModeXpMultiplier": 1,
+  "ChallengeModeQuestPointsMultiplier": 1,
   "ApplyStandardBaseXpScaleToLuminance": true,
   "CooldownReductionPerQuestPoint": 0.1,
   "CompletionBonusPerQuestPoint": 0.1,
@@ -53,6 +58,9 @@
     "StipendTimer_Monthly": 1.0
   },
   "UseAccountWideQuests": true,
+  "EnableVitaeCapAchievement": true,
+  "VitaeCapThreshold": 0.99,
+  "VitaeCapBonusQuestPoints": 25.0,
   "EnableCompletionBonusXp": true,
   "DefaultCompletionBonusXpMultiplier": 0.0,
   "CompletionBonusXpOverrides": {
@@ -115,12 +123,14 @@
     "TierChallengingXpPercentMax": 2.5,
     "ParchmentTemplates": []
   },
-  "// EnableTrophyBurdenXp": "Award bonus XP when turning in trophies based on item burden (5% of burden = 1% of level XP).",
+  "// EnableTrophyBurdenXp": "Award bonus XP for trophy/collectible turn-ins to a listed collector, scaled by burden; zero-burden weenies use TrophyEncumbranceWhenZero.",
   "EnableTrophyBurdenXp": true,
   "// TrophyQualityBonusChance": "Per turn-in: chance (0–1) for Quality specimen — 2× burden XP. Independent of Pristine.",
   "TrophyQualityBonusChance": 0.10,
   "// TrophyPristineBonusChance": "Per turn-in: chance (0–1) for Pristine specimen — 3× burden XP; stacks with Quality (6× if both).",
   "TrophyPristineBonusChance": 0.05,
   "// TrophyCollectorWcids": "WCIDs of trophy collector NPCs that accept items via Give emote.",
-  "TrophyCollectorWcids": [3917, 3918, 3919, 3920, 3921, 3922, 3923, 11343, 11348, 21338, 24215]
+  "TrophyCollectorWcids": [3917, 3918, 3919, 3920, 3921, 3922, 3923, 11343, 11348, 21338, 24215],
+  "// TrophyEncumbranceWhenZero": "When item EncumbranceVal is 0, use this for the burden-based bonus (many collectibles have 0 in the weenie). 0 = no bonus if burden is 0.",
+  "TrophyEncumbranceWhenZero": 25
 }

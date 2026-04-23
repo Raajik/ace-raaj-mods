@@ -32,6 +32,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\SharedLoot\SharedLoot.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Compile Remove=".template.config\**" />
 		<EmbeddedResource Remove=".template.config\**" />
 		<None Remove=".template.config\**" />

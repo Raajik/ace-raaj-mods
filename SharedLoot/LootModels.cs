@@ -2,6 +2,15 @@ namespace SharedLoot;
 
 // JSON shape for LootConfig.json (default beside Loremaster; BetterChestLoot uses the same file).
 
+// Minimum rarity floor for guaranteed-tier loot selection (used by hunt placement rewards).
+public enum LootRarityFloor
+{
+    Any = 0,       // all categories eligible (common through extremely rare)
+    Uncommon = 1,  // uncommon, rare, extremely rare
+    Rare = 2,      // rare or extremely rare only
+    ExtremelyRare = 3,
+}
+
 public class LootConfig
 {
     // Rarity roll order matches LootRoller: extremely rare, then rare, then uncommon, remainder = common.

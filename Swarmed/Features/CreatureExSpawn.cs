@@ -16,6 +16,7 @@ public static class CreatureExSpawn
 
         Settings? settings = PatchClass.CurrentSettings;
         double chance = settings is null ? 0 : OnlinePlayerDensity.EffectiveCreatureChance(settings);
+        SwarmedChaos.ApplyCreatureExChaosBoost(ref chance, settings);
 
         if (weenie.PropertiesInt.TryGetValue((PropertyInt)FakeInt.CreatureExType, out var creatureType))
         {
@@ -50,6 +51,7 @@ public static class CreatureExSpawn
 
         Settings? settings = PatchClass.CurrentSettings;
         double chance = settings is null ? 0 : OnlinePlayerDensity.EffectiveCreatureChance(settings);
+        SwarmedChaos.ApplyCreatureExChaosBoost(ref chance, settings);
 
         if (weenie.PropertiesInt.TryGetValue((PropertyInt)FakeInt.CreatureExType, out var creatureType))
         {
@@ -85,6 +87,7 @@ public static class CreatureExSpawn
 
         Settings? settings = PatchClass.CurrentSettings;
         double chance = settings is null ? 0 : OnlinePlayerDensity.EffectiveCreatureChance(settings);
+        SwarmedChaos.ApplyCreatureExChaosBoost(ref chance, settings);
 
         bool replaced = false;
 

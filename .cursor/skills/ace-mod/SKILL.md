@@ -72,8 +72,8 @@ Copy an existing gameplay mod in this repo (e.g. **Xenology**, **Loremaster**). 
 
 - **`/ace-build`:** build each mod’s `.csproj` under the repo root.
 - **LeyLineLedger + AutoLoot peas:** `Shared/PeaPyrealWcids.cs`, `AceRaajMods.Shared`, `GetPyrealValue` — see mods’ Readmes; coins use stack `Value` as total (don’t double-multiply stack size).
-- **EmpyreanAlteration:** mutators in `EmpyreanAlteration.Mutators`; `Harmony.PatchCategory` for `Settings.Features`; **`LootGrowthItem`** + Overtinked quest init coordination.
-- **Overtinked:** nested-pack loot → postfix **`Container.TryAddToInventory`** (5 params), resolve **`Player`** via container chain (**`Overtinked/ContainerRootPlayer.cs`**).
+- **EmpyreanAlteration:** mutators in `EmpyreanAlteration.Mutators`; `Harmony.PatchCategory` for `Settings.Features`; **`LootGrowthItem`** sets item XP at loot-generation time (postfix `CreateAndMutateWcid`) — no quest pickup-time init (`QuestItemLevelingConfiguration` removed); geometric XP curve patches are in `QuestItemGrowthHarmony.Category` (applied when `EnableLootItemLeveling`); **critical**: `QuestItemGrowthHarmony` class must contain `TargetMethodContainerTryAddToInventory` — a stray `}` will split the class and silently break the entire Harmony category; `EnableQuestItemLeveling`/`QuestItemMaxLevelMin/Max` settings are **removed** — do not re-add references to them.
+- **Overtinked:** tinkering only (`RecipeManager` verify/mutate/handle recipe, custom imbues, salvage rules) — no inventory growth hooks.
 - **Loremaster ↔ EmpyreanAlteration:** some categories patched by class name from Loremaster settings.
 - **No EmpyreanEchoes** — split across EA, Swarmed, QOL, ChallengeModes, etc.
 

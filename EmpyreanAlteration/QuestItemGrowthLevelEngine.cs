@@ -40,6 +40,8 @@ internal static class QuestItemGrowthLevelEngine
         internal int GearCritDamageResistRatingSteps;
         internal int GearHealingBoostRatingGained;
         internal int GearVitalityRatingGained;
+        internal int RareWeaponCleavingSteps;
+        internal int RareWeaponSurgeSteps;
 
         internal void AddImbue(string imbueName)
         {
@@ -142,8 +144,12 @@ internal static class QuestItemGrowthLevelEngine
 
     private static bool TryApplyWeaponLevelUp(WorldObject item, Player player, int level, Settings settings, bool emitMessages, GrowthSummary? summary)
     {
-        // Normally: 1) Imbues, 2) weapon ladder + stat + minor (WeaponQuestGrowth), or legacy spell growth, 3) salvage-like bonuses.
+        // Normally: 0) Rare +Cleaving / +surge rating (WeaponQuestGrowth), 1) Imbues, 2) ladder + stat + minor, 3) salvage-like bonuses.
         // After one imbue and while spellbook has fewer than four entries: spells/stat/minor/salvage/utility first; defer further imbues until spell cap or no other effect.
+        if (settings.WeaponQuestGrowth is { Enabled: true }
+            && WeaponQuestGrowth.TryApplyRarePropertyLevelUp(item, player, level, settings, emitMessages, summary))
+            return true;
+
         bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item);
 
         if (!prioritizeSpells)

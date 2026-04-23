@@ -44,6 +44,13 @@ public static class ChallengeRewards
         amount = (long)(amount * mult);
     }
 
+    public static double GetQuestXpMilestoneMultiplierForPlayer(Player? player)
+    {
+        if (player is null || PatchClass.Settings is not { } s || !s.Enabled || !s.ChallengeMilestoneRewardsEnabled)
+            return 1.0;
+        return GetChallengeXpLumMultiplier(player, s);
+    }
+
     static double GetChallengeXpLumMultiplier(Player player, Settings s)
     {
         double totalPercent = ChallengeMilestoneGrants.GetTotalBonusPercent(player, s);

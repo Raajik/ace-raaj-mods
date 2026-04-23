@@ -3,6 +3,68 @@ namespace EmpyreanAlteration;
 // Quest weapon spell ladder, WQG imbue rules, equal stat rolls, and weighted minor outcomes.
 internal static class WeaponQuestGrowth
 {
+    // Rare per-level rolls: +1 Cleaving (stacks on each successful roll until RareCleavingMax) and/or one-time +1 LumAugSurgeChanceRating
+    // when the weapon has no surge rating yet (roll pool skipped if LumAugSurgeChanceRating is already > 0). Runs before imbue/ladder.
+    internal static bool TryApplyRarePropertyLevelUp(
+        WorldObject item,
+        Player player,
+        int level,
+        Settings settings,
+        bool emitMessages,
+        QuestItemGrowthLevelEngine.GrowthSummary? summary)
+    {
+        if (item == null || player == null || settings?.WeaponQuestGrowth is not { } wq || !wq.Enabled || !wq.RareWeaponPropertyGrowthEnabled)
+            return false;
+
+        WeenieType wt = item.WeenieType;
+        if (wt is not (WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster))
+            return false;
+
+        double pCleave = ClampRareChance(wq.RareCleavingChancePerLevel);
+        double pSurge = ClampRareChance(wq.RareSurgeChancePerLevel);
+
+        bool any = false;
+        List<string> parts = new();
+
+        // Cleaving: each successful rare proc adds +1 until cap (multiple level-ups can keep raising it).
+        if (Random.Shared.NextDouble() < pCleave)
+        {
+            int cur = item.GetProperty(PropertyInt.Cleaving) ?? 0;
+            if (cur < wq.RareCleavingMax)
+            {
+                item.SetProperty(PropertyInt.Cleaving, cur + 1);
+                if (summary != null)
+                    summary.RareWeaponCleavingSteps++;
+                any = true;
+                parts.Add($"+1 Cleaving ({cur} → {cur + 1})");
+            }
+        }
+
+        // Surge / multistrike-style rating: only eligible while the weapon has no rating yet (do not roll or stack from this path if already present).
+        int surgeBefore = item.GetProperty(PropertyInt.LumAugSurgeChanceRating) ?? 0;
+        if (surgeBefore == 0 && Random.Shared.NextDouble() < pSurge)
+        {
+            item.SetProperty(PropertyInt.LumAugSurgeChanceRating, 1);
+            if (summary != null)
+                summary.RareWeaponSurgeSteps++;
+            any = true;
+            parts.Add($"+1 surge rating (0 → 1)");
+        }
+
+        if (!any)
+            return false;
+
+        if (emitMessages)
+        {
+            string detail = string.Join("; ", parts);
+            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} — rare growth: {detail}.");
+        }
+
+        return true;
+    }
+
+    private static double ClampRareChance(double p) => Math.Clamp(p, 0.0, 0.01);
+
     internal static bool TryApplySpellLadder(
         WorldObject item,
         Player player,
@@ -310,7 +372,7 @@ internal static class WeaponQuestGrowth
         if (stored.HasValue && stored.Value > 0)
             return stored.Value;
 
-        return Math.Max(1, settings.QuestItemMaxLevelTier);
+        return 1;
     }
 
     private static IReadOnlyList<string> GetSpellLineOrder(WeenieType wt)

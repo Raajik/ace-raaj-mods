@@ -11,6 +11,10 @@ internal static class PortalStripNoRecall
         if (!__result || S.Settings is not { EnablePortalsStripNoRecall: true } || __instance == null)
             return;
 
+        if (S.Settings.PortalsStripNoRecallBlockedPortalWcids is { Count: > 0 } blocked
+            && blocked.Contains(__instance.WeenieClassId))
+            return;
+
         var mask = __instance.PortalRestrictions;
         if (!mask.HasFlag(PortalBitmask.NoRecall))
             return;

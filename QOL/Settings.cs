@@ -23,6 +23,12 @@ public enum Features
     PortalsStripNoRecall,
     TownNetworkToll,
     VendorPackBurdenRelief,
+    FullKillXpPerDamager,
+    GiveNpcSingleFromStack,
+    LootEconomyControl,
+    VendorLootRotation,
+    KillXpMessage,
+    BundleGive,
 }
 
 public class Settings
@@ -67,7 +73,7 @@ public class Settings
     public bool EnableQuestgiverAuras { get; set; } = true;
 
     [JsonPropertyName("// EnableStackable")]
-    public string EnableStackableDoc { get; init; } = "Raise stack limits and enable stacking for selected WeenieTypes (books, keys, etc.) per the Stackable object.";
+    public string EnableStackableDoc { get; init; } = "Enable WCID-based stacking. Items whose WeenieClassId is in Stackable.StackableWcids receive MaxStackSize and merge behavior.";
     public bool EnableStackable { get; set; } = true;
 
     [JsonPropertyName("// EnablePetAttackSelected")]
@@ -123,21 +129,89 @@ public class Settings
     public string EnablePortalsStripNoRecallDoc { get; init; } = "When a portal spawns, clear PortalBitmask.NoRecall on its PortalBitmask so secondary portal recall and tie behavior can use that destination.";
     public bool EnablePortalsStripNoRecall { get; set; } = true;
 
+    [JsonPropertyName("// PortalsStripNoRecallBlockedPortalWcids")]
+    public string PortalsStripNoRecallBlockedPortalWcidsDoc { get; init; } = "Blocklist: portal WeenieClassIds that keep NoRecall (strip is skipped for these WCIDs). Empty = strip NoRecall on all portals as usual.";
+    public List<uint> PortalsStripNoRecallBlockedPortalWcids { get; set; } = new();
+
     [JsonPropertyName("// EnableTownNetworkToll")]
     public string EnableTownNetworkTollDoc { get; init; } = "When true, Town Network–matched portals debit banked pyreals (see TownNetworkToll) after ACE portal checks; insufficient funds can block or drain all bank per InsufficientFundsMode.";
-    public bool EnableTownNetworkToll { get; set; } = false;
+    public bool EnableTownNetworkToll { get; set; } = true;
 
     [JsonPropertyName("// EnableVendorPackBurdenRelief")]
-    public string EnableVendorPackBurdenReliefDoc { get; init; } = "When true, wearing a configured vendor pack WCID multiplies total encumbrance by VendorPackBurdenMultiplier (e.g. 0.95 = 5% less burden display/cap math via Creature.GetEncumbrance patch).";
+    public string EnableVendorPackBurdenReliefDoc { get; init; } = "When true, wearing (and optionally carrying in main inventory) configured pack WCIDs multiplies total encumbrance via Creature.GetEncumbrance. Per-WCID multipliers use PackBurdenWcidMultipliers when non-empty; otherwise VendorPackBurdenMultiplier applies to VendorPackBurdenWcids. The smallest multiplier (most relief) wins when multiple packs match.";
     public bool EnableVendorPackBurdenRelief { get; set; } = false;
 
     [JsonPropertyName("// VendorPackBurdenMultiplier")]
-    public string VendorPackBurdenMultiplierDoc { get; init; } = "Applied to encumbrance when any listed pack is equipped (multiplicative once).";
+    public string VendorPackBurdenMultiplierDoc { get; init; } = "Fallback applied when PackBurdenWcidMultipliers is empty and a listed WCID in VendorPackBurdenWcids matches.";
     public double VendorPackBurdenMultiplier { get; set; } = 0.95;
 
     [JsonPropertyName("// VendorPackBurdenWcids")]
-    public string VendorPackBurdenWcidsDoc { get; init; } = "Item WCIDs treated as vendor packs for burden relief (e.g. 166, 136).";
+    public string VendorPackBurdenWcidsDoc { get; init; } = "Item WCIDs treated as burden-relief packs when PackBurdenWcidMultipliers is empty.";
     public List<uint> VendorPackBurdenWcids { get; set; } = new() { 166, 136 };
+
+    [JsonPropertyName("// PackBurdenWcidMultipliers")]
+    public string PackBurdenWcidMultipliersDoc { get; init; } = "Optional map of pack WeenieClassId → encumbrance multiplier (0.01–1.0). When non-empty, only WCIDs listed here qualify; smallest multiplier among equipped + optional inventory matches is used.";
+    public Dictionary<uint, double> PackBurdenWcidMultipliers { get; set; } = new();
+
+    [JsonPropertyName("// PackBurdenIncludeMainInventory")]
+    public string PackBurdenIncludeMainInventoryDoc { get; init; } = "When true, pack WCIDs in the main inventory container (not nested packs) also count toward relief (best multiplier still wins).";
+    public bool PackBurdenIncludeMainInventory { get; set; } = true;
+
+    [JsonPropertyName("// EnableFullKillXpPerDamager")]
+    public string EnableFullKillXpPerDamagerDoc { get; init; } = "When true, replaces ACE kill/luminance split by damage percent: each player (or pet owner) in DamageHistory earns the full creature XpOverride and full LuminanceAward (vanilla uses proportional split). Healing credit is unchanged (ACE does not award kill XP for healing in this path).";
+    public bool EnableFullKillXpPerDamager { get; set; } = false;
+
+    [JsonPropertyName("// EnableGiveNpcSingleFromStack")]
+    public string EnableGiveNpcSingleFromStackDoc { get; init; } = "When giving to a non-player container (NPC), clamp give amount to 1 for stackable WeenieTypes in GiveNpcSingleStackWeenieTypes so turn-ins do not consume an entire trophy stack.";
+    public bool EnableGiveNpcSingleFromStack { get; set; } = true;
+
+    [JsonPropertyName("// EnableLootEconomyControl")]
+    public string EnableLootEconomyControlDoc { get; init; } = "Reduce loot value and amount to help reign in the pyreal economy. LootValueMultiplier scales item values; LootAmountReduction reduces drop count by percentage.";
+    public bool EnableLootEconomyControl { get; set; } = false;
+
+    [JsonPropertyName("// LootValueMultiplier")]
+    public string LootValueMultiplierDoc { get; init; } = "Multiplies loot item values (0.1 = 10% of original value, 0.01 = 1%). Applied after generation to all loot items.";
+    public double LootValueMultiplier { get; set; } = 0.1;
+
+    [JsonPropertyName("// LootAmountReduction")]
+    public string LootAmountReductionDoc { get; init; } = "Loot amount multiplier: 0.0-1.0 reduces drops (0.7 = keep 30%%), >1.0 adds extra items (1.5 = 50%% more, WIP).";
+    public double LootAmountReduction { get; set; } = 0.7;
+
+    [JsonPropertyName("// EnableLootAmountBoostWIP")]
+    public string EnableLootAmountBoostWIPDoc { get; init; } = "WIP: Enable multiplier >1.0 for extra loot drops. Not fully implemented yet.";
+    public bool EnableLootAmountBoostWIP { get; set; } = false;
+
+    [JsonPropertyName("// EnableVendorLootRotation")]
+    public string EnableVendorLootRotationDoc { get; init; } = "Enable rotating vendor stock. Clears and regenerates vendor inventory on a timer cycle.";
+    public bool EnableVendorLootRotation { get; set; } = false;
+
+    [JsonPropertyName("// VendorLootRotationMinutes")]
+    public string VendorLootRotationMinutesDoc { get; init; } = "Minutes between vendor loot rotations.";
+    public int VendorLootRotationMinutes { get; set; } = 20;
+
+    [JsonPropertyName("// VendorLootMode")]
+    public string VendorLootModeDoc { get; init; } = "Whitelist: only rotate vendors in VendorLootWcids. Blacklist: rotate all EXCEPT vendors in VendorLootWcids.";
+    public string VendorLootMode { get; set; } = "Whitelist";
+
+    [JsonPropertyName("// VendorLootWcids")]
+    public string VendorLootWcidsDoc { get; init; } = "List of vendor WCIDs for whitelist/blacklist mode.";
+    public List<uint> VendorLootWcids { get; set; } = new();
+
+    [JsonPropertyName("// VendorLootItemsPerTier")]
+    public string VendorLootItemsPerTierDoc { get; init; } = "Number of items to generate per tier during rotation.";
+    public int VendorLootItemsPerTier { get; set; } = 10;
+
+    [JsonPropertyName("// VendorLootMinValue")]
+    public string VendorLootMinValueDoc { get; init; } = "Minimum item value in pyreals for vendor loot.";
+    public int VendorLootMinValue { get; set; } = 100;
+
+    [JsonPropertyName("// VendorLootMaxValue")]
+    public string VendorLootMaxValueDoc { get; init; } = "Maximum item value in pyreals for vendor loot.";
+    public int VendorLootMaxValue { get; set; } = 10000;
+
+    [JsonPropertyName("// GiveNpcSingleStackWeenieTypes")]
+    public string GiveNpcSingleStackWeenieTypesDoc { get; init; } = "WeenieTypes that receive the give clamp (typically Generic for trophies). Only applies when MaxStackSize > 1.";
+    public List<WeenieType> GiveNpcSingleStackWeenieTypes { get; set; } = new() { WeenieType.Generic };
 
     [JsonPropertyName("// MaxSpecCredits")]
     public string MaxSpecCreditsDoc { get; init; } = "Total specialisation credits a player may spend. Vanilla cap is 70. Set to 9999 to make it effectively unlimited.";
@@ -168,12 +242,35 @@ public class Settings
     public QuestgiverAuraSettings QuestgiverAuras { get; set; } = new();
 
     [JsonPropertyName("// Stackable")]
-    public string StackableSectionDoc { get; init; } = "MaxStackSize caps stacks for types this mod makes stackable. Enable* flags gate Book/Key/Generic/Lockpick/Scroll. StackableTypes lists WeenieType names; types can also be added for edge cases—IsEnabledType uses toggles first, then membership in this list. Inside Stackable: // lines first, then values (same order).";
+    public string StackableSectionDoc { get; init; } = "MaxStackSize: cap for synthetic stacks. StackableWcids: explicit WCID whitelist — only items in this list receive stacking behavior.";
     public StackableSettings Stackable { get; set; } = new();
 
     [JsonPropertyName("// TownNetworkToll")]
     public string TownNetworkTollSectionDoc { get; init; } = "Bank PropertyInt64 for pyreals (align with LeyLineLedger CashProperty / AutoLoot), level-based fees, Loremaster QP discount from FakeFloat.QuestBonus, portal matching (substring / WCID / landblock). Inside TownNetworkToll: // lines first, then values (same order).";
     public TownNetworkTollSettings TownNetworkToll { get; set; } = new();
+
+    [JsonPropertyName("// EnableKillXpMessage")]
+    public string EnableKillXpMessageDoc { get; init; } = "Append XP earned to the kill notification: \"You killed Drudge Skulker! (48 xp)\" or \"(0.003%)\" depending on KillXpMessage.ShowPercent.";
+    public bool EnableKillXpMessage { get; set; } = true;
+
+    [JsonPropertyName("// KillXpMessage")]
+    public string KillXpMessageSectionDoc { get; init; } = "ShowPercent: false = raw xp amount, true = percentage of XP toward next level.";
+    public KillXpMessageSettings KillXpMessage { get; set; } = new();
+
+    [JsonPropertyName("// EnableBundleGive")]
+    public string EnableBundleGiveDoc { get; init; } = "When giving ≥BundleSize of a stackable WCID to an NPC, consume BundleSize items and multiply all emote rewards. Currency rewards auto-deposit to bank.";
+    public bool EnableBundleGive { get; set; } = true;
+
+    [JsonPropertyName("// BundleGive")]
+    public string BundleGiveSectionDoc { get; init; } = "BundleSize: items consumed per bundle turn-in (default 10).";
+    public BundleGiveSettings BundleGive { get; set; } = new();
+}
+
+public class KillXpMessageSettings
+{
+    [JsonPropertyName("// ShowPercent")]
+    public string ShowPercentDoc { get; init; } = "false = \"(48 xp)\", true = \"(0.003%)\" percentage toward next level.";
+    public bool ShowPercent { get; set; } = false;
 }
 
 public enum TownNetworkPortalMatchMode
@@ -224,8 +321,16 @@ public class TownNetworkTollSettings
     public string NameSubstring { get; set; } = "Town Network";
 
     [JsonPropertyName("// Wcids")]
-    public string WcidsDoc { get; init; } = "Optional portal WeenieClassIds that count as TN (used in WcidList or Combined when non-empty).";
-    public List<uint> Wcids { get; set; } = new();
+    public string WcidsDoc { get; init; } =
+        "Optional portal WeenieClassIds for TN (WcidList or Combined). Default list: retail / common TN portals (42852, 43020, 43065-43067).";
+    public List<uint> Wcids { get; set; } =
+    [
+        42852, // Portal to Town Network
+        43020, // Town Network Portal Gem
+        43065, // Portal to Town Network
+        43066, // Portal to Town Network
+        43067, // Portal to Town Network
+    ];
 
     [JsonPropertyName("// LandblockIds")]
     public string LandblockIdsDoc { get; init; } = "Optional landblock ids (ushort as JSON numbers) where the portal stands; used in Combined when non-empty.";

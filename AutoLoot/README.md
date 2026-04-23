@@ -21,7 +21,7 @@ After looting, a chat summary tells you what was picked up and why.
 ## Installation
 
 1. Build the project (or download a release) and copy the output folder to `C:\ACE\Mods\AutoLoot\`
-2. Place the server's `.utl` loot profiles in `C:\ACE\Mods\AutoLoot\LootProfiles\`
+2. Sample `.utl` profiles are included under `LootProfiles\` in the mod output; add or replace files there for your shard.
 3. Restart the server or hot-reload with `/mod f AutoLoot`
 4. Players can type `/autoloot` in-game to get started
 
@@ -48,18 +48,21 @@ All commands start with `/autoloot`.
 
 ## Server Loot Profiles
 
-Profiles are `.utl` files placed by the server admin in the `LootProfiles/` folder. Players cannot create or upload their own — they simply toggle the server's profiles on or off. Any VirindiTank-compatible `.utl` file added to `LootProfiles/` will automatically appear in every player's toggle list.
+Profiles are `.utl` files placed by the server admin in the `LootProfiles/` folder. Players cannot create or upload their own — they simply toggle the server's profiles on or off. The **shipped** `Settings.json` sets **`DefaultActiveProfiles`** to the five files below (allowlist: only those names appear in `/autoloot`, and new characters get them enabled). If you set **`DefaultActiveProfiles`** to empty `[]` and leave **`DefaultProfile`** empty, first-login still uses the bundled five filenames in code (`Autoloot.BundledDefaultProfileFileNames`), but `/autoloot` lists every `.utl` on disk (admin-style). A non-empty explicit list always means allowlist mode for the command menu.
 
-The following profiles are included out of the box:
+These profiles ship with the mod (under `LootProfiles/`):
 
 | Profile | What it loots |
 |---|---|
-| `PyrealsTradeNotes.utl` | Pyreals and Trade Notes (enabled by default for new characters) |
-| `AltCurrency.utl` | Alternative currency items |
-| `Rares.utl` | All rare items |
-| `PincerTuskMatron.utl` | Pincer, Tusk, and Matron quest turn-in pieces |
-| `PyrealMotes.utl` | Pyreal Motes |
-| `Peas.utl` | Peas |
+| `BetterKeys.utl` | Sturdy keys (e.g. Sturdy Iron / Sturdy Steel) and related rules |
+| `Currency.utl` | Pyreals, trade notes, peas, alt currency, and combined currency rules |
+| `PyrealMotes.utl` | Pyreal Mote, Sliver, Nugget, Bar |
+| `Rares.utl` | Rare items (profile rare WCID rules) |
+| `Trophies.utl` | Trophies / extended targets (see UTL; may overlap rules with other profiles on your shard) |
+
+**First-login defaults:** for any character that does not yet have `LootProfiles/PlayerData/{guid}.json`, the server enables **`DefaultActiveProfiles`** from `Settings.json` when that list is non-empty; otherwise the bundled five filenames in code (same set as above). That runs on **login** and **first kill**. To use a single legacy file for defaults, set **`DefaultProfile`** only (and see code paths for empty lists).
+
+Quest turn-in stockpiling for name fragments like Pincer / Tusk / Matron is handled by `NoDuplicateNames` in `Settings.json`, not by a separate profile.
 
 ---
 
@@ -106,7 +109,8 @@ Server admins can expand this list in `Settings.json`.
 | Setting | Default | Description |
 |---|---|---|
 | `LootProfilePath` | `Mods/AutoLoot/LootProfiles` | Folder where `.utl` profiles are stored |
-| `DefaultProfile` | `PyrealsTradeNotes.utl` | Profile auto-enabled for new characters |
+| `DefaultActiveProfiles` | The five shipped `.utl` names (see table above) | Shipped: allowlist for `/autoloot` and new-character defaults. `[]` + empty `DefaultProfile`: first-login uses bundled five in code; `/autoloot` lists every `.utl` on disk. |
+| `DefaultProfile` | `""` | Legacy: single default file when `DefaultActiveProfiles` is empty |
 | `NoDuplicateNames` | `["Pincer", "Tusk", "Matron"]` | Name fragments that trigger the one-per-player quest item check |
 
 ---

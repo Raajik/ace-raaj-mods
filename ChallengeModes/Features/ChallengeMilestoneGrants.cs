@@ -179,7 +179,20 @@ public static class ChallengeMilestoneGrants
     }
 
     // Banked (completed segments) + in-run furthest toward current segment; see Settings ChallengeBonusPercentPerLevel / SegmentCapLevel.
-    internal static double GetTotalBonusPercent(Player player, Settings s)
+    internal readonly record struct ChallengeBonusBreakdown(
+        float PercentPerLevel,
+        int SegmentCap,
+        int CompletionCount,
+        int RunMaxLevel,
+        int CurrentLevel,
+        double ProgressLevels,
+        double BankedPercent,
+        double PartialPercent)
+    {
+        internal double TotalPercent => BankedPercent + PartialPercent;
+    }
+
+    internal static ChallengeBonusBreakdown GetChallengeBonusBreakdown(Player player, Settings s)
     {
         float r = s.ChallengeBonusPercentPerLevel;
         int cap = s.ChallengeBonusSegmentCapLevel > 0 ? s.ChallengeBonusSegmentCapLevel : 300;
@@ -196,6 +209,11 @@ public static class ChallengeMilestoneGrants
 
         double banked = c * cap * r;
         double partial = progressLevels * r;
-        return banked + partial;
+        return new ChallengeBonusBreakdown(r, cap, c, m, lvl, progressLevels, banked, partial);
+    }
+
+    internal static double GetTotalBonusPercent(Player player, Settings s)
+    {
+        return GetChallengeBonusBreakdown(player, s).TotalPercent;
     }
 }

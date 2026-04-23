@@ -21,6 +21,9 @@ internal static class QuestGrowthItemHelpers
         if (item.Attuned == AttunedStatus.Attuned)
             return;
 
-        item.Attuned = AttunedStatus.Attuned;
+        // Attuned at max level instead of level 1
+        int? maxLevel = item.ItemMaxLevel;
+        if (maxLevel.HasValue && level >= maxLevel.Value)
+            item.Attuned = AttunedStatus.Attuned;
     }
 }

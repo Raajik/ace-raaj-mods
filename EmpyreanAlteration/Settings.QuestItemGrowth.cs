@@ -1,39 +1,11 @@
 namespace EmpyreanAlteration;
 
-// Quest-given item XP, max-level rolls, custom XP curves, salvage-like level-up growth, and spell growth (moved from Overtinked).
+// Loot/quest item XP, max-level rolls, custom XP curves, level-up growth, and spell growth.
 public partial class Settings
 {
-    [JsonPropertyName("// EnableQuestItemLeveling")]
-    public string EnableQuestItemLevelingDoc { get; init; } =
-        "When true (default), eligible equippable items get item XP on first player inventory add and EmpyreanAlteration level-up growth (Harmony category EmpyreanAlterationQuestItemGrowth). Per-slot rolls and weights use QuestGrowthSalvageRules, SpellGrowth, and growth engine settings. After ImbuedEffect is non-zero, further imbues are deferred until the spellbook has at least four entries (spell/cantrip growth and other non-imbue effects run first).";
-
-    [JsonPropertyName("// QuestItemXpBase")]
-    public string QuestItemXpBaseDoc { get; init; } = "Base XP for quest items when ItemXpCurveMode is AceGeometric (stock ACE geometric).";
-
-    [JsonPropertyName("// QuestItemXpScale")]
-    public string QuestItemXpScaleDoc { get; init; } = "Per-tier scale applied to QuestItemXpBase for quest init.";
-
-    [JsonPropertyName("// QuestItemMaxLevelMin")]
-    public string QuestItemMaxLevelMinDoc { get; init; } = "Rolled cap minimum for quest-given items (inventory init).";
-
-    [JsonPropertyName("// QuestItemMaxLevelMax")]
-    public string QuestItemMaxLevelMaxDoc { get; init; } = "Rolled cap maximum for quest-given items.";
-
-    [JsonPropertyName("// QuestItemMaxLevelRollPower")]
-    public string QuestItemMaxLevelRollPowerDoc { get; init; } =
-        "Exponent p in w=U^p for uniform U; p>1 makes low ItemMaxLevel rolls more common. 1.0 = uniform between min and max.";
-
-    [JsonPropertyName("// UseFixedGlobalItemMaxLevel")]
-    public string UseFixedGlobalItemMaxLevelDoc { get; init; } = "When true, ItemMaxLevel uses GlobalItemMaxLevel when greater than 0 for quest rolls.";
-
-    [JsonPropertyName("// GlobalItemMaxLevel")]
-    public string GlobalItemMaxLevelDoc { get; init; } = "Fixed cap when UseFixedGlobalItemMaxLevel is true (or invalid min/max).";
-
-    [JsonPropertyName("// GlobalItemXpPlayerScale")]
-    public string GlobalItemXpPlayerScaleDoc { get; init; } = "Legacy geometric: scales ItemBaseXp when ItemXpCurveMode is AceGeometric.";
-
-    [JsonPropertyName("// QuestItemMaxLevelTier")]
-    public string QuestItemMaxLevelTierDoc { get; init; } = "Tier passed into quest max-level roll (no TreasureDeath at inventory init).";
+    [JsonPropertyName("// AttuneLeveledItemsWhenReachingLevelOne")]
+    public string AttuneLeveledItemsWhenReachingLevelOneDoc { get; init; } =
+        "When true (default), any item with item XP (HasItemLevel) that reaches item level 1+ becomes Attuned on Player.OnItemLevelUp if not already.";
 
     [JsonPropertyName("// ItemXpGeometricFirstLevelTotal")]
     public string ItemXpGeometricFirstLevelTotalDoc { get; init; } = "Geometric mode: total XP to reach item level 1 from 0.";
@@ -43,10 +15,10 @@ public partial class Settings
 
     [JsonPropertyName("// UseTierScaledItemMaxLevel")]
     public string UseTierScaledItemMaxLevelDoc { get; init; } =
-        "When true, ItemMaxLevel = tier * ItemMaxLevelsPerTreasureTier (clamped by QuestItemMaxLevelMax). When false, use weighted random rolls.";
+        "When true, ItemMaxLevel = tier * ItemMaxLevelsPerTreasureTier. When false, use weighted random rolls.";
 
     [JsonPropertyName("// ItemMaxLevelsPerTreasureTier")]
-    public string ItemMaxLevelsPerTreasureTierDoc { get; init; } = "Tier 1 => max level 5 * n per tier step before QuestItemMaxLevelMax ceiling when UseTierScaledItemMaxLevel is true.";
+    public string ItemMaxLevelsPerTreasureTierDoc { get; init; } = "Tier scaling factor: ItemMaxLevel = tier * n when UseTierScaledItemMaxLevel is true.";
 
     [JsonPropertyName("// ItemXpCurveMode")]
     public string ItemXpCurveModeDoc { get; init; } =
@@ -84,37 +56,9 @@ public partial class Settings
         "After spell growth: chance to roll Damage/Crit/Resist ratings, Healing Boost (jewelry), or Vitality (GearMaxHealth) on armor slots, jewelry, or shields.";
 
     [JsonPropertyName("// WeaponQuestGrowth")]
-    public string WeaponQuestGrowthDoc { get; init; } = "Ordered weapon spell ladder, imbues, stat rolls, and minor outcomes for quest-growth weapons.";
+    public string WeaponQuestGrowthDoc { get; init; } = "Weapon level-up growth: spell ladder, imbues, stat rolls, and minor outcomes.";
 
-    [JsonPropertyName("// EnableQuestItemWorkmanship")]
-    public string EnableQuestItemWorkmanshipDoc { get; init; } =
-        "When true (default), roll random workmanship on the same first-inventory pass as quest item XP init so plain quest gear can be tinkered. Stored with EAQuestItemWorkmanshipInitBool (40107); Overtinked skips its own workmanship roll when that flag is set.";
-
-    [JsonPropertyName("// QuestItemWorkmanshipMin")]
-    public string QuestItemWorkmanshipMinDoc { get; init; } = "Minimum workmanship when EnableQuestItemWorkmanship is true.";
-
-    [JsonPropertyName("// QuestItemWorkmanshipMax")]
-    public string QuestItemWorkmanshipMaxDoc { get; init; } = "Maximum workmanship when EnableQuestItemWorkmanship is true.";
-
-    public bool EnableQuestItemLeveling { get; set; } = true;
-
-    public long QuestItemXpBase { get; set; } = 50_000;
-
-    public double QuestItemXpScale { get; set; } = 1.2;
-
-    public int QuestItemMaxLevelMin { get; set; } = 5;
-
-    public int QuestItemMaxLevelMax { get; set; } = 250;
-
-    public double QuestItemMaxLevelRollPower { get; set; } = 2.2;
-
-    public bool UseFixedGlobalItemMaxLevel { get; set; } = false;
-
-    public int GlobalItemMaxLevel { get; set; } = 250;
-
-    public double GlobalItemXpPlayerScale { get; set; } = 2.0;
-
-    public int QuestItemMaxLevelTier { get; set; } = 1;
+    public bool AttuneLeveledItemsWhenReachingLevelOne { get; set; } = true;
 
     public long ItemXpGeometricFirstLevelTotal { get; set; } = 50_000;
 
@@ -196,6 +140,26 @@ public class WeaponQuestGrowthSettings
     public string MeleeDamageVarianceTightenPercentDoc { get; init; } =
         "Melee stat branch only: each hit tightens DamageVariance like Granite (multiply by 1 - p/100); same selection weight as +1 Damage.";
 
+    [JsonPropertyName("// RareWeaponPropertyGrowthEnabled")]
+    public string RareWeaponPropertyGrowthEnabledDoc { get; init; } =
+        "When true (default), each quest weapon level-up can rarely grant +1 Cleaving (PropertyInt.Cleaving) and/or +1 LumAugSurgeChanceRating (surge / multistrike-style rating). Rolled first before imbues and ladder. Each chance is clamped to at most 0.01 (1%).";
+
+    [JsonPropertyName("// RareCleavingChancePerLevel")]
+    public string RareCleavingChancePerLevelDoc { get; init; } =
+        "Independent chance per level-up for +1 Cleaving when below RareCleavingMax (default 0.01; values above 0.01 are clamped).";
+
+    [JsonPropertyName("// RareSurgeChancePerLevel")]
+    public string RareSurgeChancePerLevelDoc { get; init; } =
+        "Chance per level-up to grant +1 LumAugSurgeChanceRating only when the weapon has no surge rating yet (0; clamped to 1%). No rare surge roll if LumAugSurgeChanceRating is already on the item.";
+
+    [JsonPropertyName("// RareCleavingMax")]
+    public string RareCleavingMaxDoc { get; init; } =
+        "Cleaving stacks +1 per successful rare proc across level-ups until this cap.";
+
+    [JsonPropertyName("// RareSurgeMax")]
+    public string RareSurgeMaxDoc { get; init; } =
+        "Legacy: rare surge no longer stacks; surge is at most one +1 when starting from 0. Kept for JSON compatibility.";
+
     public bool Enabled { get; set; } = true;
 
     public double SecondaryImbueChance { get; set; } = 0.05;
@@ -217,6 +181,16 @@ public class WeaponQuestGrowthSettings
     public int OakSpeedDelta { get; set; } = 50;
 
     public int MeleeDamageVarianceTightenPercent { get; set; } = 20;
+
+    public bool RareWeaponPropertyGrowthEnabled { get; set; } = true;
+
+    public double RareCleavingChancePerLevel { get; set; } = 0.01;
+
+    public double RareSurgeChancePerLevel { get; set; } = 0.01;
+
+    public int RareCleavingMax { get; set; } = 5;
+
+    public int RareSurgeMax { get; set; } = 5;
 }
 
 public class SpellGrowthSettings
@@ -227,6 +201,10 @@ public class SpellGrowthSettings
     [JsonPropertyName("// AutoPopulateFromDat")]
     public string AutoPopulateFromDatDoc { get; init; } =
         "When true and explicit ID lists are empty, auto-populate spell and cantrip pools from DatManager.PortalDat.SpellTable by name matching.";
+
+    [JsonPropertyName("// RestrictNameContainsToPlayerSpells")]
+    public string RestrictNameContainsToPlayerSpellsDoc { get; init; } =
+        "When true (default), spells added via NameContains filters are also checked against PlayerSpellTable. When false, NameContains adds all matching spells from DAT regardless of what spells the player knows.";
 
     [JsonPropertyName("// SpellOutcomeWeight")]
     public string SpellOutcomeWeightDoc { get; init; } = "Relative weight when choosing a spell outcome.";
@@ -280,6 +258,8 @@ public class SpellGrowthSettings
     public bool Enabled { get; set; } = true;
 
     public bool AutoPopulateFromDat { get; set; } = true;
+
+    public bool RestrictNameContainsToPlayerSpells { get; set; } = true;
 
     public int SpellOutcomeWeight { get; set; } = 2;
 

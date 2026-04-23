@@ -95,6 +95,12 @@ public class Settings
     [JsonPropertyName("// ChaosRequiresActiveChallenge")]
     public string ChaosRequiresActiveChallengeDoc { get; init; } = "When true, only characters with an active /cm mode may toggle chaos.";
 
+    [JsonPropertyName("// QuestPointsMultiplierWhileChallengeActive")]
+    public string QuestPointsMultiplierWhileChallengeActiveDoc { get; init; } = "Loremaster: per active /cm track (SSF, hardcore, aptitude-or-alternate) this factor is applied once per track when QuestPointsMultiplyPerActiveChallengeTrack is true (m^n). When false, a single m applies if any challenge is active (legacy). 1 = no CM-driven boost.";
+
+    [JsonPropertyName("// QuestPointsMultiplyPerActiveChallengeTrack")]
+    public string QuestPointsMultiplyPerActiveChallengeTrackDoc { get; init; } = "When true, stored QB scale is QuestPointsMultiplierWhileChallengeActive raised to CountActiveChallengeTracks (e.g. SSF+HC with m=2 => 4×). When false, any active challenge uses m once (2×).";
+
     public bool Enabled { get; set; } = false;
 
     public bool EnableArcaneLore { get; set; } = true;
@@ -148,4 +154,8 @@ public class Settings
     public float ChaosQuestBonusMultiplier { get; set; } = 4f;
 
     public bool ChaosRequiresActiveChallenge { get; set; } = true;
+
+    public float QuestPointsMultiplierWhileChallengeActive { get; set; } = 2f;
+
+    public bool QuestPointsMultiplyPerActiveChallengeTrack { get; set; } = true;
 }

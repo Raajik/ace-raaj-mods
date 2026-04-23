@@ -2,20 +2,15 @@ using ACE.Server.Network.Structure;
 
 namespace EmpyreanAlteration;
 
-// Quest item XP init, custom item XP curves, and level-up growth (separate from mutator loot GrowthItem).
+// Quest item XP, max-level rolls, custom XP curves, and spell growth (replaces old, removed module).
 internal static class QuestItemGrowthHarmony
 {
     internal const string Category = "EmpyreanAlterationQuestItemGrowth";
 
-    // ExperienceSystem + ItemXpCurveContext patches must run for loot GrowthItem appraisal when EnableLootItemLeveling
-    // is true even if EnableQuestItemLeveling is false; otherwise the client XP bar / level math is wrong or hidden.
+    // ExperienceSystem + ItemXpCurveContext patches must run for loot GrowthItem appraisal when LootItemLeveling
+    // is true even if QuestItemLeveling is false; otherwise the client XP bar / level math is wrong or hidden.
     internal static bool IsItemXpCurveHarmonyEnabled(Settings? s) =>
-        s is { Enabled: true } && (s.EnableQuestItemLeveling || s.EnableLootItemLeveling);
-
-    static bool PrepareContainerPostfix()
-    {
-        return TargetMethodContainerTryAddToInventory() != null;
-    }
+        s is { Enabled: true } && s.EnableLootItemLeveling;
 
     internal static MethodBase? TargetMethodContainerTryAddToInventory()
     {
@@ -62,16 +57,10 @@ internal static class QuestItemGrowthPostContainerTryAddToInventory
             return;
 
         Settings? s = PatchClass.Settings;
-        if (s == null || !s.Enabled || !s.EnableQuestItemLeveling)
+        if (s == null || !s.Enabled || !s.EnableLootItemLeveling)
             return;
 
         Player? owner = ContainerRootPlayer.TryGetFromContainer(__instance);
-        // Player chain: normal pack/corpse loot into inventory. Without a player, only init when the weenie is tied to a
-        // quest (e.g. reward sitting on a corpse) so appraisal shows XP as soon as the item exists, not only after pickup.
-        if (owner == null && string.IsNullOrWhiteSpace(worldObject.Quest))
-            return;
-
-        QuestItemLevelingConfiguration.TryInitializeQuestItemXpAfterInventory(worldObject, owner, s);
     }
 }
 
@@ -194,9 +183,6 @@ internal static class QuestItemGrowthOnItemLevelUpHarmony
         if (!questGrowthPath && !lootGrowthPath)
             return;
 
-        if (questGrowthPath && !s.EnableQuestItemLeveling)
-            return;
-
         if (lootGrowthPath && !s.EnableLootItemLeveling)
             return;
 
@@ -205,6 +191,13 @@ internal static class QuestItemGrowthOnItemLevelUpHarmony
         int currentLevel = item.ItemLevel ?? 0;
         if (currentLevel <= prevItemLevel)
             return;
+
+        if (lootGrowthPath && prevItemLevel <= 1)
+        {
+            int? lastApplied = item.GetProperty(QuestItemGrowthProperties.QuestGrowthLastAppliedItemLevelInt);
+            if (lastApplied == null || lastApplied <= 1)
+                return;
+        }
 
         QuestItemGrowthCatchUp.ApplyCatchUpGrowth(item, prevItemLevel, currentLevel, questGrowth, __instance, s);
     }

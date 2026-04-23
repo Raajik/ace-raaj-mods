@@ -7,8 +7,34 @@ namespace QOL;
 internal static class Stackable
 {
     static StackableSettings Cfg => S.Settings.Stackable;
+    static HashSet<uint> _wcids = new();
 
-    // On creation, inject stack properties into weenie types that ACE doesn't natively stack.
+    internal static void Initialize(string modDir, StackableSettings cfg)
+    {
+        var path = Path.Combine(modDir, cfg.WcidFile);
+        if (!File.Exists(path))
+        {
+            ModManager.Log($"[QOL] Stackable: {cfg.WcidFile} not found — no WCIDs loaded.", ModManager.LogLevel.Warn);
+            _wcids = new();
+            return;
+        }
+        try
+        {
+            var json = File.ReadAllText(path);
+            var groups = JsonSerializer.Deserialize<Dictionary<string, List<uint>>>(json);
+            _wcids = groups == null ? new() : new HashSet<uint>(groups.Values.SelectMany(v => v));
+            ModManager.Log($"[QOL] Stackable: loaded {_wcids.Count} WCIDs from {cfg.WcidFile}.");
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[QOL] Stackable: failed to load {cfg.WcidFile}: {ex.Message}", ModManager.LogLevel.Error);
+            _wcids = new();
+        }
+    }
+
+    internal static bool IsStackableWcid(uint wcid) => _wcids.Contains(wcid);
+
+    // On creation, inject stack properties into explicitly whitelisted WCIDs.
     // Sets MaxStackSize and initialises per-unit weight/value so merges keep burden accurate.
     [HarmonyPostfix]
     [HarmonyPatch(typeof(WorldObjectFactory), nameof(WorldObjectFactory.CreateWorldObject),
@@ -17,7 +43,7 @@ internal static class Stackable
     {
         if (__result == null) return;
         if (__result is NativeStackable) return;
-        if (!Cfg.IsEnabledType(__result.WeenieType)) return;
+        if (!_wcids.Contains(__result.WeenieClassId)) return;
         if ((__result.MaxStackSize ?? 0) > 1) return; // already stackable
 
         // Record per-unit weight and value before MaxStackSize is raised,
@@ -74,63 +100,16 @@ internal static class Stackable
         obj is NativeStackable ? obj :
         obj is WorldObject wo && (wo.MaxStackSize ?? 0) > 1 ? obj :
         null;
+
 }
 
 public class StackableSettings
 {
     [JsonPropertyName("// MaxStackSize")]
-    public string MaxStackSizeDoc { get; init; } = "Maximum stack size for items this mod turns into stackables (ACE max 65535).";
-
+    public string MaxStackSizeDoc { get; init; } = "Maximum stack size assigned to whitelisted items (ACE max 65535).";
     public ushort MaxStackSize { get; set; } = 100;
 
-    [JsonPropertyName("// StackableTypes")]
-    public string StackableTypesDoc { get; init; } = "WeenieType names (ACE enum) that may receive MaxStackSize and merge behavior. Entries here are the usual defaults; each listed type is also controlled by its Enable* flag above when one exists. Add a type name here to include types without a dedicated toggle.";
-
-    [JsonPropertyName("// EnableBooks")]
-    public string EnableBooksDoc { get; init; } = "Allow Book-type items to stack when EnableStackable is true.";
-
-    public bool EnableBooks { get; set; } = true;
-
-    [JsonPropertyName("// EnableKeys")]
-    public string EnableKeysDoc { get; init; } = "Allow Key-type items to stack.";
-
-    public bool EnableKeys { get; set; } = true;
-
-    [JsonPropertyName("// EnableGeneric")]
-    public string EnableGenericDoc { get; init; } = "Allow Generic-type collectibles to stack.";
-
-    public bool EnableGeneric { get; set; } = true;
-
-    [JsonPropertyName("// EnableLockpicks")]
-    public string EnableLockpicksDoc { get; init; } = "Allow Lockpick-type items to stack.";
-
-    public bool EnableLockpicks { get; set; } = true;
-
-    [JsonPropertyName("// EnableScrolls")]
-    public string EnableScrollsDoc { get; init; } = "Allow Scroll-type items to stack.";
-
-    public bool EnableScrolls { get; set; } = true;
-
-    // Backing list to surface the effective types in Settings.json for reference.
-    // See: https://github.com/ACEmulator/ACE/blob/master/Source/ACE.Entity/Enum/WeenieType.cs
-    public List<WeenieType> StackableTypes { get; set; } =
-    [
-        WeenieType.Book,      // quest letters, scrolls
-        WeenieType.Key,       // keys of all kinds
-        WeenieType.Generic,   // mob heads, trophies, misc collectibles
-        WeenieType.Lockpick,  // lockpicks
-        WeenieType.Scroll,    // learnable scroll items
-    ];
-
-    // Returns true when a given WeenieType should be treated as stackable according to the
-    // per-type toggles above. Falls back to StackableTypes for any types without a toggle.
-    public bool IsEnabledType(WeenieType weenieType) => weenieType switch
-    {
-        WeenieType.Book     => EnableBooks,
-        WeenieType.Key      => EnableKeys,
-        WeenieType.Generic  => EnableGeneric,
-        WeenieType.Lockpick => EnableLockpicks,
-        WeenieType.Scroll   => EnableScrolls,
-        _                   => StackableTypes.Contains(weenieType),
-    };
+    [JsonPropertyName("// WcidFile")]
+    public string WcidFileDoc { get; init; } = "Path (relative to mod directory) of the WCID groups file. Format: { \"GroupName\": [wcid, ...], ... }";
+    public string WcidFile { get; set; } = "StackableWcids.json";
 }

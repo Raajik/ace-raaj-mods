@@ -126,4 +126,17 @@ internal static class XenologyPersistence
             ModManager.Log($"[Xenology] SaveActiveHunt failed: {ex.Message}", ModManager.LogLevel.Warn);
         }
     }
+
+    internal static void ClearActiveHunt()
+    {
+        try
+        {
+            if (File.Exists(ActiveHuntFile))
+                File.Delete(ActiveHuntFile);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Xenology] ClearActiveHunt failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
 }

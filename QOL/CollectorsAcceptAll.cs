@@ -22,34 +22,30 @@ internal static class CollectorsAcceptAll
             var xpToNextLevel = DatManager.PortalDat.XpTable.CharacterLevelXPList[currentLevel + 1];
             var xpForThisLevel = xpToNextLevel - xpForCurrentLevel;
 
-            if (item.IsAttunedOrContainsAttuned)
+            var burden = item.EncumbranceVal ?? 0;
+            var isAttuned = item.IsAttunedOrContainsAttuned;
+
+            long bonusXp = 0;
+
+            if (isAttuned)
             {
                 if (xpForThisLevel > 0)
                 {
-                    var bonusXp = (long)(xpForThisLevel * 0.30);
-                    if (bonusXp > 0)
-                    {
-                        player.GrantXP(bonusXp, XpType.Quest, ShareType.None);
-                        player.SendMessage($"[Collector] Trophy burden bonus: +{bonusXp:N0} XP (30% of level)");
-                    }
+                    bonusXp = (long)(xpForThisLevel * 0.30);
                 }
             }
-            else
+            else if (burden > 0)
             {
-                var burden = item.EncumbranceVal ?? 0;
-                if (burden > 0)
+                if (xpForThisLevel > 0)
                 {
-                    if (xpForThisLevel > 0)
-                    {
-                        var percentOfLevel = (burden / 100.0) * XP_PER_BURDEN;
-                        var bonusXp = (long)(xpForThisLevel * percentOfLevel);
-                        if (bonusXp > 0)
-                        {
-                            player.GrantXP(bonusXp, XpType.Quest, ShareType.None);
-                            player.SendMessage($"[Collector] Trophy burden bonus: +{bonusXp:N0} XP ({percentOfLevel * 100:F2}% of level)");
-                        }
-                    }
+                    var percentOfLevel = (burden / 100.0) * XP_PER_BURDEN;
+                    bonusXp = (long)(xpForThisLevel * percentOfLevel);
                 }
+            }
+
+            if (bonusXp > 0)
+            {
+                LoremasterQuestXpInterop.GrantLevelFractionQuestXp(player, bonusXp);
             }
         }
 
@@ -93,7 +89,10 @@ internal static class CollectorsAcceptAll
             }
 
             if (hasValidGive)
+            {
+                GrantXpBonus(__instance, item);
                 return true;
+            }
 
             var isEligible = isAttuned || isFullSalvage;
 

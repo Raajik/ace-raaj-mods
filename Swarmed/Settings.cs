@@ -159,8 +159,24 @@ public class Settings
     };
 
     [JsonPropertyName("// ChaosModeReinforcementChanceScale")]
-    public string ChaosModeReinforcementChanceScaleDoc { get; init; } = "When the killing player has chaos active (FakeFloat 11013 > 1), multiply reinforcement chance by this × (chaosFactor ÷ 3), capped at 1. Set 0 to disable.";
+    public string ChaosModeReinforcementChanceScaleDoc { get; init; } = "When effective chaos (killer or shard mean FakeFloat 11013) > 1, multiply reinforcement chance by this × (chaosFactor ÷ 3), capped at 1. Set 0 to disable.";
     public float ChaosModeReinforcementChanceScale { get; set; } = 1.5f;
+
+    [JsonPropertyName("// ReinforcementChaosBlendOnlineMean")]
+    public string ReinforcementChaosBlendOnlineMeanDoc { get; init; } = "When true, reinforcement chaos factor is max(killer 11013, mean online 11013) so chaos scales Swarmed even if the killer is not in /cm chaos.";
+    public bool ReinforcementChaosBlendOnlineMean { get; set; } = true;
+
+    [JsonPropertyName("// MaxReinforcementSpawnsPerMinute")]
+    public string MaxReinforcementSpawnsPerMinuteDoc { get; init; } = "Shard-wide cap on reinforcement creatures spawned per rolling 60s (0 = unlimited).";
+    public int MaxReinforcementSpawnsPerMinute { get; set; } = 100;
+
+    [JsonPropertyName("// CreatureExChaosBoostScale")]
+    public string CreatureExChaosBoostScaleDoc { get; init; } = "Scales CreatureEx random-replacement chance up when mean online chaos > 1: extra = (meanChaos - 1) × this, added as a multiplier toward CreatureExChaosBoostMaxMultiplier.";
+    public double CreatureExChaosBoostScale { get; set; } = 0.35;
+
+    [JsonPropertyName("// CreatureExChaosBoostMaxMultiplier")]
+    public string CreatureExChaosBoostMaxMultiplierDoc { get; init; } = "Upper bound on total CreatureEx chance multiplier from chaos (e.g. 2 = double at most). 1 = disable chaos boost for CreatureEx.";
+    public double CreatureExChaosBoostMaxMultiplier { get; set; } = 2.0;
 }
 
 public class AuraPulserFeatureSettings

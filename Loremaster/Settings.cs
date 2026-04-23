@@ -18,8 +18,12 @@ public class Settings
     public float AugmentXpMultiplier { get; set; } = 1f;
 
     [JsonPropertyName("// ChallengeModeXpMultiplier")]
-    public string ChallengeModeXpMultiplierDoc { get; init; } = "Multiplicative Challenge Mode term (default 1). Set to match your ChallengeModes reward tuning, or leave 1 if unused.";
+    public string ChallengeModeXpMultiplierDoc { get; init; } = "Multiplicative term in the GrantXP / luminance chain only (default 1). Does not change stored quest points (FakeFloat.QuestBonus); use ChallengeModeQuestPointsMultiplier for that while a /cm challenge is active.";
     public float ChallengeModeXpMultiplier { get; set; } = 1f;
+
+    [JsonPropertyName("// ChallengeModeQuestPointsMultiplier")]
+    public string ChallengeModeQuestPointsMultiplierDoc { get; init; } = "While /cm challenge active: if not 1, this value scales flag-derived base QP and overrides ChallengeModes (including per-track m^n stacking). If left at 1, Loremaster uses ChallengeModes bridge then ChallengeModeXpMultiplier when that is not 1.";
+    public float ChallengeModeQuestPointsMultiplier { get; set; } = 1f;
 
     [JsonPropertyName("// ApplyStandardBaseXpScaleToLuminance")]
     public string ApplyStandardBaseXpScaleToLuminanceDoc { get; init; } = "When true, the same multiplicative chain as XP applies to luminance gains Loremaster scales.";
@@ -51,6 +55,18 @@ public class Settings
     [JsonPropertyName("// UseAccountWideQuests")]
     public string UseAccountWideQuestsDoc { get; init; } = "When true, QP and XP multiplier use unique quests solved across all characters on the account.";
     public bool UseAccountWideQuests { get; set; } = true;
+
+    [JsonPropertyName("// EnableVitaeCapAchievement")]
+    public string EnableVitaeCapAchievementDoc { get; init; } = "When true, the first time a character reaches VitaeCapThreshold vitae (server cap), grant VitaeCapBonusQuestPoints to the extra QP pool once per character.";
+    public bool EnableVitaeCapAchievement { get; set; } = true;
+
+    [JsonPropertyName("// VitaeCapThreshold")]
+    public string VitaeCapThresholdDoc { get; init; } = "Vitae fraction (0–1) treated as 'at cap' for the goofy bonus; 0.99 matches a typical 99% server vitae ceiling.";
+    public double VitaeCapThreshold { get; set; } = 0.99;
+
+    [JsonPropertyName("// VitaeCapBonusQuestPoints")]
+    public string VitaeCapBonusQuestPointsDoc { get; init; } = "Extra quest points added to LMFloat QuestPointsExtra when VitaeCapAchievement triggers (one time per character).";
+    public float VitaeCapBonusQuestPoints { get; set; } = 25f;
 
     [JsonPropertyName("// EnableCompletionBonusXp")]
     public string EnableCompletionBonusXpDoc { get; init; } = "Grant one-shot completion bonus XP on each solve; stacks with the ongoing QP multiplier.";
@@ -109,13 +125,18 @@ public class Settings
     public string MilestoneBroadcastFormat { get; set; } =
         "[Loremaster] {0} has just completed their {1} unique quest and earned {2} bonus quest points!";
 
-    [JsonPropertyName("// EnableRepeatQuestPoints")]
-    public string EnableRepeatQuestPointsDoc { get; init; } = "When true, repeat quest solves can award QP to the extra pool at most once per quest per cooldown window.";
-    public bool EnableRepeatQuestPoints { get; set; } = true;
+    [JsonPropertyName("// EnableRepeatStampSystem")]
+    public string EnableRepeatStampSystemDoc { get; init; } = "Master toggle for the second-tier repeat stamp multiplier.";
+    public bool EnableRepeatStampSystem { get; set; } = true;
 
-    [JsonPropertyName("// RepeatQuestPointCooldownSeconds")]
-    public string RepeatQuestPointCooldownSecondsDoc { get; init; } = "Min seconds between repeat-QP awards for the same quest (default 10 hours).";
-    public int RepeatQuestPointCooldownSeconds { get; set; } = 36000;
+    [JsonPropertyName("// RepeatStampBonusPerStamp")]
+    public string RepeatStampBonusPerStampDoc { get; init; } = "The amount added to the RepeatStampMultiplier for each successful stamp (e.g., 0.01 for 1%).";
+    public float RepeatStampBonusPerStamp { get; set; } = 0.01f;
+
+    [JsonPropertyName("// RepeatStampCooldownSeconds")]
+    public string RepeatStampCooldownSecondsDoc { get; init; } = "Cooldown window (in seconds) between earning the same quest stamp (e.g., 72000 for 20h).";
+    public int RepeatStampCooldownSeconds { get; set; } = 72000;
+
 
     [JsonPropertyName("// BypassPortalMaxLevelRestriction")]
     public string BypassPortalMaxLevelRestrictionDoc { get; init; } = "When true, ACE portal max-level checks (use_portal_max_level_requirement) are bypassed so over-level characters may use those portals.";
@@ -173,8 +194,12 @@ public class Settings
     public bool EnableOverrideCheckUseRequirements { get; set; } = false;
 
     [JsonPropertyName("// EnableTrophyBurdenXp")]
-    public string EnableTrophyBurdenXpDoc { get; init; } = "Award bonus XP when turning in trophies based on item burden (5% of burden = 1% of level XP).";
+    public string EnableTrophyBurdenXpDoc { get; init; } = "Award bonus XP when turning in trophies to a listed collector, scaled by item burden. Many collectibles have 0 encumbrance in data; use TrophyEncumbranceWhenZero for those.";
     public bool EnableTrophyBurdenXp { get; set; } = false;
+
+    [JsonPropertyName("// TrophyEncumbranceWhenZero")]
+    public string TrophyEncumbranceWhenZeroDoc { get; init; } = "When the item’s EncumbranceVal is 0 or null, use this value only for the burden-based XP formula (treats zero-burden collectibles as lightweight trophies). Set 0 to require a positive weenie burden (vanilla-strict).";
+    public int TrophyEncumbranceWhenZero { get; set; } = 25;
 
     [JsonPropertyName("// TrophyQualityBonusChance")]
     public string TrophyQualityBonusChanceDoc { get; init; } = "Per turn-in: chance (0–1) for a Quality specimen — 2× burden XP. Independent of Pristine.";

@@ -51,15 +51,36 @@ internal static class XenologyRanks
         return SpeciesRankBand.Mid;
     }
 
-    internal static int MilestoneLootOffset(long totalLifetimeKills, Settings settings)
+    internal static int MilestoneLootTierFromProgress(double progress, Settings settings)
     {
-        if (totalLifetimeKills >= settings.MilestoneKillsTier3)
+        if (settings.UseMilestoneXpForTiers)
+        {
+            if (progress >= settings.MilestoneXpTier3)
+                return 3;
+            if (progress >= settings.MilestoneXpTier2)
+                return 2;
+            if (progress >= settings.MilestoneXpTier1)
+                return 1;
+            return 0;
+        }
+
+        var k = (long)Math.Max(0, Math.Min(long.MaxValue, progress));
+        if (k >= settings.MilestoneKillsTier3)
             return 3;
-        if (totalLifetimeKills >= settings.MilestoneKillsTier2)
+        if (k >= settings.MilestoneKillsTier2)
             return 2;
-        if (totalLifetimeKills >= settings.MilestoneKillsTier1)
+        if (k >= settings.MilestoneKillsTier1)
             return 1;
         return 0;
+    }
+
+    internal static double MilestoneProgressForLoot(Player player, PlayerXenologyData data, Settings settings)
+    {
+        if (!settings.UseMilestoneXpForTiers)
+            return data.TotalLifetimeKills;
+
+        double pending = player.GetProperty((PropertyFloat)XenologyPropertyIds.PendingXenologyXpPreview) ?? 0.0;
+        return data.TotalXenologyXp + pending;
     }
 }
 

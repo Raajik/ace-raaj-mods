@@ -55,6 +55,7 @@
 
 	<ItemGroup>
 		<Compile Include="..\Shared\PeaPyrealWcids.cs" Link="Shared\PeaPyrealWcids.cs" />
+		<Compile Include="..\Shared\SsfAutolootPickupContext.cs" Link="Shared\SsfAutolootPickupContext.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

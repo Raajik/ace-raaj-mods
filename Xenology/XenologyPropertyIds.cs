@@ -11,4 +11,7 @@ internal static class XenologyPropertyIds
 
     // Bonus trophy-weight hint for GenerateTreasure postfix (fraction 0..1); cleared after roll.
     internal const int PendingTrophyChanceHint = 40124;
+
+    // Estimated xXP for this kill (PreDie); used so loot tier can align with post-kill TotalXenologyXp. Cleared in PostDie.
+    internal const int PendingXenologyXpPreview = 40122;
 }

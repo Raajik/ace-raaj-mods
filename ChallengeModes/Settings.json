@@ -28,6 +28,8 @@
   "// CmQuitRemoveLuminance": "When true, Enlightenment.RemoveLuminance on quit.",
   "// CmQuitRemoveSociety": "When true, Enlightenment.RemoveSociety on quit.",
   "// CmQuitRemoveAetheria": "When true, Enlightenment.RemoveAetheria on quit.",
+  "// QuestPointsMultiplierWhileChallengeActive": "Loremaster: base factor m for QB; with QuestPointsMultiplyPerActiveChallengeTrack true, scale is m^n where n = CountActiveChallengeTracks (SSF, HC, aptitude-or-alternate).",
+  "// QuestPointsMultiplyPerActiveChallengeTrack": "When true (default), m^n per active tracks (e.g. m=2, SSF+HC => 4×). When false, m once if any challenge (legacy 2×).",
   "Enabled": true,
   "EnableArcaneLore": true,
   "EnableManaConversion": true,
@@ -164,5 +166,7 @@
   "CmQuitRemoveSociety": false,
   "CmQuitRemoveAetheria": false,
   "ChaosQuestBonusMultiplier": 4.0,
-  "ChaosRequiresActiveChallenge": true
+  "ChaosRequiresActiveChallenge": true,
+  "QuestPointsMultiplierWhileChallengeActive": 2.0,
+  "QuestPointsMultiplyPerActiveChallengeTrack": true
 }

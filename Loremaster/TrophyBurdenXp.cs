@@ -49,10 +49,13 @@ internal static class TrophyBurdenXp
         if (!TrophyCollectors.ContainsKey(targetWcid))
             return;
 
-        var burden = item.EncumbranceVal ?? 0;
+        // Many trophy/collectible weenies have EncumbranceVal 0; without a floor the formula yields no bonus.
+        var rawBurden = item.EncumbranceVal ?? 0;
+        var minWhenZero = Math.Max(0, settings.TrophyEncumbranceWhenZero);
+        var burden = rawBurden > 0 ? rawBurden : minWhenZero;
         if (burden <= 0)
         {
-            DebugLog($"Item {item.Name} has no burden ({burden}), skipping");
+            DebugLog($"Item {item.Name} has no burden and TrophyEncumbranceWhenZero is 0, skipping");
             return;
         }
 
@@ -79,11 +82,13 @@ internal static class TrophyBurdenXp
 
         var bonusXp = (long)Math.Min((double)baseBonusXp * mult, long.MaxValue);
 
-        DebugLog($"{player.Name} turned in {item.Name} (burden={burden}), base={baseBonusXp}, mult={mult}, awarding {bonusXp}");
+        DebugLog(
+            $"{player.Name} turned in {item.Name} (raw burden={rawBurden}, effective={burden}), base={baseBonusXp}, mult={mult}, awarding {bonusXp}");
 
         if (bonusXp > 0)
         {
-            player.GrantXP(bonusXp, XpType.Quest, ShareType.None);
+            // Same as parchment / completion-bonus: pre-scale for shard xp_modifier, skip retention chain (ExternalXpGrants).
+            ExternalXpGrants.GrantQuestXpWithoutMultiplier(player, bonusXp);
 
             var itemName = string.IsNullOrWhiteSpace(item.Name) ? "Trophy" : item.Name.Trim();
             var prefix = "";
@@ -104,7 +109,13 @@ internal static class TrophyBurdenXp
                 _ => "",
             };
 
-            player.SendMessage($"[Loremaster] {prefix}{itemName} turned in for +{bonusXp:N0} XP (~{pctDisplay:F2}% of level{yieldNote}).");
+            var burdenNote = rawBurden <= 0 && minWhenZero > 0
+                ? $" (treat as {minWhenZero} burden; item has no listed encumbrance)"
+                : "";
+
+            var show = QuestXpAwardDisplay.EstimateCharacterXpAfterMilestoneChain(player, bonusXp);
+            player.SendMessage(
+                $"[Loremaster] {prefix}{itemName} turned in for +{show:N0} XP (~{pctDisplay:F2}% of level{yieldNote}){burdenNote}.");
         }
     }
 }

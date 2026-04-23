@@ -73,6 +73,15 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         try
         {
+            ModC.Harmony.UnpatchCategory(nameof(ItemLevelUpAttune));
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[EmpyreanAlteration] Unpatch ItemLevelUpAttune: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
             ModC.Harmony.UnpatchCategory(QuestItemGrowthHarmony.Category);
         }
         catch (Exception ex)
@@ -117,6 +126,18 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         MutatorHooks.SetupMutators();
 
+        if (Settings.AttuneLeveledItemsWhenReachingLevelOne)
+        {
+            try
+            {
+                ModC.Harmony.PatchCategory(nameof(ItemLevelUpAttune));
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[EmpyreanAlteration] PatchCategory ItemLevelUpAttune: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+        }
+
         if (Settings.ItemLevelUpGrowthEnabled)
         {
             try
@@ -129,7 +150,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             }
         }
 
-        if (Settings.EnableQuestItemLeveling || Settings.EnableLootItemLeveling)
+        if (Settings.EnableLootItemLeveling)
         {
             try
             {

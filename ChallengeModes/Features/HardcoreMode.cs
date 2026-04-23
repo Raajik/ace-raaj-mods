@@ -37,6 +37,8 @@ public static class HardcoreMode
             return;
         }
 
+        LeyLineLedgerBridge.MergeChallengeBankIntoAccount(player);
+
         player.Character.DeleteTime = (ulong)Time.GetUnixTime();
         player.Character.IsDeleted = true;
         player.CharacterChangesDetected = true;

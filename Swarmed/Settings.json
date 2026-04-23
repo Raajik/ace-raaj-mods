@@ -105,6 +105,14 @@
     "Its death cry echoes—more {0} answer!",
     "The fall of one {0} brings others running!"
   ],
-  "// ChaosModeReinforcementChanceScale": "When killer has chaos (FakeFloat 11013 > 1), multiply reinforcement chance by this × (factor ÷ 3), capped at 1. 0 = off.",
-  "ChaosModeReinforcementChanceScale": 1.5
+  "// ChaosModeReinforcementChanceScale": "When effective chaos (killer or mean online FakeFloat 11013) > 1, multiply reinforcement chance by this × (factor ÷ 3), capped at 1. 0 = off.",
+  "ChaosModeReinforcementChanceScale": 1.5,
+  "// ReinforcementChaosBlendOnlineMean": "Use max(killer chaos, mean online 11013) for reinforcement scaling.",
+  "ReinforcementChaosBlendOnlineMean": true,
+  "// MaxReinforcementSpawnsPerMinute": "Shard-wide cap on reinforcement creatures per rolling 60s (0 = unlimited).",
+  "MaxReinforcementSpawnsPerMinute": 100,
+  "// CreatureExChaosBoostScale": "CreatureEx replacement chance scales with mean online chaos: extra mult ≈ (meanChaos - 1) × this, capped by CreatureExChaosBoostMaxMultiplier.",
+  "CreatureExChaosBoostScale": 0.35,
+  "// CreatureExChaosBoostMaxMultiplier": "Max CreatureEx chance multiplier from chaos (1 = off).",
+  "CreatureExChaosBoostMaxMultiplier": 2.0
 }

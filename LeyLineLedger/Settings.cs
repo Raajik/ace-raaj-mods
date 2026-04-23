@@ -13,6 +13,10 @@ public class Settings
     public string DirectDepositDoc { get; init; } = "When true, incoming currency can deposit directly per mod rules.";
     public bool DirectDeposit { get; set; } = true;
 
+    [JsonPropertyName("// AccountWideBank")]
+    public string AccountWideBankDoc { get; init; } = "When true, standard (non–challenge mode) characters share LeyLineLedger bank balances per account (account id > character guid > name). Challenge mode uses per-character bank until merge on /cm quit or similar; see ChallengeModes + AccountBank API.";
+    public bool AccountWideBank { get; set; } = true;
+
     [JsonPropertyName("// MaxCoinsDropped")]
     public string MaxCoinsDroppedDoc { get; init; } = "Cap on physical coin stacks dropped as change; 0 uses mod default behavior.";
     public int MaxCoinsDropped { get; set; } = 0;
@@ -61,7 +65,8 @@ public class Settings
     public long DeathBankPyrealMaxLossPerDeath { get; set; } = 0;
 
     [JsonPropertyName("// SalvageBank")]
-    public string SalvageBankDoc { get; init; } = "Optional /bank salvage: banked salvage work units (single PropertyInt64) and WCID→units rules for deposit.";
+    public string SalvageBankDoc { get; init; } =
+        "Optional /bank salvage: deposit stack salvages into banked work units per DepositRules row (PropertyInt64 per material via FirstMaterialBankPropertyId + index or BankProperty).";
     public SalvageBankSettings SalvageBank { get; set; } = new();
 
     [JsonPropertyName("// HouseStorage")]
@@ -118,13 +123,55 @@ public class SalvageBankSettings
     public string EnabledDoc { get; init; } = "When true, /bank salvage commands are available.";
     public bool Enabled { get; set; } = true;
 
-    [JsonPropertyName("// BankedUnitsProperty")]
-    public string BankedUnitsPropertyDoc { get; init; } = "Character PropertyInt64 storing banked salvage work units.";
-    public int BankedUnitsProperty { get; set; } = 40200;
+    [JsonPropertyName("// DirectDepositOnSalvage")]
+    public string DirectDepositOnSalvageDoc { get; init; } =
+        "When true, salvage stacks created by recipes (salvage bench, tinkering output, etc.) credit the same bank props as /bank salvage deposit instead of landing in your pack.";
+    public bool DirectDepositOnSalvage { get; set; } = true;
+
+    [JsonPropertyName("// FirstMaterialBankPropertyId")]
+    public string FirstMaterialBankPropertyIdDoc { get; init; } =
+        "Rule index i uses FirstMaterialBankPropertyId + i unless the rule sets BankProperty. Reserve a contiguous block (count = DepositRules.Count) that does not overlap other shard props.";
+    public int FirstMaterialBankPropertyId { get; set; } = 40201;
+
+    [JsonPropertyName("// LegacyPooledSalvagePropertyToClear")]
+    public string LegacyPooledSalvagePropertyToClearDoc { get; init; } =
+        "If > 0, any positive balance on this PropertyInt64 (old single-pool salvage) is zeroed the next time the character uses a /bank salvage command, with a short message. Default 40200 matches former BankedUnitsProperty; set to 0 after migration or if unused.";
+    public int LegacyPooledSalvagePropertyToClear { get; set; } = 40200;
 
     [JsonPropertyName("// DepositRules")]
-    public string DepositRulesDoc { get; init; } = "Each rule: inventory items of WeenieClassId consume StackSize×UnitsPerItem and credit banked units.";
+    public string DepositRulesDoc { get; init; } =
+        "Each rule: credit (material units removed)×UnitsPerItem. Units per object: StackSize if stacked; else Structure (partial/full bags, often with MaxStructure cap 100) or NumItemsInMaterial; else trailing \"(N)\" in Name.";
     public List<SalvageDepositRule> DepositRules { get; set; } = new();
+
+    [JsonPropertyName("// Redeem")]
+    public string RedeemDoc { get; init; } =
+        "Per-material /bank salvage redeem <material or WCID> [bags].";
+    public SalvageRedeemSettings Redeem { get; set; } = new();
+
+    [JsonPropertyName("// ShowWcidsInSalvageStatus")]
+    public string ShowWcidsInSalvageStatusDoc { get; init; } =
+        "When true, /bank salvage status appends [WCID n] for each material. When false, names only unless the player toggled debug (see SalvageStatusWcidsTogglePropertyId).";
+    public bool ShowWcidsInSalvageStatus { get; set; }
+
+    [JsonPropertyName("// SalvageStatusWcidsTogglePropertyId")]
+    public string SalvageStatusWcidsTogglePropertyIdDoc { get; init; } =
+        "Optional PropertyInt on the character: non-zero means players can use /bank salvage debug to flip 0/1; when 1, status lines show WCIDs like ShowWcidsInSalvageStatus. Reserve an unused id (e.g. 40190). 0 disables the toggle.";
+    public int SalvageStatusWcidsTogglePropertyId { get; set; }
+}
+
+public class SalvageRedeemSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true, /bank salvage redeem is available.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// UnitsPerBag")]
+    public string UnitsPerBagDoc { get; init; } = "Banked work units debited per output bag (fixed 100 if you keep default).";
+    public int UnitsPerBag { get; set; } = 100;
+
+    [JsonPropertyName("// OutputWorkmanship")]
+    public string OutputWorkmanshipDoc { get; init; } = "If 1–10, sets Workmanship on the created bag so it matches manual salvage quality; 0 = leave weenie defaults.";
+    public int OutputWorkmanship { get; set; } = 10;
 }
 
 public class SalvageDepositRule
@@ -138,8 +185,25 @@ public class SalvageDepositRule
     public uint WeenieClassId { get; set; }
 
     [JsonPropertyName("// UnitsPerItem")]
-    public string UnitsPerItemDoc { get; init; } = "Units credited per stack unit removed (× stack size consumed).";
+    public string UnitsPerItemDoc { get; init; } =
+        "Units credited per material unit removed (stack size, or NumItemsInMaterial when StackSize is 1).";
     public int UnitsPerItem { get; set; } = 1;
+
+    [JsonPropertyName("// BankProperty")]
+    public string BankPropertyDoc { get; init; } =
+        "Optional override PropertyInt64 for this material. Default 0 uses FirstMaterialBankPropertyId + index of this rule in DepositRules (do not reorder rules without migrating props).";
+    public int BankProperty { get; set; }
+
+    [JsonPropertyName("// OutputBagWeenieClassId")]
+    public string OutputBagWeenieClassIdDoc { get; init; } =
+        "When non-zero, redeem creates this WCID (e.g. retail full-bag weenie). When zero, redeem creates the stack salvage WeenieClassId and sets StackSize or Structure to UnitsPerBag. Deposit also accepts this WCID back when non-zero and different from WeenieClassId.";
+    public uint OutputBagWeenieClassId { get; set; }
+
+    [JsonPropertyName("// AdditionalDepositWeenieClassIds")]
+    public string AdditionalDepositWeenieClassIdsDoc { get; init; } =
+        "Optional extra WCIDs that credit this material on deposit (e.g. alternate retail bag ids) without changing redeem. De-duplicated with WeenieClassId and OutputBagWeenieClassId.";
+    [JsonPropertyName("AdditionalDepositWeenieClassIds")]
+    public List<uint> AdditionalDepositWeenieClassIds { get; set; } = new();
 }
 
 public class HouseStorageSettings

@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using AceRaajMods.Shared;
 
 namespace AutoLoot;
 
@@ -17,8 +18,8 @@ namespace AutoLoot;
 /// How it works end-to-end:
 ///   1. A player types /autoloot to see available profiles and filters with [ON]/[OFF] status.
 ///   2. They toggle profiles, VendorTrash, or scrolls on/off. Settings are saved immediately.
-///   3. The server's DefaultProfile (PyrealsTradeNotes.utl by default) is automatically
-///      enabled the first time a new character uses /autoloot with no saved data.
+///   3. Default loot profiles (see Settings.DefaultActiveProfiles) are enabled automatically
+///      the first time a character has no saved PlayerData JSON (login or first kill).
 ///   4. When any creature is killed, GenerateTreasure fires. Saved settings are lazy-loaded
 ///      if this is the player's first kill of the session, so looting works even if the
 ///      player has never typed /autoloot in the current session.
@@ -110,6 +111,125 @@ public class AutoLoot
     /// </summary>
     static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
+    // When DefaultActiveProfiles is empty and DefaultProfile is empty, use these shipped filenames (keep in sync with LootProfiles/*.utl in the mod output).
+    static readonly string[] BundledDefaultProfileFileNames =
+    [
+        "BetterKeys.utl",
+        "Currency.utl",
+        "PyrealMotes.utl",
+        "Rares.utl",
+        "Trophies.utl",
+    ];
+
+    static IReadOnlyList<string> GetEffectiveDefaultProfileNames(Settings settings)
+    {
+        if (settings.DefaultActiveProfiles is { Count: > 0 })
+            return settings.DefaultActiveProfiles;
+
+        if (!string.IsNullOrWhiteSpace(settings.DefaultProfile))
+            return new[] { settings.DefaultProfile.Trim() };
+
+        return BundledDefaultProfileFileNames;
+    }
+
+    // /autoloot: when server sets DefaultActiveProfiles or DefaultProfile, the command only lists and toggles those (same as first-login default set). When both are unset, all .utl in LootProfilePath are used (admin-style full list).
+    static bool UseExplicitDefaultProfileAllowlist(Settings? settings)
+    {
+        if (settings is null)
+            return false;
+        if (settings.DefaultActiveProfiles is { Count: > 0 })
+            return true;
+        if (!string.IsNullOrWhiteSpace(settings.DefaultProfile))
+            return true;
+        return false;
+    }
+
+    static string[] ResolveCommandProfilePaths(Settings? settings)
+    {
+        if (settings is null || string.IsNullOrWhiteSpace(settings.LootProfilePath))
+            return Array.Empty<string>();
+        if (!Directory.Exists(settings.LootProfilePath))
+            return Array.Empty<string>();
+
+        string[] disk = Directory.GetFiles(settings.LootProfilePath, "*.utl", SearchOption.TopDirectoryOnly);
+        if (disk.Length == 0)
+            return Array.Empty<string>();
+
+        if (!UseExplicitDefaultProfileAllowlist(settings))
+            return disk;
+
+        List<string> list = new();
+        foreach (string raw in GetEffectiveDefaultProfileNames(settings))
+        {
+            string fn = raw.Trim();
+            if (string.IsNullOrEmpty(fn))
+                continue;
+            if (!fn.EndsWith(".utl", StringComparison.OrdinalIgnoreCase))
+                fn += ".utl";
+            string? full = disk.FirstOrDefault(p => Path.GetFileName(p).Equals(fn, StringComparison.OrdinalIgnoreCase));
+            if (full is not null)
+                list.Add(full);
+        }
+
+        return list.ToArray();
+    }
+
+    // New character: no PlayerData JSON — load DefaultActiveProfiles (or legacy/bundled fallback).
+    static void TryApplyDefaultProfilesForNewCharacter(Player player)
+    {
+        if (player is null || PatchClass.Settings is null)
+            return;
+
+        if (File.Exists(GetPlayerDataPath(player)))
+            return;
+
+        string lootRoot = PatchClass.Settings.LootProfilePath;
+        if (string.IsNullOrWhiteSpace(lootRoot))
+            return;
+
+        try
+        {
+            Directory.CreateDirectory(lootRoot);
+        }
+        catch
+        {
+            return;
+        }
+
+        string[] diskProfiles = Directory.GetFiles(lootRoot, "*.utl", SearchOption.TopDirectoryOnly);
+        if (diskProfiles.Length == 0)
+            return;
+
+        ConcurrentDictionary<string, LootCore> playerProfiles = lootProfiles.GetOrAdd(LootKey(player), _ => new ConcurrentDictionary<string, LootCore>());
+        if (!playerProfiles.IsEmpty)
+            return;
+
+        IReadOnlyList<string> names = GetEffectiveDefaultProfileNames(PatchClass.Settings);
+        foreach (string raw in names)
+        {
+            string fn = raw.Trim();
+            if (string.IsNullOrEmpty(fn))
+                continue;
+
+            if (!fn.EndsWith(".utl", StringComparison.OrdinalIgnoreCase))
+                fn += ".utl";
+
+            string? fullPath = diskProfiles.FirstOrDefault(p =>
+                Path.GetFileName(p).Equals(fn, StringComparison.OrdinalIgnoreCase));
+
+            if (fullPath is null || playerProfiles.ContainsKey(fullPath))
+                continue;
+
+            LootCore core = new LootCore();
+            core.Startup();
+            core.LoadProfile(fullPath, false);
+            playerProfiles[fullPath] = core;
+        }
+
+        if (!playerProfiles.IsEmpty)
+            SavePrefs(player);
+    }
+
     // ── Inventory helpers ────────────────────────────────────────────────────
 
     /// <summary>
@@ -138,6 +258,20 @@ public class AutoLoot
                         return true;
         }
         return false;
+    }
+
+    // AutoLoot + SSF: ChallengeModes SsfMode tags with FakeBool.Ironman while this is active.
+    static void AutolootTryCreateInInventoryWithNetworking(Player player, WorldObject item)
+    {
+        SsfAutolootPickupContext.Enter();
+        try
+        {
+            player.TryCreateInInventoryWithNetworking(item);
+        }
+        finally
+        {
+            SsfAutolootPickupContext.Leave();
+        }
     }
 
     // Detects currency (pyreal coin stack or tradenote) and, if so, deposits its value directly
@@ -207,7 +341,10 @@ public class AutoLoot
 
         var path = GetPlayerDataPath(player);
         if (!File.Exists(path))
+        {
+            TryApplyDefaultProfilesForNewCharacter(player);
             return;
+        }
 
         try
         {
@@ -310,8 +447,8 @@ public class AutoLoot
     /// A number:          toggles the profile at that index on or off.
     /// A name/partial:    toggles the first profile whose filename contains that text.
     ///
-    /// The first time a brand-new character uses /autoloot (no saved data), the server's
-    /// DefaultProfile (set in Settings.json) is automatically enabled for them.
+    /// Brand-new characters (no PlayerData JSON) get DefaultActiveProfiles from Settings.json
+    /// applied on login/first kill — /autoloot is not required.
     /// </summary>
     [CommandHandler("autoloot", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1)]
 #if REALM
@@ -330,31 +467,14 @@ public static void HandleLoadProfile(ISession session, params string[] parameter
             // Load saved prefs (no-op after the first call per session)
             EnsureLoaded(player);
 
-            // All profiles are server-hosted — .utl files in LootProfilePath
-            var profiles = Directory.GetFiles(
-                PatchClass.Settings.LootProfilePath, "*.utl", SearchOption.TopDirectoryOnly);
+            // Server-hosted .utl under LootProfilePath: either the explicit default allowlist (same as new-char defaults) or all files when no explicit list is set.
+            var profiles = ResolveCommandProfilePaths(PatchClass.Settings);
 
             var playerProfiles = lootProfiles.GetOrAdd(LootKey(player), _ => new ConcurrentDictionary<string, LootCore>());
 
-            // First-ever use for this character (no saved file, no prior session activity):
-            // auto-enable the server's DefaultProfile so there's something useful running
-            bool isNewCharacter = !loadedPlayers.ContainsKey(player.Guid.Full) && !File.Exists(GetPlayerDataPath(player));
-            // Note: loadedPlayers.TryAdd already ran in EnsureLoaded above, so check the file instead
-            if (playerProfiles.IsEmpty && !File.Exists(Path.Combine(PatchClass.Settings.LootProfilePath, "PlayerData", $"{player.Guid.Full}.json"))
-                && !string.IsNullOrEmpty(PatchClass.Settings.DefaultProfile))
-            {
-                var defaultPath = profiles.FirstOrDefault(p =>
-                    Path.GetFileName(p).Equals(PatchClass.Settings.DefaultProfile, StringComparison.OrdinalIgnoreCase));
-
-                if (defaultPath != null)
-                {
-                    var defaultCore = new LootCore();
-                    defaultCore.Startup();
-                    defaultCore.LoadProfile(defaultPath, false);
-                    playerProfiles[defaultPath] = defaultCore;
-                    SavePrefs(player);
-                }
-            }
+            // Safety net if defaults were not applied earlier (e.g. missing .utl files at login).
+            if (playerProfiles.IsEmpty && !File.Exists(GetPlayerDataPath(player)))
+                TryApplyDefaultProfilesForNewCharacter(player);
 
             // ── No arguments: show the full menu ────────────────────────────────────
 
@@ -705,7 +825,7 @@ public static void HandleLoadProfile(ISession session, params string[] parameter
                         lootedItems[lootName] = existing + qty;
 
                         lootedSet.Add(removed);
-                        player.TryCreateInInventoryWithNetworking(removed);
+                        AutolootTryCreateInInventoryWithNetworking(player, removed);
                     }
                     break;
                 }
@@ -756,7 +876,7 @@ public static void HandleLoadProfile(ISession session, params string[] parameter
 
                             lootedSet.Add(removed);
                             lootedVTNames.Add(lootName); // mark for [$] prefix in notification
-                            player.TryCreateInInventoryWithNetworking(removed);
+                            AutolootTryCreateInInventoryWithNetworking(player, removed);
                         }
                     }
                 }
@@ -775,7 +895,7 @@ public static void HandleLoadProfile(ISession session, params string[] parameter
                     lootedItems[scrollName] = existingInv + quantity;
                     lootedSet.Add(scrollObj);
                     scrollFallbackNames.Add(scrollName);
-                    player.TryCreateInInventoryWithNetworking(scrollObj);
+                    AutolootTryCreateInInventoryWithNetworking(player, scrollObj);
                 }
 
                 foreach (var item in items)
@@ -843,7 +963,7 @@ public static void HandleLoadProfile(ISession session, params string[] parameter
                     lootedItems.TryGetValue(remainderName, out var existingRemainder);
                     lootedItems[remainderName] = existingRemainder + (qty - 1);
                     lootedSet.Add(removed);
-                    player.TryCreateInInventoryWithNetworking(removed);
+                    AutolootTryCreateInInventoryWithNetworking(player, removed);
                 }
             }
 

@@ -30,12 +30,12 @@ internal static class ParchmentQuestRewards
                 var amount = (long)(xpToNext * roll);
                 if (amount > 0)
                 {
-                    PatchClass.RunWithoutQuestXpMultiplier(() =>
-                    {
-                        player.GrantXP(amount, XpType.Quest, ShareType.None);
-                    });
+                    ExternalXpGrants.GrantQuestXpWithoutMultiplier(player, amount);
                     if (player.Notify(LMBool.NotifyQuestXp))
-                        player.SendMessage($"[Loremaster] Parchment tier XP: {amount:N0}.");
+                    {
+                        var show = QuestXpAwardDisplay.EstimateCharacterXpAfterMilestoneChain(player, amount);
+                        player.SendMessage($"[Loremaster] Parchment tier XP: {show:N0}.");
+                    }
                 }
             }
         }

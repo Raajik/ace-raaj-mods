@@ -2,32 +2,20 @@ using ACE.Database.Models.World;
 
 namespace Overtinked;
 
-// Overtinked: recipe/tinkering logic lives here. Quest item XP and level-up growth are handled by EmpyreanAlteration.
+// Overtinked: tinkering recipes only (limits, salvage rules, custom imbues). Item XP, quest/loot growth, and workmanship-on-first-add are EmpyreanAlteration.
 // RecipeManager / Creature rating patches run only when Settings.RecipeManagerCategory is patched (see OnWorldOpen).
 [HarmonyPatchCategory(Settings.RecipeManagerCategory)]
 public partial class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
 {
     // Static reference for use in static patch methods (e.g. PreTryMutate).
     // Must be set from Start() as well as OnWorldOpen(): if the mod loads after the world is already up,
-    // OnWorldOpen never runs and item level-ups would see null here and skip all growth effects.
+    // OnWorldOpen never runs and static patch paths would see null here.
     internal static Settings? CurrentSettings;
 
     public override void Start()
     {
         base.Start();
         RefreshSettingsAndSalvageLookup();
-
-        if (Settings?.EnableQuestItemInventoryInit == true)
-        {
-            try
-            {
-                ModC.Harmony.PatchCategory(Settings.OvertinkedQuestInventoryCategory);
-            }
-            catch (Exception ex)
-            {
-                ModManager.Log($"[Overtinked] PatchCategory {Settings.OvertinkedQuestInventoryCategory}: {ex.Message}", ModManager.LogLevel.Warn);
-            }
-        }
     }
 
     public override async Task OnWorldOpen()
@@ -51,15 +39,6 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         catch (Exception ex)
         {
             ModManager.Log($"[Overtinked] Unpatch {Settings.RecipeManagerCategory}: {ex.Message}", ModManager.LogLevel.Warn);
-        }
-
-        try
-        {
-            ModC.Harmony.UnpatchCategory(Settings.OvertinkedQuestInventoryCategory);
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[Overtinked] Unpatch {Settings.OvertinkedQuestInventoryCategory}: {ex.Message}", ModManager.LogLevel.Warn);
         }
 
         RestoreTinkering();
@@ -159,7 +138,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             __result = propInt switch
             {
                 PropertyInt.NumTimesTinkered => comp.Compare(ov.MaxTries - 1, value ?? 0, player, requirement.Message) ? __result : false,
-                PropertyInt.ImbuedEffect => comp.Compare(ov.MaxImbueEffects - 1, BitOperations.PopCount((uint)(value ?? 0)), player, requirement.Message) ? __result : false,
+                PropertyInt.ImbuedEffect => comp.Compare(ov.MaxImbueEffects - 1, EffectiveImbuedCount((uint)(value ?? 0)), player, requirement.Message) ? __result : false,
                 _ => RecipeManager.VerifyRequirement(player, (CompareType)requirement.Enum, normalized, Convert.ToDouble(requirement.Value), requirement.Message),
             };
             continue;
@@ -286,7 +265,12 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         LesserImbueUpgrade.ApplyStrips(target, imbueEffect, s.EnableLesserImbueUpgradeToFull);
 
+        if (RendingDamageTypes.ContainsKey(imbueEffect))
+            target.ImbuedEffect &= ~AllRendingFlags;
+
         target.ImbuedEffect |= imbueEffect;
+        if (RendingDamageTypes.TryGetValue(imbueEffect, out var rendDamageType))
+            target.SetProperty(PropertyInt.DamageType, (int)rendDamageType);
 
         if (RecipeManager.incItemTinkered.Contains(dataId))
             RecipeManager.HandleTinkerLog(source, target);
@@ -309,7 +293,10 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
         if (s.NetherRendingImbue?.Enabled == true && s.NetherRendingImbue.SalvageWcids != null && s.NetherRendingImbue.SalvageWcids.Contains(wcid))
         {
+            target.ImbuedEffect &= ~AllRendingFlags;
             OvertinkedImbueStore.Add(target.Guid.Full, OvertinkedImbueFlags.NetherRending);
+            target.ImbuedEffect |= ImbuedEffectType.NetherRending;
+            target.SetProperty(PropertyInt.DamageType, (int)DamageType.Nether);
             return true;
         }
         return false;
@@ -430,325 +417,6 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         __result *= (float)(1.0 + bonusRating / 100.0);
     }
 
-    // Quest-item one-time tinkering init (workmanship + initial effects). Item XP and level-up growth live in EmpyreanAlteration.
-    private static readonly PropertyBool QuestItemInitializedBool = (PropertyBool)40101;
-
-    // Must match EmpyreanAlteration.QuestItemGrowthProperties.EAQuestItemWorkmanshipInitBool (40107).
-    private static readonly PropertyBool EmpyreanQuestWorkmanshipInitBool = (PropertyBool)40107;
-
-    // Helper: optional quest-item init on first pack add (workmanship + initial effects). Off by default; tinkering uses RecipeManager only.
-    // Call from inventory postfixes when EnableQuestItemInventoryInit is true.
-    public static void InitializeQuestWorldObject(WorldObject __result, Player? notifyPlayer = null)
-    {
-        if (__result == null)
-            return;
-
-        Settings? s = CurrentSettings;
-        if (s == null)
-            return;
-
-        if (!s.EnableQuestItemInventoryInit)
-            return;
-
-        // Only operate on items that we consider to be quest items.
-        if (!IsQuestItem(__result))
-            return;
-
-        // Ensure we only initialize a quest item once.
-        bool? alreadyInit = __result.GetProperty(QuestItemInitializedBool);
-        if (alreadyInit == true)
-            return;
-
-        if (s.EnableQuestItemWorkmanship)
-            InitializeQuestItemWorkmanship(__result, s);
-
-        if (s.EnableQuestItemInitialEffects)
-            ApplyInitialQuestItemEffects(__result, s, notifyPlayer);
-
-        __result.SetProperty(QuestItemInitializedBool, true);
-    }
-
-    // Shared shape for quest init and loot ItemXp init: weapons, all clothing, or anything with a non-zero equip mask.
-    private static bool IsEquippableShapeForOvertinkedInit(WorldObject item)
-    {
-        if (item == null)
-            return false;
-
-        WeenieType type = item.WeenieType;
-
-        if (type == WeenieType.MeleeWeapon || type == WeenieType.MissileLauncher || type == WeenieType.Caster || type == WeenieType.Clothing)
-            return true;
-
-        EquipMask? validLoc = item.ValidLocations;
-        return validLoc.HasValue && validLoc.Value != 0;
-    }
-
-    // Cloaks use stock ACE item-level / overlay behavior; skip Overtinked init.
-    private static bool IsCloakItem(WorldObject item)
-    {
-        if (item == null)
-            return false;
-
-        EquipMask? loc = item.ValidLocations;
-        if (loc.HasValue && (loc.Value & EquipMask.Cloak) != 0)
-            return true;
-
-        string name = item.Name ?? string.Empty;
-        return name.Contains("cloak", StringComparison.OrdinalIgnoreCase);
-    }
-
-    // Central predicate for whether a WorldObject should be treated as a quest item.
-    private static bool IsQuestItem(WorldObject item)
-    {
-        if (item == null)
-            return false;
-
-        // Never treat existing growth / leveled items as quest items to avoid double systems.
-        if (item.HasItemLevel)
-            return false;
-
-        bool? growth = item.GetProperty(FakeBool.GrowthItem);
-        if (growth == true)
-            return false;
-
-        if (IsCloakItem(item))
-            return false;
-
-        // Weenie templates often ship ItemBaseXp + ItemMaxLevel (e.g. 1 / 1) without being real rare loot.
-        // HasItemLevel already excludes stock rare / item-level gear; do not also exclude stub stats here.
-
-        return IsEquippableShapeForOvertinkedInit(item);
-    }
-
-    // PlayerFactory and other pre-login paths may have a Player before Session/Network exists; SendMessage NREs if called too early.
-    private static bool CanSendPlayerChat(Player? player) =>
-        player != null && player.Session?.Network != null;
-
-    private static void InitializeQuestItemWorkmanship(WorldObject item, Settings s)
-    {
-        if (item.GetProperty(EmpyreanQuestWorkmanshipInitBool) == true)
-            return;
-
-        int current = GetWorkmanship(item);
-        if (current > 0)
-            return;
-
-        int min = s.QuestItemWorkmanshipMin;
-        int max = s.QuestItemWorkmanshipMax;
-        if (min > max)
-            (min, max) = (max, min);
-
-        int rolled = min == max ? min : Random.Shared.Next(min, max + 1);
-        if (rolled < 0)
-            rolled = 0;
-
-        SetWorkmanship(item, rolled);
-    }
-
-    private static string FormatQuestItemPerkMessage(WorldObject item, int levelForText, string effectKind, string? detailLine, bool isInitialGrant)
-    {
-        int maxLv = item.ItemMaxLevel ?? 0;
-        string head = maxLv > 0
-            ? (isInitialGrant
-                ? $"{item.NameWithMaterial} begins at level {levelForText}/{maxLv}"
-                : $"{item.NameWithMaterial} has reached level {levelForText}/{maxLv}")
-            : (isInitialGrant
-                ? $"{item.NameWithMaterial} begins growing stronger"
-                : $"{item.NameWithMaterial} grows stronger at level {levelForText}");
-
-        return effectKind switch
-        {
-            "Imbue" => string.IsNullOrWhiteSpace(detailLine)
-                ? $"{head} and gains a new imbue."
-                : $"{head} and gains {detailLine}.",
-            "Slayer" => string.IsNullOrWhiteSpace(detailLine)
-                ? $"{head} and gains a new slayer bonus."
-                : $"{head} and now has {detailLine}.",
-            "StatBoost" => string.IsNullOrWhiteSpace(detailLine)
-                ? $"{head} and gains a small stat boost."
-                : $"{head}: {detailLine}.",
-            _ => $"{head}.",
-        };
-    }
-
-    private static void ApplyInitialQuestItemEffects(WorldObject item, Settings s, Player? notifyPlayer)
-    {
-        QuestItemEffectSettings cfg = s.QuestItemEffects ?? new QuestItemEffectSettings();
-
-        int imbueWeight = cfg.AllowStandardImbues || cfg.AllowCustomImbues ? cfg.ImbueWeight : 0;
-        int slayerWeight = cfg.AllowSlayer ? cfg.SlayerWeight : 0;
-        int salvageWeight = cfg.AllowSalvageLikeBoosts ? cfg.SalvageWeight : 0;
-
-        int totalWeight = Math.Max(0, imbueWeight) + Math.Max(0, slayerWeight) + Math.Max(0, salvageWeight);
-        if (totalWeight == 0)
-            return;
-
-        int roll = Random.Shared.Next(0, totalWeight);
-        bool applied = false;
-        string effectKind = "None";
-        string? detailLine = null;
-
-        if (roll < imbueWeight)
-        {
-            if (TryApplyInitialImbue(item, cfg, s, out string? imbueDetail))
-            {
-                applied = true;
-                effectKind = "Imbue";
-                detailLine = imbueDetail;
-            }
-            else
-                roll -= imbueWeight;
-        }
-        else
-            roll -= imbueWeight;
-
-        if (!applied)
-        {
-            if (roll < slayerWeight)
-            {
-                if (TryApplyInitialSlayer(item, out detailLine))
-                {
-                    applied = true;
-                    effectKind = "Slayer";
-                }
-                else
-                    roll -= slayerWeight;
-            }
-            else
-                roll -= slayerWeight;
-        }
-
-        if (!applied && roll < salvageWeight)
-        {
-            applied = TryApplyInitialSalvageBoost(item, out detailLine);
-            if (applied)
-                effectKind = "StatBoost";
-        }
-
-        if (applied && CanSendPlayerChat(notifyPlayer))
-        {
-            int displayLevel = Math.Max(1, item.ItemLevel ?? 0);
-            notifyPlayer!.SendMessage(FormatQuestItemPerkMessage(item, displayLevel, effectKind, detailLine, isInitialGrant: true));
-        }
-    }
-
-    private static bool TryApplyInitialImbue(WorldObject item, QuestItemEffectSettings cfg, Settings s, out string? detailLine)
-    {
-        detailLine = null;
-        int? damageTypeInt = item.GetProperty(PropertyInt.DamageType);
-        DamageType damageType = damageTypeInt.HasValue ? (DamageType)damageTypeInt.Value : DamageType.Undef;
-
-        ImbuedEffectType? chosen = damageType switch
-        {
-            DamageType.Acid => ImbuedEffectType.AcidRending,
-            DamageType.Cold => ImbuedEffectType.ColdRending,
-            DamageType.Electric => ImbuedEffectType.ElectricRending,
-            DamageType.Fire => ImbuedEffectType.FireRending,
-            DamageType.Pierce => ImbuedEffectType.PierceRending,
-            DamageType.Slash => ImbuedEffectType.SlashRending,
-            DamageType.Bludgeon => ImbuedEffectType.BludgeonRending,
-            _ => null,
-        };
-
-        if (cfg.AllowStandardImbues && chosen.HasValue)
-        {
-            item.ImbuedEffect |= chosen.Value;
-            detailLine = DescribeStandardImbue(chosen.Value);
-            return true;
-        }
-
-        if (cfg.AllowCustomImbues)
-        {
-            if (s.BleedImbue?.Enabled == true)
-            {
-                OvertinkedImbueStore.Add(item.Guid.Full, OvertinkedImbueFlags.Bleed);
-                detailLine = "Bleed";
-                return true;
-            }
-
-            if (s.CleavingImbue?.Enabled == true)
-            {
-                OvertinkedImbueStore.Add(item.Guid.Full, OvertinkedImbueFlags.Cleaving);
-                detailLine = "Cleaving";
-                return true;
-            }
-
-            if (s.NetherRendingImbue?.Enabled == true)
-            {
-                OvertinkedImbueStore.Add(item.Guid.Full, OvertinkedImbueFlags.NetherRending);
-                detailLine = "Nether Rending";
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static string DescribeStandardImbue(ImbuedEffectType t)
-    {
-        return t switch
-        {
-            ImbuedEffectType.AcidRending => "Acid Rending",
-            ImbuedEffectType.ColdRending => "Cold Rending",
-            ImbuedEffectType.ElectricRending => "Electric Rending",
-            ImbuedEffectType.FireRending => "Fire Rending",
-            ImbuedEffectType.PierceRending => "Pierce Rending",
-            ImbuedEffectType.SlashRending => "Slash Rending",
-            ImbuedEffectType.BludgeonRending => "Bludgeon Rending",
-            _ => t.ToString(),
-        };
-    }
-
-    private static bool TryApplyInitialSlayer(WorldObject item, out string? detailLine)
-    {
-        detailLine = null;
-
-        // Simple default: only weapons roll slayer.
-        if (item.WeenieType != WeenieType.MeleeWeapon && item.WeenieType != WeenieType.MissileLauncher && item.WeenieType != WeenieType.Caster)
-            return false;
-
-        CreatureType[] all = Enum.GetValues<CreatureType>();
-        CreatureType[] pool = all.Where(x => x != CreatureType.Invalid && x != CreatureType.Unknown && x != CreatureType.Wall).ToArray();
-        if (pool.Length == 0)
-            return false;
-
-        CreatureType chosen = pool[Random.Shared.Next(0, pool.Length)];
-
-        item.SetProperty(PropertyInt.SlayerCreatureType, (int)chosen);
-        item.SetProperty(PropertyFloat.SlayerDamageBonus, 1.0f);
-
-        detailLine = $"Slayer vs {chosen}";
-        return true;
-    }
-
-    private static bool TryApplyInitialSalvageBoost(WorldObject item, out string? effectDescription)
-    {
-        effectDescription = null;
-
-        string kind = item.WeenieType switch
-        {
-            WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster => "Damage",
-            WeenieType.Clothing => "ArmorLevel",
-            _ => "ArmorLevel",
-        };
-
-        SalvageTinkerRule rule = new()
-        {
-            Enabled = true,
-            EffectKind = kind,
-            MinValue = 1,
-            MaxValue = 2,
-        };
-
-        int value = SalvageEffectApplier.RollValue(rule);
-        SalvageEffectApplier.ApplyEffect(item, rule, value, isFailure: false);
-        effectDescription = SalvageEffectApplier.GetEffectDescription(rule, value, isFailure: false);
-        if (string.IsNullOrWhiteSpace(effectDescription))
-            effectDescription = $"gains a {kind} bonus (+{value})";
-
-        return true;
-    }
-
     private static int GetWorkmanship(WorldObject wo)
     {
         var t = Traverse.Create(wo).Property("Workmanship");
@@ -775,6 +443,28 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         t.SetValue(f);
     }
 
+    private static readonly ImbuedEffectType AllRendingFlags =
+        ImbuedEffectType.AcidRending | ImbuedEffectType.BludgeonRending | ImbuedEffectType.ColdRending |
+        ImbuedEffectType.ElectricRending | ImbuedEffectType.FireRending | ImbuedEffectType.NetherRending |
+        ImbuedEffectType.PierceRending | ImbuedEffectType.SlashRending;
+
+    // Rend-replace: one rend slot is "free" if target already has one (we replace, not stack).
+    private static int EffectiveImbuedCount(uint imbuedEffect) =>
+        BitOperations.PopCount(imbuedEffect) - ((imbuedEffect & (uint)AllRendingFlags) != 0 ? 1 : 0);
+
+    // Rending imbue → matching DamageType (applied alongside ImbuedEffect so the weapon's damage type reflects the rend).
+    private static readonly Dictionary<ImbuedEffectType, DamageType> RendingDamageTypes = new()
+    {
+        [ImbuedEffectType.AcidRending]     = DamageType.Acid,
+        [ImbuedEffectType.BludgeonRending] = DamageType.Bludgeon,
+        [ImbuedEffectType.ColdRending]     = DamageType.Cold,
+        [ImbuedEffectType.ElectricRending] = DamageType.Electric,
+        [ImbuedEffectType.FireRending]     = DamageType.Fire,
+        [ImbuedEffectType.NetherRending]   = DamageType.Nether,
+        [ImbuedEffectType.PierceRending]   = DamageType.Pierce,
+        [ImbuedEffectType.SlashRending]    = DamageType.Slash,
+    };
+
     // Maps recipe mutation dataIds to ImbuedEffectType flags so we can set target.ImbuedEffect when the recipe applies an imbue.
     private static readonly Dictionary<uint, ImbuedEffectType> imbueDataIDs = new()
     {
@@ -793,10 +483,4 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         [0x38000040] = ImbuedEffectType.SlashRending,
         [0x38000041] = ImbuedEffectType.Spellbook,
     };
-
-    // Quest / inventory init only; item XP init and level-up growth are owned by EmpyreanAlteration when enabled there.
-    public static void RunItemInitAfterInventorySuccess(WorldObject item, Player player)
-    {
-        InitializeQuestWorldObject(item, player);
-    }
 }

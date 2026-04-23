@@ -2,7 +2,9 @@ namespace EmpyreanAlteration;
 
 public static class ItemLeveling
 {
-    public static bool ApplyItemLevelProfile(WorldObject item, int tier, ItemLevelProfile profile, Settings? capRollSettings = null)
+    // When uniformLootCapRoll is true, ItemMaxLevel is uniform in [profile.MinLevel, profile.MaxLevel] (loot tier band mode).
+    // capRollSettings still applies XP curve clamps after the roll.
+    public static bool ApplyItemLevelProfile(WorldObject item, int tier, ItemLevelProfile profile, Settings? capRollSettings = null, bool uniformLootCapRoll = false)
     {
         if (item is null)
             return false;
@@ -30,7 +32,9 @@ public static class ItemLeveling
             (minLevel, maxLevel) = (maxLevel, minLevel);
 
         int maxItemLevel;
-        if (capRollSettings != null && minLevel < maxLevel)
+        if (uniformLootCapRoll && capRollSettings != null && minLevel < maxLevel)
+            maxItemLevel = Random.Shared.Next(minLevel, maxLevel + 1);
+        else if (capRollSettings != null && minLevel < maxLevel)
             maxItemLevel = ItemLevelingRolls.RollLootItemMaxLevel(tier, minLevel, maxLevel, capRollSettings);
         else
             maxItemLevel = minLevel == maxLevel ? minLevel : Random.Shared.Next(minLevel, maxLevel + 1);

@@ -17,15 +17,15 @@
 
   "// ---------- Experience ----------": "==========================================================================================================",
   "// XpModifier": "Global XP multiplier (ACE xp_modifier). 1.0 retail-like.",
-  "XpModifier": 1.0,
+  "XpModifier": 0.01,
 
   "// ---------- Loot & rares (doubles) ----------": "==========================================================================================================",
   "// RareDropRate": "ACE rare_drop_rate_percent — base chance for rare tier rolls.",
   "// TrophyDropRate": "ACE trophy_drop_rate — scales trophy generation.",
   "// AetheriaDropRate": "ACE aetheria_drop_rate — aetheria drop tuning.",
   "RareDropRate": 0.04,
-  "TrophyDropRate": 5.0,
-  "AetheriaDropRate": 10.0,
+  "TrophyDropRate": 3.0,
+  "AetheriaDropRate": 3.0,
 
   "// ---------- Cantrip rates ----------": "==========================================================================================================",
   "// CantripDropRate": "ACE cantrip_drop_rate — global cantrip scaling.",
@@ -45,8 +45,8 @@
   "// PkServer": "ACE pk_server — full PK ruleset.",
   "// PklServer": "ACE pkl_server — PK Lite ruleset.",
   "// PkTimer": "ACE pk_timer — seconds between PK kills counting toward streak/timer.",
-  "VitaePenalty": 0.01,
-  "VitaePenaltyMax": 0.1,
+  "VitaePenalty": 0.1,
+  "VitaePenaltyMax": 0.99,
   "PkServer": false,
   "PklServer": false,
   "PkTimer": 20,
@@ -94,7 +94,7 @@
     "pk_respite_timer": 300.0,
     "quest_mindelta_rate": 1.0,
     "unlocker_window": 30.0,
-    "vendor_unique_rot_time": 10800.0
+    "vendor_unique_rot_time": 1440.0
   },
 
   "// ---------- Fellowship ----------": "==========================================================================================================",
@@ -110,7 +110,7 @@
   "// HouseRentEnabled": "ACE house_rent_enabled — require periodic rent payments.",
   "// HousePurchaseRequirements": "ACE house_purchase_requirements — enforce rank/trophy/etc. checks.",
   "House30DayCooldown": true,
-  "HouseRentEnabled": false,
+  "HouseRentEnabled": true,
   "HousePurchaseRequirements": true,
 
   "// ---------- World & quests ----------": "==========================================================================================================",
@@ -143,8 +143,8 @@
   "MeleeMaxAngle": 0.0,
   "SpellcastMaxAngle": 20.0,
   "FastMissileModifier": 1.2,
-  "EncounterDelay": 30.0,
-  "EncounterRegenInterval": 30.0,
+  "EncounterDelay": 60.0,
+  "EncounterRegenInterval": 60.0,
   "MobAwarenessRange": 3.0,
   "PlayerSaveInterval": 30,
   "VoidPvpModifier": 0.5,
@@ -226,7 +226,7 @@
     "rares_real_time_v2": false,
     "require_spell_comps": true,
     "runrate_add_hooks": false,
-    "safe_spell_comps": true,
+    "safe_spell_comps": false,
     "salvage_handle_overages": true
   },
 
@@ -240,14 +240,14 @@
     "smite_uses_takedamage": false,
     "spell_projectile_ethereal": false,
     "spellcast_recoil_queue": true,
-    "suicide_instant_death": false,
+    "suicide_instant_death": true,
     "taboo_table": true,
     "tailoring_intermediate_uieffects": false,
     "trajectory_alt_solver": false,
     "use_generator_rotation_offset": true,
     "use_turbine_chat": true,
-    "use_wield_requirements": false,
-    "vendor_shop_uses_generator": false,
+    "use_wield_requirements": true,
+    "vendor_shop_uses_generator": true,
     "version_info_enabled": false
   }
 }

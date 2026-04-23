@@ -45,20 +45,62 @@ internal static class VendorPackBurdenRelief
         if (s.VendorPackBurdenWcids is not { Count: > 0 })
             return;
 
-        bool worn = false;
+        double bestMult = GetBestPackBurdenMultiplier(player, s);
+        if (bestMult >= 1.0 - 1e-9)
+            return;
+
+        bestMult = Math.Clamp(bestMult, 0.01, 1.0);
+        __result = (int)Math.Round(__result * bestMult);
+    }
+
+    // Smallest multiplier = most burden relief when several packs qualify.
+    static double GetBestPackBurdenMultiplier(Player player, Settings s)
+    {
+        double best = 1.0;
+
+        void Consider(uint wcid, double mult)
+        {
+            mult = Math.Clamp(mult, 0.01, 1.0);
+            if (mult < best)
+                best = mult;
+        }
+
+        if (s.PackBurdenWcidMultipliers is { Count: > 0 } perWcid)
+        {
+            foreach (WorldObject w in player.EquippedObjects.Values)
+            {
+                if (perWcid.TryGetValue(w.WeenieClassId, out double m))
+                    Consider(w.WeenieClassId, m);
+            }
+
+            if (s.PackBurdenIncludeMainInventory && player.Inventory != null)
+            {
+                foreach (WorldObject w in player.Inventory.Values)
+                {
+                    if (perWcid.TryGetValue(w.WeenieClassId, out double m))
+                        Consider(w.WeenieClassId, m);
+                }
+            }
+
+            return best;
+        }
+
+        double fallback = Math.Clamp(s.VendorPackBurdenMultiplier, 0.01, 1.0);
         foreach (WorldObject w in player.EquippedObjects.Values)
         {
             if (s.VendorPackBurdenWcids.Contains(w.WeenieClassId))
+                Consider(w.WeenieClassId, fallback);
+        }
+
+        if (s.PackBurdenIncludeMainInventory && player.Inventory != null)
+        {
+            foreach (WorldObject w in player.Inventory.Values)
             {
-                worn = true;
-                break;
+                if (s.VendorPackBurdenWcids.Contains(w.WeenieClassId))
+                    Consider(w.WeenieClassId, fallback);
             }
         }
 
-        if (!worn)
-            return;
-
-        double mult = Math.Clamp(s.VendorPackBurdenMultiplier, 0.01, 1.0);
-        __result = (int)Math.Round(__result * mult);
+        return best;
     }
 }

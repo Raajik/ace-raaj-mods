@@ -31,6 +31,9 @@ internal static class ManaConversionSpellCleave
         if (spell.IsHarmful == false)
             return;
 
+        if (CleavePlayerState.IsDisabled(player.Guid.Full))
+            return;
+
         var skill = player.GetCreatureSkill(Skill.ManaConversion);
         if (skill.AdvancementClass < SkillAdvancementClass.Trained)
             return;
@@ -49,7 +52,7 @@ internal static class ManaConversionSpellCleave
             return;
         LastCastTime[playerId] = now;
 
-        var range = (float)mcSettings.CleaveRange;
+        var range = CleavePlayerState.GetRange(player.Guid.Full, (float)mcSettings.CleaveRange);
         var originLoc = target.Location;
         if (originLoc == null)
             return;

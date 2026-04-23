@@ -1,0 +1,10 @@
+{
+  "Name": "LockpickLedger",
+  "Author": "ace-raaj-mods",
+  "Description": "Lockpick Durability bank: auto-converts lockpick items into banked charges for trained/specialized Lockpick users. Banked charges are automatically consumed when using locked objects (no physical lockpick required). The Limitless Lockpick item unlocks passive regen.",
+  "Version": "0.1.0",
+  "Enabled": true,
+  "HotReload": true,
+  "RegisterCommands": true,
+  "ACEVersion": "0.0"
+}

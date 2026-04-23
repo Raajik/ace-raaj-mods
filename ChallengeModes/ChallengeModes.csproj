@@ -37,6 +37,9 @@
 		<PackageReference Include="Lib.Harmony" Version="2.3.3" ExcludeAssets="runtime" />
 	</ItemGroup>
 	<ItemGroup>
+		<Compile Include="..\Shared\SsfAutolootPickupContext.cs" Link="Shared\SsfAutolootPickupContext.cs" />
+	</ItemGroup>
+	<ItemGroup>
 		<ProjectReference Include="..\..\ACE.Shared\ACE.Shared.csproj" />
 	</ItemGroup>
 	<ItemGroup>

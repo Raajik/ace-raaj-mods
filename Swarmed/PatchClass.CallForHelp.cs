@@ -68,11 +68,11 @@ public partial class PatchClass
                 OnlinePlayerDensity.LandblockPlayerCount(deathLb))
             : OnlinePlayerDensity.EffectiveReinforcementChance(baseChance, settings);
 
-        if (killerPlayer != null && settings.ChaosModeReinforcementChanceScale > 0f)
+        if (settings.ChaosModeReinforcementChanceScale > 0f)
         {
-            var chaosF = killerPlayer.GetProperty((FakeFloat)11013);
-            if (chaosF is double cf && cf > 1.01)
-                chance = Math.Min(1f, chance * settings.ChaosModeReinforcementChanceScale * ((float)cf / 3f));
+            float chaosF = SwarmedChaos.EffectiveChaosFactor(killerPlayer, settings);
+            if (chaosF > 1.01f)
+                chance = Math.Min(1f, chance * settings.ChaosModeReinforcementChanceScale * (chaosF / 3f));
         }
 
         int spawnMin = landscape ? settings.LandscapeSpawnMin : settings.DungeonSpawnMin;
@@ -229,8 +229,45 @@ public partial class PatchClass
             return;
         }
 
+        // Re-check count inside the critical section to prevent race conditions
+        if (settings.CallForHelpMessages.Count == 0)
+        {
+            return;
+        }
+
         if (spawnMin > spawnMax)
             (spawnMin, spawnMax) = (spawnMax, spawnMin);
+
+        int count = Math.Clamp(ThreadSafeRandom.Next(spawnMin, spawnMax + 1), spawnMin, spawnMax);
+        if (settings.MaxReinforcementSpawnsPerMinute > 0)
+        {
+            int allowed = ReinforcementSpawnBudget.ConsumeSpawnBudget(count, settings.MaxReinforcementSpawnsPerMinute);
+            if (allowed <= 0)
+            {
+                RecordCallForHelpDebug(new CallForHelpSnapshot
+                {
+                    UtcTime = DateTime.UtcNow,
+                    Outcome = "rate_limited",
+                    CreatureName = creatureName,
+                    WeenieClassId = wcid,
+                    IsDungeon = isDungeon,
+                    PathLabel = pathLabel,
+                    PathEnabled = enabled,
+                    Chance = chance,
+                    RollValue = roll,
+                    RollSucceeded = true,
+                    SpawnMin = spawnMin,
+                    SpawnMax = spawnMax,
+                });
+                return;
+            }
+
+            count = allowed;
+        }
+
+        // Guard against empty messages list (defensive)
+        if (settings.CallForHelpMessages == null || settings.CallForHelpMessages.Count == 0)
+            return;
 
         string messageFormat = settings.CallForHelpMessages[ThreadSafeRandom.Next(0, settings.CallForHelpMessages.Count)];
         string message;
@@ -246,7 +283,6 @@ public partial class PatchClass
 
         __instance.EnqueueBroadcast(new GameMessageSystemChat(message, ChatMessageType.Combat), WorldObject.LocalBroadcastRange, ChatMessageType.Combat);
 
-        int count = Math.Clamp(ThreadSafeRandom.Next(spawnMin, spawnMax + 1), spawnMin, spawnMax);
         float healthMin = Math.Clamp(settings.ReinforcementHealthMin, 0.01f, 1f);
         float healthMax = Math.Clamp(settings.ReinforcementHealthMax, 0.01f, 1f);
         if (healthMin > healthMax)

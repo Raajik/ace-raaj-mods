@@ -61,10 +61,45 @@ public partial class Settings
     };
 
     [JsonPropertyName("// GrowthTierLevelRange")]
-    public string GrowthTierLevelRangeDoc { get; init; } = "Treasure tier → allowed item level range for growth rolls.";
+    public string GrowthTierLevelRangeDoc { get; init; } =
+        "Treasure tier → allowed item level range for GrowthItem mutator when UseTreasureTierItemMaxLevelBand is false. When true, bands are [5*T, 10*T] instead.";
 
     public Dictionary<int, IntRange> GrowthTierLevelRange { get; set; } =
-        Enumerable.Range(1, 8).ToDictionary(x => x, x => Range.Int(x * 2 - 1, x * 2 + 3));
+        Enumerable.Range(1, 8).ToDictionary(x => x, x => Range.Int(5 * x, 10 * x));
+
+    [JsonPropertyName("// UseTreasureTierItemMaxLevelBand")]
+    public string UseTreasureTierItemMaxLevelBandDoc { get; init; } =
+        "When true (default), LootGrowthItem and GrowthItem roll ItemMaxLevel uniformly in [5*T, 10*T] for treasure tier T (clamped to Min/Max tier keys). Ignores biased LootItemMaxLevelRollPower / soft cap / elite band for that roll.";
+
+    public bool UseTreasureTierItemMaxLevelBand { get; set; } = true;
+
+    [JsonPropertyName("// TreasureTierItemMaxLevelBandMinTier")]
+    public string TreasureTierItemMaxLevelBandMinTierDoc { get; init; } = "Minimum ACE treasure tier used for the 5x/10x band (default 1).";
+
+    public int TreasureTierItemMaxLevelBandMinTier { get; set; } = 1;
+
+    [JsonPropertyName("// TreasureTierItemMaxLevelBandMaxTier")]
+    public string TreasureTierItemMaxLevelBandMaxTierDoc { get; init; } = "Maximum ACE treasure tier clamp for the 5x/10x band (default 8).";
+
+    public int TreasureTierItemMaxLevelBandMaxTier { get; set; } = 8;
+
+    [JsonPropertyName("// LootLowTreasureTierMaxBandCutoff")]
+    public string LootLowTreasureTierMaxBandCutoffDoc { get; init; } =
+        "When > 0, treasure tiers T <= this value use LootLowTreasureTierItemMaxLevelMin/Max for ItemMaxLevel rolls instead of [5*T,10*T]. Set 0 to disable and use the linear band for all tiers.";
+
+    public int LootLowTreasureTierMaxBandCutoff { get; set; } = 2;
+
+    [JsonPropertyName("// LootLowTreasureTierItemMaxLevelMin")]
+    public string LootLowTreasureTierItemMaxLevelMinDoc { get; init; } =
+        "Inclusive low end of ItemMaxLevel when UseTreasureTierItemMaxLevelBand is true and clamped tier <= LootLowTreasureTierMaxBandCutoff.";
+
+    public int LootLowTreasureTierItemMaxLevelMin { get; set; } = 10;
+
+    [JsonPropertyName("// LootLowTreasureTierItemMaxLevelMax")]
+    public string LootLowTreasureTierItemMaxLevelMaxDoc { get; init; } =
+        "Inclusive high end of ItemMaxLevel for low treasure tiers (see LootLowTreasureTierMaxBandCutoff).";
+
+    public int LootLowTreasureTierItemMaxLevelMax { get; set; } = 20;
 
     [JsonPropertyName("// GrowthXpBase")]
     public string GrowthXpBaseDoc { get; init; } = "Base XP for growth-style item leveling.";
@@ -85,7 +120,13 @@ public partial class Settings
     [JsonPropertyName("// EnableLootItemPreImbue")]
     public string EnableLootItemPreImbueDoc { get; init; } = "LootGrowthItem: roll pre-imbues on eligible loot.";
 
-    public bool EnableLootItemPreImbue { get; set; } = false;
+    public bool EnableLootItemPreImbue { get; set; } = true;
+
+    [JsonPropertyName("// LootGrowthReplaceVanillaCapWithoutItemXp")]
+    public string LootGrowthReplaceVanillaCapWithoutItemXpDoc { get; init; } =
+        "When true (default), LootGrowthItem clears ACE 'cap-only' item level (e.g. MutateCloak ItemMaxLevel 1–5 with no ItemBaseXp/ScalesWithLevel track) so loot-time item XP can initialize. Set false to keep retail cloak caps untouched.";
+
+    public bool LootGrowthReplaceVanillaCapWithoutItemXp { get; set; } = true;
 
     [JsonPropertyName("// LootItemXpBase")]
     public string LootItemXpBaseDoc { get; init; } = "Base XP for loot-time item leveling.";
@@ -139,7 +180,7 @@ public partial class Settings
     [JsonPropertyName("// LootItemPreImbueChance")]
     public string LootItemPreImbueChanceDoc { get; init; } = "Chance to apply a pre-imbue on eligible loot.";
 
-    public double LootItemPreImbueChance { get; set; } = 0.02;
+    public double LootItemPreImbueChance { get; set; } = 0.05;
 
     [JsonPropertyName("// LootItemLevelingEligibleWeenieTypes")]
     public string LootItemLevelingEligibleWeenieTypesDoc { get; init; } = "Weenie types that may receive loot-time item XP / pre-imbues.";

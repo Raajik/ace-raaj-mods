@@ -23,9 +23,22 @@ public class Settings
     public string LootProfilePathDoc { get; init; } = "Folder for .utl loot profiles. Default empty: PatchClass sets Path.Combine(ModPath, \"LootProfiles\") after load. Override to any server path; /autoloot creates the folder if missing.";
     public string LootProfilePath { get; set; } = "";
 
+    [JsonPropertyName("// DefaultActiveProfiles")]
+    public string DefaultActiveProfilesDoc { get; init; } =
+        "Shipped default: five LootProfiles/*.utl filenames (allowlist for /autoloot and new characters). When empty and DefaultProfile empty: /autoloot lists every .utl on disk; first-login still uses Autoloot.BundledDefaultProfileFileNames.";
+    public List<string> DefaultActiveProfiles { get; set; } =
+    [
+        "BetterKeys.utl",
+        "Currency.utl",
+        "PyrealMotes.utl",
+        "Rares.utl",
+        "Trophies.utl",
+    ];
+
     [JsonPropertyName("// DefaultProfile")]
-    public string DefaultProfileDoc { get; init; } = "Profile auto-enabled the first time a player uses /autoloot in a session. Empty string = no profile active by default.";
-    public string DefaultProfile { get; set; } = "PyrealsTradeNotes.utl";
+    public string DefaultProfileDoc { get; init; } =
+        "Legacy: single default filename when DefaultActiveProfiles is empty. Leave empty to use bundled list for first-login defaults only; disk-wide /autoloot menu when DefaultActiveProfiles is also empty.";
+    public string DefaultProfile { get; set; } = "";
 
     [JsonPropertyName("// NoDuplicateNames")]
     public string NoDuplicateNamesDoc { get; init; } = "Name substrings (case-insensitive): if an item matches and the player already has same WCID in inventory, skip loot — reduces quest-timer bypass via stockpiling. Add more fragments as needed.";

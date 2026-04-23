@@ -1,0 +1,73 @@
+﻿using SharedLoot;
+
+namespace WorldEvents;
+
+internal static class HuntLootRewards
+{
+    internal static List<string> GrantPlacementLoot(Settings settings, int zeroBasedRank, double huntPoints, Player player)
+    {
+        if (!settings.HuntGrantLootTableRolls)
+            return new List<string>();
+
+        // Only top 3 get loot
+        if (zeroBasedRank >= 3)
+            return new List<string>();
+
+        var floor = RarityFloorForPlace(zeroBasedRank);
+        return GrantLootRollSync(player, zeroBasedRank + 1, floor, settings);
+    }
+
+    // 1st: rare or better; 2nd: uncommon or better; 3rd: any
+    static LootRarityFloor RarityFloorForPlace(int zeroBasedRank) => zeroBasedRank switch
+    {
+        0 => LootRarityFloor.Rare,
+        1 => LootRarityFloor.Uncommon,
+        _ => LootRarityFloor.Any,
+    };
+
+    static List<string> GrantLootRollSync(Player player, int place, LootRarityFloor floor, Settings settings)
+    {
+        var names = new List<string>();
+        var cfg = LootConfigStore.GetLoadedOrDefault();
+
+        var item = LootRoller.TryCreateFromMinRarity(cfg, floor);
+        if (item is null)
+        {
+            ModManager.Log($"[Hunt] Hunt loot roll produced no item for {player.Name} (place {place}, floor {floor}).", ModManager.LogLevel.Warn);
+            names.Add("(empty roll)");
+            return names;
+        }
+
+        names.Add($"{item.Name} [WCID {item.WeenieClassId}]");
+
+        var placeTag = $"place {place}";
+        if (HuntBankInterop.TryLeyLineLedgerAutoBank(player, item, placeTag))
+            return names;
+
+        // SSF: ChallengeModes.SsfMode rejects TryCreateInInventoryWithNetworking when the item is not
+        // Ironman-tagged. Banked trade notes never hit that path; rolled loot (motes, etc.) must be
+        // tagged like vendor purchases and AutoLoot (see SsfMode PreTryCreateInInventoryWithNetworking).
+        TagHuntRewardForSsfIfNeeded(player, item);
+
+        if (!player.TryCreateInInventoryWithNetworking(item, out _))
+        {
+            item.Location = player.Location.InFrontOf(0.5f);
+            item.EnterWorld();
+            player.SendMessage(
+                $"[Hunt] Hunt reward (place {place}) — could not add {item.Name} to your pack. Dropped at your feet.");
+        }
+        else
+        {
+            player.SendMessage($"[Hunt] Hunt reward (place {place}): {item.Name}.");
+        }
+
+        return names;
+    }
+
+    static void TagHuntRewardForSsfIfNeeded(Player player, WorldObject item)
+    {
+        if (player.GetProperty(FakeBool.Ironman) != true) return;
+        if (item.GetProperty(FakeBool.Ironman) == true) return;
+        item.SetProperty(FakeBool.Ironman, true);
+    }
+}

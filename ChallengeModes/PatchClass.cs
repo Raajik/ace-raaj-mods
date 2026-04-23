@@ -44,6 +44,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     public override void Start()
     {
         base.Start();
+        LeyLineLedgerBridge.RegisterChallengeModeResolver(PlayerHasActiveChallenge);
         ApplyChallengeModesHarmony();
     }
 
@@ -63,6 +64,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         Settings = SettingsContainer.Settings ?? new Settings();
 
+        LeyLineLedgerBridge.RegisterChallengeModeResolver(PlayerHasActiveChallenge);
         ApplyExtendedCharacterLevelTable();
         ApplyChallengeModesHarmony();
     }

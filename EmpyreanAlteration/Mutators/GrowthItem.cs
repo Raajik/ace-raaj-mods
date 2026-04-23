@@ -6,17 +6,27 @@ internal class GrowthItem : Mutator
         if (item.HasItemLevel)
             return false;
 
-        //Only the unmutated?
-        if (mutations.Count > 0)
-            return false;
+        bool tierBand = PatchClass.Settings.UseTreasureTierItemMaxLevelBand;
+        ItemLevelProfile profileSettings;
+        if (tierBand)
+        {
+            (int lo, int hi) = LootTierItemMaxLevel.GetBand(profile.Tier, PatchClass.Settings);
+            profileSettings = new ItemLevelProfile(
+                PatchClass.Settings.GrowthXpBase,
+                PatchClass.Settings.GrowthXpScaleByTier,
+                lo,
+                hi);
+        }
+        else
+        {
+            profileSettings = new ItemLevelProfile(
+                PatchClass.Settings.GrowthXpBase,
+                PatchClass.Settings.GrowthXpScaleByTier,
+                PatchClass.Settings.GrowthTierLevelRange.TryGetValue(profile.Tier, out var range) ? range.Min : 1,
+                PatchClass.Settings.GrowthTierLevelRange.TryGetValue(profile.Tier, out range) ? range.Max : 1);
+        }
 
-        var profileSettings = new ItemLevelProfile(
-            PatchClass.Settings.GrowthXpBase,
-            PatchClass.Settings.GrowthXpScaleByTier,
-            PatchClass.Settings.GrowthTierLevelRange.TryGetValue(profile.Tier, out var range) ? range.Min : 1,
-            PatchClass.Settings.GrowthTierLevelRange.TryGetValue(profile.Tier, out range) ? range.Max : 1);
-
-        if (!ItemLeveling.ApplyItemLevelProfile(item, profile.Tier, profileSettings, PatchClass.Settings))
+        if (!ItemLeveling.ApplyItemLevelProfile(item, profile.Tier, profileSettings, PatchClass.Settings, uniformLootCapRoll: tierBand))
             return false;
 
         //Store item tier

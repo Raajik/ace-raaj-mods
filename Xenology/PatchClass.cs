@@ -87,7 +87,7 @@ public partial class PatchClass : BasicPatch<Settings>
             {
                 try
                 {
-                    await Task.Delay(30_000, token).ConfigureAwait(false);
+                    await Task.Delay(10_000, token).ConfigureAwait(false);
                     var s = CurrentSettings;
                     if (s?.EnableXenology == true)
                         XenologyRuntime.TickHuntTimer(s);

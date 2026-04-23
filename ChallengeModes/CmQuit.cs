@@ -69,6 +69,8 @@ internal static class CmQuit
             return;
         }
 
+        LeyLineLedgerBridge.MergeChallengeBankIntoAccount(player);
+
         var capLevel = player.Level ?? 1;
         var delta = capLevel / 10000f;
         if (delta > 0f)
@@ -94,6 +96,7 @@ internal static class CmQuit
             Enlightenment.RemoveLevel(player);
 
         PatchClass.DisableAllChallengeModesForQuit(player);
+        LeyLineLedgerBridge.MirrorAccountToPlayerAfterChallengeCleared(player);
         CmCommands.RefreshChallengeRadar(player);
         player.SavePlayerToDatabase();
         player.SendMessage(

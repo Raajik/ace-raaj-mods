@@ -1,0 +1,12 @@
+{
+  "// Enabled": "Master switch. When false, no patches are applied.",
+  "Enabled": true,
+  "// LimitlessRegenEnabled": "When true, players who have banked a Limitless Lockpick (WCID 30253) receive passive Lockpick Durability regen at the interval below.",
+  "LimitlessRegenEnabled": true,
+  "// LimitlessRegenIntervalSeconds": "Seconds between passive regen grants for Limitless Lockpick holders (default 21600 = 6 hours).",
+  "LimitlessRegenIntervalSeconds": 21600,
+  "// LimitlessRegenChargesPerInterval": "Lockpick Durability granted per Limitless Lockpick each interval (default 600; stacks multiplicatively with each additional Limitless Lockpick banked).",
+  "LimitlessRegenChargesPerInterval": 600,
+  "// RequireLockpickSkill": "When true, only characters with Lockpick trained or specialized can auto-bank lockpick items and use banked durability on locks.",
+  "RequireLockpickSkill": true
+}

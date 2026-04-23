@@ -51,6 +51,15 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         try
         {
+            ModC.Harmony.UnpatchCategory(nameof(SalvageDirectDeposit));
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger] Unpatch SalvageDirectDeposit before re-apply: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
             Settings = SettingsContainer.Settings ?? new Settings();
         }
         catch
@@ -66,6 +75,9 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         if (Settings.DeathBankPyrealPercent > 0)
             ModC.Harmony.PatchCategory(nameof(DeathBankPenalty));
+
+        if (Settings.SalvageBank.Enabled && Settings.SalvageBank.DirectDepositOnSalvage)
+            ModC.Harmony.PatchCategory(nameof(SalvageDirectDeposit));
     }
 
     public override void Stop()
@@ -89,6 +101,14 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         try
         {
             ModC.Harmony.UnpatchCategory(nameof(DeathBankPenalty));
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(SalvageDirectDeposit));
         }
         catch
         {
@@ -149,24 +169,42 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         var verbToken = parameters[0];
 
+        // Shorthand: /b s st | /b s d | /b s r iron 2  ->  same as /bank salvage ...
+        if (verbToken.Equals("s", StringComparison.OrdinalIgnoreCase))
+        {
+            List<string> expanded = new() { "salvage" };
+            for (int i = 1; i < parameters.Length; i++)
+                expanded.Add(parameters[i]);
+            BankSalvage.Handle(session, expanded.ToArray());
+            return;
+        }
+
         if (verbToken.Equals("salvage", StringComparison.OrdinalIgnoreCase))
         {
             BankSalvage.Handle(session, parameters);
             return;
         }
 
-        //Deposit shorthand: /bank deposit or /b d
+        //Deposit shorthand: /bank deposit or /b d  ;  /bank deposit all | /b d a  also banks all stack salvage (SalvageBank)
         if (verbToken.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
             verbToken.Equals("d", StringComparison.OrdinalIgnoreCase))
         {
+            bool depositSalvageToo = parameters.Length >= 2 &&
+                (parameters[1].Equals("a", StringComparison.OrdinalIgnoreCase) ||
+                 parameters[1].Equals("all", StringComparison.OrdinalIgnoreCase));
+
             BankExtensions.DepositAllCash(session);
             BankExtensions.DepositAllLuminance(session);
             BankExtensions.DepositAllItems(session);
+
+            if (depositSalvageToo && Settings.SalvageBank is { Enabled: true })
+                BankSalvage.Handle(session, new[] { "salvage", "deposit" });
 
             return;
         }
 
         //Withdraw shorthand: /bank withdraw pyreals <amount> or /b w p <amount>; luminance gem: withdraw luminance <amount> or w l <amount>
+        // Salvage bags: /bank withdraw salvage <material> [bags]  |  /b w s <material> [bags]  -> same as /bank salvage redeem ...
         if (verbToken.Equals("withdraw", StringComparison.OrdinalIgnoreCase) ||
             verbToken.Equals("w", StringComparison.OrdinalIgnoreCase))
         {
@@ -186,9 +224,30 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 return;
             }
 
+            if (parameters.Length >= 3 &&
+                (parameters[1].Equals("salvage", StringComparison.OrdinalIgnoreCase) ||
+                 parameters[1].Equals("s", StringComparison.OrdinalIgnoreCase)))
+            {
+                if (Settings.SalvageBank is not { Enabled: true })
+                {
+                    player.SendMessage("Bank salvage is disabled.");
+                    return;
+                }
+
+                string[] expanded = new string[parameters.Length];
+                expanded[0] = "salvage";
+                expanded[1] = "redeem";
+                for (int i = 2; i < parameters.Length; i++)
+                    expanded[i] = parameters[i];
+
+                BankSalvage.Handle(session, expanded);
+                return;
+            }
+
             if (parameters.Length < 3)
             {
-                player.SendMessage("Usage: /bank withdraw pyreals <amount> | withdraw luminance <amount> | shorthand /b w p <amt> | /b w l <amt>");
+                player.SendMessage("Usage: /bank withdraw pyreals <amount> | withdraw luminance <amount> | withdraw salvage <material> [bags]");
+                player.SendMessage("  Shorthand: /b w p <amt> | /b w l <amt> | /b w s <material> [bags]  (salvage = bag redeem)");
                 return;
             }
 
@@ -203,7 +262,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             if (!currencyToken.Equals("pyreals", StringComparison.OrdinalIgnoreCase) &&
                 !currencyToken.Equals("p", StringComparison.OrdinalIgnoreCase))
             {
-                player.SendMessage("Usage: /bank withdraw pyreals <amount> | withdraw luminance <amount> | shorthand /b w p <amt> | /b w l <amt>");
+                player.SendMessage("Usage: /bank withdraw pyreals <amount> | withdraw luminance <amount> | withdraw salvage <material> [bags]");
+                player.SendMessage("  Shorthand: /b w p <amt> | /b w l <amt> | /b w s <material> [bags]");
                 return;
             }
 
@@ -262,7 +322,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         //Fallback to legacy item-based List/Give/Take handling
         if (!parameters.TryParseCommand(out var verb, out var name, out var amount, out var wildcardAmount))
         {
-            player.SendMessage("Usage: /bank [list | deposit | withdraw pyreals <amount> | withdraw luminance <amount> | transfer ...]");
+            player.SendMessage("Usage: /bank [list | deposit | withdraw pyreals <amount> | withdraw luminance | withdraw salvage <material> [bags] | transfer ...]");
             return;
         }
 
@@ -403,6 +463,49 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         return player.TryConsumeFromEquippedObjectsWithNetworking(stack, take);
     }
 
+    // Stack salvage: StackSize. Single-stack "bags" (e.g. Salved Leather (80)): fill is usually Structure/MaxStructure (caps at 100); NumItemsInMaterial is a fallback; name "(N)" last resort.
+    public static int GetSalvageMaterialUnitCount(WorldObject wo)
+    {
+        if (wo is null)
+            return 0;
+
+        int stack = (int)(wo.StackSize ?? 1);
+        if (stack > 1)
+            return stack;
+
+        if (wo.Structure is ushort strV && strV > 0)
+        {
+            int s = strV;
+            if (wo.MaxStructure is ushort maxCap && maxCap > 0 && s > maxCap)
+                s = maxCap;
+
+            if (wo.MaxStructure is ushort maxW && maxW > 1)
+                return Math.Max(1, s);
+
+            if (s > 1)
+                return s;
+        }
+
+        int nim = wo.NumItemsInMaterial ?? 1;
+        if (nim > 1)
+            return nim;
+
+        int fromName = TryParseSalvageParenCountFromName(wo.Name);
+        if (fromName > 0)
+            return fromName;
+
+        return 1;
+    }
+
+    static int TryParseSalvageParenCountFromName(string? name)
+    {
+        if (string.IsNullOrEmpty(name))
+            return 0;
+
+        Match m = Regex.Match(name, @"\((\d+)\)\s*$");
+        return m.Success && int.TryParse(m.Groups[1].Value, out int n) ? n : 0;
+    }
+
     // Stack counts across nested containers (AllItems) and equipped; avoids undercount vs GetNumInventoryItemsOfWCID-only.
     public static int CountBankableWcid(Player player, uint wcid)
     {
@@ -417,7 +520,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             if (!seen.Add(wo.Guid.Full))
                 continue;
 
-            n += (int)(wo.StackSize ?? 1);
+            n += GetSalvageMaterialUnitCount(wo);
         }
 
         foreach (WorldObject wo in player.GetEquippedObjectsOfWCID(wcid))
@@ -425,7 +528,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             if (!seen.Add(wo.Guid.Full))
                 continue;
 
-            n += (int)(wo.StackSize ?? 1);
+            n += GetSalvageMaterialUnitCount(wo);
         }
 
         return n;
@@ -474,9 +577,10 @@ public static class BankExtensions
     }
 
     public static long GetBanked(this Player player, int prop) =>
-        player.GetProperty((PropertyInt64)prop) ?? 0;
+        AccountBankStore.GetBalance(player, prop);
+
     public static void IncBanked(this Player player, int prop, long amount) =>
-        player.SetProperty((PropertyInt64)prop, player.GetBanked(prop) + amount);
+        AccountBankStore.Add(player, prop, amount);
 
     public static void DepositAllItems(Session session)
     {
@@ -669,6 +773,16 @@ public static class BankExtensions
             {
                 error = "You cannot transfer to yourself.";
                 return false;
+            }
+
+            if (PatchClass.Settings is { AccountWideBank: true })
+            {
+                sender.IncBanked(cashProp, -amount);
+                senderDebited = true;
+                sender.UpdateCoinValue();
+                AccountBankStore.AddToAccountByOfflineCharacter(targetChar, cashProp, amount);
+                ModManager.Log($"[LeyLineLedger] {sender.Name} transferred {amount:N0} pyreals to offline character '{targetName}' (account-wide bank file).", ModManager.LogLevel.Info);
+                return true;
             }
 
             var row = context.BiotaPropertiesInt64.FirstOrDefault(p =>

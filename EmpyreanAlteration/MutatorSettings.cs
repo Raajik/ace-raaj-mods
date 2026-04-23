@@ -39,6 +39,13 @@ public static class MutatorHelpers
         if (Activator.CreateInstance(mutatorType) is not Mutator mutator)
             throw new InvalidOperationException($"Mutator {mutatorType.Name} could not be constructed.");
 
+        if (!Enum.TryParse<Mutation>(settings.Mutation, ignoreCase: false, out var mutationKind))
+        {
+            ModManager.Log($"[EmpyreanAlteration] Mutator '{settings.Mutation}' does not match Mutation enum; using AutoScale for ordering.", ModManager.LogLevel.Warn);
+            mutationKind = Mutation.AutoScale;
+        }
+
+        mutator.MutationType = mutationKind;
         mutator.Event = settings.Events;
 
         var cfg = PatchClass.Settings ?? new Settings();

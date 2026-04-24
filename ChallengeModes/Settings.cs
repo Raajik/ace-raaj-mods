@@ -47,14 +47,14 @@ public class Settings
     [JsonPropertyName("// HardcoreStartingLives")]
     public string HardcoreStartingLivesDoc { get; init; } = "Starting life count for hardcore mode.";
 
-    [JsonPropertyName("// ChallengeMilestoneRewardsEnabled")]
-    public string ChallengeMilestoneRewardsEnabledDoc { get; init; } = "One-time skill credits + permanent XP/lum % at ChallengeMilestoneLevels while a challenge is active at level-up; after Loremaster QP multiplier.";
+    [JsonPropertyName("// ChallengeAchievementRewardsEnabled")]
+    public string ChallengeAchievementRewardsEnabledDoc { get; init; } = "One-time skill credits + permanent XP/lum % at ChallengeAchievementLevels while a challenge is active at level-up; after Loremaster QP multiplier.";
 
-    [JsonPropertyName("// ChallengeMilestoneLevels")]
-    public string ChallengeMilestoneLevelsDoc { get; init; } = "Character levels for skill-credit milestones; one credit per active mode (SSF, hardcore, alternate, aptitude) per level, each mode once forever.";
+    [JsonPropertyName("// ChallengeAchievementLevels")]
+    public string ChallengeAchievementLevelsDoc { get; init; } = "Character levels for skill-credit achievements; one credit per active mode (SSF, hardcore, alternate, aptitude) per level, each mode once forever.";
 
-    [JsonPropertyName("// ChallengeMilestonePercentEach")]
-    public string ChallengeMilestonePercentEachDoc { get; init; } = "Skill-credit message / bookkeeping; milestone XP/lum % uses ChallengeBonusPercentPerLevel × furthest level per segment.";
+    [JsonPropertyName("// ChallengeAchievementPercentEach")]
+    public string ChallengeAchievementPercentEachDoc { get; init; } = "Skill-credit message / bookkeeping; achievement XP/lum % uses ChallengeBonusPercentPerLevel × furthest level per segment.";
 
     [JsonPropertyName("// ChallengeBonusPercentPerLevel")]
     public string ChallengeBonusPercentPerLevelDoc { get; init; } = "XP/luminance bonus percent per character level toward the current 300-level segment (e.g. 0.01 = 0.01% per level, level 60 => 0.6%).";
@@ -90,10 +90,7 @@ public class Settings
     public string CmQuitRemoveAetheriaDoc { get; init; } = "When true, /cm quit calls Enlightenment.RemoveAetheria.";
 
     [JsonPropertyName("// ChaosQuestBonusMultiplier")]
-    public string ChaosQuestBonusMultiplierDoc { get; init; } = "FakeFloat 11013 factor applied to Loremaster QuestBonus() when /cm chaos on (e.g. 4 = 4× QP factor contribution).";
-
-    [JsonPropertyName("// ChaosRequiresActiveChallenge")]
-    public string ChaosRequiresActiveChallengeDoc { get; init; } = "When true, only characters with an active /cm mode may toggle chaos.";
+    public string ChaosQuestBonusMultiplierDoc { get; init; } = "FakeFloat 11013 factor applied to Loremaster QuestBonus() when /cm chaos is active (e.g. 4 = 4× QP factor contribution). Chaos is now a standalone challenge track; this still controls the multiplier.";
 
     [JsonPropertyName("// QuestPointsMultiplierWhileChallengeActive")]
     public string QuestPointsMultiplierWhileChallengeActiveDoc { get; init; } = "Loremaster: per active /cm track (SSF, hardcore, aptitude-or-alternate) this factor is applied once per track when QuestPointsMultiplyPerActiveChallengeTrack is true (m^n). When false, a single m applies if any challenge is active (legacy). 1 = no CM-driven boost.";
@@ -123,11 +120,11 @@ public class Settings
     public float HardcoreSecondsBetweenDeathAllowed { get; set; } = 60;
     public int HardcoreStartingLives { get; set; } = 5;
 
-    public bool ChallengeMilestoneRewardsEnabled { get; set; } = true;
+    public bool ChallengeAchievementRewardsEnabled { get; set; } = true;
 
-    public List<int> ChallengeMilestoneLevels { get; set; } = new() { 50, 100, 150, 200, 225, 250, 275, 300 };
+    public List<int> ChallengeAchievementLevels { get; set; } = new() { 50, 100, 150, 200, 225, 250, 275, 300 };
 
-    public float ChallengeMilestonePercentEach { get; set; } = 1f;
+    public float ChallengeAchievementPercentEach { get; set; } = 1f;
 
     public float ChallengeBonusPercentPerLevel { get; set; } = 0.01f;
 
@@ -152,8 +149,6 @@ public class Settings
     public bool CmQuitRemoveAetheria { get; set; } = false;
 
     public float ChaosQuestBonusMultiplier { get; set; } = 4f;
-
-    public bool ChaosRequiresActiveChallenge { get; set; } = true;
 
     public float QuestPointsMultiplierWhileChallengeActive { get; set; } = 2f;
 

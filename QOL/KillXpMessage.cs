@@ -1,6 +1,8 @@
+using System.Collections.Concurrent;
+
 namespace QOL;
 
-internal enum KillXpDisplayMode { ServerDefault, Off, Raw, Percent }
+public enum KillXpDisplayMode { ServerDefault, Off, Raw, Percent }
 
 // Replaces the vanilla "You killed X!" notification with "You killed X! (48 xp)" or "You killed X! (0.003%)".
 // ThreadStatic dict is reset before each OnDeath_GrantXP so fellowship-share XP doesn't bleed across kills.
@@ -56,7 +58,8 @@ internal static class KillXpMessage
 
             if (lastDamager is Player playerKiller)
             {
-                _killXp?.TryGetValue(playerKiller.Guid.Full, out long earnedXp);
+                long earnedXp = 0;
+                _killXp?.TryGetValue(playerKiller.Guid.Full, out earnedXp);
 
                 string suffix = FormatSuffix(earnedXp, playerKiller);
                 string killerMsg = string.Format(deathMessage.Killer, __instance.Name) + suffix;
@@ -79,12 +82,28 @@ internal static class KillXpMessage
 
         if (mode == KillXpDisplayMode.Off) return "";
 
-        bool showPct = mode == KillXpDisplayMode.Percent
-            || (mode == KillXpDisplayMode.ServerDefault && (PatchClass.Settings?.KillXpMessage?.ShowPercent ?? false));
+        var cfg = PatchClass.Settings?.KillXpMessage;
+        bool showRaw, showPct, showKills;
 
-        return showPct
-            ? $" ({ComputeLevelPct(xp, player):F3}%)"
-            : $" ({xp:N0} xp)";
+        if (mode == KillXpDisplayMode.ServerDefault)
+        {
+            showRaw   = cfg?.ShowRaw   ?? true;
+            showPct   = cfg?.ShowPercent ?? false;
+            showKills = cfg?.ShowEstimatedKills ?? false;
+        }
+        else
+        {
+            showRaw   = mode == KillXpDisplayMode.Raw;
+            showPct   = mode == KillXpDisplayMode.Percent;
+            showKills = false;
+        }
+
+        var parts = new List<string>(3);
+        if (showRaw)   parts.Add($"{xp:N0} xp");
+        if (showPct)   parts.Add($"{ComputeLevelPct(xp, player):F3}%");
+        if (showKills) parts.Add($"~{ComputeEstimatedKills(xp, player):N0} kills to level");
+
+        return parts.Count > 0 ? $" ({string.Join(" | ", parts)})" : "";
     }
 
     static double ComputeLevelPct(long xp, Player player)
@@ -93,9 +112,25 @@ internal static class KillXpMessage
         {
             var xpList = DatManager.PortalDat.XpTable.CharacterLevelXPList;
             int level = player.Level ?? 1;
-            if (level >= xpList.Count - 1) return 0; // max level
+            if (level >= xpList.Count - 1) return 0;
             long window = (long)xpList[level + 1] - (long)xpList[level];
             return window > 0 ? (double)xp / window * 100.0 : 0;
+        }
+        catch { return 0; }
+    }
+
+    static long ComputeEstimatedKills(long xpPerKill, Player player)
+    {
+        if (xpPerKill <= 0) return 0;
+        try
+        {
+            var xpList = DatManager.PortalDat.XpTable.CharacterLevelXPList;
+            int level = player.Level ?? 1;
+            if (level >= xpList.Count - 1) return 0;
+            long nextLevelXp = (long)xpList[level + 1];
+            long totalXp = player.TotalExperience ?? (long)xpList[level];
+            long remaining = Math.Max(0, nextLevelXp - totalXp);
+            return (long)Math.Ceiling((double)remaining / xpPerKill);
         }
         catch { return 0; }
     }

@@ -480,21 +480,15 @@ public static void HandleLoadProfile(ISession session, params string[] parameter
 
             if (parameters.Length == 0)
             {
-                bool notificationsOn = lootNotifications.GetOrAdd(LootKey(player), true);
-                bool vtOn = vendorTrashEnabled.GetOrAdd(LootKey(player), false);
-                int vtRatio = vendorTrashRatio.GetOrAdd(LootKey(player), 50);
                 bool scrollsOn = unknownScrolls.GetOrAdd(LootKey(player), false);
                 bool raresOn = broadcastRares.GetOrAdd(LootKey(player), false);
 
-                var sb = new StringBuilder("\nAutoLoot Commands:");
-                sb.Append("\n  /autoloot <#>          — toggle profile on/off by number");
-                sb.Append("\n  /autoloot <name>       — toggle profile on/off by partial name");
-                sb.Append("\n  /autoloot on           — enable everything");
-                sb.Append("\n  /autoloot off          — disable everything");
-                sb.Append($"\n  /autoloot details      — toggle loot notifications [{(notificationsOn ? "ON" : "OFF")}]");
-                sb.Append($"\n  /autoloot vt [ratio]   — toggle VendorTrash (current ratio: {vtRatio}:1)");
-                sb.Append("\n  /autoloot scrolls      — toggle Unknown Scrolls (learn when readable; else loot)");
-                sb.Append("\n  /autoloot rares        — toggle server-wide rare broadcast");
+                var sb = new StringBuilder("\nAutoLoot:");
+                sb.Append("\n  /autoloot <#>     — toggle profile");
+                sb.Append("\n  /autoloot on      — enable all");
+                sb.Append("\n  /autoloot off     — disable all");
+                sb.Append($"\n  /autoloot scrolls — toggle spells [{(scrollsOn ? "ON" : "OFF")}]");
+                sb.Append($"\n  /autoloot rares    — toggle rares [{(raresOn ? "ON" : "OFF")}]");
 
                 if (session.AccessLevel >= AccessLevel.Developer)
                 {
@@ -526,9 +520,8 @@ public static void HandleLoadProfile(ISession session, params string[] parameter
                     }
                 }
 
-                sb.Append($"\n  V) {(vtOn ? "[ON] " : "[OFF]")} VendorTrash {vtRatio}:1  —  loot items worth ≥ {vtRatio}× their burden");
-                sb.Append($"\n  S) {(scrollsOn ? "[ON] " : "[OFF]")} Unknown Scrolls  —  learn unknown spells when readable; else loot scrolls");
-                sb.Append($"\n  R) {(raresOn ? "[ON] " : "[OFF]")} Rare Broadcast  —  announce rare loots server-wide");
+                sb.Append($"\n  S) {(scrollsOn ? "[ON] " : "[OFF]")} Unknown Scrolls");
+                sb.Append($"\n  R) {(raresOn ? "[ON] " : "[OFF]")} Rare Broadcast");
 
                 player.SendMessage(sb.ToString());
                 return;
@@ -552,7 +545,6 @@ public static void HandleLoadProfile(ISession session, params string[] parameter
                         enabled++;
                     }
                 }
-                if (!vendorTrashEnabled.GetOrAdd(LootKey(player), false)) { vendorTrashEnabled[LootKey(player)] = true; enabled++; }
                 if (!unknownScrolls.GetOrAdd(LootKey(player), false)) { unknownScrolls[LootKey(player)] = true; enabled++; }
                 SavePrefs(player);
                 player.SendMessage(enabled > 0
@@ -574,7 +566,6 @@ public static void HandleLoadProfile(ISession session, params string[] parameter
                         disabled++;
                     }
                 }
-                if (vendorTrashEnabled.GetOrAdd(LootKey(player), false)) { vendorTrashEnabled[LootKey(player)] = false; disabled++; }
                 if (unknownScrolls.GetOrAdd(LootKey(player), false)) { unknownScrolls[LootKey(player)] = false; disabled++; }
                 SavePrefs(player);
                 player.SendMessage(disabled > 0

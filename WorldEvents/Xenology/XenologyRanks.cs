@@ -51,32 +51,32 @@ internal static class HuntRanks
         return SpeciesRankBand.Mid;
     }
 
-    internal static int MilestoneLootTierFromProgress(double progress, Settings settings)
+    internal static int AchievementLootTierFromProgress(double progress, Settings settings)
     {
-        if (settings.UseMilestoneXpForTiers)
+        if (settings.UseAchievementXpForTiers)
         {
-            if (progress >= settings.MilestoneXpTier3)
+            if (progress >= settings.AchievementXpTier3)
                 return 3;
-            if (progress >= settings.MilestoneXpTier2)
+            if (progress >= settings.AchievementXpTier2)
                 return 2;
-            if (progress >= settings.MilestoneXpTier1)
+            if (progress >= settings.AchievementXpTier1)
                 return 1;
             return 0;
         }
 
         var k = (long)Math.Max(0, Math.Min(long.MaxValue, progress));
-        if (k >= settings.MilestoneKillsTier3)
+        if (k >= settings.AchievementKillsTier3)
             return 3;
-        if (k >= settings.MilestoneKillsTier2)
+        if (k >= settings.AchievementKillsTier2)
             return 2;
-        if (k >= settings.MilestoneKillsTier1)
+        if (k >= settings.AchievementKillsTier1)
             return 1;
         return 0;
     }
 
-    internal static double MilestoneProgressForLoot(Player player, PlayerHuntData data, Settings settings)
+    internal static double AchievementProgressForLoot(Player player, PlayerHuntData data, Settings settings)
     {
-        if (!settings.UseMilestoneXpForTiers)
+        if (!settings.UseAchievementXpForTiers)
             return data.TotalLifetimeKills;
 
         double pending = player.GetProperty((PropertyFloat)HuntPropertyIds.PendingHuntXpPreview) ?? 0.0;

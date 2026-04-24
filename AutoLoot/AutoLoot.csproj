@@ -113,6 +113,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\BetterSupportSkills\BetterSupportSkills.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Reference Include="ACE.Adapter">
 			<HintPath>$(ACEPath)\ACE.Adapter.dll</HintPath>
 			<Private>False</Private>

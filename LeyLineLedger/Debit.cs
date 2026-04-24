@@ -401,12 +401,30 @@ public class Debit
         {
             var playerAltCurrency = player.GetNumInventoryItemsOfWCID(__instance.AlternateCurrency.Value);
 
-            //!!ADD BANKED AMOUNT
+            // Add banked amount
             var wcid = __instance.AlternateCurrency.Value;
             var banked = PatchClass.Settings?.Items?.Where(x => x.Id == wcid).FirstOrDefault();
             if (banked is not null)
                 playerAltCurrency += (int)player.GetBanked(banked.Prop);
 
+            // Auto-convert Zefs if needed
+            if (playerAltCurrency < totalPrice && PatchClass.Settings?.AltCurrencyValues?.ContainsKey(wcid) == true)
+            {
+                long zefs = player.GetBanked(PatchClass.Settings.AltCurrencyProperty);
+                int zefValue = PatchClass.Settings.AltCurrencyValues[wcid];
+                long neededItems = totalPrice - playerAltCurrency;
+                long zefsNeeded = (neededItems + zefValue - 1) / zefValue; // round up
+
+                if (zefs >= zefsNeeded)
+                {
+                    // Convert Zefs to alt currency items and add to bank
+                    player.IncBanked(PatchClass.Settings.AltCurrencyProperty, -zefsNeeded);
+                    player.IncBanked(banked.Prop, zefsNeeded);
+                    player.SendMessage($"Auto-converted {zefsNeeded} Zefs to {zefsNeeded} {banked.Name} for purchase.");
+
+                    playerAltCurrency += (int)zefsNeeded;
+                }
+            }
 
             if (playerAltCurrency < totalPrice)
             {

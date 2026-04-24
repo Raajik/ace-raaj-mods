@@ -6,31 +6,31 @@ namespace ChallengeModes.Features;
 // Consumed via reflection from Loremaster /qb detailed (no project reference).
 public static class LoremasterXpDetail
 {
-    // Returns 0 when milestone rewards are off or ChallengeModes is disabled.
-    public static double GetMilestoneBonusPercent(Player player)
+    // Returns 0 when achievement rewards are off or ChallengeModes is disabled.
+    public static double GetAchievementBonusPercent(Player player)
     {
-        if (PatchClass.Settings is not { } s || !s.Enabled || !s.ChallengeMilestoneRewardsEnabled)
+        if (PatchClass.Settings is not { } s || !s.Enabled || !s.ChallengeAchievementRewardsEnabled)
             return 0;
-        return ChallengeMilestoneGrants.GetChallengeBonusBreakdown(player, s).TotalPercent;
+        return ChallengeAchievementGrants.GetChallengeBonusBreakdown(player, s).TotalPercent;
     }
 
-    public static void AppendChallengeMilestoneSection(StringBuilder sb, Player player)
+    public static void AppendChallengeAchievementSection(StringBuilder sb, Player player)
     {
-        sb.AppendLine("--- ChallengeModes milestone (XP / luminance) ---");
+        sb.AppendLine("--- ChallengeModes achievement (XP / luminance) ---");
         if (PatchClass.Settings is not { } s || !s.Enabled)
         {
             sb.AppendLine("ChallengeModes is disabled in ChallengeModes/Settings.json.");
             return;
         }
 
-        if (!s.ChallengeMilestoneRewardsEnabled)
+        if (!s.ChallengeAchievementRewardsEnabled)
         {
-            sb.AppendLine("Milestone rewards off (ChallengeMilestoneRewardsEnabled=false). No segment % on GrantXP/EarnLuminance.");
+            sb.AppendLine("Achievement rewards off (ChallengeAchievementRewardsEnabled=false). No segment % on GrantXP/EarnLuminance.");
             return;
         }
 
-        ChallengeMilestoneGrants.ChallengeBonusBreakdown b =
-            ChallengeMilestoneGrants.GetChallengeBonusBreakdown(player, s);
+        ChallengeAchievementGrants.ChallengeBonusBreakdown b =
+            ChallengeAchievementGrants.GetChallengeBonusBreakdown(player, s);
         sb.AppendLine(
             $"Percent per level toward a segment: {b.PercentPerLevel:0.#####}% (ChallengeBonusPercentPerLevel).");
         sb.AppendLine($"Segment length: {b.SegmentCap} levels (ChallengeBonusSegmentCapLevel).");
@@ -44,13 +44,13 @@ public static class LoremasterXpDetail
             $"Banked from completed segments: +{b.BankedPercent:0.####}% (= completions × segmentCap × %/level).");
         sb.AppendLine($"Partial this segment: +{b.PartialPercent:0.####}% (= progressLevels × %/level).");
         sb.AppendLine(
-            $"Total milestone bonus (additive): +{b.TotalPercent:0.####}% (banked + partial; one pooled value, not per SSF vs Hardcore).");
+            $"Total achievement bonus (additive): +{b.TotalPercent:0.####}% (banked + partial; one pooled value, not per SSF vs Hardcore).");
         double mult = 1.0 + b.TotalPercent / 100.0;
-        sb.AppendLine($"GrantXP / EarnLuminance multiplier from milestone: ×{mult:0.######} (= 1 + total%/100).");
+        sb.AppendLine($"GrantXP / EarnLuminance multiplier from achievement: ×{mult:0.######} (= 1 + total%/100).");
         sb.AppendLine(
-            "Skill credits at ChallengeMilestoneLevels are per challenge track (SSF / Hardcore / alternate / aptitude), once each; the % above is from segment progress only.");
+            "Skill credits at ChallengeAchievementLevels are per challenge track (SSF / Hardcore / alternate / aptitude), once each; the % above is from segment progress only.");
         sb.AppendLine(
-            "Chaos mode multiplies the Loremaster Quest Points factor (FakeFloat 11013), not this milestone %.");
+            "Chaos mode multiplies the Loremaster Quest Points factor (FakeFloat 11013), not this achievement %.");
         sb.AppendLine(
             $"Challenge active now: {(PatchClass.PlayerHasActiveChallenge(player) ? "yes" : "no")} (furthest grows while leveling with a /cm mode).");
     }

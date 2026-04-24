@@ -5,6 +5,10 @@ public class Settings
     [JsonPropertyName("// LeyLineLedgerSettings")]
     public string LeyLineLedgerSettingsDoc { get; init; } = "Reading order: below this line, every // key is documentation; the next block lists real settings in the same order. LeyLineLedger routes vendor trade and pyreals through bank-style PropertyInt64 storage, optional luminance gem withdrawal, death bank tax, and currency denomination tables. Items and Currencies arrays: each element is an object with // lines first, then Name/Id/Prop or Name/Id/Value (same order).";
 
+    [JsonPropertyName("// EnableLockpickAutoBank")]
+    public string EnableLockpickAutoBankDoc { get; init; } = "When true, lockpick items picked up by characters with Lockpick trained/spec'd are auto-converted to banked Lockpick Durability (PropertyInt64 40130). Limitless Lockpick (WCID 30253) activates passive regen via BetterSupportSkills.";
+    public bool EnableLockpickAutoBank { get; set; } = true;
+
     [JsonPropertyName("// VendorsUseBank")]
     public string VendorsUseBankDoc { get; init; } = "When true, vendor buy/sell uses bank balances instead of only inventory pyreals.";
     public bool VendorsUseBank { get; set; } = true;
@@ -34,6 +38,10 @@ public class Settings
         new() { Name = "Ancient Mhoire Coin", Id = 35383, Prop = 40006 },
         new() { Name = "Promissory Note", Id = 43901, Prop = 40007 },
         new() { Name = "Writ of Refuge", Id = 11710, Prop = 40114 },
+        new() { Name = "Sturdy Iron Key", Id = 6876, Prop = 40250 },
+        new() { Name = "Sturdy Steel Key", Id = 24477, Prop = 40500 },
+        new() { Name = "Mana Forge Key", Id = 38456, Prop = 40750 },
+        new() { Name = "Legendary Key", Id = 48746, Prop = 41000 },
     };
 
     [JsonPropertyName("// ExcessSetToMax")]
@@ -47,6 +55,23 @@ public class Settings
     [JsonPropertyName("// CashProperty")]
     public string CashPropertyDoc { get; init; } = "Character biota PropertyInt64 id for banked pyreals; align with AutoLoot BankCashProperty if used (default 39999).";
     public int CashProperty { get; set; } = 39999;
+
+    [JsonPropertyName("// AltCurrencyProperty")]
+    public string AltCurrencyPropertyDoc { get; init; } = "Character biota PropertyInt64 id for banked Zefs (universal alt currency).";
+    public int AltCurrencyProperty { get; set; } = 40120;
+
+    [JsonPropertyName("// AltCurrencyValues")]
+    public string AltCurrencyValuesDoc { get; init; } = "WCID to Zefs conversion value (×100 for scale). Must have corresponding BankItem entry.";
+    public Dictionary<uint, int> AltCurrencyValues { get; set; } = new()
+    {
+        { 36376, 100 },  // Small Olthoi Venom Sac (was 1)
+        { 44240, 500 },  // A'nekshay Token (was 5)
+        { 43142, 300 },  // Ornate Gear Marker (was 3)
+        { 36518, 500 },  // Colosseum Coin (was 5)
+        { 35383, 300 },  // Ancient Mhoire Coin (was 3)
+        { 43901, 100 },  // Promissory Note (was 1)
+        { 11710, 500 }, // Writ of Refuge (was 5)
+    };
 
     [JsonPropertyName("// LuminanceGemWeenieClassId")]
     public string LuminanceGemWeenieClassIdDoc { get; init; } = "/bank withdraw luminance creates this gem WCID carrying banked luminance; 0 disables. Default 7897 is stock ACE Black Garnet.";

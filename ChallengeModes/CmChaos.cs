@@ -4,7 +4,7 @@ namespace ChallengeModes;
 
 internal static class CmChaos
 {
-    internal static void Handle(Player player, string[] tail)
+    internal static void TryActivate(Player player)
     {
         var s = PatchClass.Settings;
         if (s is null || !s.Enabled)
@@ -13,55 +13,38 @@ internal static class CmChaos
             return;
         }
 
-        if (tail.Length == 0)
+        if (PatchClass.IsChaosEnabled(player))
         {
-            SendStatus(player);
+            player.SendMessage("Chaos is already active on this character.");
             return;
         }
 
-        var cmd = tail[0].Trim().ToLowerInvariant();
-        switch (cmd)
+        if (PatchClass.IsChaosDeclined(player))
         {
-            case "on":
-            case "enable":
-                TryTurnOn(player, s);
-                break;
-            case "off":
-            case "disable":
-                TurnOff(player);
-                break;
-            case "status":
-            case "s":
-                SendStatus(player);
-                break;
-            default:
-                player.SendMessage("Usage: /cm chaos on | off | status");
-                break;
+            player.SendMessage("Chaos cannot be re-enabled on this character (you previously left it).");
+            return;
         }
-    }
 
-    static void TryTurnOn(Player player, Settings s)
-    {
-        if (s.ChaosRequiresActiveChallenge && !PatchClass.PlayerHasActiveChallenge(player))
+        if (player.Level != 1)
         {
-            player.SendMessage("You need an active challenge mode to enable chaos (/cm list).");
+            player.SendMessage("Chaos can only be activated at level 1.");
             return;
         }
 
         var mult = Math.Clamp(s.ChaosQuestBonusMultiplier, 1f, 100f);
         player.SetProperty(CmFloat.ChaosQuestBonusMultiplier, mult);
-        player.SendMessage($"Chaos mode ON: Loremaster quest-point multiplier factor ×{mult:0.##} (see /qb).");
+        PatchClass.SetChaosEnabled(player, true);
+        CmCommands.RefreshChallengeRadar(player);
+        player.SendMessage($"Chaos is ON — Loremaster quest-point multiplier ×{mult:0.##}, Swarmed reinforcements escalate up to 5×, and aggro radius is tripled.");
     }
 
-    static void TurnOff(Player player)
+    internal static void Leave(Player player)
     {
+        if (!PatchClass.IsChaosEnabled(player))
+            return;
+
+        PatchClass.SetChaosEnabled(player, false);
+        PatchClass.SetChaosDeclined(player, true);
         player.SetProperty(CmFloat.ChaosQuestBonusMultiplier, 1f);
-        player.SendMessage("Chaos mode OFF (quest-point multiplier factor ×1).");
-    }
-
-    static void SendStatus(Player player)
-    {
-        var v = player.GetProperty(CmFloat.ChaosQuestBonusMultiplier) ?? 1f;
-        player.SendMessage($"Chaos quest-point factor: ×{v:0.##} (1 = off). Use /cm chaos on | off.");
     }
 }

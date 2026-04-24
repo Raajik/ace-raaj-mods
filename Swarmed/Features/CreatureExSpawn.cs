@@ -122,7 +122,7 @@ public static class CreatureExSpawn
         .Where(t => t != Creatures.CreatureExType.Unknown)
         .ToArray();
 
-    static Creatures.CreatureExType RandomCreatureType() =>
+    internal static Creatures.CreatureExType RandomCreatureType() =>
         RollableTypes[ThreadSafeRandom.Next(0, RollableTypes.Length)];
 
 #if REALM

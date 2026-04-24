@@ -4,29 +4,29 @@ internal static class HuntBroadcast
 {
     static readonly string[] HuntStartFlavors =
     {
-        "[EVENT] A new hunt has begun! The targets are {0}! {1} remains — good luck, hunters!",
-        "[EVENT] The hunt is on! Bonus species this window: {0}. You have {1} — may your aim be true!",
-        "[EVENT] Hear ye! A new hunt is underway. Seek out {0} — {1} left on the clock. Happy hunting!",
-        "[EVENT] The wild calls — a new hunt begins! Targets: {0}. {1} remains. Fortune favors the bold!",
-        "[EVENT] Time to hunt! Bonus kills this window go to those slaying {0}. {1} on the clock — get moving!",
-        "[EVENT] A new bounty has been declared! {0} are your marks. {1} to make your name known!",
-        "[EVENT] Steel yourselves — the hunt begins now! Track down {0}. {1} to climb the leaderboards!",
+        "[EVENT - Hunt] A new hunt has begun! The targets are {0}! {1} remains — good luck, hunters!",
+        "[EVENT - Hunt] The hunt is on! Bonus species this window: {0}. You have {1} — may your aim be true!",
+        "[EVENT - Hunt] Hear ye! A new hunt is underway. Seek out {0} — {1} left on the clock. Happy hunting!",
+        "[EVENT - Hunt] The wild calls — a new hunt begins! Targets: {0}. {1} remains. Fortune favors the bold!",
+        "[EVENT - Hunt] Time to hunt! Bonus kills this window go to those slaying {0}. {1} on the clock — get moving!",
+        "[EVENT - Hunt] A new bounty has been declared! {0} are your marks. {1} to make your name known!",
+        "[EVENT - Hunt] Steel yourselves — the hunt begins now! Track down {0}. {1} to climb the leaderboards!",
     };
 
     static readonly string[] NoTargetsFlavors =
     {
-        "[EVENT] A new hunt has begun, but the wilds are quiet — no bonus targets this window. Keep killing to unlock future hunts!",
-        "[EVENT] The hunt starts, yet the land holds its secrets. No bonus species this round — build up your kill data first!",
-        "[EVENT] A new window opens, but no targets have risen to the surface yet. Keep hunting and they'll emerge!",
+        "[EVENT - Hunt] A new hunt has begun, but the wilds are quiet — no bonus targets this window. Keep killing to unlock future hunts!",
+        "[EVENT - Hunt] The hunt starts, yet the land holds its secrets. No bonus species this round — build up your kill data first!",
+        "[EVENT - Hunt] A new window opens, but no targets have risen to the surface yet. Keep hunting and they'll emerge!",
     };
 
     static readonly string[] HuntEndFlavors =
     {
-        "[EVENT] The hunt has ended! Here are the top hunters",
-        "[EVENT] Swords down — the window has closed! Top hunters",
-        "[EVENT] The bounty board is tallied! Hunt results",
-        "[EVENT] The dust settles. Here's who came out on top",
-        "[EVENT] Well fought, hunters! Final standings",
+        "[EVENT - Hunt] The hunt has ended! Here are the top hunters",
+        "[EVENT - Hunt] Swords down — the window has closed! Top hunters",
+        "[EVENT - Hunt] The bounty board is tallied! Hunt results",
+        "[EVENT - Hunt] The dust settles. Here's who came out on top",
+        "[EVENT - Hunt] Well fought, hunters! Final standings",
     };
 
     internal static void AnnounceHuntStarted(Settings settings, ActiveHuntData hunt)
@@ -66,7 +66,7 @@ internal static class HuntBroadcast
             var lootPart = settings.HuntGrantLootTableRolls && r.LootLines is { Count: > 0 }
                 ? string.Join(", ", r.LootLines) : null;
             var bonusPart = r.TopPoolBonusXxp is double bx && bx > 0 ? $" | +{bx:0.##} Hunt XP bonus" : "";
-            var msg = $"[EVENT] {place}: {r.Name} — {r.HuntPts:0.##} pts | {xpPart}{bonusPart}";
+            var msg = $"[EVENT - Hunt] {place}: {r.Name} — {r.HuntPts:0.##} pts | {xpPart}{bonusPart}";
             if (lootPart != null) msg += $" | {lootPart}";
             HuntDisplay.BroadcastWorldLine(msg);
         }

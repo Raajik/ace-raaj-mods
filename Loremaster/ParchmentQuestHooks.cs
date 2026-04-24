@@ -259,7 +259,15 @@ public static class ParchmentQuestHooks
 
         player.UpdateQuestPoints();
 
-        ParchmentQuestRewards.GrantTierXpAndRepeatLoot(player, template);
+        var questKey = string.IsNullOrWhiteSpace(template.CompletionQuestStamp)
+            ? $"parchment_{template.Tier}"
+            : template.CompletionQuestStamp;
+
+        if (!player.HasReceivedRepeatReward(questKey))
+        {
+            ParchmentQuestRewards.GrantTierXpAndRepeatLoot(player, template);
+            player.MarkRepeatRewardGranted(questKey);
+        }
 
         var msg = template.CompleteMessage;
         if (string.IsNullOrWhiteSpace(msg))
@@ -292,7 +300,7 @@ public static class ParchmentQuestHooks
             return;
 
         var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        player.SetProperty(LMParchmentInt.CooldownUntilUnix, now + cfg.CooldownSeconds);
+        player.SetProperty(LMParchmentInt.CooldownUntilUnix, unchecked((int)(now + cfg.CooldownSeconds)));
     }
 
     // Call only after the parchment item is consumed from inventory.

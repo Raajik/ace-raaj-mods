@@ -281,7 +281,7 @@ public partial class PatchClass
             message = $"Call for help: {creatureName}";
         }
 
-        __instance.EnqueueBroadcast(new GameMessageSystemChat(message, ChatMessageType.Combat), WorldObject.LocalBroadcastRange, ChatMessageType.Combat);
+        __instance.EnqueueBroadcast(new GameMessageSystemChat(message, ChatMessageType.Magic), WorldObject.LocalBroadcastRange, ChatMessageType.Magic);
 
         float healthMin = Math.Clamp(settings.ReinforcementHealthMin, 0.01f, 1f);
         float healthMax = Math.Clamp(settings.ReinforcementHealthMax, 0.01f, 1f);
@@ -297,30 +297,83 @@ public partial class PatchClass
         if (xpBonusMin > xpBonusMax)
             (xpBonusMin, xpBonusMax) = (xpBonusMax, xpBonusMin);
 
+        // ── Chaos escalation ───────────────────────────────────────────────
+        bool chaosActive = false;
+        float chaosMult = 1.0f;
+        if (killerPlayer != null && settings.ChaosReinforcementGrowthEnabled)
+        {
+            chaosActive = ChallengeModesBridge.IsChaosEnabled(killerPlayer);
+            if (chaosActive)
+            {
+                var g = killerPlayer.Guid.Full;
+                int killCount = ChaosKillCountByPlayer.AddOrUpdate(g, 1, (_, c) => c + 1);
+                float growth = Math.Max(0.01f, settings.ChaosReinforcementGrowthPercent);
+                chaosMult = (float)Math.Min(settings.ChaosReinforcementMaxMultiplier, Math.Pow(1.0 + growth, killCount));
+            }
+        }
+
         int created = 0;
         for (int i = 0; i < count; i++)
         {
             ObjectGuid guid = GuidManager.NewDynamicGuid();
-            WorldObject? wo = WorldObjectFactory.CreateWorldObject(weenie, guid);
-            if (wo is not Creature creature)
+            Creature creature;
+
+            // Chaos mode: small chance to spawn a CreatureEx champion
+            if (chaosActive && ThreadSafeRandom.Next(0f, 1f) < settings.ChaosReinforcementCreatureExChance)
             {
-                GuidManager.RecycleDynamicGuid(guid);
-                continue;
+                var exType = Features.CreatureExSpawn.RandomCreatureType();
+#if REALM
+                var exWo = exType.Create(weenie, guid, killerPlayer?.RealmRuleset);
+#else
+                var exWo = exType.Create(weenie, guid);
+#endif
+                if (exWo is Creature exCreature)
+                {
+                    creature = exCreature;
+                }
+                else
+                {
+                    GuidManager.RecycleDynamicGuid(guid);
+                    continue;
+                }
+            }
+            else
+            {
+                WorldObject? wo = WorldObjectFactory.CreateWorldObject(weenie, guid);
+                if (wo is not Creature normalCreature)
+                {
+                    GuidManager.RecycleDynamicGuid(guid);
+                    continue;
+                }
+                creature = normalCreature;
             }
 
             creature.Location = new Position(deathLocation);
-            float healthMult = (float)ThreadSafeRandom.Next(healthMin, healthMax);
-            uint newMaxHealth = (uint)Math.Max(1, originalMaxHealth * healthMult);
-            creature.Health.Ranks = newMaxHealth;
-            creature.Health.Current = newMaxHealth;
-            float scaleMult = (float)ThreadSafeRandom.Next(scaleMin, scaleMax);
-            creature.ObjScale = originalScale * scaleMult;
 
-            if (xpBonusMax > 0f)
+            if (chaosActive)
             {
-                float bonus = (float)ThreadSafeRandom.Next(xpBonusMin, xpBonusMax);
-                if (bonus > 0f)
-                    creature.SetProperty(reinforcementBonusProp, bonus);
+                uint newMaxHealth = (uint)Math.Max(1, originalMaxHealth * chaosMult);
+                creature.Health.Ranks = newMaxHealth;
+                creature.Health.Current = newMaxHealth;
+                creature.ObjScale = originalScale * chaosMult;
+                if (chaosMult > 1.0f)
+                    creature.SetProperty(reinforcementBonusProp, chaosMult);
+            }
+            else
+            {
+                float healthMult = (float)ThreadSafeRandom.Next(healthMin, healthMax);
+                uint newMaxHealth = (uint)Math.Max(1, originalMaxHealth * healthMult);
+                creature.Health.Ranks = newMaxHealth;
+                creature.Health.Current = newMaxHealth;
+                float scaleMult = (float)ThreadSafeRandom.Next(scaleMin, scaleMax);
+                creature.ObjScale = originalScale * scaleMult;
+
+                if (xpBonusMax > 0f)
+                {
+                    float bonus = (float)ThreadSafeRandom.Next(xpBonusMin, xpBonusMax);
+                    if (bonus > 0f)
+                        creature.SetProperty(reinforcementBonusProp, bonus);
+                }
             }
 
             LandblockManager.AddObject(creature);

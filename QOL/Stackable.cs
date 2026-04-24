@@ -54,6 +54,23 @@ internal static class Stackable
         __result.MaxStackSize           = Cfg.MaxStackSize;
     }
 
+    // Same injection for the WCID-only factory path used by loot rollers and other mods.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(WorldObjectFactory), nameof(WorldObjectFactory.CreateNewWorldObject),
+        new Type[] { typeof(uint) })]
+    public static void PostCreateNewWorldObject(ref WorldObject __result)
+    {
+        if (__result == null) return;
+        if (__result is NativeStackable) return;
+        if (!_wcids.Contains(__result.WeenieClassId)) return;
+        if ((__result.MaxStackSize ?? 0) > 1) return;
+
+        __result.StackUnitEncumbrance ??= (ushort?)(__result.EncumbranceVal ?? 0);
+        __result.StackUnitValue       ??= (ushort?)(__result.Value           ?? 0);
+        __result.StackSize            ??= 1;
+        __result.MaxStackSize           = Cfg.MaxStackSize;
+    }
+
     // When ACE calls WorldObject.SetStackSize on a non-native stackable, recalculate
     // total weight and value — normally handled by Stackable.SetStackSize (override),
     // which doesn't run for objects that aren't actual Stackable subclass instances.

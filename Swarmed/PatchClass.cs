@@ -1,10 +1,15 @@
 namespace Swarmed;
 
+using System.Collections.Concurrent;
+
 [HarmonyPatch]
 public partial class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
 {
     internal static Settings? CurrentSettings;
     static bool _creatureExCommandsRegistered;
+
+    // Per-player chaos escalation: counts reinforcement-triggering kills while chaos is active.
+    internal static readonly ConcurrentDictionary<uint, int> ChaosKillCountByPlayer = new();
 
     public override void Start()
     {

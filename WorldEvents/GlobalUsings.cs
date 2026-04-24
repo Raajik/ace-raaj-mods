@@ -47,3 +47,7 @@ global using ACE.Shared.Helpers;
 global using ACE.Shared.Mods;
 
 global using WorldEvents.Hunt.Models;
+global using WorldEvents.BonusQuest.Models;
+global using WorldEvents.Invasion.Models;
+global using WorldEvents.Sale.Models;
+global using WorldEvents.Cull.Models;

@@ -14,9 +14,9 @@
   "// BonusStatsEnabled": "Adds Creature.GetBonus on top of InitLevel / StartingValue when true.",
   "// HardcoreSecondsBetweenDeathAllowed": "Minimum seconds between deaths counted for hardcore rules.",
   "// HardcoreStartingLives": "Starting life count for hardcore mode.",
-  "// ChallengeMilestoneRewardsEnabled": "Challenge milestone skill credits + permanent XP/lum %.",
-  "// ChallengeMilestoneLevels": "Skill credits: +1 per active mode (SSF/HC/alt/apt) per level, each mode once forever.",
-  "// ChallengeMilestonePercentEach": "Skill credit grants only (display); XP/lum % uses ChallengeBonusPercentPerLevel.",
+  "// ChallengeAchievementRewardsEnabled": "Challenge achievement skill credits + permanent XP/lum %.",
+  "// ChallengeAchievementLevels": "Skill credits: +1 per active mode (SSF/HC/alt/apt) per level, each mode once forever.",
+  "// ChallengeAchievementPercentEach": "Skill credit grants only (display); XP/lum % uses ChallengeBonusPercentPerLevel.",
   "// ChallengeBonusPercentPerLevel": "Percent per level toward current segment (0.01 = 0.01% per level; 60 levels => 0.6%).",
   "// ChallengeBonusSegmentCapLevel": "Completing this level banks one segment and resets in-run progress (default 300).",
   "// ChallengeModeDefaultTitles": "Future wishlist: CharacterTitle IDs if nameplate titles are implemented; not wired.",
@@ -140,9 +140,9 @@
   "BonusStatsEnabled": true,
   "HardcoreSecondsBetweenDeathAllowed": 60.0,
   "HardcoreStartingLives": 5,
-  "ChallengeMilestoneRewardsEnabled": true,
-  "ChallengeMilestoneLevels": [ 50, 100, 150, 200, 225, 250, 275, 300 ],
-  "ChallengeMilestonePercentEach": 1.0,
+  "ChallengeAchievementRewardsEnabled": true,
+  "ChallengeAchievementLevels": [ 50, 100, 150, 200, 225, 250, 275, 300 ],
+  "ChallengeAchievementPercentEach": 1.0,
   "ChallengeBonusPercentPerLevel": 0.01,
   "ChallengeBonusSegmentCapLevel": 300,
   "ChallengeModeDefaultTitles": {
@@ -166,7 +166,6 @@
   "CmQuitRemoveSociety": false,
   "CmQuitRemoveAetheria": false,
   "ChaosQuestBonusMultiplier": 4.0,
-  "ChaosRequiresActiveChallenge": true,
   "QuestPointsMultiplierWhileChallengeActive": 2.0,
   "QuestPointsMultiplyPerActiveChallengeTrack": true
 }

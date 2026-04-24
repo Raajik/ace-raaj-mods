@@ -33,7 +33,7 @@ internal static class ParchmentQuestRewards
                     ExternalXpGrants.GrantQuestXpWithoutMultiplier(player, amount);
                     if (player.Notify(LMBool.NotifyQuestXp))
                     {
-                        var show = QuestXpAwardDisplay.EstimateCharacterXpAfterMilestoneChain(player, amount);
+                        var show = QuestXpAwardDisplay.EstimateCharacterXpAfterAchievementChain(player, amount);
                         player.SendMessage($"[Loremaster] Parchment tier XP: {show:N0}.");
                     }
                 }

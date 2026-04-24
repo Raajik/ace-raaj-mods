@@ -159,13 +159,22 @@ internal static class QuestItemGrowthItemXpCurveHarmony
     }
 }
 
+// Patching GrantItemXP (Player_Xp.cs) instead of OnItemLevelUp — OnItemLevelUp only handles equipment sets
+// and Harmony fails to apply to it silently. GrantItemXP is where level changes are detected.
 [HarmonyPatch]
 [HarmonyPatchCategory(QuestItemGrowthHarmony.Category)]
 internal static class QuestItemGrowthOnItemLevelUpHarmony
 {
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(Player), nameof(Player.OnItemLevelUp), new Type[] { typeof(WorldObject), typeof(int) })]
-    public static void PreOnItemLevelUpQuestItems(WorldObject item, int prevItemLevel, Player __instance)
+    [HarmonyPatch(typeof(Player), nameof(Player.GrantItemXP), typeof(WorldObject), typeof(long))]
+    public static void PreGrantItemXP(WorldObject item, ref int __state)
+    {
+        __state = item?.ItemLevel ?? 0;
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Player), nameof(Player.GrantItemXP), typeof(WorldObject), typeof(long))]
+    public static void PostGrantItemXP(WorldObject item, int __state, Player __instance)
     {
         if (item == null)
             return;
@@ -174,32 +183,27 @@ internal static class QuestItemGrowthOnItemLevelUpHarmony
         if (s == null || !s.Enabled)
             return;
 
-        // Quest rewards: QuestGrowthItemBool. LootGrowthItem: GrowthItem + QuestGrowthTreasureTierInt (container GrowthItem
-        // mutator sets FakeInt.GrowthTier but does not set 40151, so it does not enter this path).
-        bool questGrowthPath = item.GetProperty(QuestItemGrowthProperties.QuestGrowthItemBool) == true;
-        bool lootGrowthPath = item.GetProperty(FakeBool.GrowthItem) == true
-            && item.GetProperty(QuestItemGrowthProperties.QuestGrowthTreasureTierInt).HasValue
-            && item.GetProperty(QuestItemGrowthProperties.QuestGrowthItemBool) != true;
-        if (!questGrowthPath && !lootGrowthPath)
-            return;
-
-        if (lootGrowthPath && !s.EnableLootItemLeveling)
-            return;
-
-        bool questGrowth = questGrowthPath;
-
+        int prevItemLevel = __state;
         int currentLevel = item.ItemLevel ?? 0;
         if (currentLevel <= prevItemLevel)
             return;
 
-        if (lootGrowthPath && prevItemLevel <= 1)
-        {
-            int? lastApplied = item.GetProperty(QuestItemGrowthProperties.QuestGrowthLastAppliedItemLevelInt);
-            if (lastApplied == null || lastApplied <= 1)
-                return;
-        }
+        bool questGrowthPath = item.GetProperty(QuestItemGrowthProperties.QuestGrowthItemBool) == true;
+        bool lootGrowthPath = item.GetProperty(FakeBool.GrowthItem) == true
+            && item.GetProperty(QuestItemGrowthProperties.QuestGrowthTreasureTierInt).HasValue
+            && item.GetProperty(QuestItemGrowthProperties.QuestGrowthItemBool) != true;
+        bool vanillaLevelPath = !questGrowthPath && !lootGrowthPath
+            && item.ItemBaseXp is > 0
+            && item.ItemXpStyle == ItemXpStyle.ScalesWithLevel
+            && ItemLevelingEligibility.IsEquippableGearShape(item);
 
-        QuestItemGrowthCatchUp.ApplyCatchUpGrowth(item, prevItemLevel, currentLevel, questGrowth, __instance, s);
+        if (!questGrowthPath && !lootGrowthPath && !vanillaLevelPath)
+            return;
+
+        if ((lootGrowthPath || vanillaLevelPath) && !s.EnableLootItemLeveling)
+            return;
+
+        QuestItemGrowthCatchUp.ApplyCatchUpGrowth(item, prevItemLevel, currentLevel, questGrowth: questGrowthPath, __instance, s);
     }
 }
 

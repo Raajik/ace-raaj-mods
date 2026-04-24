@@ -21,11 +21,17 @@ public static class BankSalvage
 
         MaybePurgeLegacyPooledSalvage(player, settings.SalvageBank);
 
-        if (parameters.Length < 2)
+        if (parameters.Length < 2 || string.IsNullOrEmpty(parameters[1]))
         {
-            player.SendMessage("Usage: /bank salvage status | deposit | redeem ... | debug");
-            player.SendMessage("  Shorthand: /b s st | /b s d | /b s r <material> [bags]");
-            player.SendMessage("  Withdraw-style redeem: /bank withdraw salvage <material> [bags]  |  /b w s <material> [bags]");
+            // Default to status when no subcommand
+            if (settings.SalvageBank.Enabled)
+            {
+                SendStatus(player, settings.SalvageBank);
+                return;
+            }
+            player.SendMessage("Usage: /bank salvage status | deposit | withdraw <material> [bags] | debug");
+            player.SendMessage("  Shorthand: /b s st | /b s d | /b s w <material> [bags]");
+            player.SendMessage("  Withdraw: /bank salvage withdraw <material> [bags] - spawns clean bags, debits bank.");
             return;
         }
 
@@ -42,13 +48,23 @@ public static class BankSalvage
             return;
         }
 
-        if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
+if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
             sub.Equals("all", StringComparison.OrdinalIgnoreCase))
         {
             DepositAll(player, settings);
             return;
         }
 
+        // Withdraw-style: spawns clean bags like /cisalvage, debits bank
+        // TODO: Interface with Candeth Keep salvage quest NPCs for quest completion
+        if (sub.Equals("withdraw", StringComparison.OrdinalIgnoreCase) ||
+            sub.Equals("w", StringComparison.OrdinalIgnoreCase))
+        {
+            WithdrawBags(session, parameters, settings);
+            return;
+        }
+
+        // Legacy: redeem deprecated in favor of withdraw
         if (sub.Equals("redeem", StringComparison.OrdinalIgnoreCase))
         {
             RedeemBags(session, parameters, settings);
@@ -61,10 +77,14 @@ public static class BankSalvage
     // Maps short tokens from /b s <token> ... (same as full words for /bank salvage ...).
     static string NormalizeSalvageSubcommand(string token)
     {
+        if (string.IsNullOrEmpty(token))
+            return "status";
         if (token.Equals("r", StringComparison.OrdinalIgnoreCase))
             return "redeem";
         if (token.Equals("d", StringComparison.OrdinalIgnoreCase))
             return "deposit";
+        if (token.Equals("w", StringComparison.OrdinalIgnoreCase))
+            return "withdraw";
         if (token.Equals("st", StringComparison.OrdinalIgnoreCase) || token.Equals("?", StringComparison.OrdinalIgnoreCase))
             return "status";
         if (token.Equals("db", StringComparison.OrdinalIgnoreCase) || token.Equals("wcids", StringComparison.OrdinalIgnoreCase))
@@ -627,5 +647,160 @@ public static class BankSalvage
         }
 
         return removed;
+    }
+
+    static void CreateCleanBag(Session session, string[] parameters)
+    {
+        Player? player = session.Player;
+        if (player is null)
+            return;
+
+        if (parameters.Length < 3)
+        {
+            player.SendMessage("Usage: /bank salvage create <material> - spawns clean W10 bag.");
+            player.SendMessage("Example: /bank salvage create iron");
+            return;
+        }
+
+        string materialToken = parameters[2];
+
+        if (!Enum.TryParse(materialToken, true, out MaterialType materialType))
+        {
+            player.SendMessage($"Unknown material: {materialToken}");
+            return;
+        }
+
+        if (!Player.MaterialSalvage.TryGetValue((int)materialType, out int wcid) || wcid == 0)
+        {
+            player.SendMessage($"Unknown material: {materialToken}");
+            return;
+        }
+
+        WorldObject? bag = WorldObjectFactory.CreateNewWorldObject((uint)wcid);
+        if (bag is null)
+        {
+            player.SendMessage($"Failed to create salvage bag for {materialToken}");
+            return;
+        }
+
+        bag.Name = "Salvage (100)";
+        bag.Structure = 100;
+        bag.ItemWorkmanship = 100;
+        bag.NumItemsInMaterial = 10;
+
+        if (!player.TryCreateInInventoryWithNetworking(bag))
+        {
+            bag.Destroy();
+            player.SendMessage("No inventory space.");
+            return;
+        }
+
+        player.SendMessage($"Created clean W10 bag of {materialToken} (/bank salvage create {materialToken})");
+    }
+
+    static void WithdrawBags(Session session, string[] parameters, Settings settings)
+    {
+        Player? player = session.Player;
+        if (player is null)
+            return;
+
+        SalvageBankSettings sb = settings.SalvageBank;
+        int unitsPerBag = sb.Redeem.UnitsPerBag;
+        if (unitsPerBag <= 0)
+        {
+            player.SendMessage("Salvage withdraw: UnitsPerBag must be positive in settings.");
+            return;
+        }
+
+        if (parameters.Length < 3)
+        {
+            player.SendMessage("Usage: /bank salvage withdraw <material> [bags]");
+            player.SendMessage("Example: /bank salvage withdraw steel 2  ->  creates 2 W10 steel bags");
+            player.SendMessage("Tip: Use 555 for 5 bags, 5555 for 5 bags (only uses what's available).");
+            return;
+        }
+
+        string materialToken = parameters[2];
+        int? ruleIndex = TryResolveDepositRuleIndex(sb.DepositRules, materialToken);
+        if (ruleIndex is null)
+        {
+            player.SendMessage($"Unknown material: {materialToken}. Use material name (e.g. steel, iron).");
+            return;
+        }
+
+        int ri = ruleIndex.Value;
+        SalvageDepositRule rule = sb.DepositRules[ri];
+        int bankProp = ResolveMaterialBankProperty(sb, ri, rule);
+        long banked = player.GetBanked(bankProp);
+
+        // Error: below minimum for even 1 bag
+        if (banked < unitsPerBag)
+        {
+            player.SendMessage($"You need at least {unitsPerBag:N0} banked units of {materialToken} to withdraw. (You have {banked:N0} banked).");
+            return;
+        }
+
+        // Calculate max withdraw
+        long maxBags = banked / unitsPerBag;
+
+        int wantBags = 1;
+        if (parameters.Length >= 4)
+        {
+            if (!int.TryParse(parameters[3], out wantBags) || wantBags < 1)
+            {
+                player.SendMessage("Usage: /bank salvage withdraw <material> [bags] - bags must be a positive integer.");
+                return;
+            }
+        }
+
+        // Cap to available, allow requesting more
+        int bags = (int)Math.Min(maxBags, wantBags);
+        
+        // Check if player requested more than available
+        string warning = "";
+        if (wantBags > maxBags)
+        {
+            warning = $" Withdrawing all usable {materialToken} ({maxBags} bag(s)).";
+        }
+
+        // Spawn clean bags like CISalvage
+        int done = SpawnCleanBags(player, rule, bags);
+
+        if (done > 0)
+        {
+            long debited = done * unitsPerBag;
+            player.IncBanked(bankProp, -debited);
+            string label = GetDepositRuleDisplayName(rule);
+            player.SendMessage($"Withdrew {done} W10 {label} bag(s) ({debited:N0} units). Remaining: {player.GetBanked(bankProp):N0}.{warning}");
+        }
+    }
+
+    static int SpawnCleanBags(Player player, SalvageDepositRule rule, int bags)
+    {
+        uint wcid = rule.WeenieClassId;
+        if (wcid == 0)
+            return 0;
+
+        int done = 0;
+        for (int i = 0; i < bags; i++)
+        {
+            WorldObject? bag = WorldObjectFactory.CreateNewWorldObject((uint)wcid);
+            if (bag is null)
+                break;
+
+            bag.Name = "Salvage (100)";
+            bag.Structure = 100;
+            bag.ItemWorkmanship = 100;
+            bag.NumItemsInMaterial = 10;
+
+            if (!player.TryCreateInInventoryWithNetworking(bag))
+            {
+                bag.Destroy();
+                break;
+            }
+            done++;
+        }
+
+        return done;
     }
 }

@@ -42,7 +42,7 @@ public partial class PatchClass
     {
         var settings = CurrentSettings;
         if (settings?.EnableHunt != true
-            || settings.MilestoneApplyDeathTreasureTierBump != true
+            || settings.AchievementApplyDeathTreasureTierBump != true
             || __instance == null)
             return;
 
@@ -55,15 +55,15 @@ public partial class PatchClass
 
         var nominal = __instance.DeathTreasure;
         var data = HuntRuntime.GetOrLoadPlayer(player.Guid.Full);
-        double lootProgress = HuntRanks.MilestoneProgressForLoot(player, data, settings);
-        var milestoneOffset = HuntRanks.MilestoneLootTierFromProgress(lootProgress, settings);
-        if (milestoneOffset <= 0)
+        double lootProgress = HuntRanks.AchievementProgressForLoot(player, data, settings);
+        var achievementOffset = HuntRanks.AchievementLootTierFromProgress(lootProgress, settings);
+        if (achievementOffset <= 0)
             return;
 
         var allRows = HuntDeathTreasureResolver.GetAllRows();
         var resolved = HuntDeathTreasureResolver.ResolveBumpedProfile(
             nominal,
-            milestoneOffset,
+            achievementOffset,
             settings.MaxEffectiveLootTier,
             allRows);
 
@@ -106,15 +106,15 @@ public partial class PatchClass
             return;
 
         var data = HuntRuntime.GetOrLoadPlayer(player.Guid.Full);
-        double lootProgressPost = HuntRanks.MilestoneProgressForLoot(player, data, settings);
-        var milestoneOffset = HuntRanks.MilestoneLootTierFromProgress(lootProgressPost, settings);
+        double lootProgressPost = HuntRanks.AchievementProgressForLoot(player, data, settings);
+        var achievementOffset = HuntRanks.AchievementLootTierFromProgress(lootProgressPost, settings);
 
         var hadTierBumpPending = PendingRestoreDeathTreasureType.ContainsKey(__instance.Guid.Full);
-        var skipExtraCreateList = settings.MilestoneApplyDeathTreasureTierBump
-            && !settings.MilestoneStackExtraCreateListRollsWithTierBump
+        var skipExtraCreateList = settings.AchievementApplyDeathTreasureTierBump
+            && !settings.AchievementStackExtraCreateListRollsWithTierBump
             && hadTierBumpPending;
 
-        var extraRolls = milestoneOffset * settings.MilestoneLootExtraRollsPerTier;
+        var extraRolls = achievementOffset * settings.AchievementLootExtraRollsPerTier;
         if (extraRolls > 0 && !skipExtraCreateList && __instance.Biota?.PropertiesCreateList != null)
         {
             var createList = __instance.Biota.PropertiesCreateList

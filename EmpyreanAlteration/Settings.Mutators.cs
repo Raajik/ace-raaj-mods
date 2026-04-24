@@ -191,6 +191,7 @@ public partial class Settings
         WeenieType.MissileLauncher,
         WeenieType.Caster,
         WeenieType.Clothing,
+        WeenieType.Gem,
     };
 
     [JsonPropertyName("// ItemTypeEquipmentSets")]

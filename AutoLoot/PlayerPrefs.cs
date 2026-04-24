@@ -44,9 +44,5 @@ public class PlayerPrefs
     /// </summary>
     public bool UnknownScrollsEnabled { get; set; } = false;
 
-    /// <summary>
-    /// Whether the player wants a server-wide broadcast when they loot a rare item.
-    /// Defaults to false — players opt in with /autoloot rares.
-    /// </summary>
     public bool BroadcastRares { get; set; } = false;
 }

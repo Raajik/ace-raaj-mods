@@ -11,6 +11,9 @@ namespace Loremaster;
 internal static class TrophyBurdenXp
 {
     private static readonly ConcurrentDictionary<uint, bool> TrophyCollectors = new();
+    private static readonly ConcurrentDictionary<uint, bool> _blacklist = new();
+    private static string? _logPath;
+    private static readonly object _logLock = new();
 
     private static void DebugLog(string msg)
     {
@@ -22,18 +25,36 @@ internal static class TrophyBurdenXp
     public static void Initialize()
     {
         var settings = PatchClass.Settings;
+        TrophyCollectors.Clear();
+        _blacklist.Clear();
+
         if (settings?.EnableTrophyBurdenXp != true)
             return;
 
         if (settings.TrophyCollectorWcids != null)
-        {
             foreach (var wcid in settings.TrophyCollectorWcids)
-            {
                 TrophyCollectors[wcid] = true;
+
+        if (settings.TrophyBlacklistWcids != null)
+            foreach (var wcid in settings.TrophyBlacklistWcids)
+                _blacklist[wcid] = true;
+
+        if (settings.TrophyLogEnabled)
+        {
+            var modDir = PatchClass.GetModDirectory();
+            if (!string.IsNullOrEmpty(modDir))
+            {
+                var dataDir = Path.Combine(modDir, "Data");
+                Directory.CreateDirectory(dataDir);
+                _logPath = Path.Combine(dataDir, "TrophyLog.jsonl");
             }
         }
+        else
+        {
+            _logPath = null;
+        }
 
-        ModManager.Log($"[LM] TrophyBurdenXp initialized with {TrophyCollectors.Count} collectors", ModManager.LogLevel.Info);
+        ModManager.Log($"[LM] TrophyBurdenXp initialized with {TrophyCollectors.Count} collectors, {_blacklist.Count} blacklisted WCIDs", ModManager.LogLevel.Info);
     }
 
     public static void HandleGiveRequest(Player player, WorldObject? target, WorldObject? item)
@@ -49,13 +70,18 @@ internal static class TrophyBurdenXp
         if (!TrophyCollectors.ContainsKey(targetWcid))
             return;
 
-        // Many trophy/collectible weenies have EncumbranceVal 0; without a floor the formula yields no bonus.
-        var rawBurden = item.EncumbranceVal ?? 0;
-        var minWhenZero = Math.Max(0, settings.TrophyEncumbranceWhenZero);
-        var burden = rawBurden > 0 ? rawBurden : minWhenZero;
-        if (burden <= 0)
+        // Blacklisted WCIDs are silently rejected
+        if (_blacklist.ContainsKey(item.WeenieClassId))
         {
-            DebugLog($"Item {item.Name} has no burden and TrophyEncumbranceWhenZero is 0, skipping");
+            DebugLog($"Item {item.Name} (WCID {item.WeenieClassId}) is blacklisted, skipping");
+            return;
+        }
+
+        // Minimum value threshold — blocks cheap vendor items
+        var minValue = settings.TrophyMinBuyValue;
+        if (minValue > 0 && (item.Value ?? 0) < minValue)
+        {
+            DebugLog($"Item {item.Name} value {item.Value ?? 0} < minimum {minValue}, skipping");
             return;
         }
 
@@ -66,7 +92,37 @@ internal static class TrophyBurdenXp
             return;
         }
 
-        double percentOfLevel = (burden / 100.0) * 0.15;
+        var isAttuned = (item.GetProperty(PropertyInt.Attuned) ?? 0) > 0;
+
+        double percentOfLevel;
+        string burdenNote;
+
+        if (isAttuned)
+        {
+            percentOfLevel = Math.Clamp(settings.TrophyAttunedXpFraction, 0f, 1f);
+            if (percentOfLevel <= 0)
+            {
+                DebugLog($"Item {item.Name} is attuned and TrophyAttunedXpFraction is 0, skipping");
+                return;
+            }
+            burdenNote = " (attuned item — flat rate)";
+        }
+        else
+        {
+            var rawBurden = item.EncumbranceVal ?? 0;
+            var minWhenZero = Math.Max(0, settings.TrophyEncumbranceWhenZero);
+            var burden = rawBurden > 0 ? rawBurden : minWhenZero;
+            if (burden <= 0)
+            {
+                DebugLog($"Item {item.Name} has no burden and TrophyEncumbranceWhenZero is 0, skipping");
+                return;
+            }
+            percentOfLevel = (burden / 100.0) * 0.15;
+            burdenNote = rawBurden <= 0 && minWhenZero > 0
+                ? $" (treat as {minWhenZero} burden; item has no listed encumbrance)"
+                : "";
+        }
+
         var baseBonusXp = (long)(xpToNext * percentOfLevel);
 
         var qc = Math.Clamp(settings.TrophyQualityBonusChance, 0.0, 1.0);
@@ -75,20 +131,18 @@ internal static class TrophyBurdenXp
         var rolledPristine = pc > 0 && ThreadSafeRandom.Next(0.0f, 1.0f) < (float)pc;
 
         var mult = 1;
-        if (rolledQuality)
-            mult *= 2;
-        if (rolledPristine)
-            mult *= 3;
+        if (rolledQuality) mult *= 2;
+        if (rolledPristine) mult *= 3;
 
         var bonusXp = (long)Math.Min((double)baseBonusXp * mult, long.MaxValue);
 
         DebugLog(
-            $"{player.Name} turned in {item.Name} (raw burden={rawBurden}, effective={burden}), base={baseBonusXp}, mult={mult}, awarding {bonusXp}");
+            $"{player.Name} turned in {item.Name} (attuned={isAttuned}, burden-base={percentOfLevel:P2}), base={baseBonusXp}, mult={mult}, awarding {bonusXp}");
 
         if (bonusXp > 0)
         {
-            // Same as parchment / completion-bonus: pre-scale for shard xp_modifier, skip retention chain (ExternalXpGrants).
             ExternalXpGrants.GrantQuestXpWithoutMultiplier(player, bonusXp);
+            AppendLog(settings, player, item, bonusXp, isAttuned, mult);
 
             var itemName = string.IsNullOrWhiteSpace(item.Name) ? "Trophy" : item.Name.Trim();
             var prefix = "";
@@ -102,20 +156,44 @@ internal static class TrophyBurdenXp
             var pctDisplay = percentOfLevel * mult * 100.0;
             var yieldNote = mult switch
             {
-                1 => "",
                 2 => " — double yield",
                 3 => " — triple yield",
                 6 => " — exceptional specimen (×6)",
                 _ => "",
             };
 
-            var burdenNote = rawBurden <= 0 && minWhenZero > 0
-                ? $" (treat as {minWhenZero} burden; item has no listed encumbrance)"
-                : "";
-
-            var show = QuestXpAwardDisplay.EstimateCharacterXpAfterMilestoneChain(player, bonusXp);
+            var show = QuestXpAwardDisplay.EstimateCharacterXpAfterAchievementChain(player, bonusXp);
             player.SendMessage(
                 $"[Loremaster] {prefix}{itemName} turned in for +{show:N0} XP (~{pctDisplay:F2}% of level{yieldNote}){burdenNote}.");
+        }
+    }
+
+    private static void AppendLog(Settings settings, Player player, WorldObject item, long xpAwarded, bool isAttuned, int mult)
+    {
+        if (!settings.TrophyLogEnabled || _logPath == null)
+            return;
+
+        try
+        {
+            var entry = new
+            {
+                t = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                player = player.Name ?? "",
+                guid = player.Guid.Full,
+                item = item.Name ?? "",
+                wcid = item.WeenieClassId,
+                value = item.Value ?? 0,
+                attuned = isAttuned,
+                mult,
+                xp = xpAwarded,
+            };
+            var line = System.Text.Json.JsonSerializer.Serialize(entry);
+            lock (_logLock)
+                File.AppendAllText(_logPath, line + "\n");
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LM] TrophyLog write failed: {ex.Message}", ModManager.LogLevel.Warn);
         }
     }
 }

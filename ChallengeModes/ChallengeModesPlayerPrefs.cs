@@ -12,4 +12,7 @@ public class ChallengeModesPlayerPrefs
     public bool SsfPermanentlyDeclined { get; set; }
     public bool HardcorePermanentlyDeclined { get; set; }
     public bool AlternateLevelingPermanentlyDeclined { get; set; }
+
+    public bool ChaosEnabled { get; set; }
+    public bool ChaosPermanentlyDeclined { get; set; }
 }

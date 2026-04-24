@@ -726,7 +726,7 @@ public partial class PatchClass : BasicPatch<Settings>
 
         ModManager.Log($"[Lockboxes] LootConfig has {config.common.items.Count} items", ModManager.LogLevel.Info);
 
-        int randomIndex = ThreadSafeRandom.Next(0, config.common.items.Count);
+        int randomIndex = ThreadSafeRandom.Next(0, config.common.items.Count - 1);
         var selectedItem = config.common.items[randomIndex];
 
         ModManager.Log($"[Lockboxes] Selected loot: wcid={selectedItem.wcid}, name={selectedItem.name}", ModManager.LogLevel.Info);

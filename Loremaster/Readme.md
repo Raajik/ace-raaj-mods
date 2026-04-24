@@ -132,15 +132,15 @@ Use small `StackMin`/`StackMax` for shop commodities and `1`/`1` for full salvag
 
 ---
 
-### Milestone Broadcasts
+### Achievement Broadcasts
 
-When a player's account reaches a configured milestone of unique quests solved, a message is broadcast server-wide and an optional bonus QP reward is granted.
+When a player's account reaches a configured achievement threshold of unique quests solved, a message is broadcast server-wide and an optional bonus QP reward is granted.
 
-- Milestones are account-wide, not per-character.
+- Achievement thresholds are account-wide, not per-character.
 - Default thresholds: 25, 50, 100, 250, 500, 750, 1000 — then every 500 up to 10,000.
-- Bonus QP per milestone uses the formula `(MilestoneBonusQPPercent / 100) × MilestoneBonusQPBase` (default 10% of 100 = 10 QP per milestone). Use `MilestoneBonusQPOverrides` to set a fixed QP value for specific thresholds.
+- Bonus QP per achievement uses the formula `(AchievementBonusQPPercent / 100) × AchievementBonusQPBase` (default 10% of 100 = 10 QP per achievement). Use `AchievementBonusQPOverrides` to set a fixed QP value for specific thresholds.
 - The broadcast message format is configurable.
-- Can be disabled entirely with `EnableMilestoneBroadcasts: false`.
+- Can be disabled entirely with `EnableAchievementBroadcasts: false`.
 
 Default broadcast format:
 ```
@@ -247,16 +247,16 @@ All settings live in `Settings.json` in the mod folder. The file is auto-generat
 | `EnableRepeatSolveLoot` | bool | `true` | Master toggle for repeat-solve item rewards (uses `Mods/Loremaster/LootConfig.json` by default). |
 | `LootConfigPath` | string | `""` | Optional path to `LootConfig.json`; empty = `Mods/Loremaster/LootConfig.json`. |
 
-### Milestone Broadcasts
+### Achievement Broadcasts
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `EnableMilestoneBroadcasts` | bool | `true` | Master toggle for server-wide milestone messages. |
-| `MilestoneThresholds` | list | see below | Account-wide unique quest counts that trigger a broadcast. |
-| `MilestoneBonusQPPercent` | float | `10` | Percentage used in formula: bonus = (this / 100) × MilestoneBonusQPBase. |
-| `MilestoneBonusQPBase` | float | `100` | Base value for formula. Default gives 10 QP per milestone. |
-| `MilestoneBonusQPOverrides` | dict | `{}` | Per-threshold QP overrides. If a threshold is present here, that QP is used instead of the formula. |
-| `MilestoneBroadcastFormat` | string | see below | Format string. `{0}` = character name, `{1}` = ordinal milestone (e.g. "50th"), `{2}` = bonus QP awarded. |
+| `EnableAchievementBroadcasts` | bool | `true` | Master toggle for server-wide achievement messages. |
+| `AchievementThresholds` | list | see below | Account-wide unique quest counts that trigger a broadcast. |
+| `AchievementBonusQPPercent` | float | `10` | Percentage used in formula: bonus = (this / 100) × AchievementBonusQPBase. |
+| `AchievementBonusQPBase` | float | `100` | Base value for formula. Default gives 10 QP per achievement. |
+| `AchievementBonusQPOverrides` | dict | `{}` | Per-threshold QP overrides. If a threshold is present here, that QP is used instead of the formula. |
+| `AchievementBroadcastFormat` | string | see below | Format string. `{0}` = character name, `{1}` = ordinal achievement (e.g. "50th"), `{2}` = bonus QP awarded. |
 
 ### Quest Cooldown Reduction
 
@@ -314,7 +314,7 @@ The `.csproj` pulls `ACEmulator.ACE.Shared` from NuGet automatically. It expects
 | Account-wide unique quest tracking | No | Yes |
 | Completion bonus XP (first and repeat, level-scaled) | No | Yes |
 | Weighted repeat-solve loot | No | Yes |
-| Milestone broadcasts with formula-based bonus QP | No | Yes |
+| Achievement broadcasts with formula-based bonus QP | No | Yes |
 | Quest cooldown reduction (same % as XP bonus) | No | Yes |
 | Per-player notification toggles | No | Yes |
 | Admin inspect / reset commands | No | Yes |

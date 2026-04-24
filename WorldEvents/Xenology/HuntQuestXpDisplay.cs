@@ -6,28 +6,28 @@ namespace WorldEvents;
 // Matches Loremaster.QuestXpAwardDisplay: estimated character XP to the bar after ChallengeModes 450-prefix.
 internal static class HuntQuestXpDisplay
 {
-    static MethodInfo? _challengeMilestoneMult;
+    static MethodInfo? _challengeAchievementMult;
     static bool _resolved;
 
-    internal static long EstimateCharacterXpAfterMilestoneChain(Player? player, long levelFractionIntendedBarGain)
+    internal static long EstimateCharacterXpAfterAchievementChain(Player? player, long levelFractionIntendedBarGain)
     {
         if (player is null || levelFractionIntendedBarGain <= 0)
             return levelFractionIntendedBarGain;
-        var m = GetChallengeMilestoneMult(player);
+        var m = GetChallengeAchievementMult(player);
         if (m <= 0)
             m = 1.0;
         return (long)(levelFractionIntendedBarGain * m + 0.5);
     }
 
-    static double GetChallengeMilestoneMult(Player player)
+    static double GetChallengeAchievementMult(Player player)
     {
         if (!_resolved)
             Resolve();
-        if (_challengeMilestoneMult is null)
+        if (_challengeAchievementMult is null)
             return 1.0;
         try
         {
-            return (double)(_challengeMilestoneMult.Invoke(null, new object?[] { player }) ?? 1.0);
+            return (double)(_challengeAchievementMult.Invoke(null, new object?[] { player }) ?? 1.0);
         }
         catch
         {
@@ -43,8 +43,8 @@ internal static class HuntQuestXpDisplay
             if (!string.Equals(asm.GetName().Name, "ChallengeModes", StringComparison.Ordinal))
                 continue;
             var t = asm.GetType("ChallengeModes.Features.ChallengeRewards");
-            _challengeMilestoneMult = t?.GetMethod(
-                "GetQuestXpMilestoneMultiplierForPlayer",
+            _challengeAchievementMult = t?.GetMethod(
+                "GetQuestXpAchievementMultiplierForPlayer",
                 BindingFlags.Public | BindingFlags.Static,
                 null,
                 new[] { typeof(Player) },

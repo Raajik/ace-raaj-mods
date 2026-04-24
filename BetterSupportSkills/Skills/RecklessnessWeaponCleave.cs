@@ -41,7 +41,7 @@ internal static class RecklessnessWeaponCleave
         if (__result.Weapon is SpellProjectile)
             return;
 
-        RecklessnessCleaveSettings rc = settings.RecklessnessCleave;
+        RecklessnessCleaveSettings rc = settings.Recklessness;
         int extra = reck.AdvancementClass == SkillAdvancementClass.Specialized
             ? rc.CleaveTargetsSpecialized
             : rc.CleaveTargetsTrained;

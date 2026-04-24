@@ -47,3 +47,4 @@ global using ACE.Shared.Helpers;
 global using ACE.Shared.Mods;
 
 global using AceRaajMods.Shared;
+global using MaterialType = ACE.Entity.Enum.MaterialType;

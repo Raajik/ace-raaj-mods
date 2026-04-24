@@ -9,7 +9,7 @@ internal static class ChallengeModesDetailBridge
     const string AssemblyShortName = "ChallengeModes";
     const string DetailTypeName = "ChallengeModes.Features.LoremasterXpDetail";
 
-    internal static void AppendChallengeMilestoneSection(StringBuilder sb, Player player)
+    internal static void AppendChallengeAchievementSection(StringBuilder sb, Player player)
     {
         try
         {
@@ -23,7 +23,7 @@ internal static class ChallengeModesDetailBridge
                     continue;
 
                 var append = t.GetMethod(
-                    "AppendChallengeMilestoneSection",
+                    "AppendChallengeAchievementSection",
                     BindingFlags.Public | BindingFlags.Static,
                     binder: null,
                     types: new[] { typeof(StringBuilder), typeof(Player) },
@@ -37,16 +37,16 @@ internal static class ChallengeModesDetailBridge
         }
         catch (Exception ex)
         {
-            sb.AppendLine("--- ChallengeModes milestone ---");
+            sb.AppendLine("--- ChallengeModes achievement ---");
             sb.AppendLine($"(Detail failed: {ex.Message})");
             return;
         }
 
-        sb.AppendLine("--- ChallengeModes milestone ---");
+        sb.AppendLine("--- ChallengeModes achievement ---");
         sb.AppendLine("ChallengeModes assembly not loaded; use Meta.json + ChallengeModes.dll for segment breakdown.");
     }
 
-    internal static double GetMilestoneBonusPercent(Player player)
+    internal static double GetAchievementBonusPercent(Player player)
     {
         try
         {
@@ -60,7 +60,7 @@ internal static class ChallengeModesDetailBridge
                     continue;
 
                 var m = t.GetMethod(
-                    "GetMilestoneBonusPercent",
+                    "GetAchievementBonusPercent",
                     BindingFlags.Public | BindingFlags.Static,
                     binder: null,
                     types: new[] { typeof(Player) },

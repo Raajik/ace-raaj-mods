@@ -15,8 +15,9 @@
     "SpellDodgePercentSpecialized": 0.10
   },
   "EnableAssessCreature": true,
+  "EnableSalvage": true,
   "EnableCooking": true,
-  "EnableDeception": false,
+  "EnableDeception": true,
   "EnableDirtyFighting": true,
   "DirtyFighting": {
     "DebuffDurationSeconds": 180,
@@ -29,20 +30,20 @@
     "BleedPercentTrained": 0.01,
     "BleedPercentSpecialized": 0.02
   },
-  "EnableDualWield": false,
+  "EnableDualWield": true,
   "DualWield": {
     "DamageResistanceTrained": 10,
     "DamageResistanceSpecialized": 20
   },
   "EnableFletching": false,
   "EnableHealing": true,
-  "EnableLeadership": false,
+  "EnableLeadership": true,
   "Leadership": {
     "ExtraCombatPetSlotsTrained": 1,
     "ExtraCombatPetSlotsSpecialized": 2
   },
-  "EnableLockpick": false,
-  "EnableLoyalty": false,
+  "EnableLockpick": true,
+  "EnableLoyalty": true,
   "Loyalty": {
     "CorruptionSpellIds": [],
     "SummoningSkillPerTier": 50,
@@ -53,7 +54,7 @@
     "PercentMaxHealthPerSecondSpecialized": 0.01
   },
   "EnableManaConversion": true,
-  "EnableMagicWithoutManaConversion": false,
+  "EnableMagicWithoutManaConversion": true,
   "MagicWithoutManaConversion": {
     "EchoWarVoidHarmful": true,
     "TripleLifeHarmful": true,
@@ -61,14 +62,14 @@
     "ItemEnchantmentWeaveSpellId": 90000018,
     "WeaveStacksForPlus50": 1
   },
-  "EnableMeleeLifeSpellProc": false,
+  "EnableMeleeLifeSpellProc": true,
   "MeleeLifeSpellProc": {
     "SpellId": 0,
     "ProcChance": 0.12,
     "CooldownSeconds": 4.0
   },
-  "EnableMissileDefense": false,
-  "EnableRecklessness": false,
+  "EnableMissileDefense": true,
+  "EnableRecklessness": true,
   "RecklessnessCleave": {
     "CleaveTargetsTrained": 1,
     "CleaveTargetsSpecialized": 2,
@@ -79,7 +80,7 @@
     "SplashPlayerVictims": false
   },
   "EnableShield": true,
-  "EnableSneakAttack": false,
+  "EnableSneakAttack": true,
   "SneakAttack": {
     "ExtraWeaponFollowUpsTrained": 1,
     "ExtraWeaponFollowUpsSpecialized": 2,
@@ -95,6 +96,17 @@
     "ExtraRollsSpecialized": 2,
     "MaxExtraRolls": 10,
     "BonusTreasureChance": 0.5
+  },
+  "EnableTinkeringLootGating": false,
+  "TinkeringLootGating": {
+    "MaxLevelBonusTrained": 10,
+    "MaxLevelBonusSpecialized": 20
+  },
+  "EnableVendorItemLeveling": false,
+  "VendorItemLeveling": {
+    "MaxLevel": 25,
+    "BaseXp": 10000,
+    "TreasureTier": 3
   },
   "Cooking": {
     "LegendaryHealthSpell": 6077,
@@ -120,5 +132,11 @@
     "CleaveRange": 15.0,
     "EquipmentManaEfficiencyTrained": 0.25,
     "EquipmentManaEfficiencySpecialized": 0.50
+  },
+  "Salvage": {
+    "UnitsPerItem": 1,
+    "AutoDepositPercent": 0.001,
+    "AutoDepositPercentUnlocked": 0.0005,
+    "RequireQuestsForUnlock": 100
   }
 }

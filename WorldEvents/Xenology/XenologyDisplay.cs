@@ -41,8 +41,5 @@ internal static class HuntDisplay
     }
 
     internal static void BroadcastWorldLine(string message)
-    {
-        foreach (var p in PlayerManager.GetAllOnline())
-            p.SendMessage(message);
-    }
+        => WorldEventsBroadcast.Send(message);
 }

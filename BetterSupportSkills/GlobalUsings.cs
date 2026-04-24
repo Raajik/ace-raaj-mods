@@ -28,6 +28,7 @@ global using ACE.Server.WorldObjects;
 global using HarmonyLib;
 
 global using ACE.Shared;
+global using ACE.Shared.Helpers;
 global using ACE.Shared.Mods;
 
 global using BetterSupportSkills.Skills;

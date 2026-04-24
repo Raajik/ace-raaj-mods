@@ -12,13 +12,13 @@ Server-side challenge hub: `/cm` commands for **SSF** (ironman), **hardcore**, *
 - `/cm levels` | `refund` — alternate leveling spend/refund UI.
 - Admin/debug entries as listed in `CmCommands` help.
 
-## Milestone rewards (`ChallengeMilestoneRewardsEnabled`)
+## Achievement rewards (`ChallengeAchievementRewardsEnabled`)
 
 When enabled and the player **has at least one active challenge** at level-up (`PatchClass.PlayerHasActiveChallenge`):
 
-1. **Skill credits** — For each entry in `ChallengeMilestoneLevels`, crossing that level grants **+1 skill credit per active challenge track** (SSF, hardcore, alternate leveling, aptitude) that has **not** already claimed that milestone on that track. Tracks use separate bitmasks (`FakeInt.ChallengeMilestoneSkillBits*`); legacy `ChallengeMilestoneClaimBits` is migrated once to all four tracks.
+1. **Skill credits** — For each entry in `ChallengeAchievementLevels`, crossing that level grants **+1 skill credit per active challenge track** (SSF, hardcore, alternate leveling, aptitude) that has **not** already claimed that achievement on that track. Tracks use separate bitmasks (`FakeInt.ChallengeMilestoneSkillBits*` — legacy ACE property names retained for data compatibility); legacy `ChallengeMilestoneClaimBits` is migrated once to all four tracks.
 
-2. **XP / luminance bonus** — Permanent additive percent from `ChallengeRewards` / `ChallengeMilestoneGrants.GetTotalBonusPercent`:
+2. **XP / luminance bonus** — Permanent additive percent from `ChallengeRewards` / `ChallengeAchievementGrants.GetTotalBonusPercent`:
    - `ChallengeBonusPercentPerLevel` — percent **per character level** counted toward the **current segment**.
    - `ChallengeBonusSegmentCapLevel` — segment length (default **300**). Completing a segment (reaching `cap × (completionCount + 1)`) **banks** `cap × ChallengeBonusPercentPerLevel` into the total and **resets** in-segment furthest (`ChallengeRunMaxLevel`) to **0** for the next climb. **Skill credit bitmasks are not reset.**
 
@@ -26,7 +26,7 @@ When enabled and the player **has at least one active challenge** at level-up (`
 
 ## Ordering vs Loremaster
 
-Milestone XP/luminance multiplier is applied **after** Loremaster’s quest-point multiplier when both are active (see `ChallengeRewards` and Loremaster integration).
+Achievement XP/luminance multiplier is applied **after** Loremaster’s quest-point multiplier when both are active (see `ChallengeRewards` and Loremaster integration).
 
 ## Future wishlist: display titles
 
@@ -35,7 +35,7 @@ Milestone XP/luminance multiplier is applied **after** Loremaster’s quest-poin
 ## Files of note
 
 - `PatchClass.cs` — Harmony registration, aptitude / alternate leveling / SSF hooks.
-- `Features/ChallengeMilestoneGrants.cs` — `GrantXP` prefix/postfix, bonus percent math.
+- `Features/ChallengeAchievementGrants.cs` — `GrantXP` prefix/postfix, bonus percent math.
 - `Features/ChallengeRewards.cs` — XP/luminance multiplier from claimed progress.
 - `CmQuit.cs`, `ConfirmationCmQuit.cs` — `/cm quit` flow.
 
@@ -49,11 +49,11 @@ Use a test character with backups as needed.
 
 2. **Segment completion** — With defaults (`ChallengeBonusSegmentCapLevel` 300), reach **300** with a challenge active; confirm message about segment complete, banked %, and `ChallengeRunMaxLevel` reset for the **next** segment; confirm skill-credit bits **unchanged**.
 
-3. **Milestone skill credits** — At a configured `ChallengeMilestoneLevels` threshold, with **two** modes active (e.g. SSF + hardcore), confirm **+2** credits and message lists both. Repeat on another character with **one** mode — **+1**. Confirm no duplicate grant on re-leveling past the same milestone.
+3. **Achievement skill credits** — At a configured `ChallengeAchievementLevels` threshold, with **two** modes active (e.g. SSF + hardcore), confirm **+2** credits and message lists both. Repeat on another character with **one** mode — **+1**. Confirm no duplicate grant on re-leveling past the same achievement.
 
 4. **Per-track independence** — Complete a milestone on SSF only; enable hardcore later on a fresh combo character and confirm hardcore track can still claim that milestone index if intended (separate bitmask).
 
-5. **Challenge inactive** — Level with **no** challenge active; confirm no milestone grants / no change to challenge fake properties.
+5. **Challenge inactive** — Level with **no** challenge active; confirm no achievement grants / no change to challenge fake properties.
 
 6. **Loremaster + Challenge** — With both mods on, complete a QP-eligible action and confirm order of operations feels correct (no double-counting; challenge % applies after Loremaster where applicable).
 
@@ -63,4 +63,4 @@ Use a test character with backups as needed.
 
 9. **Titles** — Confirm **no** nameplate title change when using `/cm ssf`, `hardcore`, `alternateleveling`, or aptitude (wishlist only).
 
-10. **Settings reload** — Toggle `ChallengeMilestoneRewardsEnabled` (if you use live reload), restart or reload per server practice; confirm behavior matches.
+10. **Settings reload** — Toggle `ChallengeAchievementRewardsEnabled` (if you use live reload), restart or reload per server practice; confirm behavior matches.

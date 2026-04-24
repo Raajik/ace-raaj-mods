@@ -16,7 +16,7 @@ public static class ChallengeRewards
         if (__instance is null || amount <= 0)
             return;
 
-        if (PatchClass.Settings is not { } s || !s.Enabled || !s.ChallengeMilestoneRewardsEnabled)
+        if (PatchClass.Settings is not { } s || !s.Enabled || !s.ChallengeAchievementRewardsEnabled)
             return;
 
         double mult = GetChallengeXpLumMultiplier(__instance, s);
@@ -34,7 +34,7 @@ public static class ChallengeRewards
         if (__instance is null || amount <= 0)
             return;
 
-        if (PatchClass.Settings is not { } s || !s.Enabled || !s.ChallengeMilestoneRewardsEnabled)
+        if (PatchClass.Settings is not { } s || !s.Enabled || !s.ChallengeAchievementRewardsEnabled)
             return;
 
         double mult = GetChallengeXpLumMultiplier(__instance, s);
@@ -44,16 +44,16 @@ public static class ChallengeRewards
         amount = (long)(amount * mult);
     }
 
-    public static double GetQuestXpMilestoneMultiplierForPlayer(Player? player)
+    public static double GetQuestXpAchievementMultiplierForPlayer(Player? player)
     {
-        if (player is null || PatchClass.Settings is not { } s || !s.Enabled || !s.ChallengeMilestoneRewardsEnabled)
+        if (player is null || PatchClass.Settings is not { } s || !s.Enabled || !s.ChallengeAchievementRewardsEnabled)
             return 1.0;
         return GetChallengeXpLumMultiplier(player, s);
     }
 
     static double GetChallengeXpLumMultiplier(Player player, Settings s)
     {
-        double totalPercent = ChallengeMilestoneGrants.GetTotalBonusPercent(player, s);
+        double totalPercent = ChallengeAchievementGrants.GetTotalBonusPercent(player, s);
         if (totalPercent <= 0)
             return 1.0;
 

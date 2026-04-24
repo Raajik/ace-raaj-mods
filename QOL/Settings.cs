@@ -21,6 +21,7 @@ public enum Features
     PetExShareDamage,
     CollectorsAcceptAll,
     PortalsStripNoRecall,
+    BypassPortalRestrictions,
     TownNetworkToll,
     VendorPackBurdenRelief,
     FullKillXpPerDamager,
@@ -29,6 +30,7 @@ public enum Features
     VendorLootRotation,
     KillXpMessage,
     BundleGive,
+    VendorPriceInflation,
 }
 
 public class Settings
@@ -132,6 +134,14 @@ public class Settings
     [JsonPropertyName("// PortalsStripNoRecallBlockedPortalWcids")]
     public string PortalsStripNoRecallBlockedPortalWcidsDoc { get; init; } = "Blocklist: portal WeenieClassIds that keep NoRecall (strip is skipped for these WCIDs). Empty = strip NoRecall on all portals as usual.";
     public List<uint> PortalsStripNoRecallBlockedPortalWcids { get; set; } = new();
+
+    [JsonPropertyName("// EnableBypassPortalRestrictions")]
+    public string EnableBypassPortalRestrictionsDoc { get; init; } = "When true, bypass ACE portal use requirements (level, quest, race, gender, bitmask) and recall restrictions (dungeon, busy, PK timer, olthoi). The Town Network toll system is NOT affected—fees are still enforced.";
+    public bool EnableBypassPortalRestrictions { get; set; } = true;
+
+    [JsonPropertyName("// BypassPortalRestrictions")]
+    public string BypassPortalRestrictionsSectionDoc { get; init; } = "Granular toggles for which restrictions to bypass. All default to true (bypassed). Inside BypassPortalRestrictions: // lines first, then values (same order).";
+    public BypassPortalRestrictionsSettings BypassPortalRestrictions { get; set; } = new();
 
     [JsonPropertyName("// EnableTownNetworkToll")]
     public string EnableTownNetworkTollDoc { get; init; } = "When true, Town Network–matched portals debit banked pyreals (see TownNetworkToll) after ACE portal checks; insufficient funds can block or drain all bank per InsufficientFundsMode.";
@@ -264,13 +274,29 @@ public class Settings
     [JsonPropertyName("// BundleGive")]
     public string BundleGiveSectionDoc { get; init; } = "BundleSize: items consumed per bundle turn-in (default 10).";
     public BundleGiveSettings BundleGive { get; set; } = new();
+
+    [JsonPropertyName("// EnableVendorPriceInflation")]
+    public string EnableVendorPriceInflationDoc { get; init; } = "When true, multiplies the buy rate vendors charge players by VendorBuyRateMultiplier. Does not affect how much vendors pay for items sold to them.";
+    public bool EnableVendorPriceInflation { get; set; } = false;
+
+    [JsonPropertyName("// VendorBuyRateMultiplier")]
+    public string VendorBuyRateMultiplierDoc { get; init; } = "Multiplier on vendor purchase prices (e.g. 5.0 = 5× normal cost). Only applies when EnableVendorPriceInflation is true.";
+    public double VendorBuyRateMultiplier { get; set; } = 5.0;
 }
 
 public class KillXpMessageSettings
 {
+    [JsonPropertyName("// ShowRaw")]
+    public string ShowRawDoc { get; init; } = "Show raw XP amount from the kill (e.g. '48 xp').";
+    public bool ShowRaw { get; set; } = true;
+
     [JsonPropertyName("// ShowPercent")]
-    public string ShowPercentDoc { get; init; } = "false = \"(48 xp)\", true = \"(0.003%)\" percentage toward next level.";
+    public string ShowPercentDoc { get; init; } = "Show kill XP as percentage of current level window (e.g. '0.003%').";
     public bool ShowPercent { get; set; } = false;
+
+    [JsonPropertyName("// ShowEstimatedKills")]
+    public string ShowEstimatedKillsDoc { get; init; } = "Show estimated kills of this creature needed to reach next level (e.g. '~234 kills to level').";
+    public bool ShowEstimatedKills { get; set; } = false;
 }
 
 public enum TownNetworkPortalMatchMode
@@ -292,17 +318,29 @@ public class TownNetworkTollSettings
     public string BankCashPropertyDoc { get; init; } = "PropertyInt64 id for banked pyreals (default 39999; match LeyLineLedger/AutoLoot).";
     public int BankCashProperty { get; set; } = 39999;
 
-    [JsonPropertyName("// LevelSplit")]
-    public string LevelSplitDoc { get; init; } = "Characters with Level below this pay FeeBelowLevel; at or above pay FeeAtOrAboveLevel.";
-    public int LevelSplit { get; set; } = 50;
+    [JsonPropertyName("// FeeBelow50Min")]
+    public string FeeBelow50MinDoc { get; init; } = "Minimum toll for characters below level 50.";
+    public long FeeBelow50Min { get; set; } = 10_000;
 
-    [JsonPropertyName("// FeeBelowLevel")]
-    public string FeeBelowLevelDoc { get; init; } = "Base toll in pyreals before QP discount when Level < LevelSplit.";
-    public long FeeBelowLevel { get; set; } = 50_000;
+    [JsonPropertyName("// FeeBelow50Max")]
+    public string FeeBelow50MaxDoc { get; init; } = "Maximum toll for characters below level 50.";
+    public long FeeBelow50Max { get; set; } = 50_000;
 
-    [JsonPropertyName("// FeeAtOrAboveLevel")]
-    public string FeeAtOrAboveLevelDoc { get; init; } = "Base toll in pyreals before QP discount when Level >= LevelSplit.";
-    public long FeeAtOrAboveLevel { get; set; } = 250_000;
+    [JsonPropertyName("// Fee50to100Min")]
+    public string Fee50to100MinDoc { get; init; } = "Minimum toll for characters level 50-100.";
+    public long Fee50to100Min { get; set; } = 50_001;
+
+    [JsonPropertyName("// Fee50to100Max")]
+    public string Fee50to100MaxDoc { get; init; } = "Maximum toll for characters level 50-100.";
+    public long Fee50to100Max { get; set; } = 100_000;
+
+    [JsonPropertyName("// FeeAbove100Min")]
+    public string FeeAbove100MinDoc { get; init; } = "Minimum toll for characters above level 100.";
+    public long FeeAbove100Min { get; set; } = 250_000;
+
+    [JsonPropertyName("// FeeAbove100Max")]
+    public string FeeAbove100MaxDoc { get; init; } = "Maximum toll for characters above level 100.";
+    public long FeeAbove100Max { get; set; } = 1_250_000;
 
     [JsonPropertyName("// QpPerThousandForDiscountStep")]
     public string QpPerThousandForDiscountStepDoc { get; init; } = "Each full block of this much FakeFloat.QuestBonus (Loremaster QP) applies DiscountPercentPerStep to the fee (multiplicative stack, uncapped toward 0 cost).";
@@ -343,4 +381,66 @@ public class TownNetworkTollSettings
     [JsonPropertyName("// InsufficientFundsMode")]
     public string InsufficientFundsModeDoc { get; init; } = "Block: cannot use portal if bank < computed fee. DrainAll: if 0 < bank < fee, debit entire bank and allow travel.";
     public TownNetworkInsufficientFundsMode InsufficientFundsMode { get; set; } = TownNetworkInsufficientFundsMode.Block;
+
+    [JsonPropertyName("// ScarabWcids")]
+    public string ScarabWcidsDoc { get; init; } = "WCIDs of scarabs that can be taken as toll payment.";
+    public List<uint> ScarabWcids { get; set; } =
+    [
+        686,   // Copper Scarab
+        687,   // Gold Scarab
+        688,   // Silver Scarab
+        689,   // Iron Scarab
+        690,   // Pyreal Scarab
+        691,   // Lead Scarab
+        7299,  // Diamond Scarab
+        8897,  // Platinum Scarab
+        37155, // Mana Scarab
+    ];
+
+    [JsonPropertyName("// TaperWcid")]
+    public string TaperWcidDoc { get; init; } = "WCID of Prismatic Tapers that can be taken as toll payment.";
+    public uint TaperWcid { get; set; } = 20631;
+
+    [JsonPropertyName("// MinScarabThreshold")]
+    public string MinScarabThresholdDoc { get; init; } = "Never take scarabs if it would leave the player with fewer than this many remaining.";
+    public int MinScarabThreshold { get; set; } = 5;
+
+    [JsonPropertyName("// MinTaperThreshold")]
+    public string MinTaperThresholdDoc { get; init; } = "Never take tapers if it would leave the player with fewer than this many remaining.";
+    public int MinTaperThreshold { get; set; } = 50;
+
+    [JsonPropertyName("// TaperTakePercentMin")]
+    public string TaperTakePercentMinDoc { get; init; } = "Minimum percentage of tapers to take (inclusive).";
+    public int TaperTakePercentMin { get; set; } = 9;
+
+    [JsonPropertyName("// TaperTakePercentMax")]
+    public string TaperTakePercentMaxDoc { get; init; } = "Maximum percentage of tapers to take (inclusive).";
+    public int TaperTakePercentMax { get; set; } = 25;
+
+    [JsonPropertyName("// ScarabTakePercent")]
+    public string ScarabTakePercentDoc { get; init; } = "Percentage of chosen scarab stack to take (rounded up, minimum 1).";
+    public int ScarabTakePercent { get; set; } = 5;
+}
+
+public class BypassPortalRestrictionsSettings
+{
+    [JsonPropertyName("// BypassPortalUseRequirements")]
+    public string BypassPortalUseRequirementsDoc { get; init; } = "Bypass level, quest, race, gender, and portal bitmask restrictions when using portals.";
+    public bool BypassPortalUseRequirements { get; set; } = true;
+
+    [JsonPropertyName("// BypassDungeonRecall")]
+    public string BypassDungeonRecallDoc { get; init; } = "Allow recall from dungeons and other recall-disabled landblocks.";
+    public bool BypassDungeonRecall { get; set; } = true;
+
+    [JsonPropertyName("// BypassBusyRecall")]
+    public string BypassBusyRecallDoc { get; init; } = "Allow recall while casting, using items, or otherwise busy.";
+    public bool BypassBusyRecall { get; set; } = true;
+
+    [JsonPropertyName("// BypassPKTimerRecall")]
+    public string BypassPKTimerRecallDoc { get; init; } = "Allow recall immediately after PK combat without waiting for the timer.";
+    public bool BypassPKTimerRecall { get; set; } = true;
+
+    [JsonPropertyName("// BypassOlthoiRecall")]
+    public string BypassOlthoiRecallDoc { get; init; } = "Allow olthoi characters to use all recall types.";
+    public bool BypassOlthoiRecall { get; set; } = true;
 }

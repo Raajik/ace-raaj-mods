@@ -1,5 +1,7 @@
 {
   "// LeyLineLedgerSettings": "Reading order: below this line, every // key is documentation; the next block lists real settings in the same order. LeyLineLedger routes vendor trade and pyreals through bank-style PropertyInt64 storage, optional luminance gem withdrawal, death bank tax, and currency denomination tables. Items and Currencies arrays: each element is an object with // lines first, then Name/Id/Prop or Name/Id/Value (same order).",
+  "// EnableLockpickAutoBank": "When true, lockpick items picked up by characters with Lockpick trained/spec'd are auto-converted to banked Lockpick Durability.",
+  "EnableLockpickAutoBank": true,
   "// VendorsUseBank": "When true, vendor buy/sell uses bank balances instead of only inventory pyreals.",
   "// DirectDeposit": "When true, incoming currency can deposit directly per mod rules.",
   "// AccountWideBank": "When true, standard (non–challenge) characters share bank balances per account (account id > guid > name). Challenge characters use per-character bank until merge on /cm quit or HC permadeath.",

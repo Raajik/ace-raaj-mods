@@ -84,9 +84,9 @@ internal static class ShieldThorns
         if (!isEvade && !isBlock)
             return;
 
-        double basePercent = 0.05;
+        double basePercent = 0.025;
         if (shieldSkill.AdvancementClass == SkillAdvancementClass.Specialized)
-            basePercent = 0.10;
+            basePercent = 0.05;
 
         double shieldSkillValue = shieldSkill.Current;
 

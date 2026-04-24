@@ -19,12 +19,14 @@ internal static class HuntXpRewards
             return false;
 
         var grant = (long)(xpToNext * fraction);
+        if (zeroBasedRank >= 3)
+            grant = Math.Max(grant, settings.HuntPlacementXpMinRest);
         if (grant <= 0)
             return false;
 
         HuntXpInterop.GrantQuestXpWithoutMultiplier(player, grant);
         // Grant path undoes shard xp_modifier; message uses est. to bar (incl. challenge milestone) for parity with Challenge PreGrantXP.
-        var awarded = HuntQuestXpDisplay.EstimateCharacterXpAfterMilestoneChain(player, grant);
+        var awarded = HuntQuestXpDisplay.EstimateCharacterXpAfterAchievementChain(player, grant);
         amount = awarded;
         var pct = fraction * 100.0;
         var label = PlacementOrdinalLabel(zeroBasedRank);

@@ -312,13 +312,15 @@ if (chest == null)
         }
     }
 
-    /// <summary>
-    /// Gets a random number of guaranteed items to add (1..MaxGuaranteedItems, typically 1-2).
-    /// </summary>
     private static int GetRandomNumberOfItems()
     {
-        int cap = Math.Max(1, Settings.MaxGuaranteedItems);
-        return ThreadSafeRandom.Next(1, cap + 1);
+        var s = Settings;
+        int count = 1;
+        if (ThreadSafeRandom.Next(0.0f, 1.0f) < s.SecondItemChance)
+            count++;
+        if (ThreadSafeRandom.Next(0.0f, 1.0f) < s.ThirdItemChance)
+            count++;
+        return count;
     }
 
     private static WorldObject? SelectRandomGuaranteedItem(Chest _)

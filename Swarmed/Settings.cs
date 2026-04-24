@@ -67,6 +67,22 @@ public class Settings
     public string ReinforcementXpBonusMaxDoc { get; init; } = "XP bonus multiplier upper bound for reinforcement kills.";
     public float ReinforcementXpBonusMax { get; set; } = 2.0f;
 
+    [JsonPropertyName("// ChaosReinforcementGrowthEnabled")]
+    public string ChaosReinforcementGrowthEnabledDoc { get; init; } = "When true, reinforcements triggered by chaos-mode players grow in power per proc instead of shrinking.";
+    public bool ChaosReinforcementGrowthEnabled { get; set; } = true;
+
+    [JsonPropertyName("// ChaosReinforcementGrowthPercent")]
+    public string ChaosReinforcementGrowthPercentDoc { get; init; } = "Growth per reinforcement proc (0.30 = 30%). Multiplier = (1 + growth) ^ killCount, capped at max.";
+    public float ChaosReinforcementGrowthPercent { get; set; } = 0.30f;
+
+    [JsonPropertyName("// ChaosReinforcementMaxMultiplier")]
+    public string ChaosReinforcementMaxMultiplierDoc { get; init; } = "Maximum escalation multiplier for chaos reinforcements (e.g. 5.0 = 5×).";
+    public float ChaosReinforcementMaxMultiplier { get; set; } = 5.0f;
+
+    [JsonPropertyName("// ChaosReinforcementCreatureExChance")]
+    public string ChaosReinforcementCreatureExChanceDoc { get; init; } = "Chance (0–1) for a chaos reinforcement to spawn as a random CreatureEx champion instead of a scaled normal creature.";
+    public float ChaosReinforcementCreatureExChance { get; set; } = 0.05f;
+
     [JsonPropertyName("// CreatureChance")]
     public string CreatureChanceDoc { get; init; } = "Base chance (0–1) for CreatureEx factory random champion replacement; can scale with online players when enabled.";
     public double CreatureChance { get; set; } = 0;

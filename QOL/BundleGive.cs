@@ -1,3 +1,5 @@
+using WeenieClassName = ACE.Server.Factories.Enum.WeenieClassName;
+
 namespace QOL;
 
 // Bundle turn-in: if a player gives ≥BundleSize of a stackable WCID to an NPC,

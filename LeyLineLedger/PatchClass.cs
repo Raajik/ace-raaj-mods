@@ -131,39 +131,54 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         //No args or explicit list -> show summary
         if (parameters.Length == 0 || parameters[0].Equals("list", StringComparison.OrdinalIgnoreCase))
         {
-            var cash = player.GetBanked(Settings.CashProperty);
-            var lum = player.GetBanked(Settings.LuminanceProperty);
+            long pyreals = player.GetBanked(Settings.CashProperty);
+            long luminance = player.GetBanked(Settings.LuminanceProperty);
+            long zefs = Settings.AltCurrencyProperty > 0 ? player.GetBanked(Settings.AltCurrencyProperty) : 0;
 
-            var mmdItem = Settings.Items.FirstOrDefault(x => x.Id == 20630);
-            var mmdCount = mmdItem is not null ? player.GetBanked(mmdItem.Prop) : 0;
+            // MMD calculation (each MMD = 250,000 pyreals) - visual helper only
+            long mmdCount = pyreals / 250000;
 
-            var bankItems = Settings.Items.Where(x => x.Id != 20630).ToList();
+            string pyrealsDisplay = pyreals >= 1_000_000_000 
+                ? $"{pyreals / 1_000_000_000.0:F1}B" 
+                : pyreals >= 1_000_000 
+                    ? $"{pyreals / 1_000_000:F1}M" 
+                    : pyreals >= 1_000 
+                        ? $"{pyreals / 1_000:F0}k" 
+                        : pyreals.ToString("N0");
 
-            var sbSummary = new StringBuilder();
-            if (UsePrettyBankFormatting)
+            var keys = new (string label, int prop, uint wcid)[]
             {
-                sbSummary.AppendLine("==== Bank Summary ====");
-            }
-            else
+                ("SIK", 40250, 6876),
+                ("SSK", 40500, 24477),
+                ("MFK", 40750, 38456),
+                ("L", 41000, 48746)
+            };
+            var keyParts = new List<string>();
+            foreach (var (label, prop, wcid) in keys)
             {
-                sbSummary.Append("Bank summary:");
+                long banked = player.GetBanked(prop);
+                if (banked > 0)
+                    keyParts.Add($"{label}={banked}");
             }
 
-            sbSummary.Append("\nPyreals: ");
-            sbSummary.Append($"{cash:N0}");
+            long writs = 0;
+            var writ = Settings.Items.FirstOrDefault(x => x.Name.Contains("Writ"));
+            if (writ != null)
+                writs = player.GetBanked(writ.Prop);
+
+            string message = $"Pyreals: {pyrealsDisplay}";
             if (mmdCount > 0)
-                sbSummary.Append($" ({mmdCount:N0} MMD)");
+                message += $" (~{mmdCount:N0} MMD)";
 
-            sbSummary.Append($"\nLuminance: {lum:N0}");
+            message += $", Luminance: {luminance:N0}";
+            if (zefs > 0)
+                message += $", Zefs: {zefs:N0}";
+            if (keyParts.Count > 0)
+                message += $", {string.Join(", ", keyParts)}";
+            if (writs > 0)
+                message += $", Writs={writs}";
 
-            if (bankItems.Count > 0)
-            {
-                sbSummary.Append("\nItems:");
-                foreach (var item in bankItems)
-                    sbSummary.Append($"\n{item.Name}: {player.GetBanked(item.Prop)} banked, {player.GetNumInventoryItemsOfWCID(item.Id)} held");
-            }
-
-            player.SendMessage($"{sbSummary}");
+            player.SendMessage(message);
             return;
         }
 
@@ -189,15 +204,16 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (verbToken.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
             verbToken.Equals("d", StringComparison.OrdinalIgnoreCase))
         {
-            bool depositSalvageToo = parameters.Length >= 2 &&
-                (parameters[1].Equals("a", StringComparison.OrdinalIgnoreCase) ||
-                 parameters[1].Equals("all", StringComparison.OrdinalIgnoreCase));
+            // Always deposit salvage unless explicitly disabled
+            bool skipSalvage = parameters.Length >= 2 && 
+                (parameters[1].Equals("no", StringComparison.OrdinalIgnoreCase) ||
+                 parameters[1].Equals("skip", StringComparison.OrdinalIgnoreCase));
 
             BankExtensions.DepositAllCash(session);
             BankExtensions.DepositAllLuminance(session);
             BankExtensions.DepositAllItems(session);
 
-            if (depositSalvageToo && Settings.SalvageBank is { Enabled: true })
+            if (!skipSalvage && Settings.SalvageBank is { Enabled: true })
                 BankSalvage.Handle(session, new[] { "salvage", "deposit" });
 
             return;
@@ -549,6 +565,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (player.TryCreateItems($"{item.Id} {amount}"))
         {
             player.IncBanked(item.Prop, -amount);
+            SyncZefsOnChange(player, item, -amount);
             player.SendMessage($"Withdrew {amount} {item.Name}. {player.GetBanked(item.Prop)} banked, {player.GetNumInventoryItemsOfWCID(item.Id)} held");
         }
     }
@@ -559,11 +576,18 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (deposited == amount)
         {
             player.IncBanked(item.Prop, amount);
+            SyncZefsOnChange(player, item, amount);
             player.SendMessage($"Deposited {amount:N0} {item.Name}. {player.GetBanked(item.Prop)} banked, {player.GetNumInventoryItemsOfWCID(item.Id):N0} held");
             return;
         }
 
         player.SendMessage($"Unable to deposit {amount:N0}.  You have {player.GetNumInventoryItemsOfWCID(item.Id):N0} {item.Name} (canonical)");
+    }
+
+    static void SyncZefsOnChange(Player player, BankItem item, int delta)
+    {
+        if (Settings.AltCurrencyValues.TryGetValue(item.Id, out int zefValue))
+            player.IncBanked(Settings.AltCurrencyProperty, (long)delta * zefValue);
     }
 }
 

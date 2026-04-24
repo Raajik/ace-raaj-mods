@@ -17,6 +17,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     static readonly ConcurrentDictionary<uint, bool> SsfDeclinedByGuid = new();
     static readonly ConcurrentDictionary<uint, bool> HardcoreDeclinedByGuid = new();
     static readonly ConcurrentDictionary<uint, bool> AlternateLevelingDeclinedByGuid = new();
+    static readonly ConcurrentDictionary<uint, bool> ChaosEnabledByGuid = new();
+    static readonly ConcurrentDictionary<uint, bool> ChaosDeclinedByGuid = new();
     // Last UTC write-time ticks applied from prefs JSON per character; re-read when file changes or after load failure.
     static readonly ConcurrentDictionary<uint, long> PrefsLoadedFromFileTicks = new();
     static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
@@ -80,6 +82,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         SsfDeclinedByGuid.Clear();
         HardcoreDeclinedByGuid.Clear();
         AlternateLevelingDeclinedByGuid.Clear();
+        ChaosEnabledByGuid.Clear();
+        ChaosDeclinedByGuid.Clear();
         PrefsLoadedFromFileTicks.Clear();
         ArcaneLoreManaRemainderByGuid.Clear();
         ManaConversionManaRemainderByGuid.Clear();
@@ -204,7 +208,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             _ssfHardcoreCategoryPatched = true;
         }
 
-        var wantRewards = Settings.ChallengeMilestoneRewardsEnabled;
+        var wantRewards = Settings.ChallengeAchievementRewardsEnabled;
         if (wantRewards && !_challengeRewardsCategoryPatched)
         {
             ModC.Harmony.PatchCategory(nameof(ChallengeRewards));
@@ -332,6 +336,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             SsfDeclinedByGuid[g] = prefs.SsfPermanentlyDeclined;
             HardcoreDeclinedByGuid[g] = prefs.HardcorePermanentlyDeclined;
             AlternateLevelingDeclinedByGuid[g] = prefs.AlternateLevelingPermanentlyDeclined;
+            ChaosEnabledByGuid[g] = prefs.ChaosEnabled;
+            ChaosDeclinedByGuid[g] = prefs.ChaosPermanentlyDeclined;
             PrefsLoadedFromFileTicks[g] = writeTicks;
         }
         catch (Exception ex)
@@ -359,6 +365,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 SsfPermanentlyDeclined = SsfDeclinedByGuid.GetOrAdd(g, false),
                 HardcorePermanentlyDeclined = HardcoreDeclinedByGuid.GetOrAdd(g, false),
                 AlternateLevelingPermanentlyDeclined = AlternateLevelingDeclinedByGuid.GetOrAdd(g, false),
+                ChaosEnabled = ChaosEnabledByGuid.GetOrAdd(g, false),
+                ChaosPermanentlyDeclined = ChaosDeclinedByGuid.GetOrAdd(g, false),
             };
             var path = GetPlayerDataPath(player);
             File.WriteAllText(path, JsonSerializer.Serialize(prefs, JsonOptions));
@@ -421,6 +429,33 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     {
         EnsureLoaded(player);
         return AlternateLevelingDeclinedByGuid.GetOrAdd(player.Guid.Full, false);
+    }
+
+    public static bool IsChaosEnabled(Player? player)
+    {
+        if (player?.Guid == null) return false;
+        EnsureLoaded(player);
+        return ChaosEnabledByGuid.GetOrAdd(player.Guid.Full, false);
+    }
+
+    public static bool IsChaosDeclined(Player player)
+    {
+        EnsureLoaded(player);
+        return ChaosDeclinedByGuid.GetOrAdd(player.Guid.Full, false);
+    }
+
+    public static void SetChaosEnabled(Player player, bool value)
+    {
+        EnsureLoaded(player);
+        ChaosEnabledByGuid[player.Guid.Full] = value;
+        SavePrefs(player);
+    }
+
+    public static void SetChaosDeclined(Player player, bool value)
+    {
+        EnsureLoaded(player);
+        ChaosDeclinedByGuid[player.Guid.Full] = value;
+        SavePrefs(player);
     }
 
     public static void SetAlternateLevelingEnabled(Player player, bool value)
@@ -492,6 +527,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         // Aptitude and alternate leveling are mutually exclusive; count at most one progression slot.
         if (IsAptitudeEnabled(player) || IsAlternateLevelingEnabled(player))
             n++;
+
+        if (IsChaosEnabled(player))
+            n++;
         return n;
     }
 
@@ -539,13 +577,16 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (prefs.Enabled)
             return true;
 
-        if (Settings is null || !Settings.Enabled || !Settings.AlternateLeveling.Enabled)
+        if (Settings is null || !Settings.Enabled)
             return false;
 
-        if (prefs.AlternateLevelingPermanentlyDeclined)
-            return false;
+        if (Settings.AlternateLeveling.Enabled && !prefs.AlternateLevelingPermanentlyDeclined && prefs.AlternateLevelingEnabled)
+            return true;
 
-        return prefs.AlternateLevelingEnabled;
+        if (prefs.ChaosEnabled)
+            return true;
+
+        return false;
     }
 
     public static bool OfflineCharacterNameHasActiveChallenge(string characterName)
@@ -599,6 +640,14 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         {
             EnabledByGuid[g] = false;
             PermanentlyOptedOutByGuid[g] = true;
+        }
+
+        var hadChaos = ChaosEnabledByGuid.GetOrAdd(g, false);
+        if (hadChaos)
+        {
+            ChaosEnabledByGuid[g] = false;
+            ChaosDeclinedByGuid[g] = true;
+            player.SetProperty(CmFloat.ChaosQuestBonusMultiplier, 1f);
         }
 
         SavePrefs(player);

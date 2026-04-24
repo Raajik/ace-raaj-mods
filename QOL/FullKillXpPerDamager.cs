@@ -37,6 +37,19 @@ internal static class FullKillXpPerDamager
             if (playerDamager == null)
                 continue;
 
+            // Feature requires Achievement Tier 1. Under-tier players get vanilla proportional XP.
+            if ((playerDamager.GetProperty((FakeInt)11050) ?? 0) < 1)
+            {
+                if (baseXp > 0)
+                {
+                    float frac = kvp.Value.TotalDamage / totalHealth;
+                    playerDamager.EarnXP((long)Math.Round(frac * baseXp), XpType.Kill);
+                    if (luminanceAward != null)
+                        playerDamager.EarnLuminance((long)Math.Round(frac * luminanceAward.Value), XpType.Kill);
+                }
+                continue;
+            }
+
             playerDamager.EarnXP((long)Math.Round((double)baseXp), XpType.Kill);
 
             if (luminanceAward != null)

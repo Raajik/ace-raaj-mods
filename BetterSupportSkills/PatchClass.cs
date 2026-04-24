@@ -7,6 +7,7 @@ namespace BetterSupportSkills;
 public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Settings.json") : ACE.Shared.Mods.BasicPatch<Settings>(mod, settingsName)
 {
     static bool _commandCategoriesRegistered;
+    static CancellationTokenSource? _lockpickRegenCts;
     private const bool EnableDebug = false; // Set to true to debug startup
 
     private static void DebugLog(string msg)
@@ -70,6 +71,8 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
         TryApplyFoodPatch();
         TryApplyDamageEventPatch();
         TryApplyDirtyFightingPatch();
+        TryApplyLockpickPatches();
+        TryApplyVendorItemLevelingPatch();
 
         if (Settings.EnableManaConversion)
         {
@@ -215,7 +218,7 @@ void TryApplyDamageEventPatch()
         
         ModManager.Log($"[BSS] TryApplyLootPatch called - EnableTrophyDrops={Settings?.EnableTrophyDrops}, EnableAlchemy={Settings?.EnableAlchemy}", ModManager.LogLevel.Info);
 
-        if ((Settings?.EnableTrophyDrops == true) || (Settings?.EnableAlchemy == true))
+        if ((Settings?.EnableTrophyDrops == true) || (Settings?.EnableAlchemy == true) || (Settings?.EnableTinkeringLootGating == true))
         {
             try
             {
@@ -236,6 +239,12 @@ void TryApplyDamageEventPatch()
                 {
                     var alchemyPostfix = AccessTools.Method(typeof(Skills.AlchemyBuffs), "PostfixGenerateTreasure");
                     ModC.Harmony?.Patch(generateTreasure, null, new HarmonyMethod(alchemyPostfix), null);
+                }
+
+                if (Settings.EnableTinkeringLootGating)
+                {
+                    var tinkeringPostfix = AccessTools.Method(typeof(Skills.TinkeringLootGating), "PostfixGenerateTreasure");
+                    ModC.Harmony?.Patch(generateTreasure, null, new HarmonyMethod(tinkeringPostfix), null);
                 }
 
                 LootPatchApplied = true;
@@ -272,6 +281,46 @@ try
         catch (Exception ex)
         {
             ModManager.Log($"[BSS] Food patch failed: {ex}", ModManager.LogLevel.Error);
+        }
+    }
+
+    static bool VendorItemLevelingPatchApplied;
+
+    void TryApplyVendorItemLevelingPatch()
+    {
+        if (VendorItemLevelingPatchApplied) return;
+        if (Settings?.EnableVendorItemLeveling != true) return;
+
+        try
+        {
+            var loadInventory = AccessTools.Method(typeof(Vendor), "LoadInventory");
+            if (loadInventory == null)
+            {
+                ModManager.Log("[BSS] Vendor.LoadInventory method not found", ModManager.LogLevel.Error);
+                return;
+            }
+
+            var postfix = AccessTools.Method(typeof(Skills.VendorItemLeveling), "PostfixLoadInventory");
+            ModC.Harmony?.Patch(loadInventory, null, new HarmonyMethod(postfix), null);
+
+            var finalizeBuy = AccessTools.Method(typeof(Player), nameof(Player.FinalizeBuyTransaction),
+                new Type[] { typeof(Vendor), typeof(List<WorldObject>), typeof(List<WorldObject>), typeof(uint) });
+            if (finalizeBuy == null)
+            {
+                ModManager.Log("[BSS] Player.FinalizeBuyTransaction method not found", ModManager.LogLevel.Error);
+            }
+            else
+            {
+                var prefix = AccessTools.Method(typeof(Skills.VendorItemLeveling), "PrefixFinalizeBuyTransaction");
+                ModC.Harmony?.Patch(finalizeBuy, new HarmonyMethod(prefix), null, null);
+            }
+
+            VendorItemLevelingPatchApplied = true;
+            ModManager.Log("[BSS] VendorItemLeveling patches applied (LoadInventory + FinalizeBuyTransaction)", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] VendorItemLeveling patch failed: {ex}", ModManager.LogLevel.Error);
         }
     }
 
@@ -329,6 +378,10 @@ try
             enabledFeatures.Add(Features.SneakAttackSkill);
         if (Settings.EnableTrophyDrops)
             enabledFeatures.Add(Features.TrophyDropsSkill);
+        if (Settings.EnableTinkeringLootGating)
+            enabledFeatures.Add(Features.TinkeringLootGating);
+        if (Settings.EnableVendorItemLeveling)
+            enabledFeatures.Add(Features.VendorItemLeveling);
 
         ModC.RegisterPatchCategories(enabledFeatures.ToArray());
     }
@@ -336,6 +389,8 @@ try
     public override void Stop()
     {
         RecuperationHoT.RemoveHealerHookOnModStop(ModC.Harmony);
+        _lockpickRegenCts?.Cancel();
+        _lockpickRegenCts = null;
         _commandCategoriesRegistered = false;
         base.Stop();
     }
@@ -354,7 +409,7 @@ try
 
         if (parameters.Length >= 2 && parameters[0].Equals("range", StringComparison.OrdinalIgnoreCase))
         {
-            float serverMax = (float)(PatchClass.Settings?.RecklessnessCleave.CleaveRangeMeters
+            float serverMax = (float)(PatchClass.Settings?.Recklessness?.CleaveRangeMeters
                               ?? PatchClass.Settings?.ManaConversion.CleaveRange
                               ?? 15.0);
             if (!float.TryParse(parameters[1], out float requested) || requested < 0)
@@ -478,6 +533,55 @@ try
         }
     }
 
+    static bool LockpickPatchApplied;
+
+    void TryApplyLockpickPatches()
+    {
+        if (Settings?.EnableLockpick != true) return;
+        if (!LockpickPatchApplied)
+        {
+            try
+            {
+                var onUse = AccessTools.Method(typeof(WorldObject), "OnActivate", new[] { typeof(WorldObject) });
+                if (onUse == null)
+                {
+                    ModManager.Log("[BSS] WorldObject.OnActivate method not found", ModManager.LogLevel.Error);
+                }
+                else
+                {
+                    var prefix = AccessTools.Method(typeof(Skills.LockpickDurability), "PreWorldObjectOnUse");
+                    ModC.Harmony?.Patch(onUse, new HarmonyMethod(prefix));
+                    LockpickPatchApplied = true;
+                    ModManager.Log("[BSS] WorldObject.OnActivate lockpick prefix applied", ModManager.LogLevel.Info);
+                }
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[BSS] Lockpick patch failed: {ex}", ModManager.LogLevel.Error);
+            }
+        }
+
+        if (Settings.Lockpick?.LimitlessRegenEnabled == true)
+            StartLockpickRegenTimer(Settings.Lockpick);
+    }
+
+    void StartLockpickRegenTimer(LockpickSettings lockpickSettings)
+    {
+        _lockpickRegenCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _lockpickRegenCts = cts;
+        var checkIntervalMs = (int)Math.Min(lockpickSettings.LimitlessRegenIntervalSeconds * 1000 / 4, 60_000);
+        _ = Task.Run(async () =>
+        {
+            while (!cts.Token.IsCancellationRequested)
+            {
+                try { await Task.Delay(checkIntervalMs, cts.Token); } catch (TaskCanceledException) { break; }
+                try { Skills.LockpickDurability.TickRegen(lockpickSettings); }
+                catch (Exception ex) { ModManager.Log($"[BSS] Lockpick regen tick error: {ex.Message}", ModManager.LogLevel.Warn); }
+            }
+        }, cts.Token);
+    }
+
     static bool PlayerEnterWorldPatchApplied;
 
     void TryApplyPlayerEnterWorldPatch()
@@ -532,5 +636,58 @@ internal static class ModCommandsList
 
         foreach (var line in lines)
             player.SendMessage(line, ChatMessageType.System);
+    }
+
+    [CommandHandler("autosalvage", AccessLevel.Player, CommandHandlerFlag.RequiresWorld)]
+    public static void HandleAutoSalvage(Session session, params string[] parameters)
+    {
+        if (session?.Player is not Player player)
+            return;
+
+        var skill = player.GetCreatureSkill(Skill.Fletching);
+        if (skill is null || skill.AdvancementClass < SkillAdvancementClass.Trained)
+        {
+            player.SendMessage("You need a trained skill to use auto-salvage.", ChatMessageType.System);
+            return;
+        }
+
+        var currentlyEnabled = Skills.SalvageAutoDeposit.IsEnabled(player);
+        var newState = !currentlyEnabled;
+
+        if (parameters.Length > 0 && parameters[0].Trim().ToLowerInvariant() == "off")
+            newState = false;
+
+        Skills.SalvageAutoDeposit.SetEnabled(player, newState);
+
+        player.SendMessage($"Auto-salvage: {(newState ? "ON" : "OFF")} (auto-loots salvage to bank)", ChatMessageType.System);
+    }
+
+    [CommandHandler("bssadmin", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld)]
+    public static void HandleBssAdmin(Session session, params string[] parameters)
+    {
+        if (session?.Player is not Player player)
+            return;
+
+        if (parameters.Length == 0)
+        {
+            player.SendMessage("Usage: /bssadmin unlock | lock (toggle debug flag for auto-salvage testing)", ChatMessageType.System);
+            return;
+        }
+
+        var arg = parameters[0].Trim().ToLowerInvariant();
+        if (arg == "unlock")
+        {
+            player.SetProperty((ACE.Entity.Enum.Properties.PropertyInt)49999, 1);
+            player.SendMessage("Debug unlock: ENABLED (auto-salvage tests as unlocked)", ChatMessageType.System);
+        }
+        else if (arg == "lock")
+        {
+            player.SetProperty((ACE.Entity.Enum.Properties.PropertyInt)49999, 0);
+            player.SendMessage("Debug unlock: DISABLED", ChatMessageType.System);
+        }
+        else
+        {
+            player.SendMessage("Usage: /bssadmin unlock | lock", ChatMessageType.System);
+        }
     }
 }

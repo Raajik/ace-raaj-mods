@@ -122,7 +122,7 @@ public partial class PatchClass
         data.LastKillUtc = DateTime.UtcNow;
         data.LastKillWcid = speciesId;
 
-        AnnounceMilestones(killer, data, settings);
+        AnnounceAchievements(killer, data, settings);
 
         var huntNow = DateTime.UtcNow;
         if (HuntRuntime.ActiveHunt != null
@@ -218,18 +218,18 @@ public partial class PatchClass
         return pct;
     }
 
-    static void AnnounceMilestones(Player player, PlayerHuntData data, Settings settings)
+    static void AnnounceAchievements(Player player, PlayerHuntData data, Settings settings)
     {
-        double progress = settings.UseMilestoneXpForTiers ? data.TotalHuntXp : data.TotalLifetimeKills;
-        var tier = HuntRanks.MilestoneLootTierFromProgress(progress, settings);
+        double progress = settings.UseAchievementXpForTiers ? data.TotalHuntXp : data.TotalLifetimeKills;
+        var tier = HuntRanks.AchievementLootTierFromProgress(progress, settings);
 
-        if (tier > data.LastAnnouncedMilestoneTier)
+        if (tier > data.LastAnnouncedAchievementTier)
         {
-            data.LastAnnouncedMilestoneTier = tier;
-            var label = settings.UseMilestoneXpForTiers
+            data.LastAnnouncedAchievementTier = tier;
+            var label = settings.UseAchievementXpForTiers
                 ? $"{data.TotalHuntXp:N0} Hunt XP"
                 : $"{data.TotalLifetimeKills:N0} lifetime kills";
-            player.SendMessage($"[Hunt] Milestone: {label} — loot tier offset +{tier} on qualifying drops.");
+            player.SendMessage($"[Hunt] Achievement: {label} — loot tier offset +{tier} on qualifying drops.");
         }
     }
 }

@@ -20,9 +20,12 @@ public enum Features
     MeleeLifeSpellSkill,
     MissileDefenseSkill,
     RecklessnessSkill,
+    SalvageSkill,
     ShieldSkill,
     SneakAttackSkill,
     TrophyDropsSkill,
+    TinkeringLootGating,
+    VendorItemLeveling,
 }
 
 public class Settings
@@ -95,8 +98,12 @@ public class Settings
     public LeadershipSettings Leadership { get; set; } = new();
 
     [JsonPropertyName("// EnableLockpick")]
-    public string EnableLockpickDoc { get; init; } = "Lockpick skill bonus — placeholder for future extra effects.";
-    public bool EnableLockpick { get; set; } = false;
+    public string EnableLockpickDoc { get; init; } = "Lockpick skill bonus — banked Lockpick Durability, auto-unlock via banked charges, Limitless Lockpick passive regen. LeyLineLedger must also have EnableLockpickAutoBank=true.";
+    public bool EnableLockpick { get; set; } = true;
+
+    [JsonPropertyName("// Lockpick")]
+    public string LockpickSectionDoc { get; init; } = "Lockpick skill settings: skill requirement, Limitless regen rate and interval.";
+    public LockpickSettings Lockpick { get; set; } = new();
 
     [JsonPropertyName("// EnableLoyalty")]
     public string EnableLoyaltyDoc { get; init; } = "Loyalty: pet Corruption autocasts (spec); healing aura for self and nearby fellows (trained+).";
@@ -134,13 +141,21 @@ public class Settings
     public string EnableMissileDefenseDoc { get; init; } = "Missile Defense skill bonus — placeholder for future extra effects.";
     public bool EnableMissileDefense { get; set; } = false;
 
-    [JsonPropertyName("// EnableRecklessness")]
+[JsonPropertyName("// EnableRecklessness")]
     public string EnableRecklessnessDoc { get; init; } = "Recklessness: weapon attacks cleave to extra nearby targets (melee/missile only).";
     public bool EnableRecklessness { get; set; } = false;
 
     [JsonPropertyName("// RecklessnessCleave")]
     public string RecklessnessCleaveSectionDoc { get; init; } = "Physical cleave: extra targets, range, damage fraction, cooldown.";
-    public RecklessnessCleaveSettings RecklessnessCleave { get; set; } = new();
+    public RecklessnessCleaveSettings Recklessness { get; set; } = new();
+
+    [JsonPropertyName("// EnableSalvage")]
+    public string EnableSalvageDoc { get; init; } = "Salvage skill bonus — auto-deposit to LeyLineLedger bank on item pickup (trained/specialized). Requires LeyLineLedger SalvageBank.Enabled.";
+    public bool EnableSalvage { get; set; } = false;
+
+    [JsonPropertyName("// Salvage")]
+    public string SalvageSectionDoc { get; init; } = "Salvage skill bonus: auto-deposit settings.";
+    public SalvageSettings Salvage { get; set; } = new();
 
     [JsonPropertyName("// EnableShield")]
     public string EnableShieldDoc { get; init; } = "Shield skill bonus — thorns damage on evades/blocks when also trained in Dirty Fighting.";
@@ -161,6 +176,22 @@ public class Settings
     [JsonPropertyName("// TrophyDrops")]
     public string TrophyDropsSectionDoc { get; init; } = "Trophy drops bonus: extra rolls based on Assess Creature/Person trained/specialized.";
     public TrophyDropsSettings TrophyDrops { get; set; } = new();
+
+    [JsonPropertyName("// EnableTinkeringLootGating")]
+    public string EnableTinkeringLootGatingDoc { get; init; } = "Tinkering loot gating — only characters with any tinkering skill trained/specialized can generate leveled items from loot. Matching skill boosts max level.";
+    public bool EnableTinkeringLootGating { get; set; } = false;
+
+    [JsonPropertyName("// TinkeringLootGating")]
+    public string TinkeringLootGatingSectionDoc { get; init; } = "Tinkering loot gating: trained +10 max level, specialized +20 max level for matching item type.";
+    public TinkeringLootGatingSettings TinkeringLootGating { get; set; } = new();
+
+    [JsonPropertyName("// EnableVendorItemLeveling")]
+    public string EnableVendorItemLevelingDoc { get; init; } = "Vendor item leveling — all eligible vendor equipment spawns with native ACE item leveling (max level 25). Anyone can use and level these.";
+    public bool EnableVendorItemLeveling { get; set; } = false;
+
+    [JsonPropertyName("// VendorItemLeveling")]
+    public string VendorItemLevelingSectionDoc { get; init; } = "Vendor item leveling: base XP and max level for vendor-sold equipment.";
+    public VendorItemLevelingSettings VendorItemLeveling { get; set; } = new();
 
     [JsonPropertyName("// Recuperation")]
     public string RecuperationSectionDoc { get; init; } = "Recuperation: heal-over-time after using kits; per-kit vital routing and timing. Inside Recuperation: // lines first, then values (same order).";
@@ -468,6 +499,25 @@ public class LeadershipSettings
     public int ExtraCombatPetSlotsSpecialized { get; set; } = 2;
 }
 
+public class LockpickSettings
+{
+    [JsonPropertyName("// RequireLockpickSkill")]
+    public string RequireLockpickSkillDoc { get; init; } = "When true, only characters with Lockpick trained or specialized can use banked durability.";
+    public bool RequireLockpickSkill { get; set; } = true;
+
+    [JsonPropertyName("// LimitlessRegenEnabled")]
+    public string LimitlessRegenEnabledDoc { get; init; } = "When true, characters who banked a Limitless Lockpick (WCID 30253) receive passive durability regen.";
+    public bool LimitlessRegenEnabled { get; set; } = true;
+
+    [JsonPropertyName("// LimitlessRegenIntervalSeconds")]
+    public string LimitlessRegenIntervalSecondsDoc { get; init; } = "Seconds between passive regen grants for Limitless Lockpick holders (default 21600 = 6 hours).";
+    public long LimitlessRegenIntervalSeconds { get; set; } = 21600;
+
+    [JsonPropertyName("// LimitlessRegenChargesPerInterval")]
+    public string LimitlessRegenChargesPerIntervalDoc { get; init; } = "Base Lockpick Durability granted per regen tick (multiplied by stack count). Default 600 = 2400/day.";
+    public long LimitlessRegenChargesPerInterval { get; set; } = 600;
+}
+
 public class LoyaltySettings
 {
     [JsonPropertyName("// CorruptionSpellIds")]
@@ -497,4 +547,53 @@ public class LoyaltySettings
     [JsonPropertyName("// PercentMaxHealthPerSecondSpecialized")]
     public string PercentMaxHealthPerSecondSpecializedDoc { get; init; } = "Fraction of max Health per second when Loyalty is specialized (typically 2× trained).";
     public double PercentMaxHealthPerSecondSpecialized { get; set; } = 0.01;
+}
+
+public class SalvageSettings
+{
+    [JsonPropertyName("// AutoDepositPercent")]
+    public string AutoDepositPercentDoc { get; init; } = "Fraction of salvage units auto-deposited to bank when specialized (0.001 = 0.1%).";
+    public double AutoDepositPercent { get; set; } = 0.001;
+
+    [JsonPropertyName("// AutoDepositPercentUnlocked")]
+    public string AutoDepositPercentUnlockedDoc { get; init; } = "Fraction of salvage units auto-deposited before unlock (0.0005 = 0.05%, half of specialized).";
+    public double AutoDepositPercentUnlocked { get; set; } = 0.0005;
+
+    [JsonPropertyName("// RequireQuestsForUnlock")]
+    public string RequireQuestsForUnlockDoc { get; init; } = "Quests completed before full auto-salvage rate (Lorelord QuestCount). 0 = always unlocked.";
+    public int RequireQuestsForUnlock { get; set; } = 100;
+
+    [JsonPropertyName("// UnitsPerItem")]
+    public string UnitsPerItemDoc { get; init; } = "Units banked per salvage item when no workmanship/structure found.";
+    public int UnitsPerItem { get; set; } = 1;
+
+    [JsonPropertyName("// MaxAutoDepositPerCommand")]
+    public string MaxAutoDepositPerCommandDoc { get; init; } = "Max items auto-deposited per salvage pickup event (prevents spam).";
+    public int MaxAutoDepositPerCommand { get; set; } = 100;
+}
+
+public class TinkeringLootGatingSettings
+{
+    [JsonPropertyName("// MaxLevelBonusTrained")]
+    public string MaxLevelBonusTrainedDoc { get; init; } = "Bonus to item max level when the matching tinkering skill is trained.";
+    public int MaxLevelBonusTrained { get; set; } = 10;
+
+    [JsonPropertyName("// MaxLevelBonusSpecialized")]
+    public string MaxLevelBonusSpecializedDoc { get; init; } = "Bonus to item max level when the matching tinkering skill is specialized.";
+    public int MaxLevelBonusSpecialized { get; set; } = 20;
+}
+
+public class VendorItemLevelingSettings
+{
+    [JsonPropertyName("// MaxLevel")]
+    public string MaxLevelDoc { get; init; } = "Maximum item level for vendor-sold equipment.";
+    public int MaxLevel { get; set; } = 25;
+
+    [JsonPropertyName("// BaseXp")]
+    public string BaseXpDoc { get; init; } = "Base XP cost for vendor-sold equipment to reach level 1.";
+    public long BaseXp { get; set; } = 10_000;
+
+    [JsonPropertyName("// TreasureTier")]
+    public string TreasureTierDoc { get; init; } = "Treasure tier used for spell/imbue selection when vendor items level up (1-8). Higher = stronger effects.";
+    public int TreasureTier { get; set; } = 3;
 }

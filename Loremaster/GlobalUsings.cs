@@ -43,6 +43,8 @@ global using System.Text.Json;
 global using System.Text.Json.Serialization;
 global using System.Text.RegularExpressions;
 
+global using Microsoft.EntityFrameworkCore;
+
 global using ACE.Shared;
 global using ACE.Shared.Helpers;
 global using ACE.Shared.Mods;

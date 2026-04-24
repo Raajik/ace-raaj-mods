@@ -611,11 +611,12 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             // One-time XP + loot bonuses (QP already reflected in UpdateQuestPoints)
             player.GrantCompletionBonuses(questName);
 
-            // Achievement check — get count before and after this solve
-if (prevAccountCount < 0) prevAccountCount = 0;
-
-var newAccountCount  = prevAccountCount + 1;
-player.CheckAndBroadcastAchievement(prevAccountCount, newAccountCount);
+            // Achievement check: newCount includes the just-added quest; prevCount = newCount - 1.
+            var newAccountCount = Settings.UseAccountWideQuests
+                ? player.GetAccountUniqueQuestCount()
+                : player.QuestManager?.GetQuests().Count(q => q.HasSolves()) ?? 0;
+            var prevAccountCount = Math.Max(0, newAccountCount - 1);
+            player.CheckAndBroadcastAchievement(prevAccountCount, newAccountCount);
         }
 
         // ── Repeat solve (previously solved, solve count increased) ─────────
@@ -624,10 +625,15 @@ player.CheckAndBroadcastAchievement(prevAccountCount, newAccountCount);
             var questName = QuestManager.GetQuestName(questFormat) ?? questFormat;
             var qst = instance.GetQuest(questName);
             var qpVal = qst?.Value() ?? 0f;
-            player.TryAwardRepeatQuestPoints(questName, qpVal);
+            bool stampGranted = player.TryAwardRepeatQuestPoints(questName, qpVal);
             player.UpdateQuestPoints();
-            player.GrantCompletionBonuses(questName);
-            player.GrantRepeatSolveLoot(questName);
+
+            if (stampGranted && !player.HasReceivedRepeatReward(questName))
+            {
+                player.GrantCompletionBonuses(questName);
+                player.GrantRepeatSolveLoot(questName);
+                player.MarkRepeatRewardGranted(questName);
+            }
         }
 
         // ── Quest removed (any → 0) ──────────────────────────────────────────

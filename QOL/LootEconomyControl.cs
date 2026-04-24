@@ -14,57 +14,48 @@ public static class LootEconomyControl
     public static void Initialize(Settings settings)
     {
         _settings = settings;
-        ModManager.Log("[QOL] LootEconomyControl initialized", ModManager.LogLevel.Info);
     }
 
+    // GenerateTreasure is void — __result would be null. We read corpse.Inventory instead.
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Creature), nameof(Creature.GenerateTreasure), new Type[] { typeof(DamageHistoryInfo), typeof(Corpse) })]
     [HarmonyPriority(int.MaxValue)]
-    public static void PostGenerateTreasure(Creature __instance, DamageHistoryInfo killer, Corpse corpse, List<WorldObject> __result)
+    public static void PostGenerateTreasure(DamageHistoryInfo killer, Corpse corpse)
     {
-        if (_settings is null)
+        if (_settings is null || !_settings.EnableLootEconomyControl)
+            return;
+
+        if (corpse?.Inventory == null || corpse.Inventory.Count == 0)
+            return;
+
+        var items = corpse.Inventory.Values.ToList();
+
+        var valueMult = _settings.LootValueMultiplier;
+        if (valueMult > 0 && valueMult < 1.0)
         {
-            ModManager.Log("[QOL] LootEconomyControl: _settings is null!", ModManager.LogLevel.Warn);
-            return;
-        }
-
-        if (!_settings.EnableLootEconomyControl)
-            return;
-
-        if (__result is null || __result.Count == 0)
-            return;
-
-        var valueMultiplier = _settings.LootValueMultiplier;
-        var amountBoost = _settings.LootAmountReduction;
-
-        ModManager.Log($"[QOL] LootEconomyControl: Processing {__result.Count} items, valueMult={valueMultiplier}, amount={amountBoost}", ModManager.LogLevel.Info);
-
-        foreach (var item in __result)
-        {
-            if (item.ItemTotalXp.HasValue && item.ItemTotalXp.Value > 0)
-                continue;
-
-            var currentValue = item.Value ?? 0;
-            if (currentValue > 0)
+            foreach (var item in items)
             {
-                var newValue = (int)Math.Max(1, currentValue * valueMultiplier);
-                item.Value = newValue;
-                ModManager.Log($"[QOL] {item.Name}: {currentValue} -> {newValue}", ModManager.LogLevel.Info);
+                // Skip quest / empyrean growth items
+                if (item.ItemTotalXp.HasValue && item.ItemTotalXp.Value > 0)
+                    continue;
+
+                var currentValue = item.Value ?? 0;
+                if (currentValue > 0)
+                    item.Value = (int)Math.Max(1, currentValue * valueMult);
             }
         }
 
-        if (amountBoost > 0 && amountBoost < 1.0)
+        var reduction = _settings.LootAmountReduction;
+        if (reduction > 0 && reduction < 1.0)
         {
-            int keepCount = (int)Math.Max(1, Math.Ceiling(__result.Count * (1.0 - amountBoost)));
-            if (keepCount < __result.Count)
+            int keepCount = (int)Math.Max(1, Math.Ceiling(items.Count * (1.0 - reduction)));
+            if (keepCount < items.Count)
             {
-                var toRemove = __result.Skip(keepCount).ToList();
-                foreach (var item in toRemove)
+                foreach (var item in items.Skip(keepCount))
                 {
-                    __result.Remove(item);
+                    corpse.TryRemoveFromInventory(item.Guid);
                     item.Destroy();
                 }
-                ModManager.Log($"[QOL] Removed {toRemove.Count} items, kept {keepCount}", ModManager.LogLevel.Info);
             }
         }
     }

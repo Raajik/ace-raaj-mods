@@ -122,6 +122,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             enabledFeatures.Add(Features.CollectorsAcceptAll);
         if (Settings.EnablePortalsStripNoRecall)
             enabledFeatures.Add(Features.PortalsStripNoRecall);
+        if (Settings.EnableBypassPortalRestrictions)
+            enabledFeatures.Add(Features.BypassPortalRestrictions);
         if (Settings.EnableTownNetworkToll)
             enabledFeatures.Add(Features.TownNetworkToll);
         if (Settings.EnableVendorPackBurdenRelief)
@@ -141,6 +143,12 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         if (Settings.EnableBundleGive)
             enabledFeatures.Add(Features.BundleGive);
+
+        if (Settings.EnableVendorPriceInflation)
+        {
+            enabledFeatures.Add(Features.VendorPriceInflation);
+            VendorPriceInflation.Initialize(Settings);
+        }
 
         ModC.RegisterPatchCategories(enabledFeatures.ToArray());
     }
@@ -166,25 +174,28 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (!TownNetworkToll.TryDebitMarketplaceRecall(__instance))
             return false;
 
-        if (__instance.IsOlthoiPlayer)
+        bool bypass = Settings?.EnableBypassPortalRestrictions == true;
+        var bypassSettings = Settings?.BypassPortalRestrictions;
+
+        if (__instance.IsOlthoiPlayer && !(bypass && bypassSettings?.BypassOlthoiRecall == true))
         {
             __instance.Session.Network.EnqueueSend(new GameEventWeenieError(__instance.Session, WeenieError.OlthoiCanOnlyRecallToLifestone));
             return false;
         }
 
-        if (__instance.PKTimerActive)
+        if (__instance.PKTimerActive && !(bypass && bypassSettings?.BypassPKTimerRecall == true))
         {
             __instance.Session.Network.EnqueueSend(new GameEventWeenieError(__instance.Session, WeenieError.YouHaveBeenInPKBattleTooRecently));
             return false;
         }
 
-        if (__instance.RecallsDisabled)
+        if (__instance.RecallsDisabled && !(bypass && bypassSettings?.BypassDungeonRecall == true))
         {
             __instance.Session.Network.EnqueueSend(new GameEventWeenieError(__instance.Session, WeenieError.ExitTrainingAcademyToUseCommand));
             return false;
         }
 
-        if (__instance.TooBusyToRecall)
+        if (__instance.TooBusyToRecall && !(bypass && bypassSettings?.BypassBusyRecall == true))
         {
             __instance.Session.Network.EnqueueSend(new GameEventWeenieError(__instance.Session, WeenieError.YoureTooBusy));
             return false;
@@ -249,7 +260,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     }
 
     [CommandHandler("qol", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
-        "QOL hub. Usage: /qol commands | killxp [off|xp|percent|default]", "")]
+        "QOL hub. Usage: /qol commands | killxp [off|xp|percent|default] | toll [components|cashonly]", "")]
     public static void HandleQol(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
@@ -257,7 +268,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         if (parameters.Length == 0)
         {
-            player.SendMessage("Usage: /qol commands | killxp [off|xp|percent|default]", ChatMessageType.System);
+            player.SendMessage("Usage: /qol commands | killxp [off|xp|percent|default] | toll [components|cashonly]", ChatMessageType.System);
             return;
         }
 
@@ -275,7 +286,13 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             return;
         }
 
-        player.SendMessage($"Unknown /qol subcommand '{head}'. Try: commands, killxp.", ChatMessageType.System);
+        if (head == "toll")
+        {
+            HandleTollSub(player, parameters.Length > 1 ? parameters[1] : null);
+            return;
+        }
+
+        player.SendMessage($"Unknown /qol subcommand '{head}'. Try: commands, killxp, toll.", ChatMessageType.System);
     }
 
     static void HandleKillXpSub(Player player, string? arg)
@@ -324,6 +341,49 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             _                         => "server default",
         };
         player.SendMessage($"Kill XP display: {label}.", ChatMessageType.System);
+    }
+
+    static void HandleTollSub(Player player, string? arg)
+    {
+        uint guid = player.Guid.Full;
+
+        if (arg == null)
+        {
+            var profile = PlayerProfileStore.GetOrCreate(guid);
+            string desc = profile.TollPaymentMode switch
+            {
+                TollPaymentMode.ComponentsFirst => "components first",
+                TollPaymentMode.CashOnly        => "cash only",
+                _                               => "components first",
+            };
+            player.SendMessage($"Town Network toll payment mode: {desc}. Use /qol toll components|cashonly.", ChatMessageType.System);
+            return;
+        }
+
+        TollPaymentMode? newMode = arg.Trim().ToLowerInvariant() switch
+        {
+            "components" or "comp" or "default" => TollPaymentMode.ComponentsFirst,
+            "cash" or "cashonly" or "money"     => TollPaymentMode.CashOnly,
+            _                                   => null,
+        };
+
+        if (newMode == null)
+        {
+            player.SendMessage("Usage: /qol toll [components|cashonly]", ChatMessageType.System);
+            return;
+        }
+
+        var profile2 = PlayerProfileStore.GetOrCreate(guid);
+        profile2.TollPaymentMode = newMode.Value;
+        PlayerProfileStore.Save(guid, profile2);
+
+        string label = newMode.Value switch
+        {
+            TollPaymentMode.ComponentsFirst => "components first (try spell components before cash)",
+            TollPaymentMode.CashOnly        => "cash only (always pay with pyreals)",
+            _                               => "unknown",
+        };
+        player.SendMessage($"Town Network toll payment mode: {label}.", ChatMessageType.System);
     }
 
     [CommandHandler("setlum", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0, "Sets luminance to the max if unlocked")]

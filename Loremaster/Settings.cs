@@ -3,7 +3,7 @@ namespace Loremaster;
 public class Settings
 {
     [JsonPropertyName("// LoremasterSettings")]
-    public string LoremasterSettingsDoc { get; init; } = "Reading order: below this line, every // key is documentation; the next block lists real settings in the same order. Loremaster extends quest points (QP), account-wide tracking, completion bonus XP, repeat loot, milestones, cooldown reduction, /qb notify defaults, optional Harmony equip patches, and BarkeeperParchments contracts. Nested BarkeeperParchments and ParchmentTemplates follow two-band // then values inside each object. Dictionary keys in QuestBonuses, CompletionBonusXpOverrides, and MilestoneBonusQPOverrides are case-sensitive quest or threshold keys.";
+    public string LoremasterSettingsDoc { get; init; } = "Reading order: below this line, every // key is documentation; the next block lists real settings in the same order. Loremaster extends quest points (QP), account-wide tracking, completion bonus XP, repeat loot, achievements, cooldown reduction, /qb notify defaults, optional Harmony equip patches, and BarkeeperParchments contracts. Nested BarkeeperParchments and ParchmentTemplates follow two-band // then values inside each object. Dictionary keys in QuestBonuses, CompletionBonusXpOverrides, and AchievementBonusQPOverrides are case-sensitive quest or threshold keys.";
 
     [JsonPropertyName("// StandardBaseXpRetentionPercent")]
     public string StandardBaseXpRetentionPercentDoc { get; init; } = "Multiplicative base: fraction of raw ACE kill/quest XP kept before other terms (25 = 25% of raw, i.e. -75% vs full vanilla). Applied with Quest Points, equipment, etc. as a product.";
@@ -91,38 +91,42 @@ public class Settings
     public string EnableRepeatSolveLootDoc { get; init; } = "When true, award loot on repeat solves (2nd+) from LootConfig.json (same table as BetterChestLoot by default).";
     public bool EnableRepeatSolveLoot { get; set; } = true;
 
+    [JsonPropertyName("// EnableRepeatRewardOnceOnly")]
+    public string EnableRepeatRewardOnceOnlyDoc { get; init; } = "When true, each quest grants its repeat reward (XP + loot) only once per character. Subsequent repeat solves still earn stamps but no additional XP or loot.";
+    public bool EnableRepeatRewardOnceOnly { get; set; } = true;
+
     [JsonPropertyName("// LootConfigPath")]
     public string LootConfigPathDoc { get; init; } = "Optional path to LootConfig.json. Empty = Mods/Loremaster/LootConfig.json.";
     public string LootConfigPath { get; set; } = "";
 
-    [JsonPropertyName("// EnableMilestoneBroadcasts")]
-    public string EnableMilestoneBroadcastsDoc { get; init; } = "Broadcast server-wide when an account hits a milestone unique-quest count.";
-    public bool EnableMilestoneBroadcasts { get; set; } = true;
+    [JsonPropertyName("// EnableAchievementBroadcasts")]
+    public string EnableAchievementBroadcastsDoc { get; init; } = "Broadcast server-wide when an account hits an achievement unique-quest count.";
+    public bool EnableAchievementBroadcasts { get; set; } = true;
 
-    [JsonPropertyName("// MilestoneThresholds")]
-    public string MilestoneThresholdsDoc { get; init; } = "Account-wide unique quest counts that trigger milestone broadcasts and bonus QP.";
-    public List<int> MilestoneThresholds { get; set; } = new()
+    [JsonPropertyName("// AchievementThresholds")]
+    public string AchievementThresholdsDoc { get; init; } = "Account-wide unique quest counts that trigger achievement broadcasts and bonus QP.";
+    public List<int> AchievementThresholds { get; set; } = new()
     {
         25, 50, 100, 250, 500, 750, 1000,
         1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000,
         5500, 6000, 6500, 7000, 7500, 8000, 8500, 9000, 9500, 10000
     };
 
-    [JsonPropertyName("// MilestoneBonusQPPercent")]
-    public string MilestoneBonusQPPercentDoc { get; init; } = "Bonus QP formula: (MilestoneBonusQPPercent / 100) × MilestoneBonusQPBase unless overridden.";
-    public float MilestoneBonusQPPercent { get; set; } = 10f;
+    [JsonPropertyName("// AchievementBonusQPPercent")]
+    public string AchievementBonusQPPercentDoc { get; init; } = "Bonus QP formula: (AchievementBonusQPPercent / 100) × AchievementBonusQPBase unless overridden.";
+    public float AchievementBonusQPPercent { get; set; } = 10f;
 
-    [JsonPropertyName("// MilestoneBonusQPBase")]
-    public string MilestoneBonusQPBaseDoc { get; init; } = "Base term for milestone bonus QP before percent (default 10% of 100 = 10 QP).";
-    public float MilestoneBonusQPBase { get; set; } = 100f;
+    [JsonPropertyName("// AchievementBonusQPBase")]
+    public string AchievementBonusQPBaseDoc { get; init; } = "Base term for achievement bonus QP before percent (default 10% of 100 = 10 QP).";
+    public float AchievementBonusQPBase { get; set; } = 100f;
 
-    [JsonPropertyName("// MilestoneBonusQPOverrides")]
-    public string MilestoneBonusQPOverridesDoc { get; init; } = "Per milestone threshold (int key): fixed QP instead of the percent×base formula.";
-    public Dictionary<int, float> MilestoneBonusQPOverrides { get; set; } = new();
+    [JsonPropertyName("// AchievementBonusQPOverrides")]
+    public string AchievementBonusQPOverridesDoc { get; init; } = "Per achievement threshold (int key): fixed QP instead of the percent×base formula.";
+    public Dictionary<int, float> AchievementBonusQPOverrides { get; set; } = new();
 
-    [JsonPropertyName("// MilestoneBroadcastFormat")]
-    public string MilestoneBroadcastFormatDoc { get; init; } = "Broadcast format: {0} character name, {1} ordinal milestone, {2} bonus QP.";
-    public string MilestoneBroadcastFormat { get; set; } =
+    [JsonPropertyName("// AchievementBroadcastFormat")]
+    public string AchievementBroadcastFormatDoc { get; init; } = "Broadcast format: {0} character name, {1} ordinal achievement, {2} bonus QP.";
+    public string AchievementBroadcastFormat { get; set; } =
         "[Loremaster] {0} has just completed their {1} unique quest and earned {2} bonus quest points!";
 
     [JsonPropertyName("// EnableRepeatStampSystem")]
@@ -226,9 +230,39 @@ public class Settings
         24215, // Black Hill Collector
     };
 
+    [JsonPropertyName("// TrophyAttunedXpFraction")]
+    public string TrophyAttunedXpFractionDoc { get; init; } = "When the turned-in item is Attuned (PropertyInt.Attuned > 0), award this flat fraction of XP-to-next-level instead of the burden formula. Quality/Pristine multipliers still apply. Set 0 to block attuned items entirely.";
+    public float TrophyAttunedXpFraction { get; set; } = 0.10f;
+
+    [JsonPropertyName("// TrophyMinBuyValue")]
+    public string TrophyMinBuyValueDoc { get; init; } = "Minimum item Value (pyreal buy price) to be eligible for burden XP. Items worth less than this threshold are silently rejected. 0 = disabled (all values allowed). Useful for blocking cheap vendor items like training-academy consumables.";
+    public int TrophyMinBuyValue { get; set; } = 0;
+
+    [JsonPropertyName("// TrophyBlacklistWcids")]
+    public string TrophyBlacklistWcidsDoc { get; init; } = "WCIDs permanently blocked from earning trophy burden XP regardless of value or attuned status. Use this for specific vendor-bought items that slip past TrophyMinBuyValue (e.g. Oil of Rendering, spell Foci).";
+    public List<uint> TrophyBlacklistWcids { get; set; } = new();
+
+    [JsonPropertyName("// TrophyLogEnabled")]
+    public string TrophyLogEnabledDoc { get; init; } = "When true, append every trophy turn-in to Data/TrophyLog.jsonl for analytics and blacklist building.";
+    public bool TrophyLogEnabled { get; set; } = false;
+
     [JsonPropertyName("// BarkeeperParchments")]
     public string BarkeeperParchmentsSectionDoc { get; init; } = "Bartender parchment contracts: cooldown, Town Criers, boards, tier XP bands, templates. Inside BarkeeperParchments: // lines first, then values (same order).";
     public BarkeeperParchmentsSettings BarkeeperParchments { get; set; } = new();
+
+    // ── Achievement Tier system ────────────────────────────────────────────
+
+    [JsonPropertyName("// EnableAchievementTiers")]
+    public string EnableAchievementTiersDoc { get; init; } = "When true, track a per-character achievement tier (LMInt 11050) based on progress points. Other mods gate features behind this tier.";
+    public bool EnableAchievementTiers { get; set; } = true;
+
+    [JsonPropertyName("// KillsPerQuestEquivalent")]
+    public string KillsPerQuestEquivalentDoc { get; init; } = "How many total creature kills (from WorldEvents TotalLifetimeKills) equals one progress point. Default 100 = 100 kills ≈ 1 unique quest. Requires WorldEvents loaded; otherwise only quest count contributes.";
+    public int KillsPerQuestEquivalent { get; set; } = 100;
+
+    [JsonPropertyName("// AchievementTierThresholds")]
+    public string AchievementTierThresholdsDoc { get; init; } = "Ordered list of progress-point thresholds that unlock Tier 1, 2, 3, 4 respectively. Progress points = uniqueQuestCount + floor(totalKills / KillsPerQuestEquivalent).";
+    public List<int> AchievementTierThresholds { get; set; } = new() { 50, 150, 300, 500 };
 }
 
 public class BarkeeperParchmentsSettings

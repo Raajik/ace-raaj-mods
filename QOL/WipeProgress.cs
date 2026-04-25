@@ -140,12 +140,33 @@ internal static class WipeProgress
         player.RemoveProperty(FakeFloat.TimestampLastPlayerDeath);
         player.RemoveProperty((FakeFloat)11013); // ChaosQuestBonusMultiplier
 
-        // ── LeyLineLedger bank balance ──
-        player.RemoveProperty((FakeFloat)20001);
-        player.RemoveProperty((FakeFloat)20002);
-        player.RemoveProperty((FakeFloat)20003);
-        player.RemoveProperty((FakeFloat)20004);
-        player.RemoveProperty((FakeFloat)20005);
+        // ── LeyLineLedger bank balances (PropertyInt64, not FakeFloat) ──
+        // Hardcoded default property IDs used by LeyLineLedger
+        var bankProps = new[]
+        {
+            39999, // CashProperty (pyreals)
+            39998, // LuminanceProperty
+            40120, // AltCurrencyProperty (Zefs)
+            40200, // LegacyPooledSalvagePropertyToClear
+            40130, // Lockpick durability
+        };
+        foreach (var prop in bankProps)
+            player.SetProperty((PropertyInt64)prop, 0);
+
+        // Salvage bank materials (FirstMaterialBankPropertyId = 40201, up to 100 slots)
+        for (int i = 0; i < 100; i++)
+            player.SetProperty((PropertyInt64)(40201 + i), 0);
+
+        // Item bank properties (common defaults from LeyLineLedger Settings.Items)
+        var itemBankProps = new[] { 40001, 40002, 40003, 40004, 40005 };
+        foreach (var prop in itemBankProps)
+            player.SetProperty((PropertyInt64)prop, 0);
+
+        // ── Keys (hardcoded props from /b display) ──
+        player.SetProperty((PropertyInt64)40250, 0); // SIK
+        player.SetProperty((PropertyInt64)40500, 0); // SSK
+        player.SetProperty((PropertyInt64)40750, 0); // MFK
+        player.SetProperty((PropertyInt64)41000, 0); // L
 
         // ── Reset vitae ──
         player.RemoveProperty((PropertyFloat)218); // Vitae

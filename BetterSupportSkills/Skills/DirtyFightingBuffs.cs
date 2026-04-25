@@ -19,7 +19,7 @@ internal static class DirtyFightingBuffs
     [Conditional("DEBUG")]
     private static void DebugLog(string msg)
     {
-        ModManager.Log($"[BSS DF] {msg}", ModManager.LogLevel.Info);
+        ModManager.Log($"[BSS DF] {msg}", ModManager.LogLevel.Debug);
     }
 
     private static readonly int[] EnhancedDefenseDebuff = { 90000007, 90000008 };

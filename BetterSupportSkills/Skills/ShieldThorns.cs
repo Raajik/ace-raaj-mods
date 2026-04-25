@@ -14,7 +14,7 @@ internal static class ShieldThorns
     [Conditional("DEBUG")]
     private static void DebugLog(string msg)
     {
-        ModManager.Log($"[BSS ShieldThorns] {msg}", ModManager.LogLevel.Info);
+        ModManager.Log($"[BSS ShieldThorns] {msg}", ModManager.LogLevel.Debug);
     }
 
     public static void PostfixCalculateDamage(DamageEvent __result, Creature attacker, Creature defender, WorldObject damageSource)

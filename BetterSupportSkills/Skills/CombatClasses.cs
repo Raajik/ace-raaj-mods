@@ -13,7 +13,7 @@ internal static class CombatClasses
     [Conditional("DEBUG")]
     private static void DebugLog(string msg)
     {
-        ModManager.Log($"[BSS CombatClasses] {msg}", ModManager.LogLevel.Info);
+        ModManager.Log($"[BSS CombatClasses] {msg}", ModManager.LogLevel.Debug);
     }
 
     static readonly ConcurrentDictionary<uint, double> LastCrusaderHealTick = new();

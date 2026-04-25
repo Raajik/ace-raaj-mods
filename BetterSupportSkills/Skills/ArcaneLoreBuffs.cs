@@ -14,7 +14,7 @@ internal static class ArcaneLoreBuffs
     [Conditional("DEBUG")]
     private static void DebugLog(string msg)
     {
-        ModManager.Log($"[BSS ArcaneLore] {msg}", ModManager.LogLevel.Info);
+        ModManager.Log($"[BSS ArcaneLore] {msg}", ModManager.LogLevel.Debug);
     }
 
     // Smart vulnerability echo: map spell damage type to matching vulnerability spell.

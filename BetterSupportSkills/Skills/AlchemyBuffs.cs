@@ -17,7 +17,7 @@ internal static class AlchemyBuffs
     [Conditional("DEBUG")]
     private static void DebugLog(string msg)
     {
-        ModManager.Log($"[BSS Alchemy] {msg}", ModManager.LogLevel.Info);
+        ModManager.Log($"[BSS Alchemy] {msg}", ModManager.LogLevel.Debug);
     }
 
     public static bool PrefixPlayerEnterWorld(Player __instance)

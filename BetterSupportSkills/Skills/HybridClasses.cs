@@ -13,7 +13,7 @@ internal static class HybridClasses
     [Conditional("DEBUG")]
     private static void DebugLog(string msg)
     {
-        ModManager.Log($"[BSS Hybrid] {msg}", ModManager.LogLevel.Info);
+        ModManager.Log($"[BSS Hybrid] {msg}", ModManager.LogLevel.Debug);
     }
 
     // -- Spell ID Lookup Tables (Tier 1–8) -------------------------------

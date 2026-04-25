@@ -15,7 +15,7 @@ internal static class CookingBuffs
     [Conditional("DEBUG")]
     private static void DebugLog(string msg)
     {
-        ModManager.Log($"[BSS Cooking] {msg}", ModManager.LogLevel.Info);
+        ModManager.Log($"[BSS Cooking] {msg}", ModManager.LogLevel.Debug);
     }
 
     private static readonly int[] LegendarySpells = { 90000001, 90000002, 90000003 };

@@ -411,6 +411,14 @@ internal static class InvasionRuntime
                 ? QueryCreatureWcidsByType(themeTypeId, levelMin, levelMax)
                 : QueryNearbyCreatureWcids(town, levelMin, levelMax);
 
+            // Fallback: if nearby query is empty, search entire database globally
+            if (wcids.Count == 0 && themeTypeId == 0)
+            {
+                wcids = QueryCreatureWcidsGlobal(levelMin, levelMax);
+                if (wcids.Count > 0)
+                    ModManager.Log($"[Invasion] Fallback to global query for {town.TownName} T{tier}: found {wcids.Count} candidates.", ModManager.LogLevel.Info);
+            }
+
             if (wcids.Count == 0)
             {
                 ModManager.Log($"[Invasion] No mobs found for {town.TownName} T{tier} lv{levelMin}-{levelMax} theme={themeTypeId}.", ModManager.LogLevel.Warn);
@@ -527,6 +535,22 @@ internal static class InvasionRuntime
 
         return (from weenie in ctx.Weenie
                 where instanceWcids.Contains(weenie.ClassId)
+                where weenie.Type == (int)WeenieType.Creature
+                where !excluded.Contains(weenie.ClassId)
+                join lvProp in ctx.WeeniePropertiesInt on weenie.ClassId equals lvProp.ObjectId
+                where lvProp.Type == levelTypeId && lvProp.Value >= levelMin && lvProp.Value <= levelMax
+                select weenie.ClassId)
+               .Distinct().ToList();
+    }
+
+    static List<uint> QueryCreatureWcidsGlobal(int levelMin, int levelMax)
+    {
+        using var ctx = new WorldDbContext();
+        ctx.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+        var levelTypeId = (ushort)PropertyInt.Level;
+        var excluded    = NonAttackableCreatureIds(ctx);
+
+        return (from weenie in ctx.Weenie
                 where weenie.Type == (int)WeenieType.Creature
                 where !excluded.Contains(weenie.ClassId)
                 join lvProp in ctx.WeeniePropertiesInt on weenie.ClassId equals lvProp.ObjectId

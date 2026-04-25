@@ -728,7 +728,7 @@ public static class SummoningClasses
 
             // Properly initialize as a combat pet (mirrors CombatPet.Init)
             pet.Faction1Bits = player.Faction1Bits;
-            pet.MonsterState = ACE.Entity.Enum.Properties.State.Awake;
+            pet.MonsterState = Creature.State.Awake;
             pet.IsAwake = true;
             pet.SetCombatMode(CombatMode.Melee);
 

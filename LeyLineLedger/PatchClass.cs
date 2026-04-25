@@ -128,58 +128,77 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (player is null)
             return;
 
-        //No args or explicit list -> show summary
+        //No args or explicit list -> show summary with diffs
         if (parameters.Length == 0 || parameters[0].Equals("list", StringComparison.OrdinalIgnoreCase))
         {
-            long pyreals = player.GetBanked(Settings.CashProperty);
-            long luminance = player.GetBanked(Settings.LuminanceProperty);
-            long zefs = Settings.AltCurrencyProperty > 0 ? player.GetBanked(Settings.AltCurrencyProperty) : 0;
+            var (last, current) = BankSnapshotTracker.GetDiff(player.Guid.Full);
+            BankSnapshotTracker.MarkViewed(player.Guid.Full);
 
-            // MMD calculation (each MMD = 250,000 pyreals) - visual helper only
-            long mmdCount = pyreals / 250000;
+            long pyreals = current.Pyreals;
+            long luminance = current.Luminance;
+            long zefs = Settings.AltCurrencyProperty > 0 ? current.AltCurrency : 0;
 
-            string pyrealsDisplay = pyreals >= 1_000_000_000 
-                ? $"{pyreals / 1_000_000_000.0:F1}B" 
-                : pyreals >= 1_000_000 
-                    ? $"{pyreals / 1_000_000:F1}M" 
-                    : pyreals >= 1_000 
-                        ? $"{pyreals / 1_000:F0}k" 
+            long pyrealDiff = last != null ? current.Pyreals - last.Pyreals : 0;
+            long lumDiff = last != null ? current.Luminance - last.Luminance : 0;
+            long zefDiff = last != null ? current.AltCurrency - last.AltCurrency : 0;
+
+            string pyrealsDisplay = pyreals >= 1_000_000_000
+                ? $"{pyreals / 1_000_000_000.0:F1}B"
+                : pyreals >= 1_000_000
+                    ? $"{pyreals / 1_000_000.0:F1}M"
+                    : pyreals >= 1_000
+                        ? $"{pyreals / 1_000.0:F0}k"
                         : pyreals.ToString("N0");
 
-            var keys = new (string label, int prop, uint wcid)[]
+            long mmdCount = pyreals / 250000;
+            string pyrealLine = $"Pyreals: {pyrealsDisplay}";
+            if (mmdCount > 0)
+                pyrealLine += $" (~{mmdCount:N0} MMD)";
+            pyrealLine += $" ({BankSnapshotTracker.FormatDiff(pyrealDiff)})";
+            player.SendMessage(pyrealLine, DiffMessageType(pyrealDiff));
+
+            string lumLine = $"Luminance: {luminance:N0} ({BankSnapshotTracker.FormatDiff(lumDiff)})";
+            player.SendMessage(lumLine, DiffMessageType(lumDiff));
+
+            if (zefs > 0 || zefDiff != 0)
             {
-                ("SIK", 40250, 6876),
-                ("SSK", 40500, 24477),
-                ("MFK", 40750, 38456),
-                ("L", 41000, 48746)
+                string zefLine = $"Zefs: {zefs:N0} ({BankSnapshotTracker.FormatDiff(zefDiff)})";
+                player.SendMessage(zefLine, DiffMessageType(zefDiff));
+            }
+
+            var keys = new (string label, int prop)[]
+            {
+                ("SIK", 40250),
+                ("SSK", 40500),
+                ("MFK", 40750),
+                ("L", 41000)
             };
-            var keyParts = new List<string>();
-            foreach (var (label, prop, wcid) in keys)
+            foreach (var (label, prop) in keys)
             {
-                long banked = player.GetBanked(prop);
-                if (banked > 0)
-                    keyParts.Add($"{label}={banked}");
+                long banked = current.Keys.GetValueOrDefault(label, 0);
+                long keyDiff = last != null ? banked - last.Keys.GetValueOrDefault(label, 0) : 0;
+                if (banked > 0 || keyDiff != 0)
+                {
+                    string keyLine = $"{label}: {banked:N0} ({BankSnapshotTracker.FormatDiff(keyDiff)})";
+                    player.SendMessage(keyLine, DiffMessageType(keyDiff));
+                }
             }
 
             long writs = 0;
             var writ = Settings.Items.FirstOrDefault(x => x.Name.Contains("Writ"));
             if (writ != null)
                 writs = player.GetBanked(writ.Prop);
-
-            string message = $"Pyreals: {pyrealsDisplay}";
-            if (mmdCount > 0)
-                message += $" (~{mmdCount:N0} MMD)";
-
-            message += $", Luminance: {luminance:N0}";
-            if (zefs > 0)
-                message += $", Zefs: {zefs:N0}";
-            if (keyParts.Count > 0)
-                message += $", {string.Join(", ", keyParts)}";
             if (writs > 0)
-                message += $", Writs={writs}";
+                player.SendMessage($"Writs: {writs:N0}");
 
-            player.SendMessage(message);
             return;
+        }
+
+        static ACE.Entity.Enum.ChatMessageType DiffMessageType(long diff)
+        {
+            if (diff > 0) return ACE.Entity.Enum.ChatMessageType.CombatSelf;   // green
+            if (diff < 0) return ACE.Entity.Enum.ChatMessageType.CombatEnemy;  // red
+            return ACE.Entity.Enum.ChatMessageType.System;                     // white
         }
 
         var verbToken = parameters[0];

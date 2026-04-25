@@ -40,42 +40,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         }
     }
 
-    static bool _vendorLootRotationPatchApplied;
-
-    void TryApplyVendorLootRotationPatch()
-    {
-        if (_vendorLootRotationPatchApplied) return;
-        if (!Settings.EnableVendorLootRotation) return;
-
-        try
-        {
-            var loadInventory = AccessTools.Method(typeof(Vendor), "LoadInventory");
-            if (loadInventory == null)
-            {
-                ModManager.Log("[QOL] Vendor.LoadInventory method not found; vendor loot rotation patch skipped.", ModManager.LogLevel.Error);
-                return;
-            }
-
-            var postfix = AccessTools.Method(typeof(VendorLootRotation), nameof(VendorLootRotation.PostLoadInventory));
-            if (postfix == null)
-            {
-                ModManager.Log("[QOL] VendorLootRotation.PostLoadInventory method not found.", ModManager.LogLevel.Error);
-                return;
-            }
-
-            var harmonyMethod = new HarmonyMethod(postfix);
-            harmonyMethod.priority = 200;
-            ModC.Harmony?.Patch(loadInventory, null, harmonyMethod, null);
-
-            _vendorLootRotationPatchApplied = true;
-            ModManager.Log("[QOL] VendorLootRotation patch applied (Vendor.LoadInventory postfix).", ModManager.LogLevel.Info);
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[QOL] VendorLootRotation patch failed: {ex}", ModManager.LogLevel.Error);
-        }
-    }
-
     public override void Start()
     {
         base.Start();
@@ -90,6 +54,35 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         VendorLootRotation.Initialize(Settings);
         TryApplyVendorLootRotationPatch();
         ApplyWorldOpenSideEffects();
+    }
+
+    void TryApplyVendorLootRotationPatch()
+    {
+        if (!Settings.EnableVendorLootRotation) return;
+
+        try
+        {
+            var approachVendor = AccessTools.Method(typeof(Vendor), nameof(Vendor.ApproachVendor));
+            if (approachVendor == null)
+            {
+                ModManager.Log("[QOL] Vendor.ApproachVendor method not found; vendor loot rotation patch skipped.", ModManager.LogLevel.Error);
+                return;
+            }
+
+            var prefix = AccessTools.Method(typeof(VendorLootRotation), nameof(VendorLootRotation.OnVendorApproachPrefix));
+            if (prefix == null)
+            {
+                ModManager.Log("[QOL] VendorLootRotation.OnVendorApproachPrefix method not found.", ModManager.LogLevel.Error);
+                return;
+            }
+
+            ModC.Harmony?.Patch(approachVendor, new HarmonyMethod(prefix));
+            ModManager.Log("[QOL] VendorLootRotation patched to Vendor.ApproachVendor.", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[QOL] VendorLootRotation patch failed: {ex}", ModManager.LogLevel.Error);
+        }
     }
 
     public override async Task OnWorldOpen()

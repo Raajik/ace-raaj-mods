@@ -105,7 +105,7 @@ internal static class TownNetworkToll
         if (!IsTownNetworkPortal(__instance, toll))
             return;
 
-        long fee = ComputeRandomFee(player, toll);
+        long fee = ComputeDynamicFee(player, toll);
         var mode = GetPlayerPaymentMode(player);
 
         if (mode == TollPaymentMode.ComponentsFirst && CanPayWithComponents(player, toll, out _))
@@ -138,7 +138,7 @@ internal static class TownNetworkToll
         if (!IsTownNetworkPortal(__instance, toll))
             return;
 
-        long fee = ComputeRandomFee(player, toll);
+        long fee = ComputeDynamicFee(player, toll);
         ProcessPayment(player, fee, toll, "Town Network portal");
     }
 
@@ -152,7 +152,7 @@ internal static class TownNetworkToll
         if (!toll.ChargeMarketplaceRecall)
             return true;
 
-        long fee = ComputeRandomFee(player, toll);
+        long fee = ComputeDynamicFee(player, toll);
         return ProcessPayment(player, fee, toll, "marketplace recall");
     }
 
@@ -177,6 +177,19 @@ internal static class TownNetworkToll
         if (TryPayWithCash(player, fee, toll, out long charge))
         {
             SendFlavor(player, new PaymentResult(true, charge, "pyreals", (int)charge, (int)(GetBankedPyreals(player, toll.BankCashProperty))));
+            // Show charge diff inline (red for negative)
+            long remaining = GetBankedPyreals(player, toll.BankCashProperty);
+            string currentStr = remaining >= 1_000_000_000
+                ? $"{remaining / 1_000_000_000.0:F1}B"
+                : remaining >= 1_000_000
+                    ? $"{remaining / 1_000_000.0:F1}M"
+                    : remaining >= 1_000
+                        ? $"{remaining / 1_000.0:F0}k"
+                        : remaining.ToString("N0");
+            string chargeStr = charge >= 250_000
+                ? $"{(charge / 250_000.0):F2} MMD"
+                : $"{charge:N0} pyreals";
+            player.SendMessage($"{context} toll: {chargeStr} deducted. Bank: {currentStr} (-{chargeStr})", ChatMessageType.CombatEnemy);
             ModManager.Log($"[TownNetworkToll] {player.Name} paid {charge:N0} pyreals (bank) for {context}. " +
                 $"Remaining bank: {GetBankedPyreals(player, toll.BankCashProperty):N0}", ModManager.LogLevel.Info);
             return true;
@@ -325,7 +338,7 @@ internal static class TownNetworkToll
     }
 
     // ── Fee Computation ────────────────────────────────────────────────────
-    internal static long ComputeRandomFee(Player player, TownNetworkTollSettings t)
+    internal static long ComputeDynamicFee(Player player, TownNetworkTollSettings t)
     {
         // Seed based on player GUID and a 5-second time window so CheckUseRequirements
         // and ActOnUse (which run milliseconds apart) produce the same fee.
@@ -352,7 +365,18 @@ internal static class TownNetworkToll
         double mult = 1.0 - steps * t.DiscountPercentPerStep;
         if (mult < 0) mult = 0;
 
-        return (long)Math.Round(baseFee * mult);
+        if (!t.EnableDynamicPricing)
+            return (long)Math.Round(baseFee * mult);
+
+        // Economy multiplier (shared with VendorLootRotation, updated every 5 min)
+        double economyMult = VendorLootRotation.GetEconomyMultiplier();
+
+        // Continuous level scaling: 1.0 at level 1 → LevelScalingMaxMultiplier at level 275
+        double levelMult = 1.0 + ((player.Level ?? 1) / 275.0) * (t.LevelScalingMaxMultiplier - 1.0);
+        if (levelMult < 1.0) levelMult = 1.0;
+
+        double finalFee = baseFee * economyMult * levelMult * t.BaseLevelMultiplier * mult;
+        return (long)Math.Round(finalFee);
     }
 
     // ── Flavor Messaging ───────────────────────────────────────────────────
@@ -366,12 +390,12 @@ internal static class TownNetworkToll
         string costStr;
         string itemName;
 
-        if (result.ItemName == "pyreals" && player.Level > 100)
+        if (result.ItemName == "pyreals" && result.Cost >= 250_000)
         {
-            // High-level players see costs in whole MMDs (250,000 pyreals each)
-            int mmdCount = (int)(result.Cost / 250_000);
-            costStr = mmdCount.ToString();
-            itemName = mmdCount == 1 ? "MMD" : "MMDs";
+            // Show costs in decimal MMDs (250,000 pyreals each) for large amounts
+            double mmd = result.Cost / 250_000.0;
+            costStr = mmd.ToString("F2");
+            itemName = mmd == 1.0 ? "MMD" : "MMDs";
         }
         else
         {

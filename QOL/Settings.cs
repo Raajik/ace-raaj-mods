@@ -232,6 +232,26 @@ public class Settings
     public string VendorLootMaxValueDoc { get; init; } = "Maximum item value in pyreals for vendor loot.";
     public int VendorLootMaxValue { get; set; } = 10000;
 
+    [JsonPropertyName("// VendorLootCooldownMinutes")]
+    public string VendorLootCooldownMinutesDoc { get; init; } = "Minutes between vendor inventory rotations for the same vendor instance.";
+    public int VendorLootCooldownMinutes { get; set; } = 15;
+
+    [JsonPropertyName("// VendorLootEconomyScanMinutes")]
+    public string VendorLootEconomyScanMinutesDoc { get; init; } = "How often to scan total banked pyreals across all online players.";
+    public int VendorLootEconomyScanMinutes { get; set; } = 5;
+
+    [JsonPropertyName("// VendorLootLuxuryTaxPercent")]
+    public string VendorLootLuxuryTaxPercentDoc { get; init; } = "Hidden luxury tax added to vendor prices. 10 = 10% price increase.";
+    public double VendorLootLuxuryTaxPercent { get; set; } = 10.0;
+
+    [JsonPropertyName("// VendorLootEconomyPyrealDivisor")]
+    public string VendorLootEconomyPyrealDivisorDoc { get; init; } = "Divisor for economy multiplier calculation. Default 100M = 100,000,000.";
+    public long VendorLootEconomyPyrealDivisor { get; set; } = 100_000_000L;
+
+    [JsonPropertyName("// VendorLootCashPropertyId")]
+    public string VendorLootCashPropertyIdDoc { get; init; } = "PropertyInt64 ID for banked pyreals. Default 39999 aligns with LeyLineLedger CashProperty.";
+    public int VendorLootCashPropertyId { get; set; } = 39999;
+
     [JsonPropertyName("// GiveNpcSingleStackWeenieTypes")]
     public string GiveNpcSingleStackWeenieTypesDoc { get; init; } = "WeenieTypes that receive the give clamp (typically Generic for trophies). Only applies when MaxStackSize > 1.";
     public List<WeenieType> GiveNpcSingleStackWeenieTypes { get; set; } = new() { WeenieType.Generic };
@@ -339,6 +359,18 @@ public enum TownNetworkInsufficientFundsMode
 
 public class TownNetworkTollSettings
 {
+    [JsonPropertyName("// EnableDynamicPricing")]
+    public string EnableDynamicPricingDoc { get; init; } = "When true, toll fees scale with server economy (shared with VendorLootRotation) and character level.";
+    public bool EnableDynamicPricing { get; set; } = true;
+
+    [JsonPropertyName("// LevelScalingMaxMultiplier")]
+    public string LevelScalingMaxMultiplierDoc { get; init; } = "Maximum level scaling multiplier at max level (default 3.0 = 3× at level 275).";
+    public double LevelScalingMaxMultiplier { get; set; } = 3.0;
+
+    [JsonPropertyName("// BaseLevelMultiplier")]
+    public string BaseLevelMultiplierDoc { get; init; } = "Flat multiplier applied after all other calculations.";
+    public double BaseLevelMultiplier { get; set; } = 1.0;
+
     [JsonPropertyName("// BankCashProperty")]
     public string BankCashPropertyDoc { get; init; } = "PropertyInt64 id for banked pyreals (default 39999; match LeyLineLedger/AutoLoot).";
     public int BankCashProperty { get; set; } = 39999;

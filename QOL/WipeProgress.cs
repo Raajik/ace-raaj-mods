@@ -53,8 +53,13 @@ internal static class WipeProgress
         // ── 1. Wipe account-wide JSON files ──
         try
         {
-            var modDir = Path.GetDirectoryName(typeof(WipeProgress).Assembly.Location) ?? "";
+            var modDir = Path.GetDirectoryName(typeof(WipeProgress).Assembly.Location);
+            if (string.IsNullOrWhiteSpace(modDir))
+                modDir = AppDomain.CurrentDomain.BaseDirectory;
+
             var parentDir = Directory.GetParent(modDir)?.FullName ?? modDir;
+            if (string.IsNullOrWhiteSpace(parentDir))
+                parentDir = modDir;
 
             var filesToWipe = new[]
             {

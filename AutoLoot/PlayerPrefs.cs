@@ -1,48 +1,18 @@
 namespace AutoLoot;
 
-/// <summary>
-/// Stores a single player's AutoLoot preferences so they survive server restarts.
-///
-/// One JSON file per character is written to LootProfilePath/PlayerData/{guid}.json
-/// whenever the player changes any setting. On their next session, AutoLoot loads
-/// the file and restores everything exactly as they left it.
-/// </summary>
 public class PlayerPrefs
 {
-    /// <summary>
-    /// The filenames (not full paths) of every .utl profile the player had active
-    /// when they last saved. Full paths can change if the server moves files;
-    /// filenames are stable.
-    /// </summary>
     public List<string> ActiveProfileNames { get; set; } = new();
-
-    /// <summary>
-    /// Whether the player wants a chat summary when items are auto-looted.
-    /// Defaults to true — players opt out with /autoloot details.
-    /// </summary>
     public bool LootNotifications { get; set; } = true;
-
-    /// <summary>
-    /// Whether the VendorTrash ratio filter is active.
-    /// Toggled with /autoloot vt.
-    /// </summary>
     public bool VendorTrashEnabled { get; set; } = false;
-
-    /// <summary>
-    /// The minimum value:burden ratio for the VendorTrash filter.
-    /// Items with (sell value / burden) >= this threshold are looted.
-    /// Default 50 = "worth at least 50× its weight."
-    /// Changed with /autoloot vt [number].
-    /// </summary>
     public int VendorTrashRatio { get; set; } = 50;
-
-    /// <summary>
-    /// Whether the Unknown Scrolls filter is active.
-    /// When on, unknown spell scrolls on corpses are learned when the character can read them
-    /// (same rules as using the scroll); otherwise they are looted to inventory. Already-known
-    /// spells are skipped. Toggled with /autoloot scrolls.
-    /// </summary>
     public bool UnknownScrollsEnabled { get; set; } = false;
 
-    public bool BroadcastRares { get; set; } = false;
+    // Achievement tracking
+    public int KeyUnlocks { get; set; } = 0;
+    public int LockpickUnlocks { get; set; } = 0;
+    public int ItemsSalvaged { get; set; } = 0;
+    public bool KeyUnlockNotified { get; set; } = false;
+    public bool LockpickUnlockNotified { get; set; } = false;
+    public bool SalvageUnlockNotified { get; set; } = false;
 }

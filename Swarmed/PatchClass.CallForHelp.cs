@@ -4,6 +4,7 @@ public partial class PatchClass
 {
     const int SwarmedReinforcementXpBonusPropertyId = 40110;
     const int SwarmedPlayerXpBonusPropertyId = 40111;
+    const int SwarmedReinforcementDepthPropertyId = 40112;
 
     static void RecordCallForHelpDebug(in CallForHelpSnapshot snapshot, int spawnsCreated = 0) =>
         CallForHelpDebug.Record(snapshot, spawnsCreated);
@@ -269,7 +270,11 @@ public partial class PatchClass
         if (settings.CallForHelpMessages == null || settings.CallForHelpMessages.Count == 0)
             return;
 
-        string messageFormat = settings.CallForHelpMessages[ThreadSafeRandom.Next(0, settings.CallForHelpMessages.Count)];
+        int msgIndex = ThreadSafeRandom.Next(0, settings.CallForHelpMessages.Count);
+        if (msgIndex < 0 || msgIndex >= settings.CallForHelpMessages.Count)
+            return;
+
+        string messageFormat = settings.CallForHelpMessages[msgIndex];
         string message;
         try
         {
@@ -297,6 +302,17 @@ public partial class PatchClass
         if (xpBonusMin > xpBonusMax)
             (xpBonusMin, xpBonusMax) = (xpBonusMax, xpBonusMin);
 
+        // ── Reinforcement depth & compound growth ──────────────────────────
+        int parentDepth = __instance.GetProperty((PropertyInt)SwarmedReinforcementDepthPropertyId) ?? 0;
+        int childDepth = parentDepth + 1;
+        bool growthEnabled = settings.ReinforcementGrowthEnabled;
+        float growthMult = 1.0f;
+        if (growthEnabled)
+        {
+            float growthPct = Math.Max(0.01f, settings.ReinforcementGrowthPercent);
+            growthMult = (float)Math.Min(settings.ReinforcementGrowthMaxMultiplier, Math.Pow(1.0 + growthPct, childDepth));
+        }
+
         // ── Chaos escalation ───────────────────────────────────────────────
         bool chaosActive = false;
         float chaosMult = 1.0f;
@@ -312,14 +328,19 @@ public partial class PatchClass
             }
         }
 
+        // Determine whether this spawn should be a CreatureEx (depth threshold or chaos chance)
+        bool forceCreatureEx = growthEnabled
+            && childDepth >= settings.ReinforcementCreatureExDepthThreshold
+            && ThreadSafeRandom.Next(0f, 1f) < settings.ReinforcementCreatureExChanceAtThreshold;
+
         int created = 0;
         for (int i = 0; i < count; i++)
         {
             ObjectGuid guid = GuidManager.NewDynamicGuid();
             Creature creature;
 
-            // Chaos mode: small chance to spawn a CreatureEx champion
-            if (chaosActive && ThreadSafeRandom.Next(0f, 1f) < settings.ChaosReinforcementCreatureExChance)
+            // Spawn CreatureEx if forced by depth threshold or chaos roll
+            if (forceCreatureEx || (chaosActive && ThreadSafeRandom.Next(0f, 1f) < settings.ChaosReinforcementCreatureExChance))
             {
                 var exType = Features.CreatureExSpawn.RandomCreatureType();
 #if REALM
@@ -350,31 +371,34 @@ public partial class PatchClass
 
             creature.Location = new Position(deathLocation);
 
+            // Apply depth-based compound growth (stacked with chaos if both active)
+            float effectiveMult = growthEnabled ? growthMult : 1.0f;
             if (chaosActive)
-            {
-                uint newMaxHealth = (uint)Math.Max(1, originalMaxHealth * chaosMult);
-                creature.Health.Ranks = newMaxHealth;
-                creature.Health.Current = newMaxHealth;
-                creature.ObjScale = originalScale * chaosMult;
-                if (chaosMult > 1.0f)
-                    creature.SetProperty(reinforcementBonusProp, chaosMult);
-            }
-            else
-            {
-                float healthMult = (float)ThreadSafeRandom.Next(healthMin, healthMax);
-                uint newMaxHealth = (uint)Math.Max(1, originalMaxHealth * healthMult);
-                creature.Health.Ranks = newMaxHealth;
-                creature.Health.Current = newMaxHealth;
-                float scaleMult = (float)ThreadSafeRandom.Next(scaleMin, scaleMax);
-                creature.ObjScale = originalScale * scaleMult;
+                effectiveMult *= chaosMult;
 
-                if (xpBonusMax > 0f)
-                {
-                    float bonus = (float)ThreadSafeRandom.Next(xpBonusMin, xpBonusMax);
-                    if (bonus > 0f)
-                        creature.SetProperty(reinforcementBonusProp, bonus);
-                }
-            }
+            uint newMaxHealth = (uint)Math.Max(1, originalMaxHealth * effectiveMult);
+            creature.Health.Ranks = newMaxHealth;
+            creature.Health.Current = newMaxHealth;
+            creature.ObjScale = originalScale * effectiveMult;
+
+            // Damage rating scales with depth/chaos (proxy for "30% more damage")
+            int damageRating = (int)(originalMaxHealth * 0.005f * effectiveMult);
+            if (damageRating > 0)
+                creature.SetProperty(PropertyInt.DamageRating, damageRating);
+
+            // Level scales with depth/chaos
+            int originalLevel = __instance.GetProperty(PropertyInt.Level) ?? 1;
+            int newLevel = (int)Math.Max(1, originalLevel * effectiveMult);
+            if (newLevel > originalLevel)
+                creature.SetProperty(PropertyInt.Level, newLevel);
+
+            // XP bonus = effectiveMult - 1.0 (e.g. 1.3 → +30% XP)
+            float xpBonus = effectiveMult - 1.0f;
+            if (xpBonus > 0f)
+                creature.SetProperty(reinforcementBonusProp, xpBonus);
+
+            // Tag creature with its reinforcement depth so chains compound
+            creature.SetProperty((PropertyInt)SwarmedReinforcementDepthPropertyId, childDepth);
 
             LandblockManager.AddObject(creature);
             created++;

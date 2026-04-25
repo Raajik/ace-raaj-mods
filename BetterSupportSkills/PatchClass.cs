@@ -1,4 +1,6 @@
 using HarmonyLib;
+using System.Reflection;
+using ACE.Database.Models.World;
 using ACE.Server.Entity;
 using ACE.Server.WorldObjects;
 
@@ -8,12 +10,10 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
 {
     static bool _commandCategoriesRegistered;
     static CancellationTokenSource? _lockpickRegenCts;
-    private const bool EnableDebug = false; // Set to true to debug startup
-
+    [System.Diagnostics.Conditional("DEBUG")]
     private static void DebugLog(string msg)
     {
-        if (EnableDebug)
-            ModManager.Log($"[BSS] {msg}", ModManager.LogLevel.Info);
+        ModManager.Log($"[BSS] {msg}", ModManager.LogLevel.Info);
     }
 
     public override async Task OnStartSuccess()
@@ -73,6 +73,10 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
         TryApplyDirtyFightingPatch();
         TryApplyLockpickPatches();
         TryApplyVendorItemLevelingPatch();
+        TryApplyChaosTinkerPatch();
+        TryApplySummoningClassesPatch();
+        TryApplyCombatClassesPatch();
+        Skills.AchievementUnlockedApi.Initialize();
 
         if (Settings.EnableManaConversion)
         {
@@ -80,7 +84,7 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
             try
             {
                 var method = AccessTools.Method(typeof(WorldObject), "HandleCastSpell", new Type[] {
-                    typeof(Spell), typeof(WorldObject), typeof(WorldObject), typeof(WorldObject), typeof(bool), typeof(bool), typeof(bool) });
+                    typeof(ACE.Server.Entity.Spell), typeof(WorldObject), typeof(WorldObject), typeof(WorldObject), typeof(bool), typeof(bool), typeof(bool) });
                 if (method != null)
                     ModManager.Log($"[BetterSupportSkills] HandleCastSpell found: {method}", ModManager.LogLevel.Info);
                 else
@@ -161,12 +165,6 @@ void TryApplyDamageEventPatch()
                         ModC.Harmony?.Patch(spellProjectileCalc, null, new HarmonyMethod(spellShieldPostfix), null);
                     }
 
-                    if (Settings.EnableArcaneLore)
-                    {
-                        var arcaneLorePostfix = AccessTools.Method(typeof(Skills.ArcaneLoreBuffs), "PostfixSpellProjectileCalculateDamage");
-                        ModC.Harmony?.Patch(spellProjectileCalc, null, new HarmonyMethod(arcaneLorePostfix), null);
-                    }
-
                     ModManager.Log("[BSS] SpellProjectile.CalculateDamage postfix applied", ModManager.LogLevel.Info);
                 }
             }
@@ -175,11 +173,73 @@ void TryApplyDamageEventPatch()
                 ModManager.Log($"[BSS] SpellProjectile patch failed: {ex}", ModManager.LogLevel.Error);
             }
         }
+
+        // Arcane Lore echo patch on HandleCastSpell
+        if (Settings?.EnableArcaneLore == true)
+        {
+            try
+            {
+                var handleCastSpell = AccessTools.Method(typeof(WorldObject), "HandleCastSpell", new Type[] {
+                    typeof(ACE.Server.Entity.Spell), typeof(WorldObject), typeof(WorldObject), typeof(WorldObject), typeof(bool), typeof(bool), typeof(bool) });
+                if (handleCastSpell != null)
+                {
+                    var alPostfix = AccessTools.Method(typeof(Skills.ArcaneLoreBuffs), "PostHandleCastSpellEcho");
+                    if (alPostfix != null)
+                    {
+                        ModC.Harmony?.Patch(handleCastSpell, null, new HarmonyMethod(alPostfix));
+                        ModManager.Log("[BSS] ArcaneLore HandleCastSpell postfix applied", ModManager.LogLevel.Info);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[BSS] ArcaneLore patch failed: {ex}", ModManager.LogLevel.Error);
+            }
+        }
+
+        // Cooking food consumption patch
+        if (Settings?.EnableCooking == true)
+        {
+            try
+            {
+                var applyConsumable = AccessTools.Method(typeof(Food), nameof(Food.ApplyConsumable));
+                if (applyConsumable != null)
+                {
+                    var cookingPostfix = AccessTools.Method(typeof(Skills.CookingBuffs), "PostApplyConsumable");
+                    if (cookingPostfix != null)
+                    {
+                        ModC.Harmony?.Patch(applyConsumable, null, new HarmonyMethod(cookingPostfix));
+                        ModManager.Log("[BSS] Cooking Food.ApplyConsumable postfix applied", ModManager.LogLevel.Info);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[BSS] Cooking patch failed: {ex}", ModManager.LogLevel.Error);
+            }
+        }
+
+        // XP boost patch for "HOW DID YOU EVEN DO THAT?!" achievement
+        try
+        {
+            var grantXp = AccessTools.Method(typeof(Player), nameof(Player.GrantXP), new Type[] { typeof(long), typeof(XpType), typeof(ShareType) });
+            if (grantXp != null)
+            {
+                var xpPrefix = AccessTools.Method(typeof(Skills.XpBoostPatch), "PrefixGrantXP");
+                if (xpPrefix != null)
+                {
+                    ModC.Harmony?.Patch(grantXp, new HarmonyMethod(xpPrefix));
+                    ModManager.Log("[BSS] Player.GrantXP prefix applied for achievement XP boost", ModManager.LogLevel.Info);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] XP boost patch failed: {ex}", ModManager.LogLevel.Error);
+        }
     }
 
     static bool LootPatchApplied;
-
-    static bool DirtyFightingPatchApplied;
 
     void TryApplyDirtyFightingPatch()
     {
@@ -203,7 +263,17 @@ void TryApplyDamageEventPatch()
                 ModC.Harmony?.Patch(applyHigh, null, new HarmonyMethod(typeof(Skills.DirtyFightingBuffs), "PostfixFightDirty_ApplyHighAttack"));
                 ModC.Harmony?.Patch(applyMedium, null, new HarmonyMethod(typeof(Skills.DirtyFightingBuffs), "PostfixFightDirty_ApplyMediumAttack"));
 
-                DirtyFightingPatchApplied = true;
+                // Patch FightDirty for 100% application rate
+                var fightDirty = AccessTools.Method(typeof(Creature), nameof(Creature.FightDirty));
+                if (fightDirty != null)
+                {
+                    var fdPrefix = AccessTools.Method(typeof(Skills.DirtyFightingBuffs), "PrefixFightDirty");
+                    if (fdPrefix != null)
+                    {
+                        ModC.Harmony?.Patch(fightDirty, new HarmonyMethod(fdPrefix));
+                        ModManager.Log("[BSS] DirtyFighting FightDirty prefix applied", ModManager.LogLevel.Info);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -284,6 +354,268 @@ try
         }
     }
 
+    static bool SummoningClassesPatchApplied;
+
+    void TryApplySummoningClassesPatch()
+    {
+        if (SummoningClassesPatchApplied) return;
+        if (Settings?.EnableSummoningClasses != true) return;
+
+        try
+        {
+            // Patch HandleCastSpell for summon trigger
+            var handleCastSpell = AccessTools.Method(typeof(WorldObject), "HandleCastSpell", new Type[] {
+                typeof(ACE.Server.Entity.Spell), typeof(WorldObject), typeof(WorldObject), typeof(WorldObject), typeof(bool), typeof(bool), typeof(bool) });
+            if (handleCastSpell != null)
+            {
+                var postfix = AccessTools.Method(typeof(Skills.SummoningClasses), "PostHandleCastSpell");
+                if (postfix != null)
+                {
+                    ModC.Harmony?.Patch(handleCastSpell, null, new HarmonyMethod(postfix));
+                    ModManager.Log("[BSS] SummoningClasses HandleCastSpell postfix applied", ModManager.LogLevel.Info);
+                }
+            }
+            else
+            {
+                ModManager.Log("[BSS] SummoningClasses HandleCastSpell method not found", ModManager.LogLevel.Error);
+            }
+
+            // Patch Creature.Heartbeat for follow behavior (CombatPet inherits it)
+            var heartbeat = AccessTools.Method(typeof(Creature), nameof(Creature.Heartbeat), new Type[] { typeof(double) });
+            if (heartbeat != null)
+            {
+                var hbPostfix = AccessTools.Method(typeof(Skills.SummoningClasses), "PostCombatPetHeartbeat");
+                if (hbPostfix != null)
+                {
+                    ModC.Harmony?.Patch(heartbeat, null, new HarmonyMethod(hbPostfix));
+                    ModManager.Log("[BSS] SummoningClasses CombatPet.Heartbeat postfix applied", ModManager.LogLevel.Info);
+                }
+            }
+
+            // Patch Player.LogOut_Final for cleanup
+            var logout = AccessTools.Method(typeof(Player), nameof(Player.LogOut_Final));
+            if (logout != null)
+            {
+                var logoutPrefix = AccessTools.Method(typeof(Skills.SummoningClasses), "PreLogOut_Final");
+                if (logoutPrefix != null)
+                    ModC.Harmony?.Patch(logout, new HarmonyMethod(logoutPrefix));
+            }
+
+            // Patch Player.Teleport for cleanup
+            var teleport = AccessTools.Method(typeof(Player), nameof(Player.Teleport));
+            if (teleport != null)
+            {
+                var teleportPostfix = AccessTools.Method(typeof(Skills.SummoningClasses), "PostTeleport");
+                if (teleportPostfix != null)
+                    ModC.Harmony?.Patch(teleport, null, new HarmonyMethod(teleportPostfix));
+            }
+
+            // Patch Pet.Init for 2× device summon for class players
+            var petInit = AccessTools.Method(typeof(Pet), nameof(Pet.Init), new Type[] { typeof(Player), typeof(PetDevice) });
+            if (petInit != null)
+            {
+                var petInitPostfix = AccessTools.Method(typeof(Skills.SummoningClasses), "PostPetInit");
+                if (petInitPostfix != null)
+                    ModC.Harmony?.Patch(petInit, null, new HarmonyMethod(petInitPostfix));
+            }
+
+            // Patch PetDevice.CheckUseRequirements to remove cooldown
+            var checkUse = AccessTools.Method(typeof(PetDevice), nameof(PetDevice.CheckUseRequirements), new Type[] { typeof(WorldObject) });
+            if (checkUse != null)
+            {
+                var checkUsePrefix = AccessTools.Method(typeof(Skills.SummoningClasses), "PreCheckUseRequirements");
+                if (checkUsePrefix != null)
+                    ModC.Harmony?.Patch(checkUse, new HarmonyMethod(checkUsePrefix));
+            }
+
+            // Patch Creature.TakeDamage for Artificer wisp procs
+            var takeDamage = AccessTools.Method(typeof(Creature), nameof(Creature.TakeDamage), new Type[] { typeof(WorldObject), typeof(DamageType), typeof(float), typeof(bool) });
+            if (takeDamage != null)
+            {
+                var takeDamagePostfix = AccessTools.Method(typeof(Skills.SummoningClasses), "PostCreatureTakeDamage");
+                if (takeDamagePostfix != null)
+                    ModC.Harmony?.Patch(takeDamage, null, new HarmonyMethod(takeDamagePostfix));
+            }
+
+            // Cache Artificer spells
+            Skills.SummoningClasses.CacheArtificerSpells();
+
+            SummoningClassesPatchApplied = true;
+            ModManager.Log("[BSS] SummoningClasses patches applied", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] SummoningClasses patch failed: {ex}", ModManager.LogLevel.Error);
+        }
+    }
+
+    static bool CombatClassesPatchApplied;
+
+    void TryApplyCombatClassesPatch()
+    {
+        if (CombatClassesPatchApplied) return;
+        if (Settings?.EnableCombatClasses != true) return;
+
+        ModManager.Log("[BSS] TryApplyCombatClassesPatch starting...", ModManager.LogLevel.Info);
+
+        // Patch Player.DamageTarget for Rogue bleed, Berserker life steal, Crusader crit, and hybrid classes
+        try
+        {
+            var damageTarget = AccessTools.Method(typeof(Player), nameof(Player.DamageTarget), new Type[] { typeof(Creature), typeof(WorldObject) });
+            if (damageTarget == null)
+            {
+                ModManager.Log("[BSS] Player.DamageTarget method not found", ModManager.LogLevel.Error);
+            }
+            else
+            {
+                var postfix = AccessTools.Method(typeof(Skills.CombatClasses), "PostDamageTargetCombatEffects");
+                if (postfix != null)
+                {
+                    ModC.Harmony?.Patch(damageTarget, null, new HarmonyMethod(postfix));
+                    ModManager.Log("[BSS] CombatClasses DamageTarget postfix applied", ModManager.LogLevel.Info);
+                }
+                else
+                    ModManager.Log("[BSS] CombatClasses.PostDamageTargetCombatEffects not found", ModManager.LogLevel.Error);
+
+                var hybridPostfix = AccessTools.Method(typeof(Skills.HybridClasses), "PostDamageTargetHybridSpells");
+                if (hybridPostfix != null)
+                {
+                    ModC.Harmony?.Patch(damageTarget, null, new HarmonyMethod(hybridPostfix));
+                    ModManager.Log("[BSS] HybridClasses DamageTarget postfix applied", ModManager.LogLevel.Info);
+                }
+                else
+                    ModManager.Log("[BSS] HybridClasses.PostDamageTargetHybridSpells not found", ModManager.LogLevel.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] DamageTarget patch failed: {ex}", ModManager.LogLevel.Error);
+        }
+
+        // Patch WorldObject.Heartbeat for Crusader passive heal and Death Knight aura
+        try
+        {
+            var heartbeat = AccessTools.Method(typeof(WorldObject), nameof(WorldObject.Heartbeat), new Type[] { typeof(double) });
+            if (heartbeat == null)
+            {
+                ModManager.Log("[BSS] WorldObject.Heartbeat method not found", ModManager.LogLevel.Error);
+            }
+            else
+            {
+                var hbPostfix = AccessTools.Method(typeof(Skills.CombatClasses), "PostHeartbeatCrusaderHeal");
+                if (hbPostfix != null)
+                {
+                    ModC.Harmony?.Patch(heartbeat, null, new HarmonyMethod(hbPostfix));
+                    ModManager.Log("[BSS] CombatClasses Heartbeat postfix applied", ModManager.LogLevel.Info);
+                }
+                else
+                    ModManager.Log("[BSS] CombatClasses.PostHeartbeatCrusaderHeal not found", ModManager.LogLevel.Error);
+
+                var auraPostfix = AccessTools.Method(typeof(Skills.HybridClasses), "PostHeartbeatAura");
+                if (auraPostfix != null)
+                {
+                    ModC.Harmony?.Patch(heartbeat, null, new HarmonyMethod(auraPostfix));
+                    ModManager.Log("[BSS] HybridClasses Heartbeat aura postfix applied", ModManager.LogLevel.Info);
+                }
+                else
+                    ModManager.Log("[BSS] HybridClasses.PostHeartbeatAura not found", ModManager.LogLevel.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] Heartbeat patch failed: {ex}", ModManager.LogLevel.Error);
+        }
+
+        // Patch Player.PlayerEnterWorld for cleanup
+        try
+        {
+            var enterWorld = AccessTools.Method(typeof(Player), nameof(Player.PlayerEnterWorld));
+            if (enterWorld == null)
+            {
+                ModManager.Log("[BSS] Player.PlayerEnterWorld method not found", ModManager.LogLevel.Error);
+            }
+            else
+            {
+                var ewPostfix = AccessTools.Method(typeof(Skills.CombatClasses), "PostEnterWorld");
+                if (ewPostfix != null)
+                    ModC.Harmony?.Patch(enterWorld, null, new HarmonyMethod(ewPostfix));
+                else
+                    ModManager.Log("[BSS] CombatClasses.PostEnterWorld not found", ModManager.LogLevel.Error);
+
+                var hybridEwPostfix = AccessTools.Method(typeof(Skills.HybridClasses), "PostEnterWorldAura");
+                if (hybridEwPostfix != null)
+                    ModC.Harmony?.Patch(enterWorld, null, new HarmonyMethod(hybridEwPostfix));
+                else
+                    ModManager.Log("[BSS] HybridClasses.PostEnterWorldAura not found", ModManager.LogLevel.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] PlayerEnterWorld patch failed: {ex}", ModManager.LogLevel.Error);
+        }
+
+        // Patch WorldObject.TryCastSpell for Bloodmage drain AoE
+        try
+        {
+            var tryCastSpell = AccessTools.Method(typeof(WorldObject), nameof(WorldObject.TryCastSpell), new Type[] { typeof(ACE.Server.Entity.Spell), typeof(WorldObject), typeof(WorldObject), typeof(WorldObject), typeof(bool), typeof(bool), typeof(bool) });
+            if (tryCastSpell == null)
+            {
+                ModManager.Log("[BSS] WorldObject.TryCastSpell method not found", ModManager.LogLevel.Error);
+            }
+            else
+            {
+                var drainAoEPostfix = AccessTools.Method(typeof(Skills.HybridClasses), "PostTryCastSpellDrainAoE");
+                if (drainAoEPostfix != null)
+                {
+                    ModC.Harmony?.Patch(tryCastSpell, null, new HarmonyMethod(drainAoEPostfix));
+                    ModManager.Log("[BSS] HybridClasses TryCastSpell drain AoE postfix applied", ModManager.LogLevel.Info);
+                }
+                else
+                    ModManager.Log("[BSS] HybridClasses.PostTryCastSpellDrainAoE not found", ModManager.LogLevel.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] TryCastSpell drain AoE patch failed: {ex}", ModManager.LogLevel.Error);
+        }
+
+        CombatClassesPatchApplied = true;
+        ModManager.Log("[BSS] CombatClasses patch registration complete", ModManager.LogLevel.Info);
+    }
+
+    static bool ChaosTinkerPatchApplied;
+
+    void TryApplyChaosTinkerPatch()
+    {
+        if (ChaosTinkerPatchApplied) return;
+        if (Settings?.EnableChaosTinkerAchievement != true) return;
+
+        try
+        {
+            var handleRecipe = AccessTools.Method(typeof(RecipeManager), nameof(RecipeManager.HandleRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(double) });
+            if (handleRecipe == null)
+            {
+                ModManager.Log("[BSS] RecipeManager.HandleRecipe method not found", ModManager.LogLevel.Error);
+                return;
+            }
+
+            var prefix = AccessTools.Method(typeof(Skills.ChaosTinker), "PrefixHandleRecipe");
+            var postfix = AccessTools.Method(typeof(Skills.ChaosTinker), "PostfixHandleRecipe");
+
+            if (prefix != null)
+                ModC.Harmony?.Patch(handleRecipe, new HarmonyMethod(prefix));
+            if (postfix != null)
+                ModC.Harmony?.Patch(handleRecipe, null, new HarmonyMethod(postfix));
+
+            ChaosTinkerPatchApplied = true;
+            ModManager.Log("[BSS] ChaosTinker patches applied (HandleRecipe prefix + postfix)", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] ChaosTinker patch failed: {ex}", ModManager.LogLevel.Error);
+        }
+    }
+
     static bool VendorItemLevelingPatchApplied;
 
     void TryApplyVendorItemLevelingPatch()
@@ -301,7 +633,9 @@ try
             }
 
             var postfix = AccessTools.Method(typeof(Skills.VendorItemLeveling), "PostfixLoadInventory");
-            ModC.Harmony?.Patch(loadInventory, null, new HarmonyMethod(postfix), null);
+            var harmonyMethod = new HarmonyMethod(postfix);
+            harmonyMethod.priority = 300; // Run after VendorLootRotation (priority 200)
+            ModC.Harmony?.Patch(loadInventory, null, harmonyMethod, null);
 
             var finalizeBuy = AccessTools.Method(typeof(Player), nameof(Player.FinalizeBuyTransaction),
                 new Type[] { typeof(Vendor), typeof(List<WorldObject>), typeof(List<WorldObject>), typeof(uint) });
@@ -382,6 +716,10 @@ try
             enabledFeatures.Add(Features.TinkeringLootGating);
         if (Settings.EnableVendorItemLeveling)
             enabledFeatures.Add(Features.VendorItemLeveling);
+        if (Settings.EnableSummoningClasses)
+            enabledFeatures.Add(Features.SummoningClasses);
+        // CombatClasses patches are applied manually in TryApplyCombatClassesPatch()
+        // to avoid double-patching with declarative attributes.
 
         ModC.RegisterPatchCategories(enabledFeatures.ToArray());
     }
@@ -493,6 +831,16 @@ try
                 var current = Settings.Alchemy?.ShowEchoMessages ?? true;
                 player.SendMessage($"Alchemy echo messages: {(current ? "ON" : "OFF")} (use /bss alchemy on|off to toggle)", ChatMessageType.System);
             }
+            return;
+        }
+
+        if (head == "summonmessages" || head == "summonmsg")
+        {
+            var profile = PlayerProfileStore.GetOrCreate(player.Guid.Full);
+            bool newState = !profile.SummonMessagesEnabled;
+            profile.SummonMessagesEnabled = newState;
+            PlayerProfileStore.Save(player.Guid.Full, profile);
+            player.SendMessage($"Summon messages: {(newState ? "ON" : "OFF")}", ChatMessageType.System);
             return;
         }
 
@@ -638,6 +986,37 @@ internal static class ModCommandsList
             player.SendMessage(line, ChatMessageType.System);
     }
 
+    // -- AutoLoot bridge ------------------------------------------------------
+
+    static class AutoLootBridge
+    {
+        static MethodInfo? _setSalvageState;
+        static bool _resolved;
+
+        static void Resolve()
+        {
+            _resolved = true;
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (!string.Equals(asm.GetName().Name, "AutoLoot", StringComparison.Ordinal))
+                    continue;
+                var t = asm.GetType("AutoLoot.AutoLoot");
+                if (t != null)
+                {
+                    _setSalvageState = t.GetMethod("SetSalvageState", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player), typeof(bool) }, null);
+                }
+                break;
+            }
+        }
+
+        internal static void SetSalvageState(Player player, bool enabled)
+        {
+            if (!_resolved) Resolve();
+            if (_setSalvageState == null) return;
+            try { _setSalvageState.Invoke(null, new object?[] { player, enabled }); } catch { }
+        }
+    }
+
     [CommandHandler("autosalvage", AccessLevel.Player, CommandHandlerFlag.RequiresWorld)]
     public static void HandleAutoSalvage(Session session, params string[] parameters)
     {
@@ -658,6 +1037,7 @@ internal static class ModCommandsList
             newState = false;
 
         Skills.SalvageAutoDeposit.SetEnabled(player, newState);
+        AutoLootBridge.SetSalvageState(player, newState);
 
         player.SendMessage($"Auto-salvage: {(newState ? "ON" : "OFF")} (auto-loots salvage to bank)", ChatMessageType.System);
     }

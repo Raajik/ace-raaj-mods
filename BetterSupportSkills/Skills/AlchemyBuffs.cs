@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Timers;
 using ACE.Common;
 using ACE.Entity;
@@ -13,12 +14,10 @@ namespace BetterSupportSkills.Skills;
 [HarmonyPatchCategory(nameof(Features.AlchemySkill))]
 internal static class AlchemyBuffs
 {
-    private const bool EnableDebug = false;
-
+    [Conditional("DEBUG")]
     private static void DebugLog(string msg)
     {
-        if (EnableDebug)
-            ModManager.Log($"[BSS Alchemy] {msg}", ModManager.LogLevel.Info);
+        ModManager.Log($"[BSS Alchemy] {msg}", ModManager.LogLevel.Info);
     }
 
     public static bool PrefixPlayerEnterWorld(Player __instance)
@@ -77,7 +76,7 @@ internal static class AlchemyBuffs
         state.EchoesRemaining = maxEchoes;
 
         state.EchoTimer = new Timer(interval * 1000);
-        state.EchoTimer.Elapsed += (s, e) => OnEchoTimer(s, e, player, state);
+        state.EchoTimer.Elapsed += (_, e) => OnEchoTimer(e, player, state);
         state.EchoTimer.AutoReset = true;
         state.EchoTimer.Start();
 
@@ -85,7 +84,7 @@ internal static class AlchemyBuffs
         player.SendMessage($"Your {skillWord} Alchemy will echo this potion's effect every {(int)interval} seconds for {alchemySettings.EchoDuration} seconds!");
     }
 
-    private static void OnEchoTimer(object sender, ElapsedEventArgs e, Player player, AlchemyState state)
+    private static void OnEchoTimer(ElapsedEventArgs e, Player player, AlchemyState state)
     {
         if (player == null || player.IsDead || state.EchoesRemaining <= 0)
         {

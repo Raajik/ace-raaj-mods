@@ -24,7 +24,7 @@ public static class LockpickDurability
     internal const int PropLimitCount  = 40132;
     internal const int PropKeyPref     = 40133;
 
-    // ── Commands ──────────────────────────────────────────────────────────────
+    // -- Commands --------------------------------------------------------------
 
     [CommandHandler("lp", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
         "Lockpick Durability. /lp for status, /lp help for commands.")]
@@ -114,7 +114,7 @@ public static class LockpickDurability
         }
     }
 
-    // ── Lock-use intercept (applied manually in PatchClass) ───────────────────
+    // -- Lock-use intercept (applied manually in PatchClass) -------------------
 
     public static bool PreWorldObjectOnUse(WorldObject activator, WorldObject __instance)
     {
@@ -151,7 +151,7 @@ public static class LockpickDurability
         return true;
     }
 
-    // ── Passive regen (called from PatchClass background timer) ──────────────
+    // -- Passive regen (called from PatchClass background timer) --------------
 
     internal static void TickRegen(LockpickSettings settings)
     {
@@ -185,7 +185,7 @@ public static class LockpickDurability
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // -- Helpers ---------------------------------------------------------------
 
     static bool HasLockpickSkill(Player player)
     {

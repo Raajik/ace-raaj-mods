@@ -26,12 +26,18 @@ public enum Features
     TrophyDropsSkill,
     TinkeringLootGating,
     VendorItemLeveling,
+    SummoningClasses,
+    CombatClasses,
 }
 
 public class Settings
 {
     [JsonPropertyName("// FeatureToggles")]
     public string FeatureTogglesDoc { get; init; } = "Each Enable* flag turns one skill bonus patch group on or off — false = vanilla ACE for that skill.";
+
+    [JsonPropertyName("// EnableAutoCastReagentCosts")]
+    public string EnableAutoCastReagentCostsDoc { get; init; } = "When true, hybrid class auto-cast spells consume reagents and mana like normal spell casts. When false, they are free procs.";
+    public bool EnableAutoCastReagentCosts { get; set; } = true;
 
     [JsonPropertyName("// EnableAlchemy")]
     public string EnableAlchemyDoc { get; init; } = "Alchemy skill bonus — echoes potion effects and bonus potion drops.";
@@ -188,6 +194,26 @@ public class Settings
     [JsonPropertyName("// EnableVendorItemLeveling")]
     public string EnableVendorItemLevelingDoc { get; init; } = "Vendor item leveling — all eligible vendor equipment spawns with native ACE item leveling (max level 25). Anyone can use and level these.";
     public bool EnableVendorItemLeveling { get; set; } = false;
+
+    [JsonPropertyName("// EnableChaosTinkerAchievement")]
+    public string EnableChaosTinkerAchievementDoc { get; init; } = "When true, failing a tinker while having tinkering trained unlocks the /chaostinker command.";
+    public bool EnableChaosTinkerAchievement { get; set; } = true;
+
+    [JsonPropertyName("// EnableSummoningClasses")]
+    public string EnableSummoningClassesDoc { get; init; } = "Summoning classes — auto-summon pets when specialized Summoning + secondary magic spec.";
+    public bool EnableSummoningClasses { get; set; } = true;
+
+    [JsonPropertyName("// SummoningClasses")]
+    public string SummoningClassesSectionDoc { get; init; } = "Druid (Life), Elementalist (War), Necromancer (Void), Enchanter (Creature Enchantment), Artificer (Item Enchantment) auto-summon settings.";
+    public SummoningClassesSettings SummoningClasses { get; set; } = new();
+
+    [JsonPropertyName("// EnableCombatClasses")]
+    public string EnableCombatClassesDoc { get; init; } = "Combat classes — Rogue, Berserker, Crusader unlock via achievements and grant combat bonuses.";
+    public bool EnableCombatClasses { get; set; } = true;
+
+    [JsonPropertyName("// CombatClasses")]
+    public string CombatClassesSectionDoc { get; init; } = "Combat class bonuses: Rogue bleed, Berserker life steal, Crusader heal/crit/thorns.";
+    public CombatClassesSettings CombatClasses { get; set; } = new();
 
     [JsonPropertyName("// VendorItemLeveling")]
     public string VendorItemLevelingSectionDoc { get; init; } = "Vendor item leveling: base XP and max level for vendor-sold equipment.";
@@ -349,24 +375,32 @@ public class AlchemySettings
 
 public class ArcaneLoreSettings
 {
-    [JsonPropertyName("// SpellDodgePercentTrained")]
-    public string SpellDodgePercentTrainedDoc { get; init; } = "Dodge chance = (Arcane Lore skill) * this value when trained (e.g., 0.05 = 5% of skill).";
-    public double SpellDodgePercentTrained { get; set; } = 0.05;
+    [JsonPropertyName("// EchoSpellCasts")]
+    public string EchoSpellCastsDoc { get; init; } = "When true, trained Arcane Lore causes harmful spells to echo (cast again) on the same target.";
+    public bool EchoSpellCasts { get; set; } = true;
 
-    [JsonPropertyName("// SpellDodgePercentSpecialized")]
-    public string SpellDodgePercentSpecializedDoc { get; init; } = "Dodge chance = (Arcane Lore skill) * this value when specialized (e.g., 0.10 = 10% of skill).";
-    public double SpellDodgePercentSpecialized { get; set; } = 0.10;
+    [JsonPropertyName("// EchoDebuffSpells")]
+    public string EchoDebuffSpellsDoc { get; init; } = "When true, Creature Enchantment debuffs also cast Imperil + Fester on the target.";
+    public bool EchoDebuffSpells { get; set; } = true;
+
+    [JsonPropertyName("// EchoImperilSpellId")]
+    public string EchoImperilSpellIdDoc { get; init; } = "Spell ID for Imperil cast during debuff echo (0 = disabled).";
+    public int EchoImperilSpellId { get; set; } = 0;
+
+    [JsonPropertyName("// EchoFesterSpellId")]
+    public string EchoFesterSpellIdDoc { get; init; } = "Spell ID for Fester cast during debuff echo (0 = disabled).";
+    public int EchoFesterSpellId { get; set; } = 0;
 }
 
 public class TrophyDropsSettings
 {
     [JsonPropertyName("// ExtraRollsTrained")]
     public string ExtraRollsTrainedDoc { get; init; } = "Extra loot rolls when Assess Creature or Person is trained.";
-    public int ExtraRollsTrained { get; set; } = 1;
+    public int ExtraRollsTrained { get; set; } = 3;
 
     [JsonPropertyName("// ExtraRollsSpecialized")]
     public string ExtraRollsSpecializedDoc { get; init; } = "Extra loot rolls when Assess Creature or Person is specialized.";
-    public int ExtraRollsSpecialized { get; set; } = 2;
+    public int ExtraRollsSpecialized { get; set; } = 5;
 
     [JsonPropertyName("// MaxExtraRolls")]
     public string MaxExtraRollsDoc { get; init; } = "Maximum extra loot rolls (capped to prevent exploitation).";
@@ -596,4 +630,164 @@ public class VendorItemLevelingSettings
     [JsonPropertyName("// TreasureTier")]
     public string TreasureTierDoc { get; init; } = "Treasure tier used for spell/imbue selection when vendor items level up (1-8). Higher = stronger effects.";
     public int TreasureTier { get; set; } = 3;
+}
+
+public class CombatClassesSettings
+{
+    [JsonPropertyName("// Rogue")]
+    public string RogueSectionDoc { get; init; } = "Rogue bonuses: bleed on every melee hit, amplified Dirty Fighting debuffs.";
+    public RogueSettings Rogue { get; set; } = new();
+
+    [JsonPropertyName("// Berserker")]
+    public string BerserkerSectionDoc { get; init; } = "Berserker bonuses: life steal on melee hits.";
+    public BerserkerSettings Berserker { get; set; } = new();
+
+    [JsonPropertyName("// Crusader")]
+    public string CrusaderSectionDoc { get; init; } = "Crusader bonuses: passive self-heal, crit damage bonus, enhanced shield thorns.";
+    public CrusaderSettings Crusader { get; set; } = new();
+
+    [JsonPropertyName("// Windwalker")]
+    public string WindwalkerSectionDoc { get; init; } = "Windwalker bonuses: melee attacks launch elemental streak spells at nearby enemies.";
+    public WindwalkerSettings Windwalker { get; set; } = new();
+
+    [JsonPropertyName("// Battlemage")]
+    public string BattlemageSectionDoc { get; init; } = "Battlemage bonuses: melee attacks launch elemental arc spells at hit targets.";
+    public BattlemageSettings Battlemage { get; set; } = new();
+
+    [JsonPropertyName("// DeathKnight")]
+    public string DeathKnightSectionDoc { get; init; } = "Death Knight bonuses: nether spells on melee hits, damage aura, echo.";
+    public DeathKnightSettings DeathKnight { get; set; } = new();
+
+    [JsonPropertyName("// Bloodmage")]
+    public string BloodmageSectionDoc { get; init; } = "Bloodmage bonuses: hecatomb echoes on melee hit, drain spells become AoE, life-drain aura.";
+    public BloodmageSettings Bloodmage { get; set; } = new();
+}
+
+public class RogueSettings
+{
+    [JsonPropertyName("// BleedPercentPerHit")]
+    public string BleedPercentPerHitDoc { get; init; } = "Percent of target max health bled per tick on every melee hit (stacks in 3 tiers).";
+    public double BleedPercentPerHit { get; set; } = 0.005;
+
+    [JsonPropertyName("// BleedTicks")]
+    public string BleedTicksDoc { get; init; } = "Number of bleed ticks per application.";
+    public int BleedTicks { get; set; } = 10;
+
+    [JsonPropertyName("// BleedIntervalSeconds")]
+    public string BleedIntervalSecondsDoc { get; init; } = "Seconds between bleed ticks.";
+    public double BleedIntervalSeconds { get; set; } = 1.0;
+
+    [JsonPropertyName("// DebuffMultiplier")]
+    public string DebuffMultiplierDoc { get; init; } = "Multiplier applied to Dirty Fighting debuff spell potency when Rogue class is active. Requires CustomSpells.";
+    public double DebuffMultiplier { get; set; } = 2.0;
+}
+
+public class BerserkerSettings
+{
+    [JsonPropertyName("// LifeStealPercent")]
+    public string LifeStealPercentDoc { get; init; } = "Percent of melee damage dealt that heals the Berserker.";
+    public double LifeStealPercent { get; set; } = 0.08;
+
+    [JsonPropertyName("// LifeStealMaxPerHit")]
+    public string LifeStealMaxPerHitDoc { get; init; } = "Maximum health drained per hit.";
+    public int LifeStealMaxPerHit { get; set; } = 50;
+}
+
+public class CrusaderSettings
+{
+    [JsonPropertyName("// PassiveHealPercentPerSecond")]
+    public string PassiveHealPercentPerSecondDoc { get; init; } = "Percent of max health passively healed per second.";
+    public double PassiveHealPercentPerSecond { get; set; } = 0.01;
+
+    [JsonPropertyName("// CritDamageMultiplier")]
+    public string CritDamageMultiplierDoc { get; init; } = "Multiplier applied to critical hit damage (1.5 = +50% bonus damage).";
+    public double CritDamageMultiplier { get; set; } = 1.5;
+
+    [JsonPropertyName("// ThornsMultiplier")]
+    public string ThornsMultiplierDoc { get; init; } = "Multiplier to shield thorns damage when Crusader class is active.";
+    public double ThornsMultiplier { get; set; } = 2.0;
+
+    [JsonPropertyName("// ThornsOnAllHits")]
+    public string ThornsOnAllHitsDoc { get; init; } = "When true, thorns applies on all incoming melee/missile hits, not just evades/blocks.";
+    public bool ThornsOnAllHits { get; set; } = true;
+}
+
+public class WindwalkerSettings
+{
+    [JsonPropertyName("// StreakRangeMeters")]
+    public string StreakRangeMetersDoc { get; init; } = "Radius in meters to search for streak spell targets on melee hit.";
+    public double StreakRangeMeters { get; set; } = 15.0;
+
+    [JsonPropertyName("// EchoEnabled")]
+    public string EchoEnabledDoc { get; init; } = "When true and Mana Conversion is specialized, streak spells echo to volley (triple cast chain).";
+    public bool EchoEnabled { get; set; } = true;
+
+    [JsonPropertyName("// ManaCostMultiplier")]
+    public string ManaCostMultiplierDoc { get; init; } = "Multiplier applied to auto-cast spell mana cost (0.5 = half cost).";
+    public double ManaCostMultiplier { get; set; } = 0.5;
+}
+
+public class BattlemageSettings
+{
+    [JsonPropertyName("// EchoEnabled")]
+    public string EchoEnabledDoc { get; init; } = "When true and Mana Conversion is specialized, arc spells echo to volley (triple cast chain).";
+    public bool EchoEnabled { get; set; } = true;
+
+    [JsonPropertyName("// ManaCostMultiplier")]
+    public string ManaCostMultiplierDoc { get; init; } = "Multiplier applied to auto-cast spell mana cost (0.5 = half cost).";
+    public double ManaCostMultiplier { get; set; } = 0.5;
+}
+
+public class DeathKnightSettings
+{
+    [JsonPropertyName("// AuraRangeMeters")]
+    public string AuraRangeMetersDoc { get; init; } = "Radius in meters for Death Knight damage aura.";
+    public double AuraRangeMeters { get; set; } = 15.0;
+
+    [JsonPropertyName("// AuraDamagePerTick")]
+    public string AuraDamagePerTickDoc { get; init; } = "Nether damage dealt per second by the aura.";
+    public int AuraDamagePerTick { get; set; } = 5;
+
+    [JsonPropertyName("// AuraTickSeconds")]
+    public string AuraTickSecondsDoc { get; init; } = "Seconds between aura damage ticks.";
+    public double AuraTickSeconds { get; set; } = 1.0;
+
+    [JsonPropertyName("// EchoEnabled")]
+    public string EchoEnabledDoc { get; init; } = "When true and Arcane Lore is specialized, nether spells echo once.";
+    public bool EchoEnabled { get; set; } = true;
+
+    [JsonPropertyName("// ManaCostMultiplier")]
+    public string ManaCostMultiplierDoc { get; init; } = "Multiplier applied to auto-cast spell mana cost (0.5 = half cost).";
+    public double ManaCostMultiplier { get; set; } = 0.5;
+}
+
+public class BloodmageSettings
+{
+    [JsonPropertyName("// EchoCount")]
+    public string EchoCountDoc { get; init; } = "Number of hecatomb echoes on melee hit (main hit + echoes).";
+    public int EchoCount { get; set; } = 5;
+
+    [JsonPropertyName("// EchoTierDrop")]
+    public string EchoTierDropDoc { get; init; } = "How many tiers lower each echo is (approximates 30% less damage per drop).";
+    public int EchoTierDrop { get; set; } = 1;
+
+    [JsonPropertyName("// DrainSpellRangeMeters")]
+    public string DrainSpellRangeMetersDoc { get; init; } = "Radius in meters for Bloodmage drain spell AoE.";
+    public double DrainSpellRangeMeters { get; set; } = 15.0;
+
+    [JsonPropertyName("// AuraRangeMeters")]
+    public string AuraRangeMetersDoc { get; init; } = "Radius in meters for Bloodmage life-drain aura.";
+    public double AuraRangeMeters { get; set; } = 15.0;
+
+    [JsonPropertyName("// AuraDrainPerTick")]
+    public string AuraDrainPerTickDoc { get; init; } = "Health drained from each enemy per aura tick.";
+    public int AuraDrainPerTick { get; set; } = 1;
+
+    [JsonPropertyName("// AuraTickSeconds")]
+    public string AuraTickSecondsDoc { get; init; } = "Seconds between aura ticks.";
+    public double AuraTickSeconds { get; set; } = 1.0;
+
+    [JsonPropertyName("// ManaCostMultiplier")]
+    public string ManaCostMultiplierDoc { get; init; } = "Multiplier applied to auto-cast spell mana cost (0.5 = half cost).";
+    public double ManaCostMultiplier { get; set; } = 0.5;
 }

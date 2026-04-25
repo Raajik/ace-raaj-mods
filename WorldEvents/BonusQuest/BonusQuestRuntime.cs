@@ -175,11 +175,12 @@ internal static class BonusQuestRuntime
         }
 
         var displayName = BonusQuestDisplay.QuestDisplayName(questName);
-        var mult = settings.BonusQuestXpFraction * settings.BonusQuestXpMultiplier;
+        var tierFraction = BonusQuestRewards.GetTierFraction(settings, newCount);
+        var tierLabel = newCount switch { 1 => "1st", 2 => "2nd", 3 => "3rd", _ => $"{newCount}th" };
 
-        if (BonusQuestRewards.TryGrantCompletionXp(settings, player, out var awarded))
+        if (BonusQuestRewards.TryGrantCompletionXp(settings, player, newCount, out var awarded))
             player.SendMessage(
-                $"[EVENT - Bonus Quest] \"{displayName}\" bonus complete (×{mult * 100:0}% XP)! " +
+                $"[EVENT - Bonus Quest] \"{displayName}\" bonus complete ({tierLabel} completion — {tierFraction * 100:0}% XP)! " +
                 $"+{awarded:N0} XP awarded. (Your total completions: {newCount}.)");
         else
             player.SendMessage(

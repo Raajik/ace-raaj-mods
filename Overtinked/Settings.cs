@@ -22,7 +22,7 @@ public class Settings
     public string SalvageRulesDoc { get; init; } = "Per-salvage tinker rules (random or fixed). Include both WCIDs for quest-reward pairs. Each array element: // keys first, then values.";
 
     [JsonPropertyName("// EnableFailureRedesign")]
-    public string EnableFailureRedesignDoc { get; init; } = "When true, failed tinkers apply the opposite effect instead of destroying the item.";
+    public string EnableFailureRedesignDoc { get; init; } = "When true, failed tinkers trigger chaotic POSITIVE effects (overcharge, cascade, mana surge, workmanship bloom, spell whisper) instead of destruction.";
 
     [JsonPropertyName("// EnableDefaultImbueFailureWorkmanship")]
     public string EnableDefaultImbueFailureWorkmanshipDoc { get; init; } = "When true, failed imbue tinkers add +1 Workmanship instead of destroying the item, capped at 10.";
@@ -47,7 +47,7 @@ public class Settings
         "When true (default), before OR-ing the new imbue bit, strip the weaker effect on the item: Armor Cleaving (IgnoreArmor) for Sunstone; Biting Strike (CriticalFrequency) for Black Opal; Crushing Blow-style crit mult (CriticalMultiplier) for Fire Opal; quest Resistance Cleaving (ResistanceModifierType + ResistanceModifier) when upgrading to the matching elemental/physical rending imbue.";
 
     // Max number of tinkers allowed per item (recipe check uses MaxTries - 1).
-    public int MaxTries { get; set; } = 50;
+    public int MaxTries { get; set; } = 10;
 
     // Difficulty step between each extra tinker tier.
     public float Scale { get; set; } = .5f;

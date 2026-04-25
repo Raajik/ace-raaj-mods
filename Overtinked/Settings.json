@@ -5,7 +5,7 @@
   "// MaxImbueEffects": "Max imbue effects allowed on an item (checked via bit count of ImbuedEffect).",
   "// EnableRecipeManagerPatch": "When true, patches RecipeManager.UseObjectOnTarget (and related) for tinkering flow.",
   "// SalvageRules": "Per-salvage tinker rules (random or fixed). Include both WCIDs for quest-reward pairs.",
-  "// EnableFailureRedesign": "When true, failed tinkers apply the opposite effect instead of destroying the item.",
+  "// EnableFailureRedesign": "When true, failed tinkers apply chaotic positive effects instead of destroying the item.",
   "// EnableDefaultImbueFailureWorkmanship": "When true, failed imbue tinkers add +1 Workmanship instead of destroying the item, capped at 10.",
   "// BleedImbue": "Bleed imbue (e.g. Serpentine 21075). Inside: // lines first, then values.",
   "// CleavingImbue": "Cleaving imbue (e.g. Tiger Eye 21081).",
@@ -13,7 +13,7 @@
   "// BuffedImbueRules": "Buffed jewelry imbues. Each array element: // keys first, then values.",
   "// ShowPlayerSalvageMessage": "When true, send the player a short message when a custom salvage/imbue is applied.",
   "// EnableLesserImbueUpgradeToFull": "Strip weaker effects before imbue: IgnoreArmor (armor cleaving) for Sunstone; CriticalFrequency (biting strike) for Black Opal; CriticalMultiplier (crushing-style) for Fire Opal; ResistanceModifier* for matching rending salvage.",
-  "MaxTries": 50,
+  "MaxTries": 10,
   "Scale": 0.5,
   "MaxImbueEffects": 5,
   "EnableRecipeManagerPatch": true,
@@ -26,251 +26,155 @@
       "// MaxValue": "Random range high (inclusive).",
       "// FixedValue": "If set, use this value instead of rolling.",
       "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        20986
-      ],
+      "// BaneSpellIds": "Optional: spell IDs to apply or upgrade on success.",
+      "Wcids": [20986],
       "Name": "Iron",
       "EffectKind": "Damage",
-      "MinValue": 1,
-      "MaxValue": 5,
-      "FixedValue": null,
-      "Enabled": true
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 3,
+      "Enabled": true,
+      "BaneSpellIds": []
     },
     {
-      "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
-      "// Name": "Display name for logs/config.",
-      "// EffectKind": "Kind of effect: Damage, ArmorLevel, etc.",
-      "// MinValue": "Random range low (inclusive). Ignored if FixedValue is set.",
-      "// MaxValue": "Random range high (inclusive).",
-      "// FixedValue": "If set, use this value instead of rolling.",
-      "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        20993,
-        29581
-      ],
+      "Wcids": [20993, 29581],
       "Name": "Steel",
       "EffectKind": "ArmorLevel",
-      "MinValue": 20,
-      "MaxValue": 100,
-      "FixedValue": null,
-      "Enabled": true
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 60,
+      "Enabled": true,
+      "BaneSpellIds": [4407, 6095]
     },
     {
-      "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
-      "// Name": "Display name for logs/config.",
-      "// EffectKind": "Kind of effect: Damage, ArmorLevel, etc.",
-      "// MinValue": "Random range low (inclusive). Ignored if FixedValue is set.",
-      "// MaxValue": "Random range high (inclusive).",
-      "// FixedValue": "If set, use this value instead of rolling.",
-      "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        20985,
-        29576
-      ],
+      "Wcids": [20985, 29576],
       "Name": "Granite",
       "EffectKind": "DamageVariance",
-      "MinValue": 20,
-      "MaxValue": 100,
-      "FixedValue": null,
-      "Enabled": true
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 60,
+      "Enabled": true,
+      "BaneSpellIds": []
     },
     {
-      "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
-      "// Name": "Display name for logs/config.",
-      "// EffectKind": "Kind of effect: Damage, ArmorLevel, etc.",
-      "// MinValue": "Random range low (inclusive). Ignored if FixedValue is set.",
-      "// MaxValue": "Random range high (inclusive).",
-      "// FixedValue": "If set, use this value instead of rolling.",
-      "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        20989
-      ],
+      "Wcids": [20989],
       "Name": "Oak",
       "EffectKind": "WeaponSpeed",
-      "MinValue": 50,
-      "MaxValue": 250,
-      "FixedValue": null,
-      "Enabled": true
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 150,
+      "Enabled": true,
+      "BaneSpellIds": []
     },
     {
-      "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
-      "// Name": "Display name for logs/config.",
-      "// EffectKind": "Kind of effect: Damage, ArmorLevel, etc.",
-      "// MinValue": "Random range low (inclusive). Ignored if FixedValue is set.",
-      "// MaxValue": "Random range high (inclusive).",
-      "// FixedValue": "If set, use this value instead of rolling.",
-      "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        20981
-      ],
+      "Wcids": [20981],
       "Name": "Armoredillo Hide",
       "EffectKind": "ArmorModVsAcid",
-      "MinValue": 40,
-      "MaxValue": 200,
-      "FixedValue": null,
-      "Enabled": true
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 10,
+      "Enabled": true,
+      "BaneSpellIds": [4391, 6088]
     },
     {
-      "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
-      "// Name": "Display name for logs/config.",
-      "// EffectKind": "Kind of effect: Damage, ArmorLevel, etc.",
-      "// MinValue": "Random range low (inclusive). Ignored if FixedValue is set.",
-      "// MaxValue": "Random range high (inclusive).",
-      "// FixedValue": "If set, use this value instead of rolling.",
-      "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        20982
-      ],
+      "Wcids": [20982],
       "Name": "Bronze",
       "EffectKind": "ArmorModVsSlash",
-      "MinValue": 20,
-      "MaxValue": 100,
-      "FixedValue": null,
-      "Enabled": true
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 10,
+      "Enabled": true,
+      "BaneSpellIds": [4393, 6097]
     },
     {
-      "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
-      "// Name": "Display name for logs/config.",
-      "// EffectKind": "Kind of effect: Damage, ArmorLevel, etc.",
-      "// MinValue": "Random range low (inclusive). Ignored if FixedValue is set.",
-      "// MaxValue": "Random range high (inclusive).",
-      "// FixedValue": "If set, use this value instead of rolling.",
-      "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        20983
-      ],
+      "Wcids": [20983],
       "Name": "Ceramic",
       "EffectKind": "ArmorModVsFire",
-      "MinValue": 40,
-      "MaxValue": 200,
-      "FixedValue": null,
-      "Enabled": true
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 10,
+      "Enabled": true,
+      "BaneSpellIds": [4401, 6092]
     },
     {
-      "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
-      "// Name": "Display name for logs/config.",
-      "// EffectKind": "Kind of effect: Damage, ArmorLevel, etc.",
-      "// MinValue": "Random range low (inclusive). Ignored if FixedValue is set.",
-      "// MaxValue": "Random range high (inclusive).",
-      "// FixedValue": "If set, use this value instead of rolling.",
-      "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        21061
-      ],
+      "Wcids": [21061],
       "Name": "Marble",
       "EffectKind": "ArmorModVsBludgeon",
-      "MinValue": 20,
-      "MaxValue": 100,
-      "FixedValue": null,
-      "Enabled": true
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 10,
+      "Enabled": true,
+      "BaneSpellIds": [4397, 6090]
     },
     {
-      "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
-      "// Name": "Display name for logs/config.",
-      "// EffectKind": "Kind of effect: Damage, ArmorLevel, etc.",
-      "// MinValue": "Random range low (inclusive). Ignored if FixedValue is set.",
-      "// MaxValue": "Random range high (inclusive).",
-      "// FixedValue": "If set, use this value instead of rolling.",
-      "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        20991
-      ],
+      "Wcids": [20991],
       "Name": "Reedshark Hide",
       "EffectKind": "ArmorModVsElectric",
-      "MinValue": 40,
-      "MaxValue": 200,
-      "FixedValue": null,
-      "Enabled": true
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 10,
+      "Enabled": true,
+      "BaneSpellIds": [4409, 6099]
     },
     {
-      "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
-      "// Name": "Display name for logs/config.",
-      "// EffectKind": "Kind of effect: Damage, ArmorLevel, etc.",
-      "// MinValue": "Random range low (inclusive). Ignored if FixedValue is set.",
-      "// MaxValue": "Random range high (inclusive).",
-      "// FixedValue": "If set, use this value instead of rolling.",
-      "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        20995
-      ],
+      "Wcids": [20995],
       "Name": "Wool",
       "EffectKind": "ArmorModVsCold",
-      "MinValue": 40,
-      "MaxValue": 200,
-      "FixedValue": null,
-      "Enabled": true
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 10,
+      "Enabled": true,
+      "BaneSpellIds": [4403, 6093]
     },
     {
-      "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
-      "// Name": "Display name for logs/config.",
-      "// EffectKind": "Kind of effect: Damage, ArmorLevel, etc.",
-      "// MinValue": "Random range low (inclusive). Ignored if FixedValue is set.",
-      "// MaxValue": "Random range high (inclusive).",
-      "// FixedValue": "If set, use this value instead of rolling.",
-      "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        21042
-      ],
+      "Wcids": [20980],
+      "Name": "Alabaster",
+      "EffectKind": "ArmorModVsPierce",
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 10,
+      "Enabled": true,
+      "BaneSpellIds": [4412, 6096]
+    },
+    {
+      "Wcids": [21042],
       "Name": "Brass",
       "EffectKind": "WeaponDefense",
-      "MinValue": 1,
-      "MaxValue": 5,
-      "FixedValue": null,
-      "Enabled": true
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 3,
+      "Enabled": true,
+      "BaneSpellIds": []
     },
     {
-      "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
-      "// Name": "Display name for logs/config.",
-      "// EffectKind": "Kind of effect: Damage, ArmorLevel, etc.",
-      "// MinValue": "Random range low (inclusive). Ignored if FixedValue is set.",
-      "// MaxValue": "Random range high (inclusive).",
-      "// FixedValue": "If set, use this value instead of rolling.",
-      "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        20988
-      ],
+      "Wcids": [20988],
       "Name": "Mahogany",
       "EffectKind": "DamageMod",
-      "MinValue": 4,
-      "MaxValue": 20,
-      "FixedValue": null,
-      "Enabled": true
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 12,
+      "Enabled": true,
+      "BaneSpellIds": []
     },
     {
-      "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
-      "// Name": "Display name for logs/config.",
-      "// EffectKind": "Kind of effect: Damage, ArmorLevel, etc.",
-      "// MinValue": "Random range low (inclusive). Ignored if FixedValue is set.",
-      "// MaxValue": "Random range high (inclusive).",
-      "// FixedValue": "If set, use this value instead of rolling.",
-      "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        20994
-      ],
+      "Wcids": [20994],
       "Name": "Velvet",
       "EffectKind": "WeaponOffense",
-      "MinValue": 1,
-      "MaxValue": 1,
-      "FixedValue": null,
-      "Enabled": true
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 3,
+      "Enabled": true,
+      "BaneSpellIds": []
     },
     {
-      "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
-      "// Name": "Display name for logs/config.",
-      "// EffectKind": "Kind of effect: Damage, ArmorLevel, etc.",
-      "// MinValue": "Random range low (inclusive). Ignored if FixedValue is set.",
-      "// MaxValue": "Random range high (inclusive).",
-      "// FixedValue": "If set, use this value instead of rolling.",
-      "// Enabled": "When false, this salvage rule is skipped.",
-      "Wcids": [
-        21050
-      ],
+      "Wcids": [21050],
       "Name": "Green Garnet",
-      "EffectKind": "DamageMod",
-      "MinValue": 1,
-      "MaxValue": 5,
-      "FixedValue": null,
-      "Enabled": true
+      "EffectKind": "ElementalDamageMod",
+      "MinValue": 0,
+      "MaxValue": 0,
+      "FixedValue": 3,
+      "Enabled": true,
+      "BaneSpellIds": []
     }
   ],
   "EnableFailureRedesign": true,
@@ -282,9 +186,7 @@
     "// DamagePerTick": "Damage per tick.",
     "// MaxStacks": "Max stacks.",
     "// TickIntervalSeconds": "Tick interval in seconds.",
-    "SalvageWcids": [
-      21075
-    ],
+    "SalvageWcids": [21075],
     "Name": "Bleed",
     "Enabled": true,
     "DamagePerTick": 1,
@@ -301,9 +203,7 @@
     "// SplashRespectCanDamageGate": "When true, splash respects CanDamage.",
     "// SplashDamagePlayerVictims": "When false, cleave never damages players.",
     "// SplashDamageCapPerTarget": "Cap raw splash damage per target; 0 = no cap.",
-    "SalvageWcids": [
-      21081
-    ],
+    "SalvageWcids": [21081],
     "Name": "Cleaving",
     "Enabled": true,
     "SplashRadiusMeters": 5.0,
@@ -322,9 +222,7 @@
     "// NetherBonusVsCreaturesMultiplier": "Multiplier vs creatures.",
     "// NetherBonusVsPlayersMultiplier": "Multiplier vs players.",
     "// NetherBonusSoftCap": "Soft cap on Nether bonus; 0 = none.",
-    "SalvageWcids": [
-      21064
-    ],
+    "SalvageWcids": [21064],
     "Name": "Nether Rending",
     "Enabled": true,
     "NetherDamageFraction": 0.25,
@@ -344,9 +242,7 @@
       "// SecondaryValue": "Value for secondary stat.",
       "// ImbuedEffectTypeName": "ACE ImbuedEffectType name for display.",
       "// Enabled": "When false, this rule is skipped.",
-      "Wcids": [
-        21053
-      ],
+      "Wcids": [21053],
       "Name": "Hematite",
       "PrimaryStat": "MaxHealth",
       "PrimaryMin": 25,
@@ -357,18 +253,7 @@
       "Enabled": false
     },
     {
-      "// Wcids": "Salvage/material WCIDs.",
-      "// Name": "Display name.",
-      "// PrimaryStat": "Primary stat: MaxHealth, MaxStamina, MaxMana.",
-      "// PrimaryMin": "Minimum rolled primary bonus.",
-      "// PrimaryMax": "Maximum rolled primary bonus.",
-      "// SecondaryStat": "Optional secondary stat.",
-      "// SecondaryValue": "Value for secondary stat.",
-      "// ImbuedEffectTypeName": "ACE ImbuedEffectType name for display.",
-      "// Enabled": "When false, this rule is skipped.",
-      "Wcids": [
-        21060
-      ],
+      "Wcids": [21060],
       "Name": "Malachite",
       "PrimaryStat": "MaxStamina",
       "PrimaryMin": 25,
@@ -379,18 +264,7 @@
       "Enabled": false
     },
     {
-      "// Wcids": "Salvage/material WCIDs.",
-      "// Name": "Display name.",
-      "// PrimaryStat": "Primary stat: MaxHealth, MaxStamina, MaxMana.",
-      "// PrimaryMin": "Minimum rolled primary bonus.",
-      "// PrimaryMax": "Maximum rolled primary bonus.",
-      "// SecondaryStat": "Optional secondary stat.",
-      "// SecondaryValue": "Value for secondary stat.",
-      "// ImbuedEffectTypeName": "ACE ImbuedEffectType name for display.",
-      "// Enabled": "When false, this rule is skipped.",
-      "Wcids": [
-        21058
-      ],
+      "Wcids": [21058],
       "Name": "Lavender Jade",
       "PrimaryStat": "MaxMana",
       "PrimaryMin": 25,

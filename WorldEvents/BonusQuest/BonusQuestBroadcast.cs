@@ -4,10 +4,10 @@ internal static class BonusQuestBroadcast
 {
     static readonly string[] AddedFlavors =
     {
-        "[EVENT - Bonus Quest] New bonus quests posted! Complete {0} for {1}x bonus XP!",
-        "[EVENT - Bonus Quest] The quest board has been updated! Featured: {0} — {1}x XP on completion!",
-        "[EVENT - Bonus Quest] Fresh bonus quests available: {0}. Earn {1}x bonus XP for each completion!",
-        "[EVENT - Bonus Quest] Hear ye! Bonus quests posted: {0}. Adventurers who complete them earn {1}x XP!",
+        "[EVENT - Bonus Quest] New bonus quests posted! Complete {0} for tiered bonus XP — 20% for your 1st, 15% for 2nd, 10% for 3rd, 5% after that!",
+        "[EVENT - Bonus Quest] The quest board has been updated! Featured: {0} — tiered XP rewards on completion!",
+        "[EVENT - Bonus Quest] Fresh bonus quests available: {0}. Earn up to 20% of a level for your first completion!",
+        "[EVENT - Bonus Quest] Hear ye! Bonus quests posted: {0}. 1st=20%, 2nd=15%, 3rd=10%, rest=5% XP!",
     };
 
     static readonly string[] NoQuestsFlavors =
@@ -28,10 +28,8 @@ internal static class BonusQuestBroadcast
         }
 
         var list = BonusQuestDisplay.FormatQuestList(added);
-        var mult = (int)(settings.BonusQuestXpFraction * settings.BonusQuestXpMultiplier * 100);
-        var multLabel = mult >= 100 ? $"{mult / 100}" : $"{mult / 100.0:0.#}";
         var template = AddedFlavors[Random.Shared.Next(AddedFlavors.Length)];
-        HuntDisplay.BroadcastWorldLine(string.Format(template, list, multLabel));
+        HuntDisplay.BroadcastWorldLine(string.Format(template, list));
     }
 
     internal static void AnnounceReminder(Settings settings)
@@ -49,10 +47,8 @@ internal static class BonusQuestBroadcast
                 : $"{(int)rotateIn.TotalMinutes}m";
 
             var list = BonusQuestDisplay.FormatQuestList(bq.QuestNames);
-            var mult = (int)(settings.BonusQuestXpFraction * settings.BonusQuestXpMultiplier * 100);
-            var multLabel = mult >= 100 ? $"{mult / 100}" : $"{mult / 100.0:0.#}";
 
-            HuntDisplay.BroadcastWorldLine($"[EVENT - Bonus Quest] Active bonus quests: {list} — {multLabel}x XP each. Board rotates in {rotateStr}.");
+            HuntDisplay.BroadcastWorldLine($"[EVENT - Bonus Quest] Active bonus quests: {list} — tiered XP (20%/15%/10%/5%). Board rotates in {rotateStr}.");
         }
     }
 }

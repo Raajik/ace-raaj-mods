@@ -6,14 +6,35 @@ namespace QOL;
 [HarmonyPatchCategory(nameof(Features.Animations))]
 internal static class Animations
 {
-    // FakeInt 11050 = Loremaster LMInt.AchievementTier. Read directly so QOL has no hard reference to Loremaster.
-    const int AchievementTierPropId = 11050;
-
     // Set synchronously before each player action that calls GetAnimationLength; cleared in finalizer.
     [ThreadStatic] static int _animTier;
 
+    static Func<Player, string, bool>? _hasAchievementRef;
+
+    static bool HasAchievementUnlocked(Player p, string id)
+    {
+        if (_hasAchievementRef is null)
+        {
+            var asm = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.GetName().Name == "AchievementUnlocked");
+            if (asm is null) return false;
+            var type = asm.GetType("AchievementUnlocked.AchievementManager");
+            var method = type?.GetMethod("HasAchievement", new[] { typeof(Player), typeof(string) });
+            if (method is not null)
+                _hasAchievementRef = (Func<Player, string, bool>)Delegate.CreateDelegate(typeof(Func<Player, string, bool>), method);
+        }
+        return _hasAchievementRef?.Invoke(p, id) == true;
+    }
+
     static int GetPlayerAnimTier(Player p)
-        => p.GetProperty((FakeInt)AchievementTierPropId) ?? 0;
+    {
+        if (HasAchievementUnlocked(p, "LoreTier4")) return 4;
+        if (HasAchievementUnlocked(p, "LoreTier3")) return 3;
+        if (HasAchievementUnlocked(p, "LoreTier2")) return 2;
+        if (HasAchievementUnlocked(p, "LoreTier1")) return 1;
+        // Legacy fallback for characters migrated before AchievementUnlocked
+        return p.GetProperty((FakeInt)11050) ?? 0;
+    }
 
     // ── MotionTable hooks ──────────────────────────────────────────────────
 

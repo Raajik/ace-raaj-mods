@@ -14,17 +14,28 @@ internal static class BssPlayerPaidSpellCast
         if (player == null || spell._spell == null || target == null)
             return false;
 
-        // DoCastSpell_Inner compares StartPos vs current position; procs are not real windups — pin so we do not fizzle.
-        player.StartPos = new ACE.Server.Physics.Common.Position(player.PhysicsObj.Position);
+        // Prevent recursive re-entry into HandleCastSpell patches (cleave/echo/summon)
+        // that would cause stack overflow when DoCastSpell_Inner → CreatePlayerSpell → HandleCastSpell
+        bool wasInAutoCast = BssAutoCaster.IsInAutoCast;
+        BssAutoCaster.IsInAutoCast = true;
+        try
+        {
+            // DoCastSpell_Inner compares StartPos vs current position; procs are not real windups — pin so we do not fizzle.
+            player.StartPos = new ACE.Server.Physics.Common.Position(player.PhysicsObj.Position);
 
-        uint magicSkill = player.GetCreatureSkill(spell.School).Current;
-        Player.CastingPreCheckStatus status = player.GetCastingPreCheckStatus(spell, magicSkill, isWeaponSpell: false);
+            uint magicSkill = player.GetCreatureSkill(spell.School).Current;
+            Player.CastingPreCheckStatus status = player.GetCastingPreCheckStatus(spell, magicSkill, isWeaponSpell: false);
 
-        if (!player.CalculateManaUsage(status, spell, target, casterItem: null, out uint manaUsed))
-            return false;
+            if (!player.CalculateManaUsage(status, spell, target, casterItem: null, out uint manaUsed))
+                return false;
 
-        player.DoCastSpell_Inner(spell, casterItem: null, manaUsed, target, status, finishCast);
-        return true;
+            player.DoCastSpell_Inner(spell, casterItem: null, manaUsed, target, status, finishCast);
+            return true;
+        }
+        finally
+        {
+            BssAutoCaster.IsInAutoCast = wasInAutoCast;
+        }
     }
 
     // Mirrors WorldObject.TryCastSpell_WithRedirects for Creature targets with NonComponentTargetType item redirects.

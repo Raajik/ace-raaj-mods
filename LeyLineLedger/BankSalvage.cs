@@ -1,5 +1,6 @@
 using ACE.Database;
 using System.Globalization;
+using System.Reflection;
 using static ACE.Server.WorldObjects.Player;
 
 namespace LeyLineLedger;
@@ -146,6 +147,40 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         return TryGetCachedWeenieName(rule.WeenieClassId)?.Trim() ?? "";
     }
 
+    static string? _overtinkedEffectMethod;
+
+    static string GetDynamicEffect(SalvageDepositRule rule)
+    {
+        var name = GetDepositRuleDisplayName(rule);
+        if (string.IsNullOrWhiteSpace(name)) return rule.Effect;
+
+        // Try Overtinked.SalvageEffectApplier.GetMaterialEffect via reflection
+        if (_overtinkedEffectMethod == null)
+        {
+            _overtinkedEffectMethod = "";
+            try
+            {
+                var asm = AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(a => string.Equals(a.GetName().Name, "Overtinked", StringComparison.Ordinal));
+                var t = asm?.GetType("Overtinked.SalvageEffectApplier");
+                var mi = t?.GetMethod("GetMaterialEffect", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string) }, null);
+                if (mi != null)
+                {
+                    var result = mi.Invoke(null, new object[] { name });
+                    if (result is string s && !string.IsNullOrWhiteSpace(s))
+                        return s;
+                }
+            }
+            catch { }
+        }
+        else if (_overtinkedEffectMethod == "")
+        {
+            // Already tried and failed, use static effect
+        }
+
+        return rule.Effect;
+    }
+
     static string FormatSalvageBagUnitsLine(long units, int unitsPerBag, SalvageDepositRule rule, bool showWcid)
     {
         string nameBase = GetDepositRuleDisplayName(rule);
@@ -156,9 +191,20 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
             compact = $"WCID {rule.WeenieClassId}";
 
         string amount = FormatSalvageAsBagFraction(units, unitsPerBag);
+        string line;
         if (showWcid)
-            return $"  {amount} {compact} [WCID {rule.WeenieClassId}]";
-        return $"  {amount} {compact}";
+            line = $"  {amount} {compact} [WCID {rule.WeenieClassId}]";
+        else
+            line = $"  {amount} {compact}";
+
+        var effect = GetDynamicEffect(rule);
+        if (!string.IsNullOrWhiteSpace(effect))
+            line += $", {effect.Trim()}";
+
+        if (!string.IsNullOrWhiteSpace(rule.Description))
+            line += $" — {rule.Description.Trim()}";
+
+        return line;
     }
 
     static string FormatSalvageAsBagFraction(long units, int unitsPerBag)
@@ -176,36 +222,55 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         int unitsPerBag = sb.Redeem.UnitsPerBag;
 
         IReadOnlyList<SalvageDepositRule> rules = sb.DepositRules;
-        List<(int ruleIndex, long units)> nonZero = new();
+
+        // Read all balances and group by category
+        var entries = new List<(int ruleIndex, long units, SalvageSkillCategory category)>();
         for (int i = 0; i < rules.Count; i++)
         {
             int prop = ResolveMaterialBankProperty(sb, i, rules[i]);
             long u = player.GetBanked(prop);
-            if (u > 0)
-                nonZero.Add((i, u));
+            entries.Add((i, u, rules[i].Category));
         }
 
-        nonZero.Sort((a, b) => b.units.CompareTo(a.units));
-
-        if (nonZero.Count == 0)
-            player.SendMessage("Banked salvage (by material): none.");
-        else
+        // Define category display order
+        var categoryOrder = new[]
         {
-            if (unitsPerBag > 0)
-                player.SendMessage("Banked salvage (amounts are bag-sized units; redeem uses whole bags only):");
-            else
-                player.SendMessage("Banked salvage (by material, non-zero only; set Redeem.UnitsPerBag to show bag amounts):");
+            SalvageSkillCategory.ArmorTinkering,
+            SalvageSkillCategory.WeaponTinkering,
+            SalvageSkillCategory.ItemTinkering,
+            SalvageSkillCategory.MagicItemTinkering,
+            SalvageSkillCategory.Special,
+            SalvageSkillCategory.Useless,
+        };
 
-            int lines = 0;
-            foreach ((int ruleIndex, long units) in nonZero)
+        var byCategory = entries
+            .GroupBy(e => e.category)
+            .ToDictionary(g => g.Key, g => g.OrderBy(e => GetDepositRuleDisplayName(rules[e.ruleIndex]), StringComparer.OrdinalIgnoreCase).ToList());
+
+        player.SendMessage(unitsPerBag > 0
+            ? "Banked salvage (amounts are bag-sized units; redeem uses whole bags only):"
+            : "Banked salvage (by material):");
+
+        foreach (var cat in categoryOrder)
+        {
+            if (!byCategory.TryGetValue(cat, out var list)) continue;
+
+            string header = cat switch
+            {
+                SalvageSkillCategory.ArmorTinkering => "[Armor Tinkering]",
+                SalvageSkillCategory.WeaponTinkering => "[Weapon Tinkering]",
+                SalvageSkillCategory.ItemTinkering => "[Item Tinkering]",
+                SalvageSkillCategory.MagicItemTinkering => "[Magic Item Tinkering]",
+                SalvageSkillCategory.Special => "[Special]",
+                SalvageSkillCategory.Useless => "[Useless --]",
+                _ => $"[{cat}]",
+            };
+            player.SendMessage(header);
+
+            foreach (var (ruleIndex, units, _) in list)
             {
                 SalvageDepositRule rule = rules[ruleIndex];
                 player.SendMessage(FormatSalvageBagUnitsLine(units, unitsPerBag, rule, showWcid));
-                if (++lines >= 45)
-                {
-                    player.SendMessage($"  ... and {nonZero.Count - lines} more with balance.");
-                    break;
-                }
             }
         }
     }

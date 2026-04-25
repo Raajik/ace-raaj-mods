@@ -1,9 +1,22 @@
+using System.Collections.Concurrent;
+using ACE.Database;
+using ACE.Database.Models.Shard;
+using ACE.Entity;
+using ACE.Entity.Enum;
+using ACE.Server.Managers;
+using ACE.Server.Network.GameEvent.Events;
+using ACE.Server.Network.GameMessages.Messages;
+using ACE.Server.WorldObjects;
+
 namespace QOL;
 
 public static class OfflineSwear
 {
-    [CommandHandler("offlineswear", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 1,
-        "Swear allegiance to another character on your account that is offline. Usage: /offlineswear <patron name>")]
+    static readonly ConcurrentDictionary<uint, DateTime> SwearCooldowns = new();
+    static readonly TimeSpan CooldownDuration = TimeSpan.FromMinutes(15);
+
+    [CommandHandler("swear", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 1,
+        "Swear allegiance to another character. Usage: /swear <patron name>")]
     public static void Handle(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
@@ -18,48 +31,60 @@ public static class OfflineSwear
             return;
         }
 
-        if (player.Account?.AccountId is not uint accountId)
+        // Cooldown check
+        if (SwearCooldowns.TryGetValue(player.Guid.Full, out var lastSwear))
         {
-            player.SendMessage("Your session has no account; cannot use this command.");
-            return;
+            var remaining = CooldownDuration - (DateTime.UtcNow - lastSwear);
+            if (remaining > TimeSpan.Zero)
+            {
+                player.SendMessage($"You must wait {remaining.TotalMinutes:0} more minute(s) before swearing allegiance again.");
+                return;
+            }
         }
 
         var requestedName = string.Join(" ", parameters).Trim();
         if (string.IsNullOrEmpty(requestedName))
         {
-            player.SendMessage("Usage: /offlineswear <patron name>");
+            player.SendMessage("Usage: /swear <patron name>");
             return;
         }
 
-        var accountPlayers = PlayerManager.GetAccountPlayers(accountId);
-        if (accountPlayers is null || accountPlayers.Count == 0)
-        {
-            player.SendMessage("No characters found for your account.");
-            return;
-        }
-
-        IPlayer? patron = null;
-        foreach (var kvp in accountPlayers)
-        {
-            var p = kvp.Value;
-            if (p.Guid == player.Guid)
-                continue;
-            if (p.Name.Equals(requestedName, StringComparison.OrdinalIgnoreCase))
-            {
-                patron = p;
-                break;
-            }
-        }
-
+        var patron = PlayerManager.FindByName(requestedName, out bool isOnline);
         if (patron is null)
         {
-            player.SendMessage($"No other character named \"{requestedName}\" exists on your account.");
+            player.SendMessage($"No character named \"{requestedName}\" exists.");
             return;
         }
 
-        if (PlayerManager.GetOnlinePlayer(patron.Guid) is not null)
+        if (patron.Guid == player.Guid)
         {
-            player.SendMessage($"{patron.Name} is online; use the normal swear flow instead.");
+            player.SendMessage("You cannot swear allegiance to yourself.");
+            return;
+        }
+
+        // Check if target is ignoring allegiance requests
+        bool ignoresRequests = false;
+        if (isOnline && patron is Player onlinePatron)
+        {
+            ignoresRequests = onlinePatron.GetCharacterOption(CharacterOption.IgnoreAllegianceRequests);
+        }
+        else
+        {
+            // Offline player: load character stub to check options
+            try
+            {
+                var character = DatabaseManager.Shard.BaseDatabase.GetCharacterStubByGuid(patron.Guid.Full);
+                if (character != null)
+                {
+                    ignoresRequests = (character.CharacterOptions1 & (int)CharacterOptions1.IgnoreAllegianceRequests) != 0;
+                }
+            }
+            catch { /* fallback: allow if DB lookup fails */ }
+        }
+
+        if (ignoresRequests)
+        {
+            player.SendMessage($"{patron.Name} is not accepting allegiance requests.");
             return;
         }
 
@@ -151,7 +176,10 @@ public static class OfflineSwear
         if (player.GetCharacterOption(CharacterOption.ListenToAllegianceChat) && player.Allegiance != null)
             player.JoinTurbineChatChannel("Allegiance");
 
-        ModManager.Log($"[QOL/offlineswear] {player.Name} swore to offline patron {patron.Name} (same account).", ModManager.LogLevel.Info);
+        // Apply cooldown
+        SwearCooldowns[player.Guid.Full] = DateTime.UtcNow;
+
+        ModManager.Log($"[QOL/swear] {player.Name} swore to patron {patron.Name} (online={isOnline}).", ModManager.LogLevel.Info);
     }
 
     static bool IsOlthoiHeritage(IPlayer p)

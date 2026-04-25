@@ -1,3 +1,4 @@
+using AutoLoot;
 using AutoLoot.Loot;
 
 namespace AutoLoot.Helpers;
@@ -194,5 +195,46 @@ internal class Commands
         {
             player.TryRemoveFromInventoryWithNetworking(item.Key, out var i, Player.RemoveFromInventoryAction.None);
         }
+    }
+
+    /// <summary>
+    /// /autosalvage — Toggle auto-salvage verbosity and on/off state.
+    ///   off   — disable auto-salvage
+    ///   short — enable auto-salvage; batch summary only (default)
+    ///   full  — enable auto-salvage; per-item message with bag fraction
+    /// </summary>
+    [CommandHandler("autosalvage", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0,
+        "Toggle auto-salvage. Usage: /autosalvage off | short | full")]
+    public static void HandleAutoSalvage(Session session, params string[] parameters)
+    {
+        var player = session.Player;
+        var arg = parameters.Length > 0 ? parameters[0].Trim().ToLowerInvariant() : "";
+
+        int mode;
+        string label;
+        switch (arg)
+        {
+            case "0" or "off" or "disable":
+                mode = 0;
+                label = "OFF";
+                break;
+            case "1" or "short" or "on":
+                mode = 1;
+                label = "SHORT (batch summary)";
+                break;
+            case "2" or "full" or "verbose":
+                mode = 2;
+                label = "FULL (per-item + bag %)";
+                break;
+            default:
+                var current = AutoLoot.autosalvageMode.GetOrAdd(player.Guid.Full, 1);
+                string currentLabel = current switch { 0 => "OFF", 1 => "SHORT", 2 => "FULL", _ => "SHORT" };
+                player.SendMessage($"[AutoSalvage] Current mode: {currentLabel}. Usage: /autosalvage off | short | full");
+                return;
+        }
+
+        AutoLoot.autosalvageMode[player.Guid.Full] = mode;
+        AutoLoot.SetSalvageState(player, mode > 0);
+        player.SendMessage($"[AutoSalvage] Mode: {label}");
     }
 }

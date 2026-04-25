@@ -163,6 +163,29 @@ internal static class HuntRuntime
             FinalizeHuntLeaderboard(settings, ended);
     }
 
+    internal static void ForceStart(Settings settings)
+    {
+        lock (HuntLock)
+        {
+            if (ActiveHunt != null)
+            {
+                ActiveHunt = null;
+                HuntPersistence.ClearActiveHunt();
+            }
+            var now = DateTime.UtcNow;
+            StartHuntWindow(settings, now, now.AddHours(settings.HuntIntervalHours));
+        }
+    }
+
+    internal static void ForceStop()
+    {
+        lock (HuntLock)
+        {
+            ActiveHunt = null;
+            HuntPersistence.ClearActiveHunt();
+        }
+    }
+
     internal static void StartHuntWindow(Settings settings, DateTime windowStartUtc, DateTime windowEndUtc)
     {
         var targets = PickHuntTargets(settings);

@@ -1,11 +1,9 @@
 namespace AutoLoot;
 
-// Holds configurable settings for AutoLoot. ACE.BaseMod creates Settings.json beside the DLL on first run.
-// Use PatchClass.Settings; reload picks up JSON changes in OnWorldOpen().
 public class Settings
 {
     [JsonPropertyName("// AutoLoot")]
-    public string AutoLootDoc { get; init; } = "Reading order: every // key is documentation; real settings follow in the same order. DebugLogging through NoDuplicateNames.";
+    public string AutoLootDoc { get; init; } = "Reading order: every // key is documentation; real settings follow in the same order. DebugLogging through LockpickLootBankPercent.";
 
     [JsonPropertyName("// DebugLogging")]
     public string DebugLoggingDoc { get; init; } = "When true, logs PostGenerateTreasure entry and early-return reasons to Ace_Log (verbose; disable after debugging).";
@@ -15,63 +13,59 @@ public class Settings
     public string DepositLootedCurrencyToBankDoc { get; init; } = "When true, looted pyreal stacks and trade notes are credited to banked pyreals (PropertyInt64) instead of inventory.";
     public bool DepositLootedCurrencyToBank { get; set; } = true;
 
-    [JsonPropertyName("// DepositAltCurrencyToBank")]
-    public string DepositAltCurrencyToBankDoc { get; init; } = "When true, looted alt currency (Olthoi Venom, A'nekshay Token, etc) are credited to bank + sync Zefs.";
-    public bool DepositAltCurrencyToBank { get; set; } = true;
-
     [JsonPropertyName("// BankCashProperty")]
     public string BankCashPropertyDoc { get; init; } = "Must match LeyLineLedger Settings.CashProperty when using that mod (default 39999).";
     public int BankCashProperty { get; set; } = 39999;
 
-    [JsonPropertyName("// AltCurrencyProperty")]
-    public string AltCurrencyPropertyDoc { get; init; } = "PropertyInt64 for banked Zefs (must match LeyLineLedger).";
-    public int AltCurrencyProperty { get; set; } = 40120;
-
-    [JsonPropertyName("// AltCurrencyWcidToZefValue")]
-    public string AltCurrencyWcidToZefValueDoc { get; init; } = "WCID to Zefs value (×100 scale).";
-    public Dictionary<uint, int> AltCurrencyWcidToZefValue { get; set; } = new()
-    {
-        { 36376, 100 },   // Small Olthoi Venom Sac
-        { 44240, 500 },   // A'nekshay Token
-        { 43142, 300 },   // Ornate Gear Marker
-        { 36518, 500 },   // Colosseum Coin
-        { 35383, 300 },   // Ancient Mhoire Coin
-        { 43901, 100 },   // Promissory Note
-        { 11710, 500 },   // Writ of Refuge
-    };
-
     [JsonPropertyName("// LootProfilePath")]
-    public string LootProfilePathDoc { get; init; } = "Folder for .utl loot profiles. Default empty: PatchClass sets Path.Combine(ModPath, \"LootProfiles\") after load. Override to any server path; /autoloot creates the folder if missing.";
+    public string LootProfilePathDoc { get; init; } = "Folder for .utl loot profiles. Default empty: PatchClass sets Path.Combine(ModPath, \"LootProfiles\"). Override to any server path; /autoloot creates the folder if missing.";
     public string LootProfilePath { get; set; } = "";
 
     [JsonPropertyName("// DefaultActiveProfiles")]
     public string DefaultActiveProfilesDoc { get; init; } =
-        "Shipped default: five LootProfiles/*.utl filenames (allowlist for /autoloot and new characters). When empty and DefaultProfile empty: /autoloot lists every .utl on disk; first-login still uses Autoloot.BundledDefaultProfileFileNames.";
+        "Shipped default: two LootProfiles/*.utl filenames (allowlist for /autoloot menu and new characters). Empty []: bundled list in code for first-login defaults only; /autoloot lists every .utl on disk. AutoSalvage is now material-type based and does not require a .utl profile. Key banking is baked into core (no profile needed).";
     public List<string> DefaultActiveProfiles { get; set; } =
     [
         "Currency.utl",
-        "PyrealMotes.utl",
+        "Trophies.utl",
     ];
 
     [JsonPropertyName("// DefaultProfile")]
     public string DefaultProfileDoc { get; init; } =
-        "Legacy: single default filename when DefaultActiveProfiles is empty. Leave empty to use bundled list for first-login defaults only; disk-wide /autoloot menu when DefaultActiveProfiles is also empty.";
+        "Legacy: single default filename when DefaultActiveProfiles is empty. Leave empty with empty DefaultActiveProfiles for disk-wide menu + bundled first-login profile set.";
     public string DefaultProfile { get; set; } = "";
 
     [JsonPropertyName("// NoDuplicateNames")]
     public string NoDuplicateNamesDoc { get; init; } = "Name substrings (case-insensitive): if an item matches and the player already has same WCID in inventory, skip loot — reduces quest-timer bypass via stockpiling. Add more fragments as needed.";
     public List<string> NoDuplicateNames { get; set; } = ["Pincer", "Tusk", "Matron"];
 
-    [JsonPropertyName("// ProfileTierRequirements")]
-    public string ProfileTierRequirementsDoc { get; init; } = "Minimum Achievement Tier (Loremaster FakeInt 11050) required to activate each .utl profile filename. Profiles not listed here are always available. New characters start with DefaultActiveProfiles only; players must earn tiers to unlock the rest.";
-    public Dictionary<string, int> ProfileTierRequirements { get; set; } = new()
+    [JsonPropertyName("// KeysUnlockThreshold")]
+    public string KeysUnlockThresholdDoc { get; init; } = "Number of objects unlocked with keys required to unlock BetterKeys.utl auto-loot and key banking.";
+    public int KeysUnlockThreshold { get; set; } = 10;
+
+    [JsonPropertyName("// LockpickUnlockThreshold")]
+    public string LockpickUnlockThresholdDoc { get; init; } = "Number of objects unlocked with lockpicks required to unlock lockpick corpse-loot banking.";
+    public int LockpickUnlockThreshold { get; set; } = 10;
+
+    [JsonPropertyName("// SalvageUnlockThreshold")]
+    public string SalvageUnlockThresholdDoc { get; init; } = "Number of items manually salvaged required to unlock material-type auto-salvage.";
+    public int SalvageUnlockThreshold { get; set; } = 50;
+
+    [JsonPropertyName("// KeyBankProperties")]
+    public string KeyBankPropertiesDoc { get; init; } = "WCID to PropertyInt64 mapping for key banking (must match LeyLineLedger Settings.Items).";
+    public Dictionary<uint, int> KeyBankProperties { get; set; } = new()
     {
-        ["Trophies.utl"] = 1,
-        ["Rares.utl"] = 2,
-        ["BetterKeys.utl"] = 3,
+        { 6876, 40250 },   // Sturdy Iron Key
+        { 24477, 40500 },  // Sturdy Steel Key
+        { 38456, 40750 },  // Mana Forge Key
+        { 48746, 41000 },  // Legendary Key
     };
 
-    [JsonPropertyName("// DepositCurrencyRequiredTier")]
-    public string DepositCurrencyRequiredTierDoc { get; init; } = "Minimum Achievement Tier to use the DepositLootedCurrencyToBank feature. 0 = always available.";
-    public int DepositCurrencyRequiredTier { get; set; } = 3;
+    [JsonPropertyName("// LockpickBankProperty")]
+    public string LockpickBankPropertyDoc { get; init; } = "PropertyInt64 for banked lockpick durability (must match LeyLineLedger / BetterSupportSkills).";
+    public int LockpickBankProperty { get; set; } = 40130;
+
+    [JsonPropertyName("// LockpickLootBankPercent")]
+    public string LockpickLootBankPercentDoc { get; init; } = "Percent of lockpick structure banked when looted from corpses (0.10 = 10%).";
+    public float LockpickLootBankPercent { get; set; } = 0.10f;
 }

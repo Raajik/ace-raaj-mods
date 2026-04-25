@@ -30,6 +30,7 @@
   "// CmQuitRemoveAetheria": "When true, Enlightenment.RemoveAetheria on quit.",
   "// QuestPointsMultiplierWhileChallengeActive": "Loremaster: base factor m for QB; with QuestPointsMultiplyPerActiveChallengeTrack true, scale is m^n where n = CountActiveChallengeTracks (SSF, HC, aptitude-or-alternate).",
   "// QuestPointsMultiplyPerActiveChallengeTrack": "When true (default), m^n per active tracks (e.g. m=2, SSF+HC => 4×). When false, m once if any challenge (legacy 2×).",
+
   "Enabled": true,
   "EnableArcaneLore": true,
   "EnableManaConversion": true,
@@ -141,7 +142,7 @@
   "HardcoreSecondsBetweenDeathAllowed": 60.0,
   "HardcoreStartingLives": 5,
   "ChallengeAchievementRewardsEnabled": true,
-  "ChallengeAchievementLevels": [ 50, 100, 150, 200, 225, 250, 275, 300 ],
+  "ChallengeAchievementLevels": [ 50, 100, 150, 200, 250, 275, 300, 400, 500, 600, 700, 800, 900, 1000, 1250, 1500, 2000, 2500, 3000, 4000, 5000, 7500, 9999 ],
   "ChallengeAchievementPercentEach": 1.0,
   "ChallengeBonusPercentPerLevel": 0.01,
   "ChallengeBonusSegmentCapLevel": 300,

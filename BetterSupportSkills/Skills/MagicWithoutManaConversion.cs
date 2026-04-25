@@ -10,6 +10,9 @@ internal static class MagicWithoutManaConversion
     [ThreadStatic]
     static bool _inBssEcho;
 
+    [ThreadStatic]
+    static bool _isInMagicWithoutMcCast;
+
     public static bool PrefixPlayerEnterWorld(Player __instance)
     {
         TryApplyWeaveBuffs(__instance);
@@ -54,38 +57,57 @@ internal static class MagicWithoutManaConversion
     public static void PostHandleCastSpellEcho(Spell spell, WorldObject target, WorldObject? itemCaster, WorldObject? weapon,
         bool isWeaponSpell, bool fromProc, bool equip, WorldObject? __instance = null)
     {
+        if (_isInMagicWithoutMcCast)
+            return;
+
         if (_inBssEcho || __instance is not Player player)
             return;
 
-        if (PatchClass.Settings is not { EnableMagicWithoutManaConversion: true } s)
+        if (spell == null)
             return;
 
-        if (player.GetCreatureSkill(Skill.ManaConversion).AdvancementClass >= SkillAdvancementClass.Trained)
-            return;
-
-        if (!spell.IsHarmful || target == null)
-            return;
-
-        MagicWithoutManaConversionSettings m = s.MagicWithoutManaConversion;
-
-        _inBssEcho = true;
+        _isInMagicWithoutMcCast = true;
         try
         {
-            if (m.EchoWarVoidHarmful && IsWarOrVoid(spell))
-            {
-                BssPlayerPaidSpellCast.TryCastSpellWithRedirects_PlayerMana(player, spell, target);
+            if (PatchClass.Settings is not { EnableMagicWithoutManaConversion: true } s)
                 return;
-            }
 
-            if (m.TripleLifeHarmful && IsLife(spell))
+            var mcSkill = player.GetCreatureSkill(Skill.ManaConversion);
+            if (mcSkill != null && mcSkill.AdvancementClass >= SkillAdvancementClass.Trained)
+                return;
+
+            if (!spell.IsHarmful || target == null)
+                return;
+
+            MagicWithoutManaConversionSettings m = s.MagicWithoutManaConversion;
+
+            _inBssEcho = true;
+            try
             {
-                BssPlayerPaidSpellCast.TryCastSpellWithRedirects_PlayerMana(player, spell, target);
-                BssPlayerPaidSpellCast.TryCastSpellWithRedirects_PlayerMana(player, spell, target);
+                if (m.EchoWarVoidHarmful && IsWarOrVoid(spell))
+                {
+                    BssPlayerPaidSpellCast.TryCastSpellWithRedirects_PlayerMana(player, spell, target);
+                    return;
+                }
+
+                if (m.TripleLifeHarmful && IsLife(spell))
+                {
+                    BssPlayerPaidSpellCast.TryCastSpellWithRedirects_PlayerMana(player, spell, target);
+                    BssPlayerPaidSpellCast.TryCastSpellWithRedirects_PlayerMana(player, spell, target);
+                }
             }
+            finally
+            {
+                _inBssEcho = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS MagicWithoutMC] PostHandleCastSpellEcho error: {ex.Message}", ModManager.LogLevel.Warn);
         }
         finally
         {
-            _inBssEcho = false;
+            _isInMagicWithoutMcCast = false;
         }
     }
 

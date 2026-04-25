@@ -7,4 +7,6 @@ internal static class CmFloat
 
     // Must match Loremaster LMFloat.ChaosQuestBonusMultiplier (11013).
     internal const FakeFloat ChaosQuestBonusMultiplier = (FakeFloat)11013;
+
+
 }

@@ -17,6 +17,12 @@ internal static class LMFloat
 
     // The aggregate prestige/achievement bonus pool (Achievements, Vitae Achievement, etc.).
     internal const FakeFloat AchievementPoolBonus = (FakeFloat)11015;
+
+    // Account-wide milestone bonus from ChallengeModes level achievements (0.1% per milestone per track).
+    internal const FakeFloat AccountMilestoneBonus = (FakeFloat)11016;
+
+    // Quest points accumulated during the current challenge mode run (isolated from account-wide pool).
+    internal const FakeFloat ChallengeRunQuestPoints = (FakeFloat)11017;
 }
 
 internal static class LMString
@@ -45,7 +51,8 @@ internal static class LMBool
 // Per-character achievement progress (stored as PropertyInt via FakeInt cast).
 internal static class LMInt
 {
-    // Current unlocked achievement tier (0 = none, 1–4). Set by RecalcAndStoreTier.
+    // DEPRECATED (2026-04-24): Achievement tiers are now managed by AchievementUnlocked mod.
+    // Kept for backward compatibility; do not write new values here.
     internal const FakeInt AchievementTier = (FakeInt)11050;
 }
 

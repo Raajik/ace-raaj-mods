@@ -21,6 +21,31 @@ public static class ImbueSalvageWcids
         21089,         // Zircon (Magic Defense)
     };
 
+    // Maps salvage WCID to the imbue effect it would apply (for chaos accidental success).
+    private static readonly Dictionary<uint, ImbuedEffectType> WcidToImbue = new()
+    {
+        [21079] = ImbuedEffectType.ArmorRending,
+        [29582] = ImbuedEffectType.ArmorRending,
+        [21049] = ImbuedEffectType.CripplingBlow,
+        [29575] = ImbuedEffectType.CripplingBlow,
+        [21040] = ImbuedEffectType.CriticalStrike,
+        [29573] = ImbuedEffectType.CriticalStrike,
+        [21037] = ImbuedEffectType.ColdRending,
+        [29571] = ImbuedEffectType.ColdRending,
+        [21039] = ImbuedEffectType.PierceRending,
+        [21048] = ImbuedEffectType.AcidRending,
+        [29574] = ImbuedEffectType.AcidRending,
+        [21056] = ImbuedEffectType.ElectricRending,
+        [21069] = ImbuedEffectType.FireRending,
+        [21054] = ImbuedEffectType.SlashRending,
+        [29577] = ImbuedEffectType.SlashRending,
+        [21086] = ImbuedEffectType.BludgeonRending,
+        [30260] = ImbuedEffectType.BludgeonRending,
+        [21066] = ImbuedEffectType.MeleeDefense,
+        [21088] = ImbuedEffectType.MissileDefense,
+        [21089] = ImbuedEffectType.MagicDefense,
+    };
+
     public static HashSet<uint> Build(Settings s)
     {
         var set = new HashSet<uint>(DefaultWcids);
@@ -34,5 +59,15 @@ public static class ImbueSalvageWcids
             foreach (uint w in s.NetherRendingImbue.SalvageWcids)
                 set.Add(w);
         return set;
+    }
+
+    public static ImbuedEffectType? GetImbueForWcid(uint wcid)
+    {
+        return WcidToImbue.TryGetValue(wcid, out var effect) ? effect : null;
+    }
+
+    public static bool IsImbueSalvage(uint wcid, Settings s)
+    {
+        return Build(s).Contains(wcid);
     }
 }

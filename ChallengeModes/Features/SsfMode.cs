@@ -121,8 +121,10 @@ public static class SsfMode
         var target = matches[0];
         target.SetProperty(FakeBool.Ironman, false);
         target.SetProperty(FakeBool.Hardcore, false);
+        PatchClass.SetSsfDeclined(target, false);
+        PatchClass.SetHardcoreDeclined(target, false);
         target.RadarColor = RadarColor.Default;
-        target.SendMessage("An admin removed your SSF/hardcore flags.");
+        target.SendMessage("An admin removed your SSF/hardcore flags and cleared rejoin lockouts.");
         admin.SendMessage($"Cleared SSF and hardcore on {target.Name}.");
         return true;
     }

@@ -75,14 +75,14 @@ internal static class LoyaltyCorruptionPets
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Creature), nameof(Creature.MeleeAttack))]
-    public static void PostMeleeAttack(ref Creature __instance, ref float __result)
+    public static void PostMeleeAttack(Creature __instance, ref float __result)
     {
         TryCastCorruption(__instance);
     }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Creature), nameof(Creature.RangeAttack))]
-    public static void PostRangeAttack(ref Creature __instance)
+    public static void PostRangeAttack(Creature __instance)
     {
         TryCastCorruption(__instance);
     }

@@ -2,7 +2,7 @@ using System.Linq;
 
 namespace LeyLineLedger;
 
-// Called by Xenology (and optionally other mods) for hunt loot: bank currency and Items[]-listed stacks without using inventory.
+// Called by Hunt (and optionally other mods) for hunt loot: bank currency and Items[]-listed stacks without using inventory.
 public static class HuntRewardBanking
 {
     public static bool TryAutoBankHuntLoot(Player player, WorldObject item, string placeTag)
@@ -13,14 +13,14 @@ public static class HuntRewardBanking
         if (TryBankCurrency(player, item, out var currencyDesc))
         {
             item.Destroy();
-            player.SendMessage($"[Xenology] Hunt reward ({placeTag}): {currencyDesc} sent to your bank.");
+            player.SendMessage($"[Hunt] Hunt reward ({placeTag}): {currencyDesc} sent to your bank.");
             return true;
         }
 
         if (TryBankLedgerStack(player, item, out var label, out var stackCount))
         {
             item.Destroy();
-            player.SendMessage($"[Xenology] Hunt reward ({placeTag}): banked +{stackCount:N0} {label}.");
+            player.SendMessage($"[Hunt] Hunt reward ({placeTag}): banked +{stackCount:N0} {label}.");
             return true;
         }
 

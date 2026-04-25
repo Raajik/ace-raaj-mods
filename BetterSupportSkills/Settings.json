@@ -1,4 +1,5 @@
 {
+  "EnableAutoCastReagentCosts": true,
   "EnableAlchemy": true,
   "Alchemy": {
     "EchoIntervalTrained": 15.0,
@@ -11,8 +12,10 @@
   },
   "EnableArcaneLore": true,
   "ArcaneLore": {
-    "SpellDodgePercentTrained": 0.05,
-    "SpellDodgePercentSpecialized": 0.10
+    "EchoSpellCasts": true,
+    "EchoDebuffSpells": true,
+    "EchoImperilSpellId": 4312,
+    "EchoFesterSpellId": 4489
   },
   "EnableAssessCreature": true,
   "EnableSalvage": true,
@@ -92,8 +95,8 @@
   },
   "EnableTrophyDrops": true,
   "TrophyDrops": {
-    "ExtraRollsTrained": 1,
-    "ExtraRollsSpecialized": 2,
+    "ExtraRollsTrained": 3,
+    "ExtraRollsSpecialized": 5,
     "MaxExtraRolls": 10,
     "BonusTreasureChance": 0.5
   },
@@ -102,7 +105,7 @@
     "MaxLevelBonusTrained": 10,
     "MaxLevelBonusSpecialized": 20
   },
-  "EnableVendorItemLeveling": false,
+  "EnableVendorItemLeveling": true,
   "VendorItemLeveling": {
     "MaxLevel": 25,
     "BaseXp": 10000,
@@ -138,5 +141,116 @@
     "AutoDepositPercent": 0.001,
     "AutoDepositPercentUnlocked": 0.0005,
     "RequireQuestsForUnlock": 100
+  },
+  "EnableSummoningClasses": true,
+  "SummoningClasses": {
+    "SummonDurationSeconds": 60,
+    "MasteryDamageRatingBonus": 10,
+    "PetAwarenessRange": 5.0,
+    "FollowDistanceThreshold": 15.0,
+    "FollowMaxDistanceBeforeDestroy": 250.0,
+    "Druid": {
+      "Enabled": true,
+      "TotalCap": 4,
+      "PetTypes": {
+        "Wasps": { "Enabled": true, "Count": 4 },
+        "Grievvers": { "Enabled": false, "Count": 4 },
+        "Moars": { "Enabled": false, "Count": 4 },
+        "Custom1": { "Enabled": false, "Count": 4 },
+        "Custom2": { "Enabled": false, "Count": 4 },
+        "Custom3": { "Enabled": false, "Count": 4 }
+      }
+    },
+    "Elementalist": {
+      "Enabled": true,
+      "TotalCap": 4,
+      "PetTypes": {
+        "Elementals": { "Enabled": true, "Count": 4 },
+        "K'naths": { "Enabled": false, "Count": 4 },
+        "Wisps": { "Enabled": false, "Count": 4 },
+        "Golems": { "Enabled": false, "Count": 4 },
+        "Grievvers": { "Enabled": false, "Count": 4 },
+        "Moars": { "Enabled": false, "Count": 4 },
+        "Custom1": { "Enabled": false, "Count": 4 },
+        "Custom2": { "Enabled": false, "Count": 4 },
+        "Custom3": { "Enabled": false, "Count": 4 }
+      }
+    },
+    "Necromancer": {
+      "Enabled": true,
+      "TotalCap": 10,
+      "PetTypes": {
+        "Skeletons": { "Enabled": true, "Count": 4 },
+        "Spectres": { "Enabled": true, "Count": 4 },
+        "Zombies": { "Enabled": true, "Count": 4 },
+        "Custom1": { "Enabled": false, "Count": 4 },
+        "Custom2": { "Enabled": false, "Count": 4 },
+        "Custom3": { "Enabled": false, "Count": 4 }
+      }
+    },
+    "Enchanter": {
+      "Enabled": true,
+      "TotalCap": 10,
+      "PetTypes": {
+        "Golems": { "Enabled": true, "Count": 4 },
+        "Custom1": { "Enabled": false, "Count": 4 },
+        "Custom2": { "Enabled": false, "Count": 4 },
+        "Custom3": { "Enabled": false, "Count": 4 }
+      }
+    },
+    "Artificer": {
+      "Enabled": true,
+      "TotalCap": 4,
+      "PetTypes": {
+        "Wisps": { "Enabled": true, "Count": 4 },
+        "Custom1": { "Enabled": false, "Count": 4 },
+        "Custom2": { "Enabled": false, "Count": 4 },
+        "Custom3": { "Enabled": false, "Count": 4 }
+      }
+    }
+  },
+  "EnableCombatClasses": true,
+  "CombatClasses": {
+    "Rogue": {
+      "BleedPercentPerHit": 0.005,
+      "BleedTicks": 10,
+      "BleedIntervalSeconds": 1.0,
+      "DebuffMultiplier": 2.0
+    },
+    "Berserker": {
+      "LifeStealPercent": 0.08,
+      "LifeStealMaxPerHit": 50
+    },
+    "Crusader": {
+      "PassiveHealPercentPerSecond": 0.01,
+      "CritDamageMultiplier": 1.5,
+      "ThornsMultiplier": 2.0,
+      "ThornsOnAllHits": true
+    },
+    "Windwalker": {
+      "StreakRangeMeters": 15.0,
+      "EchoEnabled": true,
+      "ManaCostMultiplier": 0.5
+    },
+    "Battlemage": {
+      "EchoEnabled": true,
+      "ManaCostMultiplier": 0.5
+    },
+    "DeathKnight": {
+      "AuraRangeMeters": 15.0,
+      "AuraDamagePerTick": 5,
+      "AuraTickSeconds": 1.0,
+      "EchoEnabled": true,
+      "ManaCostMultiplier": 0.5
+    },
+    "Bloodmage": {
+      "EchoCount": 5,
+      "EchoTierDrop": 1,
+      "DrainSpellRangeMeters": 15.0,
+      "AuraRangeMeters": 15.0,
+      "AuraDrainPerTick": 1,
+      "AuraTickSeconds": 1.0,
+      "ManaCostMultiplier": 0.5
+    }
   }
 }

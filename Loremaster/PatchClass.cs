@@ -56,6 +56,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         RefreshEmpyreanAlterationRelocatedPatches();
         RefreshParchmentQuestPatches();
         TrophyBurdenXp.Initialize();
+        AccountQuestFlags.Load();
 
         // OnWorldOpen never runs on hot-reload; still recalc anyone online and watch Settings.json.
         UpdateIngamePlayers();
@@ -597,6 +598,14 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 return;
 
             var beforeQp = (float)(player.GetProperty(FakeFloat.QuestBonus) ?? 0f);
+
+            if (ChallengeModesActiveBridge.PlayerHasActiveChallenge(player))
+            {
+                var qpVal = quest.Value();
+                var current = (float)(player.GetProperty(LMFloat.ChallengeRunQuestPoints) ?? 0f);
+                player.SetProperty(LMFloat.ChallengeRunQuestPoints, current + qpVal);
+            }
+
             player.UpdateQuestPoints();
             var afterQp = (float)(player.GetProperty(FakeFloat.QuestBonus) ?? 0f);
             if (player.Notify(LMBool.NotifyQuest))
@@ -607,6 +616,10 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             }
 
             var questName = QuestManager.GetQuestName(questFormat) ?? questFormat;
+
+            // Account-wide quest flag: all characters on this account treated as completed
+            if (player.Account?.AccountId is uint accountId)
+                AccountQuestFlags.AddFlag(accountId, questName);
 
             // One-time XP + loot bonuses (QP already reflected in UpdateQuestPoints)
             player.GrantCompletionBonuses(questName);
@@ -626,6 +639,13 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             var qst = instance.GetQuest(questName);
             var qpVal = qst?.Value() ?? 0f;
             bool stampGranted = player.TryAwardRepeatQuestPoints(questName, qpVal);
+
+            if (ChallengeModesActiveBridge.PlayerHasActiveChallenge(player) && stampGranted)
+            {
+                var current = (float)(player.GetProperty(LMFloat.ChallengeRunQuestPoints) ?? 0f);
+                player.SetProperty(LMFloat.ChallengeRunQuestPoints, current + qpVal);
+            }
+
             player.UpdateQuestPoints();
 
             if (stampGranted && !player.HasReceivedRepeatReward(questName))

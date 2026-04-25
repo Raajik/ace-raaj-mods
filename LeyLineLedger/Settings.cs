@@ -199,11 +199,32 @@ public class SalvageRedeemSettings
     public int OutputWorkmanship { get; set; } = 10;
 }
 
+public enum SalvageSkillCategory
+{
+    ArmorTinkering,
+    WeaponTinkering,
+    ItemTinkering,
+    MagicItemTinkering,
+    Special,
+    Useless
+}
+
 public class SalvageDepositRule
 {
+    [JsonPropertyName("// Category")]
+    public string CategoryDoc { get; init; } = "Tinkering skill category for display grouping: ArmorTinkering, WeaponTinkering, ItemTinkering, MagicItemTinkering, Special, Useless.";
+    public SalvageSkillCategory Category { get; set; } = SalvageSkillCategory.Useless;
+
+    [JsonPropertyName("// Description")]
+    public string DescriptionDoc { get; init; } = "Full description of what this salvage does (from wiki). Displayed in /bank salvage status.";
+    public string Description { get; set; } = "";
     [JsonPropertyName("// Name")]
     public string NameDoc { get; init; } = "Display name for messages.";
     public string Name { get; set; } = "";
+
+    [JsonPropertyName("// Effect")]
+    public string EffectDoc { get; init; } = "Optional description of what this salvage does when tinkered (e.g. '+60 AL', '+3 Damage'). Displayed in /bank salvage status.";
+    public string Effect { get; set; } = "";
 
     [JsonPropertyName("// WeenieClassId")]
     public string WeenieClassIdDoc { get; init; } = "Item WCID to salvage into units.";

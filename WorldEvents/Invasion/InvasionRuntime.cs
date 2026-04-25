@@ -294,6 +294,96 @@ internal static class InvasionRuntime
         _dynamicSpawns.Clear();
     }
 
+    internal static void ForceStart(Settings s, string? townName = null)
+    {
+        var now = DateTime.UtcNow;
+
+        lock (InvasionLock)
+        {
+            if (ActiveInvasion != null)
+            {
+                var stopped = ActiveInvasion;
+                StopWaveInternal(stopped);
+                ActiveInvasion = null;
+                InvasionPersistence.ClearActiveInvasion();
+            }
+
+            var eligible = s.InvasionTowns
+                .Where(t => t.Enabled && !string.IsNullOrWhiteSpace(t.TownName))
+                .ToList();
+
+            if (!string.IsNullOrWhiteSpace(townName))
+                eligible = eligible.Where(t => t.TownName.Equals(townName, StringComparison.OrdinalIgnoreCase)).ToList();
+
+            if (eligible.Count == 0)
+            {
+                ModManager.Log($"[Invasion] ForceStart: no eligible town{(townName != null ? $" matching '{townName}'" : "")}.", ModManager.LogLevel.Warn);
+                return;
+            }
+
+            var minT = Math.Max(1, s.InvasionMinTowns);
+            var maxT = Math.Max(minT, Math.Min(s.InvasionMaxTowns, eligible.Count));
+            var townCount = string.IsNullOrWhiteSpace(townName) ? _rng.Next(minT, maxT + 1) : eligible.Count;
+
+            Shuffle(eligible);
+            var selected = eligible.Take(townCount).ToList();
+
+            var themeTypeId = 0u;
+            var themeName = "";
+            if (s.InvasionUseCreatureTypeTheme && s.InvasionCreatureTypePool.Count > 0)
+            {
+                themeTypeId = s.InvasionCreatureTypePool[_rng.Next(s.InvasionCreatureTypePool.Count)];
+                themeName = ((CreatureType)themeTypeId).ToString();
+            }
+
+            var threshMin = Math.Max(1, s.InvasionKillThresholdMin);
+            var threshMax = Math.Max(threshMin, s.InvasionKillThresholdMax);
+            var threshold = _rng.Next(threshMin, threshMax + 1);
+            var respawnMins = ComputeBossRespawnMinutes(s, threshold);
+            var ends = now.AddMinutes(s.InvasionWindowMinutes);
+
+            var wave = new ActiveInvasionData
+            {
+                StartedUtc = now,
+                EndsUtc = ends,
+                ThemeName = themeName,
+                WaveKillThreshold = threshold,
+                BossRespawnMinutes = respawnMins,
+            };
+
+            foreach (var town in selected)
+            {
+                var mode = ResolveMode(town);
+                var tier = s.InvasionUseTierSystem ? _rng.Next(1, 7) : 0;
+                wave.Towns.Add(new TownInvasionEntry
+                {
+                    TownName = town.TownName,
+                    EventName = town.EventName ?? "",
+                    Mode = mode,
+                    Tier = tier,
+                });
+
+                if (mode == InvasionMode.Scripted)
+                    TryStartScriptedEvent(town.EventName);
+                else
+                    StartDynamicEntry(s, town, tier, themeTypeId);
+            }
+
+            InvasionKillTracker.Reset(threshold, respawnMins);
+            _lastReminderUtc = now;
+            ActiveInvasion = wave;
+            InvasionPersistence.SaveActiveInvasion(wave);
+
+            ModManager.Log(
+                $"[Invasion] Force-started — {string.Join(", ", wave.Towns.Select(t => $"{t.TownName}(T{t.Tier})"))} " +
+                $"theme:{(themeName.Length > 0 ? themeName : "none")} threshold:{threshold} respawn:{respawnMins:0.#}m ends:{ends:u}",
+                ModManager.LogLevel.Info);
+
+            var snap = wave;
+            Task.Run(() => InvasionBroadcast.AnnounceWaveStart(s, snap));
+        }
+    }
+
     internal static void ForceStop(Settings s)
     {
         ActiveInvasionData? stopped = null;
@@ -327,14 +417,52 @@ internal static class InvasionRuntime
                 return;
             }
 
-            var spawned = SpawnScattered(town, wcids, town.DynamicMaxSpawns);
-            _dynamicSpawns.AddRange(spawned);
-            ModManager.Log($"[Invasion] Spawned {spawned.Count} mobs at {town.TownName} T{tier}.", ModManager.LogLevel.Info);
+            // Pre-generate all positions on timer thread (no object mutation).
+            // Group by target landblock so each LB spawns its own mobs.
+            var spawns = GenerateSpawnPositions(town, wcids, town.DynamicMaxSpawns);
+            var byLb = spawns.GroupBy(sp => sp.Pos.LandblockId).ToList();
+
+            foreach (var group in byLb)
+            {
+                var lb = LandblockManager.GetLandblock(group.Key, false);
+                if (lb == null) continue;
+                var batch = group.ToList();
+                lb.EnqueueAction(new ActionEventDelegate(() =>
+                {
+                    var spawned = SpawnBatchOnLandblock(lb, batch);
+                    lock (_dynamicSpawns)
+                        _dynamicSpawns.AddRange(spawned);
+                }));
+            }
+
+            ModManager.Log($"[Invasion] Queued {spawns.Count} mobs across {byLb.Count} landblock(s) at {town.TownName} T{tier}.", ModManager.LogLevel.Info);
         }
         catch (Exception ex)
         {
             ModManager.Log($"[Invasion] Dynamic spawn failed for {town.TownName}: {ex.Message}", ModManager.LogLevel.Warn);
         }
+    }
+
+    static List<(Position Pos, uint Wcid)> GenerateSpawnPositions(InvasionTownSettings town, List<uint> wcids, int maxCount)
+    {
+        var result = new List<(Position, uint)>();
+        if (town.TownCenterObjCellId == 0) return result;
+        Shuffle(wcids);
+
+        for (var i = 0; i < maxCount; i++)
+        {
+            var angle  = _rng.NextDouble() * 2 * Math.PI;
+            var dist   = (float)(_rng.NextDouble() * town.TownSpawnRadius);
+            var ox     = town.TownCenterX + (float)(Math.Cos(angle) * dist);
+            var oy     = town.TownCenterY + (float)(Math.Sin(angle) * dist);
+            var facing = (float)(_rng.NextDouble() * Math.PI * 2);
+
+            var pos = new Position(town.TownCenterObjCellId, ox, oy, town.TownCenterZ,
+                0f, 0f, (float)Math.Sin(facing / 2), (float)Math.Cos(facing / 2));
+            pos.LandblockId = new LandblockId(pos.GetCell());
+            result.Add((pos, wcids[i % wcids.Count]));
+        }
+        return result;
     }
 
     static (int min, int max) ResolveLevelRange(Settings s, InvasionTownSettings town, int tier)
@@ -347,15 +475,29 @@ internal static class InvasionRuntime
         return (town.DynamicLevelMin, town.DynamicLevelMax);
     }
 
+    static IQueryable<uint> NonAttackableCreatureIds(WorldDbContext ctx)
+    {
+        var attackableTypeId = (ushort)PropertyBool.Attackable;
+        var npcLooksLikeTypeId = (ushort)PropertyBool.NpcLooksLikeObject;
+
+        return ctx.WeeniePropertiesBool
+            .Where(b => (b.Type == attackableTypeId && b.Value == false) ||
+                        (b.Type == npcLooksLikeTypeId && b.Value == true))
+            .Select(b => b.ObjectId)
+            .Distinct();
+    }
+
     static List<uint> QueryCreatureWcidsByType(uint creatureTypeId, int levelMin, int levelMax)
     {
         using var ctx = new WorldDbContext();
         ctx.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         var levelTypeId = (ushort)PropertyInt.Level;
         var ctTypeId    = (ushort)PropertyInt.CreatureType;
+        var excluded    = NonAttackableCreatureIds(ctx);
 
         return (from weenie in ctx.Weenie
                 where weenie.Type == (int)WeenieType.Creature
+                where !excluded.Contains(weenie.ClassId)
                 join ctProp in ctx.WeeniePropertiesInt on weenie.ClassId equals ctProp.ObjectId
                 where ctProp.Type == ctTypeId && ctProp.Value == (int)creatureTypeId
                 join lvProp in ctx.WeeniePropertiesInt on weenie.ClassId equals lvProp.ObjectId
@@ -371,42 +513,42 @@ internal static class InvasionRuntime
         ctx.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
         var levelTypeId = (ushort)PropertyInt.Level;
         var lbs = town.DynamicLandblocks;
+        var excluded = NonAttackableCreatureIds(ctx);
 
-        return (from inst in ctx.LandblockInstance
-                where lbs.Contains((int)(inst.ObjCellId >> 16))
-                join weenie in ctx.Weenie on inst.WeenieClassId equals weenie.ClassId
+        // Force client evaluation for the bitwise shift; then server-side for the rest
+        var instanceWcids = ctx.LandblockInstance
+            .AsEnumerable()
+            .Where(inst => lbs.Contains((int)(inst.ObjCellId >> 16)))
+            .Select(inst => inst.WeenieClassId)
+            .Distinct()
+            .ToList();
+
+        if (instanceWcids.Count == 0) return new();
+
+        return (from weenie in ctx.Weenie
+                where instanceWcids.Contains(weenie.ClassId)
                 where weenie.Type == (int)WeenieType.Creature
+                where !excluded.Contains(weenie.ClassId)
                 join lvProp in ctx.WeeniePropertiesInt on weenie.ClassId equals lvProp.ObjectId
                 where lvProp.Type == levelTypeId && lvProp.Value >= levelMin && lvProp.Value <= levelMax
-                select inst.WeenieClassId)
+                select weenie.ClassId)
                .Distinct().ToList();
     }
 
-    static List<WorldObject> SpawnScattered(InvasionTownSettings town, List<uint> wcids, int maxCount)
+    /// <summary>
+    /// Spawns a pre-generated batch of mobs on a specific landblock. Must be called from that landblock's tick thread.
+    /// </summary>
+    static List<WorldObject> SpawnBatchOnLandblock(Landblock lb, List<(Position Pos, uint Wcid)> batch)
     {
         var result = new List<WorldObject>();
-        if (town.TownCenterObjCellId == 0) return result;
-        Shuffle(wcids);
-
-        for (var i = 0; i < maxCount; i++)
+        foreach (var (pos, wcid) in batch)
         {
-            var wcid = wcids[i % wcids.Count];
             var wo = WorldObjectFactory.CreateNewWorldObject(wcid);
             if (wo == null) continue;
-
-            var angle  = _rng.NextDouble() * 2 * Math.PI;
-            var dist   = (float)(_rng.NextDouble() * town.TownSpawnRadius);
-            var ox     = town.TownCenterX + (float)(Math.Cos(angle) * dist);
-            var oy     = town.TownCenterY + (float)(Math.Sin(angle) * dist);
-            var facing = (float)(_rng.NextDouble() * Math.PI * 2);
-
-            wo.Location = new Position(town.TownCenterObjCellId, ox, oy, town.TownCenterZ,
-                0f, 0f, (float)Math.Sin(facing / 2), (float)Math.Cos(facing / 2));
-            wo.Location.LandblockId = new LandblockId(wo.Location.GetCell());
-
+            wo.Location = pos;
             try
             {
-                if (LandblockManager.AddObject(wo))
+                if (lb.AddWorldObject(wo))
                     result.Add(wo);
             }
             catch (Exception ex)

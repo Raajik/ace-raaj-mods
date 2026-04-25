@@ -67,6 +67,26 @@ public class Settings
     public string ReinforcementXpBonusMaxDoc { get; init; } = "XP bonus multiplier upper bound for reinforcement kills.";
     public float ReinforcementXpBonusMax { get; set; } = 2.0f;
 
+    [JsonPropertyName("// ReinforcementGrowthEnabled")]
+    public string ReinforcementGrowthEnabledDoc { get; init; } = "When true, every reinforcement generation grows by ReinforcementGrowthPercent compounded per depth (1.3^depth).";
+    public bool ReinforcementGrowthEnabled { get; set; } = true;
+
+    [JsonPropertyName("// ReinforcementGrowthPercent")]
+    public string ReinforcementGrowthPercentDoc { get; init; } = "Compounded growth per reinforcement generation (0.30 = 30% per spawn, so gen 2 = 69% stronger than original).";
+    public float ReinforcementGrowthPercent { get; set; } = 0.30f;
+
+    [JsonPropertyName("// ReinforcementGrowthMaxMultiplier")]
+    public string ReinforcementGrowthMaxMultiplierDoc { get; init; } = "Cap on total reinforcement growth multiplier (e.g. 5.0 = 5× max).";
+    public float ReinforcementGrowthMaxMultiplier { get; set; } = 5.0f;
+
+    [JsonPropertyName("// ReinforcementCreatureExDepthThreshold")]
+    public string ReinforcementCreatureExDepthThresholdDoc { get; init; } = "Reinforcement chain depth at which CreatureEx champions start spawning (e.g. 3 = 3rd generation).";
+    public int ReinforcementCreatureExDepthThreshold { get; set; } = 3;
+
+    [JsonPropertyName("// ReinforcementCreatureExChanceAtThreshold")]
+    public string ReinforcementCreatureExChanceAtThresholdDoc { get; init; } = "Chance (0–1) to spawn CreatureEx once depth threshold is reached. 1.0 = always.";
+    public float ReinforcementCreatureExChanceAtThreshold { get; set; } = 1.0f;
+
     [JsonPropertyName("// ChaosReinforcementGrowthEnabled")]
     public string ChaosReinforcementGrowthEnabledDoc { get; init; } = "When true, reinforcements triggered by chaos-mode players grow in power per proc instead of shrinking.";
     public bool ChaosReinforcementGrowthEnabled { get; set; } = true;

@@ -1,27 +1,43 @@
 {
-  "// AutoLoot": "Reading order: every // key is documentation; real settings follow in the same order. DebugLogging through NoDuplicateNames.",
-  "// DebugLogging": "When true, logs PostGenerateTreasure entry and early-return reasons to Ace_Log (verbose; disable after debugging).",
-  "// DepositLootedCurrencyToBank": "When true, looted pyreal stacks and trade notes are credited to banked pyreals (PropertyInt64) instead of inventory.",
-  "// BankCashProperty": "Must match LeyLineLedger Settings.CashProperty when using that mod (default 39999).",
-  "// LootProfilePath": "Folder for .utl loot profiles. Default empty: PatchClass sets Path.Combine(ModPath, \"LootProfiles\") after load. Override to any server path; /autoloot creates the folder if missing.",
-  "// DefaultActiveProfiles": "Shipped default: the five LootProfiles/*.utl files (allowlist for /autoloot and new characters). Empty []: bundled list in code for first login, /autoloot lists every .utl on disk — see README.",
-  "// DefaultProfile": "Legacy single file if you want one explicit default; leave empty with empty DefaultActiveProfiles for disk-wide menu + bundled first-login profile set.",
-  "// NoDuplicateNames": "Name substrings (case-insensitive): if an item matches and the player already has same WCID in inventory, skip loot — reduces quest-timer bypass via stockpiling. Add more fragments as needed.",
+  "// AutoLoot": "Reading order: every // key is documentation; real settings follow in the same order.",
+  "// DebugLogging": "When true, logs PostGenerateTreasure entry and early-return reasons to Ace_Log.",
   "DebugLogging": false,
+  "// DepositLootedCurrencyToBank": "When true, looted pyreal stacks and trade notes are credited to banked pyreals.",
   "DepositLootedCurrencyToBank": true,
+  "// BankCashProperty": "Must match LeyLineLedger Settings.CashProperty when using that mod (default 39999).",
   "BankCashProperty": 39999,
+  "// LootProfilePath": "Folder for .utl loot profiles. Default empty: PatchClass sets Path.Combine(ModPath, \"LootProfiles\").",
   "LootProfilePath": "",
+  "// DefaultActiveProfiles": "Shipped default: Currency, Trophies, BetterKeys (locked until 10 key unlocks), AutoSalvage (locked until 50 salvages).",
   "DefaultActiveProfiles": [
-    "BetterKeys.utl",
     "Currency.utl",
-    "PyrealMotes.utl",
-    "Rares.utl",
-    "Trophies.utl"
+    "Trophies.utl",
+    "BetterKeys.utl",
+    "AutoSalvage.utl"
   ],
+  "// DefaultProfile": "Legacy single file; leave empty.",
   "DefaultProfile": "",
+  "// NoDuplicateNames": "Name substrings (case-insensitive): skip loot if player already owns same WCID.",
   "NoDuplicateNames": [
     "Pincer",
     "Tusk",
     "Matron"
-  ]
+  ],
+  "// KeysUnlockThreshold": "Objects unlocked with keys to unlock BetterKeys.utl and key banking.",
+  "KeysUnlockThreshold": 10,
+  "// LockpickUnlockThreshold": "Objects unlocked with lockpicks to unlock lockpick corpse-loot banking.",
+  "LockpickUnlockThreshold": 10,
+  "// SalvageUnlockThreshold": "Items manually salvaged to unlock AutoSalvage.utl.",
+  "SalvageUnlockThreshold": 50,
+  "// KeyBankProperties": "WCID to PropertyInt64 for key banking (must match LeyLineLedger).",
+  "KeyBankProperties": {
+    "6876": 40250,
+    "24477": 40500,
+    "38456": 40750,
+    "48746": 41000
+  },
+  "// LockpickBankProperty": "PropertyInt64 for banked lockpick durability.",
+  "LockpickBankProperty": 40130,
+  "// LockpickLootBankPercent": "Percent of lockpick structure banked from corpse loot (0.10 = 10%).",
+  "LockpickLootBankPercent": 0.10
 }

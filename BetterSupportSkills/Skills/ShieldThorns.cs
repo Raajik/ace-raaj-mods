@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Linq;
 using ACE.Entity;
 using ACE.Entity.Enum;
@@ -10,12 +11,10 @@ namespace BetterSupportSkills.Skills;
 [HarmonyPatchCategory(nameof(Features.ShieldSkill))]
 internal static class ShieldThorns
 {
-    private const bool EnableDebug = false;
-
+    [Conditional("DEBUG")]
     private static void DebugLog(string msg)
     {
-        if (EnableDebug)
-            ModManager.Log($"[BSS ShieldThorns] {msg}", ModManager.LogLevel.Info);
+        ModManager.Log($"[BSS ShieldThorns] {msg}", ModManager.LogLevel.Info);
     }
 
     public static void PostfixCalculateDamage(DamageEvent __result, Creature attacker, Creature defender, WorldObject damageSource)
@@ -32,9 +31,13 @@ internal static class ShieldThorns
         if (defender == null || attacker == null)
             return;
 
-        DebugLog($"DamageEvent: attacker={attacker?.Name}, defender={defender?.Name}, Weapon={__result.Weapon?.GetType().Name}, isSpellProjectile={__result.Weapon is SpellProjectile}, CombatType={__result.CombatType}");
+        DebugLog($"DamageEvent: attacker={attacker!.Name}, defender={defender!.Name}, Weapon={__result.Weapon?.GetType().Name}, isSpellProjectile={__result.Weapon is SpellProjectile}, CombatType={__result.CombatType}");
 
         if (defender is not Player playerDefender)
+            return;
+
+        var profile = PlayerProfileStore.GetOrCreate(playerDefender.Guid.Full);
+        if (!profile.ThornsEnabled)
             return;
 
         var shieldSkill = playerDefender.GetCreatureSkill(Skill.Shield);
@@ -46,13 +49,12 @@ internal static class ShieldThorns
             return;
 
         var shield = playerDefender.GetEquippedShield();
-        bool hasShield = shield != null;
         
-        DebugLog($"Shield check: hasShield={hasShield}");
+        DebugLog($"Shield check: hasShield={shield != null}");
 
-        if (hasShield)
+        if (shield is not null)
         {
-            bool hasMagicAbsorbing = shield.GetAbsorbMagicDamage() != null;
+            bool hasMagicAbsorbing = shield.GetAbsorbMagicDamage() is not null;
             
             DebugLog($"Magic shield check: hasMagicAbsorbing={hasMagicAbsorbing}");
             
@@ -81,7 +83,11 @@ internal static class ShieldThorns
         bool isEvade = __result.Evaded;
         bool isBlock = __result.ShieldMod < 1.0f && __result.ShieldMod >= 0.0f;
 
-        if (!isEvade && !isBlock)
+        bool isCrusader = SummoningClasses.GetPlayerClass(playerDefender) == "Crusader";
+        var crusaderSettings = PatchClass.Settings?.CombatClasses?.Crusader;
+        bool thornsOnAllHits = isCrusader && (crusaderSettings?.ThornsOnAllHits ?? false);
+
+        if (!isEvade && !isBlock && !thornsOnAllHits)
             return;
 
         double basePercent = 0.025;
@@ -94,10 +100,16 @@ internal static class ShieldThorns
             return;
 
         double thornsDamage = shieldSkillValue * basePercent;
-        ApplyThornsDamage(playerDefender, attacker, thornsDamage, isEvade, isBlock);
+
+        if (isCrusader && crusaderSettings != null && crusaderSettings.ThornsMultiplier > 1.0)
+        {
+            thornsDamage *= crusaderSettings.ThornsMultiplier;
+        }
+
+        ApplyThornsDamage(playerDefender, attacker, thornsDamage, isEvade, isBlock, thornsOnAllHits);
     }
 
-    private static void ApplyThornsDamage(Player defender, Creature attacker, double damageAmount, bool isEvade, bool isBlock)
+    private static void ApplyThornsDamage(Player defender, Creature attacker, double damageAmount, bool isEvade, bool isBlock, bool onAllHits = false)
     {
         if (attacker == null || attacker.IsDead)
             return;
@@ -113,13 +125,17 @@ internal static class ShieldThorns
         {
             var totalDamage = attacker.TakeDamage(damageSource, damageType, (float)damageAmount);
 
-            var msg = isEvade
-                ? $"Your shield thorns reflect {totalDamage} damage from the evaded attack!"
-                : $"Your shield thorns reflect {totalDamage} damage from the blocked attack!";
+            string msg;
+            if (onAllHits && !isEvade && !isBlock)
+                msg = $"Your crusader's wrath reflects {totalDamage} damage!";
+            else
+                msg = isEvade
+                    ? $"Your shield thorns reflect {totalDamage} damage from the evaded attack!"
+                    : $"Your shield thorns reflect {totalDamage} damage from the blocked attack!";
 
             defender.SendMessage(msg);
 
-            DebugLog($"Shield thorns dealt {totalDamage} to {attacker.Name} (evade:{isEvade}, block:{isBlock}, amount:{damageAmount})");
+            DebugLog($"Shield thorns dealt {totalDamage} to {attacker.Name} (evade:{isEvade}, block:{isBlock}, allHits:{onAllHits}, amount:{damageAmount})");
         }
         catch (Exception ex)
         {
@@ -162,5 +178,21 @@ internal static class ShieldThorns
         
         var skillWord = shieldSkill.AdvancementClass == SkillAdvancementClass.Specialized ? "specialized" : "trained";
         playerDefender.SendMessage($"({(int)damageNegated} damage negated by {skillWord} Shield skill)");
+    }
+
+    [CommandHandler("thorns", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0,
+        "Toggle shield thorns reflection damage on or off.",
+        "Usage: /thorns")]
+    public static void HandleThorns(Session session, params string[] parameters)
+    {
+        if (session?.Player is not Player player)
+            return;
+
+        var profile = PlayerProfileStore.GetOrCreate(player.Guid.Full);
+        profile.ThornsEnabled = !profile.ThornsEnabled;
+        PlayerProfileStore.Save(player.Guid.Full, profile);
+
+        string state = profile.ThornsEnabled ? "ON" : "OFF";
+        player.SendMessage($"Shield thorns: {state}", ChatMessageType.System);
     }
 }

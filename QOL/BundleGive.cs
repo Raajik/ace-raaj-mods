@@ -129,8 +129,9 @@ internal static class BundleGive
             {
                 var wo = WorldObjectFactory.CreateNewWorldObject(wcid);
                 if (wo == null) break;
-                int take = wo is Stackable ? Math.Min(remaining, wo.MaxStackSize ?? 1) : 1;
-                if (wo is Stackable) wo.SetStackSize(take);
+                int maxStack = wo.MaxStackSize ?? 1;
+                int take = maxStack > 1 ? Math.Min(remaining, maxStack) : 1;
+                if (maxStack > 1) wo.SetStackSize(take);
                 __instance.TryCreateInInventoryWithNetworking(wo);
                 remaining -= take;
             }

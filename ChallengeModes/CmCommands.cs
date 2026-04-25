@@ -14,7 +14,7 @@ public static class CmCommands
         + "/cm alt                     - Alternate Leveling (level 1 only)\n"
         + "/cm levels                  - view alternate leveling spend\n"
         + "/cm refund                  - refund unspent alt levels\n"
-        + "/cm leave                   - leave ALL modes and reset to level 1\n"
+        + "/cm quit                    - reset to level 1 and leave all challenge modes\n"
         + "/cm who                     - challenge players currently online";
 
     [CommandHandler("cm", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
@@ -48,8 +48,9 @@ public static class CmCommands
             case "?":
                 player.SendMessage(HelpText);
                 return;
+            case "quit":
             case "leave":
-                CmFreshStart.TryEnqueue(player);
+                CmQuit.TryEnqueue(player);
                 return;
             case "levels":
             case "refund":
@@ -157,6 +158,7 @@ public static class CmCommands
 
         player.SetProperty(FakeBool.Ironman, true);
         player.SetProperty(FakeBool.Hardcore, false);
+        PatchClass.OnChallengeStarted(player);
         RefreshChallengeRadar(player);
         player.SendMessage("SSF is now ON.");
     }
@@ -185,6 +187,7 @@ public static class CmCommands
         player.SetProperty(FakeInt.HardcoreLives, s.HardcoreStartingLives);
         player.SetProperty(FakeFloat.TimestampLastPlayerDeath, Time.GetUnixTime());
         player.SetProperty(FakeBool.Hardcore, true);
+        PatchClass.OnChallengeStarted(player);
         RefreshChallengeRadar(player);
         if (!combo)
             player.SendMessage($"Hardcore is ON - {s.HardcoreStartingLives} lives.");
@@ -223,6 +226,7 @@ public static class CmCommands
         }
 
         PatchClass.SetAlternateLevelingEnabled(player, true);
+        PatchClass.OnChallengeStarted(player);
         player.SendMessage("Alternate Leveling is ON. Use /cm levels to track spend, /cm refund to recover unspent levels.");
     }
 

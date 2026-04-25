@@ -14,7 +14,7 @@ internal static class MeleeLifeSpellProc
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Player), nameof(Player.DamageTarget), new Type[] { typeof(Creature), typeof(WorldObject) })]
-    public static void PostDamageTarget(Creature target, WorldObject damageSource, ref Player __instance, ref DamageEvent __result)
+    public static void PostDamageTarget(Creature target, WorldObject damageSource, Player __instance, ref DamageEvent __result)
     {
         if (__result is null || !__result.HasDamage || target == null || damageSource == null)
             return;

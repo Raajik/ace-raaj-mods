@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Linq;
 using ACE.Entity;
 using ACE.Server.Entity;
@@ -14,12 +15,11 @@ namespace BetterSupportSkills.Skills;
 internal static class DirtyFightingBuffs
 {
     public static bool CustomSpellsLoaded { get; private set; }
-    private const bool EnableDebug = false;
 
+    [Conditional("DEBUG")]
     private static void DebugLog(string msg)
     {
-        if (EnableDebug)
-            ModManager.Log($"[BSS DF] {msg}", ModManager.LogLevel.Info);
+        ModManager.Log($"[BSS DF] {msg}", ModManager.LogLevel.Info);
     }
 
     private static readonly int[] EnhancedDefenseDebuff = { 90000007, 90000008 };
@@ -36,6 +36,41 @@ internal static class DirtyFightingBuffs
         return true;
     }
 
+    // -- 100% Application Rate ------------------------------------------
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Creature), nameof(Creature.FightDirty))]
+    public static bool PrefixFightDirty(Creature __instance, WorldObject target, WorldObject weapon)
+    {
+        var settings = PatchClass.Settings;
+        if (settings?.EnableDirtyFighting != true)
+            return true; // Let vanilla handle it
+
+        var dirtySkill = __instance.GetCreatureSkill(Skill.DirtyFighting);
+        if (dirtySkill.AdvancementClass < SkillAdvancementClass.Trained)
+            return true;
+
+        var creatureTarget = target as Creature;
+        if (creatureTarget == null)
+            return true;
+
+        // Always apply based on attack height (100% rate)
+        switch (__instance.AttackHeight)
+        {
+            case ACE.Entity.Enum.AttackHeight.Low:
+                __instance.FightDirty_ApplyLowAttack(creatureTarget, weapon);
+                break;
+            case ACE.Entity.Enum.AttackHeight.Medium:
+                __instance.FightDirty_ApplyMediumAttack(creatureTarget, weapon);
+                break;
+            case ACE.Entity.Enum.AttackHeight.High:
+                __instance.FightDirty_ApplyHighAttack(creatureTarget, weapon);
+                break;
+        }
+
+        return false; // Skip original chance-based logic
+    }
+
     private static void CheckCustomSpells()
     {
         if (CustomSpellsLoaded) return;
@@ -43,7 +78,7 @@ internal static class DirtyFightingBuffs
         try
         {
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            var customSpellsAsm = assemblies.FirstOrDefault(a => a.FullName.StartsWith("CustomSpells"));
+            var customSpellsAsm = assemblies.FirstOrDefault(a => a.FullName?.StartsWith("CustomSpells") == true);
             
             if (customSpellsAsm != null)
             {
@@ -51,7 +86,7 @@ internal static class DirtyFightingBuffs
                 CustomSpellsLoaded = patchType != null;
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             CustomSpellsLoaded = false;
         }
@@ -140,6 +175,16 @@ internal static class DirtyFightingBuffs
             }
 
             var addResult = target.EnchantmentManager.Add(spell, attacker, weapon);
+
+            // Rogue debuff amplification
+            if (addResult.Enchantment != null && SummoningClasses.GetPlayerClass(attacker) == "Rogue")
+            {
+                var rogueMult = PatchClass.Settings?.CombatClasses?.Rogue?.DebuffMultiplier ?? 1.0;
+                if (rogueMult > 1.0)
+                {
+                    addResult.Enchantment.StatModValue = (float)(addResult.Enchantment.StatModValue * rogueMult);
+                }
+            }
 
             if (target is Player playerTarget)
                 playerTarget.Session.Network.EnqueueSend(new GameEventMagicUpdateEnchantment(playerTarget.Session, new Enchantment(playerTarget, addResult.Enchantment)));

@@ -8,9 +8,12 @@ namespace BetterSupportSkills.Skills;
 [HarmonyPatchCategory(nameof(Features.SneakAttackSkill))]
 internal static class SneakAttackBuffs
 {
+    [ThreadStatic]
+    static bool _isInSneakAttackCast;
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Player), nameof(Player.DamageTarget), new Type[] { typeof(Creature), typeof(WorldObject) })]
-    public static void PostDamageTargetWeapon(Creature target, WorldObject damageSource, ref Player __instance, ref DamageEvent __result)
+    public static void PostDamageTargetWeapon(Creature target, WorldObject damageSource, Player __instance, ref DamageEvent __result)
     {
         if (__result is null || !__result.HasDamage || target == null)
             return;
@@ -50,30 +53,48 @@ internal static class SneakAttackBuffs
     public static void PostHandleCastSpellSneak(Spell spell, WorldObject target, WorldObject? itemCaster, WorldObject? weapon,
         bool isWeaponSpell, bool fromProc, bool equip, WorldObject? __instance = null)
     {
-        if (__instance is not Player player)
+        if (_isInSneakAttackCast)
             return;
 
-        if (PatchClass.Settings is not { EnableSneakAttack: true } s)
-            return;
+        _isInSneakAttackCast = true;
+        try
+        {
+            if (__instance is not Player player)
+                return;
 
-        if (!spell.IsHarmful)
-            return;
+            if (spell == null)
+                return;
 
-        var sneak = player.GetCreatureSkill(Skill.SneakAttack);
-        if (sneak.AdvancementClass < SkillAdvancementClass.Trained)
-            return;
+            if (PatchClass.Settings is not { EnableSneakAttack: true } s)
+                return;
 
-        if (target is Player && !s.SneakAttack.AllowPlayerSpellVictims)
-            return;
+            if (!spell.IsHarmful)
+                return;
 
-        int extra = sneak.AdvancementClass == SkillAdvancementClass.Specialized
-            ? s.SneakAttack.ExtraHarmfulSpellCastsSpecialized
-            : s.SneakAttack.ExtraHarmfulSpellCastsTrained;
+            var sneak = player.GetCreatureSkill(Skill.SneakAttack);
+            if (sneak == null || sneak.AdvancementClass < SkillAdvancementClass.Trained)
+                return;
 
-        if (extra <= 0 || target == null)
-            return;
+            if (target is Player && !s.SneakAttack.AllowPlayerSpellVictims)
+                return;
 
-        for (int i = 0; i < extra; i++)
-            BssPlayerPaidSpellCast.TryCastSpellWithRedirects_PlayerMana(player, spell, target);
+            int extra = sneak.AdvancementClass == SkillAdvancementClass.Specialized
+                ? s.SneakAttack.ExtraHarmfulSpellCastsSpecialized
+                : s.SneakAttack.ExtraHarmfulSpellCastsTrained;
+
+            if (extra <= 0 || target == null)
+                return;
+
+            for (int i = 0; i < extra; i++)
+                BssPlayerPaidSpellCast.TryCastSpellWithRedirects_PlayerMana(player, spell, target);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS SneakAttack] PostHandleCastSpellSneak error: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+        finally
+        {
+            _isInSneakAttackCast = false;
+        }
     }
 }

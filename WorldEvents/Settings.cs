@@ -255,13 +255,21 @@ public sealed class Settings
     public string BonusQuestGrantXpDoc { get; init; } = "When true, grant bonus XP on each bonus quest completion.";
     public bool BonusQuestGrantXp { get; set; } = true;
 
-    [JsonPropertyName("// BonusQuestXpFraction")]
-    public string BonusQuestXpFractionDoc { get; init; } = "Base fraction of XP-to-next-level per completion (before multiplier). Default 0.10 = 10%.";
-    public double BonusQuestXpFraction { get; set; } = 0.10;
+    [JsonPropertyName("// BonusQuestFirstCompletionFraction")]
+    public string BonusQuestFirstCompletionFractionDoc { get; init; } = "Fraction of XP-to-next-level for the player's 1st bonus quest completion in the window. Default 0.20 = 20%.";
+    public double BonusQuestFirstCompletionFraction { get; set; } = 0.20;
 
-    [JsonPropertyName("// BonusQuestXpMultiplier")]
-    public string BonusQuestXpMultiplierDoc { get; init; } = "Multiplier applied on top of BonusQuestXpFraction. Default 10 → total 100% of XP-to-next-level per completion.";
-    public double BonusQuestXpMultiplier { get; set; } = 10.0;
+    [JsonPropertyName("// BonusQuestSecondCompletionFraction")]
+    public string BonusQuestSecondCompletionFractionDoc { get; init; } = "Fraction for the 2nd completion. Default 0.15 = 15%.";
+    public double BonusQuestSecondCompletionFraction { get; set; } = 0.15;
+
+    [JsonPropertyName("// BonusQuestThirdCompletionFraction")]
+    public string BonusQuestThirdCompletionFractionDoc { get; init; } = "Fraction for the 3rd completion. Default 0.10 = 10%.";
+    public double BonusQuestThirdCompletionFraction { get; set; } = 0.10;
+
+    [JsonPropertyName("// BonusQuestRemainingCompletionFraction")]
+    public string BonusQuestRemainingCompletionFractionDoc { get; init; } = "Fraction for 4th and subsequent completions. Default 0.05 = 5%.";
+    public double BonusQuestRemainingCompletionFraction { get; set; } = 0.05;
 
     [JsonPropertyName("// BonusQuestIncludeUnknownMaxSolves")]
     public string BonusQuestIncludeUnknownMaxSolvesDoc { get; init; } = "When true, quests not found in the world DB (unknown repeat limits) are eligible for selection.";

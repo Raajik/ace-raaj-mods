@@ -41,9 +41,17 @@ public static class LoremasterExtensions
     {
         if (PatchClass.Settings is null || player.QuestManager is null) return;
 
-        var basePoints = PatchClass.Settings.UseAccountWideQuests
-            ? player.CalculateAccountQuestPoints()
-            : player.CalculateQuestPoints();
+        float basePoints;
+        if (ChallengeModesActiveBridge.PlayerHasActiveChallenge(player))
+        {
+            basePoints = (float)(player.GetProperty(LMFloat.ChallengeRunQuestPoints) ?? 0f);
+        }
+        else
+        {
+            basePoints = PatchClass.Settings.UseAccountWideQuests
+                ? player.CalculateAccountQuestPoints()
+                : player.CalculateQuestPoints();
+        }
 
         basePoints *= GetChallengeModeQuestPointsScale(player);
 
@@ -158,8 +166,9 @@ public static class LoremasterExtensions
         var augF = Math.Max(0.0, s.AugmentXpMultiplier);
         var enF = Math.Max(0.0, player.GetEnlightenmentMultiplierFactor());
         var cmF = Math.Max(0.0, s.ChallengeModeXpMultiplier);
+        var msF = Math.Max(0.0, 1.0 + (player.GetProperty(LMFloat.AccountMilestoneBonus) ?? 0f));
 
-        return baseF * qpF * eqF * augF * enF * cmF;
+        return baseF * qpF * eqF * augF * enF * cmF * msF;
     }
 
     public static double GetQuestCooldownReduction(this Player player)
@@ -474,55 +483,6 @@ public static class LoremasterExtensions
             }
         }
 
-        player.RecalcAndStoreTier();
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Achievement Tier
-    // ─────────────────────────────────────────────────────────────────────────
-
-    public static int GetProgressPoints(this Player player)
-    {
-        var s = PatchClass.Settings;
-        var questCount = s?.UseAccountWideQuests == true
-            ? player.GetAccountUniqueQuestCount()
-            : player.QuestManager?.GetQuests().Count(q => q.HasSolves()) ?? 0;
-
-        var killsEquiv = 0;
-        var killDiv = Math.Max(1, s?.KillsPerQuestEquivalent ?? 100);
-        if (WorldEventsHuntBridge.TryGetTotalLifetimeKills(player, out var kills))
-            killsEquiv = (int)(kills / killDiv);
-
-        return questCount + killsEquiv;
-    }
-
-    static int CalcTierFromPoints(int points, Settings s)
-    {
-        var thresholds = s.AchievementTierThresholds;
-        int tier = 0;
-        for (int i = 0; i < thresholds.Count; i++)
-            if (points >= thresholds[i]) tier = i + 1;
-        return tier;
-    }
-
-    public static void RecalcAndStoreTier(this Player player)
-    {
-        var s = PatchClass.Settings;
-        if (s is null || !s.EnableAchievementTiers) return;
-
-        var points = player.GetProgressPoints();
-        var newTier = CalcTierFromPoints(points, s);
-        var oldTier = player.GetProperty(LMInt.AchievementTier) ?? 0;
-
-        if (newTier <= oldTier) return;
-
-        player.SetProperty(LMInt.AchievementTier, newTier);
-        var threshold = newTier <= s.AchievementTierThresholds.Count
-            ? s.AchievementTierThresholds[newTier - 1] : points;
-        player.SendMessage(
-            $"[Loremaster] Achievement Tier {newTier} unlocked! ({points} progress points — {threshold} required). New features are available in /autoloot and server QOL.",
-            ChatMessageType.Broadcast);
-        ModManager.Log($"[Loremaster] {player.Name} reached Achievement Tier {newTier} ({points} pts).", ModManager.LogLevel.Info);
     }
 
     public static void UpdateAchievementPoolBonus(this Player player, double contribution)

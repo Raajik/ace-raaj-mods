@@ -40,6 +40,42 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         }
     }
 
+    static bool _vendorLootRotationPatchApplied;
+
+    void TryApplyVendorLootRotationPatch()
+    {
+        if (_vendorLootRotationPatchApplied) return;
+        if (!Settings.EnableVendorLootRotation) return;
+
+        try
+        {
+            var loadInventory = AccessTools.Method(typeof(Vendor), "LoadInventory");
+            if (loadInventory == null)
+            {
+                ModManager.Log("[QOL] Vendor.LoadInventory method not found; vendor loot rotation patch skipped.", ModManager.LogLevel.Error);
+                return;
+            }
+
+            var postfix = AccessTools.Method(typeof(VendorLootRotation), nameof(VendorLootRotation.PostLoadInventory));
+            if (postfix == null)
+            {
+                ModManager.Log("[QOL] VendorLootRotation.PostLoadInventory method not found.", ModManager.LogLevel.Error);
+                return;
+            }
+
+            var harmonyMethod = new HarmonyMethod(postfix);
+            harmonyMethod.priority = 200;
+            ModC.Harmony?.Patch(loadInventory, null, harmonyMethod, null);
+
+            _vendorLootRotationPatchApplied = true;
+            ModManager.Log("[QOL] VendorLootRotation patch applied (Vendor.LoadInventory postfix).", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[QOL] VendorLootRotation patch failed: {ex}", ModManager.LogLevel.Error);
+        }
+    }
+
     public override void Start()
     {
         base.Start();
@@ -52,6 +88,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         RegisterEnabledPatchCategories();
         CollectorsAcceptAll.Initialize();
         VendorLootRotation.Initialize(Settings);
+        TryApplyVendorLootRotationPatch();
         ApplyWorldOpenSideEffects();
     }
 
@@ -401,6 +438,30 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         }
         else
             player.SendMessage($"Your luminance was already the max or a max is not set.");
+    }
+
+    [CommandHandler("wipe", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld, 1,
+        "Wipe all non-admin character progress. Usage: /wipe data")]
+    public static void HandleWipe(Session session, params string[] parameters)
+    {
+        if (session?.Player is not Player player)
+            return;
+
+        if (parameters.Length == 0)
+        {
+            player.SendMessage("Usage: /wipe data — wipes all non-admin progress (achievements, quest points, bank balances).");
+            return;
+        }
+
+        var head = parameters[0].Trim().ToLowerInvariant();
+        if (head == "data")
+        {
+            WipeProgress.HandleCommand(player);
+        }
+        else
+        {
+            player.SendMessage("Unknown /wipe subcommand. Use: /wipe data");
+        }
     }
 }
 

@@ -43,9 +43,6 @@ public partial class PatchClass
 
     public static bool PortalHasQuestSolves_Prefix(QuestManager __instance, ref bool __result, object[] __args)
     {
-        if (PatchClass.Settings?.PermanentFlagQuests is not { Count: > 0 } permanent)
-            return true;
-
         if (__instance?.Creature is not Player player)
             return true;
 
@@ -57,14 +54,26 @@ public partial class PatchClass
         if (string.IsNullOrWhiteSpace(questName))
             return true;
 
-        if (!permanent.Contains(questName))
-            return true;
+        // Account-wide quest flag: any character on the account has completed this quest
+        if (player.Account?.AccountId is uint accountId
+            && AccountQuestFlags.HasFlag(accountId, questName))
+        {
+            __result = true;
+            return false;
+        }
 
-        var quest = __instance.GetQuest(questName);
-        if (quest is null || quest.NumTimesCompleted <= 0)
-            return true;
+        // Legacy permanent-flag quests (local-only, no account sync)
+        if (PatchClass.Settings?.PermanentFlagQuests is { Count: > 0 } permanent
+            && permanent.Contains(questName))
+        {
+            var quest = __instance.GetQuest(questName);
+            if (quest is not null && quest.NumTimesCompleted > 0)
+            {
+                __result = true;
+                return false;
+            }
+        }
 
-        __result = true;
-        return false;
+        return true;
     }
 }

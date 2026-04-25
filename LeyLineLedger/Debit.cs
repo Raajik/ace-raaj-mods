@@ -59,8 +59,37 @@ public class Debit
 
         __instance.Writer.Write(Convert.ToUInt32(vendor.DealMagicalItems ?? false));
 
-        __instance.Writer.Write((float)vendor.BuyPrice.GetValueOrDefault());
-        __instance.Writer.Write((float)vendor.SellPrice.GetValueOrDefault());
+        // Apply active price multipliers to displayed rates so client matches server calculations
+        float displayBuyPrice = (float)(vendor.BuyPrice ?? 1.0);
+        float displaySellPrice = (float)(vendor.SellPrice ?? 0.75);
+
+        // Check for WorldEvents Sale multiplier via reflection (avoid hard dependency)
+        try
+        {
+            var weAsm = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.FullName?.StartsWith("WorldEvents") == true);
+            if (weAsm != null)
+            {
+                var patchType = weAsm.GetType("WorldEvents.PatchClass");
+                if (patchType != null)
+                {
+                    var method = patchType.GetMethod("ComputeVendorPriceMultiplier", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+                    if (method != null)
+                    {
+                        var mult = (double)method.Invoke(null, new object[] { vendor })!;
+                        if (mult > 0)
+                        {
+                            displayBuyPrice = (float)((double)displayBuyPrice * mult);
+                            displaySellPrice = (float)((double)displaySellPrice * mult);
+                        }
+                    }
+                }
+            }
+        }
+        catch { /* Ignore reflection errors */ }
+
+        __instance.Writer.Write(displayBuyPrice);
+        __instance.Writer.Write(displaySellPrice);
 
         // the wcid of the alternate currency
         __instance.Writer.Write(vendor.AlternateCurrency ?? 0);
@@ -379,10 +408,11 @@ public class Debit
 
         foreach (var item in purchaseItems)
         {
-            var cost = __instance.GetSellCost(item);
+            // Use GetBuyCost (what player pays to buy) not GetSellCost (what vendor pays when player sells)
+            var cost = __instance.GetBuyCost(item);
 
             // detect rollover?
-            totalPrice += cost;
+            totalPrice += (uint)cost;
         }
 
         // verify player has enough currency
@@ -419,7 +449,7 @@ public class Debit
                 {
                     // Convert Zefs to alt currency items and add to bank
                     player.IncBanked(PatchClass.Settings.AltCurrencyProperty, -zefsNeeded);
-                    player.IncBanked(banked.Prop, zefsNeeded);
+                    player.IncBanked(banked!.Prop, zefsNeeded);
                     player.SendMessage($"Auto-converted {zefsNeeded} Zefs to {zefsNeeded} {banked.Name} for purchase.");
 
                     playerAltCurrency += (int)zefsNeeded;

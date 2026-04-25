@@ -122,7 +122,13 @@ public class Settings
 
     public bool ChallengeAchievementRewardsEnabled { get; set; } = true;
 
-    public List<int> ChallengeAchievementLevels { get; set; } = new() { 50, 100, 150, 200, 225, 250, 275, 300 };
+    public List<int> ChallengeAchievementLevels { get; set; } = new()
+    {
+        50, 100, 150, 200, 250, 275, 300,
+        400, 500, 600, 700, 800, 900, 1000,
+        1250, 1500, 2000, 2500, 3000,
+        4000, 5000, 7500, 9999
+    };
 
     public float ChallengeAchievementPercentEach { get; set; } = 1f;
 
@@ -153,4 +159,8 @@ public class Settings
     public float QuestPointsMultiplierWhileChallengeActive { get; set; } = 2f;
 
     public bool QuestPointsMultiplyPerActiveChallengeTrack { get; set; } = true;
+
+    [JsonPropertyName("// ChallengeAbsorbPassupXp")]
+    public string ChallengeAbsorbPassupXpDoc { get; init; } = "When true, characters in challenge modes do not receive allegiance passup XP; instead, the XP is automatically passed up to their patron.";
+    public bool ChallengeAbsorbPassupXp { get; set; } = true;
 }

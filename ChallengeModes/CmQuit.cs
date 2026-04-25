@@ -7,7 +7,7 @@ namespace ChallengeModes;
 
 internal static class CmQuit
 {
-    internal static void TryEnqueueConfirmation(Player player)
+    internal static void TryEnqueue(Player player)
     {
         var s = PatchClass.Settings;
         if (s is null || !s.Enabled)
@@ -16,15 +16,9 @@ internal static class CmQuit
             return;
         }
 
-        if (!PatchClass.PlayerHasActiveChallenge(player))
-        {
-            player.SendMessage("You do not have any challenge modes active.");
-            return;
-        }
-
         if (s.CmQuitRequiresConfirmation)
         {
-            var text = BuildConfirmText(s);
+            var text = BuildConfirmText(s, PatchClass.PlayerHasActiveChallenge(player));
             if (!player.ConfirmationManager.EnqueueSend(new Confirmation_CmQuit(player.Guid), text))
                 player.SendMessage("You already have a confirmation dialog open.");
         }
@@ -32,7 +26,7 @@ internal static class CmQuit
             Apply(player);
     }
 
-    static string BuildConfirmText(Settings s)
+    static string BuildConfirmText(Settings s, bool hasActiveChallenge)
     {
         var parts = new List<string>();
         if (s.CmQuitRemoveLevel)
@@ -50,11 +44,14 @@ internal static class CmQuit
         if (s.CmQuitUnequipAll)
             parts.Add("your equipped items will be moved to your pack");
 
-        parts.Add("you will leave all challenge modes (permanent lockouts where applicable)");
-        parts.Add("your character gains a small shared XP pool bonus (level ÷ 10000)");
+        if (hasActiveChallenge)
+        {
+            parts.Add("you will leave all challenge modes (permanent lockouts where applicable)");
+            parts.Add("your character gains a small shared XP pool bonus (level \u00f7 10000)");
+        }
 
         var body = parts.Count > 0 ? string.Join(", ", parts) + "." : string.Empty;
-        return $"If you continue, {body} Do you wish to quit all challenge modes?";
+        return $"If you continue, {body} Do you wish to {(hasActiveChallenge ? "quit all challenge modes" : "reset to level 1")}?";
     }
 
     internal static void Apply(Player player)
@@ -63,11 +60,7 @@ internal static class CmQuit
         if (s is null || !s.Enabled)
             return;
 
-        if (!PatchClass.PlayerHasActiveChallenge(player))
-        {
-            player.SendMessage("You do not have any challenge modes active.");
-            return;
-        }
+        var hadActiveChallenge = PatchClass.PlayerHasActiveChallenge(player);
 
         LeyLineLedgerBridge.MergeChallengeBankIntoAccount(player);
 
@@ -95,13 +88,30 @@ internal static class CmQuit
         if (s.CmQuitRemoveLevel)
             Enlightenment.RemoveLevel(player);
 
-        PatchClass.DisableAllChallengeModesForQuit(player);
-        LeyLineLedgerBridge.MirrorAccountToPlayerAfterChallengeCleared(player);
-        CmCommands.RefreshChallengeRadar(player);
+        if (hadActiveChallenge)
+        {
+            PatchClass.DisableAllChallengeModesForQuit(player);
+            LeyLineLedgerBridge.MirrorAccountToPlayerAfterChallengeCleared(player);
+            CmCommands.RefreshChallengeRadar(player);
+        }
+
+        // Clear isolated challenge quest points; account-wide pool takes over on next quest update
+        player.SetProperty((FakeFloat)11017, 0f);
+
         player.SavePlayerToDatabase();
-        player.SendMessage(
-            $"You have quit all challenge modes. Shared enlightenment XP pool increased by {delta:0.####} (from level {capLevel}).",
-            ChatMessageType.Broadcast);
+
+        if (hadActiveChallenge)
+        {
+            player.SendMessage(
+                $"You have quit all challenge modes and been reset to level 1. Shared enlightenment XP pool increased by {delta:0.####}.",
+                ChatMessageType.Broadcast);
+        }
+        else
+        {
+            player.SendMessage(
+                $"You have been reset to level 1. Shared enlightenment XP pool increased by {delta:0.####} (from level {capLevel}).",
+                ChatMessageType.Broadcast);
+        }
     }
 
     static void UnequipAllToPack(Player player)

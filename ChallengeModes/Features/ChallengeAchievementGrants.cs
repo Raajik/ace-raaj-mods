@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using ACE.Entity.Enum;
 using ACE.Server.WorldObjects;
 using HarmonyLib;
 
@@ -6,6 +7,7 @@ namespace ChallengeModes.Features;
 
 // Level-up: furthest progress (ChallengeRunMaxLevel) only increases while a challenge is active; segment completion at cap * (completions+1) resets m to 0.
 // Skill credits: one per achievement level per challenge mode (SSF / hardcore / alternate / aptitude), each once forever; not reset on segment.
+// Milestone bonuses: 0.1% account-wide XP per milestone level per active track (Regular / SSF / Hardcore / Alternate / Aptitude / Chaos).
 // Furthest progress never decreases on death or level loss — only segment completion at the segment cap resets the in-segment counter.
 [HarmonyPatchCategory(nameof(ChallengeRewards))]
 public static class ChallengeAchievementGrants
@@ -16,18 +18,6 @@ public static class ChallengeAchievementGrants
         Hardcore,
         Alternate,
         Aptitude,
-    }
-
-    static FakeInt BitsProperty(SkillCreditTrack track)
-    {
-        return track switch
-        {
-            SkillCreditTrack.Ssf => FakeInt.ChallengeMilestoneSkillBitsSsf,
-            SkillCreditTrack.Hardcore => FakeInt.ChallengeMilestoneSkillBitsHardcore,
-            SkillCreditTrack.Alternate => FakeInt.ChallengeMilestoneSkillBitsAlternate,
-            SkillCreditTrack.Aptitude => FakeInt.ChallengeMilestoneSkillBitsAptitude,
-            _ => FakeInt.ChallengeMilestoneSkillBitsSsf,
-        };
     }
 
     static bool TrackActive(Player player, SkillCreditTrack track)
@@ -54,6 +44,113 @@ public static class ChallengeAchievementGrants
         };
     }
 
+    enum MilestoneTrack
+    {
+        Regular,
+        Ssf,
+        Hardcore,
+        Alternate,
+        Aptitude,
+        Chaos,
+    }
+
+    static bool MilestoneTrackActive(Player player, MilestoneTrack track)
+    {
+        return track switch
+        {
+            MilestoneTrack.Regular => true,
+            MilestoneTrack.Ssf => player.GetProperty(FakeBool.Ironman) == true,
+            MilestoneTrack.Hardcore => player.GetProperty(FakeBool.Hardcore) == true,
+            MilestoneTrack.Alternate => PatchClass.IsAlternateLevelingEnabled(player),
+            MilestoneTrack.Aptitude => PatchClass.IsAptitudeEnabled(player),
+            MilestoneTrack.Chaos => PatchClass.IsChaosEnabled(player),
+            _ => false,
+        };
+    }
+
+    static string MilestoneTrackLabel(MilestoneTrack track)
+    {
+        return track switch
+        {
+            MilestoneTrack.Regular => "Regular",
+            MilestoneTrack.Ssf => "SSF",
+            MilestoneTrack.Hardcore => "Hardcore",
+            MilestoneTrack.Alternate => "Alternate leveling",
+            MilestoneTrack.Aptitude => "Aptitude",
+            MilestoneTrack.Chaos => "Chaos",
+            _ => "?",
+        };
+    }
+
+    // Reflection bridge to AchievementUnlocked (avoids hard project reference)
+    static Func<Player, string, bool>? _hasAchievementRef;
+    static Action<Player, string>? _unlockAchievementRef;
+    static Func<uint, string, bool>? _hasAccountAchievementRef;
+    static Action<uint, string>? _unlockAccountAchievementRef;
+    static Action<uint, float>? _addAccountMilestoneBonusRef;
+
+    static void EnsureAchievementBridge()
+    {
+        if (_hasAchievementRef is not null && _unlockAchievementRef is not null
+            && _hasAccountAchievementRef is not null && _unlockAccountAchievementRef is not null
+            && _addAccountMilestoneBonusRef is not null)
+            return;
+
+        var asm = AppDomain.CurrentDomain.GetAssemblies()
+            .FirstOrDefault(a => a.GetName().Name == "AchievementUnlocked");
+        if (asm is null) return;
+
+        var type = asm.GetType("AchievementUnlocked.AchievementManager");
+        if (type is null) return;
+
+        var hasMethod = type.GetMethod("HasAchievement", new[] { typeof(Player), typeof(string) });
+        var unlockMethod = type.GetMethod("UnlockAchievement", new[] { typeof(Player), typeof(string) });
+        var hasAccountMethod = type.GetMethod("HasAccountAchievement", new[] { typeof(uint), typeof(string) });
+        var unlockAccountMethod = type.GetMethod("UnlockAccountAchievement", new[] { typeof(uint), typeof(string) });
+        var addMilestoneMethod = type.GetMethod("AddAccountMilestoneBonus", new[] { typeof(uint), typeof(float) });
+
+        if (hasMethod is not null)
+            _hasAchievementRef = (Func<Player, string, bool>)Delegate.CreateDelegate(typeof(Func<Player, string, bool>), hasMethod);
+        if (unlockMethod is not null)
+            _unlockAchievementRef = (Action<Player, string>)Delegate.CreateDelegate(typeof(Action<Player, string>), unlockMethod);
+        if (hasAccountMethod is not null)
+            _hasAccountAchievementRef = (Func<uint, string, bool>)Delegate.CreateDelegate(typeof(Func<uint, string, bool>), hasAccountMethod);
+        if (unlockAccountMethod is not null)
+            _unlockAccountAchievementRef = (Action<uint, string>)Delegate.CreateDelegate(typeof(Action<uint, string>), unlockAccountMethod);
+        if (addMilestoneMethod is not null)
+            _addAccountMilestoneBonusRef = (Action<uint, float>)Delegate.CreateDelegate(typeof(Action<uint, float>), addMilestoneMethod);
+    }
+
+    static bool HasAchievement(Player player, string id)
+    {
+        EnsureAchievementBridge();
+        return _hasAchievementRef?.Invoke(player, id) == true;
+    }
+
+    static void UnlockAchievement(Player player, string id)
+    {
+        EnsureAchievementBridge();
+        _unlockAchievementRef?.Invoke(player, id);
+    }
+
+    static bool HasAccountAchievement(uint accountId, string id)
+    {
+        EnsureAchievementBridge();
+        return _hasAccountAchievementRef?.Invoke(accountId, id) == true;
+    }
+
+    static void UnlockAccountAchievement(uint accountId, string id)
+    {
+        EnsureAchievementBridge();
+        _unlockAccountAchievementRef?.Invoke(accountId, id);
+    }
+
+    static void AddAccountMilestoneBonus(uint accountId, float amount)
+    {
+        EnsureAchievementBridge();
+        _addAccountMilestoneBonusRef?.Invoke(accountId, amount);
+    }
+
     sealed class GrantXpSnapshot
     {
         internal int LevelBefore;
@@ -68,9 +165,6 @@ public static class ChallengeAchievementGrants
     public static void PrefixGrantXp(Player __instance)
     {
         if (__instance?.Guid == null)
-            return;
-
-        if (PatchClass.Settings is not { Enabled: true, ChallengeAchievementRewardsEnabled: true })
             return;
 
         SnapshotsByPlayerGuid[__instance.Guid.Full] = new GrantXpSnapshot
@@ -88,9 +182,6 @@ public static class ChallengeAchievementGrants
         if (__instance?.Guid == null)
             return;
 
-        if (PatchClass.Settings is not { } s || !s.Enabled || !s.ChallengeAchievementRewardsEnabled)
-            return;
-
         if (!SnapshotsByPlayerGuid.TryRemove(__instance.Guid.Full, out GrantXpSnapshot? snap))
             return;
 
@@ -98,7 +189,48 @@ public static class ChallengeAchievementGrants
         if (newLevel <= snap.LevelBefore)
             return;
 
-        if (!snap.ChallengeActive)
+        var s = PatchClass.Settings;
+        if (s is null || !s.Enabled)
+            return;
+
+        var achievementLevels = s.ChallengeAchievementLevels;
+        var accountId = __instance.Account?.AccountId ?? 0;
+
+        // ── Milestone bonuses: all characters, all active tracks ──
+        if (accountId != 0 && achievementLevels is not null && achievementLevels.Count > 0)
+        {
+            for (int i = 0; i < achievementLevels.Count; i++)
+            {
+                int ml = achievementLevels[i];
+                if (ml <= 0)
+                    continue;
+
+                if (snap.LevelBefore >= ml || newLevel < ml)
+                    continue;
+
+                foreach (MilestoneTrack track in Enum.GetValues<MilestoneTrack>())
+                {
+                    if (!MilestoneTrackActive(__instance, track))
+                        continue;
+
+                    var achId = $"CmMilestone_{track}_{ml}";
+                    bool wasUnlocked = HasAccountAchievement(accountId, achId);
+                    UnlockAccountAchievement(accountId, achId);
+                    bool isNowUnlocked = HasAccountAchievement(accountId, achId);
+
+                    if (!wasUnlocked && isNowUnlocked)
+                    {
+                        AddAccountMilestoneBonus(accountId, 0.1f);
+                        __instance.SendMessage(
+                            $"{MilestoneTrackLabel(track)} milestone level {ml}: +0.1% account-wide XP bonus.",
+                            ChatMessageType.Broadcast);
+                    }
+                }
+            }
+        }
+
+        // ── Challenge-specific: skill credits + segment tracking ──
+        if (!s.ChallengeAchievementRewardsEnabled || !snap.ChallengeActive)
             return;
 
         int cap = s.ChallengeBonusSegmentCapLevel > 0 ? s.ChallengeBonusSegmentCapLevel : 300;
@@ -108,22 +240,7 @@ public static class ChallengeAchievementGrants
         int m = __instance.GetProperty(FakeInt.ChallengeRunMaxLevel) ?? 0;
         m = Math.Max(m, newLevel);
 
-        var achievementLevels = s.ChallengeAchievementLevels;
-
-        // One-time migration: old single ChallengeMilestoneClaimBits (legacy ACE name) → same bits on all four tracks (no duplicate skill grants).
-        int legacyBits = __instance.GetProperty(FakeInt.ChallengeMilestoneClaimBits) ?? 0;
-        if (legacyBits != 0)
-        {
-            foreach (SkillCreditTrack track in Enum.GetValues<SkillCreditTrack>())
-            {
-                FakeInt prop = BitsProperty(track);
-                int cur = __instance.GetProperty(prop) ?? 0;
-                __instance.SetProperty(prop, cur | legacyBits);
-            }
-
-            __instance.RemoveProperty(FakeInt.ChallengeMilestoneClaimBits);
-        }
-
+        // Skill credits (per challenge track, once each)
         if (achievementLevels is not null && achievementLevels.Count > 0)
         {
             for (int i = 0; i < achievementLevels.Count; i++)
@@ -135,31 +252,31 @@ public static class ChallengeAchievementGrants
                 if (snap.LevelBefore >= ml || newLevel < ml)
                     continue;
 
-                int mask = 1 << i;
-                int granted = 0;
-                var credited = new List<string>();
+                var achId = $"CmReach{ml}";
+                bool wasUnlocked = HasAchievement(__instance, achId);
+                UnlockAchievement(__instance, achId);
+                bool isNowUnlocked = HasAchievement(__instance, achId);
 
-                foreach (SkillCreditTrack track in Enum.GetValues<SkillCreditTrack>())
+                if (!wasUnlocked && isNowUnlocked)
                 {
-                    if (!TrackActive(__instance, track))
-                        continue;
+                    int granted = 0;
+                    var credited = new List<string>();
 
-                    FakeInt prop = BitsProperty(track);
-                    int tb = __instance.GetProperty(prop) ?? 0;
-                    if ((tb & mask) != 0)
-                        continue;
+                    foreach (SkillCreditTrack track in Enum.GetValues<SkillCreditTrack>())
+                    {
+                        if (!TrackActive(__instance, track))
+                            continue;
 
-                    tb |= mask;
-                    __instance.SetProperty(prop, tb);
-                    granted++;
-                    credited.Add(TrackLabel(track));
-                }
+                        granted++;
+                        credited.Add(TrackLabel(track));
+                    }
 
-                if (granted > 0)
-                {
-                    __instance.AddSkillCredits(granted);
-                    __instance.SendMessage(
-                        $"Challenge achievement (level {ml}): +{granted} skill credit(s) ({string.Join(", ", credited)}). One per active challenge mode, once each.");
+                    if (granted > 0)
+                    {
+                        __instance.AddSkillCredits(granted);
+                        __instance.SendMessage(
+                            $"Challenge achievement (level {ml}): +{granted} skill credit(s) ({string.Join(", ", credited)}). One per active challenge mode, once each.");
+                    }
                 }
             }
         }

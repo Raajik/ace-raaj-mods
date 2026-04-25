@@ -31,6 +31,7 @@ public enum Features
     KillXpMessage,
     BundleGive,
     VendorPriceInflation,
+    NoDeathDrops,
 }
 
 public class Settings
@@ -107,7 +108,7 @@ public class Settings
     public bool EnablePetExShareDamage { get; set; } = true;
 
     [JsonPropertyName("// EnableOfflineSwear")]
-    public string EnableOfflineSwearDoc { get; init; } = "Chat command /offlineswear and related offline-name filter behavior.";
+    public string EnableOfflineSwearDoc { get; init; } = "Chat command /swear and related allegiance auto-accept behavior.";
     public bool EnableOfflineSwear { get; set; } = true;
 
     [JsonPropertyName("// EnableCollectorsAcceptAll")]
@@ -183,6 +184,14 @@ public class Settings
     public string LootValueMultiplierDoc { get; init; } = "Multiplies loot item values (0.1 = 10% of original value, 0.01 = 1%). Applied after generation to all loot items.";
     public double LootValueMultiplier { get; set; } = 0.1;
 
+    [JsonPropertyName("// LootValueMaxCap")]
+    public string LootValueMaxCapDoc { get; init; } = "Absolute maximum value in pyreals for any loot item after multiplier. 0 = disabled (no cap).";
+    public int LootValueMaxCap { get; set; } = 500;
+
+    [JsonPropertyName("// LootMagicalItemExtraReduction")]
+    public string LootMagicalItemExtraReductionDoc { get; init; } = "Additional multiplier for magical items (cantrips, imbues). Stacks with LootValueMultiplier. 0.5 = half the already-reduced value.";
+    public double LootMagicalItemExtraReduction { get; set; } = 0.3;
+
     [JsonPropertyName("// LootAmountReduction")]
     public string LootAmountReductionDoc { get; init; } = "Loot amount multiplier: 0.0-1.0 reduces drops (0.7 = keep 30%%), >1.0 adds extra items (1.5 = 50%% more, WIP).";
     public double LootAmountReduction { get; set; } = 0.7;
@@ -207,9 +216,13 @@ public class Settings
     public string VendorLootWcidsDoc { get; init; } = "List of vendor WCIDs for whitelist/blacklist mode.";
     public List<uint> VendorLootWcids { get; set; } = new();
 
-    [JsonPropertyName("// VendorLootItemsPerTier")]
-    public string VendorLootItemsPerTierDoc { get; init; } = "Number of items to generate per tier during rotation.";
-    public int VendorLootItemsPerTier { get; set; } = 10;
+    [JsonPropertyName("// VendorLootItemsPerTierMin")]
+    public string VendorLootItemsPerTierMinDoc { get; init; } = "Minimum items to generate per tier during rotation.";
+    public int VendorLootItemsPerTierMin { get; set; } = 4;
+
+    [JsonPropertyName("// VendorLootItemsPerTierMax")]
+    public string VendorLootItemsPerTierMaxDoc { get; init; } = "Maximum items to generate per tier during rotation.";
+    public int VendorLootItemsPerTierMax { get; set; } = 9;
 
     [JsonPropertyName("// VendorLootMinValue")]
     public string VendorLootMinValueDoc { get; init; } = "Minimum item value in pyreals for vendor loot.";
@@ -279,9 +292,21 @@ public class Settings
     public string EnableVendorPriceInflationDoc { get; init; } = "When true, multiplies the buy rate vendors charge players by VendorBuyRateMultiplier. Does not affect how much vendors pay for items sold to them.";
     public bool EnableVendorPriceInflation { get; set; } = false;
 
+    [JsonPropertyName("// EnableNoDeathDrops")]
+    public string EnableNoDeathDropsDoc { get; init; } = "When true, items never drop on death (including slippery/dropped-on-death items). Physical coins also do not drop. LeyLineLedger banked pyreals are unaffected.";
+    public bool EnableNoDeathDrops { get; set; } = true;
+
     [JsonPropertyName("// VendorBuyRateMultiplier")]
     public string VendorBuyRateMultiplierDoc { get; init; } = "Multiplier on vendor purchase prices (e.g. 5.0 = 5× normal cost). Only applies when EnableVendorPriceInflation is true.";
     public double VendorBuyRateMultiplier { get; set; } = 5.0;
+
+    [JsonPropertyName("// EnableVendorSpecialItemInflation")]
+    public string EnableVendorSpecialItemInflationDoc { get; init; } = "When true, items with imbues, cantrips, or other special effects cost an additional VendorSpecialItemMultiplier on top of VendorBuyRateMultiplier.";
+    public bool EnableVendorSpecialItemInflation { get; set; } = true;
+
+    [JsonPropertyName("// VendorSpecialItemMultiplier")]
+    public string VendorSpecialItemMultiplierDoc { get; init; } = "Extra multiplier for special vendor items (imbued, cantripped, etc.). Stacks with VendorBuyRateMultiplier. 3.0 = 3× on top of base inflation.";
+    public double VendorSpecialItemMultiplier { get; set; } = 3.0;
 }
 
 public class KillXpMessageSettings

@@ -25,6 +25,9 @@ public class SalvageTinkerRule
     [JsonPropertyName("// Enabled")]
     public string EnabledDoc { get; init; } = "When false, this salvage rule is skipped.";
 
+    [JsonPropertyName("// BaneSpellIds")]
+    public string BaneSpellIdsDoc { get; init; } = "Optional: spell IDs to apply or upgrade on success. First ID = initial spell, each subsequent ID = upgrade tier.";
+
     public uint[] Wcids { get; set; } = Array.Empty<uint>();
 
     public string? Name { get; set; }
@@ -37,4 +40,6 @@ public class SalvageTinkerRule
     public int? FixedValue { get; set; }
 
     public bool Enabled { get; set; } = true;
+
+    public int[] BaneSpellIds { get; set; } = Array.Empty<int>();
 }

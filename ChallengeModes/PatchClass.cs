@@ -34,6 +34,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     static bool _alternateLevelingCategoryPatched;
     static bool _ssfHardcoreCategoryPatched;
     static bool _challengeRewardsCategoryPatched;
+    static bool _challengePassupAbsorbCategoryPatched;
 
     static List<ulong> _storedXpTableCosts = new();
     static List<uint> _storedXpTableCredits = new();
@@ -147,6 +148,22 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             }
         }
 
+        if (_challengePassupAbsorbCategoryPatched)
+        {
+            try
+            {
+                ModC.Harmony.UnpatchCategory(nameof(ChallengePassupAbsorb));
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[ChallengeModes] Unpatch ChallengePassupAbsorb: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+            finally
+            {
+                _challengePassupAbsorbCategoryPatched = false;
+            }
+        }
+
         if (!_aptitudeCategoryPatched)
             return;
 
@@ -226,6 +243,12 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             }
 
             _challengeRewardsCategoryPatched = false;
+        }
+
+        if (!_challengePassupAbsorbCategoryPatched)
+        {
+            ModC.Harmony.PatchCategory(nameof(ChallengePassupAbsorb));
+            _challengePassupAbsorbCategoryPatched = true;
         }
     }
 
@@ -458,6 +481,15 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         SavePrefs(player);
     }
 
+    public static void OnChallengeStarted(Player player)
+    {
+        // Isolate quest points for this challenge run
+        player.SetProperty((FakeFloat)11017, 0f);
+        // Reset displayed QP so the character starts fresh (only achievement/extra QP retained)
+        var extra = (float)(player.GetProperty((FakeFloat)11011) ?? 0f);
+        player.SetProperty(FakeFloat.QuestBonus, extra);
+    }
+
     public static void SetAlternateLevelingEnabled(Player player, bool value)
     {
         EnsureLoaded(player);
@@ -624,10 +656,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         var hadHc = player.GetProperty(FakeBool.Hardcore) == true;
         player.SetProperty(FakeBool.Ironman, false);
         player.SetProperty(FakeBool.Hardcore, false);
-        if (hadSsf)
-            SsfDeclinedByGuid[g] = true;
-        if (hadHc)
-            HardcoreDeclinedByGuid[g] = true;
+        // Allow re-enabling after leave (player is reset to level 1 anyway).
+        SsfDeclinedByGuid[g] = false;
+        HardcoreDeclinedByGuid[g] = false;
 
         var hadAlt = AlternateLevelingEnabledByGuid.GetOrAdd(g, false) || GetAlternateLevelingEnabledRaw(player);
         if (hadAlt)
@@ -739,6 +770,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             }
             EnabledByGuid[guid] = true;
             SavePrefs(player);
+            OnChallengeStarted(player);
             player.SendMessage("Aptitude is now ON. Skills only through usage; use XP on attributes and vitals.");
             return;
         }

@@ -17,7 +17,7 @@ internal static class RecklessnessWeaponCleave
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Player), nameof(Player.DamageTarget), new Type[] { typeof(Creature), typeof(WorldObject) })]
-    public static void PostDamageTarget(Creature target, WorldObject damageSource, ref Player __instance, ref DamageEvent __result)
+    public static void PostDamageTarget(Creature target, WorldObject damageSource, Player __instance, ref DamageEvent __result)
     {
         if (_inCleaveChain)
             return;

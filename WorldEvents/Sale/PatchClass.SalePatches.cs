@@ -7,25 +7,40 @@ public partial class PatchClass
     // ── Vendor pricing: global inflation + sale discount ──────────────────
 
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(Vendor), "get_MerchandiseBuyRate")]
-    public static void PostGetMerchandiseBuyRateSale(ref double? __result, Vendor __instance)
+    [HarmonyPatch(typeof(Vendor), nameof(Vendor.GetBuyCost), new Type[] { typeof(WorldObject) })]
+    public static void PostGetBuyCostSale(ref int __result, Vendor __instance)
+    {
+        var mult = ComputeVendorPriceMultiplier(__instance);
+        if (mult == 1.0) return;
+        __result = Math.Max(1, (int)(__result * mult));
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Vendor), nameof(Vendor.GetSellCost), new Type[] { typeof(WorldObject) })]
+    public static void PostGetSellCostSale(ref uint __result, Vendor __instance)
+    {
+        var mult = ComputeVendorPriceMultiplier(__instance);
+        if (mult == 1.0) return;
+        __result = (uint)Math.Max(1.0, __result * mult);
+    }
+
+    static double ComputeVendorPriceMultiplier(Vendor vendor)
     {
         var s = CurrentSettings;
-        if (s == null) return;
+        if (s == null) return 1.0;
 
-        var rate = __result ?? 1.0;
-
+        var mult = 1.0;
         if (s.SaleVendorPriceMultiplier > 0 && s.SaleVendorPriceMultiplier != 1.0)
-            rate *= s.SaleVendorPriceMultiplier;
+            mult *= s.SaleVendorPriceMultiplier;
 
         if (s.SaleEnabled && s.SaleVendorDiscountMultiplier > 0 && s.SaleVendorDiscountMultiplier != 1.0)
         {
-            var lb = (int)(__instance.Location?.LandblockId.Landblock ?? 0);
-            if (SaleRuntime.IsVendorOnSale(lb, __instance.Name, __instance.WeenieClassId))
-                rate *= s.SaleVendorDiscountMultiplier;
+            var lb = (int)(vendor.Location?.LandblockId.Landblock ?? 0);
+            if (SaleRuntime.IsVendorOnSale(lb, vendor.Name, vendor.WeenieClassId))
+                mult *= s.SaleVendorDiscountMultiplier;
         }
 
-        __result = rate;
+        return mult;
     }
 
     // ── Loot enhancement: boost values + bonus SharedLoot items ──────────

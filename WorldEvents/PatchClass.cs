@@ -346,14 +346,21 @@ public partial class PatchClass : BasicPatch<Settings>
 
     // /event and /events — hub command for all active world events.
     [CommandHandler("event", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
-        "Show active world events. Usage: /event | /event hunt | /event qb | /event on | /event off")]
+        "Show active world events. Usage: /event | /event hunt | /event qb | /event on | /event off. Admin: /event start <invasion|cull|sale|hunt> [modifier] | /event stop [name] | /event status [name]")]
     [CommandHandler("events", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
-        "Show active world events. Usage: /events | /events hunt | /events qb | /events on | /events off")]
+        "Show active world events. Usage: /events | /events hunt | /events qb | /events on | /events off. Admin: /events start <invasion|cull|sale|hunt> [modifier] | /events stop [name] | /events status [name]")]
     public static void HandleEvents(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player) return;
 
         var sub = parameters.Length > 0 ? parameters[0].Trim().ToLowerInvariant() : "";
+
+        if (player.Session.AccessLevel >= AccessLevel.Admin &&
+            (sub == "start" || sub == "stop" || sub == "status"))
+        {
+            HandleEventAdmin(player, sub, parameters);
+            return;
+        }
 
         switch (sub)
         {
@@ -380,6 +387,117 @@ public partial class PatchClass : BasicPatch<Settings>
                 break;
             default:
                 ShowAllEvents(player);
+                break;
+        }
+    }
+
+    static void HandleEventAdmin(Player player, string sub, string[] parameters)
+    {
+        var s = CurrentSettings ?? new Settings();
+
+        switch (sub)
+        {
+            case "start":
+                if (parameters.Length < 2)
+                {
+                    player.SendMessage("[Admin] Usage: /event start <invasion|cull|sale|hunt> [modifier]");
+                    return;
+                }
+                var eventName = parameters[1].Trim().ToLowerInvariant();
+                var modifier = parameters.Length > 2 ? string.Join(" ", parameters.Skip(2)) : null;
+
+                switch (eventName)
+                {
+                    case "invasion" or "inv":
+                        InvasionRuntime.ForceStart(s, modifier);
+                        player.SendMessage($"[Invasion] Force-started{(modifier != null ? $" at {modifier}" : "")}.");
+                        break;
+                    case "cull":
+                        uint? typeId = null;
+                        if (!string.IsNullOrWhiteSpace(modifier) && uint.TryParse(modifier, out var parsed))
+                            typeId = parsed;
+                        CullRuntime.ForceStart(s, typeId);
+                        player.SendMessage("[Cull] Force-started.");
+                        break;
+                    case "sale":
+                        SaleRuntime.ForceStart(s, modifier);
+                        player.SendMessage($"[Sale] Force-started{(modifier != null ? $" at {modifier}" : "")}.");
+                        break;
+                    case "hunt":
+                        HuntRuntime.ForceStart(s);
+                        player.SendMessage("[Hunt] Force-started.");
+                        break;
+                    default:
+                        player.SendMessage($"[Admin] Unknown event '{eventName}'. Use: invasion, cull, sale, hunt.");
+                        break;
+                }
+                break;
+
+            case "stop":
+                if (parameters.Length < 2)
+                {
+                    // Stop all
+                    InvasionRuntime.ForceStop(s);
+                    CullRuntime.ForceStop();
+                    SaleRuntime.ForceStop();
+                    HuntRuntime.ForceStop();
+                    player.SendMessage("[Admin] All active events stopped.");
+                }
+                else
+                {
+                    var target = parameters[1].Trim().ToLowerInvariant();
+                    switch (target)
+                    {
+                        case "invasion" or "inv":
+                            InvasionRuntime.ForceStop(s);
+                            player.SendMessage("[Invasion] Force-stopped.");
+                            break;
+                        case "cull":
+                            CullRuntime.ForceStop();
+                            player.SendMessage("[Cull] Force-stopped.");
+                            break;
+                        case "sale":
+                            SaleRuntime.ForceStop();
+                            player.SendMessage("[Sale] Force-stopped.");
+                            break;
+                        case "hunt":
+                            HuntRuntime.ForceStop();
+                            player.SendMessage("[Hunt] Force-stopped.");
+                            break;
+                        default:
+                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt.");
+                            break;
+                    }
+                }
+                break;
+
+            case "status":
+                if (parameters.Length < 2)
+                {
+                    ShowAllEvents(player);
+                }
+                else
+                {
+                    var target = parameters[1].Trim().ToLowerInvariant();
+                    switch (target)
+                    {
+                        case "invasion" or "inv":
+                            ShowInvasionStatus(player);
+                            break;
+                        case "cull":
+                            ShowCullStatus(player);
+                            break;
+                        case "sale":
+                            ShowSaleStatus(player);
+                            break;
+                        case "hunt":
+                            ShowHuntStatus(player, huntOnly: true);
+                            break;
+                        default:
+                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt.");
+                            break;
+                    }
+                }
                 break;
         }
     }
@@ -555,8 +673,7 @@ public partial class PatchClass : BasicPatch<Settings>
                 return;
             }
 
-            var mult = settings.BonusQuestXpFraction * settings.BonusQuestXpMultiplier * 100;
-            player.SendMessage($"[Bonus Quest] {bq.QuestNames.Count} active quest(s) — {mult:0}% XP each. Next rotation in {rotateStr}:");
+            player.SendMessage($"[Bonus Quest] {bq.QuestNames.Count} active quest(s) — tiered XP (20%/15%/10%/5%). Next rotation in {rotateStr}:");
 
             var now = DateTime.UtcNow;
             for (var i = 0; i < bq.QuestNames.Count; i++)
@@ -606,26 +723,6 @@ public partial class PatchClass : BasicPatch<Settings>
         {
             var tierStr = t.Tier > 0 ? $" — Tier {t.Tier}" : "";
             player.SendMessage($"  {t.TownName}{tierStr} ({t.Mode}" + (t.Mode == InvasionMode.Scripted && !string.IsNullOrEmpty(t.EventName) ? $": {t.EventName}" : "") + ")");
-        }
-    }
-
-    // Admin: force-stop current invasion.
-    [CommandHandler("invasion", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld, -1,
-        "Invasion admin. Usage: /invasion stop")]
-    public static void HandleInvasionAdmin(Session session, params string[] parameters)
-    {
-        if (session?.Player is not Player player) return;
-        var sub = parameters.Length > 0 ? parameters[0].Trim().ToLowerInvariant() : "";
-
-        if (sub == "stop")
-        {
-            var s = CurrentSettings ?? new Settings();
-            InvasionRuntime.ForceStop(s);
-            player.SendMessage("[Invasion] Current invasion force-stopped.");
-        }
-        else
-        {
-            player.SendMessage("[Invasion] Usage: /invasion stop");
         }
     }
 
@@ -695,62 +792,4 @@ public partial class PatchClass : BasicPatch<Settings>
             : "[Cull] You haven't killed any target creatures yet.");
     }
 
-    [CommandHandler("cull", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld, -1,
-        "Cull admin. Usage: /cull start [creaturetype] | /cull stop | /cull status")]
-    public static void HandleCullAdmin(Session session, params string[] parameters)
-    {
-        if (session?.Player is not Player player) return;
-        var sub = parameters.Length > 0 ? parameters[0].Trim().ToLowerInvariant() : "";
-        var s = CurrentSettings ?? new Settings();
-
-        switch (sub)
-        {
-            case "start":
-                uint? typeId = null;
-                if (parameters.Length > 1 && uint.TryParse(parameters[1], out var parsed))
-                    typeId = parsed;
-                CullRuntime.ForceStart(s, typeId);
-                player.SendMessage($"[Cull] Force-started.");
-                break;
-            case "stop":
-                CullRuntime.ForceStop();
-                player.SendMessage("[Cull] Force-stopped.");
-                break;
-            case "status":
-                ShowCullStatus(player);
-                break;
-            default:
-                player.SendMessage("[Cull] Usage: /cull start [creatureTypeId] | /cull stop | /cull status");
-                break;
-        }
-    }
-
-    // Admin: sale force-start / force-stop.
-    [CommandHandler("sale", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld, -1,
-        "Sale admin. Usage: /sale start [town] | /sale stop | /sale status")]
-    public static void HandleSaleAdmin(Session session, params string[] parameters)
-    {
-        if (session?.Player is not Player player) return;
-        var sub = parameters.Length > 0 ? parameters[0].Trim().ToLowerInvariant() : "";
-        var s = CurrentSettings ?? new Settings();
-
-        switch (sub)
-        {
-            case "start":
-                var townArg = parameters.Length > 1 ? string.Join(" ", parameters.Skip(1)) : null;
-                SaleRuntime.ForceStart(s, townArg);
-                player.SendMessage("[Sale] Force-started.");
-                break;
-            case "stop":
-                SaleRuntime.ForceStop();
-                player.SendMessage("[Sale] Force-stopped.");
-                break;
-            case "status":
-                ShowSaleStatus(player);
-                break;
-            default:
-                player.SendMessage("[Sale] Usage: /sale start [town] | /sale stop | /sale status");
-                break;
-        }
-    }
 }

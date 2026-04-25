@@ -59,3 +59,6 @@ cs_files.txt
 
 # WIP mods and experiments (not tracked until promoted out of this folder)
 Work-In-Progress/
+
+# Local reference material (ACE source, world DB dumps — not part of mod repo)
+.references/

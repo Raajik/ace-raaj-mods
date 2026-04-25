@@ -67,6 +67,16 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     // Snapshot of default TinkeringDifficulty; can be used to restore on shutdown.
     static readonly List<float> difficulty = RecipeManager.TinkeringDifficulty.ToList();
 
+    // Per-item bonus to MaxTries (applied on top of Settings.MaxTries). Key = item Guid.Full.
+    internal static readonly System.Collections.Concurrent.ConcurrentDictionary<uint, int> ItemMaxTriesBonus = new();
+
+    internal static int GetEffectiveMaxTries(WorldObject obj, Settings settings)
+    {
+        int baseMax = settings.MaxTries - 1;
+        int bonus = ItemMaxTriesBonus.GetValueOrDefault(obj.Guid.Full, 0);
+        return baseMax + bonus;
+    }
+
     private void RestoreTinkering()
     {
         RecipeManager.TinkeringDifficulty = difficulty.ToList();
@@ -86,7 +96,11 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
 
         var last = RecipeManager.TinkeringDifficulty.Last();
-        var toAdd = Math.Max(0, Settings.MaxTries - diffs);
+        // Extend well beyond vanilla table so overtinkering has meaningful difficulty.
+        // Vanilla ACE has 30 entries; we extend to 60 so cap-expansion (up to 30)
+        // and normal overtinkering both face escalating difficulty.
+        int maxSupported = Math.Max(Settings.MaxTries + 30, 60);
+        var toAdd = Math.Max(0, maxSupported - diffs);
         var steps = Enumerable.Range(diffs, toAdd)
             .Select((x, i) => last + (i + 1) * Settings.Scale);
 
@@ -137,7 +151,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
             __result = propInt switch
             {
-                PropertyInt.NumTimesTinkered => comp.Compare(ov.MaxTries - 1, value ?? 0, player, requirement.Message) ? __result : false,
+                PropertyInt.NumTimesTinkered => comp.Compare(GetEffectiveMaxTries(obj, ov), value ?? 0, player, requirement.Message) ? __result : false,
                 PropertyInt.ImbuedEffect => comp.Compare(ov.MaxImbueEffects - 1, EffectiveImbuedCount((uint)(value ?? 0)), player, requirement.Message) ? __result : false,
                 _ => RecipeManager.VerifyRequirement(player, (CompareType)requirement.Enum, normalized, Convert.ToDouble(requirement.Value), requirement.Message),
             };
@@ -238,6 +252,14 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             int value = SalvageEffectApplier.RollValue(rule);
             if (SalvageEffectApplier.ApplyEffect(target, rule, value, isFailure: false))
             {
+                // Armor salvages (ArmorLevel + ArmorModVs*) apply all bane spells at once.
+                // Weapon salvages use incremental bane spell upgrading.
+                if (rule.EffectKind == "ArmorLevel" || rule.EffectKind.StartsWith("ArmorModVs"))
+                    SalvageEffectApplier.ApplyFullBaneSpells(target, rule, player);
+                else
+                    SalvageEffectApplier.ApplyBaneSpell(target, rule, player);
+
+                SalvageEffectApplier.EnsureManaPool(target);
                 RecipeManager.HandleTinkerLog(source, target);
                 if (s.ShowPlayerSalvageMessage)
                 {
@@ -270,7 +292,10 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         target.ImbuedEffect |= imbueEffect;
         if (RendingDamageTypes.TryGetValue(imbueEffect, out var rendDamageType))
+        {
             target.SetProperty(PropertyInt.DamageType, (int)rendDamageType);
+            ConvertBoltSpellsForDamageType(target, rendDamageType);
+        }
 
         if (RecipeManager.incItemTinkered.Contains(dataId))
             RecipeManager.HandleTinkerLog(source, target);
@@ -304,7 +329,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
     const int ImbueFailureWorkmanshipCap = 10;
 
-    // Prefix: when EnableFailureRedesign and our roll fails, apply opposite effect (numeric) or +1 Workmanship (imbue), or let original run.
+    // Prefix: when a tinker fails, apply chaotic positive effects instead of destruction/damage.
+    // Note: failures now increment NumTimesTinkered normally, but chaos effects can rewind it.
     [HarmonyPrefix]
     [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.HandleRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(double) })]
     public static bool PreHandleRecipe(Player player, WorldObject source, WorldObject target, Recipe recipe, double successChance)
@@ -317,27 +343,35 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (rolledSuccess)
             return true;
 
-        // Ensure a failed attempt never increases tinker count; we'll restore this after applying failure effects.
-        int numTimesTinkered = target.GetProperty(PropertyInt.NumTimesTinkered) ?? 0;
-
         uint wcid = source.WeenieClassId;
         HashSet<uint> imbueWcids = ImbueSalvageWcids.Build(s);
 
-        if (imbueWcids.Contains(wcid) && s.EnableDefaultImbueFailureWorkmanship)
+        // Imbue failures → contextual chaos (accidental success, bonus imbue, slayer, etc.)
+        if (imbueWcids.Contains(wcid))
         {
             player.TryConsumeFromInventoryWithNetworking(wcid, 1);
-            int currentInt = GetWorkmanship(target);
-            if (currentInt < ImbueFailureWorkmanshipCap)
+
+            if (s.EnableFailureRedesign)
             {
-                SetWorkmanship(target, currentInt + 1);
-                player.Session?.Network?.EnqueueSend(new GameMessageSystemChat($"Your imbue attempt failed, but the {target.NameWithMaterial} gains a point of workmanship.", ChatMessageType.Craft));
-                ModManager.Log($"[Overtinked] Imbue failure Workmanship: {player.Name} +1 Workmanship on {target.Guid} (now {currentInt + 1}).");
+                ChaosFailureEffects.ApplyContextualChaos(player, target, null, s, wcid);
+                RecipeManager.HandleTinkerLog(source, target);
             }
-            else
+            else if (s.EnableDefaultImbueFailureWorkmanship)
             {
-                player.Session?.Network?.EnqueueSend(new GameMessageSystemChat($"Your imbue attempt failed. The {target.NameWithMaterial} is already at maximum workmanship.", ChatMessageType.Craft));
+                // Legacy: +1 workmanship
+                int currentInt = GetWorkmanship(target);
+                if (currentInt < ImbueFailureWorkmanshipCap)
+                {
+                    SetWorkmanship(target, currentInt + 1);
+                    player.Session?.Network?.EnqueueSend(new GameMessageSystemChat($"Your imbue attempt failed, but the {target.NameWithMaterial} gains a point of workmanship.", ChatMessageType.Craft));
+                    ModManager.Log($"[Overtinked] Imbue failure Workmanship: {player.Name} +1 Workmanship on {target.Guid} (now {currentInt + 1}).");
+                }
+                else
+                {
+                    player.Session?.Network?.EnqueueSend(new GameMessageSystemChat($"Your imbue attempt failed. The {target.NameWithMaterial} is already at maximum workmanship.", ChatMessageType.Craft));
+                }
+                RecipeManager.HandleTinkerLog(source, target);
             }
-            target.SetProperty(PropertyInt.NumTimesTinkered, numTimesTinkered);
             return false;
         }
 
@@ -346,17 +380,10 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             return true;
 
         player.TryConsumeFromInventoryWithNetworking(wcid, 1);
-        int magnitude = rule.FixedValue ?? (rule.MinValue + rule.MaxValue) / 2;
-        if (SalvageEffectApplier.ApplyEffect(target, rule, magnitude, isFailure: true))
-        {
-            string desc = SalvageEffectApplier.GetEffectDescription(rule, magnitude, isFailure: true);
-            if (!string.IsNullOrEmpty(desc))
-                player.Session?.Network?.EnqueueSend(new GameMessageSystemChat($"Your tinkering failed! The {target.NameWithMaterial} was damaged: {desc}.", ChatMessageType.Craft));
-            else
-                player.Session?.Network?.EnqueueSend(new GameMessageSystemChat($"Your tinkering failed! The {target.NameWithMaterial} is now slightly worse.", ChatMessageType.Craft));
-            ModManager.Log($"[Overtinked] Failure redesign: {player.Name} applied opposite {rule.EffectKind} -{magnitude} on {target.Guid}");
-        }
-        target.SetProperty(PropertyInt.NumTimesTinkered, numTimesTinkered);
+
+        // Phase 3: Context-aware chaotic positive failure effects
+        ChaosFailureEffects.ApplyContextualChaos(player, target, rule, s, wcid);
+        RecipeManager.HandleTinkerLog(source, target);
 
         return false;
     }
@@ -441,6 +468,50 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         // ACE WorldObject.Workmanship is float?; reflection rejects int (see CharacterCreate / TryAddToInventory stack).
         float f = value;
         t.SetValue(f);
+    }
+
+    // When a rending imbue changes the weapon's damage type, convert any existing bolt spells to the new element.
+    private static void ConvertBoltSpellsForDamageType(WorldObject target, DamageType newType)
+    {
+        if (target.Biota?.PropertiesSpellBook == null || target.Biota.PropertiesSpellBook.Count == 0)
+            return;
+
+        var book = target.Biota.PropertiesSpellBook;
+        var boltChains = new Dictionary<DamageType, int[]>
+        {
+            [DamageType.Fire]     = new[] { 27, 81, 82, 83, 84, 85, 2128, 4439 },
+            [DamageType.Cold]     = new[] { 28, 70, 71, 72, 73, 74, 2136, 4447 },
+            [DamageType.Electric] = new[] { 75, 76, 77, 78, 79, 80, 2140, 4451 },
+            [DamageType.Bludgeon] = new[] { 64, 65, 66, 67, 68, 69, 2144, 4455 },
+            [DamageType.Slash]    = new[] { 92, 93, 94, 95, 96, 97, 2146, 4457 },
+            [DamageType.Pierce]   = new[] { 86, 87, 88, 89, 90, 91, 2132, 4443 },
+            [DamageType.Acid]     = new[] { 58, 59, 60, 61, 62, 63, 2122, 4433 },
+            [DamageType.Nether]   = new[] { 5349, 5350, 5351, 5352, 5353, 5354, 5355, 5356 },
+        };
+
+        if (!boltChains.TryGetValue(newType, out var newChain))
+            return;
+
+        var spellsToConvert = new List<(int oldId, int tier)>();
+        foreach (int spellId in book.Keys.ToList())
+        {
+            foreach (var chain in boltChains.Values)
+            {
+                int tier = Array.IndexOf(chain, spellId);
+                if (tier >= 0)
+                {
+                    spellsToConvert.Add((spellId, tier));
+                    break;
+                }
+            }
+        }
+
+        foreach (var (oldId, tier) in spellsToConvert)
+        {
+            book.Remove(oldId);
+            int newId = newChain[Math.Min(tier, newChain.Length - 1)];
+            book[newId] = 1.0f;
+        }
     }
 
     private static readonly ImbuedEffectType AllRendingFlags =

@@ -5,9 +5,17 @@ public class Settings
     [JsonPropertyName("// LoremasterSettings")]
     public string LoremasterSettingsDoc { get; init; } = "Reading order: below this line, every // key is documentation; the next block lists real settings in the same order. Loremaster extends quest points (QP), account-wide tracking, completion bonus XP, repeat loot, achievements, cooldown reduction, /qb notify defaults, optional Harmony equip patches, and BarkeeperParchments contracts. Nested BarkeeperParchments and ParchmentTemplates follow two-band // then values inside each object. Dictionary keys in QuestBonuses, CompletionBonusXpOverrides, and AchievementBonusQPOverrides are case-sensitive quest or threshold keys.";
 
+    [JsonPropertyName("// EnableAccountWideAugments")]
+    public string EnableAccountWideAugmentsDoc { get; init; } = "When true, non-exempt augment purchases are shared across all characters on the same account. Exempt: attribute augs, resist augs, skill-spec augs (one-time side effects).";
+    public bool EnableAccountWideAugments { get; set; } = true;
+
+    [JsonPropertyName("// ChallengeCharactersShareAccountAugments")]
+    public string ChallengeCharactersShareAccountAugmentsDoc { get; init; } = "When true, challenge mode characters receive account-wide augments immediately (exception to challenge isolation). When false, they only get augments on /cm quit.";
+    public bool ChallengeCharactersShareAccountAugments { get; set; } = true;
+
     [JsonPropertyName("// StandardBaseXpRetentionPercent")]
     public string StandardBaseXpRetentionPercentDoc { get; init; } = "Multiplicative base: fraction of raw ACE kill/quest XP kept before other terms (25 = 25% of raw, i.e. -75% vs full vanilla). Applied with Quest Points, equipment, etc. as a product.";
-    public float StandardBaseXpRetentionPercent { get; set; } = 25f;
+    public float StandardBaseXpRetentionPercent { get; set; } = 1f;
 
     [JsonPropertyName("// BonusPerQuestPoint")]
     public string BonusPerQuestPointDoc { get; init; } = "Quest Points factor = 1 + (QP × BonusPerQuestPoint / 100), multiplied after base retention and with equipment/augments/enlight/challenge.";
@@ -35,7 +43,7 @@ public class Settings
 
     [JsonPropertyName("// CompletionBonusPerQuestPoint")]
     public string CompletionBonusPerQuestPointDoc { get; init; } = "Added to DefaultCompletionBonusXpMultiplier when computing completion bonus: effective fraction = DefaultCompletionBonusXpMultiplier + (QP × CompletionBonusPerQuestPoint / 100), then × per-quest override.";
-    public float CompletionBonusPerQuestPoint { get; set; } = 0.1f;
+    public float CompletionBonusPerQuestPoint { get; set; } = 0.02f;
 
     [JsonPropertyName("// DefaultPoints")]
     public string DefaultPointsDoc { get; init; } = "QP awarded for quests not listed in QuestBonuses; 0 = only explicit QuestBonuses grant QP.";
@@ -74,7 +82,7 @@ public class Settings
 
     [JsonPropertyName("// DefaultCompletionBonusXpMultiplier")]
     public string DefaultCompletionBonusXpMultiplierDoc { get; init; } = "Flat fraction of next-level XP for completion bonus, before the CompletionBonusPerQuestPoint term; 0 = only QP-scaled + overrides.";
-    public float DefaultCompletionBonusXpMultiplier { get; set; } = 0f;
+    public float DefaultCompletionBonusXpMultiplier { get; set; } = 0.01f;
 
     [JsonPropertyName("// CompletionBonusXpOverrides")]
     public string CompletionBonusXpOverridesDoc { get; init; } = "Per-quest absolute fraction of next-level XP for completion bonus when the quest is listed. 0 suppresses. Unlisted quests use DefaultCompletionBonusXpMultiplier + (QP × CompletionBonusPerQuestPoint / 100).";

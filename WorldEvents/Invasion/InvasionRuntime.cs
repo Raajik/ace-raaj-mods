@@ -435,9 +435,10 @@ internal static class InvasionRuntime
                 var lb = LandblockManager.GetLandblock(group.Key, false);
                 if (lb == null) continue;
                 var batch = group.ToList();
+                var townCopy = town; // capture for closure
                 lb.EnqueueAction(new ActionEventDelegate(() =>
                 {
-                    var spawned = SpawnBatchOnLandblock(lb, batch);
+                    var spawned = SpawnBatchOnLandblock(lb, batch, townCopy);
                     lock (_dynamicSpawns)
                         _dynamicSpawns.AddRange(spawned);
                 }));
@@ -459,18 +460,39 @@ internal static class InvasionRuntime
 
         for (var i = 0; i < maxCount; i++)
         {
-            var angle  = _rng.NextDouble() * 2 * Math.PI;
-            var dist   = (float)(_rng.NextDouble() * town.TownSpawnRadius);
-            var ox     = town.TownCenterX + (float)(Math.Cos(angle) * dist);
-            var oy     = town.TownCenterY + (float)(Math.Sin(angle) * dist);
-            var facing = (float)(_rng.NextDouble() * Math.PI * 2);
-
-            var pos = new Position(town.TownCenterObjCellId, ox, oy, town.TownCenterZ,
-                0f, 0f, (float)Math.Sin(facing / 2), (float)Math.Cos(facing / 2));
-            pos.LandblockId = new LandblockId(pos.GetCell());
+            var pos = GenerateSingleSpawnPosition(town, _rng);
+            if (pos == null) continue;
             result.Add((pos, wcids[i % wcids.Count]));
         }
         return result;
+    }
+
+    static Position? GenerateSingleSpawnPosition(InvasionTownSettings town, Random rng, float? overrideAngle = null, float? overrideDist = null)
+    {
+        var angle  = overrideAngle ?? rng.NextDouble() * 2 * Math.PI;
+        var dist   = overrideDist ?? rng.NextDouble() * town.TownSpawnRadius;
+        var ox     = town.TownCenterX + (float)(Math.Cos(angle) * dist);
+        var oy     = town.TownCenterY + (float)(Math.Sin(angle) * dist);
+        var facing = (float)(rng.NextDouble() * Math.PI * 2);
+
+        // Snap Z to terrain height
+        float z = town.TownCenterZ;
+        try
+        {
+            var lbId = new LandblockId(new Position(town.TownCenterObjCellId, ox, oy, z, 0f, 0f, 0f, 1f).GetCell());
+            var lb = LandblockManager.GetLandblock(lbId, false);
+            if (lb?.LandblockMesh != null)
+            {
+                var terrainZ = lb.LandblockMesh.GetZ(new System.Numerics.Vector2(ox, oy));
+                z = terrainZ + 0.05f; // slight offset above ground
+            }
+        }
+        catch { /* fallback to town center Z */ }
+
+        var pos = new Position(town.TownCenterObjCellId, ox, oy, z,
+            0f, 0f, (float)Math.Sin(facing / 2), (float)Math.Cos(facing / 2));
+        pos.LandblockId = new LandblockId(pos.GetCell());
+        return pos;
     }
 
     static (int min, int max) ResolveLevelRange(Settings s, InvasionTownSettings town, int tier)
@@ -562,24 +584,56 @@ internal static class InvasionRuntime
     /// <summary>
     /// Spawns a pre-generated batch of mobs on a specific landblock. Must be called from that landblock's tick thread.
     /// </summary>
-    static List<WorldObject> SpawnBatchOnLandblock(Landblock lb, List<(Position Pos, uint Wcid)> batch)
+    static List<WorldObject> SpawnBatchOnLandblock(Landblock lb, List<(Position Pos, uint Wcid)> batch, InvasionTownSettings town)
     {
         var result = new List<WorldObject>();
+        var retryRng = new Random();
+        int failCount = 0;
+
         foreach (var (pos, wcid) in batch)
         {
             var wo = WorldObjectFactory.CreateNewWorldObject(wcid);
             if (wo == null) continue;
-            wo.Location = pos;
-            try
+
+            bool placed = false;
+            Position? currentPos = pos;
+
+            // Try original position + up to 2 retries with new random positions
+            for (int attempt = 0; attempt < 3 && !placed; attempt++)
             {
-                if (lb.AddWorldObject(wo))
-                    result.Add(wo);
+                if (attempt > 0)
+                {
+                    // Generate a new nearby position for retry
+                    var retryPos = GenerateSingleSpawnPosition(town, retryRng);
+                    if (retryPos == null) continue;
+                    currentPos = retryPos;
+                }
+
+                wo.Location = currentPos;
+                try
+                {
+                    if (lb.AddWorldObject(wo))
+                    {
+                        placed = true;
+                        result.Add(wo);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ModManager.Log($"[Invasion] Attempt {attempt + 1} failed to place WCID {wcid}: {ex.Message}", ModManager.LogLevel.Warn);
+                }
             }
-            catch (Exception ex)
+
+            if (!placed)
             {
-                ModManager.Log($"[Invasion] Failed to place WCID {wcid}: {ex.Message}", ModManager.LogLevel.Warn);
+                failCount++;
+                wo.Destroy(); // clean up the unused world object
             }
         }
+
+        if (failCount > 0)
+            ModManager.Log($"[Invasion] SpawnBatchOnLandblock: {failCount}/{batch.Count} mobs failed to place after 3 attempts each on landblock {lb.Id.Raw:X4}", ModManager.LogLevel.Warn);
+
         return result;
     }
 

@@ -25,6 +25,8 @@ public class Mod : BasicMod
 }
 ```
 
+> **Pitfall: `nameof(Mod)` → `"Mod"`** — `nameof()` resolves at compile time to the class name, not the mod name. `Setup(nameof(Mod), ...)` sets `ModPath = C:\ACE\Mods\Mod\` (nonexistent), causing `Container.ModAssembly` to NRE, which the framework logs as `Failed to start. Unpatching com.ACE.ACEmulator.Mod: Object reference not set`. Always pass the **assembly/folder name**: `nameof(YourMod)` where `YourMod` matches `$(AssemblyName)` in the `.csproj`.
+
 ## PatchClass (critical)
 
 - Put `[HarmonyPrefix]` / `[HarmonyPostfix]` on **`PatchClass`** (often `partial` across files). Patches on a **different** type than `Setup(..., new PatchClass(this))` may **never apply** (silent). `[HarmonyPatchCategory]` types apply when `Harmony.PatchCategory(...)` runs.
@@ -76,6 +78,10 @@ Copy an existing gameplay mod in this repo (e.g. **Xenology**, **Loremaster**). 
 - **Overtinked:** tinkering only (`RecipeManager` verify/mutate/handle recipe, custom imbues, salvage rules) — no inventory growth hooks.
 - **Loremaster ↔ EmpyreanAlteration:** some categories patched by class name from Loremaster settings.
 - **No EmpyreanEchoes** — split across EA, Swarmed, QOL, ChallengeModes, etc.
+- **Swarmed — Buddy spawns + global creature variation:**
+  - **BuddySpawns:** Background timer (30s) checks active landblocks. After idle threshold (no kills, default 2min), living creatures roll chance (25%) to spawn a buddy within radius (10m). Threshold doubles each round (2×), capped at max (30min). Cap per landblock (10). Reset on any death. See `Swarmed/Features/BuddySpawns.cs`.
+  - **CreatureVariation:** Apply ±8–21% variation to **ALL** creature spawns (health, stamina, mana, scale, damage rating, level). **Must use deferred `ActionChain` (e.g., 0.5s delay)** — modifying vitals during `WorldObjectFactory.CreateWorldObject` causes `AddWorldObjectInternal` rejections. See `Swarmed/Features/CreatureVariation.cs`.
+  - **Wild CreatureEx:** Independent factory chance (1% landscape / 0.5% dungeon) for random champion replacement, separate from admin `CreatureChance`. See `Swarmed/Features/CreatureExSpawn.cs`.
 
 ### AureatePath + Loremaster + ChallengeModes (enlightenment pool, `/cm quit`, QB gate)
 

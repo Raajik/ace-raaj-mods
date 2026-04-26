@@ -119,6 +119,24 @@ public class Settings
         new() { Name = "MMD", Id = 20630, Value = 250000 },
         new() { Name = "CashSink", Id = 40652, Value = 50 * 250000 },
     };
+
+    [JsonPropertyName("// EconomyBalancer")]
+    public string EconomyBalancerDoc { get; init; } =
+        "Optional self-balancing economy: periodically scans player bank balances and adjusts PyrealValue per currency based on rarity. Disabled by default.";
+    public EconomyBalancerSettings EconomyBalancer { get; set; } = new();
+
+    [JsonPropertyName("// LootTracker")]
+    public string LootTrackerDoc { get; init; } =
+        "Optional: track WCIDs players pick up frequently to identify hot items. Useful for deciding which items should be added to the bank or have a place in the economy.";
+    public LootTrackerSettings LootTracker { get; set; } = new();
+
+    [JsonPropertyName("// PublicExchange")]
+    public string PublicExchangeDoc { get; init; } = "Public exchange: players can buy/sell banked items with dynamic pool pricing.";
+    public PublicExchangeSettings PublicExchange { get; set; } = new();
+
+    [JsonPropertyName("// Lottery")]
+    public string LotteryDoc { get; init; } = "Weekly lottery fed by exchange sell tax. Virtual tickets purchased with banked pyreals.";
+    public LotterySettings Lottery { get; set; } = new();
 }
 
 public class BankItem
@@ -250,6 +268,10 @@ public class SalvageDepositRule
         "Optional extra WCIDs that credit this material on deposit (e.g. alternate retail bag ids) without changing redeem. De-duplicated with WeenieClassId and OutputBagWeenieClassId.";
     [JsonPropertyName("AdditionalDepositWeenieClassIds")]
     public List<uint> AdditionalDepositWeenieClassIds { get; set; } = new();
+
+    [JsonPropertyName("// ExchangeValue")]
+    public string ExchangeValueDoc { get; init; } = "Pyreal value per bag for public exchange trading. 0 = not exchangeable.";
+    public long ExchangeValue { get; set; } = 0;
 }
 
 public class HouseStorageSettings
@@ -301,6 +323,241 @@ public class CurrencyItem
     public uint Id { get; set; }
 
     [JsonPropertyName("// Value")]
-    public string ValueDoc { get; init; } = "Pyreal value of one unit of this WCID when computing change.";
-    public int Value { get; set; }
+    public string ValueDoc { get; init; } = "Base unit count for this currency (display/counting).";
+    public long Value { get; set; }
+
+    [JsonPropertyName("// PyrealValue")]
+    public string PyrealValueDoc { get; init; } = "Pyreals per unit for conversion math (cost calculation, auto-convert). If omitted, defaults to Value.";
+    public long PyrealValue { get; set; }
+
+    public long GetPyrealValue() => PyrealValue > 0 ? PyrealValue : Value;
+}
+
+public class EconomyBalancerSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true, periodically scan player bank balances and adjust currency PyrealValues based on supply vs target rarity.";
+    public bool Enabled { get; set; }
+
+    [JsonPropertyName("// IncludeAdminBalances")]
+    public string IncludeAdminBalancesDoc { get; init; } =
+        "When false (default), admin accounts (access level > Player) are excluded from supply scans. When true, admins are included — useful for testing.";
+    public bool IncludeAdminBalances { get; set; }
+
+    [JsonPropertyName("// ScanIntervalMinutes")]
+    public string ScanIntervalMinutesDoc { get; init; } =
+        "How often to run the supply scan and recalculate values (in minutes). Default 60 = hourly.";
+    public int ScanIntervalMinutes { get; set; } = 60;
+
+    [JsonPropertyName("// MinScanIntervalMinutes")]
+    public string MinScanIntervalMinutesDoc { get; init; } =
+        "Minimum scan interval regardless of command override. Prevents abuse of admin force-scan commands.";
+    public int MinScanIntervalMinutes { get; set; } = 15;
+
+    [JsonPropertyName("// MinSupplyWeight")]
+    public string MinSupplyWeightDoc { get; init; } =
+        "Base weight per currency representing its expected scarcity relative to MMD. Higher = more common. A currency with weight 100 is 100x as common as weight 1 at equilibrium.";
+    public Dictionary<uint, double> MinSupplyWeight { get; set; } = new();
+
+    [JsonPropertyName("// ValueAdjustmentSmoothing")]
+    public string ValueAdjustmentSmoothingDoc { get; init; } =
+        "0.0–1.0: How fast values adjust toward target. 0.1 = slow/gradual (10% of the gap per cycle). 1.0 = instant. Default 0.25 (25% per cycle).";
+    public double ValueAdjustmentSmoothing { get; set; } = 0.25;
+
+    [JsonPropertyName("// LogChangesOnly")]
+    public string LogChangesOnlyDoc { get; init; } =
+        "When true, only log currency values that changed. When false, log every scan with full table.";
+    public bool LogChangesOnly { get; set; } = true;
+
+    [JsonPropertyName("// MinValueFloor")]
+    public string MinValueFloorDoc { get; init; } =
+        "Absolute minimum PyrealValue allowed per currency, regardless of supply. Prevents currencies from becoming worthless if over-supplied.";
+    public int MinValueFloor { get; set; } = 1;
+
+    [JsonPropertyName("// TargetZefSupply")]
+    public string TargetZefSupplyDoc { get; init; } =
+        "Target total Zef-equivalent supply across all alt-currency bank balances. If actual supply exceeds this, ZefPyrealValue drops. Default 100000 = 100k Zefs.";
+    public long TargetZefSupply { get; set; } = 100000;
+
+    [JsonPropertyName("// MinZefPyrealValue")]
+    public string MinZefPyrealValueDoc { get; init; } =
+        "Minimum ZefPyrealValue allowed (prevents Zefs from becoming worthless). Default 1000000 = 1M pyreals = 4 MMDs.";
+    public long MinZefPyrealValue { get; set; } = 1000000;
+
+    [JsonPropertyName("// MaxZefPyrealValue")]
+    public string MaxZefPyrealValueDoc { get; init; } =
+        "Maximum ZefPyrealValue allowed (prevents Zefs from becoming too valuable). Default 100000000 = 100M pyreals = 400 MMDs.";
+    public long MaxZefPyrealValue { get; set; } = 100000000;
+}
+
+public class LootTrackerSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true, track WCIDs players pick up to identify frequently-looted items for potential economy additions.";
+    public bool Enabled { get; set; }
+
+    [JsonPropertyName("// IncludeAdminBalances")]
+    public string IncludeAdminBalancesDoc { get; init; } =
+        "When false (default), admin accounts are excluded from loot tracking. When true, admins are included for testing.";
+    public bool IncludeAdminBalances { get; set; }
+
+    [JsonPropertyName("// ScanIntervalMinutes")]
+    public string ScanIntervalMinutesDoc { get; init; } =
+        "How often to aggregate loot counts and log the hot items report (in minutes).";
+    public int ScanIntervalMinutes { get; set; } = 60;
+
+    [JsonPropertyName("// ReportTopN")]
+    public string ReportTopNDoc { get; init; } =
+        "How many top-looted items to show in the economy report. Default 20.";
+    public int ReportTopN { get; set; } = 20;
+
+    [JsonPropertyName("// IgnoreWcids")]
+    public string IgnoreWcidsDoc { get; init; } =
+        "WCIDs to ignore in loot tracking (e.g., raw pyreals, common junk). Add pyreals and coins here to avoid noise.";
+    public List<uint> IgnoreWcids { get; set; } = new()
+    {
+        273,    // Pyreal
+        2621,   // Pyreal I
+        2622,   // Pyreal V
+        2623,   // Pyreal X
+        2624,   // Pyreal L
+        2625,   // Pyreal C
+        2626,   // Pyreal D
+        2627,   // Pyreal M
+        7374,   // Pyreal CL
+        7375,   // Pyreal CC
+        7376,   // Pyreal CCL
+        7377,   // Pyreal DCCL
+        20628,  // Pyreal MD
+        20629,  // Pyreal MM
+        20630,  // MMD
+        36432,  // Gold Pea
+    };
+
+    [JsonPropertyName("// MinLootCountForReport")]
+    public string MinLootCountForReportDoc { get; init; } =
+        "Minimum total loot count for a WCID to appear in the economy report. Filters out rare/noise items.";
+    public int MinLootCountForReport { get; set; } = 100;
+
+    [JsonPropertyName("// LootCountPropertyStart")]
+    public string LootCountPropertyStartDoc { get; init; } =
+        "First PropertyInt64 used to store per-character loot counts (one per tracked WCID). Reserve a contiguous block.";
+    public int LootCountPropertyStart { get; set; } = 45000;
+
+    [JsonPropertyName("// AutoAddToBankThreshold")]
+    public string AutoAddToBankThresholdDoc { get; init; } =
+        "If a non-tracked WCID exceeds this many total loots across the server, log a suggestion to add it to bank Items. Set to 0 to disable.";
+    public int AutoAddToBankThreshold { get; set; } = 10000;
+}
+
+public class PublicExchangeSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true, /exchange commands are available.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// StaticValueWcids")]
+    public string StaticValueWcidsDoc { get; init; } = "WCIDs with fixed PyrealValue regardless of pool depth. All pyreal denominations are static since they're unlimited vendor supply.";
+    public List<uint> StaticValueWcids { get; set; } = new()
+    {
+        273,    // Pyreal
+        2621,   // I
+        2622,   // V
+        2623,   // X
+        2624,   // L
+        2625,   // C
+        2626,   // D
+        2627,   // M
+        7374,   // CL
+        7375,   // CC
+        7376,   // CCL
+        7377,   // DCCL
+        20628,  // MD
+        20629,  // MM
+        20630,  // MMD
+        40652,  // CashSink
+    };
+
+    [JsonPropertyName("// ZefPyrealValue")]
+    public string ZefPyrealValueDoc { get; init; } = "How many pyreals one Zef (alt currency) is worth. Default 25,000,000 = 100 MMDs. Items in AltCurrencyValues use this for exchange pricing.";
+    public long ZefPyrealValue { get; set; } = 25000000;
+
+    [JsonPropertyName("// Elasticity")]
+    public string ElasticityDoc { get; init; } = "How aggressively prices swing with pool depth. 0.5 = ±50% at extremes.";
+    public double Elasticity { get; set; } = 0.5;
+
+    [JsonPropertyName("// BaseTaxRate")]
+    public string BaseTaxRateDoc { get; init; } = "Base tax on sell transactions (0.05 = 5%).";
+    public double BaseTaxRate { get; set; } = 0.05;
+
+    [JsonPropertyName("// MaxTaxRate")]
+    public string MaxTaxRateDoc { get; init; } = "Hard cap on sell tax regardless of exchange wealth.";
+    public double MaxTaxRate { get; set; } = 0.20;
+
+    [JsonPropertyName("// TaxSensitivity")]
+    public string TaxSensitivityDoc { get; init; } = "How fast tax rises with exchange wealth ratio. 0.6 means 25% wealth ratio hits max tax.";
+    public double TaxSensitivity { get; set; } = 0.6;
+
+    [JsonPropertyName("// SeedQuantity")]
+    public string SeedQuantityDoc { get; init; } = "Initial pool quantity for each bank item on first load.";
+    public long SeedQuantity { get; set; } = 10;
+
+    [JsonPropertyName("// PoolJsonPath")]
+    public string PoolJsonPathDoc { get; init; } = "Relative path to exchange pool JSON file.";
+    public string PoolJsonPath { get; set; } = "ExchangePool.json";
+}
+
+public class LotterySettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true, /lottery commands are available.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// BaseTicketPrice")]
+    public string BaseTicketPriceDoc { get; init; } = "Base pyreal cost per lottery ticket.";
+    public long BaseTicketPrice { get; set; } = 1000;
+
+    [JsonPropertyName("// TicketPricePoolPercent")]
+    public string TicketPricePoolPercentDoc { get; init; } = "Additional ticket cost as % of current pool (0.0001 = 0.01%).";
+    public double TicketPricePoolPercent { get; set; } = 0.0001;
+
+    [JsonPropertyName("// DrawIntervalMinutes")]
+    public string DrawIntervalMinutesDoc { get; init; } = "How often the lottery auto-draws (default 10080 = 7 days).";
+    public int DrawIntervalMinutes { get; set; } = 10080;
+
+    [JsonPropertyName("// TicketPropertyId")]
+    public string TicketPropertyIdDoc { get; init; } = "PropertyInt64 for storing virtual ticket count per character.";
+    public int TicketPropertyId { get; set; } = 45214;
+
+    [JsonPropertyName("// MinPoolForDraw")]
+    public string MinPoolForDrawDoc { get; init; } = "Minimum pool size before auto-draw runs.";
+    public long MinPoolForDraw { get; set; } = 10000;
+
+    [JsonPropertyName("// MaxPoolSize")]
+    public string MaxPoolSizeDoc { get; init; } = "If pool exceeds this, use MaxPoolDestructionRate for tax.";
+    public long MaxPoolSize { get; set; } = 5000000;
+
+    [JsonPropertyName("// SmallTaxThreshold")]
+    public string SmallTaxThresholdDoc { get; init; } = "Tax amounts below this use SmallTaxDestructionRate.";
+    public long SmallTaxThreshold { get; set; } = 10000;
+
+    [JsonPropertyName("// LargeTaxThreshold")]
+    public string LargeTaxThresholdDoc { get; init; } = "Tax amounts between Small and Large use MediumTaxDestructionRate.";
+    public long LargeTaxThreshold { get; set; } = 100000;
+
+    [JsonPropertyName("// SmallTaxDestructionRate")]
+    public string SmallTaxDestructionRateDoc { get; init; } = "Portion of tax destroyed for small transactions.";
+    public double SmallTaxDestructionRate { get; set; } = 0.60;
+
+    [JsonPropertyName("// MediumTaxDestructionRate")]
+    public string MediumTaxDestructionRateDoc { get; init; } = "Portion of tax destroyed for medium transactions.";
+    public double MediumTaxDestructionRate { get; set; } = 0.75;
+
+    [JsonPropertyName("// LargeTaxDestructionRate")]
+    public string LargeTaxDestructionRateDoc { get; init; } = "Portion of tax destroyed for large transactions.";
+    public double LargeTaxDestructionRate { get; set; } = 0.85;
+
+    [JsonPropertyName("// MaxPoolDestructionRate")]
+    public string MaxPoolDestructionRateDoc { get; init; } = "Portion of tax destroyed when pool exceeds MaxPoolSize.";
+    public double MaxPoolDestructionRate { get; set; } = 0.95;
 }

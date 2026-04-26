@@ -29,7 +29,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     // Completion-bonus, parchment, and trophy/level-fraction quest XP call GrantXP with amounts already derived as fractions of next level; skip the retention/QP equipment chain (RunWithoutQuestXpMultiplier) so low StandardBaseXpRetention does not crush them.
     static int _questXpMultiplierSuppressDepth;
 
-    internal static void RunWithoutQuestXpMultiplier(Action action)
+    public static void RunWithoutQuestXpMultiplier(Action action)
     {
         _questXpMultiplierSuppressDepth++;
         try
@@ -55,6 +55,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         TryApplyPortalHasQuestSolvesHooks();
         RefreshEmpyreanAlterationRelocatedPatches();
         RefreshParchmentQuestPatches();
+        RefreshAccountAugmentPatches();
         TrophyBurdenXp.Initialize();
         AccountQuestFlags.Load();
 
@@ -78,6 +79,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         SetupSettingsJsonWatcher();
         RefreshEmpyreanAlterationRelocatedPatches();
         RefreshParchmentQuestPatches();
+        RefreshAccountAugmentPatches();
     }
 
     static void RefreshEmpyreanAlterationRelocatedPatches()
@@ -258,6 +260,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 UpdateIngamePlayers();
                 RefreshEmpyreanAlterationRelocatedPatches();
                 RefreshParchmentQuestPatches();
+                RefreshAccountAugmentPatches();
                 ReloadLootConfig();
                 ModManager.Log("[Loremaster] Settings.json reloaded; recalculated QP for all online players.");
             }
@@ -681,8 +684,9 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         var mult  = __instance.GetTotalXpMultiplier();
         var total = (long)(amount * mult);
 
-        var notify = xpType == XpType.Kill  && __instance.Notify(LMBool.NotifyKillXp)
-                  || xpType == XpType.Quest && __instance.Notify(LMBool.NotifyQuestXp);
+        // Kill XP is already shown inline with the kill message (e.g. "[9 xp]");
+        // only show the detailed breakdown for quest XP.
+        var notify = xpType == XpType.Quest && __instance.Notify(LMBool.NotifyQuestXp);
         if (notify && __instance.Session != null)
             __instance.SendMessage($"Earned {total:N0} XP! ({amount:N0} raw × {mult * 100.0:0.##}% of full vanilla)");
 

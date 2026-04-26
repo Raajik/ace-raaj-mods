@@ -1,5 +1,6 @@
 global using ACE.Common;
 global using ACE.Common.Extensions;
+global using ACE.Database;
 global using ACE.Database.Models.Shard;
 global using ACE.DatLoader;
 global using ACE.DatLoader.Entity.AnimationHooks;

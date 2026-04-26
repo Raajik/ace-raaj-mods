@@ -207,10 +207,16 @@ public static class VendorLootRotation
         {
             long total = 0;
             int count = 0;
+
             var cashPropId = _settings.VendorLootCashPropertyId;
+            var adminAccess = (uint)AccessLevel.Admin;
 
             foreach (var player in PlayerManager.GetAllOnline())
             {
+                // Skip admin accounts from economy balance
+                if (player.Account?.AccessLevel >= adminAccess)
+                    continue;
+
                 var banked = player.GetProperty((PropertyInt64)cashPropId) ?? 0;
                 total += banked;
                 count++;
@@ -242,7 +248,7 @@ public static class VendorLootRotation
     // Vendor Approach Hook (replaces LoadInventory postfix)
     // =====================================================================
 
-    public static void OnVendorApproachPrefix(Player player, Vendor __instance)
+    public static void OnVendorApproachPrefix(Player player, VendorType action, uint altCurrencySpent, Vendor __instance)
     {
         if (_settings is null || !_settings.EnableVendorLootRotation)
             return;
@@ -287,33 +293,17 @@ public static class VendorLootRotation
         ModManager.Log($"[VendorLoot] Rotating vendor {vendor.Name} ({vendor.WeenieClassId})...", ModManager.LogLevel.Info);
         ModManager.Log($"[VendorLoot] Profiles available: {_rotationProfiles.Count}, Economy multiplier: {_economyMultiplier:F2}x", ModManager.LogLevel.Info);
 
-        // -- Remove previously rotated items to avoid infinite accumulation --
-        if (_vendorRotatedItems.TryGetValue(vendorGuid, out var oldItems))
-        {
-            foreach (var guid in oldItems)
-            {
-                vendor.DefaultItemsForSale.Remove(guid);
-                _originalValues.Remove(guid);
-            }
-            oldItems.Clear();
-        }
-        else
-        {
-            _vendorRotatedItems[vendorGuid] = new HashSet<ObjectGuid>();
-        }
+        // -- Clear ALL inventory and tracking for this vendor --
+        vendor.DefaultItemsForSale.Clear();
+        _vendorRotatedItems.Remove(vendorGuid);
+        _originalValues.Clear();
+        var rotatedSet = new HashSet<ObjectGuid>();
+        _vendorRotatedItems[vendorGuid] = rotatedSet;
 
-        var rotatedSet = _vendorRotatedItems[vendorGuid];
         int generatedCount = 0;
         int acceptedCount = 0;
 
-        // -- Capture original values of default inventory on first encounter --
-        foreach (var kvp in vendor.DefaultItemsForSale)
-        {
-            if (!_originalValues.ContainsKey(kvp.Key))
-                _originalValues[kvp.Key] = kvp.Value.Value ?? 0;
-        }
-
-        // -- Generate rotated loot (append mode) --
+        // -- Generate rotated loot (replace mode) --
         foreach (var profile in _rotationProfiles)
         {
             WorldObject? item = null;

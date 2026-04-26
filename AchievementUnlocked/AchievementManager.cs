@@ -23,9 +23,7 @@ public static class AchievementManager
 
     public static void Initialize(Settings settings)
     {
-        if (_initialized)
-            return;
-
+        _initialized = false;
         _settings = settings;
         _achievements.Clear();
         _indexById.Clear();
@@ -371,7 +369,10 @@ public static class AchievementManager
             return;
 
         if (!_indexById.TryGetValue(id, out var index))
+        {
+            ModManager.Log($"[AchievementUnlocked] UnlockAchievement failed: '{id}' not found in registry. Check Settings.json for invalid Type values or missing entries.", ModManager.LogLevel.Warn);
             return;
+        }
 
         var ach = _ordered[index];
 
@@ -394,7 +395,7 @@ public static class AchievementManager
             SyncAccountUnlocksToOnlineCharacters(player.Account.AccountId, ach.Id);
         }
 
-        if (ach.Notify && _settings.NotifyOnUnlock)
+        if (_settings.NotifyOnUnlock)
             NotifyUnlock(player, ach);
 
         if (ach.Id.StartsWith("LoreTier", StringComparison.OrdinalIgnoreCase))
@@ -532,7 +533,7 @@ public static class AchievementManager
         return true;
     }
 
-    static void TryUnlock(Player player, int index)
+    public static void TryUnlock(Player player, int index)
     {
         if (index < 0 || index >= _ordered.Count)
             return;
@@ -696,23 +697,23 @@ public static class AchievementManager
         // Use flavorful messages for class achievements
         if (ach.Category.Equals("Classes", StringComparison.OrdinalIgnoreCase) && ClassFlavorMessages.TryGetValue(ach.Id, out var flavor))
         {
-            player.SendMessage($"{prefix} You unlocked '{ach.Name}' — {ach.Description}", ChatMessageType.Tell);
+            player.SendMessage($"{prefix} You unlocked '{ach.Name}' — {ach.Description}", ChatMessageType.Magic);
 
             if (_settings?.BroadcastOnUnlock == true)
             {
                 var broadcast = $"{player.Name} {flavor}";
-                PlayerManager.BroadcastToAll(new GameMessageSystemChat(broadcast, ChatMessageType.WorldBroadcast));
+                PlayerManager.BroadcastToAll(new GameMessageSystemChat(broadcast, ChatMessageType.Magic));
             }
         }
         else
         {
             var msg = string.IsNullOrWhiteSpace(prefix) ? $"You unlocked '{ach.Name}' — {ach.Description}" : $"{prefix} You unlocked '{ach.Name}' — {ach.Description}";
-            player.SendMessage(msg, ChatMessageType.Tell);
+            player.SendMessage(msg, ChatMessageType.Magic);
 
             if (_settings?.BroadcastOnUnlock == true)
             {
                 var broadcast = $"{player.Name} unlocked the achievement '{ach.Name}'!";
-                PlayerManager.BroadcastToAll(new GameMessageSystemChat(broadcast, ChatMessageType.WorldBroadcast));
+                PlayerManager.BroadcastToAll(new GameMessageSystemChat(broadcast, ChatMessageType.Magic));
             }
         }
     }

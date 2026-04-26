@@ -48,8 +48,8 @@ public class Settings
     public int LockpickUnlockThreshold { get; set; } = 10;
 
     [JsonPropertyName("// SalvageUnlockThreshold")]
-    public string SalvageUnlockThresholdDoc { get; init; } = "Number of items manually salvaged required to unlock material-type auto-salvage.";
-    public int SalvageUnlockThreshold { get; set; } = 50;
+    public string SalvageUnlockThresholdDoc { get; init; } = "DEPRECATED — AutoSalvage is now available to all players from the start. Type /autoloot salvage or /autosalvage to toggle it.";
+    public int SalvageUnlockThreshold { get; set; } = 0;
 
     [JsonPropertyName("// KeyBankProperties")]
     public string KeyBankPropertiesDoc { get; init; } = "WCID to PropertyInt64 mapping for key banking (must match LeyLineLedger Settings.Items).";

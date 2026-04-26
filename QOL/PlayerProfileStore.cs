@@ -54,12 +54,13 @@ internal static class PlayerProfileStore
         }
     }
 
-    // Called from PlayerEnterWorld postfix to populate fast-access KillXpMessage.PlayerPrefs.
+    // Called from PlayerEnterWorld postfix to populate fast-access preference caches.
     public static void PostfixPlayerEnterWorld(Player __instance)
     {
         if (__instance == null) return;
         uint guid = __instance.Guid.Full;
         var profile = GetOrCreate(guid);
         KillXpMessage.PlayerPrefs[guid] = profile.KillXpMode;
+        XpTracker.SpendAutoPrefs[guid]  = profile.XpSpendAuto;
     }
 }

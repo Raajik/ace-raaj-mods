@@ -25,6 +25,15 @@ public sealed class ActiveInvasionData
     /// <summary>Boss respawn delay in minutes, computed from threshold.</summary>
     public double BossRespawnMinutes { get; set; } = 5.0;
 
+    /// <summary>How many trickle spawn pulses have fired for this wave. Used for scaling per pulse.</summary>
+    public int TricklePulseCount { get; set; } = 0;
+
+    /// <summary>When true, this is an unthemed chaos wave with amplified CreatureEx spawning.</summary>
+    public bool ChaosMode { get; set; } = false;
+
+    /// <summary>Number of CreatureEx bosses spawned so far in this wave (chaos cap tracking).</summary>
+    public int CreatureExSpawnedCount { get; set; } = 0;
+
     // Dynamic-mode spawn references are tracked in-memory only (InvasionRuntime._dynamicSpawns);
     // not serialized since spawned mobs don't survive server restarts anyway.
 }

@@ -1,0 +1,8 @@
+{
+  "Name": "ValheelContent",
+  "Author": "ACE Mod",
+  "Description": "Auto-imports Valheel custom content (weenies, landblocks, quests, recipes, treasure, events) from SQL files at server startup.",
+  "Version": "1.0.0",
+  "MinApiVersion": "1.0",
+  "Dependencies": []
+}

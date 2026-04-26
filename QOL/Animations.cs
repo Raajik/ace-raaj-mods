@@ -10,6 +10,7 @@ internal static class Animations
     [ThreadStatic] static int _animTier;
 
     static Func<Player, string, bool>? _hasAchievementRef;
+    static Action<Player, string, int>? _setProgressRef;
 
     static bool HasAchievementUnlocked(Player p, string id)
     {
@@ -26,6 +27,30 @@ internal static class Animations
         return _hasAchievementRef?.Invoke(p, id) == true;
     }
 
+    static void IncrementAchievementProgress(Player p, string id)
+    {
+        if (_setProgressRef is null)
+        {
+            var asm = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.GetName().Name == "AchievementUnlocked");
+            if (asm is null) return;
+            var type = asm.GetType("AchievementUnlocked.AchievementManager");
+            var method = type?.GetMethod("IncrementProgress", new[] { typeof(Player), typeof(string), typeof(int) });
+            if (method is not null)
+                _setProgressRef = (Action<Player, string, int>)Delegate.CreateDelegate(typeof(Action<Player, string, int>), method);
+        }
+        _setProgressRef?.Invoke(p, id, 1);
+    }
+
+    static int GetRecallAnimTier(Player p)
+    {
+        if (HasAchievementUnlocked(p, "RecallMaster")) return 8;
+        if (HasAchievementUnlocked(p, "RecallExpert")) return 7;
+        if (HasAchievementUnlocked(p, "RecallAdept")) return 6;
+        if (HasAchievementUnlocked(p, "RecallNovice")) return 5;
+        return 0;
+    }
+
     static int GetPlayerAnimTier(Player p)
     {
         if (HasAchievementUnlocked(p, "LoreTier4")) return 4;
@@ -34,6 +59,15 @@ internal static class Animations
         if (HasAchievementUnlocked(p, "LoreTier1")) return 1;
         // Legacy fallback for characters migrated before AchievementUnlocked
         return p.GetProperty((FakeInt)11050) ?? 0;
+    }
+
+    static void TrackRecall(Player player)
+    {
+        // Increment progress for each recall achievement (achievement system handles its own counters)
+        IncrementAchievementProgress(player, "RecallNovice");
+        IncrementAchievementProgress(player, "RecallAdept");
+        IncrementAchievementProgress(player, "RecallExpert");
+        IncrementAchievementProgress(player, "RecallMaster");
     }
 
     // ── MotionTable hooks ──────────────────────────────────────────────────
@@ -50,7 +84,7 @@ internal static class Animations
 
         int tier = _animTier;
 
-        // Tier 2+: instant (existing behaviour for all animations in the dict)
+        // Recall tiers 4+ and Lore tiers 2+: instant
         if (tier >= 2 && anim.AnimationSpeeds.TryGetValue(motion, out float instant))
         {
             __result = instant;
@@ -60,7 +94,7 @@ internal static class Animations
         // Tier 0: vanilla — only apply if not in the dict at all
         if (tier == 0) return true;
 
-        // Tier 1: let original run, postfix will multiply
+        // Tier 1, 5, 6, 7: let original run, postfix will multiply
         return true;
     }
 
@@ -69,9 +103,27 @@ internal static class Animations
     public static void PostGetAnimationLength(MotionCommand motion, ref float __result)
     {
         var anim = S.Settings?.Animations;
-        if (anim is null || _animTier != 1) return;
-        if (anim.AnimationSpeeds.ContainsKey(motion))
-            __result *= anim.Tier1Multiplier;
+        if (anim is null) return;
+
+        switch (_animTier)
+        {
+            case 1:
+                if (anim.AnimationSpeeds.ContainsKey(motion))
+                    __result *= anim.Tier1Multiplier;
+                break;
+            case 5:
+                if (anim.AnimationSpeeds.ContainsKey(motion))
+                    __result *= 0.75f;
+                break;
+            case 6:
+                if (anim.AnimationSpeeds.ContainsKey(motion))
+                    __result *= 0.50f;
+                break;
+            case 7:
+                if (anim.AnimationSpeeds.ContainsKey(motion))
+                    __result *= 0.25f;
+                break;
+        }
     }
 
     // ── Per-player tier taggers ────────────────────────────────────────────
@@ -88,7 +140,13 @@ internal static class Animations
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), "HandleActionTeleToLifestone")]
-    static void PreLifestone(Player __instance) => _animTier = GetPlayerAnimTier(__instance);
+    static void PreLifestone(Player __instance)
+    {
+        int baseTier = GetPlayerAnimTier(__instance);
+        int recallTier = GetRecallAnimTier(__instance);
+        _animTier = Math.Max(baseTier, recallTier);
+        TrackRecall(__instance);
+    }
 
     [HarmonyFinalizer]
     [HarmonyPatch(typeof(Player), "HandleActionTeleToLifestone")]
@@ -96,7 +154,13 @@ internal static class Animations
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), "HandleActionTeleToHouse")]
-    static void PreHouseRecall(Player __instance) => _animTier = GetPlayerAnimTier(__instance);
+    static void PreHouseRecall(Player __instance)
+    {
+        int baseTier = GetPlayerAnimTier(__instance);
+        int recallTier = GetRecallAnimTier(__instance);
+        _animTier = Math.Max(baseTier, recallTier);
+        TrackRecall(__instance);
+    }
 
     [HarmonyFinalizer]
     [HarmonyPatch(typeof(Player), "HandleActionTeleToHouse")]
@@ -104,7 +168,13 @@ internal static class Animations
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), "HandleActionTeleToMansion")]
-    static void PreMansion(Player __instance) => _animTier = GetPlayerAnimTier(__instance);
+    static void PreMansion(Player __instance)
+    {
+        int baseTier = GetPlayerAnimTier(__instance);
+        int recallTier = GetRecallAnimTier(__instance);
+        _animTier = Math.Max(baseTier, recallTier);
+        TrackRecall(__instance);
+    }
 
     [HarmonyFinalizer]
     [HarmonyPatch(typeof(Player), "HandleActionTeleToMansion")]
@@ -112,7 +182,13 @@ internal static class Animations
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), "HandleActionRecallAllegianceHometown")]
-    static void PreAllegiance(Player __instance) => _animTier = GetPlayerAnimTier(__instance);
+    static void PreAllegiance(Player __instance)
+    {
+        int baseTier = GetPlayerAnimTier(__instance);
+        int recallTier = GetRecallAnimTier(__instance);
+        _animTier = Math.Max(baseTier, recallTier);
+        TrackRecall(__instance);
+    }
 
     [HarmonyFinalizer]
     [HarmonyPatch(typeof(Player), "HandleActionRecallAllegianceHometown")]
@@ -120,7 +196,13 @@ internal static class Animations
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), "HandleActionTeleToMarketPlace")]
-    static void PreMarketplace(Player __instance) => _animTier = GetPlayerAnimTier(__instance);
+    static void PreMarketplace(Player __instance)
+    {
+        int baseTier = GetPlayerAnimTier(__instance);
+        int recallTier = GetRecallAnimTier(__instance);
+        _animTier = Math.Max(baseTier, recallTier);
+        TrackRecall(__instance);
+    }
 
     [HarmonyFinalizer]
     [HarmonyPatch(typeof(Player), "HandleActionTeleToMarketPlace")]
@@ -128,7 +210,13 @@ internal static class Animations
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), "HandleActionTeleToPkArena")]
-    static void PrePkArena(Player __instance) => _animTier = GetPlayerAnimTier(__instance);
+    static void PrePkArena(Player __instance)
+    {
+        int baseTier = GetPlayerAnimTier(__instance);
+        int recallTier = GetRecallAnimTier(__instance);
+        _animTier = Math.Max(baseTier, recallTier);
+        TrackRecall(__instance);
+    }
 
     [HarmonyFinalizer]
     [HarmonyPatch(typeof(Player), "HandleActionTeleToPkArena")]
@@ -136,7 +224,13 @@ internal static class Animations
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), "HandleActionTeleToPklArena")]
-    static void PrePklArena(Player __instance) => _animTier = GetPlayerAnimTier(__instance);
+    static void PrePklArena(Player __instance)
+    {
+        int baseTier = GetPlayerAnimTier(__instance);
+        int recallTier = GetRecallAnimTier(__instance);
+        _animTier = Math.Max(baseTier, recallTier);
+        TrackRecall(__instance);
+    }
 
     [HarmonyFinalizer]
     [HarmonyPatch(typeof(Player), "HandleActionTeleToPklArena")]
@@ -183,8 +277,6 @@ public class AnimationSettings
 {
     [JsonPropertyName("// DieSeconds")]
     public string DieSecondsDoc { get; init; } = "Seconds between each /die (HandleSuicide) speech step. 0 = minimal delay. Does not use MotionTable.";
-
-    // Seconds between each /die (HandleSuicide) broadcast step. Lower = faster death RP; retail pacing discussions often reference ~18s total for long recall-adjacent sequences — tune here and via AnimationSpeeds instead of expecting vanilla MotionTable timings.
     public float DieSeconds { get; set; } = 0.0f;
 
     [JsonPropertyName("// Tier1Multiplier")]
@@ -193,8 +285,6 @@ public class AnimationSettings
 
     [JsonPropertyName("// AnimationSpeeds")]
     public string AnimationSpeedsDoc { get; init; } = "Keys must be quoted ACE MotionCommand names (JSON strings). Value = seconds for Tier 2+ players (0 = instant). Tier 1 players get vanilla × Tier1Multiplier. Tier 0 players get vanilla. Omitted key = vanilla for all tiers. Enum: ACE.Entity.Enum.MotionCommand.";
-
-    // See MotionCommand enum: https://github.com/ACEmulator/ACE/blob/master/Source/ACE.Entity/Enum/MotionCommand.cs
     public Dictionary<MotionCommand, float> AnimationSpeeds { get; set; } = new()
     {
         [MotionCommand.AllegianceHometownRecall] = 0f,

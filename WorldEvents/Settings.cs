@@ -383,6 +383,38 @@ public sealed class Settings
         new() { Tier = 6, LevelMin = 151, LevelMax = 200 },
     };
 
+    [JsonPropertyName("// TrickleSwarmMultiplier")]
+    public string TrickleSwarmMultiplierDoc { get; init; } = "Each trickle spawn pulse adds this fraction of the scaled spawn cap as NEW mobs on top of refilling dead ones. 0.5 = +50% new swarm each pulse. Set 0 to disable swarm growth (only refill losses).";
+    public double TrickleSwarmMultiplier { get; set; } = 0.5;
+
+    [JsonPropertyName("// CreatureExWcid")]
+    public string CreatureExWcidDoc { get; init; } = "Global WCID used as the base weenie when summoning a CreatureEx champion at the 50% scaling threshold. If 0 and a creature-type theme is active, a random matching WCID is picked instead.";
+    public uint CreatureExWcid { get; set; } = 0;
+
+    [JsonPropertyName("// InvasionThemeMonsterMixMin")]
+    public string InvasionThemeMonsterMixMinDoc { get; init; } = "Themed waves spawn a mix of N different monster WCIDs (same CreatureType). Minimum N.";
+    public int InvasionThemeMonsterMixMin { get; set; } = 2;
+
+    [JsonPropertyName("// InvasionThemeMonsterMixMax")]
+    public string InvasionThemeMonsterMixMaxDoc { get; init; } = "Themed waves spawn a mix of N different monster WCIDs (same CreatureType). Maximum N.";
+    public int InvasionThemeMonsterMixMax { get; set; } = 4;
+
+    [JsonPropertyName("// InvasionChaosScalingPercent")]
+    public string InvasionChaosScalingPercentDoc { get; init; } = "Per-pulse scaling multiplier for unthemed chaos waves. 0.20 = +20% per pulse (vs +10% for themed).";
+    public double InvasionChaosScalingPercent { get; set; } = 0.20;
+
+    [JsonPropertyName("// InvasionChaosCreatureExPerPulse")]
+    public string InvasionChaosCreatureExPerPulseDoc { get; init; } = "How many CreatureEx bosses spawn per trickle pulse in chaos mode.";
+    public int InvasionChaosCreatureExPerPulse { get; set; } = 2;
+
+    [JsonPropertyName("// InvasionChaosMaxCreatureExTotal")]
+    public string InvasionChaosMaxCreatureExTotalDoc { get; init; } = "Maximum total CreatureEx bosses allowed in a single chaos wave.";
+    public int InvasionChaosMaxCreatureExTotal { get; set; } = 10;
+
+    [JsonPropertyName("// InvasionCreatureExOnThemedPulse")]
+    public string InvasionCreatureExOnThemedPulseDoc { get; init; } = "When true, themed waves also spawn a CreatureEx boss on the 5th trickle pulse (same as chaos).";
+    public bool InvasionCreatureExOnThemedPulse { get; set; } = true;
+
     [JsonPropertyName("// InvasionTowns")]
     public string InvasionTownsDoc { get; init; } = "List of towns eligible for invasion. Mode: Scripted (fires ACE event from SQL), Dynamic (spawns mobs at TownCenterObjCellId), Random. TownCenterObjCellId required for Dynamic.";
     public List<InvasionTownSettings> InvasionTowns { get; set; } = DefaultInvasionTowns();

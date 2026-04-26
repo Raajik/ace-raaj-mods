@@ -72,7 +72,6 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
         TryApplyDamageEventPatch();
         TryApplyDirtyFightingPatch();
         TryApplyLockpickPatches();
-        TryApplyVendorItemLevelingPatch();
         TryApplyChaosTinkerPatch();
         TryApplySummoningClassesPatch();
         TryApplyCombatClassesPatch();
@@ -428,10 +427,14 @@ try
                     ModC.Harmony?.Patch(checkUse, new HarmonyMethod(checkUsePrefix));
             }
 
-            // Patch Creature.TakeDamage for Artificer wisp procs
+            // Patch Creature.TakeDamage for summon trigger + Artificer wisp procs
             var takeDamage = AccessTools.Method(typeof(Creature), nameof(Creature.TakeDamage), new Type[] { typeof(WorldObject), typeof(DamageType), typeof(float), typeof(bool) });
             if (takeDamage != null)
             {
+                var summonTriggerPostfix = AccessTools.Method(typeof(Skills.SummoningClasses), "PostCreatureTakeDamage_SummonTrigger");
+                if (summonTriggerPostfix != null)
+                    ModC.Harmony?.Patch(takeDamage, null, new HarmonyMethod(summonTriggerPostfix));
+
                 var takeDamagePostfix = AccessTools.Method(typeof(Skills.SummoningClasses), "PostCreatureTakeDamage");
                 if (takeDamagePostfix != null)
                     ModC.Harmony?.Patch(takeDamage, null, new HarmonyMethod(takeDamagePostfix));
@@ -616,48 +619,6 @@ try
         }
     }
 
-    static bool VendorItemLevelingPatchApplied;
-
-    void TryApplyVendorItemLevelingPatch()
-    {
-        if (VendorItemLevelingPatchApplied) return;
-        if (Settings?.EnableVendorItemLeveling != true) return;
-
-        try
-        {
-            var loadInventory = AccessTools.Method(typeof(Vendor), "LoadInventory");
-            if (loadInventory == null)
-            {
-                ModManager.Log("[BSS] Vendor.LoadInventory method not found", ModManager.LogLevel.Error);
-                return;
-            }
-
-            var postfix = AccessTools.Method(typeof(Skills.VendorItemLeveling), "PostfixLoadInventory");
-            var harmonyMethod = new HarmonyMethod(postfix);
-            harmonyMethod.priority = 300; // Run after VendorLootRotation (priority 200)
-            ModC.Harmony?.Patch(loadInventory, null, harmonyMethod, null);
-
-            var finalizeBuy = AccessTools.Method(typeof(Player), nameof(Player.FinalizeBuyTransaction),
-                new Type[] { typeof(Vendor), typeof(List<WorldObject>), typeof(List<WorldObject>), typeof(uint) });
-            if (finalizeBuy == null)
-            {
-                ModManager.Log("[BSS] Player.FinalizeBuyTransaction method not found", ModManager.LogLevel.Error);
-            }
-            else
-            {
-                var prefix = AccessTools.Method(typeof(Skills.VendorItemLeveling), "PrefixFinalizeBuyTransaction");
-                ModC.Harmony?.Patch(finalizeBuy, new HarmonyMethod(prefix), null, null);
-            }
-
-            VendorItemLevelingPatchApplied = true;
-            ModManager.Log("[BSS] VendorItemLeveling patches applied (LoadInventory + FinalizeBuyTransaction)", ModManager.LogLevel.Info);
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[BSS] VendorItemLeveling patch failed: {ex}", ModManager.LogLevel.Error);
-        }
-    }
-
     private void RegisterEnabledPatchCategories()
     {
         if (!_commandCategoriesRegistered)
@@ -714,10 +675,12 @@ try
             enabledFeatures.Add(Features.TrophyDropsSkill);
         if (Settings.EnableTinkeringLootGating)
             enabledFeatures.Add(Features.TinkeringLootGating);
-        if (Settings.EnableVendorItemLeveling)
-            enabledFeatures.Add(Features.VendorItemLeveling);
         if (Settings.EnableSummoningClasses)
             enabledFeatures.Add(Features.SummoningClasses);
+        if (Settings.EnableDruidPetThorns)
+            enabledFeatures.Add(Features.DruidPetThorns);
+        if (Settings.EnableSalvage)
+            enabledFeatures.Add(Features.SalvageSkill);
         // CombatClasses patches are applied manually in TryApplyCombatClassesPatch()
         // to avoid double-patching with declarative attributes.
 
@@ -1022,13 +985,6 @@ internal static class ModCommandsList
     {
         if (session?.Player is not Player player)
             return;
-
-        var skill = player.GetCreatureSkill(Skill.Fletching);
-        if (skill is null || skill.AdvancementClass < SkillAdvancementClass.Trained)
-        {
-            player.SendMessage("You need a trained skill to use auto-salvage.", ChatMessageType.System);
-            return;
-        }
 
         var currentlyEnabled = Skills.SalvageAutoDeposit.IsEnabled(player);
         var newState = !currentlyEnabled;

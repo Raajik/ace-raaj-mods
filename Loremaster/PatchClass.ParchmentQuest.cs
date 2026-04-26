@@ -31,6 +31,34 @@ public partial class PatchClass
         }
     }
 
+    internal static void RefreshAccountAugmentPatches()
+    {
+        const string category = nameof(AccountAugmentStore);
+        var harmony = Mod.Instance?.Harmony;
+        if (harmony is null)
+            return;
+
+        try
+        {
+            harmony.UnpatchCategory(category);
+        }
+        catch
+        {
+        }
+
+        if (PatchClass.Settings?.EnableAccountWideAugments != true)
+            return;
+
+        try
+        {
+            harmony.PatchCategory(category);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Loremaster] AccountAugmentStore patch failed: {ex.Message}", ModManager.LogLevel.Error);
+        }
+    }
+
     [CommandHandler("lmparchment", AccessLevel.Player, CommandHandlerFlag.RequiresWorld,
         "Barkeeper parchment quests: list, abandon. Explore/Fetch: use a Town Crier. Type /lmparchment help.")]
     public static void HandleLmparchment(Session session, params string[] parameters)

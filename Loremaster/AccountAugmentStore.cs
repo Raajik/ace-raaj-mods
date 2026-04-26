@@ -160,6 +160,9 @@ internal static class AccountAugmentStore
             var data = ReadOrCreate(key);
             MirrorDataToPlayer(player, data);
         }
+
+        // Auto-grant racial augments to all characters (no level/achievement gate).
+        GrantRacialAugments(player);
     }
 
     /// <summary>

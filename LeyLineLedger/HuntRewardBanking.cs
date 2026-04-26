@@ -88,7 +88,7 @@ public static class HuntRewardBanking
     }
 
     static bool IsDenominationWcid(uint wcid, Settings s) =>
-        s.Currencies is { Count: > 0 } && s.Currencies.Any(c => c is not null && c.Id == wcid);
+        s.Currencies != null && s.Currencies.Count > 0 && s.Currencies.Any(c => c != null && c.Id == wcid);
 
     static void CreditPyrealsToBank(Player player, Settings s, long totalValue)
     {

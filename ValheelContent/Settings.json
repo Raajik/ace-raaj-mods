@@ -1,0 +1,8 @@
+{
+  "EnableValheelContent": true,
+  "ImportOnStartup": true,
+  "TrackImportHash": true,
+  "BatchSize": 50,
+  "LogImportSummary": true,
+  "RequireRestartAfterFirstImport": true
+}

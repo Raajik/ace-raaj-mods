@@ -32,6 +32,9 @@ public enum Features
     BundleGive,
     VendorPriceInflation,
     NoDeathDrops,
+    PetKillSummary,
+    XpTracker,
+    AutoBuff,
 }
 
 public class Settings
@@ -52,7 +55,7 @@ public class Settings
     public bool EnableDefaults { get; set; } = true;
 
     [JsonPropertyName("// EnableFellowships")]
-    public string EnableFellowshipsDoc { get; init; } = "Raises max fellowship size for this mod’s invite logic, XP share (flat or per-size table), /fship bulk invite, optional busy bypass, StopAtMaxFellowshipInvite.";
+    public string EnableFellowshipsDoc { get; init; } = "Raises max fellowship size for this mod's invite logic, XP share (flat or per-size table), /fship bulk invite, optional busy bypass, StopAtMaxFellowshipInvite.";
     public bool EnableFellowships { get; set; } = true;
 
     [JsonPropertyName("// EnablePermanentObjects")]
@@ -80,7 +83,7 @@ public class Settings
     public bool EnableStackable { get; set; } = true;
 
     [JsonPropertyName("// EnablePetAttackSelected")]
-    public string EnablePetAttackSelectedDoc { get; init; } = "Pet attacks match the player’s selected target where applicable.";
+    public string EnablePetAttackSelectedDoc { get; init; } = "Pet attacks match the player's selected target where applicable.";
     public bool EnablePetAttackSelected { get; set; } = true;
 
     [JsonPropertyName("// EnablePetMessageDamage")]
@@ -104,7 +107,7 @@ public class Settings
     public bool EnablePetEx { get; set; } = true;
 
     [JsonPropertyName("// EnablePetExShareDamage")]
-    public string EnablePetExShareDamageDoc { get; init; } = "Share damage between player and PetEx pet per that feature’s rules.";
+    public string EnablePetExShareDamageDoc { get; init; } = "Share damage between player and PetEx pet per that feature's rules.";
     public bool EnablePetExShareDamage { get; set; } = true;
 
     [JsonPropertyName("// EnableOfflineSwear")]
@@ -327,6 +330,38 @@ public class Settings
     [JsonPropertyName("// VendorSpecialItemMultiplier")]
     public string VendorSpecialItemMultiplierDoc { get; init; } = "Extra multiplier for special vendor items (imbued, cantripped, etc.). Stacks with VendorBuyRateMultiplier. 3.0 = 3× on top of base inflation.";
     public double VendorSpecialItemMultiplier { get; set; } = 3.0;
+
+    [JsonPropertyName("// EnablePetKillSummary")]
+    public string EnablePetKillSummaryDoc { get; init; } = "Batch pet kill messages into a summary after an idle window, instead of sending a message per kill.";
+    public bool EnablePetKillSummary { get; set; } = true;
+
+    [JsonPropertyName("// PetKillSummaryWindowSeconds")]
+    public string PetKillSummaryWindowSecondsDoc { get; init; } = "Idle window in seconds with no new pet kills before emitting a kill summary.";
+    public int PetKillSummaryWindowSeconds { get; set; } = 30;
+
+    [JsonPropertyName("// EnableXpTracker")]
+    public string EnableXpTrackerDoc { get; init; } = "Track XP, luminance, and bank deposits per session. Provides /xp tracker and /xp spend commands.";
+    public bool EnableXpTracker { get; set; } = true;
+
+    [JsonPropertyName("// XpTrackerWindowMinutes")]
+    public string XpTrackerWindowMinutesDoc { get; init; } = "Session window in minutes for /xp tracker display.";
+    public int XpTrackerWindowMinutes { get; set; } = 60;
+
+    [JsonPropertyName("// XpSpendStopBeforeMaxRanks")]
+    public string XpSpendStopBeforeMaxRanksDoc { get; init; } = "Stop spending XP into a stat when it is within this many ranks of max (prevents overcapping).";
+    public int XpSpendStopBeforeMaxRanks { get; set; } = 3;
+
+    [JsonPropertyName("// XpSpend")]
+    public string XpSpendSectionDoc { get; init; } = "XP spending skill weights for /xp spend. Skills not in CombatSkills or SocialSkills use SupportSkillWeight.";
+    public XpSpendSettings XpSpend { get; set; } = new();
+
+    [JsonPropertyName("// EnableAutoBuff")]
+    public string EnableAutoBuffDoc { get; init; } = "Auto-buff system: /buffs to cast best known buffs, /buffs auto for timer-based recasting.";
+    public bool EnableAutoBuff { get; set; } = true;
+
+    [JsonPropertyName("// AutoBuff")]
+    public string AutoBuffSectionDoc { get; init; } = "Auto-buff: check interval, recast buffer, toggle property id.";
+    public AutoBuffSettings AutoBuff { get; set; } = new();
 }
 
 public class KillXpMessageSettings
@@ -500,4 +535,50 @@ public class BypassPortalRestrictionsSettings
     [JsonPropertyName("// BypassOlthoiRecall")]
     public string BypassOlthoiRecallDoc { get; init; } = "Allow olthoi characters to use all recall types.";
     public bool BypassOlthoiRecall { get; set; } = true;
+}
+
+public class AutoBuffSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true, /buffs commands are available.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// TogglePropertyId")]
+    public string TogglePropertyIdDoc { get; init; } = "PropertyInt for storing auto-buff toggle state per character (1 = on, 0 = off).";
+    public int TogglePropertyId { get; set; } = 45215;
+
+    [JsonPropertyName("// CheckIntervalSeconds")]
+    public string CheckIntervalSecondsDoc { get; init; } = "How often to check and recast expiring buffs (seconds).";
+    public int CheckIntervalSeconds { get; set; } = 60;
+
+    [JsonPropertyName("// RecastBufferSeconds")]
+    public string RecastBufferSecondsDoc { get; init; } = "Recast buffs when they have less than this many seconds remaining.";
+    public int RecastBufferSeconds { get; set; } = 60;
+}
+
+public class XpSpendSettings
+{
+    [JsonPropertyName("// AttributeVitalWeight")]
+    public string AttributeVitalWeightDoc { get; init; } = "Weight for attributes and vitals relative to skills. Higher = more XP allocated to attributes/vitals.";
+    public int AttributeVitalWeight { get; set; } = 1;
+
+    [JsonPropertyName("// CombatSkills")]
+    public string CombatSkillsDoc { get; init; } = "Skill names (ACE Skill enum) considered combat for weighting (e.g. Sword, MagicAttack).";
+    public List<string> CombatSkills { get; set; } = new();
+
+    [JsonPropertyName("// CombatSkillWeight")]
+    public string CombatSkillWeightDoc { get; init; } = "Weight for combat skills.";
+    public int CombatSkillWeight { get; set; } = 2;
+
+    [JsonPropertyName("// SocialSkills")]
+    public string SocialSkillsDoc { get; init; } = "Skill names considered social for weighting (e.g. Salvaging, Appraise).";
+    public List<string> SocialSkills { get; set; } = new();
+
+    [JsonPropertyName("// SocialSkillWeight")]
+    public string SocialSkillWeightDoc { get; init; } = "Weight for social skills.";
+    public int SocialSkillWeight { get; set; } = 1;
+
+    [JsonPropertyName("// SupportSkillWeight")]
+    public string SupportSkillWeightDoc { get; init; } = "Weight for all other skills not in CombatSkills or SocialSkills.";
+    public int SupportSkillWeight { get; set; } = 1;
 }

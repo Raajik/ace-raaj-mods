@@ -12,14 +12,13 @@ public static class VendorPriceInflation
     public static void Initialize(Settings settings) => _settings = settings;
 
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(Vendor), "get_MerchandiseBuyRate")]
-    public static void PostGetMerchandiseBuyRate(ref double? __result)
+    [HarmonyPatch(typeof(Vendor), nameof(Vendor.GetBuyCost), new Type[] { typeof(WorldObject) })]
+    public static void PostGetBuyCostBase(ref int __result)
     {
         if (_settings is null || !_settings.EnableVendorPriceInflation)
             return;
 
-        var rate = __result ?? 1.0;
-        __result = rate * _settings.VendorBuyRateMultiplier;
+        __result = Math.Max(1, (int)(__result * _settings.VendorBuyRateMultiplier));
     }
 
     [HarmonyPostfix]

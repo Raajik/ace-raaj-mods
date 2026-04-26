@@ -62,52 +62,42 @@ public static class SalvageAutoDeposit
         player.SetProperty((PropertyInt64)bankProp, (long)(current + depositUnits));
     }
 
-    [HarmonyPatch(typeof(Player), nameof(Player.TryAddToInventory), new Type[] { typeof(WorldObject) })]
-    [HarmonyPostfix]
-    public static void Postfix_TryAddToInventory(Player __instance, WorldObject item)
+    // ── Intercept salvage bags entering inventory ────────────────────────────
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Player), nameof(Player.TryCreateInInventoryWithNetworking), new[] { typeof(WorldObject) })]
+    public static bool PreTryCreateInInventory(Player __instance, WorldObject item, ref bool __result)
     {
         if (__instance is null || item is null)
-            return;
+            return true;
 
         if (!IsEnabled(__instance))
-            return;
+            return true;
 
         var settings = PatchClass.Settings;
         if (settings?.EnableSalvage != true)
-            return;
-
-        var salvage = settings.Salvage;
-        if (salvage is null)
-            return;
+            return true;
 
         // Check if salvage stack (WCID 20981-21089)
         if (!IsSalvageStack(item.WeenieClassId))
-            return;
+            return true;
+
+        var salvage = settings.Salvage;
+        if (salvage is null)
+            return true;
 
         int materialIndex = GetMaterialIndex(item.WeenieClassId);
         if (materialIndex < 0)
-            return;
+            return true;
 
-        // Calculate units from item
         int rawUnits = GetSalvageUnits(item, salvage.UnitsPerItem);
         if (rawUnits <= 0)
-            return;
+            return true;
 
-        // Apply percentage - check quest count for rate
-        int questCount = GetQuestCount(__instance);
-        double percent = questCount >= salvage.RequireQuestsForUnlock 
-            ? salvage.AutoDepositPercent 
-            : salvage.AutoDepositPercentUnlocked;
-        double depositUnits = rawUnits * percent;
-        if (depositUnits < 0.01) // Skip if less than 0.01 units
-            return;
-
-        // Use same bank property IDs as LeyLineLedger
+        // Deposit full amount (100%)
         int bankProp = 40201 + materialIndex;
-
-        // Deposit to bank
         long current = __instance.GetProperty((PropertyInt64)bankProp) ?? 0;
-        __instance.SetProperty((PropertyInt64)bankProp, (long)(current + depositUnits));
+        __instance.SetProperty((PropertyInt64)bankProp, current + rawUnits);
 
         // Accumulate for message
         var playerId = __instance.Guid.Full;
@@ -116,17 +106,22 @@ public static class SalvageAutoDeposit
         {
             if (!accum.ContainsKey(materialIndex))
                 accum[materialIndex] = 0;
-            accum[materialIndex] += depositUnits;
+            accum[materialIndex] += rawUnits;
         }
 
         // Check if we should send a summary message
         var now = DateTime.UtcNow;
-        if (!LastMessageTime.TryGetValue(playerId, out var lastTime) || 
+        if (!LastMessageTime.TryGetValue(playerId, out var lastTime) ||
             (now - lastTime).TotalSeconds >= MESSAGE_INTERVAL_SECONDS)
         {
             LastMessageTime[playerId] = now;
             SendAccumulatedMessage(__instance, accum);
         }
+
+        // Destroy the item so it doesn't enter inventory
+        item.Destroy();
+        __result = true;
+        return false;
     }
 
     static void SendAccumulatedMessage(Player player, Dictionary<int, double> accum)
@@ -189,21 +184,6 @@ public static class SalvageAutoDeposit
             return structure;
         ModManager.Log($"[BSS Salvage] DEBUG: No workmanship/structure - wcid={item.WeenieClassId}, name={item.Name}, work={work}, structure={structure}, using unitsPerItem={unitsPerItem}", ModManager.LogLevel.Info);
         return unitsPerItem;
-    }
-
-    static int GetQuestCount(Player player)
-    {
-        // Admin debug bypass - check for FakeInt 49999 as debug flag
-        var debugFlag = player.GetProperty((ACE.Entity.Enum.Properties.PropertyInt)49999);
-        if (debugFlag == 1)
-            return 100;
-
-        // Check Loremaster achievement tier first (FakeInt 11050)
-        var tier = player.GetProperty((ACE.Entity.Enum.Properties.PropertyInt)11050);
-        // If tier exists, return 100+ to indicate full unlock, otherwise use tiers * 10 as proxy for quest-like progress
-        if (tier.HasValue)
-            return tier.Value > 0 ? 100 : 0;
-        return 0;
     }
 
     static string GetMaterialName(int index)

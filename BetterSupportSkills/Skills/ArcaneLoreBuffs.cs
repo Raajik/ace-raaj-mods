@@ -37,6 +37,52 @@ internal static class ArcaneLoreBuffs
         return true;
     }
 
+    /// <summary>
+    /// Returns true if the Life Magic spell is allowed to echo.
+    /// Whitelist: Hecatomb, Drain, Harm, Heal, Revitalize, Infuse.
+    /// </summary>
+    static bool IsLifeMagicEchoAllowed(Spell spell)
+    {
+        if (spell.School != MagicSchool.LifeMagic)
+            return true; // non-Life = allow (handled by other filters)
+
+        var name = spell.Name ?? "";
+        if (name.Contains("Hecatomb", StringComparison.OrdinalIgnoreCase)) return true;
+        if (name.Contains("Drain", StringComparison.OrdinalIgnoreCase)) return true;
+        if (name.Contains("Harm", StringComparison.OrdinalIgnoreCase)) return true;
+        if (name.Contains("Heal", StringComparison.OrdinalIgnoreCase)) return true;
+        if (name.Contains("Revitalize", StringComparison.OrdinalIgnoreCase)) return true;
+        if (name.Contains("Infuse", StringComparison.OrdinalIgnoreCase)) return true;
+
+        return false; // skip all other Life Magic (regen, self-buffs, etc.)
+    }
+
+    /// <summary>
+    /// Casts a spell on target, snapshotting and restoring caster vitals for Hecatomb spells.
+    /// </summary>
+    static void TryCastSpellWithVitalSnapshot(Player player, Spell spell, Creature target)
+    {
+        var isHecatomb = spell.Name?.Contains("Hecatomb", StringComparison.OrdinalIgnoreCase) == true;
+
+        uint? preHealth = null, preStamina = null, preMana = null;
+        if (isHecatomb)
+        {
+            preHealth = player.Health.Current;
+            preStamina = player.Stamina.Current;
+            preMana = player.Mana.Current;
+        }
+
+        player.TryCastSpell(spell, target);
+
+        if (isHecatomb && preHealth.HasValue)
+        {
+            player.UpdateVital(player.Health, preHealth.Value);
+            player.UpdateVital(player.Stamina, preStamina!.Value);
+            player.UpdateVital(player.Mana, preMana!.Value);
+            DebugLog($"Hecatomb vital snapshot restored for {player.Name}");
+        }
+    }
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(WorldObject), "HandleCastSpell", new Type[] {
         typeof(Spell), typeof(WorldObject), typeof(WorldObject), typeof(WorldObject), typeof(bool), typeof(bool), typeof(bool) })]
@@ -62,7 +108,20 @@ internal static class ArcaneLoreBuffs
             if (settings?.EnableArcaneLore != true)
                 return;
 
+            // Skip self-targeted beneficial spells (buffs, recalls on self, etc.)
+            if (spell.IsSelfTargeted && spell.IsBeneficial)
+                return;
+
+            // Skip portal/recall spells entirely
+            if (spell.IsPortalSpell)
+                return;
+
+            // Only echo harmful spells
             if (!spell.IsHarmful)
+                return;
+
+            // Life Magic whitelist
+            if (!IsLifeMagicEchoAllowed(spell))
                 return;
 
             var skill = player.GetCreatureSkill(Skill.ArcaneLore);
@@ -81,7 +140,7 @@ internal static class ArcaneLoreBuffs
             {
                 if (!player.IsInvalidTarget(spell, creatureTarget))
                 {
-                    player.TryCastSpell(spell, creatureTarget);
+                    TryCastSpellWithVitalSnapshot(player, spell, creatureTarget);
                     player.SendMessage("Your Arcane Lore echoes the spell!");
                     DebugLog($"Echoed spell {spell.Id} on {creatureTarget.Name}");
                 }

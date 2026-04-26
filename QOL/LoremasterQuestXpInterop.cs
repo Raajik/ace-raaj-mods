@@ -7,6 +7,7 @@ namespace QOL;
 // Calls Loremaster.ExternalXpGrants when present so level-fraction quest XP (CollectorsAcceptAll) skips the GrantXP retention/QP chain.
 internal static class LoremasterQuestXpInterop
 {
+    static MethodInfo? _grantQuestXpWithBaseRetention;
     static MethodInfo? _grantQuestXpWithoutMultiplier;
     static bool _resolved;
 
@@ -18,11 +19,13 @@ internal static class LoremasterQuestXpInterop
         if (!_resolved)
             Resolve();
 
-        if (_grantQuestXpWithoutMultiplier is not null)
+        // Prefer without-multiplier grant so collector bonus XP is not silently halved by retention.
+        var method = _grantQuestXpWithoutMultiplier ?? _grantQuestXpWithBaseRetention;
+        if (method is not null)
         {
             try
             {
-                _grantQuestXpWithoutMultiplier.Invoke(null, new object?[] { player, amount });
+                method.Invoke(null, new object?[] { player, amount });
                 return;
             }
             catch
@@ -54,7 +57,16 @@ internal static class LoremasterQuestXpInterop
                 continue;
 
             var t = asm.GetType("Loremaster.ExternalXpGrants");
-            _grantQuestXpWithoutMultiplier = t?.GetMethod(
+            if (t == null) return;
+
+            _grantQuestXpWithBaseRetention = t.GetMethod(
+                "GrantQuestXpWithBaseRetention",
+                BindingFlags.Public | BindingFlags.Static,
+                null,
+                new[] { typeof(Player), typeof(long) },
+                null);
+
+            _grantQuestXpWithoutMultiplier = t.GetMethod(
                 "GrantQuestXpWithoutMultiplier",
                 BindingFlags.Public | BindingFlags.Static,
                 null,

@@ -1,0 +1,257 @@
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using ACE.Database.Models.World;
+using ACE.Database;
+using ACE.Server.Managers;
+using ACE.Server.WorldObjects;
+
+namespace ValheelContent;
+
+internal static class ContentImporter
+{
+    private static Settings? _settings;
+    private static string _contentPath = "";
+    private static string _statePath = "";
+
+    public static void Initialize(Settings settings, string modDirectory)
+    {
+        _settings = settings;
+        _contentPath = Path.Combine(modDirectory, "Content");
+        _statePath = Path.Combine(modDirectory, "import-state.json");
+    }
+
+    public static bool ValidateContentFolder()
+    {
+        if (!Directory.Exists(_contentPath))
+        {
+            ModManager.Log("[Valheel] Content folder not found. Expected: " + _contentPath, ModManager.LogLevel.Warn);
+            return false;
+        }
+        return true;
+    }
+
+    public static void RunImport()
+    {
+        if (_settings?.EnableValheelContent != true)
+            return;
+
+        if (!ValidateContentFolder())
+            return;
+
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var previousState = ContentHashTracker.LoadState(_statePath);
+        var currentHashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        var categories = Directory.GetDirectories(_contentPath)
+            .OrderBy(d => d, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        int totalFiles = 0;
+        int importedFiles = 0;
+        int skippedFiles = 0;
+        int failedFiles = 0;
+        bool isFirstRun = previousState == null;
+
+        foreach (var categoryDir in categories)
+        {
+            var categoryName = Path.GetFileName(categoryDir);
+            var sqlFiles = Directory.GetFiles(categoryDir, "*.sql", SearchOption.AllDirectories)
+                .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (sqlFiles.Count == 0)
+                continue;
+
+            ModManager.Log($"[Valheel] Scanning {categoryName}: {sqlFiles.Count} SQL files...", ModManager.LogLevel.Info);
+
+            var filesToImport = new List<SqlFileInfo>();
+
+            foreach (var filePath in sqlFiles)
+            {
+                var relativePath = GetRelativePath(filePath, _contentPath);
+                totalFiles++;
+
+                string content;
+                try
+                {
+                    content = File.ReadAllText(filePath);
+                }
+                catch (Exception ex)
+                {
+                    ModManager.Log($"[Valheel] Failed to read {relativePath}: {ex.Message}", ModManager.LogLevel.Error);
+                    failedFiles++;
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    ModManager.Log($"[Valheel] Skipping empty file: {relativePath}", ModManager.LogLevel.Debug);
+                    skippedFiles++;
+                    continue;
+                }
+
+                var hash = ComputeHash(content);
+                currentHashes[relativePath] = hash;
+
+                if (_settings.TrackImportHash && previousState?.FileHashes != null)
+                {
+                    if (previousState.FileHashes.TryGetValue(relativePath, out var previousHash) && previousHash == hash)
+                    {
+                        skippedFiles++;
+                        continue;
+                    }
+                }
+
+                filesToImport.Add(new SqlFileInfo(filePath, relativePath, hash, content));
+            }
+
+            if (filesToImport.Count > 0)
+            {
+                ModManager.Log($"[Valheel] Importing {filesToImport.Count} new/changed files in {categoryName}...", ModManager.LogLevel.Info);
+                var (catImported, catFailed) = ImportBatch(filesToImport);
+                importedFiles += catImported;
+                failedFiles += catFailed;
+            }
+        }
+
+        // Clear ACE caches after all imports
+        if (importedFiles > 0)
+        {
+            ClearAceCaches();
+        }
+
+        // Save state
+        ContentHashTracker.SaveState(_statePath, new ImportState
+        {
+            LastImportUtc = DateTime.UtcNow,
+            FileHashes = currentHashes
+        });
+
+        stopwatch.Stop();
+
+        if (_settings.LogImportSummary)
+        {
+            ModManager.Log($"[Valheel] Import complete in {stopwatch.Elapsed.TotalSeconds:F1}s. Total: {totalFiles}, Imported: {importedFiles}, Skipped: {skippedFiles}, Failed: {failedFiles}", ModManager.LogLevel.Info);
+        }
+
+        if (isFirstRun && _settings.RequireRestartAfterFirstImport && importedFiles > 0)
+        {
+            ModManager.Log("[Valheel] FIRST IMPORT COMPLETE. A server restart is strongly recommended to ensure all ACE caches are fully refreshed and new content is available.", ModManager.LogLevel.Warn);
+        }
+    }
+
+    private static (int imported, int failed) ImportBatch(List<SqlFileInfo> files)
+    {
+        int imported = 0;
+        int failed = 0;
+        int batchSize = _settings?.BatchSize ?? 50;
+
+        for (int i = 0; i < files.Count; i += batchSize)
+        {
+            var batch = files.Skip(i).Take(batchSize).ToList();
+
+            try
+            {
+                using var ctx = new WorldDbContext();
+                using var tx = ctx.Database.BeginTransaction();
+
+                foreach (var file in batch)
+                {
+                    try
+                    {
+                        ctx.Database.ExecuteSqlRaw(file.Content);
+                        imported++;
+                    }
+                    catch (Exception ex)
+                    {
+                        ModManager.Log($"[Valheel] SQL error in {file.RelativePath}: {ex.Message}", ModManager.LogLevel.Error);
+                        failed++;
+                        // Continue with next file in batch — don't abort the batch
+                    }
+                }
+
+                tx.Commit();
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[Valheel] Batch transaction failed (files {i}-{i + batch.Count}): {ex.Message}", ModManager.LogLevel.Error);
+                failed += batch.Count;
+            }
+        }
+
+        return (imported, failed);
+    }
+
+    private static void ClearAceCaches()
+    {
+        try
+        {
+            DatabaseManager.World.ClearWeenieCache();
+            ModManager.Log("[Valheel] Cleared weenie cache.", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Valheel] Failed to clear weenie cache: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
+            DatabaseManager.World.ClearCookbookCache();
+            ModManager.Log("[Valheel] Cleared cookbook cache.", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Valheel] Failed to clear cookbook cache: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
+            DatabaseManager.World.ClearCachedLandblockInstances();
+            ModManager.Log("[Valheel] Cleared landblock instance cache.", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Valheel] Failed to clear landblock cache: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
+            DatabaseManager.World.ClearWieldedTreasureCache();
+            ModManager.Log("[Valheel] Cleared wielded treasure cache.", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Valheel] Failed to clear wielded treasure cache: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
+            DatabaseManager.World.ClearSpellCache();
+            ModManager.Log("[Valheel] Cleared spell cache.", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Valheel] Failed to clear spell cache: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    private static string ComputeHash(string content)
+    {
+        var bytes = Encoding.UTF8.GetBytes(content);
+        var hash = MD5.HashData(bytes);
+        return Convert.ToHexString(hash);
+    }
+
+    private static string GetRelativePath(string fullPath, string basePath)
+    {
+        if (fullPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase))
+        {
+            var relative = fullPath.Substring(basePath.Length).TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            return relative.Replace(Path.DirectorySeparatorChar, '/');
+        }
+        return fullPath;
+    }
+
+    private record SqlFileInfo(string FullPath, string RelativePath, string Hash, string Content);
+}

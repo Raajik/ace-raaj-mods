@@ -36,117 +36,117 @@ public static class SummoningClasses
         ["Druid"] = new[]
         {
             "The winds carry whispers of ancient groves. You sense the calling of the Druid, but your bond with Life Magic is not yet strong enough.",
-            "A wasp lands gently on your shoulder and flies away. The path of the Druid is close, but your Life Magic must deepen to 100 base.",
-            "The forest spirits watch you curiously. They will only answer to a true Druid — one who has mastered Summoning and Life Magic alike.",
-            "You feel the pulse of nature, faint but unmistakable. The Druid's path awaits those with 100 base skill in both Summoning and Life Magic.",
-            "Leaves swirl around you in an unseen breeze. The wild calls, but you lack the base prowess in Life Magic and Summoning to answer.",
-            "A stag watches you from the treeline before vanishing. Nature's trust is earned through mastery, not mere interest.",
-            "The soil beneath your feet feels alive, yet distant. The Druid's communion requires 100 base Summoning and Life Magic.",
-            "You dream of swaying canopies and buzzing hives. Dreams are not enough — forge your skills to 100 base to awaken the Druid within.",
+            "A wasp lands gently on your shoulder and flies away. The path of the Druid is close, but your Life Magic must be specialized to answer.",
+            "The forest spirits watch you curiously. They will only answer to a true Druid — one who has specialized both Summoning and Life Magic.",
+            "You feel the pulse of nature, faint but unmistakable. The Druid's path awaits those who have specialized Summoning and Life Magic.",
+            "Leaves swirl around you in an unseen breeze. The wild calls, but you lack the specialized skill in Life Magic and Summoning to answer.",
+            "A stag watches you from the treeline before vanishing. Nature's trust is earned through dedication, not mere interest.",
+            "The soil beneath your feet feels alive, yet distant. The Druid's communion requires specialized Summoning and Life Magic.",
+            "You dream of swaying canopies and buzzing hives. Dreams are not enough — specialize both skills to awaken the Druid within.",
             "A druidic circle appears briefly in the corner of your vision, then fades. Your potential is noted, but your skills are lacking.",
-            "The scent of rain and pollen fills your senses. The path is there, hidden behind the threshold of 100 base skill.",
-            "Vines curl toward you, then withdraw. Nature courts you, but will not commit until you reach the required mastery.",
-            "You hear the distant song of the Great Hive. Only those with true mastery over Summoning and Life Magic may join the chorus.",
+            "The scent of rain and pollen fills your senses. The path is there, hidden behind the threshold of true specialization.",
+            "Vines curl toward you, then withdraw. Nature courts you, but will not commit until you specialize the required arts.",
+            "You hear the distant song of the Great Hive. Only those with specialized Summoning and Life Magic may join the chorus.",
             "A glowing seed appears in your palm, then crumbles to dust. The Druid's gift requires stronger foundations.",
-            "Bees circle your head three times and depart. An omen — your Summoning and Life Magic must both reach 100 base.",
-            "The Green whispers your name, but softly. Speak louder through your skills, and it shall answer in full.",
-            "You stand at the edge of an ancient grove, barred by mist. Clear it with 100 base Summoning and Life Magic.",
-            "A wolf howls in the distance, and you understand the meaning: 'Not yet, but soon.' Grow stronger.",
-            "The roots of the world pulse beneath you. They sense your potential, but demand proof through skill.",
+            "Bees circle your head three times and depart. An omen — your Summoning and Life Magic must both be specialized.",
+            "The Green whispers your name, but softly. Speak louder through your specialized skills, and it shall answer in full.",
+            "You stand at the edge of an ancient grove, barred by mist. Clear it with specialized Summoning and Life Magic.",
+            "A wolf howls in the distance, and you understand the meaning: 'Not yet, but soon.' Commit to the path.",
+            "The roots of the world pulse beneath you. They sense your potential, but demand proof through specialization.",
             "A butterfly with wings of emerald light flutters past. It leads to the Druid's path, but you cannot yet follow.",
-            "The Old Growth rumbles in its slumber. Wake it with mastery — 100 base in Summoning and Life Magic."
+            "The Old Growth rumbles in its slumber. Wake it with mastery — specialize both Summoning and Life Magic."
         },
         ["Elementalist"] = new[]
         {
             "The air around you crackles with unspent energy. The Elementalist's path shimmers before you, but your War Magic remains too weak.",
-            "A spark leaps from your fingertips to the ground. The elements notice you, but demand 100 base mastery in Summoning and War Magic.",
-            "You feel the heat of a forge that exists only in your mind. Stoke it — reach 100 base in War Magic and Summoning.",
+            "A spark leaps from your fingertips to the ground. The elements notice you, but demand specialized mastery in Summoning and War Magic.",
+            "You feel the heat of a forge that exists only in your mind. Stoke it — specialize both War Magic and Summoning.",
             "Frost gathers on your armor, then melts away. The elements tease you. Prove yourself with skill to earn their loyalty.",
-            "A pebble floats for a heartbeat, then drops. Your telekinetic potential is real, but needs 100 base Summoning and War Magic to bloom.",
+            "A pebble floats for a heartbeat, then drops. Your telekinetic potential is real, but needs specialized Summoning and War Magic to bloom.",
             "The sky darkens for exactly one second above you. The Primal forces are watching, waiting for your mastery to manifest.",
             "Static electricity makes your hair stand on end. The Elementalist within you stirs, but cannot yet break free.",
             "You see four motes of light — red, blue, white, yellow — dancing in a circle. They scatter before you can grasp them.",
             "The echo of a thunderclap follows your every step for a moment. The storm knows your name, but not your strength.",
             "A gust of wind shapes itself into an arrow, pointing forward, then dissipates. Follow it through mastery.",
-            "Your shadow flickers with an inner flame that isn't yours. The Primalist's power lurks within, gated by your base skill.",
+            "Your shadow flickers with an inner flame that isn't yours. The Primalist's power lurks within, gated by your specialized skill.",
             "Magma veins glow faintly beneath the earth you walk on. The world's fire responds to those with true War Magic mastery.",
-            "Crystals hum in your pack, resonating with nearby ley lines. Attune yourself fully — 100 base in both required skills.",
+            "Crystals hum in your pack, resonating with nearby ley lines. Attune yourself fully — specialize both required skills.",
             "A raindrop falls upward, just one. The elements are playful, but they will not serve a master who has not earned their rank.",
-            "You taste ozone and copper on your tongue. The storm is close. Reach out with 100 base Summoning and War Magic.",
+            "You taste ozone and copper on your tongue. The storm is close. Reach out with specialized Summoning and War Magic.",
             "An elemental rune burns itself into the dirt at your feet, then fades. Learn its meaning through mastery.",
             "The air pressure shifts, making your ears pop. Something vast is near — an Elementalist's power, waiting for its vessel.",
             "Sparks form a constellation above your head, then scatter like frightened fireflies. They need a stronger anchor.",
             "You hear the heartbeat of a volcano, slow and immense. It synchronizes with yours for three beats, then falls silent.",
-            "The four elements hold a council, and your name is spoken. The verdict: 'Prove it with 100 base skill.'"
+            "The four elements hold a council, and your name is spoken. The verdict: 'Prove it with specialized skill.'"
         },
         ["Necromancer"] = new[]
         {
             "A chill passes through you, though the sun is bright. The grave whispers your name, but your Void Magic is too shallow.",
             "A raven watches you from a dead branch, then caws three times. The Necromancer's path is not for the half-trained.",
-            "Your reflection in still water shows a skull for exactly one second. The veil is thin, but your Void Magic must reach 100 base.",
+            "Your reflection in still water shows a skull for exactly one second. The veil is thin, but your Void Magic must be specialized.",
             "You find a bone coin in your pocket that you don't remember owning. The dead invest in those who show true mastery.",
-            "The ground beneath a fresh grave trembles, then settles. They know you, but will not rise until you command with 100 base skill.",
+            "The ground beneath a fresh grave trembles, then settles. They know you, but will not rise until you command with specialized skill.",
             "A ghostly hand brushes your shoulder, then withdraws. Even spirits are shy around those who haven't proven their power.",
             "You smell grave dirt and formaldehyde on the wind. The Necromancer's garden beckons, but the gate is locked by skill.",
-            "A skeleton's jawbone chatters on its own. It is laughing — not cruelly, but at your impatience. Grow to 100 base.",
+            "A skeleton's jawbone chatters on its own. It is laughing — not cruelly, but at your impatience. Specialize both arts.",
             "Your shadow stretches too long for the angle of the sun. Something walks behind you, waiting for your mastery to match its own.",
             "A funeral bell tolls in a town you cannot see. It rings for your potential, not your death. Answer it with skill.",
             "The pages of a nearby book turn to a diagram of anatomy you didn't know existed. Knowledge is not enough — power is required.",
-            "You feel the weight of a hundred unburied souls pressing on your mind. Only 100 base Void Magic and Summoning can bear it.",
+            "You feel the weight of a hundred unburied souls pressing on your mind. Only specialized Void Magic and Summoning can bear it.",
             "A wisp of green flame dances on your palm, then gutters out. The necrotic fire needs more fuel — your skill must grow.",
-            "The dead speak to you in dreams, but their voices are muffled. Sharpen your Void Magic to 100 base to hear them clearly.",
+            "The dead speak to you in dreams, but their voices are muffled. Sharpen your Void Magic through specialization to hear them clearly.",
             "A tombstone etches itself into the bark of a tree near you. Your name is not on it yet, but the inscription is waiting.",
             "You hear the clatter of bones assembling themselves in an empty room. They are practicing for your arrival. Don't keep them waiting.",
             "Your blood runs cold for no reason, then warms again. The Necromancer's touch is upon you, but not yet within you.",
             "A phantasmal choir sings a single dirge note in your ears. They are calling you home — the home of true mastery.",
-            "The concept of decay fascinates you more than it should. Indulge that fascination. Master it with 100 base skill.",
+            "The concept of decay fascinates you more than it should. Indulge that fascination. Master it with specialized skill.",
             "A skull rolled by the wind stops at your feet, staring upward. It sees potential. Fulfill it with Summoning and Void Magic mastery."
         },
         ["Enchanter"] = new[]
         {
             "The world seems slightly more colorful for a heartbeat, then dulls again. The Enchanter's lens is cracked until your Creature Enchantment deepens.",
-            "You feel the weave of magic around creatures, tangled and knotted. Untangle it with 100 base Summoning and Creature Enchantment.",
+            "You feel the weave of magic around creatures, tangled and knotted. Untangle it with specialized Summoning and Creature Enchantment.",
             "A stray enchantment from a nearby battle washes over you harmlessly. It recognizes kinship, but your skill is not yet sufficient.",
-            "Animals freeze when you look at them, then flee. They sense the Enchanter within you, still caged by insufficient base skill.",
-            "A scroll of Creature Enchantment unfurls in your mind's eye, but the text is blurred. Reach 100 base to read it clearly.",
+            "Animals freeze when you look at them, then flee. They sense the Enchanter within you, still caged by insufficient specialization.",
+            "A scroll of Creature Enchantment unfurls in your mind's eye, but the text is blurred. Specialize the skill to read it clearly.",
             "You see the threads of influence connecting every living thing. They are too fine for your fingers to grasp just yet.",
-            "A melody plays that only you can hear — the song of dominated wills. Learn its notes through 100 base mastery.",
+            "A melody plays that only you can hear — the song of dominated wills. Learn its notes through specialized mastery.",
             "Your reflection in a window smiles a second after you do. The copy knows something you don't: that mastery is coming.",
             "The air shimmers with half-formed glamours wherever you walk. Your potential leaks out; contain it with true skill.",
             "A puppet without strings turns its head toward you. It recognizes a future master, but awaits the required power.",
-            "You feel the heartbeat of every beast in a hundred-yard radius. Empathy is the first step; control comes at 100 base.",
+            "You feel the heartbeat of every beast in a hundred-yard radius. Empathy is the first step; control comes through specialization.",
             "An invisible hand writes formulas in the dust on your armor. The equations of the Enchanter, still too complex for you.",
             "A bird lands on your finger and speaks a single word in a language you almost understand. Almost is not enough.",
             "The scales of a nearby lizard shift colors to match your mood. It is drawn to you, but your Creature Enchantment must deepen.",
-            "You dream of a menagerie where every creature bears your mark. Dreams require 100 base Summoning and Creature Enchantment to become real.",
+            "You dream of a menagerie where every creature bears your mark. Dreams require specialized Summoning and Creature Enchantment to become real.",
             "A compulsion spell dissipates inches from your face, cast by no one. Your own untapped power, warning you to grow stronger.",
             "The eyes of a statue follow you. It was not enchanted before you walked by. The latent magic is there; shape it with skill.",
-            "You taste honey and iron on your tongue — the flavor of charm and binding. Acquire the taste fully at 100 base.",
+            "You taste honey and iron on your tongue — the flavor of charm and binding. Acquire the taste fully through specialization.",
             "A circle of mushrooms grows where you stood only a minute ago. The fey sense your potential, but respect only mastery.",
-            "The Enchanter's sigil burns in the air before you, incomplete. Finish it with 100 base skill in both required arts."
+            "The Enchanter's sigil burns in the air before you, incomplete. Finish it with specialized skill in both required arts."
         },
         ["Artificer"] = new[]
         {
             "A wisp of light circles your head three times, then vanishes. The Artificer's companion is shy until your Item Enchantment reaches mastery.",
-            "Every item you touch feels heavier for a heartbeat, as if laden with potential enchantments. Lighten the load with 100 base skill.",
+            "Every item you touch feels heavier for a heartbeat, as if laden with potential enchantments. Lighten the load with specialized skill.",
             "You see the invisible seams where magic is stitched into objects. Your fingers itch to pull them, but your skill is not yet enough.",
             "A discarded wand at your feet twitches toward you. It senses a future Artificer, but demands proof through mastery.",
             "The mana in the air crystallizes around your hands for a moment, then melts. You are a crucible, but not yet hot enough.",
             "You hear the whispered names of a thousand enchanted items, all at once, then silence. The chorus awaits your conducting hand.",
             "A spark of Item Enchantment jumps from a stranger's ring to your finger. The magic wants to flow through you — open the channel with skill.",
             "You understand the purpose of a magical device just by glancing at it. Understanding is the first step; mastery is the destination.",
-            "The runes on your equipment glow brighter when you are near. They are cheering you on toward 100 base Item Enchantment and Summoning.",
+            "The runes on your equipment glow brighter when you are near. They are cheering you on toward specialized Item Enchantment and Summoning.",
             "An alchemist's flask shatters in your pack, but the liquid holds its shape for a second. Your latent magic is playful; discipline it.",
             "You see the ghostly outline of an enchantment that could be added to your weapon. The blueprint is clear, but your hands cannot yet build it.",
-            "A wisp manifests in your peripheral vision whenever you cast a spell. It is curious about you. Impress it with 100 base mastery.",
+            "A wisp manifests in your peripheral vision whenever you cast a spell. It is curious about you. Impress it with specialized mastery.",
             "The metal in your armor resonates with your heartbeat, humming a single note. Tune it to the chord of true mastery.",
-            "You intuitively know how to improve a stranger's magical item, but lack the power to execute the improvement. Grow to 100 base.",
+            "You intuitively know how to improve a stranger's magical item, but lack the power to execute the improvement. Specialize both arts.",
             "A shower of spectral sparks erupts from your fingers when you snap them. The Artificer's signature, written in potential.",
             "Every magical item you see has a second, hidden aura that others miss. You can almost read the aura. Almost.",
             "A tool you have never held before feels perfectly balanced in your grip. The Artificer's instinct is there; the power must catch up.",
             "You hear the soft chiming of a thousand enchanted bells, all slightly out of tune. Only a true Artificer can harmonize them.",
             "The world of objects opens itself to you like a book written in a language you are still learning. Finish the lesson with skill.",
-            "A wisp-shaped constellation appears in the dust at your feet. The pattern is an invitation — RSVP with 100 base Item Enchantment and Summoning."
+            "A wisp-shaped constellation appears in the dust at your feet. The pattern is an invitation — RSVP with specialized Item Enchantment and Summoning."
         }
     };
 
@@ -155,7 +155,7 @@ public static class SummoningClasses
     static readonly Dictionary<int, uint> DrainHealthSpellIds = new();
     static bool _spellsCached = false;
 
-    const int UNLOCK_SKILL_THRESHOLD = 100;
+
 
     // -- WCID Pools ------------------------------------------------------
 
@@ -415,6 +415,7 @@ public static class SummoningClasses
             if (spell == null) return;
             if (!IsHarmfulSpell(spell)) return;
 
+            LastCombatHitUtc[player.Guid.Full] = DateTime.UtcNow;
             TrySummonPets(player);
         }
         catch (Exception ex)
@@ -663,6 +664,9 @@ public static class SummoningClasses
                 lock (activePets) { activePets.Add(pet); }
                 TrackedPetGuids.Add(pet.Guid.Full);
 
+                int duration = PatchClass.Settings?.SummoningClasses?.SummonDurationSeconds ?? 15;
+                StartDestroyTimer(pet, duration);
+
                 summonedCount++;
             }
         }
@@ -670,13 +674,6 @@ public static class SummoningClasses
         if (summonedCount > 0)
         {
             try { player.ApplyVisualEffects(visualEffect, 1.0f); } catch { }
-
-            var profile = PlayerProfileStore.GetOrCreate(player.Guid.Full);
-            if (profile.SummonMessagesEnabled)
-            {
-                string msg = GetSummonMessage(className, typeName, summonedCount);
-                player.SendMessage(msg, ChatMessageType.Magic);
-            }
         }
     }
 
@@ -795,16 +792,14 @@ public static class SummoningClasses
         }
     }
 
-    static void StartDestroyTimer(CombatPet pet, int seconds)
+static void StartDestroyTimer(CombatPet pet, int seconds)
     {
+        // Don't call Destroy here - let the heartbeat handler (PostCombatPetHeartbeat) handle destroy on ACE's main thread
+        // It times out after 10 seconds of no combat damage, cleaner than our manual timer
         _ = Task.Run(async () =>
         {
-            try
-            {
-                await Task.Delay(seconds * 1000);
-                if (!pet.IsDestroyed) pet.Destroy();
-            }
-            catch { }
+            try { await Task.Delay(seconds * 1000); } catch { }
+            // Just ensure tracking is removed after timeout - heartbeat should have already cleaned up if combat active
             RemoveFromTracking(pet);
         });
     }
@@ -884,6 +879,9 @@ public static class SummoningClasses
 
             lock (activePets) { activePets.Add(secondPet); }
             TrackedPetGuids.Add(secondPet.Guid.Full);
+
+            int duration = PatchClass.Settings?.SummoningClasses?.SummonDurationSeconds ?? 15;
+            StartDestroyTimer(secondPet, duration);
         }
     }
 
@@ -970,6 +968,22 @@ public static class SummoningClasses
         }
     }
 
+    // -- Suppress death broadcast for tracked pets -----------------------
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Creature), nameof(Creature.Die), new Type[] { typeof(DamageHistoryInfo), typeof(DamageHistoryInfo) })]
+    public static bool PreCreatureDie(Creature __instance)
+    {
+        if (__instance is CombatPet pet && TrackedPetGuids.Contains(pet.Guid.Full))
+        {
+            // Silently destroy without broadcasting death message
+            pet.Destroy();
+            RemoveFromTracking(pet);
+            return false;
+        }
+        return true;
+    }
+
     // -- Heartbeat Patch (Follow Behavior) -------------------------------
 
     [HarmonyPostfix]
@@ -990,13 +1004,6 @@ public static class SummoningClasses
                 RemoveFromTracking(__instance);
                 return;
             }
-        }
-        else
-        {
-            // No combat hit recorded yet (shouldn't happen for tracked pets, but safety)
-            __instance.Destroy();
-            RemoveFromTracking(__instance);
-            return;
         }
 
         if (__instance.AttackTarget != null && !__instance.AttackTarget.IsDestroyed) return;
@@ -1065,18 +1072,18 @@ public static class SummoningClasses
 
     static readonly Dictionary<string, (string Description, string Requirements)> ClassDescriptions = new()
     {
-        ["Druid"] = ("Summon nature allies. 2× pets, no device cooldown.", "Spec Summoning + Life Magic, 100+ base each"),
-        ["Elementalist"] = ("Summon elemental allies. 2× pets, no device cooldown.", "Spec Summoning + War Magic, 100+ base each"),
-        ["Necromancer"] = ("Summon undead allies. 2× pets, no device cooldown.", "Spec Summoning + Void Magic, 100+ base each"),
-        ["Enchanter"] = ("Summon golem allies. 2× pets, no device cooldown.", "Spec Summoning + Creature Enchantment, 100+ base each"),
-        ["Artificer"] = ("Summon wisp allies with Imperil/Drain procs. 2× pets, no cooldown.", "Spec Summoning + Item Enchantment, 100+ base each"),
-        ["Rogue"] = ("Dual-wield finesse bleeds. 2× Dirty Fighting debuffs.", "Spec Dirty Fighting + Dual Wield + Finesse Weapons, 100+ base each"),
-        ["Berserker"] = ("Heavy/two-handed reckless strikes. 8% life steal.", "Spec Heavy Weapons OR Two Handed + Recklessness, 100+ base each. NO Melee Defense"),
-        ["Crusader"] = ("Shield melee with passive heals, 50% crit, 2× thorns on all hits.", "Spec Light OR Heavy Weapons + Shield + Melee Defense, 100+ base each"),
-        ["Windwalker"] = ("Light weapons + war magic. Elemental streaks at nearby enemies.", "Spec Light Weapons + War Magic + Mana Conversion, 100+ base each"),
-        ["Battlemage"] = ("Two-handed + war magic. Elemental arcs with volley echoes.", "Spec Two Handed + War Magic + Mana Conversion, 100+ base each"),
-        ["DeathKnight"] = ("Heavy/two-handed + void magic. Nether streaks/arcs + aura damage.", "Spec Heavy OR Two Handed + Void Magic + Arcane Lore, 100+ base each"),
-        ["Bloodmage"] = ("Life magic + mana conversion. Hecatomb echoes + drain AoE + aura.", "Spec Life Magic + Mana Conversion + Arcane Lore, 100+ base each"),
+        ["Druid"] = ("Summon nature allies. 2× pets, no device cooldown.", "Spec Summoning + Life Magic, specialized"),
+        ["Elementalist"] = ("Summon elemental allies. 2× pets, no device cooldown.", "Spec Summoning + War Magic, specialized"),
+        ["Necromancer"] = ("Summon undead allies. 2× pets, no device cooldown.", "Spec Summoning + Void Magic, specialized"),
+        ["Enchanter"] = ("Summon golem allies. 2× pets, no device cooldown.", "Spec Summoning + Creature Enchantment, specialized"),
+        ["Artificer"] = ("Summon wisp allies with Imperil/Drain procs. 2× pets, no cooldown.", "Spec Summoning + Item Enchantment, specialized"),
+        ["Rogue"] = ("Dual-wield finesse bleeds. 2× Dirty Fighting debuffs.", "Spec Dirty Fighting + Dual Wield + Finesse Weapons, specialized"),
+        ["Berserker"] = ("Heavy/two-handed reckless strikes. 8% life steal.", "Spec Heavy Weapons OR Two Handed + Recklessness, specialized. NO Melee Defense"),
+        ["Crusader"] = ("Shield melee with passive heals, 50% crit, 2× thorns on all hits.", "Spec Light OR Heavy Weapons + Shield + Melee Defense, specialized"),
+        ["Windwalker"] = ("Light weapons + war magic. Elemental streaks at nearby enemies.", "Spec Light Weapons + War Magic + Mana Conversion, specialized"),
+        ["Battlemage"] = ("Two-handed + war magic. Elemental arcs with volley echoes.", "Spec Two Handed + War Magic + Mana Conversion, specialized"),
+        ["DeathKnight"] = ("Heavy/two-handed + void magic. Nether streaks/arcs + aura damage.", "Spec Heavy OR Two Handed + Void Magic + Arcane Lore, specialized"),
+        ["Bloodmage"] = ("Life magic + mana conversion. Hecatomb echoes + drain AoE + aura.", "Spec Life Magic + Mana Conversion + Arcane Lore, specialized"),
     };
 
     static int GetClassReadinessScore(Player player, string className)
@@ -1087,104 +1094,74 @@ public static class SummoningClasses
         switch (className)
         {
             case "Druid":
-                maxScore = 6;
+                maxScore = 4;
                 if (IsSpec(player, Skill.Summoning)) score += 2; else if (IsTrained(player, Skill.Summoning)) score += 1;
-                if (GetBase(player, Skill.Summoning) >= 100) score += 1;
                 if (IsSpec(player, Skill.LifeMagic)) score += 2; else if (IsTrained(player, Skill.LifeMagic)) score += 1;
-                if (GetBase(player, Skill.LifeMagic) >= 100) score += 1;
                 break;
             case "Elementalist":
-                maxScore = 6;
+                maxScore = 4;
                 if (IsSpec(player, Skill.Summoning)) score += 2; else if (IsTrained(player, Skill.Summoning)) score += 1;
-                if (GetBase(player, Skill.Summoning) >= 100) score += 1;
                 if (IsSpec(player, Skill.WarMagic)) score += 2; else if (IsTrained(player, Skill.WarMagic)) score += 1;
-                if (GetBase(player, Skill.WarMagic) >= 100) score += 1;
                 break;
             case "Necromancer":
-                maxScore = 6;
+                maxScore = 4;
                 if (IsSpec(player, Skill.Summoning)) score += 2; else if (IsTrained(player, Skill.Summoning)) score += 1;
-                if (GetBase(player, Skill.Summoning) >= 100) score += 1;
                 if (IsSpec(player, Skill.VoidMagic)) score += 2; else if (IsTrained(player, Skill.VoidMagic)) score += 1;
-                if (GetBase(player, Skill.VoidMagic) >= 100) score += 1;
                 break;
             case "Enchanter":
-                maxScore = 6;
+                maxScore = 4;
                 if (IsSpec(player, Skill.Summoning)) score += 2; else if (IsTrained(player, Skill.Summoning)) score += 1;
-                if (GetBase(player, Skill.Summoning) >= 100) score += 1;
                 if (IsSpec(player, Skill.CreatureEnchantment)) score += 2; else if (IsTrained(player, Skill.CreatureEnchantment)) score += 1;
-                if (GetBase(player, Skill.CreatureEnchantment) >= 100) score += 1;
                 break;
             case "Artificer":
-                maxScore = 6;
+                maxScore = 4;
                 if (IsSpec(player, Skill.Summoning)) score += 2; else if (IsTrained(player, Skill.Summoning)) score += 1;
-                if (GetBase(player, Skill.Summoning) >= 100) score += 1;
                 if (IsSpec(player, Skill.ItemEnchantment)) score += 2; else if (IsTrained(player, Skill.ItemEnchantment)) score += 1;
-                if (GetBase(player, Skill.ItemEnchantment) >= 100) score += 1;
                 break;
             case "Rogue":
-                maxScore = 9;
+                maxScore = 6;
                 if (IsSpec(player, Skill.DirtyFighting)) score += 2; else if (IsTrained(player, Skill.DirtyFighting)) score += 1;
-                if (GetBase(player, Skill.DirtyFighting) >= 100) score += 1;
                 if (IsSpec(player, Skill.DualWield)) score += 2; else if (IsTrained(player, Skill.DualWield)) score += 1;
-                if (GetBase(player, Skill.DualWield) >= 100) score += 1;
                 if (IsSpec(player, Skill.FinesseWeapons)) score += 2; else if (IsTrained(player, Skill.FinesseWeapons)) score += 1;
-                if (GetBase(player, Skill.FinesseWeapons) >= 100) score += 1;
                 break;
             case "Berserker":
-                maxScore = 7;
+                maxScore = 4;
                 if (IsSpec(player, Skill.HeavyWeapons) || IsSpec(player, Skill.TwoHandedCombat)) score += 2;
                 else if (IsTrained(player, Skill.HeavyWeapons) || IsTrained(player, Skill.TwoHandedCombat)) score += 1;
-                if (GetBase(player, Skill.HeavyWeapons) >= 100 || GetBase(player, Skill.TwoHandedCombat) >= 100) score += 1;
                 if (IsSpec(player, Skill.Recklessness)) score += 2; else if (IsTrained(player, Skill.Recklessness)) score += 1;
-                if (GetBase(player, Skill.Recklessness) >= 100) score += 1;
                 if (AchievementUnlockedApi.IsTrainedOrSpec(player, Skill.MeleeDefense)) score -= 2;
                 break;
             case "Crusader":
-                maxScore = 9;
+                maxScore = 6;
                 if (IsSpec(player, Skill.LightWeapons) || IsSpec(player, Skill.HeavyWeapons)) score += 2;
                 else if (IsTrained(player, Skill.LightWeapons) || IsTrained(player, Skill.HeavyWeapons)) score += 1;
-                if (GetBase(player, Skill.LightWeapons) >= 100 || GetBase(player, Skill.HeavyWeapons) >= 100) score += 1;
                 if (IsSpec(player, Skill.Shield)) score += 2; else if (IsTrained(player, Skill.Shield)) score += 1;
-                if (GetBase(player, Skill.Shield) >= 100) score += 1;
                 if (IsSpec(player, Skill.MeleeDefense)) score += 2; else if (IsTrained(player, Skill.MeleeDefense)) score += 1;
-                if (GetBase(player, Skill.MeleeDefense) >= 100) score += 1;
                 break;
             case "Windwalker":
-                maxScore = 9;
+                maxScore = 6;
                 if (IsSpec(player, Skill.LightWeapons)) score += 2; else if (IsTrained(player, Skill.LightWeapons)) score += 1;
-                if (GetBase(player, Skill.LightWeapons) >= 100) score += 1;
                 if (IsSpec(player, Skill.WarMagic)) score += 2; else if (IsTrained(player, Skill.WarMagic)) score += 1;
-                if (GetBase(player, Skill.WarMagic) >= 100) score += 1;
                 if (IsSpec(player, Skill.ManaConversion)) score += 2; else if (IsTrained(player, Skill.ManaConversion)) score += 1;
-                if (GetBase(player, Skill.ManaConversion) >= 100) score += 1;
                 break;
             case "Battlemage":
-                maxScore = 9;
+                maxScore = 6;
                 if (IsSpec(player, Skill.TwoHandedCombat)) score += 2; else if (IsTrained(player, Skill.TwoHandedCombat)) score += 1;
-                if (GetBase(player, Skill.TwoHandedCombat) >= 100) score += 1;
                 if (IsSpec(player, Skill.WarMagic)) score += 2; else if (IsTrained(player, Skill.WarMagic)) score += 1;
-                if (GetBase(player, Skill.WarMagic) >= 100) score += 1;
                 if (IsSpec(player, Skill.ManaConversion)) score += 2; else if (IsTrained(player, Skill.ManaConversion)) score += 1;
-                if (GetBase(player, Skill.ManaConversion) >= 100) score += 1;
                 break;
             case "DeathKnight":
-                maxScore = 9;
+                maxScore = 6;
                 if (IsSpec(player, Skill.HeavyWeapons) || IsSpec(player, Skill.TwoHandedCombat)) score += 2;
                 else if (IsTrained(player, Skill.HeavyWeapons) || IsTrained(player, Skill.TwoHandedCombat)) score += 1;
-                if (GetBase(player, Skill.HeavyWeapons) >= 100 || GetBase(player, Skill.TwoHandedCombat) >= 100) score += 1;
                 if (IsSpec(player, Skill.VoidMagic)) score += 2; else if (IsTrained(player, Skill.VoidMagic)) score += 1;
-                if (GetBase(player, Skill.VoidMagic) >= 100) score += 1;
                 if (IsSpec(player, Skill.ArcaneLore)) score += 2; else if (IsTrained(player, Skill.ArcaneLore)) score += 1;
-                if (GetBase(player, Skill.ArcaneLore) >= 100) score += 1;
                 break;
             case "Bloodmage":
-                maxScore = 9;
+                maxScore = 6;
                 if (IsSpec(player, Skill.LifeMagic)) score += 2; else if (IsTrained(player, Skill.LifeMagic)) score += 1;
-                if (GetBase(player, Skill.LifeMagic) >= 100) score += 1;
                 if (IsSpec(player, Skill.ManaConversion)) score += 2; else if (IsTrained(player, Skill.ManaConversion)) score += 1;
-                if (GetBase(player, Skill.ManaConversion) >= 100) score += 1;
                 if (IsSpec(player, Skill.ArcaneLore)) score += 2; else if (IsTrained(player, Skill.ArcaneLore)) score += 1;
-                if (GetBase(player, Skill.ArcaneLore) >= 100) score += 1;
                 break;
         }
 
@@ -1213,7 +1190,7 @@ public static class SummoningClasses
     // -- /class Command --------------------------------------------------
 
     [CommandHandler("class", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
-        "View or change your class. Classes unlock via achievements at 100 base skill in required skills.",
+        "View or change your class. Classes unlock by specializing the required skills.",
         "Usage: /class  OR  /class auto  OR  /class <name>")]
     public static void HandleClass(Session session, params string[] parameters)
     {
@@ -1338,7 +1315,7 @@ public class SummoningClassesSettings
 
     [JsonPropertyName("// SummonDurationSeconds")]
     public string SummonDurationSecondsDoc { get; init; } = "How long summoned pets live before auto-destructing.";
-    public int SummonDurationSeconds { get; set; } = 60;
+    public int SummonDurationSeconds { get; set; } = 15;
 
     [JsonPropertyName("// MasteryDamageRatingBonus")]
     public string MasteryDamageRatingBonusDoc { get; init; } = "Extra DR when Summoning Mastery matches class.";

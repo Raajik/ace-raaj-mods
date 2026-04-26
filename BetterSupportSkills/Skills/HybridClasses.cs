@@ -21,39 +21,39 @@ internal static class HybridClasses
     // Streak spells by damage type
     private static readonly Dictionary<DamageType, int[]> StreakSpells = new()
     {
-        [DamageType.Acid] = new[] { 1790, 1791, 1792, 1793, 1794, 1795, 2121, 4432 },
-        [DamageType.Fire] = new[] { 1796, 1797, 1798, 1799, 1800, 1801, 2129, 4440 },
-        [DamageType.Cold] = new[] { 1808, 1809, 1810, 1811, 1812, 1813, 2137, 4448 },
-        [DamageType.Electric] = new[] { 1814, 1815, 1816, 1817, 1818, 1819, 2141, 4452 },
-        [DamageType.Slash] = new[] { 1826, 1827, 1828, 1829, 1830, 1831, 2147, 4458 },
-        [DamageType.Bludgeon] = new[] { 1820, 1821, 1822, 1823, 1824, 1825, 2145, 4456 },
-        [DamageType.Pierce] = new[] { 1802, 1803, 1804, 1805, 1806, 1807, 2133, 4444 }, // Force Streak fallback
-        [DamageType.Nether] = new[] { 5357, 5358, 5359, 5360, 5345, 5346, 5347, 5348 },
+        [DamageType.Acid] = new[] { 1799, 1800, 1801, 1802, 1803, 1804, 2130, 4441 },
+        [DamageType.Fire] = new[] { 1805, 1806, 1807, 1808, 1809, 1810, 2138, 4449 },
+        [DamageType.Cold] = new[] { 1817, 1818, 1819, 1820, 1821, 1822, 2146, 4457 },
+        [DamageType.Electric] = new[] { 1823, 1824, 1825, 1826, 1827, 1828, 2150, 4461 },
+        [DamageType.Slash] = new[] { 1835, 1836, 1837, 1838, 1839, 1840, 2156, 4467 },
+        [DamageType.Bludgeon] = new[] { 1829, 1830, 1831, 1832, 1833, 1834, 2154, 4465 },
+        [DamageType.Pierce] = new[] { 1811, 1812, 1813, 1814, 1815, 1816, 2142, 4453 }, // Force Streak
+        [DamageType.Nether] = new[] { 5366, 5367, 5368, 5369, 5354, 5355, 5356, 5357 },
     };
 
     // Arc spells by damage type
     private static readonly Dictionary<DamageType, int[]> ArcSpells = new()
     {
-        [DamageType.Acid] = new[] { 2711, 2712, 2713, 2714, 2715, 2716, 2717, 4421 },
-        [DamageType.Fire] = new[] { 2739, 2740, 2741, 2742, 2743, 2744, 2745, 4423 },
-        [DamageType.Cold] = new[] { 2725, 2726, 2727, 2728, 2729, 2730, 2731, 4425 },
-        [DamageType.Electric] = new[] { 2732, 2733, 2734, 2735, 2736, 2737, 2738, 4426 },
-        [DamageType.Slash] = new[] { 2753, 2754, 2755, 2756, 2757, 2758, 2759, 4422 },
-        [DamageType.Bludgeon] = new[] { 2746, 2747, 2748, 2749, 2750, 2751, 2752, 4427 },
-        [DamageType.Pierce] = new[] { 2718, 2719, 2720, 2721, 2722, 2723, 2724, 4424 }, // Force Arc fallback
-        [DamageType.Nether] = new[] { 5369, 5362, 5363, 5364, 5365, 5366, 5367, 5368 },
+        [DamageType.Acid] = new[] { 2720, 2721, 2722, 2723, 2724, 2725, 2726, 4430 },
+        [DamageType.Fire] = new[] { 2748, 2749, 2750, 2751, 2752, 2753, 2754, 4432 },
+        [DamageType.Cold] = new[] { 2734, 2735, 2736, 2737, 2738, 2739, 2740, 4434 },
+        [DamageType.Electric] = new[] { 2741, 2742, 2743, 2744, 2745, 2746, 2747, 4435 },
+        [DamageType.Slash] = new[] { 2762, 2763, 2764, 2765, 2766, 2767, 2768, 4431 },
+        [DamageType.Bludgeon] = new[] { 2755, 2756, 2757, 2758, 2759, 2760, 2761, 4436 },
+        [DamageType.Pierce] = new[] { 2727, 2728, 2729, 2730, 2731, 2732, 2733, 4433 }, // Force Arc
+        [DamageType.Nether] = new[] { 5378, 5371, 5372, 5373, 5374, 5375, 5376, 5377 },
     };
 
     // Volley spells by damage type
     private static readonly Dictionary<DamageType, int[]> VolleySpells = new()
     {
-        [DamageType.Acid] = new[] { 3654, 3655, 127, 128, 129, 130, 2123, 4434 },
-        [DamageType.Fire] = new[] { 3663, 3664, 143, 144, 145, 146, 2130, 4441 },
-        [DamageType.Cold] = new[] { 3671, 3672, 135, 136, 137, 138, 2138, 4449 },
-        [DamageType.Electric] = new[] { 3675, 3676, 139, 140, 141, 142, 2142, 4453 },
-        [DamageType.Slash] = new[] { 3658, 3659, 151, 152, 153, 154, 2125, 4436 },
-        [DamageType.Bludgeon] = new[] { 3660, 3661, 131, 132, 133, 134, 2126, 4437 },
-        [DamageType.Pierce] = new[] { 3667, 3668, 147, 148, 149, 150, 2134, 4445 }, // Force Volley fallback
+        [DamageType.Acid] = new[] { 3663, 3664, 136, 137, 138, 139, 2132, 4443 },
+        [DamageType.Fire] = new[] { 3672, 3673, 152, 153, 154, 155, 2139, 4450 },
+        [DamageType.Cold] = new[] { 3680, 3681, 144, 145, 146, 147, 2147, 4458 },
+        [DamageType.Electric] = new[] { 3684, 3685, 148, 149, 150, 151, 2151, 4462 },
+        [DamageType.Slash] = new[] { 3667, 3668, 160, 161, 162, 163, 2134, 4445 },
+        [DamageType.Bludgeon] = new[] { 3669, 3670, 140, 141, 142, 143, 2135, 4446 },
+        [DamageType.Pierce] = new[] { 3676, 3677, 156, 157, 158, 159, 2143, 4454 }, // Force Volley
         [DamageType.Nether] = new[] { 0, 0, 0, 0, 0, 0, 0, 0 }, // No nether volley
     };
 

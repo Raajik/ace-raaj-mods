@@ -48,12 +48,14 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         var modDir = Path.GetDirectoryName(typeof(PatchClass).Assembly.Location) ?? "";
         PlayerProfileStore.Initialize(modDir);
         Stackable.Initialize(modDir, Settings.Stackable);
+        XpTracker.Initialize(modDir);
 
         RegisterEnabledPatchCategories();
         CollectorsAcceptAll.Initialize();
         VendorLootRotation.Initialize(Settings);
         TryApplyVendorLootRotationPatch();
         ApplyWorldOpenSideEffects();
+        AutoBuff.TryApply();
     }
 
     void TryApplyVendorLootRotationPatch()
@@ -62,7 +64,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         try
         {
-            var approachVendor = AccessTools.Method(typeof(Vendor), nameof(Vendor.ApproachVendor));
+            var approachVendor = AccessTools.Method(typeof(Vendor), nameof(Vendor.ApproachVendor),
+                new Type[] { typeof(Player), typeof(VendorType), typeof(uint) });
             if (approachVendor == null)
             {
                 ModManager.Log("[QOL] Vendor.ApproachVendor method not found; vendor loot rotation patch skipped.", ModManager.LogLevel.Error);
@@ -179,6 +182,20 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             enabledFeatures.Add(Features.VendorPriceInflation);
             VendorPriceInflation.Initialize(Settings);
         }
+        if (Settings.EnableVendorLootRotation)
+            enabledFeatures.Add(Features.VendorLootRotation);
+
+        if (Settings.EnableNoDeathDrops)
+            enabledFeatures.Add(Features.NoDeathDrops);
+
+        if (Settings.EnablePetKillSummary)
+            enabledFeatures.Add(Features.PetKillSummary);
+
+        if (Settings.EnableXpTracker)
+            enabledFeatures.Add(Features.XpTracker);
+
+        if (Settings.EnableAutoBuff)
+            enabledFeatures.Add(Features.AutoBuff);
 
         ModC.RegisterPatchCategories(enabledFeatures.ToArray());
     }
@@ -188,6 +205,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         _qolCommandCategoriesRegistered = false;
 
         base.Stop();
+
+        AutoBuff.Stop();
 
         if (ModC.State == ModState.Running)
         {
@@ -290,7 +309,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     }
 
     [CommandHandler("qol", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
-        "QOL hub. Usage: /qol commands | killxp [off|xp|percent|default] | toll [components|cashonly]", "")]
+        "QOL hub. Usage: /qol commands | killxp [off|xp|percent|default] | toll [components|cashonly]. See also: /xp tracker | /xp spend", "")]
     public static void HandleQol(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
@@ -455,6 +474,74 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         {
             player.SendMessage("Unknown /wipe subcommand. Use: /wipe data");
         }
+    }
+
+    [CommandHandler("buffs", AccessLevel.Player, CommandHandlerFlag.RequiresWorld)]
+    public static void HandleBuffs(Session session, params string[] parameters)
+    {
+        var player = session.Player;
+        if (player == null) return;
+
+        if (!Settings.AutoBuff.Enabled)
+        {
+            player.SendMessage("Auto-buff is disabled.");
+            return;
+        }
+
+        if (parameters.Length == 0)
+        {
+            // Immediate cast on target or self
+            var target = player.AttackTarget as Player;
+            AutoBuff.CastBuffs(player, target);
+            return;
+        }
+
+        var verb = parameters[0].ToLowerInvariant();
+
+        if (verb == "auto")
+        {
+            if (parameters.Length >= 2 && parameters[1].Equals("off", StringComparison.OrdinalIgnoreCase))
+            {
+                AutoBuff.SetAutoBuffEnabled(player, false);
+                player.SendMessage("Auto-buff disabled.");
+                return;
+            }
+
+            var current = AutoBuff.IsAutoBuffEnabled(player);
+            AutoBuff.SetAutoBuffEnabled(player, !current);
+            player.SendMessage($"Auto-buff: {(!current ? "ON" : "OFF")}.");
+            return;
+        }
+
+        if (verb == "status")
+        {
+            var enabled = AutoBuff.IsAutoBuffEnabled(player);
+            var buffs = AutoBuff.GetBestBuffs(player);
+            player.SendMessage("=== Auto-Buff Status ===");
+            player.SendMessage($"  Auto-recast: {(enabled ? "ON" : "OFF")}");
+            player.SendMessage($"  Eligible buffs: {buffs.Count}");
+            if (buffs.Count > 0)
+            {
+                foreach (var spell in buffs.OrderBy(s => s.School.ToString()).ThenBy(s => s.Name))
+                {
+                    var entry = player.EnchantmentManager.GetEnchantment(spell.Id);
+                    string status;
+                    if (entry == null)
+                        status = "inactive";
+                    else if (entry.Duration < 0)
+                        status = "permanent";
+                    else
+                    {
+                        var remaining = entry.Duration + entry.StartTime;
+                        status = $"{remaining:F0}s remaining";
+                    }
+                    player.SendMessage($"  [{spell.School}] {spell.Name} (Lv{spell.Level}) — {status}");
+                }
+            }
+            return;
+        }
+
+        player.SendMessage("Usage: /buffs | /buffs auto | /buffs auto off | /buffs status");
     }
 }
 

@@ -105,12 +105,6 @@
     "MaxLevelBonusTrained": 10,
     "MaxLevelBonusSpecialized": 20
   },
-  "EnableVendorItemLeveling": true,
-  "VendorItemLeveling": {
-    "MaxLevel": 25,
-    "BaseXp": 10000,
-    "TreasureTier": 3
-  },
   "Cooking": {
     "LegendaryHealthSpell": 6077,
     "LegendaryStaminaSpell": 6076,
@@ -144,7 +138,7 @@
   },
   "EnableSummoningClasses": true,
   "SummoningClasses": {
-    "SummonDurationSeconds": 60,
+    "SummonDurationSeconds": 15,
     "MasteryDamageRatingBonus": 10,
     "PetAwarenessRange": 5.0,
     "FollowDistanceThreshold": 15.0,
@@ -208,6 +202,12 @@
         "Custom3": { "Enabled": false, "Count": 4 }
       }
     }
+  },
+  "EnableDruidPetThorns": true,
+  "DruidPetThorns": {
+    "Enabled": true,
+    "AoERadius": 5.0,
+    "DamageMultiplier": 1.0
   },
   "EnableCombatClasses": true,
   "CombatClasses": {

@@ -84,6 +84,23 @@ internal static class TownNetworkToll
         "Thank you. Your [Cost] [Item] keeps the world connected. Step through!",
     };
 
+    // ── Free Travel Flavor (poor players) ──────────────────────────────────
+    static readonly string[] FreeTravelFlavors =
+    {
+        "I'll let you through, but just this once. Don't tell anyone and don't forget that this place runs on tapers!",
+        "The Arcanum doesn't need to know about this. Go on—just remember who kept the lights on when you're rolling in pyreals.",
+        "Shh. Portal's open. Not a word to the Ministry, and if anyone asks, you paid in tapers like everyone else.",
+        "Between you and me, the ley lines don't care about your bank account. Step through—but next time, bring tapers.",
+        "I'm feeling charitable, and you're feeling broke. One free pass. After that, this place runs on tapers, not goodwill.",
+        "Don't make a habit of this. The Arcanum audits these logs, and I can't keep writing 'paid in tapers' forever.",
+        "Look, I've got a quota and you've got empty pockets. Go. But tell everyone the Town Network runs on tapers—or I'll deny everything.",
+        "One foot in front of the other, straight into the portal. We never had this conversation, and you definitely paid in tapers.",
+        "The High Mages would have my head if they knew. Quick, before the next audit—just remember: tapers. Always tapers.",
+        "Normally I'd turn you away, but I've been there. One free ride. After this, though? I'm not a charity. This place runs on tapers.",
+        "Wink-wink, nudge-nudge, you've got no money and I've got a soft spot. Go. And if anyone asks, you slipped me a handful of tapers.",
+        "The rift doesn't discriminate, but the Arcanum sure does. I'll look the other way this time—just don't forget what keeps these portals humming.",
+    };
+
     // ── Payment Result ─────────────────────────────────────────────────────
     readonly record struct PaymentResult(bool Success, long Cost, string ItemName, int AmountTaken, int Remaining);
 
@@ -112,6 +129,10 @@ internal static class TownNetworkToll
             return;
 
         long bank = GetBankedPyreals(player, toll.BankCashProperty);
+
+        // Free travel for players with less than 50,000 pyreals
+        if (bank < 50_000)
+            return;
 
         if (bank >= fee)
             return;
@@ -159,6 +180,15 @@ internal static class TownNetworkToll
     // ── Core Payment Logic ─────────────────────────────────────────────────
     static bool ProcessPayment(Player player, long fee, TownNetworkTollSettings toll, string context)
     {
+        // Free travel for players with less than 50,000 pyreals in the bank
+        long bank = GetBankedPyreals(player, toll.BankCashProperty);
+        if (bank < 50_000)
+        {
+            TryGrantExpensiveConvenience(player);
+            SendFreeTravelFlavor(player);
+            return true;
+        }
+
         var mode = GetPlayerPaymentMode(player);
 
         // ComponentsFirst: try components, fall back to cash
@@ -196,7 +226,6 @@ internal static class TownNetworkToll
         }
 
         // Insufficient funds
-        long bank = GetBankedPyreals(player, toll.BankCashProperty);
         player.SendMessage($"You cannot use the {context}: your bank holds {bank:N0} pyreals, but the Town Network toll is {fee:N0}.", ChatMessageType.System);
         return false;
     }
@@ -484,5 +513,34 @@ internal static class TownNetworkToll
         if (string.IsNullOrEmpty(t.NameSubstring)) return false;
         var hay = $"{p.Name} {p.AppraisalPortalDestination}";
         return hay.IndexOf(t.NameSubstring, StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    // ── Achievement & Free Travel Helpers ──────────────────────────────────
+
+    static void TryGrantExpensiveConvenience(Player player)
+    {
+        try
+        {
+            var asm = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.GetName().Name == "AchievementUnlocked");
+            if (asm == null) return;
+
+            var mgr = asm.GetType("AchievementUnlocked.AchievementManager");
+            var has = mgr?.GetMethod("HasAchievement", new[] { typeof(Player), typeof(string) });
+            var unlock = mgr?.GetMethod("UnlockAchievement", new[] { typeof(Player), typeof(string), typeof(bool) });
+            if (has == null || unlock == null) return;
+
+            var hasResult = has.Invoke(null, new object[] { player, "ExpensiveConvenience" });
+            if (hasResult is bool b && b) return;
+            unlock.Invoke(null, new object[] { player, "ExpensiveConvenience", false });
+        }
+        catch { /* silently fail if AchievementUnlocked is not present */ }
+    }
+
+    static void SendFreeTravelFlavor(Player player)
+    {
+        var msg = FreeTravelFlavors[Random.Shared.Next(FreeTravelFlavors.Length)];
+        var name = MageNames[Random.Shared.Next(MageNames.Length)];
+        player.SendMessage($"[{name}] {msg}", ChatMessageType.Tell);
     }
 }

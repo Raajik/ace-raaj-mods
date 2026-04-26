@@ -39,6 +39,8 @@ internal static class TrophyBurdenXp
             foreach (var wcid in settings.TrophyBlacklistWcids)
                 _blacklist[wcid] = true;
 
+        TryMergeQolCollectors();
+
         if (settings.TrophyLogEnabled)
         {
             var modDir = PatchClass.GetModDirectory();
@@ -55,6 +57,42 @@ internal static class TrophyBurdenXp
         }
 
         ModManager.Log($"[LM] TrophyBurdenXp initialized with {TrophyCollectors.Count} collectors, {_blacklist.Count} blacklisted WCIDs", ModManager.LogLevel.Info);
+    }
+
+    static void TryMergeQolCollectors()
+    {
+        try
+        {
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (!string.Equals(asm.GetName().Name, "QOL", StringComparison.Ordinal))
+                    continue;
+
+                var patchClassType = asm.GetType("QOL.PatchClass");
+                var settingsProp = patchClassType?.GetProperty("Settings", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                var settingsInstance = settingsProp?.GetValue(null);
+                if (settingsInstance == null) continue;
+
+                var settingsType = settingsInstance.GetType();
+                var enabledProp = settingsType.GetProperty("EnableCollectorsAcceptAll");
+                var enabled = enabledProp?.GetValue(settingsInstance) as bool? ?? false;
+                if (!enabled) continue;
+
+                var wcidProp = settingsType.GetProperty("CollectorWcids");
+                var wcids = wcidProp?.GetValue(settingsInstance) as System.Collections.Generic.List<uint>;
+                if (wcids == null) continue;
+
+                foreach (var wcid in wcids)
+                    TrophyCollectors[wcid] = true;
+
+                ModManager.Log($"[LM] TrophyBurdenXp merged {wcids.Count} collectors from QOL.CollectorsAcceptAll", ModManager.LogLevel.Info);
+                break;
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LM] TrophyBurdenXp QOL collector merge failed: {ex.Message}", ModManager.LogLevel.Debug);
+        }
     }
 
     public static void HandleGiveRequest(Player player, WorldObject? target, WorldObject? item)

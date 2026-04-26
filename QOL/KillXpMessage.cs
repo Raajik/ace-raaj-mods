@@ -13,8 +13,11 @@ internal static class KillXpMessage
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Player), nameof(Player.PlayerEnterWorld))]
-    public static void PostfixPlayerEnterWorld(Player __instance) =>
+    public static void PostfixPlayerEnterWorld(Player __instance)
+    {
         PlayerProfileStore.PostfixPlayerEnterWorld(__instance);
+        AutoBuff.OnPlayerEnterWorld(__instance);
+    }
     [ThreadStatic]
     static Dictionary<uint, long>? _killXp;
 
@@ -56,7 +59,8 @@ internal static class KillXpMessage
             if (criticalHit && __instance is Player)
                 deathMessage = Strings.PKCritical[0];
 
-            if (lastDamager is Player playerKiller)
+            if (lastDamager is Player playerKiller
+                && PatchClass.Settings?.EnablePetKillSummary != true)
             {
                 long earnedXp = 0;
                 _killXp?.TryGetValue(playerKiller.Guid.Full, out earnedXp);
@@ -100,10 +104,10 @@ internal static class KillXpMessage
 
         var parts = new List<string>(3);
         if (showRaw)   parts.Add($"{xp:N0} xp");
-        if (showPct)   parts.Add($"{ComputeLevelPct(xp, player):F3}%");
+        if (showPct)   parts.Add($"{ComputeLevelPct(xp, player):F1}%");
         if (showKills) parts.Add($"~{ComputeEstimatedKills(xp, player):N0} kills to level");
 
-        return parts.Count > 0 ? $" ({string.Join(" | ", parts)})" : "";
+        return parts.Count > 0 ? $" [{string.Join("/", parts)}]" : "";
     }
 
     static double ComputeLevelPct(long xp, Player player)

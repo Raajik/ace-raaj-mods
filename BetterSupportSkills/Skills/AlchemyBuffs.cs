@@ -223,7 +223,12 @@ internal static class AlchemyBuffs
                 var bonus = WorldObjectFactory.CreateNewWorldObject(item);
                 if (bonus != null)
                 {
-                    bonusNames.Add(bonus.Name);
+                    int stackSize = ThreadSafeRandom.Next(2, 5);
+                    if ((bonus.MaxStackSize ?? 0) <= 1)
+                        bonus.MaxStackSize = 100;
+                    bonus.SetStackSize(stackSize);
+
+                    bonusNames.Add($"{bonus.Name} (×{stackSize})");
                     if (corpse != null)
                         corpse.TryAddToInventory(bonus);
                     else

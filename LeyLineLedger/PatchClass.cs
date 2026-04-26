@@ -4,13 +4,20 @@ namespace LeyLineLedger;
 [HarmonyPatch]
 public partial class PatchClass(BasicMod mod, string settingsName = "Settings.json") : BasicPatch<Settings>(mod, settingsName)
 {
+    public static HarmonyLib.Harmony? Harmony { get; private set; }
     static readonly bool UsePrettyBankFormatting = true;
+
+    static PatchClass()
+    {
+        // Harmony is set when the mod starts; see Start() override
+    }
 
     // Debit/DirectDeposit must patch from Start() as well as OnWorldOpen(): if the mod loads after the world
     // is already up, OnWorldOpen never runs and vendors still use vanilla CoinValue (inventory only) while
     // /bank reads the banked PropertyInt64 directly.
     public override void Start()
     {
+        Harmony = ModC.Harmony;
         base.Start();
         ApplyConditionalHarmonyCategories();
     }
@@ -68,7 +75,10 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
 
         if (Settings.VendorsUseBank)
+        {
+            ModManager.Log("[LeyLineLedger] Patching Debit category", ModManager.LogLevel.Info);
             ModC.Harmony.PatchCategory(nameof(Debit));
+        }
 
         if (Settings.DirectDeposit)
             ModC.Harmony.PatchCategory(nameof(DirectDeposit));
@@ -78,6 +88,13 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         if (Settings.SalvageBank.Enabled && Settings.SalvageBank.DirectDepositOnSalvage)
             ModC.Harmony.PatchCategory(nameof(SalvageDirectDeposit));
+
+        ModC.Harmony.PatchCategory(nameof(EmoteBankPatches));
+
+        EconomyBalancer.TryApply();
+        LootTracker.TryApply();
+        PublicExchange.TryApply();
+        Lottery.TryApply();
     }
 
     public override void Stop()
@@ -114,6 +131,33 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         {
         }
 
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(EmoteBankPatches));
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(EconomyBalancer));
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(LootTracker));
+        }
+        catch
+        {
+        }
+
+        PublicExchange.Stop();
+        Lottery.Stop();
+
         base.Stop();
     }
 
@@ -128,8 +172,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (player is null)
             return;
 
-        //No args or explicit list -> show summary with diffs
-        if (parameters.Length == 0 || parameters[0].Equals("list", StringComparison.OrdinalIgnoreCase))
+        //No args -> compact summary with diffs; /b list -> detailed view
+        if (parameters.Length == 0)
         {
             var (last, current) = BankSnapshotTracker.GetDiff(player.Guid.Full);
             BankSnapshotTracker.MarkViewed(player.Guid.Full);
@@ -191,6 +235,21 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             if (writs > 0)
                 player.SendMessage($"Writs: {writs:N0}");
 
+            // Show AshCoins in compact view
+            var ashCoin = Settings.Items.FirstOrDefault(x => x.Name.Contains("Ash", StringComparison.OrdinalIgnoreCase));
+            if (ashCoin != null)
+            {
+                long ashBanked = player.GetBanked(ashCoin.Prop);
+                if (ashBanked > 0)
+                    player.SendMessage($"AshCoins: {ashBanked:N0}");
+            }
+
+            return;
+        }
+
+        if (parameters.Length >= 1 && parameters[0].Equals("list", StringComparison.OrdinalIgnoreCase))
+        {
+            ShowDetailedBankList(player);
             return;
         }
 
@@ -297,8 +356,65 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             if (!currencyToken.Equals("pyreals", StringComparison.OrdinalIgnoreCase) &&
                 !currencyToken.Equals("p", StringComparison.OrdinalIgnoreCase))
             {
-                player.SendMessage("Usage: /bank withdraw pyreals <amount> | withdraw luminance <amount> | withdraw salvage <material> [bags]");
-                player.SendMessage("  Shorthand: /b w p <amt> | /b w l <amt> | /b w s <material> [bags]");
+                // Try fuzzy match against bank items
+                var matchedItem = FuzzyFindBankItem(currencyToken);
+                if (matchedItem != null)
+                {
+                    var itemAmountToken = parameters[2];
+                    if (!int.TryParse(itemAmountToken, out var withdrawQty) || withdrawQty <= 0)
+                    {
+                        player.SendMessage($"Usage: /b w {currencyToken} <amount> — amount must be a positive number.");
+                        return;
+                    }
+
+                    var banked = player.GetBanked(matchedItem.Prop);
+                    if (banked < withdrawQty)
+                    {
+                        player.SendMessage($"You only have {banked:N0} {matchedItem.Name} banked (requested {withdrawQty:N0}).");
+                        return;
+                    }
+
+                    // Try to create the item in inventory
+                    var wo = WorldObjectFactory.CreateNewWorldObject(matchedItem.Id);
+                    if (wo == null)
+                    {
+                        player.SendMessage($"Failed to create {matchedItem.Name}.");
+                        return;
+                    }
+
+                    wo.SetStackSize(withdrawQty);
+                    if (!player.TryCreateInInventoryWithNetworking(wo))
+                    {
+                        player.SendMessage($"Not enough pack space to withdraw {withdrawQty:N0} {matchedItem.Name}.");
+                        wo.Destroy();
+                        return;
+                    }
+
+                    player.IncBanked(matchedItem.Prop, -withdrawQty);
+                    player.SendMessage($"Withdrew {withdrawQty:N0} {matchedItem.Name} from bank. {banked - withdrawQty:N0} remaining.");
+                    return;
+                }
+
+                // Try fuzzy match against salvage materials
+                if (Settings.SalvageBank is { Enabled: true })
+                {
+                    var matchedSalvage = FuzzyFindSalvage(currencyToken);
+                    if (matchedSalvage != null)
+                    {
+                        string[] expanded = new string[parameters.Length + 1];
+                        expanded[0] = "salvage";
+                        expanded[1] = "redeem";
+                        expanded[2] = matchedSalvage.Name;
+                        if (parameters.Length >= 3)
+                            expanded[3] = parameters[2];
+
+                        BankSalvage.Handle(session, expanded);
+                        return;
+                    }
+                }
+
+                player.SendMessage($"Unknown currency or item '{currencyToken}'. Use /b list to see what you have banked.");
+                player.SendMessage("Usage: /bank withdraw pyreals <amount> | withdraw luminance <amount> | withdraw salvage <material> [bags] | withdraw <item> <amount>");
                 return;
             }
 
@@ -396,29 +512,52 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         if (verb == Transaction.List)
         {
-            var bankItems = Settings.Items.Where(x => x.Id != 20630).ToList();
-
-            if (bankItems.Count == 0)
-            {
-                player.SendMessage("No banked items are configured.");
-                return;
-            }
-
-            var sb = new StringBuilder();
-            if (UsePrettyBankFormatting)
-            {
-                sb.AppendLine("==== Banked Items ====");
-            }
-            else
-            {
-                sb.Append("\nBanked items:");
-            }
-
-            foreach (var item in bankItems)
-                sb.Append($"\n{item.Name}:\n  {player.GetBanked(item.Prop)} banked, {player.GetNumInventoryItemsOfWCID(item.Id)} held");
-
-            player.SendMessage($"{sb}");
+            ShowDetailedBankList(player);
         }
+    }
+
+    static void ShowDetailedBankList(Player player)
+    {
+        // Only show items the player actually owns (banked or held)
+        var ownedItems = Settings.Items
+            .Where(x => x.Id != 20630)
+            .Select(x => new { Item = x, Banked = player.GetBanked(x.Prop), Held = player.GetNumInventoryItemsOfWCID(x.Id) })
+            .Where(x => x.Banked > 0 || x.Held > 0)
+            .ToList();
+
+        var pyrealsBanked = player.GetBanked(Settings.CashProperty);
+        var pyrealsHeld = player.GetNumInventoryItemsOfWCID(273) * 1; // pyreal coin
+        // Also count pyreal denominations in inventory
+        foreach (var currency in Settings.Currencies.Where(c => c.Value > 0 && c.Id != 273))
+        {
+            pyrealsHeld += player.GetNumInventoryItemsOfWCID(currency.Id) * (int)currency.Value;
+        }
+
+        var sb = new StringBuilder();
+        if (UsePrettyBankFormatting)
+        {
+            sb.AppendLine("==== Banked Items ====");
+        }
+        else
+        {
+            sb.Append("\nBanked items:");
+        }
+
+        // Always show pyreals if configured
+        if (pyrealsBanked > 0 || pyrealsHeld > 0)
+        {
+            sb.Append($"\nPyreals:\n  {pyrealsBanked:N0} banked, {pyrealsHeld:N0} held");
+        }
+
+        foreach (var entry in ownedItems)
+            sb.Append($"\n{entry.Item.Name}:\n  {entry.Banked:N0} banked, {entry.Held:N0} held");
+
+        if (ownedItems.Count == 0 && pyrealsBanked == 0 && pyrealsHeld == 0)
+        {
+            sb.Append("\n  (nothing banked yet — deposit items with /bank deposit <name> <amount>)");
+        }
+
+        player.SendMessage($"{sb}");
     }
 
     // Pulls from inventory across canonical Id then VariantWeenieClassIds until 'amount' is satisfied.
@@ -608,6 +747,379 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (Settings.AltCurrencyValues.TryGetValue(item.Id, out int zefValue))
             player.IncBanked(Settings.AltCurrencyProperty, (long)delta * zefValue);
     }
+
+    /// <summary>
+    /// Fuzzy-find a bank item by partial name (e.g. "ashc" → "AshCoin").
+    /// </summary>
+    static BankItem? FuzzyFindBankItem(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token))
+            return null;
+
+        // Exact match first
+        var exact = PatchClass.Settings.Items.FirstOrDefault(x => x.Name.Equals(token, StringComparison.OrdinalIgnoreCase));
+        if (exact != null)
+            return exact;
+
+        // Starts-with match
+        var startsWith = PatchClass.Settings.Items.FirstOrDefault(x => x.Name.StartsWith(token, StringComparison.OrdinalIgnoreCase));
+        if (startsWith != null)
+            return startsWith;
+
+        // Contains match
+        var contains = PatchClass.Settings.Items.FirstOrDefault(x => x.Name.Contains(token, StringComparison.OrdinalIgnoreCase));
+        if (contains != null)
+            return contains;
+
+        return null;
+    }
+
+    /// <summary>
+    /// Fuzzy-find a salvage deposit rule by partial material name.
+    /// </summary>
+    static SalvageDepositRule? FuzzyFindSalvage(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token) || PatchClass.Settings.SalvageBank?.DepositRules == null)
+            return null;
+
+        // Exact match first
+        var exact = PatchClass.Settings.SalvageBank.DepositRules.FirstOrDefault(x => x.Name.Equals(token, StringComparison.OrdinalIgnoreCase));
+        if (exact != null)
+            return exact;
+
+        // Starts-with match
+        var startsWith = PatchClass.Settings.SalvageBank.DepositRules.FirstOrDefault(x => x.Name.StartsWith(token, StringComparison.OrdinalIgnoreCase));
+        if (startsWith != null)
+            return startsWith;
+
+        // Contains match
+        var contains = PatchClass.Settings.SalvageBank.DepositRules.FirstOrDefault(x => x.Name.Contains(token, StringComparison.OrdinalIgnoreCase));
+        if (contains != null)
+            return contains;
+
+        return null;
+    }
+
+    /// <summary>
+    /// Fuzzy-find an exchangeable salvage bag rule by partial name.
+    /// Returns the rule and its index in DepositRules.
+    /// </summary>
+    static (SalvageDepositRule rule, int index)? FuzzyFindExchangeableSalvage(string token)
+    {
+        var rules = PatchClass.Settings.SalvageBank?.DepositRules;
+        if (string.IsNullOrWhiteSpace(token) || rules == null)
+            return null;
+
+        for (int i = 0; i < rules.Count; i++)
+        {
+            var rule = rules[i];
+            if (rule.ExchangeValue <= 0 || rule.OutputBagWeenieClassId == 0)
+                continue;
+
+            if (rule.Name.Equals(token, StringComparison.OrdinalIgnoreCase))
+                return (rule, i);
+        }
+
+        for (int i = 0; i < rules.Count; i++)
+        {
+            var rule = rules[i];
+            if (rule.ExchangeValue <= 0 || rule.OutputBagWeenieClassId == 0)
+                continue;
+
+            if (rule.Name.StartsWith(token, StringComparison.OrdinalIgnoreCase))
+                return (rule, i);
+        }
+
+        for (int i = 0; i < rules.Count; i++)
+        {
+            var rule = rules[i];
+            if (rule.ExchangeValue <= 0 || rule.OutputBagWeenieClassId == 0)
+                continue;
+
+            if (rule.Name.Contains(token, StringComparison.OrdinalIgnoreCase))
+                return (rule, i);
+        }
+
+        return null;
+    }
+
+    [CommandHandler("exchange", AccessLevel.Player, CommandHandlerFlag.RequiresWorld)]
+    [CommandHandler("ex", AccessLevel.Player, CommandHandlerFlag.RequiresWorld)]
+    public static void HandleExchange(Session session, params string[] parameters)
+    {
+        var player = session.Player;
+        if (player == null) return;
+
+        if (!Settings.PublicExchange.Enabled)
+        {
+            player.SendMessage("Public exchange is disabled.");
+            return;
+        }
+
+        if (parameters.Length == 0)
+        {
+            var taxRate = PublicExchange.ComputeTaxRate();
+            player.SendMessage("=== Public Exchange ===");
+            player.SendMessage($"Current sell tax: {taxRate:P1}");
+            player.SendMessage("Commands: /exchange list | /exchange info <item> | /exchange sell <item> <amount> | /exchange buy <item> <amount>");
+            return;
+        }
+
+        var verb = parameters[0].ToLowerInvariant();
+
+        if (verb == "list")
+        {
+            var list = PublicExchange.GetExchangeList();
+            player.SendMessage("=== Exchange Prices ===");
+            foreach (var (name, wcid, buyPrice, sellPrice, poolQty, isStatic) in list)
+            {
+                var staticTag = isStatic ? " [STATIC]" : "";
+                player.SendMessage($"  {name}: pool {poolQty:N0} | buy {buyPrice:N0} | sell {sellPrice:N0}{staticTag}");
+            }
+            return;
+        }
+
+        if (verb == "info" && parameters.Length >= 2)
+        {
+            var token = parameters[1];
+
+            // Try bank item first
+            var item = FuzzyFindBankItem(token);
+            if (item != null)
+            {
+                var basePrice = PublicExchange.GetBasePrice(item.Id);
+                var multiplier = PublicExchange.GetPoolDepthMultiplier(item.Id);
+                var buyPrice = PublicExchange.GetBuyPrice(item.Id);
+                var sellPrice = PublicExchange.GetSellPrice(item.Id);
+                var isStatic = PublicExchange.IsStaticPrice(item.Id);
+
+                player.SendMessage($"=== {item.Name} ===");
+                player.SendMessage($"  Base price: {basePrice:N0} pyreals");
+                player.SendMessage($"  Pool multiplier: {multiplier:F2}x");
+                player.SendMessage($"  Buy price: {buyPrice:N0} | Sell price: {sellPrice:N0}");
+                if (isStatic)
+                    player.SendMessage($"  [STATIC PRICE — not affected by pool depth]");
+                return;
+            }
+
+            // Try salvage bag
+            var salvage = FuzzyFindExchangeableSalvage(token);
+            if (salvage != null)
+            {
+                var (rule, index) = salvage.Value;
+                var wcid = rule.OutputBagWeenieClassId;
+                var basePrice = PublicExchange.GetBasePrice(wcid);
+                var multiplier = PublicExchange.GetPoolDepthMultiplier(wcid);
+                var buyPrice = PublicExchange.GetBuyPrice(wcid);
+                var sellPrice = PublicExchange.GetSellPrice(wcid);
+                var isStatic = PublicExchange.IsStaticPrice(wcid);
+
+                player.SendMessage($"=== {rule.Name} Bag ===");
+                player.SendMessage($"  Base price: {basePrice:N0} pyreals per bag");
+                player.SendMessage($"  Pool multiplier: {multiplier:F2}x");
+                player.SendMessage($"  Buy price: {buyPrice:N0} | Sell price: {sellPrice:N0}");
+                if (isStatic)
+                    player.SendMessage($"  [STATIC PRICE — not affected by pool depth]");
+                return;
+            }
+
+            player.SendMessage($"Item '{token}' not found.");
+            return;
+        }
+
+        if ((verb == "sell" || verb == "s") && parameters.Length >= 3)
+        {
+            var token = parameters[1];
+
+            // Try bank item first
+            var item = FuzzyFindBankItem(token);
+            if (item != null)
+            {
+                if (!long.TryParse(parameters[2], out var amount) || amount <= 0)
+                {
+                    player.SendMessage("Usage: /exchange sell <item> <amount>");
+                    return;
+                }
+
+                PublicExchange.SellItem(session, item, amount);
+                return;
+            }
+
+            // Try salvage bag
+            var salvage = FuzzyFindExchangeableSalvage(token);
+            if (salvage != null)
+            {
+                if (!long.TryParse(parameters[2], out var amount) || amount <= 0)
+                {
+                    player.SendMessage("Usage: /exchange sell <item> <amount>");
+                    return;
+                }
+
+                PublicExchange.SellSalvageBag(session, salvage.Value.rule, salvage.Value.index, amount);
+                return;
+            }
+
+            player.SendMessage($"Item '{token}' not found.");
+            return;
+        }
+
+        if ((verb == "buy" || verb == "b") && parameters.Length >= 3)
+        {
+            var token = parameters[1];
+
+            // Try bank item first
+            var item = FuzzyFindBankItem(token);
+            if (item != null)
+            {
+                if (!long.TryParse(parameters[2], out var amount) || amount <= 0)
+                {
+                    player.SendMessage("Usage: /exchange buy <item> <amount>");
+                    return;
+                }
+
+                PublicExchange.BuyItem(session, item, amount);
+                return;
+            }
+
+            // Try salvage bag
+            var salvage = FuzzyFindExchangeableSalvage(token);
+            if (salvage != null)
+            {
+                if (!long.TryParse(parameters[2], out var amount) || amount <= 0)
+                {
+                    player.SendMessage("Usage: /exchange buy <item> <amount>");
+                    return;
+                }
+
+                PublicExchange.BuySalvageBag(session, salvage.Value.rule, salvage.Value.index, amount);
+                return;
+            }
+
+            player.SendMessage($"Item '{token}' not found.");
+            return;
+        }
+
+        if (verb == "admin" && player.IsAdmin)
+        {
+            if (parameters.Length < 3)
+            {
+                player.SendMessage("Usage: /exchange admin seed <item> <qty> | /exchange admin reset <item> | /exchange admin tax");
+                return;
+            }
+
+            var adminVerb = parameters[1].ToLowerInvariant();
+
+            if (adminVerb == "tax")
+            {
+                var taxRate = PublicExchange.ComputeTaxRate();
+                player.SendMessage($"Current tax rate: {taxRate:P1}");
+                return;
+            }
+
+            var adminToken = parameters[2];
+
+            // Try bank item first
+            var adminItem = FuzzyFindBankItem(adminToken);
+            if (adminItem != null)
+            {
+                if (adminVerb == "seed" && parameters.Length >= 4 && long.TryParse(parameters[3], out var seedQty))
+                {
+                    PublicExchange.AdminSeed(adminItem.Id, seedQty);
+                    player.SendMessage($"Seeded {seedQty:N0} {adminItem.Name} into exchange pool.");
+                    return;
+                }
+
+                if (adminVerb == "reset")
+                {
+                    PublicExchange.AdminReset(adminItem.Id);
+                    player.SendMessage($"Reset exchange pool for {adminItem.Name}.");
+                    return;
+                }
+            }
+
+            // Try salvage bag
+            var adminSalvage = FuzzyFindExchangeableSalvage(adminToken);
+            if (adminSalvage != null)
+            {
+                var (rule, _) = adminSalvage.Value;
+                if (adminVerb == "seed" && parameters.Length >= 4 && long.TryParse(parameters[3], out var seedQty))
+                {
+                    PublicExchange.AdminSeed(rule.OutputBagWeenieClassId, seedQty);
+                    player.SendMessage($"Seeded {seedQty:N0} {rule.Name} bag(s) into exchange pool.");
+                    return;
+                }
+
+                if (adminVerb == "reset")
+                {
+                    PublicExchange.AdminReset(rule.OutputBagWeenieClassId);
+                    player.SendMessage($"Reset exchange pool for {rule.Name} bag(s).");
+                    return;
+                }
+            }
+
+            if (adminItem == null && adminSalvage == null)
+            {
+                player.SendMessage($"Item '{adminToken}' not found.");
+                return;
+            }
+
+            player.SendMessage("Usage: /exchange admin seed <item> <qty> | /exchange admin reset <item> | /exchange admin tax");
+            return;
+        }
+
+        player.SendMessage("Usage: /exchange list | /exchange info <item> | /exchange sell <item> <amount> | /exchange buy <item> <amount>");
+    }
+
+    [CommandHandler("lottery", AccessLevel.Player, CommandHandlerFlag.RequiresWorld)]
+    public static void HandleLottery(Session session, params string[] parameters)
+    {
+        var player = session.Player;
+        if (player == null) return;
+
+        if (!Settings.Lottery.Enabled)
+        {
+            player.SendMessage("Lottery is disabled.");
+            return;
+        }
+
+        if (parameters.Length == 0)
+        {
+            var pool = Lottery.GetPool();
+            var ticketPrice = Lottery.GetTicketPrice();
+            var prop = (PropertyInt64)Settings.Lottery.TicketPropertyId;
+            var myTickets = player.GetProperty(prop) ?? 0;
+
+            player.SendMessage("=== Weekly Lottery ===");
+            player.SendMessage($"  Pool: {pool:N0} pyreals");
+            player.SendMessage($"  Ticket price: {ticketPrice:N0} pyreals");
+            player.SendMessage($"  Your tickets: {myTickets:N0}");
+            player.SendMessage("  /lottery buy <n> — purchase tickets");
+            return;
+        }
+
+        var verb = parameters[0].ToLowerInvariant();
+
+        if (verb == "buy" || verb == "b")
+        {
+            if (parameters.Length < 2 || !long.TryParse(parameters[1], out var count) || count <= 0)
+            {
+                player.SendMessage("Usage: /lottery buy <n>");
+                return;
+            }
+
+            Lottery.BuyTickets(session, count);
+            return;
+        }
+
+        if (verb == "draw" && player.IsAdmin)
+        {
+            Lottery.DrawWinner();
+            player.SendMessage("Lottery draw complete. Check server logs.");
+            return;
+        }
+
+        player.SendMessage("Usage: /lottery | /lottery buy <n>");
+    }
 }
 
 public static class BankExtensions
@@ -617,6 +1129,28 @@ public static class BankExtensions
     {
         player.IncBanked(PatchClass.Settings.CashProperty, amount);
         player.UpdateCoinValue();
+    }
+
+    /// <summary>
+    /// Total pyreals available: banked + physical coin stacks + trade notes + peas.
+    /// Use this for vendor auto-conversion and purchasing power checks.
+    /// </summary>
+    public static long GetTotalPyreals(this Player player)
+    {
+        long total = player.GetCash();
+
+        foreach (var coinStack in player.GetInventoryItemsOfTypeWeenieType(WeenieType.Coin))
+            total += coinStack.Value ?? 0;
+
+        foreach (var o in player.AllItems())
+        {
+            if (o.WeenieClassName.StartsWith("tradenote", StringComparison.OrdinalIgnoreCase))
+                total += o.Value ?? 0;
+            else if (PeaPyrealWcids.IsPea(o.WeenieClassId))
+                total += PeaPyrealWcids.GetPyrealValue(o);
+        }
+
+        return total;
     }
 
     public static long GetBanked(this Player player, int prop) =>
@@ -1137,6 +1671,40 @@ public static class BankExtensions
             amount = Math.Min(max, amount);
 
         return success;
+    }
+
+    [CommandHandler("economy", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld)]
+    public static void HandleEconomy(Session session, params string[] parameters)
+    {
+        if (parameters.Length == 0)
+        {
+            EconomyBalancer.ShowEconomyReport(session);
+            return;
+        }
+
+        var arg = parameters[0].ToLowerInvariant();
+        switch (arg)
+        {
+            case "scan":
+            case "force":
+                EconomyBalancer.RunSupplyScan();
+                session.Player.SendMessage("Economy scan complete. Check server logs.");
+                break;
+            case "loot":
+                if (parameters.Length > 1 && parameters[1].Equals("force", StringComparison.OrdinalIgnoreCase))
+                {
+                    LootTracker.RunLootReport();
+                    session.Player.SendMessage("Loot scan complete. Check server logs.");
+                }
+                else
+                {
+                    LootTracker.ShowLootReport(session);
+                }
+                break;
+            default:
+                session.Player.SendMessage("Usage: /economy | /economy scan | /economy loot");
+                break;
+        }
     }
 }
 

@@ -8,14 +8,12 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         base.Start();
         Settings = SettingsContainer.Settings ?? new Settings();
         AchievementManager.Initialize(Settings);
-        RespectingYourTime.Initialize();
     }
 
     public override async Task OnWorldOpen()
     {
         Settings = SettingsContainer.Settings ?? new Settings();
         AchievementManager.Initialize(Settings);
-        RespectingYourTime.Initialize();
     }
 
     // ─── Login Evaluation ───
@@ -36,6 +34,14 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         // Evaluate tier-based achievements on login (account-wide for Loremaster)
         AchievementManager.EvaluateAccountLoremasterTiers(__instance.Account.AccountId);
+
+        // Evaluate Custom achievements (prerequisite-only) on login
+        for (int i = 0; i < AchievementManager.AllAchievements.Count; i++)
+        {
+            var ach = AchievementManager.AllAchievements[i];
+            if (ach.Type == AchievementType.Custom)
+                AchievementManager.TryUnlock(__instance, i);
+        }
     }
 
     // ─── Kill Tracking ───

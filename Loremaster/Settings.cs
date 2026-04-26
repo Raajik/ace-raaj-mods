@@ -15,11 +15,15 @@ public class Settings
 
     [JsonPropertyName("// StandardBaseXpRetentionPercent")]
     public string StandardBaseXpRetentionPercentDoc { get; init; } = "Multiplicative base: fraction of raw ACE kill/quest XP kept before other terms (25 = 25% of raw, i.e. -75% vs full vanilla). Applied with Quest Points, equipment, etc. as a product.";
-    public float StandardBaseXpRetentionPercent { get; set; } = 1f;
+    public float StandardBaseXpRetentionPercent { get; set; } = 0.2f;
+
+    [JsonPropertyName("// BonusXpBaseRetentionPercent")]
+    public string BonusXpBaseRetentionPercentDoc { get; init; } = "Separate base retention for intentional reward XP (completion bonuses, trophy turn-ins, parchments). 100 = full reward amount. Does NOT affect kill XP or normal quest grants. Use this to make trophy looting feel rewarding while keeping combat XP tight.";
+    public float BonusXpBaseRetentionPercent { get; set; } = 10f;
 
     [JsonPropertyName("// BonusPerQuestPoint")]
     public string BonusPerQuestPointDoc { get; init; } = "Quest Points factor = 1 + (QP × BonusPerQuestPoint / 100), multiplied after base retention and with equipment/augments/enlight/challenge.";
-    public float BonusPerQuestPoint { get; set; } = 0.1f;
+    public float BonusPerQuestPoint { get; set; } = 0.025f;
 
     [JsonPropertyName("// AugmentXpMultiplier")]
     public string AugmentXpMultiplierDoc { get; init; } = "Multiplicative augment term for /qb and XP (default 1 = no change). Raise above 1 to mirror server augment bonuses not on equipment.";
@@ -43,7 +47,7 @@ public class Settings
 
     [JsonPropertyName("// CompletionBonusPerQuestPoint")]
     public string CompletionBonusPerQuestPointDoc { get; init; } = "Added to DefaultCompletionBonusXpMultiplier when computing completion bonus: effective fraction = DefaultCompletionBonusXpMultiplier + (QP × CompletionBonusPerQuestPoint / 100), then × per-quest override.";
-    public float CompletionBonusPerQuestPoint { get; set; } = 0.02f;
+    public float CompletionBonusPerQuestPoint { get; set; } = 0.005f;
 
     [JsonPropertyName("// DefaultPoints")]
     public string DefaultPointsDoc { get; init; } = "QP awarded for quests not listed in QuestBonuses; 0 = only explicit QuestBonuses grant QP.";
@@ -82,7 +86,7 @@ public class Settings
 
     [JsonPropertyName("// DefaultCompletionBonusXpMultiplier")]
     public string DefaultCompletionBonusXpMultiplierDoc { get; init; } = "Flat fraction of next-level XP for completion bonus, before the CompletionBonusPerQuestPoint term; 0 = only QP-scaled + overrides.";
-    public float DefaultCompletionBonusXpMultiplier { get; set; } = 0.01f;
+    public float DefaultCompletionBonusXpMultiplier { get; set; } = 0.0025f;
 
     [JsonPropertyName("// CompletionBonusXpOverrides")]
     public string CompletionBonusXpOverridesDoc { get; init; } = "Per-quest absolute fraction of next-level XP for completion bonus when the quest is listed. 0 suppresses. Unlisted quests use DefaultCompletionBonusXpMultiplier + (QP × CompletionBonusPerQuestPoint / 100).";
@@ -143,7 +147,7 @@ public class Settings
 
     [JsonPropertyName("// RepeatStampBonusPerStamp")]
     public string RepeatStampBonusPerStampDoc { get; init; } = "The amount added to the RepeatStampMultiplier for each successful stamp (e.g., 0.01 for 1%).";
-    public float RepeatStampBonusPerStamp { get; set; } = 0.01f;
+    public float RepeatStampBonusPerStamp { get; set; } = 0.00025f;
 
     [JsonPropertyName("// RepeatStampCooldownSeconds")]
     public string RepeatStampCooldownSecondsDoc { get; init; } = "Cooldown window (in seconds) between earning the same quest stamp (e.g., 72000 for 20h).";

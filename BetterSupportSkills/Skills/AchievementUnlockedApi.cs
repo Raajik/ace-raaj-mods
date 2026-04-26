@@ -139,18 +139,18 @@ internal static class AchievementUnlockedApi
     {
         return className switch
         {
-            "Druid" => IsSpecialized(player, Skill.Summoning) && IsSpecialized(player, Skill.LifeMagic) && GetBaseSkill(player, Skill.Summoning) >= 100 && GetBaseSkill(player, Skill.LifeMagic) >= 100,
-            "Elementalist" => IsSpecialized(player, Skill.Summoning) && IsSpecialized(player, Skill.WarMagic) && GetBaseSkill(player, Skill.Summoning) >= 100 && GetBaseSkill(player, Skill.WarMagic) >= 100,
-            "Necromancer" => IsSpecialized(player, Skill.Summoning) && IsSpecialized(player, Skill.VoidMagic) && GetBaseSkill(player, Skill.Summoning) >= 100 && GetBaseSkill(player, Skill.VoidMagic) >= 100,
-            "Enchanter" => IsSpecialized(player, Skill.Summoning) && IsSpecialized(player, Skill.CreatureEnchantment) && GetBaseSkill(player, Skill.Summoning) >= 100 && GetBaseSkill(player, Skill.CreatureEnchantment) >= 100,
-            "Artificer" => IsSpecialized(player, Skill.Summoning) && IsSpecialized(player, Skill.ItemEnchantment) && GetBaseSkill(player, Skill.Summoning) >= 100 && GetBaseSkill(player, Skill.ItemEnchantment) >= 100,
-            "Rogue" => IsSpecialized(player, Skill.DirtyFighting) && IsSpecialized(player, Skill.DualWield) && IsSpecialized(player, Skill.FinesseWeapons) && GetBaseSkill(player, Skill.DirtyFighting) >= 100 && GetBaseSkill(player, Skill.DualWield) >= 100 && GetBaseSkill(player, Skill.FinesseWeapons) >= 100,
-            "Berserker" => (IsSpecialized(player, Skill.HeavyWeapons) || IsSpecialized(player, Skill.TwoHandedCombat)) && IsSpecialized(player, Skill.Recklessness) && (GetBaseSkill(player, Skill.HeavyWeapons) >= 100 || GetBaseSkill(player, Skill.TwoHandedCombat) >= 100) && GetBaseSkill(player, Skill.Recklessness) >= 100 && !IsTrainedOrSpec(player, Skill.MeleeDefense),
-            "Crusader" => (IsSpecialized(player, Skill.LightWeapons) || IsSpecialized(player, Skill.HeavyWeapons)) && IsSpecialized(player, Skill.Shield) && IsSpecialized(player, Skill.MeleeDefense) && (GetBaseSkill(player, Skill.LightWeapons) >= 100 || GetBaseSkill(player, Skill.HeavyWeapons) >= 100) && GetBaseSkill(player, Skill.Shield) >= 100 && GetBaseSkill(player, Skill.MeleeDefense) >= 100,
-            "Windwalker" => IsSpecialized(player, Skill.LightWeapons) && IsSpecialized(player, Skill.WarMagic) && IsSpecialized(player, Skill.ManaConversion) && GetBaseSkill(player, Skill.LightWeapons) >= 100 && GetBaseSkill(player, Skill.WarMagic) >= 100 && GetBaseSkill(player, Skill.ManaConversion) >= 100,
-            "Battlemage" => IsSpecialized(player, Skill.TwoHandedCombat) && IsSpecialized(player, Skill.WarMagic) && IsSpecialized(player, Skill.ManaConversion) && GetBaseSkill(player, Skill.TwoHandedCombat) >= 100 && GetBaseSkill(player, Skill.WarMagic) >= 100 && GetBaseSkill(player, Skill.ManaConversion) >= 100,
-            "DeathKnight" => (IsSpecialized(player, Skill.HeavyWeapons) || IsSpecialized(player, Skill.TwoHandedCombat)) && IsSpecialized(player, Skill.VoidMagic) && IsSpecialized(player, Skill.ArcaneLore) && (GetBaseSkill(player, Skill.HeavyWeapons) >= 100 || GetBaseSkill(player, Skill.TwoHandedCombat) >= 100) && GetBaseSkill(player, Skill.VoidMagic) >= 100 && GetBaseSkill(player, Skill.ArcaneLore) >= 100,
-            "Bloodmage" => IsSpecialized(player, Skill.LifeMagic) && IsSpecialized(player, Skill.ManaConversion) && IsSpecialized(player, Skill.ArcaneLore) && GetBaseSkill(player, Skill.LifeMagic) >= 100 && GetBaseSkill(player, Skill.ManaConversion) >= 100 && GetBaseSkill(player, Skill.ArcaneLore) >= 100,
+            "Druid" => IsSpecialized(player, Skill.Summoning) && IsSpecialized(player, Skill.LifeMagic),
+            "Elementalist" => IsSpecialized(player, Skill.Summoning) && IsSpecialized(player, Skill.WarMagic),
+            "Necromancer" => IsSpecialized(player, Skill.Summoning) && IsSpecialized(player, Skill.VoidMagic),
+            "Enchanter" => IsSpecialized(player, Skill.Summoning) && IsSpecialized(player, Skill.CreatureEnchantment),
+            "Artificer" => IsSpecialized(player, Skill.Summoning) && IsSpecialized(player, Skill.ItemEnchantment),
+            "Rogue" => IsSpecialized(player, Skill.DirtyFighting) && IsSpecialized(player, Skill.DualWield) && IsSpecialized(player, Skill.FinesseWeapons),
+            "Berserker" => (IsSpecialized(player, Skill.HeavyWeapons) || IsSpecialized(player, Skill.TwoHandedCombat)) && IsSpecialized(player, Skill.Recklessness) && !IsTrainedOrSpec(player, Skill.MeleeDefense),
+            "Crusader" => (IsSpecialized(player, Skill.LightWeapons) || IsSpecialized(player, Skill.HeavyWeapons)) && IsSpecialized(player, Skill.Shield) && IsSpecialized(player, Skill.MeleeDefense),
+            "Windwalker" => IsSpecialized(player, Skill.LightWeapons) && IsSpecialized(player, Skill.WarMagic) && IsSpecialized(player, Skill.ManaConversion),
+            "Battlemage" => IsSpecialized(player, Skill.TwoHandedCombat) && IsSpecialized(player, Skill.WarMagic) && IsSpecialized(player, Skill.ManaConversion),
+            "DeathKnight" => (IsSpecialized(player, Skill.HeavyWeapons) || IsSpecialized(player, Skill.TwoHandedCombat)) && IsSpecialized(player, Skill.VoidMagic) && IsSpecialized(player, Skill.ArcaneLore),
+            "Bloodmage" => IsSpecialized(player, Skill.LifeMagic) && IsSpecialized(player, Skill.ManaConversion) && IsSpecialized(player, Skill.ArcaneLore),
             _ => false
         };
     }

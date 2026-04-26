@@ -260,7 +260,7 @@ public class AutoLoot
     static bool IsEquippableItem(WorldObject item)
     {
         var type = item.ItemType;
-        return (type & (ItemType.Armor | ItemType.Clothing | ItemType.Jewelry | ItemType.MeleeWeapon | ItemType.MissileWeapon | ItemType.Caster)) != 0;
+        return (type & (ItemType.Armor | ItemType.Clothing | ItemType.Jewelry | ItemType.MeleeWeapon | ItemType.MissileWeapon | ItemType.Caster | ItemType.Gem)) != 0;
     }
 
     static bool TryAutoSalvageMaterial(Player player, WorldObject item, out int materialIndex, out int units)
@@ -319,13 +319,7 @@ public class AutoLoot
         return count >= settings.LockpickUnlockThreshold;
     }
 
-    static bool IsSalvageUnlocked(Player player)
-    {
-        var settings = PatchClass.Settings;
-        if (settings is null) return false;
-        var count = itemsSalvaged.GetOrAdd(LootKey(player), 0);
-        return count >= settings.SalvageUnlockThreshold;
-    }
+
 
     static bool IsProfileLockedByName(string filePathOrName, Player player)
     {
@@ -374,13 +368,7 @@ public class AutoLoot
         if (player is null || count <= 0) return;
         EnsureLoaded(player);
         var key = LootKey(player);
-        var newCount = itemsSalvaged.AddOrUpdate(key, count, (_, old) => old + count);
-        var settings = PatchClass.Settings;
-        if (settings is not null && newCount >= settings.SalvageUnlockThreshold && !salvageUnlockNotified.GetOrAdd(key, false))
-        {
-            salvageUnlockNotified[key] = true;
-            player.SendMessage("[AutoLoot] Achievement unlocked: Salvage Master! AutoSalvage unlocked. Type /autoloot salvage to enable it.");
-        }
+        itemsSalvaged.AddOrUpdate(key, count, (_, old) => old + count);
         SavePrefs(player);
     }
 
@@ -619,6 +607,10 @@ public class AutoLoot
                 var scrollsIdx = profiles.Length;
                 sb.Append($"\n  {scrollsIdx}) {(scrollsOn ? "[ON] " : "[OFF]")} Unknown Scrolls");
 
+                var salvageIdx = scrollsIdx + 1;
+                bool salvageOn = BetterSupportSkillsBridge.IsSalvageEnabled(player);
+                sb.Append($"\n  {salvageIdx}) {(salvageOn ? "[ON] " : "[OFF]")} AutoSalvage  (/autoloot salvage)");
+
                 player.SendMessage(sb.ToString());
                 return;
             }
@@ -710,19 +702,11 @@ public class AutoLoot
 
             if (arg.Equals("salvage", StringComparison.OrdinalIgnoreCase))
             {
-                var settings = PatchClass.Settings;
-                var salvageCount = itemsSalvaged.GetOrAdd(LootKey(player), 0);
-                if (salvageCount < settings.SalvageUnlockThreshold)
-                {
-                    player.SendMessage($"[AutoLoot] AutoSalvage is locked. Salvage {settings.SalvageUnlockThreshold} items manually to unlock it. (Progress: {salvageCount}/{settings.SalvageUnlockThreshold})");
-                    return;
-                }
-
                 bool currentlyOn = BetterSupportSkillsBridge.IsSalvageEnabled(player);
                 bool turningOn = !currentlyOn;
                 BetterSupportSkillsBridge.SetSalvageEnabled(player, turningOn);
                 SavePrefs(player);
-                player.SendMessage($"[AutoLoot] AutoSalvage: {(turningOn ? "ON" : "OFF")}");
+                player.SendMessage($"[AutoLoot] AutoSalvage: {(turningOn ? "ON" : "OFF")}. Type /autosalvage for more options.");
                 return;
             }
 
@@ -742,6 +726,16 @@ public class AutoLoot
                     unknownScrolls[LootKey(player)] = !current;
                     SavePrefs(player);
                     player.SendMessage($"Unknown Scrolls: {(!current ? "ON" : "OFF")}");
+                    return;
+                }
+                else if (index == profiles.Length + 1)
+                {
+                    // AutoSalvage
+                    bool currentlyOn = BetterSupportSkillsBridge.IsSalvageEnabled(player);
+                    bool turningOn = !currentlyOn;
+                    BetterSupportSkillsBridge.SetSalvageEnabled(player, turningOn);
+                    SavePrefs(player);
+                    player.SendMessage($"[AutoLoot] AutoSalvage: {(turningOn ? "ON" : "OFF")}. Type /autosalvage for more options.");
                     return;
                 }
             }
@@ -789,6 +783,88 @@ public class AutoLoot
         }
     }
 
+    [CommandHandler("scrolls", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1)]
+#if REALM
+    public static void HandleScrolls(ISession session, params string[] parameters)
+#else
+    public static void HandleScrolls(Session session, params string[] parameters)
+#endif
+    {
+        var player = session.Player;
+        if (player == null) return;
+
+        if (parameters.Length == 0 || !parameters[0].Equals("learn", StringComparison.OrdinalIgnoreCase))
+        {
+            player.SendMessage("Usage: /scrolls learn — learns all readable scrolls in your inventory.");
+            return;
+        }
+
+        var scrolls = new List<WorldObject>();
+        foreach (var item in player.Inventory.Values)
+        {
+            if (item.WeenieType == WeenieType.Scroll)
+                scrolls.Add(item);
+            if (item is Container container)
+                foreach (var sub in container.Inventory.Values)
+                    if (sub.WeenieType == WeenieType.Scroll)
+                        scrolls.Add(sub);
+        }
+
+        int learned = 0;
+        int skipped = 0;
+        int destroyed = 0;
+
+        foreach (var item in scrolls)
+        {
+            var spellIdProp = item.GetProperty(PropertyDataId.Spell);
+            if (spellIdProp == null || spellIdProp == 0)
+            {
+                skipped++;
+                continue;
+            }
+
+            var spellId = (uint)spellIdProp;
+            if (player.SpellIsKnown(spellId))
+            {
+                item.Destroy();
+                destroyed++;
+                continue;
+            }
+
+            if (item is not Scroll scroll || scroll.Spell == null)
+            {
+                skipped++;
+                continue;
+            }
+
+            var scrollSkill = scroll.Spell.GetMagicSkill();
+            var playerScrollSkill = player.GetCreatureSkill(scrollSkill);
+            int requiredSkill = (int)(scroll.Spell.Level * 50 - 50);
+            bool canReadScroll = playerScrollSkill.AdvancementClass >= SkillAdvancementClass.Trained
+                              && playerScrollSkill.Current >= requiredSkill;
+
+            if (!canReadScroll)
+            {
+                skipped++;
+                continue;
+            }
+
+            player.LearnSpellWithNetworking(spellId, uiOutput: false);
+
+            if (player.SpellIsKnown(spellId))
+            {
+                item.Destroy();
+                learned++;
+            }
+            else
+            {
+                skipped++;
+            }
+        }
+
+        player.SendMessage($"[Scrolls] Learned {learned} spell(s). Skipped {skipped}. Cleaned up {destroyed} duplicates.");
+    }
+
     // ── Public API for BetterSupportSkills integration ───────────────────────
 
     static bool _settingSalvageState;
@@ -816,6 +892,13 @@ public class AutoLoot
         if (debug)
             ModManager.Log("AutoLoot: PostGenerateTreasure entered", ModManager.LogLevel.Info);
 
+        if (killer == null)
+        {
+            if (debug)
+                ModManager.Log("AutoLoot: PostGenerateTreasure early exit — killer is null", ModManager.LogLevel.Info);
+            return;
+        }
+
         if (killer.TryGetPetOwnerOrAttacker() is not Player player)
         {
             if (debug)
@@ -836,8 +919,9 @@ public class AutoLoot
         bool hasProfiles    = playerProfiles != null && !playerProfiles.IsEmpty;
         bool hasVT          = vendorTrashEnabled.GetOrAdd(LootKey(player), false);
         bool hasScrolls     = unknownScrolls.GetOrAdd(LootKey(player), false);
+        bool hasSalvage     = BetterSupportSkillsBridge.IsSalvageEnabled(player);
 
-        if (!hasProfiles && !hasVT && !hasScrolls)
+        if (!hasProfiles && !hasVT && !hasScrolls && !hasSalvage)
         {
             if (debug)
                 ModManager.Log($"AutoLoot: PostGenerateTreasure early exit — no active loot for {player.Name}", ModManager.LogLevel.Info);
@@ -1040,15 +1124,20 @@ public class AutoLoot
                         continue;
                     }
 
-                    if (!player.CanReadScroll(scroll))
+                    // Custom scroll requirement: skill must be trained AND current skill >= spell level * 50 - 50
+                    var scrollSkill = scroll.Spell.GetMagicSkill();
+                    var playerScrollSkill = player.GetCreatureSkill(scrollSkill);
+                    int requiredSkill = (int)(scroll.Spell.Level * 50 - 50);
+                    bool canReadScroll = playerScrollSkill.AdvancementClass >= SkillAdvancementClass.Trained
+                                      && playerScrollSkill.Current >= requiredSkill;
+
+                    if (!canReadScroll)
                     {
-                        var skill = scroll.Spell.GetMagicSkill();
-                        var playerSkill = player.GetCreatureSkill(skill);
-                        string msg = playerSkill.AdvancementClass < SkillAdvancementClass.Trained
-                            ? $"You are not trained in {playerSkill.Skill.ToSentence()}!"
-                            : $"You are not skilled enough in {playerSkill.Skill.ToSentence()} to learn this spell.";
+                        string msg = playerScrollSkill.AdvancementClass < SkillAdvancementClass.Trained
+                            ? $"You are not trained in {playerScrollSkill.Skill.ToSentence()}!"
+                            : $"You are not skilled enough in {playerScrollSkill.Skill.ToSentence()} to learn this spell. (Requires {requiredSkill}, you have {playerScrollSkill.Current})";
                         player.Session?.Network.EnqueueSend(new GameMessageSystemChat(msg, ChatMessageType.Broadcast));
-                        FallbackLootScrollToInventory(removed, LootDisplayName(removed), qty);
+                        removed.Destroy(); // Don't pick up scrolls you can't read
                         continue;
                     }
 
@@ -1096,6 +1185,46 @@ public class AutoLoot
                         var keyName = LootDisplayName(removed);
                         lootedItems.TryGetValue(keyName, out var existing);
                         lootedItems[keyName] = existing + (removed.StackSize ?? 1);
+                        lootedSet.Add(removed);
+                        removed.Destroy();
+                    }
+                }
+            }
+
+            // ── Pass 5: AutoSalvage ──────────────────────────────────────────
+            // Salvage equippable items with MaterialType and raw salvage bags
+            // independently of .utl profiles.
+            if (hasSalvage)
+            {
+                foreach (var item in items)
+                {
+                    if (lootedSet.Contains(item) || item.IsDestroyed)
+                        continue;
+
+                    if (TryAutoSalvageMaterial(player, item, out var materialIndex, out var salvageUnits))
+                    {
+                        if (!corpse.TryRemoveFromInventory(item.Guid, out var removed))
+                            continue;
+                        int bankProp = 40201 + materialIndex;
+                        long current = player.GetProperty((PropertyInt64)bankProp) ?? 0;
+                        player.SetProperty((PropertyInt64)bankProp, current + salvageUnits);
+                        MaybeSendAutoSalvageMessage(player, materialIndex, salvageUnits);
+                        lootedSet.Add(removed);
+                        removed.Destroy();
+                    }
+                    else if (IsSalvageItem(item))
+                    {
+                        if (!corpse.TryRemoveFromInventory(item.Guid, out var removed))
+                            continue;
+                        BetterSupportSkillsBridge.OnPickupSalvage(player, removed);
+                        lootedSet.Add(removed);
+                        removed.Destroy();
+                    }
+                    else if (IsEquippableItem(item))
+                    {
+                        // Equippable but no MaterialType — destroy to avoid clutter
+                        if (!corpse.TryRemoveFromInventory(item.Guid, out var removed))
+                            continue;
                         lootedSet.Add(removed);
                         removed.Destroy();
                     }

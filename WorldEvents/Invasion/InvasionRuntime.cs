@@ -1,5 +1,6 @@
 using ACE.Database;
 using ACE.Database.Models.World;
+using HarmonyLib;
 using WorldEvents.Invasion.Models;
 
 using WorldWeenie = ACE.Database.Models.World.Weenie;
@@ -14,6 +15,9 @@ internal static class InvasionRuntime
     static readonly List<WorldObject> _dynamicSpawns = new();
     static DateTime _nextInvasionUtc = DateTime.MaxValue;
     static DateTime _lastReminderUtc = DateTime.MinValue;
+    static DateTime _nextTrickleSpawnUtc = DateTime.MinValue;
+    static int _tricklePulseCount = 0;
+    static bool _creatureExSpawnedThisWave = false;
     static readonly Random _rng = new();
 
     // ── Lifecycle ────────────────────────────────────────────────────────
@@ -90,6 +94,16 @@ internal static class InvasionRuntime
                     // Boss respawn check
                     if (InvasionKillTracker.IsBossRespawnDue(now))
                         TryRespawnBoss(s, ActiveInvasion!);
+
+                    // Trickle spawn check (30-45s chaotic reinforcements)
+                    if (_nextTrickleSpawnUtc == DateTime.MinValue)
+                        _nextTrickleSpawnUtc = now.AddSeconds(_rng.Next(30, 46));
+
+                    if (now >= _nextTrickleSpawnUtc)
+                    {
+                        _nextTrickleSpawnUtc = now.AddSeconds(_rng.Next(30, 46));
+                        DoTrickleSpawn(s);
+                    }
                 }
             }
 
@@ -156,6 +170,7 @@ internal static class InvasionRuntime
             ThemeName = themeName,
             WaveKillThreshold = threshold,
             BossRespawnMinutes = respawnMins,
+            ChaosMode = themeTypeId == 0,
         };
 
         foreach (var town in selected)
@@ -178,6 +193,9 @@ internal static class InvasionRuntime
 
         InvasionKillTracker.Reset(threshold, respawnMins);
         _lastReminderUtc = now;
+        _nextTrickleSpawnUtc = now.AddSeconds(_rng.Next(30, 46));
+        _tricklePulseCount = 0;
+        _creatureExSpawnedThisWave = false;
         ActiveInvasion = wave;
         InvasionPersistence.SaveActiveInvasion(wave);
 
@@ -292,6 +310,9 @@ internal static class InvasionRuntime
             catch { }
         }
         _dynamicSpawns.Clear();
+        _nextTrickleSpawnUtc = DateTime.MinValue;
+        _tricklePulseCount = 0;
+        _creatureExSpawnedThisWave = false;
     }
 
     internal static void ForceStart(Settings s, string? townName = null)
@@ -349,6 +370,7 @@ internal static class InvasionRuntime
                 ThemeName = themeName,
                 WaveKillThreshold = threshold,
                 BossRespawnMinutes = respawnMins,
+                ChaosMode = themeTypeId == 0,
             };
 
             foreach (var town in selected)
@@ -371,6 +393,9 @@ internal static class InvasionRuntime
 
             InvasionKillTracker.Reset(threshold, respawnMins);
             _lastReminderUtc = now;
+            _nextTrickleSpawnUtc = now.AddSeconds(_rng.Next(30, 46));
+            _tricklePulseCount = 0;
+            _creatureExSpawnedThisWave = false;
             ActiveInvasion = wave;
             InvasionPersistence.SaveActiveInvasion(wave);
 
@@ -423,6 +448,14 @@ internal static class InvasionRuntime
             {
                 ModManager.Log($"[Invasion] No mobs found for {town.TownName} T{tier} lv{levelMin}-{levelMax} theme={themeTypeId}.", ModManager.LogLevel.Warn);
                 return;
+            }
+
+            // Themed waves: narrow to a mix of 2-4 different monster WCIDs for thematic consistency
+            if (themeTypeId != 0 && wcids.Count > s.InvasionThemeMonsterMixMin)
+            {
+                Shuffle(wcids);
+                var mixCount = Math.Min(wcids.Count, _rng.Next(s.InvasionThemeMonsterMixMin, s.InvasionThemeMonsterMixMax + 1));
+                wcids = wcids.Take(mixCount).ToList();
             }
 
             // Pre-generate all positions on timer thread (no object mutation).
@@ -637,6 +670,251 @@ internal static class InvasionRuntime
         return result;
     }
 
+    // ── Trickle spawn (chaotic reinforcement) ────────────────────────────
+
+    static void DoTrickleSpawn(Settings s)
+    {
+        if (ActiveInvasion == null) return;
+
+        _tricklePulseCount++;
+        var pulse = _tricklePulseCount;
+        ActiveInvasion.TricklePulseCount = pulse;
+
+        var isChaos = ActiveInvasion.ChaosMode;
+        var scalePercent = isChaos ? s.InvasionChaosScalingPercent : 0.10;
+        var scaleFactor = 1.0 + scalePercent * Math.Min(pulse, 5);
+
+        // CreatureEx trigger: chaos = every pulse; themed = pulse 5+ (if enabled); normal = pulse 5+ once
+        var isCreatureExPulse = isChaos
+            ? ActiveInvasion.CreatureExSpawnedCount < s.InvasionChaosMaxCreatureExTotal
+            : (pulse >= 5 && !_creatureExSpawnedThisWave && s.InvasionCreatureExOnThemedPulse);
+
+        foreach (var entry in ActiveInvasion.Towns.Where(t => t.Mode == InvasionMode.Dynamic))
+        {
+            var town = s.InvasionTowns.FirstOrDefault(t => t.TownName == entry.TownName);
+            if (town == null || town.TownCenterObjCellId == 0) continue;
+
+            int livingCount;
+            lock (_dynamicSpawns)
+            {
+                livingCount = _dynamicSpawns.Count(wo =>
+                    wo != null && !wo.IsDestroyed &&
+                    wo.Location != null &&
+                    Distance2D(wo.Location, town.TownCenterX, town.TownCenterY) <= town.TownSpawnRadius * 2);
+            }
+
+            var scaledCap = (int)(town.DynamicMaxSpawns * scaleFactor);
+            var refill = Math.Max(0, scaledCap - livingCount);
+            var swarm = (int)(scaledCap * s.TrickleSwarmMultiplier);
+            var totalToSpawn = Math.Min(refill + swarm, 100 - livingCount); // per-town cap of 100
+
+            if (totalToSpawn <= 0) continue;
+
+            var (levelMin, levelMax) = ResolveLevelRange(s, town, entry.Tier);
+            var isThemed = ActiveInvasion.ThemeName.Length > 0 && s.InvasionUseCreatureTypeTheme;
+            var wcids = isThemed
+                ? QueryCreatureWcidsByType((uint)Enum.Parse<CreatureType>(ActiveInvasion.ThemeName), levelMin, levelMax)
+                : QueryNearbyCreatureWcids(town, levelMin, levelMax);
+
+            if (wcids.Count == 0 && !isThemed)
+                wcids = QueryCreatureWcidsGlobal(levelMin, levelMax);
+
+            // Themed trickle: narrow to the same 2-4 monster mix
+            if (isThemed && wcids.Count > s.InvasionThemeMonsterMixMin)
+            {
+                Shuffle(wcids);
+                var mixCount = Math.Min(wcids.Count, _rng.Next(s.InvasionThemeMonsterMixMin, s.InvasionThemeMonsterMixMax + 1));
+                wcids = wcids.Take(mixCount).ToList();
+            }
+
+            if (wcids.Count == 0) continue;
+
+            var spawns = GenerateSpawnPositions(town, wcids, totalToSpawn);
+            var byLb = spawns.GroupBy(sp => sp.Pos.LandblockId).ToList();
+
+            foreach (var group in byLb)
+            {
+                var lb = LandblockManager.GetLandblock(group.Key, false);
+                if (lb == null) continue;
+                var batch = group.ToList();
+                var townCopy = town;
+                lb.EnqueueAction(new ActionEventDelegate(() =>
+                {
+                    var spawned = SpawnBatchOnLandblock(lb, batch, townCopy);
+                    lock (_dynamicSpawns)
+                        _dynamicSpawns.AddRange(spawned);
+                }));
+            }
+
+            ModManager.Log(
+                $"[Invasion] Trickle pulse {pulse} at {town.TownName}: living={livingCount}, cap={scaledCap}, refill={refill}, swarm={swarm}, spawned={spawns.Count}",
+                ModManager.LogLevel.Info);
+
+            // CreatureEx summon
+            if (isCreatureExPulse)
+            {
+                if (!isChaos)
+                    _creatureExSpawnedThisWave = true;
+
+                var spawnCount = isChaos ? s.InvasionChaosCreatureExPerPulse : 1;
+                for (int ex = 0; ex < spawnCount; ex++)
+                {
+                    if (ActiveInvasion.CreatureExSpawnedCount >= s.InvasionChaosMaxCreatureExTotal)
+                        break;
+                    SpawnCreatureEx(s, town, entry.Tier, wcids, levelMax, isChaos);
+                }
+            }
+        }
+    }
+
+    static double Distance2D(Position pos, float tx, float ty)
+    {
+        var dx = pos.Pos.X - tx;
+        var dy = pos.Pos.Y - ty;
+        return Math.Sqrt(dx * dx + dy * dy);
+    }
+
+    static void SpawnCreatureEx(Settings s, InvasionTownSettings town, int tier, List<uint> availableWcids, int levelMax, bool isChaos = false)
+    {
+        uint baseWcid = s.CreatureExWcid;
+
+        // If no explicit WCID and we have a theme, pick a random matching creature
+        if (baseWcid == 0 && availableWcids.Count > 0)
+        {
+            baseWcid = availableWcids[_rng.Next(availableWcids.Count)];
+        }
+
+        if (baseWcid == 0)
+        {
+            ModManager.Log($"[Invasion] Cannot spawn CreatureEx at {town.TownName}: no WCID configured and no themed mobs available.", ModManager.LogLevel.Warn);
+            return;
+        }
+
+        try
+        {
+            // In chaos mode, try to spawn an actual Boss via Swarmed reflection
+            if (isChaos)
+            {
+                var swarmedAsm = AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(a => a.GetName().Name == "Swarmed");
+
+                if (swarmedAsm != null)
+                {
+                    var bossType = swarmedAsm.GetType("Swarmed.Creatures.Boss");
+                    var createMethod = bossType?.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                        .FirstOrDefault(m => m.Name == "Create" && m.GetParameters().Length == 3);
+
+                    if (bossType != null && createMethod != null)
+                    {
+                        var weenie = DatabaseManager.World.GetCachedWeenie(baseWcid);
+                        if (weenie != null)
+                        {
+                            var guid = GuidManager.NewDynamicGuid();
+                            var creature = createMethod.Invoke(null, new object?[] { weenie, guid, null });
+                            if (creature is WorldObject wo)
+                            {
+                                wo.Location = new Position(
+                                    town.TownCenterObjCellId,
+                                    town.TownCenterX, town.TownCenterY, town.TownCenterZ,
+                                    0f, 0f, 0f, 1f);
+                                wo.Location.LandblockId = new LandblockId(wo.Location.GetCell());
+
+                                // Mark as invasion-spawned chaos boss for recursive spawning
+                                wo.SetProperty((PropertyInt)10030, 1); // InvasionChaosBoss marker
+                                var depth = ActiveInvasion?.CreatureExSpawnedCount ?? 0;
+                                wo.SetProperty((PropertyInt)10031, depth); // generation depth
+
+                                if (LandblockManager.AddObject(wo))
+                                {
+                                    lock (_dynamicSpawns)
+                                        _dynamicSpawns.Add(wo);
+                                    if (ActiveInvasion != null)
+                                        ActiveInvasion.CreatureExSpawnedCount++;
+
+                                    ModManager.Log($"[Invasion] Chaos Boss '{wo.Name}' spawned at {town.TownName} (depth {depth}).", ModManager.LogLevel.Info);
+                                    Task.Run(() => InvasionBroadcast.AnnounceBossSpawned(town.TownName, wo.Name ?? "CreatureEx"));
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Standard path: try Swarmed reflection for normal CreatureEx
+            var swarmedAsmStandard = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.GetName().Name == "Swarmed");
+
+            if (swarmedAsmStandard != null)
+            {
+                var helperType = swarmedAsmStandard.GetType("Swarmed.Helpers.CreatureExHelpers");
+                var randomTypeMethod = helperType?.GetMethod("RandomCreatureType", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                var createMethod = helperType?.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                    .FirstOrDefault(m => m.Name == "Create" && m.GetParameters().Length == 3);
+
+                if (randomTypeMethod != null && createMethod != null)
+                {
+                    var exType = randomTypeMethod.Invoke(null, null);
+                    var weenie = DatabaseManager.World.GetCachedWeenie(baseWcid);
+                    if (weenie != null)
+                    {
+                        var guid = GuidManager.NewDynamicGuid();
+                        var creature = createMethod.Invoke(null, new[] { exType, weenie, guid });
+                        if (creature is WorldObject wo)
+                        {
+                            wo.Location = new Position(
+                                town.TownCenterObjCellId,
+                                town.TownCenterX, town.TownCenterY, town.TownCenterZ,
+                                0f, 0f, 0f, 1f);
+                            wo.Location.LandblockId = new LandblockId(wo.Location.GetCell());
+
+                            if (LandblockManager.AddObject(wo))
+                            {
+                                lock (_dynamicSpawns)
+                                    _dynamicSpawns.Add(wo);
+                                if (ActiveInvasion != null)
+                                    ActiveInvasion.CreatureExSpawnedCount++;
+
+                                ModManager.Log($"[Invasion] CreatureEx '{wo.Name}' spawned at {town.TownName} (pulse 5+).", ModManager.LogLevel.Info);
+                                Task.Run(() => InvasionBroadcast.AnnounceBossSpawned(town.TownName, wo.Name ?? "CreatureEx"));
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fallback: spawn normal mob with FakeInt 10029 so Swarmed will convert it if loaded later
+            var fallback = WorldObjectFactory.CreateNewWorldObject(baseWcid);
+            if (fallback == null) return;
+
+            fallback.Location = new Position(
+                town.TownCenterObjCellId,
+                town.TownCenterX, town.TownCenterY, town.TownCenterZ,
+                0f, 0f, 0f, 1f);
+            fallback.Location.LandblockId = new LandblockId(fallback.Location.GetCell());
+            fallback.SetProperty((PropertyInt)10029, _rng.Next(1, 24)); // FakeInt.CreatureExType random type
+
+            if (LandblockManager.AddObject(fallback))
+            {
+                lock (_dynamicSpawns)
+                    _dynamicSpawns.Add(fallback);
+                if (ActiveInvasion != null)
+                    ActiveInvasion.CreatureExSpawnedCount++;
+
+                ModManager.Log($"[Invasion] Fallback CreatureEx (WCID {baseWcid}) spawned at {town.TownName} with FakeInt 10029.", ModManager.LogLevel.Info);
+            }
+            else
+            {
+                fallback.Destroy();
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Invasion] CreatureEx spawn failed at {town.TownName}: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
     static void Shuffle<T>(List<T> list)
     {
         for (var i = list.Count - 1; i > 0; i--)
@@ -652,5 +930,101 @@ internal static class InvasionRuntime
     {
         lock (InvasionLock)
             return ActiveInvasion;
+    }
+
+    // ── Recursive Chaos Boss Spawning ────────────────────────────────────
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Creature), nameof(Creature.Die), new Type[] { typeof(DamageHistoryInfo), typeof(DamageHistoryInfo) })]
+    public static void PostCreatureDie_ChaosBossReinforce(DamageHistoryInfo lastDamager, DamageHistoryInfo topDamager, Creature __instance)
+    {
+        if (__instance == null || __instance.IsDestroyed) return;
+        if (ActiveInvasion == null || !ActiveInvasion.ChaosMode) return;
+
+        // Check if this is an invasion-spawned chaos boss
+        var isInvasionBoss = __instance.GetProperty((PropertyInt)10030) == 1;
+        if (!isInvasionBoss) return;
+
+        var depth = __instance.GetProperty((PropertyInt)10031) ?? 0;
+        const int maxDepth = 3; // 3 generations
+        if (depth >= maxDepth) return;
+
+        var settings = PatchClass.Settings;
+        if (settings == null) return;
+
+        // Find which town this boss died near
+        var deathPos = __instance.Location;
+        if (deathPos == null) return;
+
+        var town = settings.InvasionTowns
+            .Where(t => t.Enabled && t.TownCenterObjCellId != 0)
+            .OrderBy(t => Distance2D(deathPos, t.TownCenterX, t.TownCenterY))
+            .FirstOrDefault();
+        if (town == null) return;
+
+        // Find the town entry to get tier
+        var entry = ActiveInvasion.Towns.FirstOrDefault(t => t.TownName == town.TownName);
+        int tier = entry?.Tier ?? 0;
+
+        var (levelMin, levelMax) = ResolveLevelRange(settings, town, tier);
+        var wcids = QueryNearbyCreatureWcids(town, levelMin, levelMax);
+        if (wcids.Count == 0)
+            wcids = QueryCreatureWcidsGlobal(levelMin, levelMax);
+        if (wcids.Count == 0) return;
+
+        int spawnCount = 2; // each chaos boss spawns 2 children
+        for (int i = 0; i < spawnCount; i++)
+        {
+            if (ActiveInvasion.CreatureExSpawnedCount >= settings.InvasionChaosMaxCreatureExTotal)
+                break;
+
+            uint baseWcid = wcids[_rng.Next(wcids.Count)];
+            var weenie = DatabaseManager.World.GetCachedWeenie(baseWcid);
+            if (weenie == null) continue;
+
+            try
+            {
+                var swarmedAsm = AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(a => a.GetName().Name == "Swarmed");
+
+                if (swarmedAsm != null)
+                {
+                    var bossType = swarmedAsm.GetType("Swarmed.Creatures.Boss");
+                    var createMethod = bossType?.GetMethods(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+                        .FirstOrDefault(m => m.Name == "Create" && m.GetParameters().Length == 3);
+
+                    if (bossType != null && createMethod != null)
+                    {
+                        var guid = GuidManager.NewDynamicGuid();
+                        var creature = createMethod.Invoke(null, new object?[] { weenie, guid, null });
+                        if (creature is WorldObject wo)
+                        {
+                            var offsetX = (float)(_rng.NextDouble() * 10 - 5);
+                            var offsetY = (float)(_rng.NextDouble() * 10 - 5);
+                            wo.Location = new Position(
+                                deathPos.Cell,
+                                deathPos.Pos.X + offsetX, deathPos.Pos.Y + offsetY, deathPos.Pos.Z,
+                                0f, 0f, 0f, 1f);
+                            wo.Location.LandblockId = new LandblockId(wo.Location.GetCell());
+
+                            wo.SetProperty((PropertyInt)10030, 1);
+                            wo.SetProperty((PropertyInt)10031, depth + 1);
+
+                            if (LandblockManager.AddObject(wo))
+                            {
+                                lock (_dynamicSpawns)
+                                    _dynamicSpawns.Add(wo);
+                                ActiveInvasion.CreatureExSpawnedCount++;
+                                ModManager.Log($"[Invasion] Chaos Boss child spawned at depth {depth + 1} from {__instance.Name}.", ModManager.LogLevel.Info);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[Invasion] Chaos Boss reinforcement failed: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+        }
     }
 }

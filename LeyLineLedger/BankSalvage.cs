@@ -619,6 +619,39 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         }
 
         player.SendMessage($"Deposited {FormatDepositedSalvageSummary(items, sb.Redeem.UnitsPerBag)}. Use /bank salvage status to review.");
+
+        TryGrantSalvageHoarder(player, sb);
+    }
+
+    static void TryGrantSalvageHoarder(Player player, SalvageBankSettings sb)
+    {
+        try
+        {
+            long totalBags = 0;
+            for (int i = 0; i < sb.DepositRules.Count; i++)
+            {
+                int prop = ResolveMaterialBankProperty(sb, i, sb.DepositRules[i]);
+                long units = player.GetBanked(prop);
+                totalBags += units / sb.Redeem.UnitsPerBag;
+            }
+
+            if (totalBags < 50) return;
+
+            var asm = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.GetName().Name == "AchievementUnlocked");
+            if (asm == null) return;
+
+            var mgr = asm.GetType("AchievementUnlocked.AchievementManager");
+            var has = mgr?.GetMethod("HasAchievement", new[] { typeof(Player), typeof(string) });
+            var unlock = mgr?.GetMethod("UnlockAchievement", new[] { typeof(Player), typeof(string), typeof(bool) });
+            if (has == null || unlock == null) return;
+
+            var hasResult = has.Invoke(null, new object[] { player, "SalvageHoarder" });
+            if (hasResult is bool b && b) return;
+
+            unlock.Invoke(null, new object[] { player, "SalvageHoarder", false });
+        }
+        catch { /* silently fail if AchievementUnlocked is not present */ }
     }
 
     static string CompactSalvageMaterialNameForDeposit(string displayName)
@@ -867,5 +900,17 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         }
 
         return done;
+    }
+
+    // ── Retroactive achievement check on login ─────────────────────────────
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Player), nameof(Player.PlayerEnterWorld))]
+    public static void PostPlayerEnterWorldSalvageHoarder(Player __instance)
+    {
+        if (__instance is null) return;
+        var s = PatchClass.Settings;
+        if (s?.SalvageBank.Enabled != true) return;
+        TryGrantSalvageHoarder(__instance, s.SalvageBank);
     }
 }

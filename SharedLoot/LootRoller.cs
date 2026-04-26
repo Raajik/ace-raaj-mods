@@ -87,8 +87,22 @@ public static class LootRoller
                 return null;
 
             int stackSize;
-            if (selectedItem.stackSizeMin > 0 && selectedItem.stackSizeMax >= selectedItem.stackSizeMin)
+
+            // Auto-detect crystals, pearls, jewels for 1-3 stacking
+            bool isCrystalPearlOrJewel = item.Name.Contains("Crystal", StringComparison.OrdinalIgnoreCase)
+                                      || item.Name.Contains("Pearl", StringComparison.OrdinalIgnoreCase)
+                                      || item.Name.Contains("Jewel", StringComparison.OrdinalIgnoreCase)
+                                      || item.Name.Contains("Gem", StringComparison.OrdinalIgnoreCase)
+                                      || item.Name.Contains("Foolproof", StringComparison.OrdinalIgnoreCase);
+
+            if (isCrystalPearlOrJewel)
+            {
+                stackSize = ThreadSafeRandom.Next(1, 3);
+            }
+            else if (selectedItem.stackSizeMin > 0 && selectedItem.stackSizeMax >= selectedItem.stackSizeMin)
+            {
                 stackSize = ThreadSafeRandom.Next(selectedItem.stackSizeMin, selectedItem.stackSizeMax);
+            }
             else
             {
                 stackSize = selectedItem.stackSize;

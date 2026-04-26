@@ -25,8 +25,8 @@ public enum Features
     SneakAttackSkill,
     TrophyDropsSkill,
     TinkeringLootGating,
-    VendorItemLeveling,
     SummoningClasses,
+    DruidPetThorns,
     CombatClasses,
 }
 
@@ -191,10 +191,6 @@ public class Settings
     public string TinkeringLootGatingSectionDoc { get; init; } = "Tinkering loot gating: trained +10 max level, specialized +20 max level for matching item type.";
     public TinkeringLootGatingSettings TinkeringLootGating { get; set; } = new();
 
-    [JsonPropertyName("// EnableVendorItemLeveling")]
-    public string EnableVendorItemLevelingDoc { get; init; } = "Vendor item leveling — all eligible vendor equipment spawns with native ACE item leveling (max level 25). Anyone can use and level these.";
-    public bool EnableVendorItemLeveling { get; set; } = false;
-
     [JsonPropertyName("// EnableChaosTinkerAchievement")]
     public string EnableChaosTinkerAchievementDoc { get; init; } = "When true, failing a tinker while having tinkering trained unlocks the /chaostinker command.";
     public bool EnableChaosTinkerAchievement { get; set; } = true;
@@ -207,6 +203,14 @@ public class Settings
     public string SummoningClassesSectionDoc { get; init; } = "Druid (Life), Elementalist (War), Necromancer (Void), Enchanter (Creature Enchantment), Artificer (Item Enchantment) auto-summon settings.";
     public SummoningClassesSettings SummoningClasses { get; set; } = new();
 
+    [JsonPropertyName("// EnableDruidPetThorns")]
+    public string EnableDruidPetThornsDoc { get; init; } = "Druid pet thorns — when a Druid (Spec Summoning + Life Magic) has specialized Shield + trained Dirty Fighting, their pets reflect thorns damage when hit and deal AoE thorns damage on attack.";
+    public bool EnableDruidPetThorns { get; set; } = true;
+
+    [JsonPropertyName("// DruidPetThorns")]
+    public string DruidPetThornsSectionDoc { get; init; } = "Druid pet thorns: AoE radius, damage multiplier, max targets.";
+    public DruidPetThornsSettings DruidPetThorns { get; set; } = new();
+
     [JsonPropertyName("// EnableCombatClasses")]
     public string EnableCombatClassesDoc { get; init; } = "Combat classes — Rogue, Berserker, Crusader unlock via achievements and grant combat bonuses.";
     public bool EnableCombatClasses { get; set; } = true;
@@ -214,10 +218,6 @@ public class Settings
     [JsonPropertyName("// CombatClasses")]
     public string CombatClassesSectionDoc { get; init; } = "Combat class bonuses: Rogue bleed, Berserker life steal, Crusader heal/crit/thorns.";
     public CombatClassesSettings CombatClasses { get; set; } = new();
-
-    [JsonPropertyName("// VendorItemLeveling")]
-    public string VendorItemLevelingSectionDoc { get; init; } = "Vendor item leveling: base XP and max level for vendor-sold equipment.";
-    public VendorItemLevelingSettings VendorItemLeveling { get; set; } = new();
 
     [JsonPropertyName("// Recuperation")]
     public string RecuperationSectionDoc { get; init; } = "Recuperation: heal-over-time after using kits; per-kit vital routing and timing. Inside Recuperation: // lines first, then values (same order).";
@@ -586,16 +586,16 @@ public class LoyaltySettings
 public class SalvageSettings
 {
     [JsonPropertyName("// AutoDepositPercent")]
-    public string AutoDepositPercentDoc { get; init; } = "Fraction of salvage units auto-deposited to bank when specialized (0.001 = 0.1%).";
-    public double AutoDepositPercent { get; set; } = 0.001;
+    public string AutoDepositPercentDoc { get; init; } = "Fraction of salvage units auto-deposited to bank (1.0 = 100%).";
+    public double AutoDepositPercent { get; set; } = 1.0;
 
     [JsonPropertyName("// AutoDepositPercentUnlocked")]
-    public string AutoDepositPercentUnlockedDoc { get; init; } = "Fraction of salvage units auto-deposited before unlock (0.0005 = 0.05%, half of specialized).";
-    public double AutoDepositPercentUnlocked { get; set; } = 0.0005;
+    public string AutoDepositPercentUnlockedDoc { get; init; } = "DEPRECATED — auto-salvage is always at full rate.";
+    public double AutoDepositPercentUnlocked { get; set; } = 1.0;
 
     [JsonPropertyName("// RequireQuestsForUnlock")]
-    public string RequireQuestsForUnlockDoc { get; init; } = "Quests completed before full auto-salvage rate (Lorelord QuestCount). 0 = always unlocked.";
-    public int RequireQuestsForUnlock { get; set; } = 100;
+    public string RequireQuestsForUnlockDoc { get; init; } = "DEPRECATED — auto-salvage is always unlocked at full rate.";
+    public int RequireQuestsForUnlock { get; set; } = 0;
 
     [JsonPropertyName("// UnitsPerItem")]
     public string UnitsPerItemDoc { get; init; } = "Units banked per salvage item when no workmanship/structure found.";
@@ -615,21 +615,6 @@ public class TinkeringLootGatingSettings
     [JsonPropertyName("// MaxLevelBonusSpecialized")]
     public string MaxLevelBonusSpecializedDoc { get; init; } = "Bonus to item max level when the matching tinkering skill is specialized.";
     public int MaxLevelBonusSpecialized { get; set; } = 20;
-}
-
-public class VendorItemLevelingSettings
-{
-    [JsonPropertyName("// MaxLevel")]
-    public string MaxLevelDoc { get; init; } = "Maximum item level for vendor-sold equipment.";
-    public int MaxLevel { get; set; } = 25;
-
-    [JsonPropertyName("// BaseXp")]
-    public string BaseXpDoc { get; init; } = "Base XP cost for vendor-sold equipment to reach level 1.";
-    public long BaseXp { get; set; } = 10_000;
-
-    [JsonPropertyName("// TreasureTier")]
-    public string TreasureTierDoc { get; init; } = "Treasure tier used for spell/imbue selection when vendor items level up (1-8). Higher = stronger effects.";
-    public int TreasureTier { get; set; } = 3;
 }
 
 public class CombatClassesSettings
@@ -790,4 +775,19 @@ public class BloodmageSettings
     [JsonPropertyName("// ManaCostMultiplier")]
     public string ManaCostMultiplierDoc { get; init; } = "Multiplier applied to auto-cast spell mana cost (0.5 = half cost).";
     public double ManaCostMultiplier { get; set; } = 0.5;
+}
+
+public class DruidPetThornsSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "Enable Druid pet thorns reflection and AoE damage.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// AoERadius")]
+    public string AoERadiusDoc { get; init; } = "Radius in meters for pet thorns AoE on attack.";
+    public double AoERadius { get; set; } = 5.0;
+
+    [JsonPropertyName("// DamageMultiplier")]
+    public string DamageMultiplierDoc { get; init; } = "Multiplier applied to thorns damage for pet reflection and AoE.";
+    public double DamageMultiplier { get; set; } = 1.0;
 }

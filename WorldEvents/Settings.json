@@ -195,6 +195,19 @@
   "// InvasionIdleTimeoutMinutes": "Minutes with no kills before the invasion fades.",
   "InvasionIdleTimeoutMinutes": 25.0,
 
+  "// InvasionThemeMonsterMixMin": "Themed waves spawn a mix of N different monster WCIDs (same CreatureType). Minimum N.",
+  "InvasionThemeMonsterMixMin": 2,
+  "// InvasionThemeMonsterMixMax": "Themed waves spawn a mix of N different monster WCIDs (same CreatureType). Maximum N.",
+  "InvasionThemeMonsterMixMax": 4,
+  "// InvasionChaosScalingPercent": "Per-pulse scaling multiplier for unthemed chaos waves. 0.20 = +20% per pulse (vs +10% for themed).",
+  "InvasionChaosScalingPercent": 0.20,
+  "// InvasionChaosCreatureExPerPulse": "How many CreatureEx bosses spawn per trickle pulse in chaos mode.",
+  "InvasionChaosCreatureExPerPulse": 2,
+  "// InvasionChaosMaxCreatureExTotal": "Maximum total CreatureEx bosses allowed in a single chaos wave.",
+  "InvasionChaosMaxCreatureExTotal": 10,
+  "// InvasionCreatureExOnThemedPulse": "When true, themed waves also spawn a CreatureEx boss on the 5th trickle pulse (same as chaos).",
+  "InvasionCreatureExOnThemedPulse": true,
+
   "// InvasionTowns": "Mode: Dynamic (default) spawns mobs via world-DB queries — no SQL needed. TownCenterObjCellId: full decimal ObjCellId from /loc. TownCenterX/Y/Z: /loc bracket offsets. DynamicLandblocks: decimal top-16-bit IDs. Crystal Cove/Shadow/Withered are Mode=Scripted (require ACE events in world DB).",
   "InvasionTowns": [
     { "TownName": "Holtburg",            "EventName": "HoltAttack",      "Enabled": true, "TownCenterObjCellId": 2847146019, "TownCenterX":  110.487144, "TownCenterY":  48.396507, "TownCenterZ":  93.773705, "DynamicLandblocks": [43442, 43443, 43444, 43445, 43446] },

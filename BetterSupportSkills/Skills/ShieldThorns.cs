@@ -33,6 +33,15 @@ internal static class ShieldThorns
 
         DebugLog($"DamageEvent: attacker={attacker!.Name}, defender={defender!.Name}, Weapon={__result.Weapon?.GetType().Name}, isSpellProjectile={__result.Weapon is SpellProjectile}, CombatType={__result.CombatType}");
 
+        // Handle pet defenders (Druid pet thorns)
+        if (defender is CombatPet pet)
+        {
+            bool isEvadePet = __result.Evaded;
+            bool isBlockPet = __result.ShieldMod < 1.0f && __result.ShieldMod >= 0.0f;
+            DruidPetThorns.TryApplyPetThorns(pet, attacker, isEvadePet, isBlockPet);
+            return;
+        }
+
         if (defender is not Player playerDefender)
             return;
 
@@ -124,6 +133,9 @@ internal static class ShieldThorns
         try
         {
             var totalDamage = attacker.TakeDamage(damageSource, damageType, (float)damageAmount);
+
+            // Green burst visual on defender
+            defender.PlayAnimation(PlayScript.EnchantUpGreen);
 
             string msg;
             if (onAllHits && !isEvade && !isBlock)

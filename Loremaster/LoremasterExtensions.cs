@@ -317,6 +317,9 @@ public static class LoremasterExtensions
     {
         SendXpBonusBreakdown(player);
 
+        var s = PatchClass.Settings;
+        if (s is null) return;
+
         var qp         = player.GetProperty(FakeFloat.QuestBonus) ?? 0;
         var stampMult  = player.GetProperty(LMFloat.RepeatStampMultiplier) ?? 0;
         var extra      = player.GetProperty(LMFloat.QuestPointsExtra) ?? 0;
@@ -328,6 +331,27 @@ public static class LoremasterExtensions
             player.SendMessage($"  Repeat stamps  : +{stampMult * 100:0.##}% from repeat solves");
         if (chaos is double cd && cd > 1.001)
             player.SendMessage($"  Chaos mult     : ×{cd:0.####}");
+
+        // ── Farming Formula ──
+        player.SendMessage($"  ── How to maximize ──");
+        player.SendMessage($"  Each QP is worth   : +{s.BonusPerQuestPoint / 100.0:0.#####}% XP multiplier");
+        player.SendMessage($"  QP for +1% mult    : {100.0 / s.BonusPerQuestPoint:0.##} QP");
+        if (s.EnableRepeatStampSystem)
+        {
+            player.SendMessage($"  Each repeat stamp  : +{s.RepeatStampBonusPerStamp * 100:0.#####}% (1 QP quest = +{s.RepeatStampBonusPerStamp * 100:0.#####}%)");
+            player.SendMessage($"  Stamp cooldown     : {s.RepeatStampCooldownSeconds / 3600.0:0.##} hours");
+            player.SendMessage($"  Your stamps        : {stampMult / s.RepeatStampBonusPerStamp:0.##} earned");
+        }
+        player.SendMessage($"  Completion bonus   : {s.DefaultCompletionBonusXpMultiplier * 100:0.##}% + (QP × {s.CompletionBonusPerQuestPoint / 100.0:0.#####}%) of next-level XP");
+        var cdReduct = player.GetQuestCooldownReduction();
+        if (cdReduct > 0)
+            player.SendMessage($"  Cooldown reduction : {cdReduct * 100:0.##}% (cap {s.QuestCooldownReductionCap * 100:0.##}%)");
+        player.SendMessage($"  Account-wide QP    : {(s.UseAccountWideQuests ? "YES — alts share QP, do not double-dip" : "NO — per-character only")}");
+        player.SendMessage($"  ── Tips ──");
+        player.SendMessage($"  1) Solve NEW quests for QP (unique = multiplier growth)");
+        player.SendMessage($"  2) Repeat-solve for stamps (stamps = extra multiplier)");
+        player.SendMessage($"  3) Stack equipment with ItemXpBoost for raw kill XP");
+        player.SendMessage($"  4) Enlightenment + account milestones = permanent base layers");
 
         var sb = new StringBuilder();
         ChallengeModesDetailBridge.AppendChallengeAchievementSection(sb, player);
@@ -399,7 +423,7 @@ public static class LoremasterExtensions
         var amount = (long)(xpToNext * fraction);
         if (amount <= 0) return;
 
-        ExternalXpGrants.GrantQuestXpWithoutMultiplier(player, amount);
+        ExternalXpGrants.GrantQuestXpWithBaseRetention(player, amount);
 
         if (player.Notify(LMBool.NotifyQuestXp))
         {

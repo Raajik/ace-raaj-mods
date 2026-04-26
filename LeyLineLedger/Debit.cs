@@ -20,7 +20,9 @@ public class Debit
 
         foreach (var o in __instance.AllItems())
         {
-            if (PeaPyrealWcids.IsPea(o.WeenieClassId))
+            if (o.WeenieClassName.StartsWith("tradenote", StringComparison.OrdinalIgnoreCase))
+                banked += o.Value ?? 0;
+            else if (PeaPyrealWcids.IsPea(o.WeenieClassId))
                 banked += PeaPyrealWcids.GetPyrealValue(o);
         }
 
@@ -44,7 +46,20 @@ public class Debit
     [HarmonyPatch(typeof(GameEventApproachVendor), MethodType.Constructor, new Type[] { typeof(Session), typeof(Vendor), typeof(uint) })]
     public static bool PreCtorGameEventApproachVendor(Session session, Vendor vendor, uint altCurrencySpent, ref GameEventApproachVendor __instance)
     {
+        if (vendor == null)
+        {
+            ModManager.Log("[LeyLineLedger] ApproachVendor: vendor is null!", ModManager.LogLevel.Warn);
+            return true; // let original run
+        }
+
+        ModManager.Log($"[LeyLineLedger] ApproachVendor CALLED: vendor={vendor.WeenieClassId}, altSpent={altCurrencySpent}, session={session != null}", ModManager.LogLevel.Info);
+
         //Workaround initialization since base is awkward..?
+        if (session == null)
+        {
+            ModManager.Log("[LeyLineLedger] ApproachVendor: session is null!", ModManager.LogLevel.Warn);
+            return true; // let original run
+        }
         __instance.Base(session, GameEventType.ApproachVendor, GameMessageGroup.UIQueue);
 
 
@@ -95,20 +110,52 @@ public class Debit
         __instance.Writer.Write(vendor.AlternateCurrency ?? 0);
 
         // if this vendor accepts items as alternate currency, instead of pyreals
-        if (vendor.AlternateCurrency != null)
+        if (vendor.AlternateCurrency != null && session.Player != null)
         {
+            var player = session.Player;
             var altCurrency = DatabaseManager.World.GetCachedWeenie(vendor.AlternateCurrency.Value);
             var pluralName = altCurrency?.GetPluralName() ?? "items";
 
-            // the total amount of alternate currency the player currently has
-            var altCurrencyInInventory = (uint)session.Player.GetNumInventoryItemsOfWCID(vendor.AlternateCurrency.Value);
+            var altWcid = vendor.AlternateCurrency.Value;
+            var altInInv = (uint)player.GetNumInventoryItemsOfWCID(altWcid);
 
-            //!!ADD BANKED AMOUNT
-            var banked = PatchClass.Settings?.Items?.Where(x => x.Id == vendor.AlternateCurrency.Value).FirstOrDefault();
-            if (banked is not null)
-                altCurrencyInInventory += (uint)session.Player.GetBanked(banked.Prop);
+            var bankedItem = PatchClass.Settings?.Items?.FirstOrDefault(x => x.Id == altWcid);
+            var bankedAmount = 0u;
 
-            __instance.Writer.Write(altCurrencyInInventory + altCurrencySpent);
+            if (bankedItem != null)
+            {
+                try { bankedAmount = (uint)player.GetBanked(bankedItem.Prop); }
+                catch { }
+            }
+
+            // For MMD and similar pyreal-backed currencies, also count pyreals as equivalent currency
+            uint pyrealEquivalent = 0;
+            var currencyEntry = PatchClass.Settings?.Currencies?.FirstOrDefault(c => c.Id == altWcid);
+            if (currencyEntry != null && currencyEntry.GetPyrealValue() > 0)
+            {
+                var pyreals = player.GetTotalPyreals();
+                pyrealEquivalent = (uint)(pyreals / currencyEntry.GetPyrealValue());
+                ModManager.Log($"[LeyLineLedger] ApproachVendor pyreal calc: GetCash={player.GetCash():N0}, GetTotalPyreals={pyreals:N0}, currency={currencyEntry.Name} pyrealValue={currencyEntry.GetPyrealValue():N0}, pyrealEq={pyrealEquivalent}", ModManager.LogLevel.Info);
+            }
+            else
+            {
+                ModManager.Log($"[LeyLineLedger] ApproachVendor pyreal calc SKIPPED: currencyEntry={currencyEntry?.Name ?? "NULL"}, pyrealValue={currencyEntry?.GetPyrealValue() ?? 0}", ModManager.LogLevel.Warn);
+            }
+
+            // Count Zef equivalent
+            uint zefEquivalent = 0;
+            if (PatchClass.Settings?.AltCurrencyValues?.ContainsKey(altWcid) == true && bankedItem != null)
+            {
+                long zefs = player.GetBanked(PatchClass.Settings.AltCurrencyProperty);
+                int zefValue = PatchClass.Settings.AltCurrencyValues[altWcid];
+                zefEquivalent = (uint)(zefs / zefValue);
+            }
+
+            var totalAltCurrency = altInInv + bankedAmount + pyrealEquivalent + zefEquivalent;
+
+            ModManager.Log($"[LeyLineLedger] ApproachVendor {vendor.WeenieClassId}: alt={altWcid}, inv={altInInv}, bank={bankedAmount}, pyrealEq={pyrealEquivalent}, zefEq={zefEquivalent}, total={totalAltCurrency}", ModManager.LogLevel.Info);
+
+            __instance.Writer.Write(totalAltCurrency + altCurrencySpent);
 
             // the plural name of alt currency
             __instance.Writer.WriteString16L(pluralName);
@@ -116,6 +163,7 @@ public class Debit
         else
         {
             //Original
+            ModManager.Log($"[LeyLineLedger] ApproachVendor {vendor.WeenieClassId}: no AlternateCurrency or player null", ModManager.LogLevel.Info);
             __instance.Writer.Write(0);
             __instance.Writer.WriteString16L(string.Empty);
         }
@@ -178,7 +226,7 @@ public class Debit
         }
         else
         {
-            var bankEntry = PatchClass.Settings?.Items?.Where(x => x.Id == currentWcid).FirstOrDefault();
+            var bankEntry = PatchClass.Settings?.Items?.FirstOrDefault(x => x.Id == currentWcid);
             if (bankEntry is not null)
             {
                 //Get amount banked
@@ -186,9 +234,49 @@ public class Debit
 
                 //Use up to the amount requested
                 var used = (int)Math.Min(banked, amount);
+                var remaining = banked - used;
                 __instance.IncBanked(bankEntry.Prop, -used);
 
-                __instance.SendMessage($"Used {used:N0} {bankEntry.Name} from bank of the {amount} needed.  {banked - used:N0} remaining.");
+                // Auto-convert pyreals to currency if banked isn't enough
+                var currencyEntry = PatchClass.Settings?.Currencies?.FirstOrDefault(c => c.Id == currentWcid);
+                if (used < amount && currencyEntry != null && currencyEntry.GetPyrealValue() > 0)
+                {
+                    var stillNeeded = amount - used;
+                    var pyrealValue = currencyEntry.GetPyrealValue();
+                    var pyreals = __instance.GetTotalPyreals();
+
+                    if (pyreals >= pyrealValue)
+                    {
+                        var canConvert = pyreals / pyrealValue;
+                        var toConvert = Math.Min(canConvert, stillNeeded);
+
+                        if (toConvert > 0)
+                        {
+                            __instance.IncCash(-(long)(toConvert * pyrealValue));
+                            __instance.SendMessage($"Auto-converted {toConvert * pyrealValue:N0} pyreals to cover {toConvert} {bankEntry.Name}.");
+                            used += (int)toConvert;
+                        }
+                    }
+                }
+
+                // Auto-convert Zefs if pyreal conversion wasn't enough
+                if (used < amount && PatchClass.Settings?.AltCurrencyValues?.ContainsKey(currentWcid) == true)
+                {
+                    var stillNeeded = amount - used;
+                    int zefValue = PatchClass.Settings.AltCurrencyValues[currentWcid];
+                    long zefs = __instance.GetBanked(PatchClass.Settings.AltCurrencyProperty);
+                    long canConvert = zefs / zefValue;
+                    var toConvert = Math.Min(canConvert, stillNeeded);
+
+                    if (toConvert > 0)
+                    {
+                        __instance.IncBanked(PatchClass.Settings.AltCurrencyProperty, -toConvert * zefValue);
+                        __instance.SendMessage($"Auto-converted {toConvert * zefValue} Zefs to cover {toConvert} {bankEntry.Name}.");
+                        used += (int)toConvert;
+                    }
+                }
+
+                __instance.SendMessage($"Used {used:N0} {bankEntry.Name} from bank of the {amount} needed. {remaining:N0} remaining.");
                 amount -= (uint)used;
             }
         }
@@ -422,6 +510,10 @@ public class Debit
             var cash = player.GetCash();
             if (cash + player.CoinValue < totalPrice)
             {
+                var vendorWcid = __instance.WeenieClassId;
+                var vendorName = __instance.Name;
+                player.SendMessage($"[LeyLineLedger DEBUG] Insufficient pyreals: need {totalPrice:N0}, have {cash:N0} banked + {player.CoinValue:N0} CoinValue = {cash + player.CoinValue:N0} total.");
+                player.SendMessage($"  - VENDOR INFO: {vendorName} (WCID {vendorWcid}) accepts pyreals");
                 Vendor.CleanupCreatedItems(defaultItems);
                 __result = false;
                 return false;
@@ -429,35 +521,47 @@ public class Debit
         }
         else
         {
-            var playerAltCurrency = player.GetNumInventoryItemsOfWCID(__instance.AlternateCurrency.Value);
+            var altWcid = __instance.AlternateCurrency.Value;
+            var altInInv = (uint)player.GetNumInventoryItemsOfWCID(altWcid);
 
             // Add banked amount
-            var wcid = __instance.AlternateCurrency.Value;
-            var banked = PatchClass.Settings?.Items?.Where(x => x.Id == wcid).FirstOrDefault();
-            if (banked is not null)
-                playerAltCurrency += (int)player.GetBanked(banked.Prop);
+            var bankedItem = PatchClass.Settings?.Items?.Where(x => x.Id == altWcid).FirstOrDefault();
+            var bankedAmount = 0u;
+            if (bankedItem is not null)
+                bankedAmount = (uint)player.GetBanked(bankedItem.Prop);
 
-            // Auto-convert Zefs if needed
-            if (playerAltCurrency < totalPrice && PatchClass.Settings?.AltCurrencyValues?.ContainsKey(wcid) == true)
+            // Add pyreal equivalent for MMD-style currencies
+            var currencyEntry = PatchClass.Settings?.Currencies?.FirstOrDefault(c => c.Id == altWcid);
+            uint pyrealEquivalent = 0;
+            if (currencyEntry != null && currencyEntry.GetPyrealValue() > 0)
+            {
+                var pyreals = player.GetTotalPyreals();
+                pyrealEquivalent = (uint)(pyreals / currencyEntry.GetPyrealValue());
+            }
+
+            // Add Zef equivalent
+            uint zefEquivalent = 0;
+            if (PatchClass.Settings?.AltCurrencyValues?.ContainsKey(altWcid) == true && bankedItem != null)
             {
                 long zefs = player.GetBanked(PatchClass.Settings.AltCurrencyProperty);
-                int zefValue = PatchClass.Settings.AltCurrencyValues[wcid];
-                long neededItems = totalPrice - playerAltCurrency;
-                long zefsNeeded = (neededItems + zefValue - 1) / zefValue; // round up
-
-                if (zefs >= zefsNeeded)
-                {
-                    // Convert Zefs to alt currency items and add to bank
-                    player.IncBanked(PatchClass.Settings.AltCurrencyProperty, -zefsNeeded);
-                    player.IncBanked(banked!.Prop, zefsNeeded);
-                    player.SendMessage($"Auto-converted {zefsNeeded} Zefs to {zefsNeeded} {banked.Name} for purchase.");
-
-                    playerAltCurrency += (int)zefsNeeded;
-                }
+                int zefValue = PatchClass.Settings.AltCurrencyValues[altWcid];
+                zefEquivalent = (uint)(zefs / zefValue);
             }
+
+            var playerAltCurrency = altInInv + bankedAmount + pyrealEquivalent + zefEquivalent;
 
             if (playerAltCurrency < totalPrice)
             {
+                var currencyName = currencyEntry?.Name ?? bankedItem?.Name ?? $"WCID {altWcid}";
+                var altWeenie = DatabaseManager.World.GetCachedWeenie(altWcid);
+                var altWeenieName = altWeenie?.GetName() ?? "Unknown";
+                var vendorWcid = __instance.WeenieClassId;
+                var vendorName = __instance.Name;
+
+                player.SendMessage($"[LeyLineLedger DEBUG] Insufficient {currencyName}: need {totalPrice:N0}, have {playerAltCurrency:N0} total.");
+                player.SendMessage($"  - Inventory: {altInInv:N0} | Banked: {bankedAmount:N0} | PyrealEquiv: {pyrealEquivalent:N0} | ZefEquiv: {zefEquivalent:N0}");
+                player.SendMessage($"  - TotalPyreals: {player.GetTotalPyreals():N0} | PyrealValue: {currencyEntry?.GetPyrealValue() ?? 0:N0}/unit | Zefs: {player.GetBanked(PatchClass.Settings?.AltCurrencyProperty ?? 0):N0}");
+                player.SendMessage($"  - VENDOR INFO: {vendorName} (WCID {vendorWcid}) accepts {altWeenieName} (WCID {altWcid})");
                 Vendor.CleanupCreatedItems(defaultItems);
                 __result = false;
                 return false;

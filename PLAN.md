@@ -16,6 +16,9 @@ Single index of tracked work. **Mod notes below were merged from former per-mod 
 - **Done (2026-04-23):** **QOL Town Network toll v2** — Complete overhaul: variable random fees (10k–50k below L50, 50k–100k L50–100, 1–5 MMD notes above L100). Component-first payment system: takes 9–25% of Prismatic Tapers (WCID 20631) or 5% of a random scarab type (Copper, Gold, Silver, Iron, Pyreal, Lead, Diamond, Platinum, Mana). Never takes components if it would leave player below threshold (50 tapers / 5 scarabs). Falls back to cash. 51 immersive Arcanum mage names + 80+ flavor messages. Per-player `/qol toll components|cashonly` toggle. Server logging for all payments. Diagnostic bank debit verification with `SaveBiotaToDatabase`.
 - **Done (2026-04-23):** **QOL BypassPortalRestrictions** — Granular bypass system for all portal/recall restrictions: portal use requirements (level, quest, race, gender, bitmask), dungeon recall, busy recall, PK timer recall, olthoi recall. **Town Network toll is NOT bypassed** — fees still enforced. All default to `true` (bypassed) via `EnableBypassPortalRestrictions` and `BypassPortalRestrictions` settings object.
 - **Done (2026-04-23):** **Swarmed messaging** — Call-for-help reinforcement text color changed from `Combat` (red) to `Magic` (purple) for better visibility.
+- **Done (2026-04-26):** **QOL VendorPriceInflation crash fix** — `PostGetMerchandiseBuyRate` used a string-based patch targeting `Vendor.get_MerchandiseBuyRate`, which doesn't exist in ACE v1.76.4751. With `EnableVendorPriceInflation: true` in Settings.json, this caused "Patching exception in method null" on startup, killing all QOL patches (PetKillSummary, KillXpMessage, AutoBuff, VendorLootRotation). Fixed by replacing with two `nameof`-based patches on `Vendor.GetBuyCost(WorldObject)`: `PostGetBuyCostBase` (applies `VendorBuyRateMultiplier`) and `PostGetBuyCostSpecial` (applies `VendorSpecialItemMultiplier` for imbued/cantripped items). QOL now starts clean; pet kill XP notifications and all other features are live.
+- **Done (2026-04-26):** **LeyLineLedger EconomyBalancer + LootTracker intervals** — Both scan intervals reduced from 60 min to 5 min in the deployed `Settings.json` (`EconomyBalancer.ScanIntervalMinutes`, `LootTracker.ScanIntervalMinutes`). `MinScanIntervalMinutes` reduced from 15 to 1. Hot-reload confirmed live.
+- **Done (2026-04-26):** **Swarmed expansion** — BuddySpawns (timed auto-reinforcements: 2min idle → 25% roll, threshold doubles, cap 10/landblock, 10m radius, reset on death), Wild CreatureEx (1% landscape / 0.5% dungeon chance for random champion replacement), global CreatureVariation (±8–21% on all creature stats via deferred 0.5s ActionChain to avoid AddWorldObjectInternal rejections). See `Swarmed/Features/BuddySpawns.cs`, `CreatureVariation.cs`, `Settings.BuddySpawns` / `WildCreatureEx` / `CreatureVariation`.
 
 ## Suggested order (simplest → most complex)
 
@@ -128,6 +131,18 @@ Default mod homes for discussion; **first implementation pass may move an item**
 - **CreatureEx champions:** `CreatureFeatures` lists which `CreatureExType` variants can replace normal spawns. `/cex` spawns a specific type for testing; optional `AllowPartialCreatureExTypeMatch` allows unique substring match on the enum name.
 - **Messaging:** `CallForHelpMessages` — random `{0}` template when reinforcements trigger.
 - **Admin debug:** `/swarmed debug` — last call-for-help evaluation and session counters.
+
+**Buddy spawns (timed auto-reinforcements)**
+
+- Background timer (30s) checks landblocks with players. After idle threshold (default 2min, no kills), living original creatures roll 25% chance to spawn a buddy within 10m. Threshold doubles each successful round (2×), capped at 30min. Max 10 buddy-spawned creatures per landblock. Reset on any death. Buddies inherit same WCID, get tagged (`FakeInt 40113`), and receive CreatureVariation. See `Swarmed/Features/BuddySpawns.cs`, `Settings.BuddySpawns`.
+
+**Wild CreatureEx**
+
+- Independent factory chance: 1% landscape, 0.5% dungeon for random `CreatureEx` champion replacement. Separate from admin `CreatureChance` (default 0). See `Swarmed/Features/CreatureExSpawn.cs`, `Settings.WildCreatureEx`.
+
+**Global creature variation**
+
+- Applies ±8–21% to **ALL** creature spawns: health, stamina, mana, visual scale (`ObjScale`), damage rating, level. Deterministic per-creature GUID. **Critical:** Uses deferred `ActionChain` (0.5s delay) — modifying vitals during `WorldObjectFactory.CreateWorldObject` causes `AddWorldObjectInternal` rejections. See `Swarmed/Features/CreatureVariation.cs`, `Settings.CreatureVariation`.
 
 **Scaling (implemented)**
 

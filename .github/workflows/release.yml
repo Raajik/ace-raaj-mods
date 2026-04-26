@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout mods repo
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Clone and build ACE
+        shell: pwsh
+        run: |
+          $acePath = "$env:TEMP\ACE"
+          git clone --depth 1 https://github.com/ACEmulator/ACE.git $acePath
+          dotnet build "$acePath\Source\ACE.Server\ACE.Server.csproj" -c Release
+          $dllDir = (Get-ChildItem "$acePath\Source\ACE.Server\bin\Release\net*\ACE.Server.dll" | Select-Object -First 1).DirectoryName
+          echo "ACE_PATH=$dllDir" >> $env:GITHUB_ENV
+
+      - name: Build mods
+        shell: pwsh
+        run: |
+          $exclude = @('tools','AceModQa','Shared','SharedLoot','.git','.github','.references','docs','Work-In-Progress','.claude','.cursor')
+          $mods = Get-ChildItem -Path . -Directory | Where-Object { $exclude -notcontains $_.Name }
+          $built = @()
+          foreach ($mod in $mods) {
+            $csproj = Get-ChildItem -Path $mod.FullName -Filter "*.csproj" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if (-not $csproj) { continue }
+            Write-Host "Building $($mod.Name)..."
+            dotnet build $csproj.FullName -c Release -p:ACEPath=$env:ACE_PATH
+            if ($LASTEXITCODE -eq 0) {
+              $built += $mod.Name
+            } else {
+              Write-Warning "Build failed for $($mod.Name)"
+            }
+          }
+          echo "BUILT_MODS=$($built -join ',')" >> $env:GITHUB_ENV
+
+      - name: Collect artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path ./artifacts | Out-Null
+          $zips = Get-ChildItem -Path "C:\ACE\Mods" -Filter "*.zip" -ErrorAction SilentlyContinue
+          if ($zips) {
+            $zips | ForEach-Object { Copy-Item $_.FullName ./artifacts/ }
+          } else {
+            Write-Warning "No .zip files found in C:\ACE\Mods"
+          }
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./artifacts/*.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -55,9 +55,13 @@ public class Settings
     public string ReinforcementScaleMaxDoc { get; init; } = "Reinforcement visual scale upper bound.";
     public float ReinforcementScaleMax { get; set; } = 0.8f;
 
-    [JsonPropertyName("// MaxCallerHealth")]
-    public string MaxCallerHealthDoc { get; init; } = "Creatures with max health above this skip call-for-help reinforcement logic.";
-    public int MaxCallerHealth { get; set; } = 3000;
+    [JsonPropertyName("// HighHealthExemptionThreshold")]
+    public string HighHealthExemptionThresholdDoc { get; init; } = "Creatures with max HP above this skip ALL Swarmed alterations (CreatureEx, reinforcements, buddy spawns, variation) unless whitelisted.";
+    public int HighHealthExemptionThreshold { get; set; } = 5000;
+
+    [JsonPropertyName("// HighHealthExemptionWhitelist")]
+    public string HighHealthExemptionWhitelistDoc { get; init; } = "WCIDs that ARE allowed to receive Swarmed alterations even if their max HP exceeds the threshold.";
+    public List<uint> HighHealthExemptionWhitelist { get; set; } = new();
 
     [JsonPropertyName("// ReinforcementXpBonusMin")]
     public string ReinforcementXpBonusMinDoc { get; init; } = "XP bonus multiplier lower bound for reinforcement kills.";
@@ -73,7 +77,7 @@ public class Settings
 
     [JsonPropertyName("// ReinforcementGrowthPercent")]
     public string ReinforcementGrowthPercentDoc { get; init; } = "Compounded growth per reinforcement generation (0.30 = 30% per spawn, so gen 2 = 69% stronger than original).";
-    public float ReinforcementGrowthPercent { get; set; } = 0.30f;
+    public float ReinforcementGrowthPercent { get; set; } = 0.05f;
 
     [JsonPropertyName("// ReinforcementGrowthMaxMultiplier")]
     public string ReinforcementGrowthMaxMultiplierDoc { get; init; } = "Cap on total reinforcement growth multiplier (e.g. 5.0 = 5× max).";
@@ -93,7 +97,7 @@ public class Settings
 
     [JsonPropertyName("// ChaosReinforcementGrowthPercent")]
     public string ChaosReinforcementGrowthPercentDoc { get; init; } = "Growth per reinforcement proc (0.30 = 30%). Multiplier = (1 + growth) ^ killCount, capped at max.";
-    public float ChaosReinforcementGrowthPercent { get; set; } = 0.30f;
+    public float ChaosReinforcementGrowthPercent { get; set; } = 0.05f;
 
     [JsonPropertyName("// ChaosReinforcementMaxMultiplier")]
     public string ChaosReinforcementMaxMultiplierDoc { get; init; } = "Maximum escalation multiplier for chaos reinforcements (e.g. 5.0 = 5×).";
@@ -213,6 +217,107 @@ public class Settings
     [JsonPropertyName("// CreatureExChaosBoostMaxMultiplier")]
     public string CreatureExChaosBoostMaxMultiplierDoc { get; init; } = "Upper bound on total CreatureEx chance multiplier from chaos (e.g. 2 = double at most). 1 = disable chaos boost for CreatureEx.";
     public double CreatureExChaosBoostMaxMultiplier { get; set; } = 2.0;
+
+    [JsonPropertyName("// BuddySpawns")]
+    public string BuddySpawnsSectionDoc { get; init; } = "Timed buddy spawning: when idle, monsters spawn extra allies nearby.";
+    public BuddySpawnSettings BuddySpawns { get; set; } = new();
+
+    [JsonPropertyName("// WildCreatureEx")]
+    public string WildCreatureExSectionDoc { get; init; } = "Random CreatureEx champion spawns in the wild (landscape and dungeon).";
+    public WildCreatureExSettings WildCreatureEx { get; set; } = new();
+
+    [JsonPropertyName("// CreatureVariation")]
+    public string CreatureVariationSectionDoc { get; init; } = "Global creature stat/size variation applied to ALL spawns.";
+    public CreatureVariationSettings CreatureVariation { get; set; } = new();
+}
+
+public class BuddySpawnSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "Enable timed buddy spawning.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// TimerIntervalSeconds")]
+    public string TimerIntervalSecondsDoc { get; init; } = "How often to check landblocks for buddy spawning.";
+    public int TimerIntervalSeconds { get; set; } = 30;
+
+    [JsonPropertyName("// BaseThresholdSeconds")]
+    public string BaseThresholdSecondsDoc { get; init; } = "Initial idle time before buddy spawning starts.";
+    public int BaseThresholdSeconds { get; set; } = 120;
+
+    [JsonPropertyName("// Chance")]
+    public string ChanceDoc { get; init; } = "Per-creature chance (0-1) to spawn a buddy when threshold is met.";
+    public float Chance { get; set; } = 0.25f;
+
+    [JsonPropertyName("// ThresholdMultiplier")]
+    public string ThresholdMultiplierDoc { get; init; } = "Multiplier applied to threshold after each successful spawn round.";
+    public double ThresholdMultiplier { get; set; } = 2.0;
+
+    [JsonPropertyName("// MaxThresholdSeconds")]
+    public string MaxThresholdSecondsDoc { get; init; } = "Cap on idle threshold (prevents infinite growth).";
+    public int MaxThresholdSeconds { get; set; } = 1800;
+
+    [JsonPropertyName("// MaxPerLandblock")]
+    public string MaxPerLandblockDoc { get; init; } = "Maximum buddy-spawned creatures per landblock.";
+    public int MaxPerLandblock { get; set; } = 10;
+
+    [JsonPropertyName("// SpawnRadiusMeters")]
+    public string SpawnRadiusMetersDoc { get; init; } = "Radius in meters around parent creature for buddy spawn.";
+    public float SpawnRadiusMeters { get; set; } = 10f;
+
+    [JsonPropertyName("// ResetOnAnyDeath")]
+    public string ResetOnAnyDeathDoc { get; init; } = "When true, any creature death resets the idle timer and threshold.";
+    public bool ResetOnAnyDeath { get; set; } = true;
+}
+
+public class WildCreatureExSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "Enable random CreatureEx champion spawns in the wild.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// Chance")]
+    public string ChanceDoc { get; init; } = "Base chance (0-1) for landscape creatures to spawn as CreatureEx.";
+    public double Chance { get; set; } = 0.01;
+
+    [JsonPropertyName("// DungeonChance")]
+    public string DungeonChanceDoc { get; init; } = "Base chance (0-1) for dungeon creatures to spawn as CreatureEx.";
+    public double DungeonChance { get; set; } = 0.005;
+}
+
+public class CreatureVariationSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "Enable global stat/size variation on ALL creature spawns.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// HealthMin")]
+    public string HealthMinDoc { get; init; } = "Minimum health multiplier (e.g. 0.92 = 92% of base).";
+    public float HealthMin { get; set; } = 0.92f;
+
+    [JsonPropertyName("// HealthMax")]
+    public string HealthMaxDoc { get; init; } = "Maximum health multiplier (e.g. 1.21 = 121% of base).";
+    public float HealthMax { get; set; } = 1.21f;
+
+    [JsonPropertyName("// ScaleMin")]
+    public string ScaleMinDoc { get; init; } = "Minimum visual scale multiplier.";
+    public float ScaleMin { get; set; } = 0.92f;
+
+    [JsonPropertyName("// ScaleMax")]
+    public string ScaleMaxDoc { get; init; } = "Maximum visual scale multiplier.";
+    public float ScaleMax { get; set; } = 1.21f;
+
+    [JsonPropertyName("// DamageRatingMin")]
+    public string DamageRatingMinDoc { get; init; } = "Minimum damage rating multiplier.";
+    public float DamageRatingMin { get; set; } = 0.92f;
+
+    [JsonPropertyName("// DamageRatingMax")]
+    public string DamageRatingMaxDoc { get; init; } = "Maximum damage rating multiplier.";
+    public float DamageRatingMax { get; set; } = 1.21f;
+
+    [JsonPropertyName("// LevelVariance")]
+    public string LevelVarianceDoc { get; init; } = "Maximum level change based on multiplier (1 = ±1 level).";
+    public int LevelVariance { get; set; } = 1;
 }
 
 public class AuraPulserFeatureSettings

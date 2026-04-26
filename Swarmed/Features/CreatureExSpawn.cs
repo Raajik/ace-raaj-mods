@@ -15,6 +15,9 @@ public static class CreatureExSpawn
             return true;
 
         Settings? settings = PatchClass.CurrentSettings;
+        if (settings != null && Helpers.SwarmedHealthGate.IsExempt(weenie, settings))
+            return true;
+
         double chance = settings is null ? 0 : OnlinePlayerDensity.EffectiveCreatureChance(settings);
         SwarmedChaos.ApplyCreatureExChaosBoost(ref chance, settings);
 
@@ -50,6 +53,9 @@ public static class CreatureExSpawn
             return true;
 
         Settings? settings = PatchClass.CurrentSettings;
+        if (settings != null && Helpers.SwarmedHealthGate.IsExempt(weenie, settings))
+            return true;
+
         double chance = settings is null ? 0 : OnlinePlayerDensity.EffectiveCreatureChance(settings);
         SwarmedChaos.ApplyCreatureExChaosBoost(ref chance, settings);
 
@@ -64,6 +70,18 @@ public static class CreatureExSpawn
 
             __result = type.Create(weenie, guid);
             return false;
+        }
+
+        // Wild CreatureEx: independent chance for random champion spawns
+        if (settings?.WildCreatureEx.Enabled == true)
+        {
+            if (ThreadSafeRandom.Next(0, 1.0f) <= settings.WildCreatureEx.Chance)
+            {
+                __result = RollCreature(weenie, guid);
+                if (__result is Creature wc && wc.IsNPC)
+                    __result = new Creature(weenie, guid);
+                return false;
+            }
         }
 
         if (ThreadSafeRandom.Next(0, 1.0f) > chance)
@@ -86,6 +104,17 @@ public static class CreatureExSpawn
             return true;
 
         Settings? settings = PatchClass.CurrentSettings;
+        if (settings != null)
+        {
+            uint maxHealth = 0;
+            if (biota.PropertiesAttribute2nd != null &&
+                biota.PropertiesAttribute2nd.TryGetValue(PropertyAttribute2nd.MaxHealth, out var vital))
+                maxHealth = (uint)vital.InitLevel;
+
+            if (Helpers.SwarmedHealthGate.IsExempt(biota.WeenieClassId, maxHealth, settings))
+                return true;
+        }
+
         double chance = settings is null ? 0 : OnlinePlayerDensity.EffectiveCreatureChance(settings);
         SwarmedChaos.ApplyCreatureExChaosBoost(ref chance, settings);
 
@@ -123,7 +152,7 @@ public static class CreatureExSpawn
         .ToArray();
 
     internal static Creatures.CreatureExType RandomCreatureType() =>
-        RollableTypes[ThreadSafeRandom.Next(0, RollableTypes.Length)];
+        RollableTypes[ThreadSafeRandom.Next(0, RollableTypes.Length - 1)];
 
 #if REALM
     public static Creatures.CreatureEx RollCreature(Weenie weenie, ObjectGuid guid, AppliedRuleset ruleset) =>

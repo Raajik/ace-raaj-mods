@@ -16,6 +16,8 @@ public partial class PatchClass
         if (__instance == null)
             return;
 
+        Features.BuddySpawns.OnCreatureDeath(__instance);
+
         Settings? settings = CurrentSettings;
         if (settings == null)
             return;
@@ -166,13 +168,12 @@ public partial class PatchClass
         var deathLocation = __instance.Location;
         uint originalMaxHealth = __instance.Health?.MaxValue ?? 1;
 
-        int maxCallerHealth = settings.MaxCallerHealth;
-        if (maxCallerHealth > 0 && originalMaxHealth > maxCallerHealth)
+        if (Helpers.SwarmedHealthGate.IsExempt(__instance, settings))
         {
             RecordCallForHelpDebug(new CallForHelpSnapshot
             {
                 UtcTime = DateTime.UtcNow,
-                Outcome = "caller_health_cap",
+                Outcome = "high_health_exempt",
                 CreatureName = creatureName,
                 WeenieClassId = wcid,
                 IsDungeon = isDungeon,
@@ -399,6 +400,13 @@ public partial class PatchClass
 
             // Tag creature with its reinforcement depth so chains compound
             creature.SetProperty((PropertyInt)SwarmedReinforcementDepthPropertyId, childDepth);
+
+            // Apply global creature variation to reinforcements
+            if (settings.CreatureVariation.Enabled)
+            {
+                float varMult = Features.CreatureVariation.RollVariationMultiplier(settings.CreatureVariation, guid.Full);
+                Features.CreatureVariation.ApplyVariation(creature, varMult, settings.CreatureVariation);
+            }
 
             LandblockManager.AddObject(creature);
             created++;

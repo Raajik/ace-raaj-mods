@@ -1,0 +1,11 @@
+{
+  "Name": "SpellSiphon",
+  "Author": "Raajik",
+  "Description": "Crush spell-bearing items to extract their spells and infuse them into equipment.",
+  "Version": "0.1.0",
+  "Enabled": false,
+  "HotReload": true,
+  "RegisterCommands": true,
+  "ACEVersion": "0.0"
+}
+

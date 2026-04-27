@@ -1,4 +1,4 @@
-namespace Gemcrafter.Helpers;
+namespace SpellSiphon.Helpers;
 
 internal static class InventoryHelpers
 {

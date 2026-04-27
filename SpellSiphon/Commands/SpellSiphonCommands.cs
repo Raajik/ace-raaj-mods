@@ -1,6 +1,6 @@
-namespace Gemcrafter.Commands;
+namespace SpellSiphon.Commands;
 
-internal static class GemcrafterCommands
+internal static class SpellSiphonCommands
 {
 	// Legacy (powder) apply state removed; mortar now stores the payload.
 
@@ -54,12 +54,12 @@ internal static class GemcrafterCommands
 				player.TryCreateInInventoryWithNetworking(gem);
 
 				// Ensure it has at least one spell so /gemcrush works.
-				List<int> picks = GemLootMutator.PickRandomSpellIds(s, gem, min: 1, max: Math.Max(1, s.MaxSpellsOnLootgenGem));
+				List<int> picks = LootMutator.PickRandomSpellIds(s, gem, min: 1, max: Math.Max(1, s.MaxSpellsOnLootgenGem));
 				if (picks.Count == 0)
 					picks.Add(1109); // Blade Protection Self I fallback
 
 				foreach (int id in picks)
-					GemLootMutator.TryAddSpellId(gem, id);
+					LootMutator.TryAddSpellId(gem, id);
 
 				created++;
 			}
@@ -194,7 +194,7 @@ internal static class GemcrafterCommands
 
 		List<string> spellNames = new();
 		foreach (int id in spellIds.Distinct())
-			spellNames.Add($"{GemLootMutator.TryGetSpellName(id)} ({id})");
+			spellNames.Add($"{LootMutator.TryGetSpellName(id)} ({id})");
 
 		player.SendMessage($"[Gemcrafter] Mortar infused: {mortar.Name} (WCID {mortar.WeenieClassId}).");
 		player.SendMessage($"[Gemcrafter] Stored: {string.Join(", ", spellNames)}");
@@ -301,11 +301,11 @@ internal static class GemcrafterCommands
 			if (added >= max)
 				break;
 
-			string name = GemLootMutator.TryGetSpellName(id);
+			string name = LootMutator.TryGetSpellName(id);
 			if (ContainsAny(name, s.ExcludeTransferSpellNameContains))
 				continue;
 
-			if (GemLootMutator.TryAddSpellId(target, id))
+			if (LootMutator.TryAddSpellId(target, id))
 			{
 				added++;
 				addedNames.Add(name);
@@ -528,7 +528,7 @@ internal static class GemcrafterCommands
 					for (int i = 0; i < ids.Count; i++)
 					{
 						int id = ids[i];
-						string spellName = GemLootMutator.TryGetSpellName(id);
+						string spellName = LootMutator.TryGetSpellName(id);
 						if (ContainsAny(spellName, s?.ExcludeTransferSpellNameContains))
 							continue;
 
@@ -781,7 +781,7 @@ internal static class GemcrafterCommands
 		catch { }
 
 		player.TryCreateInInventoryWithNetworking(powder);
-		player.SendMessage($"[Gemcrafter] Created infused powder with: {GemLootMutator.TryGetSpellName(spellId.Value)} ({spellId.Value})");
+		player.SendMessage($"[Gemcrafter] Created infused powder with: {LootMutator.TryGetSpellName(spellId.Value)} ({spellId.Value})");
 	}
 
 	[CommandHandler("gemcrafter", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0,
@@ -834,7 +834,7 @@ internal static class GemcrafterCommands
 
 	private static void PrintSpellPool(Player player)
 	{
-		var (count, sampleNames) = GemLootMutator.GetSpellPoolStats();
+		var (count, sampleNames) = LootMutator.GetSpellPoolStats();
 		player.SendMessage($"[Gemcrafter] Spell pool size: {count}");
 		if (sampleNames.Count > 0)
 			player.SendMessage($"[Gemcrafter] Sample: {string.Join(", ", sampleNames)}");
@@ -856,7 +856,7 @@ internal static class GemcrafterCommands
 			var book = item.Biota?.PropertiesSpellBook;
 			if (book != null && book.Count > 0)
 			{
-				var names = book.Keys.Take(10).Select(GemLootMutator.TryGetSpellName).ToList();
+				var names = book.Keys.Take(10).Select(LootMutator.TryGetSpellName).ToList();
 				player.SendMessage($"[Gemcrafter] Spells({book.Count}): {string.Join(", ", names)}");
 			}
 		}
@@ -866,7 +866,7 @@ internal static class GemcrafterCommands
 
 		var payload = ItemPayload.ReadSpellPayload(item);
 		if (payload.Count > 0)
-			player.SendMessage($"[Gemcrafter] Payload: {string.Join(", ", payload.Select(GemLootMutator.TryGetSpellName))}");
+			player.SendMessage($"[Gemcrafter] Payload: {string.Join(", ", payload.Select(LootMutator.TryGetSpellName))}");
 	}
 
 	private static void PrintSelectedWcidHint(Session session, Player player)

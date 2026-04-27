@@ -1,4 +1,4 @@
-namespace Gemcrafter.Features;
+namespace SpellSiphon.Features;
 
 internal static class MortarAndPestleHooks
 {

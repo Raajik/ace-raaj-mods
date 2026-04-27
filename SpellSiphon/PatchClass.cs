@@ -1,6 +1,6 @@
-using Gemcrafter.Features;
+using SpellSiphon.Features;
 
-namespace Gemcrafter;
+namespace SpellSiphon;
 
 [HarmonyPatch]
 public class PatchClass : BasicPatch<Settings>

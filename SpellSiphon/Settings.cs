@@ -1,4 +1,4 @@
-namespace Gemcrafter;
+namespace SpellSiphon;
 
 public class Settings
 {

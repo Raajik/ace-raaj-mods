@@ -1,8 +1,8 @@
-namespace Gemcrafter.Features;
+namespace SpellSiphon.Features;
 
 // Temporarily disabled: this dynamic loot-factory patch caused startup/shutdown instability on your ACE build.
 // We'll re-enable once we identify a stable, patchable loot hook for your server version.
-internal static class GemLootMutator
+internal static class LootMutator
 {
 	private static readonly object _poolLock = new();
 	private static bool _poolBuilt;

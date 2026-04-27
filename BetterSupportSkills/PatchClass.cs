@@ -75,6 +75,7 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
         TryApplyChaosTinkerPatch();
         TryApplySummoningClassesPatch();
         TryApplyCombatClassesPatch();
+        TryApplyLoyaltyXpPatch();
         Skills.AchievementUnlockedApi.Initialize();
 
         if (Settings.EnableManaConversion)
@@ -109,7 +110,7 @@ void TryApplyDamageEventPatch()
     {
         if (DamageEventPatchApplied) return;
         
-        if ((Settings?.EnableAssessCreature == true) || (Settings?.EnableShield == true) || (Settings?.EnableDualWield == true))
+        if ((Settings?.EnableAssessCreature == true) || (Settings?.EnableShield == true) || (Settings?.EnableDualWield == true) || (Settings?.EnableMissileDefense == true) || (Settings?.EnableArcaneLore == true))
         {
             try
             {
@@ -123,19 +124,25 @@ void TryApplyDamageEventPatch()
                 if (Settings.EnableAssessCreature)
                 {
                     var assessCreaturePostfix = AccessTools.Method(typeof(Skills.AssessCreatureBuffs), "PostfixCalculateDamage");
-                    ModC.Harmony?.Patch(calculateDamage, null, new HarmonyMethod(assessCreaturePostfix), null);
+                    ModC.Harmony?.Patch(calculateDamage, null, new HarmonyMethod(assessCreaturePostfix));
                 }
 
                 if (Settings.EnableShield)
                 {
                     var shieldPostfix = AccessTools.Method(typeof(Skills.ShieldThorns), "PostfixCalculateDamage");
-                    ModC.Harmony?.Patch(calculateDamage, null, new HarmonyMethod(shieldPostfix), null);
+                    ModC.Harmony?.Patch(calculateDamage, null, new HarmonyMethod(shieldPostfix));
                 }
 
                 if (Settings.EnableDualWield)
                 {
                     var dualWieldPostfix = AccessTools.Method(typeof(Skills.DualWieldBuffs), "PostfixCalculateDamageDualWield");
-                    ModC.Harmony?.Patch(calculateDamage, null, new HarmonyMethod(dualWieldPostfix), null);
+                    ModC.Harmony?.Patch(calculateDamage, null, new HarmonyMethod(dualWieldPostfix));
+                }
+
+                if (Settings.EnableMissileDefense || Settings.EnableArcaneLore)
+                {
+                    var mdPostfix = AccessTools.Method(typeof(Skills.MissileDefenseBuffs), "PostfixCalculateDamage");
+                    ModC.Harmony?.Patch(calculateDamage, null, new HarmonyMethod(mdPostfix));
                 }
 
                 DamageEventPatchApplied = true;
@@ -584,6 +591,45 @@ try
 
         CombatClassesPatchApplied = true;
         ModManager.Log("[BSS] CombatClasses patch registration complete", ModManager.LogLevel.Info);
+    }
+
+    static bool LoyaltyXpPatchApplied;
+
+    void TryApplyLoyaltyXpPatch()
+    {
+        if (LoyaltyXpPatchApplied) return;
+        if (Settings?.EnableLoyalty != true) return;
+
+        try
+        {
+            var grantXp = AccessTools.Method(typeof(Player), nameof(Player.GrantXP), new Type[] { typeof(long), typeof(XpType), typeof(ShareType) });
+            if (grantXp != null)
+            {
+                var xpPrefix = AccessTools.Method(typeof(Skills.LoyaltyHealingAura), "PrefixGrantXP");
+                if (xpPrefix != null)
+                {
+                    ModC.Harmony?.Patch(grantXp, new HarmonyMethod(xpPrefix));
+                    ModManager.Log("[BSS] Loyalty GrantXP prefix applied", ModManager.LogLevel.Info);
+                }
+            }
+
+            var grantLum = AccessTools.Method(typeof(Player), nameof(Player.GrantLuminance), new Type[] { typeof(long), typeof(XpType), typeof(ShareType) });
+            if (grantLum != null)
+            {
+                var lumPrefix = AccessTools.Method(typeof(Skills.LoyaltyHealingAura), "PrefixGrantLuminance");
+                if (lumPrefix != null)
+                {
+                    ModC.Harmony?.Patch(grantLum, new HarmonyMethod(lumPrefix));
+                    ModManager.Log("[BSS] Loyalty GrantLuminance prefix applied", ModManager.LogLevel.Info);
+                }
+            }
+
+            LoyaltyXpPatchApplied = true;
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] Loyalty XP patch failed: {ex}", ModManager.LogLevel.Error);
+        }
     }
 
     static bool ChaosTinkerPatchApplied;

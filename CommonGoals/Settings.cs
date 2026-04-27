@@ -32,4 +32,12 @@ public class Settings
     [JsonPropertyName("// LootTierOverride")]
     public string LootTierOverrideDoc { get; init; } = "Override the loot tier (1–8) for personal corpses. -1 = use the creature's own treasure tier (default).";
     public int LootTierOverride { get; set; } = -1;
+
+    [JsonPropertyName("// EnableNoSplitXp")]
+    public string EnableNoSplitXpDoc { get; init; } = "When true, fellowship members each receive the FULL XP amount instead of dividing it. No effect on allegiance pass-up.";
+    public bool EnableNoSplitXp { get; set; } = false;
+
+    [JsonPropertyName("// EnableNoSplitLuminance")]
+    public string EnableNoSplitLuminanceDoc { get; init; } = "When true, fellowship members each receive the FULL luminance amount instead of dividing it.";
+    public bool EnableNoSplitLuminance { get; set; } = false;
 }

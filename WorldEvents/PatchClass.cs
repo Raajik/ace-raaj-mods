@@ -10,6 +10,7 @@ public partial class PatchClass : BasicPatch<Settings>
     CancellationTokenSource? _invasionTimerCts;
     CancellationTokenSource? _saleTimerCts;
     CancellationTokenSource? _cullTimerCts;
+    CancellationTokenSource? _schedulerTimerCts;
     static bool _bonusQuestPatchesApplied;
 
     public PatchClass(BasicMod mod, string settingsName = "Settings.json") : base(mod, settingsName)
@@ -36,6 +37,9 @@ public partial class PatchClass : BasicPatch<Settings>
 
         CullRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
         StartCullBackgroundTimer();
+
+        EventScheduler.Initialize(CurrentSettings ?? new Settings());
+        StartSchedulerBackgroundTimer();
     }
 
     public override async Task OnWorldOpen()
@@ -51,6 +55,8 @@ public partial class PatchClass : BasicPatch<Settings>
         StartSaleBackgroundTimer();
         CullRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
         StartCullBackgroundTimer();
+        EventScheduler.Initialize(CurrentSettings ?? new Settings());
+        StartSchedulerBackgroundTimer();
         await base.OnWorldOpen();
     }
 
@@ -61,6 +67,7 @@ public partial class PatchClass : BasicPatch<Settings>
         try { _invasionTimerCts?.Cancel(); } catch { }
         try { _saleTimerCts?.Cancel(); } catch { }
         try { _cullTimerCts?.Cancel(); } catch { }
+        try { _schedulerTimerCts?.Cancel(); } catch { }
         _bonusQuestPatchesApplied = false;
 
         try
@@ -213,6 +220,32 @@ public partial class PatchClass : BasicPatch<Settings>
                 catch (Exception ex)
                 {
                     ModManager.Log($"[WorldEvents] Sale timer: {ex.Message}", ModManager.LogLevel.Warn);
+                }
+            }
+        }, token);
+    }
+
+    void StartSchedulerBackgroundTimer()
+    {
+        try { _schedulerTimerCts?.Cancel(); } catch { }
+
+        _schedulerTimerCts = new CancellationTokenSource();
+        var token = _schedulerTimerCts.Token;
+        _ = Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(30_000, token).ConfigureAwait(false);
+                    var s = CurrentSettings;
+                    if (s != null)
+                        EventScheduler.Tick(s);
+                }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex)
+                {
+                    ModManager.Log($"[WorldEvents] Scheduler timer: {ex.Message}", ModManager.LogLevel.Warn);
                 }
             }
         }, token);

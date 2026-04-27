@@ -38,7 +38,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     {
         try
         {
-            var r = PresetApplier.Apply(settings);
+            var r = PresetApplier.Apply(settings, source);
             if (!settings.LogSummary)
                 return;
 

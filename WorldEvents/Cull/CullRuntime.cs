@@ -51,16 +51,16 @@ internal static class CullRuntime
 
             if (ActiveCull != null)
             {
-                // Reminder
-                if (s.CullReminderIntervalMinutes > 0
+                // Reminder (silenced when unified scheduler is managing messaging)
+                if (!s.UseUnifiedScheduler && s.CullReminderIntervalMinutes > 0
                     && (now - _lastReminderUtc).TotalMinutes >= s.CullReminderIntervalMinutes)
                 {
                     _lastReminderUtc = now;
                     CullBroadcast.AnnounceReminder(ActiveCull);
                 }
 
-                // Expiry
-                if (now >= ActiveCull.EndsUtc)
+                // Expiry (skip if scheduler is managing lifecycle)
+                if (!s.UseUnifiedScheduler && now >= ActiveCull.EndsUtc)
                 {
                     var ended = ActiveCull;
                     ActiveCull = null;
@@ -74,19 +74,20 @@ internal static class CullRuntime
                 return;
             }
 
+            if (s.UseUnifiedScheduler) return;
             if (now < _nextCullUtc) return;
             TryStartCull(s, now);
         }
     }
 
-    static void TryStartCull(Settings s, DateTime now)
+    internal static bool TryStartCull(Settings s, DateTime now)
     {
         var typeId = PickTargetSpecies(s);
         if (typeId == 0)
         {
             _nextCullUtc = now.AddMinutes(Math.Max(5, s.CullIntervalMinutes / 4));
             ModManager.Log("[Cull] No eligible species found — retrying later.", ModManager.LogLevel.Warn);
-            return;
+            return false;
         }
 
         var speciesName = ((CreatureType)typeId).ToString();
@@ -106,6 +107,7 @@ internal static class CullRuntime
         CullBroadcast.AnnounceCullStart(cull, s);
 
         ModManager.Log($"[Cull] Started — target: {speciesName} ({typeId}), ends: {cull.EndsUtc:u} UTC.", ModManager.LogLevel.Info);
+        return true;
     }
 
     static uint PickTargetSpecies(Settings s)

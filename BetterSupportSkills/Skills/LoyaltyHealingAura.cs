@@ -1,104 +1,252 @@
+using System.Diagnostics;
+using ACE.Entity.Enum;
+using ACE.Server.Entity;
+using ACE.Server.Managers;
+using ACE.Server.WorldObjects;
+
 namespace BetterSupportSkills.Skills;
 
-// Loyalty trained+: passive heal per second to self and fellowship allies within range (spec = double trained rate).
 [HarmonyPatchCategory(nameof(Features.LoyaltySkill))]
 internal static class LoyaltyHealingAura
 {
-    static readonly ConcurrentDictionary<uint, double> LastAuraUnixByPlayer = new();
+    // Cached bonus per player: guid -> (expiry, bonusMultiplier, healRate, sourceName)
+    // bonusMultiplier is (1 + total bonus percent), e.g. 1.05 for 5%
+    internal static readonly ConcurrentDictionary<uint, CachedLoyaltyBonus> PlayerBonusCache = new();
+
+    // Track last message time per player to enforce cooldown
+    static readonly ConcurrentDictionary<uint, DateTime> LastMessageTime = new();
+
+    // Track which players were in range last tick (to detect entry)
+    static readonly ConcurrentDictionary<uint, bool> WasInRangeLastTick = new();
+
+    internal record CachedLoyaltyBonus(
+        DateTime Expiry,
+        double BonusMultiplier,  // 1.05 = 5% bonus
+        int HealRate,            // HP per second
+        string? SourceName       // Name of player providing highest heal
+    );
+
+    [Conditional("DEBUG")]
+    private static void DebugLog(string msg)
+    {
+        ModManager.Log($"[BSS Loyalty] {msg}", ModManager.LogLevel.Debug);
+    }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(WorldObject), nameof(WorldObject.Heartbeat), new Type[] { typeof(double) })]
     public static void PostHeartbeat(double currentUnixTime, WorldObject __instance)
     {
-        if (__instance is not Player player)
+        if (__instance is not Player sourcePlayer)
             return;
 
-        if (PatchClass.Settings is not { EnableLoyalty: true } settings)
+        var settings = PatchClass.Settings;
+        if (settings is not { EnableLoyalty: true })
             return;
 
-        if (!settings.Loyalty.EnableHealingAura)
-            return;
-
-        var loyalty = player.GetCreatureSkill(Skill.Loyalty);
+        var loyalty = sourcePlayer.GetCreatureSkill(Skill.Loyalty);
         if (loyalty.AdvancementClass < SkillAdvancementClass.Trained)
             return;
 
-        LoyaltySettings cfg = settings.Loyalty;
-        double ratePerSecond = loyalty.AdvancementClass == SkillAdvancementClass.Specialized
-            ? cfg.PercentMaxHealthPerSecondSpecialized
-            : cfg.PercentMaxHealthPerSecondTrained;
+        var cfg = settings.Loyalty;
 
-        if (ratePerSecond <= 0 || cfg.AuraRange <= 0)
+        // Gather all landblocks in the 9-grid
+        var landblocks = GetNineGridLandblocks(sourcePlayer);
+        if (landblocks.Count == 0)
             return;
 
-        uint pid = player.Guid.Full;
-        double last = LastAuraUnixByPlayer.GetValueOrDefault(pid);
-        if (last <= 0)
-            last = currentUnixTime - 5.0;
-
-        double dt = currentUnixTime - last;
-        if (dt < 0.25)
-            return;
-
-        dt = Math.Clamp(dt, 0.25, 20.0);
-        LastAuraUnixByPlayer[pid] = currentUnixTime;
-
-        float range = (float)cfg.AuraRange;
-        List<Player> recipients = CollectRecipients(player, range);
-
-        foreach (Player recipient in recipients)
+        // Collect all players in the 9-grid
+        var allPlayers = new List<Player>();
+        foreach (var lb in landblocks)
         {
-            if (recipient.IsDead || recipient.Health is null)
+            foreach (var wo in lb.GetAllWorldObjectsForDiagnostics())
+            {
+                if (wo is Player p && !p.IsDead)
+                    allPlayers.Add(p);
+            }
+        }
+
+        if (allPlayers.Count == 0)
+            return;
+
+        // Count unique players (excluding ourselves for the "extra player" calc)
+        int playerCount = allPlayers.Select(p => p.Guid.Full).Distinct().Count();
+        int extraPlayers = Math.Max(0, playerCount - 1);
+
+        // Compute XP buff
+        double bonusPercent = 0;
+        if (cfg.EnableXpBuff && extraPlayers > 0)
+        {
+            bonusPercent = cfg.XpBuffBasePercent + (extraPlayers * cfg.XpBuffPerPlayerPercent);
+            bonusPercent = Math.Min(bonusPercent, cfg.XpBuffMaxPercent);
+        }
+        double bonusMultiplier = 1.0 + bonusPercent;
+
+        // Find highest heal rate among loyalty-trained players in grid
+        int maxHealRate = 0;
+        string? sourceName = null;
+        foreach (var p in allPlayers)
+        {
+            var pLoyalty = p.GetCreatureSkill(Skill.Loyalty);
+            if (pLoyalty.AdvancementClass < SkillAdvancementClass.Trained)
                 continue;
 
-            uint maxHp = recipient.Health.MaxValue;
-            if (maxHp == 0)
+            int rate = pLoyalty.AdvancementClass == SkillAdvancementClass.Specialized
+                ? cfg.FlatHealPerSecondSpec
+                : cfg.FlatHealPerSecondTrained;
+
+            if (rate > maxHealRate)
+            {
+                maxHealRate = rate;
+                sourceName = p.Name;
+            }
+        }
+
+        // Cache bonus for all players in grid
+        var now = DateTime.UtcNow;
+        var expiry = now.AddSeconds(5.0); // cache valid for 5s (heartbeat is ~1s)
+        var cacheEntry = new CachedLoyaltyBonus(expiry, bonusMultiplier, maxHealRate, sourceName);
+
+        foreach (var p in allPlayers)
+        {
+            PlayerBonusCache[p.Guid.Full] = cacheEntry;
+        }
+
+        // Apply flat heals
+        if (maxHealRate > 0 && cfg.EnableHealingAura)
+        {
+            ApplyHeals(allPlayers, maxHealRate);
+        }
+
+        // Detect entries and send messages
+        if (cfg.ShowRangeMessage && extraPlayers > 0)
+        {
+            SendEntryMessages(allPlayers, extraPlayers, bonusPercent, maxHealRate, sourceName, cfg);
+        }
+
+        // Update "was in range" tracking for next tick
+        WasInRangeLastTick.Clear();
+        foreach (var p in allPlayers)
+            WasInRangeLastTick[p.Guid.Full] = true;
+    }
+
+    static List<Landblock> GetNineGridLandblocks(Player player)
+    {
+        var result = new List<Landblock>();
+        var current = player.CurrentLandblock;
+        if (current == null)
+            return result;
+
+        result.Add(current);
+        foreach (var adj in current.Adjacents)
+        {
+            if (adj != null)
+                result.Add(adj);
+        }
+        return result;
+    }
+
+    static void ApplyHeals(List<Player> players, int healRate)
+    {
+        int healAmount = healRate; // per second, heartbeat is ~1s
+        foreach (var p in players)
+        {
+            if (p.IsDead || p.Health == null)
+                continue;
+            if (p.Health.Current >= p.Health.MaxValue)
                 continue;
 
-            if (recipient.Health.Current >= recipient.Health.MaxValue)
-                continue;
-
-            double heal = maxHp * ratePerSecond * dt;
-            if (heal < 0.5)
-                continue;
-
-            int healInt = (int)Math.Min(int.MaxValue, Math.Round(heal));
-            if (healInt < 1)
-                healInt = 1;
-
-            recipient.UpdateVitalDelta(recipient.Health, healInt);
+            p.UpdateVitalDelta(p.Health, healAmount);
         }
     }
 
-    static List<Player> CollectRecipients(Player source, float range)
+    static void SendEntryMessages(List<Player> players, int extraPlayers, double bonusPercent, int healRate, string? sourceName, LoyaltySettings cfg)
     {
-        var list = new List<Player> { source };
+        var now = DateTime.UtcNow;
+        string bonusText = $"{(bonusPercent * 100):F0}%";
+        string healText = $"{healRate} HP/s";
+        string nameText = sourceName ?? "a fellow adventurer";
 
-        if (source.Fellowship is null)
-            return list;
-
-        var members = source.Fellowship.GetFellowshipMembers();
-        foreach (Player? fellow in members.Values)
+        string msg;
+        if (extraPlayers == 1)
         {
-            if (fellow is null || fellow.IsDead || fellow.Guid == source.Guid)
-                continue;
-
-            if (fellow.Location is null || source.Location is null)
-                continue;
-
-            if (fellow.GetDistance(source) > range)
-                continue;
-
-            list.Add(fellow);
+            msg = $"A fellow adventurer hunts nearby, earning you both an additional {bonusText} XP/luminance and activating {nameText}'s Loyalty healing aura ({healText}).";
+        }
+        else
+        {
+            msg = $"Fellow adventurers hunt nearby, earning you all an additional {bonusText} XP/luminance and activating {nameText}'s Loyalty healing aura ({healText}).";
         }
 
-        return list;
+        foreach (var p in players)
+        {
+            uint guid = p.Guid.Full;
+            bool wasInRange = WasInRangeLastTick.ContainsKey(guid);
+            if (wasInRange)
+                continue; // already in range, don't spam
+
+            // Check cooldown
+            if (LastMessageTime.TryGetValue(guid, out var lastMsg) && (now - lastMsg).TotalSeconds < cfg.MessageCooldownSeconds)
+                continue;
+
+            p.SendMessage(msg, ChatMessageType.Magic);
+            LastMessageTime[guid] = now;
+            DebugLog($"Sent entry message to {p.Name}");
+        }
     }
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Player), nameof(Player.PlayerEnterWorld))]
     public static void PostEnterWorld(Player __instance)
     {
-        LastAuraUnixByPlayer.TryRemove(__instance.Guid.Full, out _);
+        // Clear tracking when player enters world
+        uint guid = __instance.Guid.Full;
+        PlayerBonusCache.TryRemove(guid, out _);
+        LastMessageTime.TryRemove(guid, out _);
+        WasInRangeLastTick.TryRemove(guid, out _);
+    }
+
+    /// <summary>
+    /// Returns the cached loyalty bonus multiplier for a player (1.0 = no bonus).
+    /// Called from GrantXP/GrantLuminance patches.
+    /// </summary>
+    internal static double GetBonusMultiplier(Player player)
+    {
+        if (PlayerBonusCache.TryGetValue(player.Guid.Full, out var cached))
+        {
+            if (cached.Expiry > DateTime.UtcNow)
+                return cached.BonusMultiplier;
+        }
+        return 1.0;
+    }
+
+    /// <summary>
+    /// Harmony prefix on Player.GrantXP — multiplies the amount by the cached loyalty bonus.
+    /// </summary>
+    public static void PrefixGrantXP(Player __instance, ref long amount)
+    {
+        if (PatchClass.Settings is not { EnableLoyalty: true, Loyalty.EnableXpBuff: true })
+            return;
+
+        double mult = GetBonusMultiplier(__instance);
+        if (mult > 1.0)
+        {
+            amount = (long)Math.Round(amount * mult);
+            DebugLog($"GrantXP boosted for {__instance.Name}: {mult:F2}x = {amount}");
+        }
+    }
+
+    /// <summary>
+    /// Harmony prefix on Player.GrantLuminance — multiplies the amount by the cached loyalty bonus.
+    /// </summary>
+    public static void PrefixGrantLuminance(Player __instance, ref long amount)
+    {
+        if (PatchClass.Settings is not { EnableLoyalty: true, Loyalty.EnableXpBuff: true })
+            return;
+
+        double mult = GetBonusMultiplier(__instance);
+        if (mult > 1.0)
+        {
+            amount = (long)Math.Round(amount * mult);
+            DebugLog($"GrantLuminance boosted for {__instance.Name}: {mult:F2}x = {amount}");
+        }
     }
 }

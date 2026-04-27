@@ -134,5 +134,8 @@ internal static class CmQuit
             destItem.EmoteManager.OnDrop(player);
             destItem.SaveBiotaToDatabase();
         }
+
+        // Force client inventory refresh so unequipped items are visible
+        player.SendInventoryAndWieldedItems();
     }
 }

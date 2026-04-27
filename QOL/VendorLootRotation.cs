@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using ACE.Database;
 using ACE.Database.Models.World;
 using ACE.Entity.Enum;
+using Microsoft.EntityFrameworkCore;
 using ACE.Entity.Enum.Properties;
 using ACE.Server.Entity;
 using ACE.Server.Factories;
@@ -150,9 +151,32 @@ public static class VendorLootRotation
             var dict = DatabaseManager.World.GetAllTreasureDeath();
             return dict.Values.Where(r => r != null).ToList();
         }
+        catch (ArgumentException ex) when (ex.Message.Contains("same key"))
+        {
+            ModManager.Log($"[QOL] VendorLootRotation: Duplicate keys in treasure_death table, falling back to direct query. {ex.Message}", ModManager.LogLevel.Warn);
+            return LoadTreasureDeathProfilesDirect();
+        }
         catch (Exception ex)
         {
             ModManager.Log($"[QOL] VendorLootRotation: Failed to load TreasureDeath profiles: {ex.Message}", ModManager.LogLevel.Error);
+            return new List<TreasureDeath>();
+        }
+    }
+
+    private static List<TreasureDeath> LoadTreasureDeathProfilesDirect()
+    {
+        try
+        {
+            using var context = new WorldDbContext();
+            context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.NoTracking;
+            return context.TreasureDeath
+                .GroupBy(r => r.TreasureType)
+                .Select(g => g.First())
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[QOL] VendorLootRotation: Direct query failed: {ex.Message}", ModManager.LogLevel.Error);
             return new List<TreasureDeath>();
         }
     }

@@ -40,8 +40,12 @@ Always check in this order:
 - Update the feature list and mod descriptions in `README.md` when adding or changing significant functionality.
 - Release notes are auto-generated from commits, but hand-written summaries for user-facing changes are strongly preferred.
 
-## 7. Server Logs
-- **`C:\ACE\Server\ACE_Log.txt`** is always allowed to be read and cleared if needed for diagnostics.
+## 7. External Paths (Always Allowed)
+- **`C:\ACE\Server\ACE_Log.txt`** — Server diagnostics; safe to read and clear.
+- **`C:\ACE\`** — Full ACE server installation. Agent has permission to read configs, read/write logs, and launch / shut down `ACE.Server.exe` for testing and bug-fixing.
+- **`A:\ai\projects\ace-sql`** — External ACE SQL content repository; read and document freely.
+- **`A:\obsidian\jeremy\wiki\*`** — Persistent knowledge wiki; read and edit freely.
+- **`B:\Backup\ac custom stuff`** — Stockpile of raw AC custom content (weenies, landblocks, dungeons, spells). Organize by original source (e.g., `/valheel`, `/beyond-ac`, `/killiakta`) when curating. Prune duplicates that have already been absorbed into mod projects.
 
 ## 8. Learning & Self-Improvement
 - **Every conversation is a learning opportunity.** When we compact chat or summarize findings, that information **must** be captured:
@@ -52,6 +56,12 @@ Always check in this order:
 ### 8.1 Conventions / Warnings
 - **`ACE.Common.ThreadSafeRandom.Next(int min, int max)` is inclusive on both bounds** (internally calls `Random.Next(min, max + 1)`). Using `array.Length` as the max argument causes `IndexOutOfRangeException`; always use `Length - 1` for zero-indexed array access.
 - **Prefer `nameof(Target.Method)` for Harmony patch targets.** String-based targets (e.g., `"get_MerchandiseBuyRate"`) silently fail at runtime if the method signature changes; `nameof` fails at compile time and is refactor-safe.
+- **Cross-mod integration: verify method visibility before assuming callable.** The unified event scheduler (`EventScheduler.cs`) required changing `InvasionRuntime.StopWaveInternal` and `CullRuntime.TryStartCull` from `private` to `internal`. Always check access modifiers when wiring new callers across files.
+- **Generic collection variance: `List<int>` and `List<uint>` are incompatible with `??`.** The null-coalescing operator requires matching types; explicit `.Select(lb => (uint)lb).ToList()` is required when mapping landblock IDs between `int` and `uint` representations.
+- **Dual-path lifecycle: preserve legacy behavior behind a toggle.** The `UseUnifiedScheduler` setting allows both independent timers (legacy) and centralized scheduling (new) to coexist. When refactoring event systems, gate new behavior so existing deployments aren't broken.
+- **Deprecate settings gracefully — don't remove properties from `Settings.cs`.** Existing `Settings.json` files will break if properties are removed. Instead, keep the property, update the doc comment to `DEPRECATED`, and stop using it in code. Example: `ExtraRollsTrained` / `ExtraRollsSpecialized` in `TrophyDropsSettings`.
+- **Use `IPlayer.MonarchId` for lightweight allegiance checks.** No need to call `AllegianceManager.LoadPlayer()` if you only need to test same-allegiance — compare `player.MonarchId == patron.MonarchId`.
+- **`Character.HasAsFriend(friendId, lock)` extension exists for friend checks.** Use `player.Character.HasAsFriend(patron.Guid.Full, player.CharacterDatabaseLock)` instead of manually iterating `CharacterPropertiesFriendList`.
 
 ## 9. External Knowledge Base
 - **`A:\obsidian\jeremy\AGENT.md`** — LLM Wiki Agent rulebook. At the end of every task, consult and follow its instructions for knowledge persistence.

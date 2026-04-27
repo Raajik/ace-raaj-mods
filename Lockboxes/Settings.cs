@@ -40,6 +40,9 @@ public class LootItem
 
     [JsonPropertyName("stackSize")]
     public int stackSize { get; set; } = 1;
+
+    [JsonPropertyName("stackSizeMax")]
+    public int stackSizeMax { get; set; } = 0;
 }
 
 public class LootCategory

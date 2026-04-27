@@ -144,8 +144,12 @@ public class Settings
     public MeleeLifeSpellProcSettings MeleeLifeSpellProc { get; set; } = new();
 
     [JsonPropertyName("// EnableMissileDefense")]
-    public string EnableMissileDefenseDoc { get; init; } = "Missile Defense skill bonus — placeholder for future extra effects.";
+    public string EnableMissileDefenseDoc { get; init; } = "Missile Defense skill bonus — chance to completely dodge incoming spell damage based on buffed skill (10% trained / 15% spec).";
     public bool EnableMissileDefense { get; set; } = false;
+
+    [JsonPropertyName("// MissileDefense")]
+    public string MissileDefenseSectionDoc { get; init; } = "Missile Defense: spell dodge chance and cap.";
+    public MissileDefenseSettings MissileDefense { get; set; } = new();
 
 [JsonPropertyName("// EnableRecklessness")]
     public string EnableRecklessnessDoc { get; init; } = "Recklessness: weapon attacks cleave to extra nearby targets (melee/missile only).";
@@ -376,8 +380,16 @@ public class AlchemySettings
 public class ArcaneLoreSettings
 {
     [JsonPropertyName("// EchoSpellCasts")]
-    public string EchoSpellCastsDoc { get; init; } = "When true, trained Arcane Lore causes harmful spells to echo (cast again) on the same target.";
+    public string EchoSpellCastsDoc { get; init; } = "When true, trained Arcane Lore gives a chance for harmful spells to echo (cast again) on the same target.";
     public bool EchoSpellCasts { get; set; } = true;
+
+    [JsonPropertyName("// EchoChancePercent")]
+    public string EchoChancePercentDoc { get; init; } = "Chance to echo = buffed Arcane Lore skill * this percent. Example: 400 skill * 0.10 = 40% echo chance.";
+    public double EchoChancePercent { get; set; } = 0.10;
+
+    [JsonPropertyName("// EchoMaxChain")]
+    public string EchoMaxChainDoc { get; init; } = "Maximum number of times an echo can chain off itself. 10 = up to 10 consecutive echoes.";
+    public int EchoMaxChain { get; set; } = 10;
 
     [JsonPropertyName("// EchoDebuffSpells")]
     public string EchoDebuffSpellsDoc { get; init; } = "When true, Creature Enchantment debuffs also cast Imperil + Fester on the target.";
@@ -390,21 +402,51 @@ public class ArcaneLoreSettings
     [JsonPropertyName("// EchoFesterSpellId")]
     public string EchoFesterSpellIdDoc { get; init; } = "Spell ID for Fester cast during debuff echo (0 = disabled).";
     public int EchoFesterSpellId { get; set; } = 0;
+
+    [JsonPropertyName("// EnableAdaptation")]
+    public string EnableAdaptationDoc { get; init; } = "When true, taking magic damage grants temporary damage reduction vs that element based on Arcane Lore skill.";
+    public bool EnableAdaptation { get; set; } = true;
+
+    [JsonPropertyName("// AdaptationReductionPerSkill")]
+    public string AdaptationReductionPerSkillDoc { get; init; } = "Damage reduction percent = buffed Arcane Lore skill * this value. Example: 400 skill * 0.10 = 40% reduction.";
+    public double AdaptationReductionPerSkill { get; set; } = 0.10;
+
+    [JsonPropertyName("// AdaptationDurationSeconds")]
+    public string AdaptationDurationSecondsDoc { get; init; } = "How long the adaptation buff lasts (refreshes on same-element hit).";
+    public int AdaptationDurationSeconds { get; set; } = 60;
+
+    [JsonPropertyName("// AdaptationMaxReduction")]
+    public double AdaptationMaxReduction { get; set; } = 0.99;
+}
+
+public class MissileDefenseSettings
+{
+    [JsonPropertyName("// DodgeChanceTrainedPercent")]
+    public string DodgeChanceTrainedPercentDoc { get; init; } = "Spell dodge chance = buffed Missile Defense skill * this percent when trained.";
+    public double DodgeChanceTrainedPercent { get; set; } = 0.10;
+
+    [JsonPropertyName("// DodgeChanceSpecPercent")]
+    public string DodgeChanceSpecPercentDoc { get; init; } = "Spell dodge chance = buffed Missile Defense skill * this percent when specialized.";
+    public double DodgeChanceSpecPercent { get; set; } = 0.15;
+
+    [JsonPropertyName("// DodgeChanceCap")]
+    public string DodgeChanceCapDoc { get; init; } = "Maximum spell dodge chance regardless of skill (0.75 = 75%).";
+    public double DodgeChanceCap { get; set; } = 0.75;
 }
 
 public class TrophyDropsSettings
 {
     [JsonPropertyName("// ExtraRollsTrained")]
-    public string ExtraRollsTrainedDoc { get; init; } = "Extra loot rolls when Assess Creature or Person is trained.";
+    public string ExtraRollsTrainedDoc { get; init; } = "DEPRECATED — no longer used. Extra rolls are now calculated from buffed Assess Creature skill / 150.";
     public int ExtraRollsTrained { get; set; } = 3;
 
     [JsonPropertyName("// ExtraRollsSpecialized")]
-    public string ExtraRollsSpecializedDoc { get; init; } = "Extra loot rolls when Assess Creature or Person is specialized.";
+    public string ExtraRollsSpecializedDoc { get; init; } = "DEPRECATED — no longer used. Extra rolls are now calculated from buffed Assess Creature skill / 150.";
     public int ExtraRollsSpecialized { get; set; } = 5;
 
     [JsonPropertyName("// MaxExtraRolls")]
-    public string MaxExtraRollsDoc { get; init; } = "Maximum extra loot rolls (capped to prevent exploitation).";
-    public int MaxExtraRolls { get; set; } = 10;
+    public string MaxExtraRollsDoc { get; init; } = "Maximum extra loot rolls (capped to prevent exploitation). With skill/150, a value of 3 means 450+ skill for max rolls.";
+    public int MaxExtraRolls { get; set; } = 3;
 
     [JsonPropertyName("// BonusTreasureChance")]
     public string BonusTreasureChanceDoc { get; init; } = "Chance (0-1) to get bonus random treasure on top of trophy bonus.";
@@ -567,20 +609,40 @@ public class LoyaltySettings
     public double CooldownSeconds { get; set; } = 4.0;
 
     [JsonPropertyName("// EnableHealingAura")]
-    public string EnableHealingAuraDoc { get; init; } = "When true, trained+ Loyalty emits a passive heal to self and fellowship allies in range.";
+    public string EnableHealingAuraDoc { get; init; } = "When true, trained+ Loyalty emits a passive flat heal to all players in the 9-landblock grid.";
     public bool EnableHealingAura { get; set; } = true;
 
-    [JsonPropertyName("// AuraRange")]
-    public string AuraRangeDoc { get; init; } = "Radius in meters for healing aura (default 15 yards ≈ 13.716 m).";
-    public double AuraRange { get; set; } = 13.716;
+    [JsonPropertyName("// FlatHealPerSecondTrained")]
+    public string FlatHealPerSecondTrainedDoc { get; init; } = "Flat HP healed per second when Loyalty is trained.";
+    public int FlatHealPerSecondTrained { get; set; } = 1;
 
-    [JsonPropertyName("// PercentMaxHealthPerSecondTrained")]
-    public string PercentMaxHealthPerSecondTrainedDoc { get; init; } = "Fraction of each recipient max Health (buffed) healed per second when Loyalty is trained.";
-    public double PercentMaxHealthPerSecondTrained { get; set; } = 0.005;
+    [JsonPropertyName("// FlatHealPerSecondSpec")]
+    public string FlatHealPerSecondSpecDoc { get; init; } = "Flat HP healed per second when Loyalty is specialized.";
+    public int FlatHealPerSecondSpec { get; set; } = 2;
 
-    [JsonPropertyName("// PercentMaxHealthPerSecondSpecialized")]
-    public string PercentMaxHealthPerSecondSpecializedDoc { get; init; } = "Fraction of max Health per second when Loyalty is specialized (typically 2× trained).";
-    public double PercentMaxHealthPerSecondSpecialized { get; set; } = 0.01;
+    [JsonPropertyName("// EnableXpBuff")]
+    public string EnableXpBuffDoc { get; init; } = "When true, being near other players grants an XP/luminance bonus.";
+    public bool EnableXpBuff { get; set; } = true;
+
+    [JsonPropertyName("// XpBuffBasePercent")]
+    public string XpBuffBasePercentDoc { get; init; } = "Base XP/lum bonus percent for having 1+ other players nearby.";
+    public double XpBuffBasePercent { get; set; } = 0.05;
+
+    [JsonPropertyName("// XpBuffPerPlayerPercent")]
+    public string XpBuffPerPlayerPercentDoc { get; init; } = "Additional XP/lum bonus percent per extra player nearby.";
+    public double XpBuffPerPlayerPercent { get; set; } = 0.01;
+
+    [JsonPropertyName("// XpBuffMaxPercent")]
+    public string XpBuffMaxPercentDoc { get; init; } = "Maximum total XP/lum bonus percent.";
+    public double XpBuffMaxPercent { get; set; } = 0.25;
+
+    [JsonPropertyName("// ShowRangeMessage")]
+    public string ShowRangeMessageDoc { get; init; } = "Show a message when entering range of other players with the loyalty buff.";
+    public bool ShowRangeMessage { get; set; } = true;
+
+    [JsonPropertyName("// MessageCooldownSeconds")]
+    public string MessageCooldownSecondsDoc { get; init; } = "Minimum seconds between range messages per player.";
+    public double MessageCooldownSeconds { get; set; } = 60.0;
 }
 
 public class SalvageSettings

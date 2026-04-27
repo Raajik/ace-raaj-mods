@@ -32,8 +32,6 @@ public partial class PatchClass
         var cull = CullRuntime.ActiveCull;
         if (cull == null) return;
 
-        if (CullRuntime.IsSpawnedAdd(__instance.Guid.Full)) return;
-
         var creatureType = (uint)(__instance.GetProperty(PropertyInt.CreatureType) ?? 0);
         if (creatureType != cull.TargetCreatureType) return;
 
@@ -56,8 +54,6 @@ public partial class PatchClass
         var cull = CullRuntime.ActiveCull;
         if (cull == null) return;
 
-        if (CullRuntime.IsSpawnedAdd(__instance.Guid.Full)) return;
-
         var creatureType = (uint)(__instance.GetProperty(PropertyInt.CreatureType) ?? 0);
         if (creatureType != cull.TargetCreatureType) return;
 
@@ -66,7 +62,8 @@ public partial class PatchClass
 
         CullRuntime.RecordKill(killer.Guid.Full, killer.Name ?? "Unknown");
 
-        // Swarm spawn
+        // Swarm spawn — only original creatures spawn adds, not swarm adds themselves
+        if (CullRuntime.IsSpawnedAdd(__instance.Guid.Full)) return;
         if ((float)ThreadSafeRandom.Next(0.0f, 1.0f) >= s.CullSwarmChance) return;
 
         var wcid = __instance.WeenieClassId;

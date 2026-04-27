@@ -69,8 +69,8 @@ internal static class BonusQuestRuntime
                     ActiveWindow.QuestExpiries.Remove(q);
                 }
 
-                // Rotate: add new quests if it's time and there's room
-                if (now >= ActiveWindow.WindowEndUtc)
+                // Rotate: add new quests if it's time and there's room (skip if scheduler is managing rotation)
+                if (!settings.UseUnifiedScheduler && now >= ActiveWindow.WindowEndUtc)
                 {
                     newlyAdded = AddRotationBatch(settings, now);
                     ActiveWindow.WindowEndUtc = now.AddHours(settings.BonusQuestIntervalHours);
@@ -118,6 +118,34 @@ internal static class BonusQuestRuntime
         ModManager.Log(
             $"[BonusQuest] Board initialized at {now:u} UTC — {ActiveWindow.QuestNames.Count} quest(s) added.",
             ModManager.LogLevel.Info);
+    }
+
+    /// <summary>
+    /// Called by the unified event scheduler to rotate bonus quests.
+    /// Initializes the board if necessary and updates the window end time.
+    /// </summary>
+    internal static List<string> TryStartScheduledRotation(Settings settings, DateTime now)
+    {
+        lock (BonusQuestLock)
+        {
+            if (ActiveWindow == null)
+            {
+                ActiveWindow = new ActiveBonusQuestData
+                {
+                    WindowStartUtc = now,
+                    WindowEndUtc = now.AddHours(settings.BonusQuestIntervalHours),
+                    QuestNames = new(),
+                    QuestExpiries = new(),
+                    PlayerCompletions = new(),
+                };
+            }
+
+            ActiveWindow.WindowEndUtc = now.AddHours(settings.BonusQuestIntervalHours);
+            var newlyAdded = AddRotationBatch(settings, now);
+            BonusQuestPersistence.SaveActiveWindow(ActiveWindow);
+            RebuildActiveSet();
+            return newlyAdded;
+        }
     }
 
     // Returns newly added quest names. Must be called within BonusQuestLock.

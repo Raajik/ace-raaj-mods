@@ -399,6 +399,9 @@ internal static class HuntRuntime
         if (!settings.EnableHunt)
             return;
 
+        if (settings.UseUnifiedScheduler)
+            return;
+
         ActiveHuntData? pendingFinalize = null;
 
         lock (HuntLock)

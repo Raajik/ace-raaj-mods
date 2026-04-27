@@ -11,6 +11,25 @@ public enum Features
 
 public sealed class Settings
 {
+    [JsonPropertyName("// SchedulerSettings")]
+    public string SchedulerSettingsDoc { get; init; } = "Unified event scheduler: rotates through enabled events on a fixed timer instead of independent cooldowns.";
+
+    [JsonPropertyName("// UseUnifiedScheduler")]
+    public string UseUnifiedSchedulerDoc { get; init; } = "When true, all world events are managed by the central scheduler (EventScheduler). When false, each event uses its own independent cooldown timer.";
+    public bool UseUnifiedScheduler { get; set; } = false;
+
+    [JsonPropertyName("// EventDurationMinutes")]
+    public string EventDurationMinutesDoc { get; init; } = "How long each scheduled event lasts in minutes.";
+    public double EventDurationMinutes { get; set; } = 60.0;
+
+    [JsonPropertyName("// EventStartIntervalMinutes")]
+    public string EventStartIntervalMinutesDoc { get; init; } = "Minutes between event starts. With a 60m duration and 45m interval, events overlap by 15 minutes.";
+    public double EventStartIntervalMinutes { get; set; } = 45.0;
+
+    [JsonPropertyName("// EventFiveMinuteWarning")]
+    public string EventFiveMinuteWarningDoc { get; init; } = "When true, broadcast a warning 5 minutes before each scheduled event ends.";
+    public bool EventFiveMinuteWarning { get; set; } = true;
+
     [JsonPropertyName("// HuntSettings")]
     public string HuntSettingsDoc { get; init; } = "Doc lines (// keys) precede each real setting block in shipped Settings.json.";
 

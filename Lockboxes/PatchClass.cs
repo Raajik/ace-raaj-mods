@@ -162,8 +162,8 @@ public partial class PatchClass : BasicPatch<Settings>
                     new() { wcid = 6353, name = "Pyreal Mote", stackSize = 1 },
                     new() { wcid = 6355, name = "Pyreal Sliver", stackSize = 1 },
                     new() { wcid = 6876, name = "Sturdy Iron Key", stackSize = 1 },
-                    new() { wcid = 45876, name = "Scarlet Red Letter", stackSize = 1 },
-                    new() { wcid = 45875, name = "Lucky Gold Letter", stackSize = 1 },
+                    new() { wcid = 45876, name = "Scarlet Red Letter", stackSize = 1, stackSizeMax = 3 },
+                    new() { wcid = 45875, name = "Lucky Gold Letter", stackSize = 1, stackSizeMax = 3 },
                     new() { wcid = 44711, name = "Lesser Stamina Kit", stackSize = 1 },
                     new() { wcid = 44713, name = "Lesser Mana Kit", stackSize = 1 }
                 },
@@ -740,7 +740,10 @@ public partial class PatchClass : BasicPatch<Settings>
 
                 if (config.common.stackSizeChance > 0 && ThreadSafeRandom.Next(0.0f, 1.0f) < config.common.stackSizeChance)
                 {
-                    stackSize *= 2;
+                    if (selectedItem.stackSizeMax > selectedItem.stackSize)
+                        stackSize = ThreadSafeRandom.Next(selectedItem.stackSize, selectedItem.stackSizeMax + 1);
+                    else
+                        stackSize *= 2;
                 }
 
                 item.SetStackSize(stackSize);

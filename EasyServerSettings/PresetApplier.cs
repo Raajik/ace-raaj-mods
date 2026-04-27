@@ -4,13 +4,15 @@ public static class PresetApplier
 {
     public sealed record ApplyResult(int BoolOk, int BoolRejected, int LongOk, int LongRejected, int DoubleOk, int DoubleRejected);
 
-    public static ApplyResult Apply(Settings settings)
+    public static ApplyResult Apply(Settings settings, string source = "")
     {
         int boolOk = 0, boolRej = 0, longOk = 0, longRej = 0, doubleOk = 0, doubleRej = 0;
 
         ApplyDirectSettings(settings, ref boolOk, ref boolRej, ref doubleOk, ref doubleRej, ref longOk, ref longRej);
 
-        if (settings.ResyncVariablesAfterApply)
+        // ResyncVariables requires PropertyManager to be fully initialized;
+        // skip during Start() when the world hasn't opened yet.
+        if (settings.ResyncVariablesAfterApply && !source.Equals("Start", StringComparison.OrdinalIgnoreCase))
         {
             try
             {

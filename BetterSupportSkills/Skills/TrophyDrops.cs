@@ -37,9 +37,7 @@ internal static class TrophyDropsBonus
         var assessCreature = player.GetCreatureSkill(Skill.AssessCreature);
         if (assessCreature.AdvancementClass >= SkillAdvancementClass.Trained)
         {
-            extraRolls = assessCreature.AdvancementClass == SkillAdvancementClass.Specialized
-                ? trophySettings.ExtraRollsSpecialized
-                : trophySettings.ExtraRollsTrained;
+            extraRolls = (int)(assessCreature.Current / 150.0);
         }
 
         extraRolls = Math.Min(extraRolls, trophySettings.MaxExtraRolls);
@@ -96,32 +94,80 @@ internal static class TrophyDropsBonus
         if (!createList.Any())
             return;
 
-        int itemsAdded = 0;
         var bonusNames = new List<string>();
+        int itemsAdded = 0;
 
-        for (int i = 0; i < extraRolls; i++)
+        // === Assess Creature: Stacked Trophies ===
+        // Guaranteed extra rolls based on buffed skill (skill / 150, capped at MaxExtraRolls)
+        var assessCreature = player.GetCreatureSkill(Skill.AssessCreature);
+        if (assessCreature.AdvancementClass >= SkillAdvancementClass.Trained && extraRolls > 0)
         {
-            var selected = ACE.Server.WorldObjects.Creature.CreateListSelect(createList);
-            foreach (var item in selected)
+            for (var roll = 0; roll < extraRolls; roll++)
             {
-                var bonus = WorldObjectFactory.CreateNewWorldObject(item);
-                if (bonus != null)
+                var selected = ACE.Server.WorldObjects.Creature.CreateListSelect(createList);
+                foreach (var item in selected)
                 {
-                    int stackSize = ThreadSafeRandom.Next(2, 5);
-                    if ((bonus.MaxStackSize ?? 0) <= 1)
-                        bonus.MaxStackSize = 100;
-                    bonus.SetStackSize(stackSize);
+                    var bonus = WorldObjectFactory.CreateNewWorldObject(item);
+                    if (bonus != null)
+                    {
+                        int stackSize = ThreadSafeRandom.Next(2, 5);
+                        if ((bonus.MaxStackSize ?? 0) <= 1)
+                            bonus.MaxStackSize = 100;
+                        bonus.SetStackSize(stackSize);
 
-                    bonusNames.Add($"{bonus.Name} (×{stackSize})");
-                    if (corpse != null)
-                        corpse.TryAddToInventory(bonus);
-                    else
-                        __instance.TryAddToInventory(bonus);
-                    itemsAdded++;
+                        bonusNames.Add($"{bonus.Name} (×{stackSize})");
+                        if (corpse != null)
+                            corpse.TryAddToInventory(bonus);
+                        else
+                            __instance.TryAddToInventory(bonus);
+                        itemsAdded++;
+                    }
                 }
             }
         }
 
+        // === Alchemy: Stacked Potions ===
+        // Guaranteed extra rolls based on buffed skill (skill / 150, capped at MaxExtraRolls)
+        var alchemy = player.GetCreatureSkill(Skill.Alchemy);
+        if (alchemy.AdvancementClass >= SkillAdvancementClass.Trained && extraRolls > 0)
+        {
+            for (var roll = 0; roll < extraRolls; roll++)
+            {
+                // Filter for potion-like items (we'll check by name or weenie type)
+                var potionList = createList.Where(c => 
+                {
+                    var wcid = c.WeenieClassId;
+                    // Common potion WCID ranges or names would go here
+                    // For now, we'll include all and let the stack handle it
+                    return true;
+                }).ToList();
+
+                if (potionList.Any())
+                {
+                    var selected = ACE.Server.WorldObjects.Creature.CreateListSelect(potionList);
+                    foreach (var item in selected)
+                    {
+                        var bonus = WorldObjectFactory.CreateNewWorldObject(item);
+                        if (bonus != null)
+                        {
+                            int stackSize = ThreadSafeRandom.Next(2, 3);
+                            if ((bonus.MaxStackSize ?? 0) <= 1)
+                                bonus.MaxStackSize = 100;
+                            bonus.SetStackSize(stackSize);
+
+                            bonusNames.Add($"{bonus.Name} (×{stackSize})");
+                            if (corpse != null)
+                                corpse.TryAddToInventory(bonus);
+                            else
+                                __instance.TryAddToInventory(bonus);
+                            itemsAdded++;
+                        }
+                    }
+                }
+            }
+        }
+
+        // === Bonus Treasure (kept as-is) ===
         if (__instance?.DeathTreasure != null && trophySettings.BonusTreasureChance > 0)
         {
             var rng = ThreadSafeRandom.Next(0.0f, 1.0f);
@@ -143,9 +189,9 @@ internal static class TrophyDropsBonus
         if (itemsAdded > 0)
         {
             if (bonusNames.Any())
-                player.SendMessage($"Your creature assessment knowledge reveals: {string.Join(", ", bonusNames)}!");
+                player.SendMessage($"Your knowledge reveals: {string.Join(", ", bonusNames)}!");
             else
-                player.SendMessage($"Your creature assessment knowledge reveals extra loot opportunities! ({itemsAdded} bonus item(s) added)");
+                player.SendMessage($"Your knowledge reveals extra loot! ({itemsAdded} bonus item(s) added)");
         }
     }
 }

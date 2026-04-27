@@ -22,6 +22,9 @@ Single index of tracked work. **Mod notes below were merged from former per-mod 
 - **Done (2026-04-26):** **QOL VendorPriceInflation crash fix** — `PostGetMerchandiseBuyRate` used a string-based patch targeting `Vendor.get_MerchandiseBuyRate`, which doesn't exist in ACE v1.76.4751. With `EnableVendorPriceInflation: true` in Settings.json, this caused "Patching exception in method null" on startup, killing all QOL patches (PetKillSummary, KillXpMessage, AutoBuff, VendorLootRotation). Fixed by replacing with two `nameof`-based patches on `Vendor.GetBuyCost(WorldObject)`: `PostGetBuyCostBase` (applies `VendorBuyRateMultiplier`) and `PostGetBuyCostSpecial` (applies `VendorSpecialItemMultiplier` for imbued/cantripped items). QOL now starts clean; pet kill XP notifications and all other features are live.
 - **Done (2026-04-26):** **LeyLineLedger EconomyBalancer + LootTracker intervals** — Both scan intervals reduced from 60 min to 5 min in the deployed `Settings.json` (`EconomyBalancer.ScanIntervalMinutes`, `LootTracker.ScanIntervalMinutes`). `MinScanIntervalMinutes` reduced from 15 to 1. Hot-reload confirmed live.
 - **Done (2026-04-26):** **Swarmed expansion** — BuddySpawns (timed auto-reinforcements: 2min idle → 25% roll, threshold doubles, cap 10/landblock, 10m radius, reset on death), Wild CreatureEx (1% landscape / 0.5% dungeon chance for random champion replacement), global CreatureVariation (±8–21% on all creature stats via deferred 0.5s ActionChain to avoid AddWorldObjectInternal rejections). See `Swarmed/Features/BuddySpawns.cs`, `CreatureVariation.cs`, `Settings.BuddySpawns` / `WildCreatureEx` / `CreatureVariation`.
+- **Done (2026-04-26):** **WorldEvents unified scheduler** — `EventScheduler.cs` rotates through enabled event types (Invasion, Cull, Sale, BonusQuest, Hunt) on a fixed timer. Events start every 45 minutes, run for 60 minutes, overlap by 15 minutes, and never run back-to-back. Each event type has scheduler-compatible start/end hooks (`TryStartWaveBypassCooldown`, `TryStartScheduledSale`, `TryStartCull` returning `bool`, `TryStartScheduledRotation`). `PatchClass.cs` wires `EventScheduler.Initialize()` and a 30s background timer. Settings: `UseUnifiedScheduler`, `EventDurationMinutes`, `EventStartIntervalMinutes`, `EventFiveMinuteWarning`.
+- **Done (2026-04-26):** **BetterSupportSkills ArcaneLore + MissileDefense rework** — Spell dodge moved from Arcane Lore to Missile Defense (`MissileDefenseBuffs.cs`: 10% trained / 15% spec spell dodge, 75% cap). Arcane Lore now has "Adaptation": taking magic damage applies `-10% of buffed skill` as elemental damage reduction for 60s, capped at 99%. Settings: `EnableAdaptation`, `AdaptationReductionPerSkill`, `AdaptationDurationSeconds`, `AdaptationMaxReduction`.
+- **Done (2026-04-26):** **CommonGoals NoSplitXp / NoSplitLuminance** — Prefixes on `Fellowship.SplitXp` and `SplitLuminance` grant full credit to each fellowship member. Toggle: `EnableNoSplitXp`.
 
 ## Suggested order (simplest → most complex)
 
@@ -41,17 +44,17 @@ Burn down from the top; later items need more design or ACE integration.
 
 ## Active Bug Tracker
 
-| Priority | Bug | Root Cause / Notes | Last Seen |
-|----------|-----|-------------------|-----------|
-| **HIGH** | Item price reduction needs EconomyBalancer decimal variance | Currently whole numbers (200). Integrate EconBalancer for realistic pricing (e.g. 194 vs 200). | 2026-04-26 |
-| **HIGH** | Salvage not depositing to bank | Verify LeyLineLedger ↔ BetterSupportSkills integration. `/b d` auto-deposits by default. | 2026-04-26 |
-| **HIGH** | Leave challenge = gear invisible until relog | `CmQuit` unequip-to-pack logic may not refresh client inventory. | 2026-04-26 |
-| **MEDIUM** | Assess Creature bonus "chances instead of stacked items" | TrophyDrops roll logic — need repro details on exact wrong behavior. | 2026-04-26 |
-| **MEDIUM** | Cull event not counting Swarm-generated kills | Kill tracker may not hook `CreatureEx`/reinforcement deaths. | 2026-04-26 |
-| **MEDIUM** | Offlineswear filter affects friends | Missing fellowship/friend check in QOL swear filter. | 2026-04-26 |
-| **MEDIUM** | Vendor items not getting levels | Item leveling needs vendor WCID allowlist or vendor flag bypass. | 2026-04-26 |
-| **MEDIUM** | Lucky Gold Letter stack minimum | Loot generation stack count issue. | 2026-04-26 |
-| **LOW** | Event reminders fire too often | Change to start + 5-min-warning only. | 2026-04-26 |
+| Priority | Bug | Root Cause / Notes | Status | Last Seen |
+|----------|-----|-------------------|--------|-----------|
+| **HIGH** | Item price reduction needs EconomyBalancer decimal variance | `QOL/VendorPriceInflation.cs` casts to `(int)` — whole numbers only. No EconomyBalancer integration. | **Not Started** | 2026-04-26 |
+| **HIGH** | Salvage not depositing to bank | `/b d` auto-deposit exists via `BankSalvage`, but cross-mod property alignment (40201+ vs `ResolveMaterialBankProperty`) is unverified. | **Partial** | 2026-04-26 |
+| **HIGH** | Leave challenge = gear invisible until relog | Fix attempt: `CmQuit.cs` calls `SendInventoryAndWieldedItems()` after unequip. Needs in-game verification. | **Needs Verify** | 2026-04-26 |
+| **MEDIUM** | ~~Assess Creature bonus "chances instead of stacked items"~~ | `TrophyDrops.cs`: `extraRolls` is only a gate (`if (!TryGetValue) return;`), never consumed as loop count. One 50% roll for stack of 2–5, not guaranteed rolls. | **Fixed** | 2026-04-26 |
+| **MEDIUM** | ~~Cull event not counting Swarm-generated kills~~ | `PatchClass.CullPatches.cs` explicitly bails with `if (IsSpawnedAdd) return;` before `RecordKill`. Swarm kills are actively excluded. | **Fixed** | 2026-04-26 |
+| **MEDIUM** | ~~Offlineswear filter affects friends~~ | `QOL/OfflineSwear.cs` has no friend, fellowship, or allegiance check. | **Fixed** | 2026-04-26 |
+| **MEDIUM** | Vendor items not getting levels | No vendor-specific leveling code; `Player.OnItemLevelUp` never fires for vendor items. No allowlist or bypass exists. | **Not Started** | 2026-04-26 |
+| **MEDIUM** | ~~Lucky Gold Letter stack minimum~~ | `SharedLoot/DefaultLootConfig.cs` has `stackSizeMin = 3`, but `Lockboxes/PatchClass.cs` hardcodes `stackSize = 1`, overriding it. | **Fixed** | 2026-04-26 |
+| **LOW** | ~~Event reminders fire too often~~ | Cull/Invasion/Sale runtimes still broadcast own reminders (15m/15m/10m) on top of scheduler 5-min warning. | **Fixed** | 2026-04-26 |
 
 ## Repeat Bug Escalation
 
@@ -67,18 +70,21 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
 
 ## Immediate Reworks (Next Session)
 
-1. **Arcane Lore → Adaptation Rework** *(BetterSupportSkills)*
-   - **KEEP** spell dodge code (move to **Missile Defense**: 50% trained / 100% spec skill value)
-   - **NEW** Arcane Lore "Adaptation":
-     - Trigger: Taking magic damage (not resisted via Magic Defense)
-     - Effect: `-10% of Arcane Lore buffed skill rating` as damage reduction vs that element
-     - Example: 400 skill = 40% reduction vs Acid for 60s
-     - Duration: 60s, refreshes on same-type hit
-     - **Cap: 99%**
-   - **Mod:** BetterSupportSkills
+1. **~~Arcane Lore → Adaptation Rework~~** *(BetterSupportSkills)* — **DONE**
+   - Spell dodge moved to `MissileDefenseBuffs.cs` (50% trained / 100% spec skill value).
+   - Adaptation implemented in `ArcaneLoreBuffs.cs`: element-specific damage reduction (`skill * AdaptationReductionPerSkill`, 60s duration, cap 99%).
+   - Settings: `EnableAdaptation`, `AdaptationReductionPerSkill`, `AdaptationDurationSeconds`, `AdaptationMaxReduction`.
 
-2. **Enlightenment Pool Expansion** *(AureatePath / Loremaster / ChallengeModes)*
-   - Currently: `+level÷10000` on enlighten
+2. **Enlightenment Pool Expansion** *(AureatePath / Loremaster / ChallengeModes)* — **PARTIAL**
+   - ✅ Base pool: `+level÷10000` on enlighten (AureatePath / ChallengeModes `/cm quit`).
+   - ✅ Achievement bonus: `+0.001f` per unlock added to FakeFloat 11012 (`AchievementManager.cs`).
+   - ❌ Augment bonus: Not yet added to pool formula.
+   - ❌ Equipment bonus: No wielded-item FakeFloat bonus implemented yet.
+   - Target formula: `1 + enlightPool + augmentBonus + achievementBonus + equipmentBonus`
+
+3. **~~CommonGoals Expansion — "No split XP"~~** — **DONE**
+   - `CommonGoals/NoSplitXp.cs`: Prefixes on `Fellowship.SplitXp` and `SplitLuminance` grant full credit per killer.
+   - Toggle: `EnableNoSplitXp` (default `false`).
    - **ADD:** `+augment bonus + achievement bonus + equipment bonus`
    - Formula: `1 + enlightPool + augmentBonus + achievementBonus + equipmentBonus`
    - Equipment bonus from **FakeFloat on wielded items** (e.g., "Enlightenment 3 required")

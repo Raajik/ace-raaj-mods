@@ -42,16 +42,16 @@ internal static class SaleRuntime
 
             if (_activeSale != null)
             {
-                // Reminder
-                if (s.SaleReminderIntervalMinutes > 0
+                // Reminder (silenced when unified scheduler is managing messaging)
+                if (!s.UseUnifiedScheduler && s.SaleReminderIntervalMinutes > 0
                     && (now - _lastReminderUtc).TotalMinutes >= s.SaleReminderIntervalMinutes)
                 {
                     _lastReminderUtc = now;
                     SaleBroadcast.AnnounceReminder(_activeSale);
                 }
 
-                // Expiry
-                if (now >= _activeSale.EndsUtc)
+                // Expiry (skip if scheduler is managing lifecycle)
+                if (!s.UseUnifiedScheduler && now >= _activeSale.EndsUtc)
                 {
                     var ended = _activeSale;
                     _activeSale = null;
@@ -62,6 +62,7 @@ internal static class SaleRuntime
                 return;
             }
 
+            if (s.UseUnifiedScheduler) return;
             if (now < _nextSaleUtc) return;
 
             TryStartSale(s, now);
@@ -166,6 +167,36 @@ internal static class SaleRuntime
             var ended = _activeSale;
             _activeSale = null;
             _nextSaleUtc = DateTime.UtcNow;
+            SalePersistence.ClearActiveSale();
+            SaleBroadcast.AnnounceSaleEnd(ended);
+        }
+    }
+
+    /// <summary>
+    /// Starts a sale immediately for the unified scheduler. Does not check cooldown.
+    /// </summary>
+    internal static ActiveSaleData? TryStartScheduledSale(Settings s)
+    {
+        lock (_lock)
+        {
+            if (_activeSale != null) return null;
+            var now = DateTime.UtcNow;
+            TryStartSale(s, now);
+            return _activeSale;
+        }
+    }
+
+    /// <summary>
+    /// Ends the active sale for the unified scheduler. Does not set next cooldown.
+    /// </summary>
+    internal static void EndScheduledSale()
+    {
+        lock (_lock)
+        {
+            if (_activeSale == null) return;
+            var ended = _activeSale;
+            _activeSale = null;
+            // Do NOT set _nextSaleUtc — scheduler handles timing
             SalePersistence.ClearActiveSale();
             SaleBroadcast.AnnounceSaleEnd(ended);
         }

@@ -4,7 +4,7 @@ namespace CommonGoals;
 // Range 13001 — no collision with Loremaster (11xxx) or WorldEvents (12xxx).
 internal static class CGProps
 {
-    internal const FakeDataId PersonalCorpseOwner = (FakeDataId)13001;
+    internal const int PersonalCorpseOwner = 13001;
 }
 
 internal static class PersonalLoot
@@ -88,7 +88,7 @@ internal static class PersonalLoot
             corpse.MotionTableId = source.MotionTableId;
             corpse.SoundTableId = source.SoundTableId;
             corpse.PhysicsTableId = source.PhysicsTableId;
-            corpse.Scale = source.ObjScale ?? 1f;
+            corpse.ObjScale = source.ObjScale ?? 1f;
             corpse.Name = $"{source.Name}'s Remains";
 
             // Place at creature's last known position.
@@ -108,7 +108,7 @@ internal static class PersonalLoot
             {
                 for (int attempt = 0; attempt < 3; attempt++)
                 {
-                    var item = LootRoller.TryCreateRandomItem(lootConfig, tier);
+                    var item = LootRoller.TryCreateRandomItem(lootConfig);
                     if (item is not null)
                         corpse.TryAddToInventory(item);
                 }
@@ -126,10 +126,10 @@ internal static class PersonalLoot
 
     static int ResolveLootTier(Creature source)
     {
-        // Use the creature's TreasureType as a tier proxy (clamped 1–8).
-        var tt = source.TreasureType ?? 0;
+        // Use the creature's DeathTreasureType as a tier proxy (clamped 1–8).
+        var tt = source.DeathTreasureType ?? 0;
         if (tt <= 0) return 1;
-        return Math.Clamp(tt / 100, 1, 8); // rough mapping; tune per shard
+        return Math.Clamp((int)(tt / 100u), 1, 8); // rough mapping; tune per shard
     }
 }
 

@@ -81,8 +81,8 @@ internal static class InvasionRuntime
                 }
                 else
                 {
-                    // Reminder broadcast
-                    if ((now - _lastReminderUtc).TotalMinutes >= s.InvasionReminderIntervalMinutes)
+                    // Reminder broadcast (silenced when unified scheduler is managing messaging)
+                    if (!s.UseUnifiedScheduler && (now - _lastReminderUtc).TotalMinutes >= s.InvasionReminderIntervalMinutes)
                     {
                         _lastReminderUtc = now;
                         var snap = ActiveInvasion!;
@@ -107,7 +107,7 @@ internal static class InvasionRuntime
                 }
             }
 
-            if (ActiveInvasion == null && ended == null)
+            if (!s.UseUnifiedScheduler && ActiveInvasion == null && ended == null)
             {
                 if (now >= _nextInvasionUtc)
                     TryStartNextWave(s, now);
@@ -208,6 +208,90 @@ internal static class InvasionRuntime
         Task.Run(() => InvasionBroadcast.AnnounceWaveStart(s, snap));
     }
 
+    /// <summary>
+    /// Starts a new invasion wave immediately, bypassing the cooldown check.
+    /// Used by the unified event scheduler.
+    /// </summary>
+    internal static ActiveInvasionData? TryStartWaveBypassCooldown(Settings s)
+    {
+        var now = DateTime.UtcNow;
+
+        lock (InvasionLock)
+        {
+            if (ActiveInvasion != null) return null;
+
+            var eligible = s.InvasionTowns.Where(t => t.Enabled && !string.IsNullOrWhiteSpace(t.TownName)).ToList();
+            if (eligible.Count == 0) return null;
+
+            var minT = Math.Max(1, s.InvasionMinTowns);
+            var maxT = Math.Max(minT, Math.Min(s.InvasionMaxTowns, eligible.Count));
+            var townCount = _rng.Next(minT, maxT + 1);
+
+            Shuffle(eligible);
+            var selected = eligible.Take(townCount).ToList();
+
+            var themeTypeId = 0u;
+            var themeName = "";
+            if (s.InvasionUseCreatureTypeTheme && s.InvasionCreatureTypePool.Count > 0)
+            {
+                themeTypeId = s.InvasionCreatureTypePool[_rng.Next(s.InvasionCreatureTypePool.Count)];
+                themeName = ((CreatureType)themeTypeId).ToString();
+            }
+
+            var threshMin = Math.Max(1, s.InvasionKillThresholdMin);
+            var threshMax = Math.Max(threshMin, s.InvasionKillThresholdMax);
+            var threshold = _rng.Next(threshMin, threshMax + 1);
+            var respawnMins = ComputeBossRespawnMinutes(s, threshold);
+
+            var ends = now.AddMinutes(s.InvasionWindowMinutes);
+            var wave = new ActiveInvasionData
+            {
+                StartedUtc = now,
+                EndsUtc = ends,
+                ThemeName = themeName,
+                WaveKillThreshold = threshold,
+                BossRespawnMinutes = respawnMins,
+                ChaosMode = themeTypeId == 0,
+            };
+
+            foreach (var town in selected)
+            {
+                var mode = ResolveMode(town);
+                var tier = s.InvasionUseTierSystem ? _rng.Next(1, 7) : 0;
+                wave.Towns.Add(new TownInvasionEntry
+                {
+                    TownName = town.TownName,
+                    EventName = town.EventName ?? "",
+                    Mode = mode,
+                    Tier = tier,
+                });
+
+                if (mode == InvasionMode.Scripted)
+                    TryStartScriptedEvent(town.EventName);
+                else
+                    StartDynamicEntry(s, town, tier, themeTypeId);
+            }
+
+            InvasionKillTracker.Reset(threshold, respawnMins);
+            _lastReminderUtc = now;
+            _nextTrickleSpawnUtc = now.AddSeconds(_rng.Next(30, 46));
+            _tricklePulseCount = 0;
+            _creatureExSpawnedThisWave = false;
+            ActiveInvasion = wave;
+            InvasionPersistence.SaveActiveInvasion(wave);
+
+            ModManager.Log(
+                $"[Invasion] Wave started (scheduler) — {string.Join(", ", wave.Towns.Select(t => $"{t.TownName}(T{t.Tier})"))} " +
+                $"theme:{(themeName.Length > 0 ? themeName : "none")} threshold:{threshold} respawn:{respawnMins:0.#}m ends:{ends:u}",
+                ModManager.LogLevel.Info);
+
+            var snap = wave;
+            Task.Run(() => InvasionBroadcast.AnnounceWaveStart(s, snap));
+
+            return wave;
+        }
+    }
+
     // Higher threshold → faster respawn (interpolated linearly)
     static double ComputeBossRespawnMinutes(Settings s, int threshold)
     {
@@ -268,22 +352,29 @@ internal static class InvasionRuntime
                 0f, 0f, 0f, 1f);
             boss.Location.LandblockId = new LandblockId(boss.Location.GetCell());
 
-            if (!LandblockManager.AddObject(boss)) return;
-            if (boss is not Creature bossCreature) return;
+            var lb = LandblockManager.GetLandblock(boss.Location.LandblockId, false);
+            if (lb == null) return;
 
-            InvasionKillTracker.OnBossSpawned(bossCreature);
+            var isRespawn = InvasionKillTracker.TotalKills > InvasionKillTracker.Threshold;
             var bossName = boss.Name ?? $"WCID {town.BossWcid}";
             var townName = town.TownName;
-            var isRespawn = InvasionKillTracker.TotalKills > InvasionKillTracker.Threshold;
 
-            ModManager.Log($"[Invasion] Boss '{bossName}' spawned at {townName}.", ModManager.LogLevel.Info);
-            Task.Run(() =>
+            lb.EnqueueAction(new ActionEventDelegate(() =>
             {
-                if (isRespawn)
-                    InvasionBroadcast.AnnounceBossRespawning(townName, bossName);
-                else
-                    InvasionBroadcast.AnnounceBossSpawned(townName, bossName);
-            });
+                if (!lb.AddWorldObject(boss)) return;
+                if (boss is not Creature bossCreature) return;
+
+                InvasionKillTracker.OnBossSpawned(bossCreature);
+
+                ModManager.Log($"[Invasion] Boss '{bossName}' spawned at {townName}.", ModManager.LogLevel.Info);
+                Task.Run(() =>
+                {
+                    if (isRespawn)
+                        InvasionBroadcast.AnnounceBossRespawning(townName, bossName);
+                    else
+                        InvasionBroadcast.AnnounceBossSpawned(townName, bossName);
+                });
+            }));
         }
         catch (Exception ex)
         {
@@ -293,7 +384,7 @@ internal static class InvasionRuntime
 
     // ── Wave shutdown ────────────────────────────────────────────────────
 
-    static void StopWaveInternal(ActiveInvasionData wave)
+    internal static void StopWaveInternal(ActiveInvasionData wave)
     {
         foreach (var t in wave.Towns.Where(t => t.Mode == InvasionMode.Scripted && !string.IsNullOrWhiteSpace(t.EventName)))
         {
@@ -824,17 +915,14 @@ internal static class InvasionRuntime
                                 var depth = ActiveInvasion?.CreatureExSpawnedCount ?? 0;
                                 wo.SetProperty((PropertyInt)10031, depth); // generation depth
 
-                                if (LandblockManager.AddObject(wo))
+                                EnqueueAddWorldObject(wo, () =>
                                 {
-                                    lock (_dynamicSpawns)
-                                        _dynamicSpawns.Add(wo);
                                     if (ActiveInvasion != null)
                                         ActiveInvasion.CreatureExSpawnedCount++;
-
                                     ModManager.Log($"[Invasion] Chaos Boss '{wo.Name}' spawned at {town.TownName} (depth {depth}).", ModManager.LogLevel.Info);
                                     Task.Run(() => InvasionBroadcast.AnnounceBossSpawned(town.TownName, wo.Name ?? "CreatureEx"));
-                                    return;
-                                }
+                                });
+                                return;
                             }
                         }
                     }
@@ -868,17 +956,14 @@ internal static class InvasionRuntime
                                 0f, 0f, 0f, 1f);
                             wo.Location.LandblockId = new LandblockId(wo.Location.GetCell());
 
-                            if (LandblockManager.AddObject(wo))
+                            EnqueueAddWorldObject(wo, () =>
                             {
-                                lock (_dynamicSpawns)
-                                    _dynamicSpawns.Add(wo);
                                 if (ActiveInvasion != null)
                                     ActiveInvasion.CreatureExSpawnedCount++;
-
                                 ModManager.Log($"[Invasion] CreatureEx '{wo.Name}' spawned at {town.TownName} (pulse 5+).", ModManager.LogLevel.Info);
                                 Task.Run(() => InvasionBroadcast.AnnounceBossSpawned(town.TownName, wo.Name ?? "CreatureEx"));
-                                return;
-                            }
+                            });
+                            return;
                         }
                     }
                 }
@@ -895,24 +980,45 @@ internal static class InvasionRuntime
             fallback.Location.LandblockId = new LandblockId(fallback.Location.GetCell());
             fallback.SetProperty((PropertyInt)10029, _rng.Next(1, 24)); // FakeInt.CreatureExType random type
 
-            if (LandblockManager.AddObject(fallback))
+            EnqueueAddWorldObject(fallback, () =>
             {
-                lock (_dynamicSpawns)
-                    _dynamicSpawns.Add(fallback);
                 if (ActiveInvasion != null)
                     ActiveInvasion.CreatureExSpawnedCount++;
-
                 ModManager.Log($"[Invasion] Fallback CreatureEx (WCID {baseWcid}) spawned at {town.TownName} with FakeInt 10029.", ModManager.LogLevel.Info);
-            }
-            else
-            {
-                fallback.Destroy();
-            }
+            }, onFail: () => fallback.Destroy());
         }
         catch (Exception ex)
         {
             ModManager.Log($"[Invasion] CreatureEx spawn failed at {town.TownName}: {ex.Message}", ModManager.LogLevel.Warn);
         }
+    }
+
+    static void EnqueueAddWorldObject(WorldObject wo, Action? onSuccess = null, Action? onFail = null)
+    {
+        if (wo?.Location == null)
+        {
+            onFail?.Invoke();
+            return;
+        }
+        var lb = LandblockManager.GetLandblock(wo.Location.LandblockId, false);
+        if (lb == null)
+        {
+            onFail?.Invoke();
+            return;
+        }
+        lb.EnqueueAction(new ActionEventDelegate(() =>
+        {
+            if (lb.AddWorldObject(wo))
+            {
+                lock (_dynamicSpawns)
+                    _dynamicSpawns.Add(wo);
+                onSuccess?.Invoke();
+            }
+            else
+            {
+                onFail?.Invoke();
+            }
+        }));
     }
 
     static void Shuffle<T>(List<T> list)
@@ -1010,13 +1116,11 @@ internal static class InvasionRuntime
                             wo.SetProperty((PropertyInt)10030, 1);
                             wo.SetProperty((PropertyInt)10031, depth + 1);
 
-                            if (LandblockManager.AddObject(wo))
+                            EnqueueAddWorldObject(wo, () =>
                             {
-                                lock (_dynamicSpawns)
-                                    _dynamicSpawns.Add(wo);
                                 ActiveInvasion.CreatureExSpawnedCount++;
                                 ModManager.Log($"[Invasion] Chaos Boss child spawned at depth {depth + 1} from {__instance.Name}.", ModManager.LogLevel.Info);
-                            }
+                            });
                         }
                     }
                 }

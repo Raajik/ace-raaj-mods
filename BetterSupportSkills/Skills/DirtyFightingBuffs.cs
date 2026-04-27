@@ -128,6 +128,34 @@ internal static class DirtyFightingBuffs
         ApplyCustomSpell(target, player, weapon, spellId);
     }
 
+    // Tracks last DF message per (target, spell) to suppress refresh spam
+    static readonly ConcurrentDictionary<(uint TargetGuid, uint SpellId), DateTime> LastDfMessageTime = new();
+
+    /// <summary>
+    /// Prefix on FightDirty_SendMessage — suppresses chat messages when the same debuff
+    /// was messaged recently (indicating a duration refresh rather than a fresh application).
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Creature), nameof(Creature.FightDirty_SendMessage))]
+    public static bool PreFightDirtySendMessage(Creature target, Spell spell)
+    {
+        var settings = PatchClass.Settings;
+        if (settings?.EnableDirtyFighting != true)
+            return true; // let vanilla handle when our mod is off
+
+        if (spell == null)
+            return true;
+
+        var key = (target.Guid.Full, (uint)spell.Id);
+        var now = DateTime.UtcNow;
+
+        if (LastDfMessageTime.TryGetValue(key, out var last) && (now - last).TotalSeconds < 5.0)
+            return false; // suppress — likely a refresh
+
+        LastDfMessageTime[key] = now;
+        return true; // allow fresh application message
+    }
+
     public static void PostfixFightDirty_ApplyMediumAttack(Creature __instance, Creature target, WorldObject weapon)
     {
         var settings = PatchClass.Settings;

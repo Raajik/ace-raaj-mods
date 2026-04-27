@@ -62,24 +62,42 @@ public static class OfflineSwear
             return;
         }
 
+        // Friend / allegiance bypass for ignore/locked filters
+        bool isFriend = false;
+        bool sameAllegiance = false;
+        try
+        {
+            isFriend = player.Character.HasAsFriend(patron.Guid.Full, player.CharacterDatabaseLock);
+        }
+        catch { /* fallback */ }
+        try
+        {
+            sameAllegiance = player.MonarchId != null && player.MonarchId == patron.MonarchId;
+        }
+        catch { /* fallback */ }
+        bool bypassFilters = isFriend || sameAllegiance;
+
         // Check if target is ignoring allegiance requests
         bool ignoresRequests = false;
-        if (isOnline && patron is Player onlinePatron)
+        if (!bypassFilters)
         {
-            ignoresRequests = onlinePatron.GetCharacterOption(CharacterOption.IgnoreAllegianceRequests);
-        }
-        else
-        {
-            // Offline player: load character stub to check options
-            try
+            if (isOnline && patron is Player onlinePatron)
             {
-                var character = DatabaseManager.Shard.BaseDatabase.GetCharacterStubByGuid(patron.Guid.Full);
-                if (character != null)
-                {
-                    ignoresRequests = (character.CharacterOptions1 & (int)CharacterOptions1.IgnoreAllegianceRequests) != 0;
-                }
+                ignoresRequests = onlinePatron.GetCharacterOption(CharacterOption.IgnoreAllegianceRequests);
             }
-            catch { /* fallback: allow if DB lookup fails */ }
+            else
+            {
+                // Offline player: load character stub to check options
+                try
+                {
+                    var character = DatabaseManager.Shard.BaseDatabase.GetCharacterStubByGuid(patron.Guid.Full);
+                    if (character != null)
+                    {
+                        ignoresRequests = (character.CharacterOptions1 & (int)CharacterOptions1.IgnoreAllegianceRequests) != 0;
+                    }
+                }
+                catch { /* fallback: allow if DB lookup fails */ }
+            }
         }
 
         if (ignoresRequests)
@@ -135,7 +153,7 @@ public static class OfflineSwear
             }
 
             var patronOfficer = targetNode.Player?.AllegianceOfficerRank ?? 0;
-            if (targetNode.Allegiance.IsLocked && !targetNode.Allegiance.HasApprovedVassal(player.Guid.Full)
+            if (!bypassFilters && targetNode.Allegiance.IsLocked && !targetNode.Allegiance.HasApprovedVassal(player.Guid.Full)
                 && patronOfficer < (int)AllegianceOfficerLevel.Castellan)
             {
                 player.Session.Network.EnqueueSend(new GameMessageSystemChat($"{patron.Name} is not accepting allegiance requests.", ChatMessageType.Broadcast));

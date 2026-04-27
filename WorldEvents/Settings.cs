@@ -556,6 +556,11 @@ public sealed class Settings
     public string SaleTownsDoc { get; init; } = "Towns eligible for a sale. Landblocks: list of top-16-bit landblock IDs (use /loc in-game — the high 4 hex digits). HasMasterMage: include the local Master Mage in the sale.";
     public List<SaleTownSettings> SaleTowns { get; set; } = DefaultSaleTowns();
 
+    [JsonPropertyName("// SoloCompetitorBonus")]
+    public string _doc_SoloCompetitorBonus { get; set; } = "Bonus applied when only one player participates in a world event.";
+    [JsonPropertyName("SoloCompetitorBonus")]
+    public SoloCompetitorBonusSettings SoloCompetitorBonus { get; set; } = new();
+
     static List<SaleTownSettings> DefaultSaleTowns() => new()
     {
         new() { TownName = "Holtburg",            CenterLandblocks = new() { 0xA9B4 },               HasMasterMage = true  },
@@ -765,4 +770,27 @@ public sealed class Settings
         new() { TownName = "Withered",        EventName = "WitherAttack", Mode = InvasionMode.Scripted },
         new() { TownName = "Ayan Baqur",      EventName = "AyanAttack" },
     };
+}
+
+public class SoloCompetitorBonusSettings
+{
+    [JsonPropertyName("// Enable")]
+    public string _doc_Enable { get; set; } = "When true, solo competitors receive bonus rewards.";
+    [JsonPropertyName("Enable")]
+    public bool Enable { get; set; } = true;
+
+    [JsonPropertyName("// LootFloorBonus")]
+    public string _doc_LootFloorBonus { get; set; } = "Additional loot tier offset granted to solo competitors.";
+    [JsonPropertyName("LootFloorBonus")]
+    public int LootFloorBonus { get; set; } = 1;
+
+    [JsonPropertyName("// XpMultiplier")]
+    public string _doc_XpMultiplier { get; set; } = "XP multiplier applied to solo competitor rewards.";
+    [JsonPropertyName("XpMultiplier")]
+    public float XpMultiplier { get; set; } = 1.5f;
+
+    [JsonPropertyName("// BroadcastMessage")]
+    public string _doc_BroadcastMessage { get; set; } = "Server-wide broadcast when a solo competitor earns bonus rewards. Use {Name} for the player name.";
+    [JsonPropertyName("BroadcastMessage")]
+    public string BroadcastMessage { get; set; } = "{Name} reigns supreme as the only competitor and earns bonus rewards!";
 }

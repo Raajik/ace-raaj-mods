@@ -212,16 +212,18 @@ internal static class HuntRuntime
         if (!anyParticipants)
             return;
 
+        var participantCount = endedHunt.HuntPointsByBracket.Values.SelectMany(d => d.Keys).Distinct().Count();
+
         for (var bracketIdx = 0; bracketIdx <= 3; bracketIdx++)
         {
             if (!endedHunt.HuntPointsByBracket.TryGetValue(bracketIdx, out var bracketPts) || bracketPts.Count == 0)
                 continue;
 
-            FinalizeBracket(settings, endedHunt, bracketIdx, bracketPts);
+            FinalizeBracket(settings, endedHunt, bracketIdx, bracketPts, participantCount);
         }
     }
 
-    static void FinalizeBracket(Settings settings, ActiveHuntData endedHunt, int bracketIdx, Dictionary<uint, double> bracketPts)
+    static void FinalizeBracket(Settings settings, ActiveHuntData endedHunt, int bracketIdx, Dictionary<uint, double> bracketPts, int participantCount)
     {
         var ordered = bracketPts.OrderByDescending(kv => kv.Value).ToList();
         if (ordered.Count > 0)
@@ -274,23 +276,23 @@ internal static class HuntRuntime
                 try
                 {
                     lootLines[idx] = new List<string>();
-                    if (HuntXpRewards.TryGrantPlacementXp(settings, idx, recipient, out var xa, out var xf))
+                    if (HuntXpRewards.TryGrantPlacementXp(settings, idx, recipient, participantCount, out var xa, out var xf))
                     {
                         xpGranted[idx] = xa;
                         xpFormula[idx] = xf;
                     }
 
-                    lootLines[idx] = HuntLootRewards.GrantPlacementLoot(settings, idx, pts, recipient);
+                    lootLines[idx] = HuntLootRewards.GrantPlacementLoot(settings, idx, pts, recipient, participantCount);
 
                     // 1st place claims any unfilled podium slots
                     if (idx == 0)
                     {
                         foreach (var extraRank in unfilledTopSlots)
                         {
-                            if (HuntXpRewards.TryGrantPlacementXp(settings, extraRank, recipient, out var xa2, out _))
+                            if (HuntXpRewards.TryGrantPlacementXp(settings, extraRank, recipient, participantCount, out var xa2, out _))
                                 xpGranted[0] = (xpGranted[0] ?? 0) + xa2;
 
-                            lootLines[0].AddRange(HuntLootRewards.GrantPlacementLoot(settings, extraRank, pts, recipient));
+                            lootLines[0].AddRange(HuntLootRewards.GrantPlacementLoot(settings, extraRank, pts, recipient, participantCount));
                         }
                     }
                 }
@@ -305,6 +307,12 @@ internal static class HuntRuntime
         {
             try
             {
+                if (participantCount == 1 && settings.SoloCompetitorBonus.Enable)
+                {
+                    var playerName = HuntDisplay.ResolvePlayerName(ordered[0].Key);
+                    WorldEventsBroadcast.Send(settings.SoloCompetitorBonus.BroadcastMessage.Replace("{Name}", playerName));
+                }
+
                 var bonusByGuid = ApplyHuntTopPoolBonus(settings, ordered);
                 AnnounceHuntEndFromSnapshot(settings, bracketIdx, ordered, xpGranted, xpFormula, lootLines, bonusByGuid);
             }

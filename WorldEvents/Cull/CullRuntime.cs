@@ -68,8 +68,7 @@ internal static class CullRuntime
                     _spawnedAddGuids.Clear();
                     _deathStackCount = 0;
                     CullPersistence.ClearActiveCull();
-                    Task.Run(() => CullRewards.DistributeRewards(ended, s));
-                    CullBroadcast.AnnounceCullEnd(ended);
+                    EndCull(ended, s);
                 }
                 return;
             }
@@ -223,6 +222,13 @@ internal static class CullRuntime
         }
     }
 
+    internal static void EndCull(ActiveCullData ended, Settings s)
+    {
+        var participantCount = ended.KillsByPlayer.Count;
+        Task.Run(() => CullRewards.DistributeRewards(ended, s, participantCount));
+        CullBroadcast.AnnounceCullEnd(ended);
+    }
+
     internal static void ForceStop()
     {
         lock (CullLock)
@@ -234,7 +240,7 @@ internal static class CullRuntime
             _spawnedAddGuids.Clear();
             _deathStackCount = 0;
             CullPersistence.ClearActiveCull();
-            CullBroadcast.AnnounceCullEnd(ended);
+            EndCull(ended, PatchClass.CurrentSettings ?? new Settings());
         }
     }
 }

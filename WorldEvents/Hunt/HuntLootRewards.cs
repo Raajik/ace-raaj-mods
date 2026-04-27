@@ -4,7 +4,7 @@ namespace WorldEvents;
 
 internal static class HuntLootRewards
 {
-    internal static List<string> GrantPlacementLoot(Settings settings, int zeroBasedRank, double huntPoints, Player player)
+    internal static List<string> GrantPlacementLoot(Settings settings, int zeroBasedRank, double huntPoints, Player player, int participantCount = 1)
     {
         if (!settings.HuntGrantLootTableRolls)
             return new List<string>();
@@ -14,6 +14,8 @@ internal static class HuntLootRewards
             return new List<string>();
 
         var floor = RarityFloorForPlace(zeroBasedRank);
+        if (participantCount == 1 && settings.SoloCompetitorBonus.Enable)
+            floor = (LootRarityFloor)Math.Min((int)floor + settings.SoloCompetitorBonus.LootFloorBonus, (int)LootRarityFloor.ExtremelyRare);
         return GrantLootRollSync(player, zeroBasedRank + 1, floor, settings);
     }
 

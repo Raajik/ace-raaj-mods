@@ -116,8 +116,16 @@ internal static class InvasionRuntime
 
         if (ended != null)
         {
-            if (InvasionKillTracker.HasParticipants)
-                InvasionLootRewards.DistributeWaveRewards(s);
+            var ranked = InvasionKillTracker.GetRanked();
+            var participantCount = ranked.Count;
+            if (participantCount > 0)
+                InvasionLootRewards.DistributeWaveRewards(s, participantCount);
+
+            if (participantCount == 1 && s.SoloCompetitorBonus.Enable)
+            {
+                var playerName = ranked[0].Name;
+                WorldEventsBroadcast.Send(s.SoloCompetitorBonus.BroadcastMessage.Replace("{Name}", playerName));
+            }
 
             if (idleFade)
                 InvasionBroadcast.AnnounceIdleFade(ended);

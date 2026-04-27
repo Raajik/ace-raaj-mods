@@ -202,17 +202,26 @@ internal static class BonusQuestRuntime
             BonusQuestPersistence.SaveActiveWindow(ActiveWindow);
         }
 
+        var participantCount = 0;
+        lock (BonusQuestLock)
+            participantCount = ActiveWindow?.PlayerCompletions.Count ?? 0;
+
         var displayName = BonusQuestDisplay.QuestDisplayName(questName);
         var tierFraction = BonusQuestRewards.GetTierFraction(settings, newCount);
         var tierLabel = newCount switch { 1 => "1st", 2 => "2nd", 3 => "3rd", _ => $"{newCount}th" };
 
-        if (BonusQuestRewards.TryGrantCompletionXp(settings, player, newCount, out var awarded))
+        if (BonusQuestRewards.TryGrantCompletionXp(settings, player, newCount, participantCount, out var awarded))
             player.SendMessage(
                 $"[EVENT - Bonus Quest] \"{displayName}\" bonus complete ({tierLabel} completion — {tierFraction * 100:0}% XP)! " +
                 $"+{awarded:N0} XP awarded. (Your total completions: {newCount}.)");
         else
             player.SendMessage(
                 $"[EVENT - Bonus Quest] \"{displayName}\" is a bonus quest! (Your total completions: {newCount}.)");
+
+        if (participantCount == 1 && settings.SoloCompetitorBonus.Enable && newCount == 1)
+        {
+            WorldEventsBroadcast.Send(settings.SoloCompetitorBonus.BroadcastMessage.Replace("{Name}", player.Name ?? "Unknown"));
+        }
 
         try
         {

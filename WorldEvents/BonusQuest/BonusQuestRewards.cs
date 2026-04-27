@@ -13,7 +13,7 @@ internal static class BonusQuestRewards
         };
     }
 
-    internal static bool TryGrantCompletionXp(Settings settings, Player player, int completionCount, out long awarded)
+    internal static bool TryGrantCompletionXp(Settings settings, Player player, int completionCount, int participantCount, out long awarded)
     {
         awarded = 0;
         if (!settings.BonusQuestGrantXp) return false;
@@ -24,6 +24,9 @@ internal static class BonusQuestRewards
         var fraction = GetTierFraction(settings, completionCount);
         var grant = (long)(xpToNext * fraction);
         if (grant <= 0) return false;
+
+        if (participantCount == 1 && settings.SoloCompetitorBonus.Enable)
+            grant = (long)(grant * settings.SoloCompetitorBonus.XpMultiplier);
 
         HuntXpInterop.GrantQuestXpWithoutMultiplier(player, grant);
         awarded = HuntQuestXpDisplay.EstimateCharacterXpAfterAchievementChain(player, grant);

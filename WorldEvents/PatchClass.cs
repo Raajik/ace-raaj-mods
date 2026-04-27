@@ -315,7 +315,7 @@ public partial class PatchClass : BasicPatch<Settings>
         for (var i = 0; i < top.Count; i++)
         {
             var entry = top[i];
-            player.SendMessage($"  {i + 1}. {entry.AccountName} — {entry.TotalEventCompletions} completion{(entry.TotalEventCompletions == 1 ? "" : "s")}");
+            player.SendMessage($"  {i + 1}. Account {entry.AccountId} — {entry.TotalEventCompletions} completion{(entry.TotalEventCompletions == 1 ? "" : "s")}");
         }
     }
 
@@ -341,13 +341,13 @@ public partial class PatchClass : BasicPatch<Settings>
             var unique = entry.UniqueQuestNamesByEventType.TryGetValue("BonusQuest", out var names) ? names.Count : total;
             var repeats = total - unique;
             var repeatStr = repeats > 0 ? $", {repeats} repeat{(repeats == 1 ? "" : "s")}" : "";
-            player.SendMessage($"  {i + 1}. {entry.AccountName} — {unique} unique{repeatStr}");
+            player.SendMessage($"  {i + 1}. Account {entry.AccountId} — {unique} unique{repeatStr}");
         }
     }
 
     // Admin: per-account participation detail.
     [CommandHandler("worldevents", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld, -1,
-        "WorldEvents admin. Usage: /worldevents participation <accountname>")]
+        "WorldEvents admin. Usage: /worldevents participation <accountId>")]
     public static void HandleWorldEventsAdmin(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player) return;
@@ -355,14 +355,19 @@ public partial class PatchClass : BasicPatch<Settings>
         var sub = parameters.Length > 0 ? parameters[0].Trim().ToLowerInvariant() : "";
         if (sub == "participation" && parameters.Length > 1)
         {
-            var accountName = parameters[1];
-            var summary = BonusQuestParticipation.GetByAccountName(accountName);
-            if (summary == null)
+            if (!uint.TryParse(parameters[1], out var accountId))
             {
-                player.SendMessage($"[WorldEvents] No participation data for account '{accountName}'.");
+                player.SendMessage("[WorldEvents] Invalid account id.");
                 return;
             }
-            player.SendMessage($"[WorldEvents] {summary.AccountName} (id:{summary.AccountId})");
+
+            var summary = BonusQuestParticipation.GetByAccountId(accountId);
+            if (summary == null)
+            {
+                player.SendMessage($"[WorldEvents] No participation data for account {accountId}.");
+                return;
+            }
+            player.SendMessage($"[WorldEvents] Account {summary.AccountId}");
             player.SendMessage($"  Total completions: {summary.TotalEventCompletions}");
             foreach (var kvp in summary.CompletionsByEventType)
                 player.SendMessage($"  {kvp.Key}: {kvp.Value}");
@@ -373,7 +378,7 @@ public partial class PatchClass : BasicPatch<Settings>
         }
         else
         {
-            player.SendMessage("[WorldEvents] Usage: /worldevents participation <accountname>");
+            player.SendMessage("[WorldEvents] Usage: /worldevents participation <accountId>");
         }
     }
 

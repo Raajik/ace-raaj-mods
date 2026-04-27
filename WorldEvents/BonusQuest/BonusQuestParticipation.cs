@@ -1,6 +1,6 @@
 namespace WorldEvents;
 
-using WorldEvents.BonusQuest.Models;
+using WorldEvents.Models;
 
 internal static class BonusQuestParticipation
 {
@@ -39,13 +39,11 @@ internal static class BonusQuestParticipation
                 summary = new AccountParticipationSummary
                 {
                     AccountId = accountId,
-                    AccountName = accountName,
                 };
             }
 
             // Keep account/character names current
             summary.AccountId = accountId;
-            summary.AccountName = accountName;
             summary.Characters[playerGuid] = playerName;
 
             summary.TotalEventCompletions++;
@@ -55,15 +53,14 @@ internal static class BonusQuestParticipation
             if (!string.IsNullOrEmpty(questName))
             {
                 if (!summary.UniqueQuestNamesByEventType.TryGetValue(eventType, out var names))
-                    summary.UniqueQuestNamesByEventType[eventType] = names = new List<string>();
-                if (!names.Contains(questName, StringComparer.OrdinalIgnoreCase))
-                    names.Add(questName);
+                    summary.UniqueQuestNamesByEventType[eventType] = names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                names.Add(questName);
             }
 
-            var nowStr = DateTime.UtcNow.ToString("u");
-            if (string.IsNullOrEmpty(summary.FirstCompletionUtc))
-                summary.FirstCompletionUtc = nowStr;
-            summary.LastCompletionUtc = nowStr;
+            var now = DateTime.UtcNow;
+            if (!summary.FirstCompletionUtc.HasValue)
+                summary.FirstCompletionUtc = now;
+            summary.LastCompletionUtc = now;
 
             File.WriteAllText(path, JsonSerializer.Serialize(summary, JsonOptions));
         }
@@ -103,27 +100,22 @@ internal static class BonusQuestParticipation
         }
     }
 
-    // Returns the summary for one account by name, or null if not found.
-    internal static AccountParticipationSummary? GetByAccountName(string accountName)
+    // Returns the summary for one account by id, or null if not found.
+    internal static AccountParticipationSummary? GetByAccountId(uint accountId)
     {
         try
         {
             EnsureDirectories();
-            foreach (var file in Directory.GetFiles(AccountsDirectory, "*.json"))
-            {
-                try
-                {
-                    var json = File.ReadAllText(file);
-                    var summary = JsonSerializer.Deserialize<AccountParticipationSummary>(json, JsonOptions);
-                    if (summary != null && string.Equals(summary.AccountName, accountName, StringComparison.OrdinalIgnoreCase))
-                        return summary;
-                }
-                catch { }
-            }
+            var path = AccountFile(accountId);
+            if (!File.Exists(path))
+                return null;
+
+            var json = File.ReadAllText(path);
+            return JsonSerializer.Deserialize<AccountParticipationSummary>(json, JsonOptions);
         }
         catch (Exception ex)
         {
-            ModManager.Log($"[BonusQuest] GetByAccountName failed: {ex.Message}", ModManager.LogLevel.Warn);
+            ModManager.Log($"[BonusQuest] GetByAccountId failed: {ex.Message}", ModManager.LogLevel.Warn);
         }
 
         return null;

@@ -11,6 +11,7 @@ public partial class PatchClass : BasicPatch<Settings>
     CancellationTokenSource? _saleTimerCts;
     CancellationTokenSource? _cullTimerCts;
     CancellationTokenSource? _schedulerTimerCts;
+    CancellationTokenSource? _poiHuntTimerCts;
     static bool _bonusQuestPatchesApplied;
 
     public PatchClass(BasicMod mod, string settingsName = "Settings.json") : base(mod, settingsName)
@@ -38,6 +39,9 @@ public partial class PatchClass : BasicPatch<Settings>
         CullRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
         StartCullBackgroundTimer();
 
+        PoiHuntRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
+        StartPoiHuntBackgroundTimer();
+
         EventScheduler.Initialize(CurrentSettings ?? new Settings());
         StartSchedulerBackgroundTimer();
     }
@@ -55,6 +59,8 @@ public partial class PatchClass : BasicPatch<Settings>
         StartSaleBackgroundTimer();
         CullRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
         StartCullBackgroundTimer();
+        PoiHuntRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
+        StartPoiHuntBackgroundTimer();
         EventScheduler.Initialize(CurrentSettings ?? new Settings());
         StartSchedulerBackgroundTimer();
         await base.OnWorldOpen();
@@ -68,6 +74,7 @@ public partial class PatchClass : BasicPatch<Settings>
         try { _saleTimerCts?.Cancel(); } catch { }
         try { _cullTimerCts?.Cancel(); } catch { }
         try { _schedulerTimerCts?.Cancel(); } catch { }
+        try { _poiHuntTimerCts?.Cancel(); } catch { }
         _bonusQuestPatchesApplied = false;
 
         try
@@ -251,6 +258,32 @@ public partial class PatchClass : BasicPatch<Settings>
         }, token);
     }
 
+    void StartPoiHuntBackgroundTimer()
+    {
+        try { _poiHuntTimerCts?.Cancel(); } catch { }
+
+        _poiHuntTimerCts = new CancellationTokenSource();
+        var token = _poiHuntTimerCts.Token;
+        _ = Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(30_000, token).ConfigureAwait(false);
+                    var s = CurrentSettings;
+                    if (s?.EnablePoiHunt == true)
+                        PoiHuntRuntime.Tick(s);
+                }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex)
+                {
+                    ModManager.Log($"[WorldEvents] POI Hunt timer: {ex.Message}", ModManager.LogLevel.Warn);
+                }
+            }
+        }, token);
+    }
+
     void TryApplyBonusQuestPatches()
     {
         if (_bonusQuestPatchesApplied) return;
@@ -417,6 +450,9 @@ public partial class PatchClass : BasicPatch<Settings>
             case "5" or "sale":
                 ShowSaleStatus(player);
                 break;
+            case "6" or "poihunt" or "poi":
+                ShowPoiHuntStatus(player);
+                break;
             case "off":
                 WorldEventsBroadcast.SetOptOut(player, true);
                 break;
@@ -465,8 +501,12 @@ public partial class PatchClass : BasicPatch<Settings>
                         HuntRuntime.ForceStart(s);
                         player.SendMessage("[Hunt] Force-started.");
                         break;
+                    case "poihunt" or "poi":
+                        PoiHuntRuntime.ForceStart(s);
+                        player.SendMessage("[POI Hunt] Force-started.");
+                        break;
                     default:
-                        player.SendMessage($"[Admin] Unknown event '{eventName}'. Use: invasion, cull, sale, hunt.");
+                        player.SendMessage($"[Admin] Unknown event '{eventName}'. Use: invasion, cull, sale, hunt, poihunt.");
                         break;
                 }
                 break;
@@ -502,8 +542,12 @@ public partial class PatchClass : BasicPatch<Settings>
                             HuntRuntime.ForceStop();
                             player.SendMessage("[Hunt] Force-stopped.");
                             break;
+                        case "poihunt" or "poi":
+                            PoiHuntRuntime.ForceStop(s);
+                            player.SendMessage("[POI Hunt] Force-stopped.");
+                            break;
                         default:
-                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt.");
+                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt, poihunt.");
                             break;
                     }
                 }
@@ -531,8 +575,11 @@ public partial class PatchClass : BasicPatch<Settings>
                         case "hunt":
                             ShowHuntStatus(player, huntOnly: true);
                             break;
+                        case "poihunt" or "poi":
+                            ShowPoiHuntStatus(player);
+                            break;
                         default:
-                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt.");
+                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt, poihunt.");
                             break;
                     }
                 }
@@ -633,6 +680,32 @@ public partial class PatchClass : BasicPatch<Settings>
         }
         else
             player.SendMessage("  Sale: disabled.");
+
+        if (settings?.EnablePoiHunt == true)
+        {
+            lock (PoiHuntRuntime.PoiHuntLock)
+            {
+                var poi = PoiHuntRuntime.ActiveEvent;
+                if (poi != null)
+                {
+                    var currentRound = poi.Rounds.ElementAtOrDefault(poi.CurrentRoundIndex);
+                    if (currentRound != null && currentRound.IsActive)
+                    {
+                        var rem = currentRound.EndTime - DateTime.UtcNow;
+                        var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
+                        player.SendMessage($"  POI Hunt: Round {currentRound.RoundNumber} active — {remStr} remaining.");
+                    }
+                    else
+                    {
+                        player.SendMessage("  POI Hunt: event active — no current round.");
+                    }
+                }
+                else
+                    player.SendMessage("  POI Hunt: no active event.");
+            }
+        }
+        else
+            player.SendMessage("  POI Hunt: disabled.");
     }
 
     static void ShowHuntStatus(Player player, bool huntOnly)
@@ -679,6 +752,43 @@ public partial class PatchClass : BasicPatch<Settings>
             player.SendMessage(pts > 0
                 ? $"[Hunt] Your hunt points this window: {pts:0.##}"
                 : "[Hunt] Your hunt points this window: 0 (no qualifying kills yet).");
+        }
+    }
+
+    static void ShowPoiHuntStatus(Player player)
+    {
+        var settings = CurrentSettings;
+        if (settings?.EnablePoiHunt != true)
+        {
+            player.SendMessage("[WorldEvents] POI Hunt is disabled.");
+            return;
+        }
+
+        lock (PoiHuntRuntime.PoiHuntLock)
+        {
+            var evt = PoiHuntRuntime.ActiveEvent;
+            if (evt == null)
+            {
+                player.SendMessage("[POI Hunt] No active event.");
+                return;
+            }
+
+            var currentRound = evt.Rounds.ElementAtOrDefault(evt.CurrentRoundIndex);
+            if (currentRound != null && currentRound.IsActive)
+            {
+                var rem = currentRound.EndTime - DateTime.UtcNow;
+                var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
+                player.SendMessage($"[POI Hunt] Round {currentRound.RoundNumber} active — {remStr} remaining.");
+            }
+            else
+            {
+                player.SendMessage($"[POI Hunt] Event {evt.EventId} active — no current round.");
+            }
+
+            var myFinds = evt.PlayerFindCounts.TryGetValue(player.Guid.Full, out var f) ? f : 0;
+            player.SendMessage(myFinds > 0
+                ? $"[POI Hunt] Your finds this event: {myFinds}"
+                : "[POI Hunt] You haven't found any locations yet.");
         }
     }
 

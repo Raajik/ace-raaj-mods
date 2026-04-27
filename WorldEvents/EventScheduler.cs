@@ -53,6 +53,7 @@ internal static class EventScheduler
             // Hunt is handled separately — it runs continuously but gets bonus windows
             if (settings.EnableHunt) _rotation.Add(WorldEventType.Hunt);
             if (settings.EnablePoiHunt) _rotation.Add(WorldEventType.PoiHunt);
+            if (settings.EnableScavengerHunt) _rotation.Add(WorldEventType.ScavengerHunt);
 
             EventDurationMinutes = settings.EventDurationMinutes > 0 ? settings.EventDurationMinutes : 60.0;
             EventStartIntervalMinutes = settings.EventStartIntervalMinutes > 0 ? settings.EventStartIntervalMinutes : 45.0;
@@ -148,6 +149,9 @@ internal static class EventScheduler
             case WorldEventType.PoiHunt:
                 started = TryStartPoiHunt(settings, out eventName);
                 break;
+            case WorldEventType.ScavengerHunt:
+                started = TryStartScavengerHunt(settings, out eventName);
+                break;
         }
 
         if (!started)
@@ -187,6 +191,9 @@ internal static class EventScheduler
                 break;
             case WorldEventType.PoiHunt:
                 EndPoiHunt(settings);
+                break;
+            case WorldEventType.ScavengerHunt:
+                EndScavengerHunt(settings);
                 break;
         }
 
@@ -292,6 +299,13 @@ internal static class EventScheduler
         return PoiHuntRuntime.TryStartEvent(s);
     }
 
+    static bool TryStartScavengerHunt(Settings s, out string? name)
+    {
+        name = "Scavenger Hunt";
+        if (!s.EnableScavengerHunt) return false;
+        return ScavengerRuntime.TryStartEvent(s);
+    }
+
     // ── Event Enders ─────────────────────────────────────────────────────
 
     static void EndInvasion(Settings s)
@@ -354,6 +368,11 @@ internal static class EventScheduler
         PoiHuntRuntime.ForceStop(s);
     }
 
+    static void EndScavengerHunt(Settings s)
+    {
+        ScavengerRuntime.ForceStop(s);
+    }
+
     // ── Messaging ────────────────────────────────────────────────────────
 
     static void SendStartMessage(ActiveScheduledEvent evt, Settings s)
@@ -367,6 +386,7 @@ internal static class EventScheduler
             WorldEventType.BonusQuest => $"[EVENT] New bonus quests are available! Check the board! ({duration}m remaining)",
             WorldEventType.Hunt => $"[EVENT] A new hunt has begun! Bonus targets are active! ({duration}m remaining)",
             WorldEventType.PoiHunt => $"[EVENT] A POI Hunt has begun! Find the hidden locations! ({duration}m remaining)",
+            WorldEventType.ScavengerHunt => $"[EVENT] A Scavenger Hunt has begun! Lorewalker Zahir seeks rare items! ({duration}m remaining)",
             _ => $"[EVENT] {evt.EventName} has started! ({duration}m remaining)"
         };
 
@@ -383,6 +403,7 @@ internal static class EventScheduler
             WorldEventType.BonusQuest => $"[EVENT] Bonus quest board rotates in 5 minutes!",
             WorldEventType.Hunt => $"[EVENT] The hunt ends in 5 minutes!",
             WorldEventType.PoiHunt => $"[EVENT] The POI Hunt ends in 5 minutes!",
+            WorldEventType.ScavengerHunt => $"[EVENT] The Scavenger Hunt ends in 5 minutes!",
             _ => $"[EVENT] {evt.EventName} ends in 5 minutes!"
         };
 
@@ -399,6 +420,7 @@ internal static class EventScheduler
             WorldEventType.BonusQuest => $"[EVENT] Bonus quests have rotated!",
             WorldEventType.Hunt => $"[EVENT] The hunt has ended! Check the leaderboards!",
             WorldEventType.PoiHunt => $"[EVENT] The POI Hunt has ended!",
+            WorldEventType.ScavengerHunt => $"[EVENT] The Scavenger Hunt has ended!",
             _ => $"[EVENT] {evt.EventName} has ended!"
         };
 

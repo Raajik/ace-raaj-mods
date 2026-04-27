@@ -12,6 +12,7 @@ public partial class PatchClass : BasicPatch<Settings>
     CancellationTokenSource? _cullTimerCts;
     CancellationTokenSource? _schedulerTimerCts;
     CancellationTokenSource? _poiHuntTimerCts;
+    CancellationTokenSource? _scavengerTimerCts;
     static bool _bonusQuestPatchesApplied;
 
     public PatchClass(BasicMod mod, string settingsName = "Settings.json") : base(mod, settingsName)
@@ -42,6 +43,9 @@ public partial class PatchClass : BasicPatch<Settings>
         PoiHuntRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
         StartPoiHuntBackgroundTimer();
 
+        ScavengerRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
+        StartScavengerHuntBackgroundTimer();
+
         EventScheduler.Initialize(CurrentSettings ?? new Settings());
         StartSchedulerBackgroundTimer();
     }
@@ -61,6 +65,8 @@ public partial class PatchClass : BasicPatch<Settings>
         StartCullBackgroundTimer();
         PoiHuntRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
         StartPoiHuntBackgroundTimer();
+        ScavengerRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
+        StartScavengerHuntBackgroundTimer();
         EventScheduler.Initialize(CurrentSettings ?? new Settings());
         StartSchedulerBackgroundTimer();
         await base.OnWorldOpen();
@@ -75,6 +81,7 @@ public partial class PatchClass : BasicPatch<Settings>
         try { _cullTimerCts?.Cancel(); } catch { }
         try { _schedulerTimerCts?.Cancel(); } catch { }
         try { _poiHuntTimerCts?.Cancel(); } catch { }
+        try { _scavengerTimerCts?.Cancel(); } catch { }
         _bonusQuestPatchesApplied = false;
 
         try
@@ -284,6 +291,32 @@ public partial class PatchClass : BasicPatch<Settings>
         }, token);
     }
 
+    void StartScavengerHuntBackgroundTimer()
+    {
+        try { _scavengerTimerCts?.Cancel(); } catch { }
+
+        _scavengerTimerCts = new CancellationTokenSource();
+        var token = _scavengerTimerCts.Token;
+        _ = Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(30_000, token).ConfigureAwait(false);
+                    var s = CurrentSettings;
+                    if (s?.EnableScavengerHunt == true)
+                        ScavengerRuntime.Tick(s);
+                }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex)
+                {
+                    ModManager.Log($"[WorldEvents] Scavenger Hunt timer: {ex.Message}", ModManager.LogLevel.Warn);
+                }
+            }
+        }, token);
+    }
+
     void TryApplyBonusQuestPatches()
     {
         if (_bonusQuestPatchesApplied) return;
@@ -453,6 +486,9 @@ public partial class PatchClass : BasicPatch<Settings>
             case "6" or "poihunt" or "poi":
                 ShowPoiHuntStatus(player);
                 break;
+            case "7" or "scavenger" or "scavengerhunt":
+                ShowScavengerStatus(player);
+                break;
             case "off":
                 WorldEventsBroadcast.SetOptOut(player, true);
                 break;
@@ -505,8 +541,12 @@ public partial class PatchClass : BasicPatch<Settings>
                         PoiHuntRuntime.ForceStart(s);
                         player.SendMessage("[POI Hunt] Force-started.");
                         break;
+                    case "scavenger" or "scavengerhunt":
+                        ScavengerRuntime.ForceStart(s);
+                        player.SendMessage("[Scavenger Hunt] Force-started.");
+                        break;
                     default:
-                        player.SendMessage($"[Admin] Unknown event '{eventName}'. Use: invasion, cull, sale, hunt, poihunt.");
+                        player.SendMessage($"[Admin] Unknown event '{eventName}'. Use: invasion, cull, sale, hunt, poihunt, scavenger.");
                         break;
                 }
                 break;
@@ -546,8 +586,12 @@ public partial class PatchClass : BasicPatch<Settings>
                             PoiHuntRuntime.ForceStop(s);
                             player.SendMessage("[POI Hunt] Force-stopped.");
                             break;
+                        case "scavenger" or "scavengerhunt":
+                            ScavengerRuntime.ForceStop(s);
+                            player.SendMessage("[Scavenger Hunt] Force-stopped.");
+                            break;
                         default:
-                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt, poihunt.");
+                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt, poihunt, scavenger.");
                             break;
                     }
                 }
@@ -578,8 +622,11 @@ public partial class PatchClass : BasicPatch<Settings>
                         case "poihunt" or "poi":
                             ShowPoiHuntStatus(player);
                             break;
+                        case "scavenger" or "scavengerhunt":
+                            ShowScavengerStatus(player);
+                            break;
                         default:
-                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt, poihunt.");
+                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt, poihunt, scavenger.");
                             break;
                     }
                 }
@@ -706,6 +753,32 @@ public partial class PatchClass : BasicPatch<Settings>
         }
         else
             player.SendMessage("  POI Hunt: disabled.");
+
+        if (settings?.EnableScavengerHunt == true)
+        {
+            lock (ScavengerRuntime.ScavengerLock)
+            {
+                var scav = ScavengerRuntime.ActiveEvent;
+                if (scav != null && scav.IsActive)
+                {
+                    var currentRound = scav.Rounds.ElementAtOrDefault(scav.CurrentRoundIndex);
+                    if (currentRound != null && currentRound.IsActive)
+                    {
+                        var rem = currentRound.EndTime - DateTime.UtcNow;
+                        var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
+                        player.SendMessage($"  Scavenger Hunt: Round {currentRound.RoundNumber} — {currentRound.TargetName} — {remStr} remaining.");
+                    }
+                    else
+                    {
+                        player.SendMessage("  Scavenger Hunt: event active — no current round.");
+                    }
+                }
+                else
+                    player.SendMessage("  Scavenger Hunt: no active event.");
+            }
+        }
+        else
+            player.SendMessage("  Scavenger Hunt: disabled.");
     }
 
     static void ShowHuntStatus(Player player, bool huntOnly)
@@ -789,6 +862,43 @@ public partial class PatchClass : BasicPatch<Settings>
             player.SendMessage(myFinds > 0
                 ? $"[POI Hunt] Your finds this event: {myFinds}"
                 : "[POI Hunt] You haven't found any locations yet.");
+        }
+    }
+
+    static void ShowScavengerStatus(Player player)
+    {
+        var settings = CurrentSettings;
+        if (settings?.EnableScavengerHunt != true)
+        {
+            player.SendMessage("[WorldEvents] Scavenger Hunt is disabled.");
+            return;
+        }
+
+        lock (ScavengerRuntime.ScavengerLock)
+        {
+            var evt = ScavengerRuntime.ActiveEvent;
+            if (evt == null || !evt.IsActive)
+            {
+                player.SendMessage("[Scavenger Hunt] No active event.");
+                return;
+            }
+
+            var currentRound = evt.Rounds.ElementAtOrDefault(evt.CurrentRoundIndex);
+            if (currentRound != null && currentRound.IsActive)
+            {
+                var rem = currentRound.EndTime - DateTime.UtcNow;
+                var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
+                player.SendMessage($"[Scavenger Hunt] Round {currentRound.RoundNumber} — seeking {currentRound.TargetName} — {remStr} remaining.");
+            }
+            else
+            {
+                player.SendMessage($"[Scavenger Hunt] Event {evt.EventId} active — no current round.");
+            }
+
+            var myTurnIns = evt.PlayerTurnInCounts.TryGetValue(player.Guid.Full, out var t) ? t : 0;
+            player.SendMessage(myTurnIns > 0
+                ? $"[Scavenger Hunt] Your turn-ins this event: {myTurnIns}"
+                : "[Scavenger Hunt] You haven't turned in any items yet.");
         }
     }
 

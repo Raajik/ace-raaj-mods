@@ -45,7 +45,9 @@ Always check in this order:
 - **`C:\ACE\`** — Full ACE server installation. Agent has permission to read configs, read/write logs, and launch / shut down `ACE.Server.exe` for testing and bug-fixing.
 - **`A:\ai\projects\ace-sql`** — External ACE SQL content repository; read and document freely.
 - **`A:\obsidian\jeremy\wiki\*`** — Persistent knowledge wiki; read and edit freely.
-- **`B:\Backup\ac custom stuff`** — Stockpile of raw AC custom content (weenies, landblocks, dungeons, spells). Organize by original source (e.g., `/valheel`, `/beyond-ac`, `/killiakta`) when curating. Prune duplicates that have already been absorbed into mod projects.
+- **`B:\Backup\ac custom stuff`** — Stockpile of raw AC custom content (weenies, landblocks, dungeons, spells). Organized by original source (`/valheel`, `/beyond-ac`, `/killiakta`, `/asheron4fun`, `/achard`). Prune duplicates that have already been absorbed into mod projects. See `_INDEX.md` in that directory for full manifest.
+- **`B:\Backup\ac custom stuff\_DB_BACKUPS\`** — ValHeel server MySQL dumps for data mining. See `_DB_BACKUPS\README.md` for snapshot inventory.
+- **`B:\Backup\ac custom stuff\reference\`** — Mod frameworks (ACE.BaseMod, ILT2, DragonMoonAscension, CustomAetheria, ValHeelPublicFork) preserved for reference.
 
 ## 8. Learning & Self-Improvement
 - **Every conversation is a learning opportunity.** When we compact chat or summarize findings, that information **must** be captured:

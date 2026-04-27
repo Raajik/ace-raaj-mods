@@ -198,26 +198,49 @@ internal static class UseOnTargetHooks
 				// If appraisal fallback fails, keep using the raw target param.
 			}
 
-			bool looksLikeGem = LooksLikeGem(intendedTarget!, s);
+			bool canCrush = CanCrushTarget(intendedTarget!, s);
 			if (MortarDebugHits < 25)
 			{
 				MortarDebugHits++;
 				try
 				{
-					ModManager.Log($"[Gemcrafter Debug] Mortar tool used: rawTarget={targetNonNull?.Name} WCID={targetNonNull?.WeenieClassId} WT={targetNonNull?.WeenieType} ItemType={targetNonNull?.ItemType} intended={intendedTarget?.Name} WCID={intendedTarget?.WeenieClassId} WT={intendedTarget?.WeenieType} ItemType={intendedTarget?.ItemType} looksLikeGem={looksLikeGem}", ModManager.LogLevel.Info);
+					ModManager.Log($"[SpellSiphon Debug] Mortar tool used: rawTarget={targetNonNull?.Name} WCID={targetNonNull?.WeenieClassId} WT={targetNonNull?.WeenieType} ItemType={targetNonNull?.ItemType} intended={intendedTarget?.Name} WCID={intendedTarget?.WeenieClassId} WT={intendedTarget?.WeenieType} ItemType={intendedTarget?.ItemType} canCrush={canCrush}", ModManager.LogLevel.Info);
 				}
 				catch
 				{
 				}
 			}
 
-			// 1) Mortar on gem => consume gem + store its spells on the mortar itself.
-			if (looksLikeGem)
+			// 1) Mortar on crushable item => consume item + store its spells on the mortar itself.
+			if (canCrush)
 			{
 				List<int> spellIds = ReadGemSpellIds(intendedTarget!);
 				if (spellIds.Count == 0)
 				{
-					playerNonNull.SendMessage("[Gemcrafter] That gem has no spells to crush.");
+					playerNonNull.SendMessage("[SpellSiphon] That item has no spells to extract.");
+					return false;
+				}
+
+				// Calculate success rate and roll
+				float skill = playerNonNull.GetCreatureSkill(Skill.MagicItemTinkering).Current;
+				float rate = s.BaseSuccessRate + (skill * s.SkillBonusPerPoint);
+				if (s.ReduceBySpellLevel && intendedTarget!.Biota?.PropertiesSpellBook != null)
+				{
+					foreach (var spellId in intendedTarget.Biota.PropertiesSpellBook.Keys)
+					{
+						var spell = new ACE.Server.Entity.Spell(spellId);
+						if (spell.Level > 6)
+							rate -= 2.0f * (spell.Level - 6);
+					}
+				}
+				rate = Math.Clamp(rate, 0f, s.MaxSuccessRate);
+				float roll = (float)ThreadSafeRandom.Next(0.0f, 100.0f);
+
+				if (roll > rate)
+				{
+					InventoryHelpers.TryRemoveOneFromPlayer(playerNonNull, intendedTarget!, s.Verbose, out _, out _);
+					playerNonNull.SendMessage("Your mortar shatters the item but fails to capture any spells.");
+					ModManager.Log($"[SpellSiphon] {playerNonNull.Name} failed to crush {intendedTarget.Name} (roll {roll:F1}% > {rate:F1}%).");
 					return false;
 				}
 
@@ -225,22 +248,22 @@ internal static class UseOnTargetHooks
 				if (!consumed)
 				{
 					if (s.Verbose)
-						playerNonNull.SendMessage($"[Gemcrafter] Consume debug: {debug}");
-					playerNonNull.SendMessage("[Gemcrafter] Failed to consume the gem.");
+						playerNonNull.SendMessage($"[SpellSiphon] Consume debug: {debug}");
+					playerNonNull.SendMessage("[SpellSiphon] Failed to consume the item.");
 					return false;
 				}
 
 				bool wrote = ItemPayload.TryWriteSpellPayload(__instance, spellIds);
 				if (!wrote)
 				{
-					playerNonNull.SendMessage("[Gemcrafter] Failed to infuse the mortar. (payload write failed)");
+					playerNonNull.SendMessage("[SpellSiphon] Failed to infuse the mortar. (payload write failed)");
 					return false;
 				}
 
 				try { __instance.UiEffects |= UiEffects.Magical; }
 				catch { }
 
-				playerNonNull.SendMessage("[Gemcrafter] You infuse the mortar. Now use it on equipment to apply the spells.");
+				playerNonNull.SendMessage("[SpellSiphon] You infuse the mortar. Now use it on equipment to apply the spells.");
 				return false;
 			}
 
@@ -291,10 +314,27 @@ internal static class UseOnTargetHooks
 		return true;
 	}
 
-	private static bool LooksLikeGem(WorldObject item, Settings s)
+	private static bool CanCrushTarget(WorldObject item, Settings s)
 	{
 		if (s.GemWcidAllowlist != null && s.GemWcidAllowlist.Count > 0)
 			return s.GemWcidAllowlist.Contains(item.WeenieClassId);
+
+		if (s.EnableAnyItemCrushing)
+		{
+			bool hasSpells = (item.Biota?.PropertiesSpellBook?.Count > 0) || (item.SpellDID > 0);
+			if (!hasSpells)
+				return false;
+			if (s.NonCrushableWcids.Contains(item.WeenieClassId))
+				return false;
+			if (!s.AllowAttunedAndBonded)
+			{
+				bool isAttuned = (item.Attuned ?? AttunedStatus.Normal) >= AttunedStatus.Attuned;
+				bool isBonded = (item.Bonded ?? BondedStatus.Normal) >= BondedStatus.Bonded;
+				if (isAttuned || isBonded)
+					return false;
+			}
+			return true;
+		}
 
 		return (item.ItemType & ItemType.Gem) != 0 || item.WeenieType == WeenieType.Gem;
 	}

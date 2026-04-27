@@ -522,6 +522,8 @@ internal static class SpellSiphonCommands
 	{
 		string query = string.Join(' ', parameters).Trim();
 		int shown = 0;
+		Settings? s = settings ?? PatchClass.Settings;
+		bool anyItemMode = s?.EnableAnyItemCrushing ?? false;
 
 		try
 		{
@@ -530,15 +532,30 @@ internal static class SpellSiphonCommands
 				if (item == null)
 					continue;
 
-				bool looksLikeGem = (item.ItemType & ItemType.Gem) != 0 || item.WeenieType == WeenieType.Gem;
-				if (!looksLikeGem)
-					continue;
+				bool isCandidate;
+				if (anyItemMode)
+				{
+					isCandidate = (item.Biota?.PropertiesSpellBook?.Count > 0) || (item.SpellDID > 0);
+					if (!isCandidate) continue;
+					if (s?.NonCrushableWcids.Contains(item.WeenieClassId) ?? false) continue;
+					if (!(s?.AllowAttunedAndBonded ?? true))
+					{
+						bool isAttuned = (item.Attuned ?? AttunedStatus.Normal) >= AttunedStatus.Attuned;
+						bool isBonded = (item.Bonded ?? BondedStatus.Normal) >= BondedStatus.Bonded;
+						if (isAttuned || isBonded) continue;
+					}
+				}
+				else
+				{
+					isCandidate = (item.ItemType & ItemType.Gem) != 0 || item.WeenieType == WeenieType.Gem;
+					if (!isCandidate) continue;
+				}
 
 				if (requireTransferable)
 				{
 					// Only show gems that have at least one spell that would transfer.
 					// This uses the same name-fragment filter as the apply step.
-					Settings? s = settings ?? PatchClass.Settings;
+					// s already declared above
 					List<int> ids = ReadGemSpellIds(item);
 					bool anyTransferable = false;
 					int transferableCount = 0;

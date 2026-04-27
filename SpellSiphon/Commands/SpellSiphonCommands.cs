@@ -108,7 +108,7 @@ internal static class SpellSiphonCommands
 		WorldObject? gem = null;
 		if (parameters.Length > 0)
 		{
-			gem = FindInventoryItemByQuery(player, parameters, requireGem: true, out int matches);
+			gem = FindInventoryItemByQuery(player, parameters, requireGem: !s.EnableAnyItemCrushing, out int matches);
 			if (gem == null)
 			{
 				player.SendMessage("[Gemcrafter] No matching gem found in your inventory.");
@@ -132,12 +132,21 @@ internal static class SpellSiphonCommands
 			return;
 		}
 
-		bool looksLikeGem = (gem.ItemType & ItemType.Gem) != 0 || gem.WeenieType == WeenieType.Gem;
-		if (!looksLikeGem)
+		if (!s.EnableAnyItemCrushing)
 		{
-			player.SendMessage($"[Gemcrafter] Appraised item is not a gem (WCID {gem.WeenieClassId}, WT {gem.WeenieType}, ItemType {gem.ItemType}).");
-			player.SendMessage("[Gemcrafter] Try: /gemcrush <wcid|name fragment>  (listing gem candidates)");
-			PrintGemCandidates(player, Array.Empty<string>());
+			bool looksLikeGem = (gem.ItemType & ItemType.Gem) != 0 || gem.WeenieType == WeenieType.Gem;
+			if (!looksLikeGem)
+			{
+				player.SendMessage($"[Gemcrafter] Appraised item is not a gem (WCID {gem.WeenieClassId}, WT {gem.WeenieType}, ItemType {gem.ItemType}).");
+				player.SendMessage("[Gemcrafter] Try: /gemcrush <wcid|name fragment>  (listing gem candidates)");
+				PrintGemCandidates(player, Array.Empty<string>());
+				return;
+			}
+		}
+
+		if (!MortarAndPestleHooks.CanCrushItem(player, gem, s, out string? reason))
+		{
+			player.SendMessage($"[Gemcrafter] {reason}");
 			return;
 		}
 
@@ -146,6 +155,16 @@ internal static class SpellSiphonCommands
 		if (spellIds.Count == 0)
 		{
 			player.SendMessage("[Gemcrafter] That gem has no spells to crush.");
+			return;
+		}
+
+		float successRate = MortarAndPestleHooks.CalculateSuccessRate(player, gem, s);
+		float roll = (float)ThreadSafeRandom.Next(0.0f, 100.0f);
+		if (roll > successRate)
+		{
+			InventoryHelpers.TryRemoveOneFromPlayer(player, gem, s.Verbose, out _, out _);
+			player.SendMessage("Your mortar shatters the item but fails to capture any spells.");
+			ModManager.Log($"[SpellSiphon] {player.Name} failed to crush {gem.Name} (roll {roll:F1}% > {successRate:F1}%).");
 			return;
 		}
 

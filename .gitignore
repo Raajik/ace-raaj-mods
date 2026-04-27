@@ -62,3 +62,4 @@ Work-In-Progress/
 
 # Local reference material (ACE source, world DB dumps — not part of mod repo)
 .references/
+.worktrees/

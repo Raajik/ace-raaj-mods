@@ -427,7 +427,9 @@ public enum WorldEventType
     Invasion,
     Cull,
     Sale,
-    BonusQuest
+    BonusQuest,
+    PoiHunt,
+    ScavengerHunt
 }
 
 /// <summary>

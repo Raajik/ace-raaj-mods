@@ -1,6 +1,7 @@
 ﻿using WorldEvents.Invasion.Models;
 using WorldEvents.Sale.Models;
 using WorldEvents.Cull.Models;
+using WorldEvents.PoiHunt.Models;
 
 namespace WorldEvents;
 
@@ -556,6 +557,19 @@ public sealed class Settings
     public string SaleTownsDoc { get; init; } = "Towns eligible for a sale. Landblocks: list of top-16-bit landblock IDs (use /loc in-game — the high 4 hex digits). HasMasterMage: include the local Master Mage in the sale.";
     public List<SaleTownSettings> SaleTowns { get; set; } = DefaultSaleTowns();
 
+    // ── POI Hunt ──────────────────────────────────────────────────────────
+
+    [JsonPropertyName("// PoiHuntSettings")]
+    public string PoiHuntSettingsDoc { get; init; } = "POI Hunt world event: server spawns a narrator NPC who gives clues to a point-of-interest location; players race to find it.";
+
+    [JsonPropertyName("// EnablePoiHunt")]
+    public string EnablePoiHuntDoc { get; init; } = "Master switch for the POI Hunt event.";
+    public bool EnablePoiHunt { get; set; } = true;
+
+    [JsonPropertyName("// PoiHunt")]
+    public string PoiHuntDoc { get; init; } = "POI Hunt configuration.";
+    public PoiHuntSettings PoiHunt { get; set; } = new();
+
     [JsonPropertyName("// SoloCompetitorBonus")]
     public string _doc_SoloCompetitorBonus { get; set; } = "Bonus applied when only one player participates in a world event.";
     [JsonPropertyName("SoloCompetitorBonus")]
@@ -770,6 +784,59 @@ public sealed class Settings
         new() { TownName = "Withered",        EventName = "WitherAttack", Mode = InvasionMode.Scripted },
         new() { TownName = "Ayan Baqur",      EventName = "AyanAttack" },
     };
+}
+
+public class PoiHuntSettings
+{
+    [JsonPropertyName("// PoiLocations")]
+    public string _doc_PoiLocations { get; set; } = "List of POI locations eligible for the hunt.";
+    [JsonPropertyName("PoiLocations")]
+    public List<PoiLocation> PoiLocations { get; set; } = new();
+
+    [JsonPropertyName("// ClueIntervalMinutes")]
+    public string _doc_ClueIntervalMinutes { get; set; } = "Minutes between narrator clue broadcasts.";
+    [JsonPropertyName("ClueIntervalMinutes")]
+    public int ClueIntervalMinutes { get; set; } = 5;
+
+    [JsonPropertyName("// RoundDurationMinutes")]
+    public string _doc_RoundDurationMinutes { get; set; } = "How long each round lasts in minutes.";
+    [JsonPropertyName("RoundDurationMinutes")]
+    public int RoundDurationMinutes { get; set; } = 15;
+
+    [JsonPropertyName("// MinRounds")]
+    public string _doc_MinRounds { get; set; } = "Minimum number of rounds per event.";
+    [JsonPropertyName("MinRounds")]
+    public int MinRounds { get; set; } = 4;
+
+    [JsonPropertyName("// MaxRounds")]
+    public string _doc_MaxRounds { get; set; } = "Maximum number of rounds per event.";
+    [JsonPropertyName("MaxRounds")]
+    public int MaxRounds { get; set; } = 15;
+
+    [JsonPropertyName("// NarratorBaseWcids")]
+    public string _doc_NarratorBaseWcids { get; set; } = "Base WCIDs for narrator NPCs (randomly selected each round).";
+    [JsonPropertyName("NarratorBaseWcids")]
+    public List<uint> NarratorBaseWcids { get; set; } = new();
+
+    [JsonPropertyName("// NarratorRobeWcids")]
+    public string _doc_NarratorRobeWcids { get; set; } = "Robe WCIDs for narrator NPC appearance (randomly selected each round).";
+    [JsonPropertyName("NarratorRobeWcids")]
+    public List<uint> NarratorRobeWcids { get; set; } = new() { 28256, 28257 };
+
+    [JsonPropertyName("// RewardPool")]
+    public string _doc_RewardPool { get; set; } = "Loot pool ID used for rewards.";
+    [JsonPropertyName("RewardPool")]
+    public string RewardPool { get; set; } = "Default";
+
+    [JsonPropertyName("// XpPerFind")]
+    public string _doc_XpPerFind { get; set; } = "XP granted to each player who finds the POI.";
+    [JsonPropertyName("XpPerFind")]
+    public int XpPerFind { get; set; } = 5_000_000;
+
+    [JsonPropertyName("// LootForTopN")]
+    public string _doc_LootForTopN { get; set; } = "How many top finders receive loot rewards at event end.";
+    [JsonPropertyName("LootForTopN")]
+    public int LootForTopN { get; set; } = 3;
 }
 
 public class SoloCompetitorBonusSettings

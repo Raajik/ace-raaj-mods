@@ -1,4 +1,4 @@
-namespace Gemcrafter.Features;
+namespace SpellSiphon.Features;
 
 internal static class InfusedPowderApplyHooks
 {
@@ -53,11 +53,11 @@ internal static class InfusedPowderApplyHooks
 			if (added >= max)
 				break;
 
-			string name = GemLootMutator.TryGetSpellName(id);
+			string name = LootMutator.TryGetSpellName(id);
 			if (ContainsAny(name, s.ExcludeTransferSpellNameContains))
 				continue;
 
-			if (GemLootMutator.TryAddSpellId(target, id))
+			if (LootMutator.TryAddSpellId(target, id))
 			{
 				added++;
 				addedNames.Add(name);

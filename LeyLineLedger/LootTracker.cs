@@ -290,6 +290,35 @@ internal static class LootTracker
         }
     }
 
+    public static List<(uint Wcid, string Name, int Count)> GetHotItems(int lookbackDays, int minCount)
+    {
+        var results = new List<(uint, string, int)>();
+
+        try
+        {
+            var counts = AggregateLootCounts();
+            // Note: lookbackDays is not enforced because current storage (player properties)
+            // does not retain timestamps. Time-based filtering requires a future refactor
+            // to a dated log format (e.g., JSONL with timestamps).
+            var filtered = counts
+                .Where(kv => kv.Value >= minCount)
+                .OrderByDescending(kv => kv.Value)
+                .ToList();
+
+            foreach (var (wcid, count) in filtered)
+            {
+                var name = GetItemName(wcid);
+                results.Add((wcid, name, (int)count));
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger] LootTracker.GetHotItems failed: {ex}", ModManager.LogLevel.Error);
+        }
+
+        return results;
+    }
+
     internal static void ShowLootReport(Session session)
     {
         try

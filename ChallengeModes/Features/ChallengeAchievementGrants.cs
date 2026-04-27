@@ -236,8 +236,8 @@ public static class ChallengeAchievementGrants
         int cap = s.ChallengeBonusSegmentCapLevel > 0 ? s.ChallengeBonusSegmentCapLevel : 300;
         float r = s.ChallengeBonusPercentPerLevel;
 
-        int c = __instance.GetProperty(FakeInt.ChallengeCompletionCount) ?? 0;
-        int m = __instance.GetProperty(FakeInt.ChallengeRunMaxLevel) ?? 0;
+        int c = __instance.GetProperty((FakeInt)11000) ?? 0;
+        int m = __instance.GetProperty((FakeInt)11001) ?? 0;
         m = Math.Max(m, newLevel);
 
         // Skill credits (per challenge track, once each)
@@ -291,8 +291,8 @@ public static class ChallengeAchievementGrants
                 $"Challenge segment complete (level {segmentEnd}): +{cap * r:0.####}% banked toward XP/luminance; furthest progress resets for the next climb (skill credits are not reset).");
         }
 
-        __instance.SetProperty(FakeInt.ChallengeRunMaxLevel, m);
-        __instance.SetProperty(FakeInt.ChallengeCompletionCount, c);
+        __instance.SetProperty((FakeInt)11001, m);
+        __instance.SetProperty((FakeInt)11000, c);
     }
 
     // Banked (completed segments) + in-run furthest toward current segment; see Settings ChallengeBonusPercentPerLevel / SegmentCapLevel.
@@ -314,8 +314,8 @@ public static class ChallengeAchievementGrants
         float r = s.ChallengeBonusPercentPerLevel;
         int cap = s.ChallengeBonusSegmentCapLevel > 0 ? s.ChallengeBonusSegmentCapLevel : 300;
 
-        int c = player.GetProperty(FakeInt.ChallengeCompletionCount) ?? 0;
-        int m = player.GetProperty(FakeInt.ChallengeRunMaxLevel) ?? 0;
+        int c = player.GetProperty((FakeInt)11000) ?? 0;
+        int m = player.GetProperty((FakeInt)11001) ?? 0;
         int lvl = player.Level ?? 1;
 
         double progressLevels;

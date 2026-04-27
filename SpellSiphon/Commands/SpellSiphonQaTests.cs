@@ -1,8 +1,8 @@
-namespace Gemcrafter.Commands;
+namespace SpellSiphon.Commands;
 
 using AceModQa;
 
-internal sealed class GemcrafterSmokeTest : IQaTestCase
+internal sealed class SpellSiphonSmokeTest : IQaTestCase
 {
 	public string Name => "smoke";
 
@@ -12,7 +12,7 @@ internal sealed class GemcrafterSmokeTest : IQaTestCase
 		if (s == null || !s.Enabled)
 			return QaResult.Fail("Settings not loaded or mod disabled.");
 
-		return GemcrafterQaCommands.RunSmokeForRunner(player, s);
+		return SpellSiphonQaCommands.RunSmokeForRunner(player, s);
 	}
 }
 

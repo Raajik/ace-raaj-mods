@@ -57,6 +57,11 @@ internal static class SaleRuntime
                     _activeSale = null;
                     _nextSaleUtc = now.AddMinutes(s.SaleIntervalMinutes);
                     SalePersistence.ClearActiveSale();
+                    if (ended.ParticipantCount == 1 && s.SoloCompetitorBonus.Enable)
+                    {
+                        var playerName = PlayerManager.GetOnlinePlayer(ended.ParticipantGuids[0])?.Name ?? "Unknown";
+                        WorldEventsBroadcast.Send(s.SoloCompetitorBonus.BroadcastMessage.Replace("{Name}", playerName));
+                    }
                     SaleBroadcast.AnnounceSaleEnd(ended);
                 }
                 return;
@@ -168,6 +173,12 @@ internal static class SaleRuntime
             _activeSale = null;
             _nextSaleUtc = DateTime.UtcNow;
             SalePersistence.ClearActiveSale();
+            var s = PatchClass.CurrentSettings ?? new Settings();
+            if (ended.ParticipantCount == 1 && s.SoloCompetitorBonus.Enable)
+            {
+                var playerName = PlayerManager.GetOnlinePlayer(ended.ParticipantGuids[0])?.Name ?? "Unknown";
+                WorldEventsBroadcast.Send(s.SoloCompetitorBonus.BroadcastMessage.Replace("{Name}", playerName));
+            }
             SaleBroadcast.AnnounceSaleEnd(ended);
         }
     }
@@ -198,7 +209,24 @@ internal static class SaleRuntime
             _activeSale = null;
             // Do NOT set _nextSaleUtc — scheduler handles timing
             SalePersistence.ClearActiveSale();
+            var s = PatchClass.CurrentSettings ?? new Settings();
+            if (ended.ParticipantCount == 1 && s.SoloCompetitorBonus.Enable)
+            {
+                var playerName = PlayerManager.GetOnlinePlayer(ended.ParticipantGuids[0])?.Name ?? "Unknown";
+                WorldEventsBroadcast.Send(s.SoloCompetitorBonus.BroadcastMessage.Replace("{Name}", playerName));
+            }
             SaleBroadcast.AnnounceSaleEnd(ended);
+        }
+    }
+
+    internal static void RecordParticipant(uint playerGuid)
+    {
+        lock (_lock)
+        {
+            if (_activeSale == null) return;
+            if (_activeSale.ParticipantGuids.Contains(playerGuid)) return;
+            _activeSale.ParticipantGuids.Add(playerGuid);
+            SalePersistence.SaveActiveSale(_activeSale);
         }
     }
 

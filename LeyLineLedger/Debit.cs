@@ -168,7 +168,31 @@ public class Debit
             __instance.Writer.WriteString16L(string.Empty);
         }
 
-        var numItems = vendor.DefaultItemsForSale.Count + vendor.UniqueItemsForSale.Count;
+        var validDefaultItems = new List<WorldObject>();
+        foreach (var item in vendor.DefaultItemsForSale.Values)
+        {
+            var weenie = DatabaseManager.World.GetCachedWeenie(item.WeenieClassId);
+            if (weenie == null)
+            {
+                ModManager.Log($"[LeyLineLedger] Vendor {vendor.Name} merchandise includes missing WCID {item.WeenieClassId}. Skipping.", ModManager.LogLevel.Warn);
+                continue;
+            }
+            validDefaultItems.Add(item);
+        }
+
+        var validUniqueItems = new List<WorldObject>();
+        foreach (var item in vendor.UniqueItemsForSale.Values)
+        {
+            var weenie = DatabaseManager.World.GetCachedWeenie(item.WeenieClassId);
+            if (weenie == null)
+            {
+                ModManager.Log($"[LeyLineLedger] Vendor {vendor.Name} merchandise includes missing WCID {item.WeenieClassId}. Skipping.", ModManager.LogLevel.Warn);
+                continue;
+            }
+            validUniqueItems.Add(item);
+        }
+
+        var numItems = validDefaultItems.Count + validUniqueItems.Count;
 
         __instance.Writer.Write(numItems);
 
@@ -181,13 +205,13 @@ public class Debit
         //    obj.SerializeGameDataOnly(vend.Writer);
         //});
         //For each default/unique item write the stack size
-        foreach (var item in vendor.DefaultItemsForSale.Values)
+        foreach (var item in validDefaultItems)
         {
             int stackSize = item.VendorShopCreateListStackSize ?? item.StackSize ?? 1; // -1 = unlimited supply
             __instance.Writer.Write(stackSize & 0xFFFFFF | -1 << 24);
             item.SerializeGameDataOnly(__instance.Writer);
         }
-        foreach (var item in vendor.UniqueItemsForSale.Values)
+        foreach (var item in validUniqueItems)
         {
             int stackSize = item.VendorShopCreateListStackSize ?? item.StackSize ?? 1; // -1 = unlimited supply
             __instance.Writer.Write(stackSize & 0xFFFFFF | -1 << 24);

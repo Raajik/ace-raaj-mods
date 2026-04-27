@@ -9,6 +9,10 @@ public class Settings
     public string EnableLockpickAutoBankDoc { get; init; } = "When true, lockpick items picked up by characters with Lockpick trained/spec'd are auto-converted to banked Lockpick Durability (PropertyInt64 40130). Limitless Lockpick (WCID 30253) activates passive regen via BetterSupportSkills.";
     public bool EnableLockpickAutoBank { get; set; } = true;
 
+    [JsonPropertyName("// ValidateWeeniesAtStartup")]
+    public string ValidateWeeniesAtStartupDoc { get; init; } = "When true, validates required weenies at mod startup and logs missing or mismatched entries.";
+    public bool ValidateWeeniesAtStartup { get; set; } = true;
+
     [JsonPropertyName("// VendorsUseBank")]
     public string VendorsUseBankDoc { get; init; } = "When true, vendor buy/sell uses bank balances instead of only inventory pyreals.";
     public bool VendorsUseBank { get; set; } = true;

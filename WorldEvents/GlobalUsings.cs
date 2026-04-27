@@ -51,3 +51,4 @@ global using WorldEvents.BonusQuest.Models;
 global using WorldEvents.Invasion.Models;
 global using WorldEvents.Sale.Models;
 global using WorldEvents.Cull.Models;
+global using WorldEvents.ScavengerHunt.Models;

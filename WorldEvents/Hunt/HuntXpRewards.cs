@@ -2,7 +2,7 @@
 
 internal static class HuntXpRewards
 {
-    internal static bool TryGrantPlacementXp(Settings settings, int zeroBasedRank, Player player, out long amount, out string formulaSummary)
+    internal static bool TryGrantPlacementXp(Settings settings, int zeroBasedRank, Player player, int participantCount, out long amount, out string formulaSummary)
     {
         amount = 0;
         formulaSummary = "";
@@ -23,6 +23,9 @@ internal static class HuntXpRewards
             grant = Math.Max(grant, settings.HuntPlacementXpMinRest);
         if (grant <= 0)
             return false;
+
+        if (participantCount == 1 && settings.SoloCompetitorBonus.Enable)
+            grant = (long)(grant * settings.SoloCompetitorBonus.XpMultiplier);
 
         HuntXpInterop.GrantQuestXpWithoutMultiplier(player, grant);
         // Grant path undoes shard xp_modifier; message uses est. to bar (incl. challenge milestone) for parity with Challenge PreGrantXP.

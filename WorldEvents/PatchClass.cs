@@ -11,6 +11,8 @@ public partial class PatchClass : BasicPatch<Settings>
     CancellationTokenSource? _saleTimerCts;
     CancellationTokenSource? _cullTimerCts;
     CancellationTokenSource? _schedulerTimerCts;
+    CancellationTokenSource? _poiHuntTimerCts;
+    CancellationTokenSource? _scavengerTimerCts;
     static bool _bonusQuestPatchesApplied;
 
     public PatchClass(BasicMod mod, string settingsName = "Settings.json") : base(mod, settingsName)
@@ -38,6 +40,12 @@ public partial class PatchClass : BasicPatch<Settings>
         CullRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
         StartCullBackgroundTimer();
 
+        PoiHuntRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
+        StartPoiHuntBackgroundTimer();
+
+        ScavengerRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
+        StartScavengerHuntBackgroundTimer();
+
         EventScheduler.Initialize(CurrentSettings ?? new Settings());
         StartSchedulerBackgroundTimer();
     }
@@ -55,6 +63,10 @@ public partial class PatchClass : BasicPatch<Settings>
         StartSaleBackgroundTimer();
         CullRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
         StartCullBackgroundTimer();
+        PoiHuntRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
+        StartPoiHuntBackgroundTimer();
+        ScavengerRuntime.LoadFromDisk(CurrentSettings ?? new Settings());
+        StartScavengerHuntBackgroundTimer();
         EventScheduler.Initialize(CurrentSettings ?? new Settings());
         StartSchedulerBackgroundTimer();
         await base.OnWorldOpen();
@@ -68,6 +80,8 @@ public partial class PatchClass : BasicPatch<Settings>
         try { _saleTimerCts?.Cancel(); } catch { }
         try { _cullTimerCts?.Cancel(); } catch { }
         try { _schedulerTimerCts?.Cancel(); } catch { }
+        try { _poiHuntTimerCts?.Cancel(); } catch { }
+        try { _scavengerTimerCts?.Cancel(); } catch { }
         _bonusQuestPatchesApplied = false;
 
         try
@@ -251,6 +265,58 @@ public partial class PatchClass : BasicPatch<Settings>
         }, token);
     }
 
+    void StartPoiHuntBackgroundTimer()
+    {
+        try { _poiHuntTimerCts?.Cancel(); } catch { }
+
+        _poiHuntTimerCts = new CancellationTokenSource();
+        var token = _poiHuntTimerCts.Token;
+        _ = Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(30_000, token).ConfigureAwait(false);
+                    var s = CurrentSettings;
+                    if (s?.EnablePoiHunt == true)
+                        PoiHuntRuntime.Tick(s);
+                }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex)
+                {
+                    ModManager.Log($"[WorldEvents] POI Hunt timer: {ex.Message}", ModManager.LogLevel.Warn);
+                }
+            }
+        }, token);
+    }
+
+    void StartScavengerHuntBackgroundTimer()
+    {
+        try { _scavengerTimerCts?.Cancel(); } catch { }
+
+        _scavengerTimerCts = new CancellationTokenSource();
+        var token = _scavengerTimerCts.Token;
+        _ = Task.Run(async () =>
+        {
+            while (!token.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(30_000, token).ConfigureAwait(false);
+                    var s = CurrentSettings;
+                    if (s?.EnableScavengerHunt == true)
+                        ScavengerRuntime.Tick(s);
+                }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex)
+                {
+                    ModManager.Log($"[WorldEvents] Scavenger Hunt timer: {ex.Message}", ModManager.LogLevel.Warn);
+                }
+            }
+        }, token);
+    }
+
     void TryApplyBonusQuestPatches()
     {
         if (_bonusQuestPatchesApplied) return;
@@ -304,7 +370,7 @@ public partial class PatchClass : BasicPatch<Settings>
 
     static void ShowEventsLeaderboard(Player player)
     {
-        var board = BonusQuestParticipation.GetLeaderboard();
+        var board = ParticipationLedger.GetLeaderboard();
         if (board.Count == 0)
         {
             player.SendMessage("[WorldEvents] No participation data yet.");
@@ -315,13 +381,13 @@ public partial class PatchClass : BasicPatch<Settings>
         for (var i = 0; i < top.Count; i++)
         {
             var entry = top[i];
-            player.SendMessage($"  {i + 1}. {entry.AccountName} — {entry.TotalEventCompletions} completion{(entry.TotalEventCompletions == 1 ? "" : "s")}");
+            player.SendMessage($"  {i + 1}. Account {entry.AccountId} — {entry.TotalEventCompletions} completion{(entry.TotalEventCompletions == 1 ? "" : "s")}");
         }
     }
 
     static void ShowQbLeaderboard(Player player)
     {
-        var board = BonusQuestParticipation.GetLeaderboard();
+        var board = ParticipationLedger.GetLeaderboard();
         var qbBoard = board
             .Where(e => e.CompletionsByEventType.ContainsKey("BonusQuest"))
             .OrderByDescending(e => e.CompletionsByEventType["BonusQuest"])
@@ -341,13 +407,13 @@ public partial class PatchClass : BasicPatch<Settings>
             var unique = entry.UniqueQuestNamesByEventType.TryGetValue("BonusQuest", out var names) ? names.Count : total;
             var repeats = total - unique;
             var repeatStr = repeats > 0 ? $", {repeats} repeat{(repeats == 1 ? "" : "s")}" : "";
-            player.SendMessage($"  {i + 1}. {entry.AccountName} — {unique} unique{repeatStr}");
+            player.SendMessage($"  {i + 1}. Account {entry.AccountId} — {unique} unique{repeatStr}");
         }
     }
 
     // Admin: per-account participation detail.
     [CommandHandler("worldevents", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld, -1,
-        "WorldEvents admin. Usage: /worldevents participation <accountname>")]
+        "WorldEvents admin. Usage: /worldevents participation <accountId>")]
     public static void HandleWorldEventsAdmin(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player) return;
@@ -355,14 +421,19 @@ public partial class PatchClass : BasicPatch<Settings>
         var sub = parameters.Length > 0 ? parameters[0].Trim().ToLowerInvariant() : "";
         if (sub == "participation" && parameters.Length > 1)
         {
-            var accountName = parameters[1];
-            var summary = BonusQuestParticipation.GetByAccountName(accountName);
-            if (summary == null)
+            if (!uint.TryParse(parameters[1], out var accountId))
             {
-                player.SendMessage($"[WorldEvents] No participation data for account '{accountName}'.");
+                player.SendMessage("[WorldEvents] Invalid account id.");
                 return;
             }
-            player.SendMessage($"[WorldEvents] {summary.AccountName} (id:{summary.AccountId})");
+
+            var summary = ParticipationLedger.Load(accountId);
+            if (summary.TotalEventCompletions == 0)
+            {
+                player.SendMessage($"[WorldEvents] No participation data for account {accountId}.");
+                return;
+            }
+            player.SendMessage($"[WorldEvents] Account {summary.AccountId}");
             player.SendMessage($"  Total completions: {summary.TotalEventCompletions}");
             foreach (var kvp in summary.CompletionsByEventType)
                 player.SendMessage($"  {kvp.Key}: {kvp.Value}");
@@ -373,7 +444,7 @@ public partial class PatchClass : BasicPatch<Settings>
         }
         else
         {
-            player.SendMessage("[WorldEvents] Usage: /worldevents participation <accountname>");
+            player.SendMessage("[WorldEvents] Usage: /worldevents participation <accountId>");
         }
     }
 
@@ -411,6 +482,12 @@ public partial class PatchClass : BasicPatch<Settings>
                 break;
             case "5" or "sale":
                 ShowSaleStatus(player);
+                break;
+            case "6" or "poihunt" or "poi":
+                ShowPoiHuntStatus(player);
+                break;
+            case "7" or "scavenger" or "scavengerhunt":
+                ShowScavengerStatus(player);
                 break;
             case "off":
                 WorldEventsBroadcast.SetOptOut(player, true);
@@ -460,8 +537,16 @@ public partial class PatchClass : BasicPatch<Settings>
                         HuntRuntime.ForceStart(s);
                         player.SendMessage("[Hunt] Force-started.");
                         break;
+                    case "poihunt" or "poi":
+                        PoiHuntRuntime.ForceStart(s);
+                        player.SendMessage("[POI Hunt] Force-started.");
+                        break;
+                    case "scavenger" or "scavengerhunt":
+                        ScavengerRuntime.ForceStart(s);
+                        player.SendMessage("[Scavenger Hunt] Force-started.");
+                        break;
                     default:
-                        player.SendMessage($"[Admin] Unknown event '{eventName}'. Use: invasion, cull, sale, hunt.");
+                        player.SendMessage($"[Admin] Unknown event '{eventName}'. Use: invasion, cull, sale, hunt, poihunt, scavenger.");
                         break;
                 }
                 break;
@@ -497,8 +582,16 @@ public partial class PatchClass : BasicPatch<Settings>
                             HuntRuntime.ForceStop();
                             player.SendMessage("[Hunt] Force-stopped.");
                             break;
+                        case "poihunt" or "poi":
+                            PoiHuntRuntime.ForceStop(s);
+                            player.SendMessage("[POI Hunt] Force-stopped.");
+                            break;
+                        case "scavenger" or "scavengerhunt":
+                            ScavengerRuntime.ForceStop(s);
+                            player.SendMessage("[Scavenger Hunt] Force-stopped.");
+                            break;
                         default:
-                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt.");
+                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt, poihunt, scavenger.");
                             break;
                     }
                 }
@@ -526,8 +619,14 @@ public partial class PatchClass : BasicPatch<Settings>
                         case "hunt":
                             ShowHuntStatus(player, huntOnly: true);
                             break;
+                        case "poihunt" or "poi":
+                            ShowPoiHuntStatus(player);
+                            break;
+                        case "scavenger" or "scavengerhunt":
+                            ShowScavengerStatus(player);
+                            break;
                         default:
-                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt.");
+                            player.SendMessage($"[Admin] Unknown event '{target}'. Use: invasion, cull, sale, hunt, poihunt, scavenger.");
                             break;
                     }
                 }
@@ -628,6 +727,58 @@ public partial class PatchClass : BasicPatch<Settings>
         }
         else
             player.SendMessage("  Sale: disabled.");
+
+        if (settings?.EnablePoiHunt == true)
+        {
+            lock (PoiHuntRuntime.PoiHuntLock)
+            {
+                var poi = PoiHuntRuntime.ActiveEvent;
+                if (poi != null)
+                {
+                    var currentRound = poi.Rounds.ElementAtOrDefault(poi.CurrentRoundIndex);
+                    if (currentRound != null && currentRound.IsActive)
+                    {
+                        var rem = currentRound.EndTime - DateTime.UtcNow;
+                        var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
+                        player.SendMessage($"  POI Hunt: Round {currentRound.RoundNumber} active — {remStr} remaining.");
+                    }
+                    else
+                    {
+                        player.SendMessage("  POI Hunt: event active — no current round.");
+                    }
+                }
+                else
+                    player.SendMessage("  POI Hunt: no active event.");
+            }
+        }
+        else
+            player.SendMessage("  POI Hunt: disabled.");
+
+        if (settings?.EnableScavengerHunt == true)
+        {
+            lock (ScavengerRuntime.ScavengerLock)
+            {
+                var scav = ScavengerRuntime.ActiveEvent;
+                if (scav != null && scav.IsActive)
+                {
+                    var currentRound = scav.Rounds.ElementAtOrDefault(scav.CurrentRoundIndex);
+                    if (currentRound != null && currentRound.IsActive)
+                    {
+                        var rem = currentRound.EndTime - DateTime.UtcNow;
+                        var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
+                        player.SendMessage($"  Scavenger Hunt: Round {currentRound.RoundNumber} — {currentRound.TargetName} — {remStr} remaining.");
+                    }
+                    else
+                    {
+                        player.SendMessage("  Scavenger Hunt: event active — no current round.");
+                    }
+                }
+                else
+                    player.SendMessage("  Scavenger Hunt: no active event.");
+            }
+        }
+        else
+            player.SendMessage("  Scavenger Hunt: disabled.");
     }
 
     static void ShowHuntStatus(Player player, bool huntOnly)
@@ -674,6 +825,80 @@ public partial class PatchClass : BasicPatch<Settings>
             player.SendMessage(pts > 0
                 ? $"[Hunt] Your hunt points this window: {pts:0.##}"
                 : "[Hunt] Your hunt points this window: 0 (no qualifying kills yet).");
+        }
+    }
+
+    static void ShowPoiHuntStatus(Player player)
+    {
+        var settings = CurrentSettings;
+        if (settings?.EnablePoiHunt != true)
+        {
+            player.SendMessage("[WorldEvents] POI Hunt is disabled.");
+            return;
+        }
+
+        lock (PoiHuntRuntime.PoiHuntLock)
+        {
+            var evt = PoiHuntRuntime.ActiveEvent;
+            if (evt == null)
+            {
+                player.SendMessage("[POI Hunt] No active event.");
+                return;
+            }
+
+            var currentRound = evt.Rounds.ElementAtOrDefault(evt.CurrentRoundIndex);
+            if (currentRound != null && currentRound.IsActive)
+            {
+                var rem = currentRound.EndTime - DateTime.UtcNow;
+                var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
+                player.SendMessage($"[POI Hunt] Round {currentRound.RoundNumber} active — {remStr} remaining.");
+            }
+            else
+            {
+                player.SendMessage($"[POI Hunt] Event {evt.EventId} active — no current round.");
+            }
+
+            var myFinds = evt.PlayerFindCounts.TryGetValue(player.Guid.Full, out var f) ? f : 0;
+            player.SendMessage(myFinds > 0
+                ? $"[POI Hunt] Your finds this event: {myFinds}"
+                : "[POI Hunt] You haven't found any locations yet.");
+        }
+    }
+
+    static void ShowScavengerStatus(Player player)
+    {
+        var settings = CurrentSettings;
+        if (settings?.EnableScavengerHunt != true)
+        {
+            player.SendMessage("[WorldEvents] Scavenger Hunt is disabled.");
+            return;
+        }
+
+        lock (ScavengerRuntime.ScavengerLock)
+        {
+            var evt = ScavengerRuntime.ActiveEvent;
+            if (evt == null || !evt.IsActive)
+            {
+                player.SendMessage("[Scavenger Hunt] No active event.");
+                return;
+            }
+
+            var currentRound = evt.Rounds.ElementAtOrDefault(evt.CurrentRoundIndex);
+            if (currentRound != null && currentRound.IsActive)
+            {
+                var rem = currentRound.EndTime - DateTime.UtcNow;
+                var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
+                player.SendMessage($"[Scavenger Hunt] Round {currentRound.RoundNumber} — seeking {currentRound.TargetName} — {remStr} remaining.");
+            }
+            else
+            {
+                player.SendMessage($"[Scavenger Hunt] Event {evt.EventId} active — no current round.");
+            }
+
+            var myTurnIns = evt.PlayerTurnInCounts.TryGetValue(player.Guid.Full, out var t) ? t : 0;
+            player.SendMessage(myTurnIns > 0
+                ? $"[Scavenger Hunt] Your turn-ins this event: {myTurnIns}"
+                : "[Scavenger Hunt] You haven't turned in any items yet.");
         }
     }
 

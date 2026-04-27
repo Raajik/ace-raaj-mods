@@ -1,8 +1,8 @@
-namespace Gemcrafter.Commands;
+namespace SpellSiphon.Commands;
 
 using AceModQa;
 
-internal static class GemcrafterQaCommands
+internal static class SpellSiphonQaCommands
 {
 	// Deterministic, server-side QA helpers so we can validate Gemcrafter without client UI friction.
 	private static readonly uint DefaultMortarWcid = 4751;
@@ -55,7 +55,7 @@ internal static class GemcrafterQaCommands
 	{
 		QaRunner.RunAll(player, "Gemcrafter", new IQaTestCase[]
 		{
-			new GemcrafterSmokeTest(),
+			new SpellSiphonSmokeTest(),
 		});
 	}
 
@@ -149,7 +149,7 @@ internal static class GemcrafterQaCommands
 			return;
 		}
 
-		List<string> names = payload.Select(id => $"{GemLootMutator.TryGetSpellName(id)} ({id})").ToList();
+		List<string> names = payload.Select(id => $"{LootMutator.TryGetSpellName(id)} ({id})").ToList();
 		player.SendMessage($"[Gemcrafter QA] Mortar: {mortar.Name} (WCID {mortar.WeenieClassId}) payload: {string.Join(", ", names)}");
 	}
 
@@ -194,7 +194,7 @@ internal static class GemcrafterQaCommands
 			return;
 		}
 
-		player.SendMessage($"[Gemcrafter QA] Mortar infused: {mortar.Name} (WCID {mortar.WeenieClassId}) with {GemLootMutator.TryGetSpellName(spellId.Value)} ({spellId.Value})");
+		player.SendMessage($"[Gemcrafter QA] Mortar infused: {mortar.Name} (WCID {mortar.WeenieClassId}) with {LootMutator.TryGetSpellName(spellId.Value)} ({spellId.Value})");
 	}
 
 	private static void Apply(Player player, Settings s)
@@ -342,7 +342,7 @@ internal static class GemcrafterQaCommands
 				return;
 			}
 
-			string formatted = QaSpellbook.FormatSpellList(added, GemLootMutator.TryGetSpellName);
+			string formatted = QaSpellbook.FormatSpellList(added, LootMutator.TryGetSpellName);
 			player.SendMessage($"[Gemcrafter QA] Diff added: {formatted}");
 		}
 		catch
@@ -365,11 +365,11 @@ internal static class GemcrafterQaCommands
 			if (added >= max)
 				break;
 
-			string name = GemLootMutator.TryGetSpellName(id);
+			string name = LootMutator.TryGetSpellName(id);
 			if (ContainsAny(name, s.ExcludeTransferSpellNameContains))
 				continue;
 
-			if (GemLootMutator.TryAddSpellId(target, id))
+			if (LootMutator.TryAddSpellId(target, id))
 			{
 				added++;
 				addedNames.Add($"{name} ({id})");

@@ -43,6 +43,20 @@ public partial class PatchClass
         return mult;
     }
 
+    // ── Sale participant tracking ─────────────────────────────────────────
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Player), nameof(Player.FinalizeBuyTransaction), new Type[] { typeof(Vendor), typeof(List<WorldObject>), typeof(List<WorldObject>), typeof(uint) })]
+    public static void PostFinalizeBuyTransactionSale(Vendor vendor, List<WorldObject> genericItems, List<WorldObject> uniqueItems, Player __instance)
+    {
+        if ((genericItems?.Count ?? 0) == 0 && (uniqueItems?.Count ?? 0) == 0) return;
+
+        var lb = (int)(vendor.Location?.LandblockId.Landblock ?? 0);
+        if (!SaleRuntime.IsVendorOnSale(lb, vendor.Name, vendor.WeenieClassId)) return;
+
+        SaleRuntime.RecordParticipant(__instance.Guid.Full);
+    }
+
     // ── Loot enhancement: boost values + bonus SharedLoot items ──────────
 
     [HarmonyPostfix]

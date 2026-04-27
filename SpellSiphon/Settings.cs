@@ -1,4 +1,4 @@
-namespace Gemcrafter;
+namespace SpellSiphon;
 
 public class Settings
 {
@@ -74,4 +74,32 @@ public class Settings
 		"Summon",
 		"Recall",
 	};
+
+	[JsonPropertyName("// EnableAnyItemCrushing")]
+	public string EnableAnyItemCrushingDoc { get; init; } = "Allow crushing any spell-bearing item (not just gems) to extract spells.";
+	public bool EnableAnyItemCrushing { get; set; } = true;
+
+	[JsonPropertyName("// BaseSuccessRate")]
+	public string BaseSuccessRateDoc { get; init; } = "Base success rate (percent) for crushing a non-gem item.";
+	public float BaseSuccessRate { get; set; } = 20f;
+
+	[JsonPropertyName("// SkillBonusPerPoint")]
+	public string SkillBonusPerPointDoc { get; init; } = "Additional success rate per point of relevant skill (e.g. Arcane Lore).";
+	public float SkillBonusPerPoint { get; set; } = 0.05f;
+
+	[JsonPropertyName("// MaxSuccessRate")]
+	public string MaxSuccessRateDoc { get; init; } = "Maximum possible success rate for crushing.";
+	public float MaxSuccessRate { get; set; } = 100f;
+
+	[JsonPropertyName("// ReduceBySpellLevel")]
+	public string ReduceBySpellLevelDoc { get; init; } = "Reduce success rate based on the spell level of the item being crushed.";
+	public bool ReduceBySpellLevel { get; set; } = true;
+
+	[JsonPropertyName("// AllowAttunedAndBonded")]
+	public string AllowAttunedAndBondedDoc { get; init; } = "Allow crushing attuned and bonded items.";
+	public bool AllowAttunedAndBonded { get; set; } = true;
+
+	[JsonPropertyName("// NonCrushableWcids")]
+	public string NonCrushableWcidsDoc { get; init; } = "WCIDs that can never be crushed, even if they bear spells.";
+	public List<uint> NonCrushableWcids { get; set; } = new();
 }

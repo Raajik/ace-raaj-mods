@@ -1,4 +1,4 @@
-namespace Gemcrafter.Features;
+namespace SpellSiphon.Features;
 
 internal static class MortarAndPestleHooks
 {
@@ -18,13 +18,31 @@ internal static class MortarAndPestleHooks
 		if (source.WeenieClassId != s.CrusherToolWcid)
 			return true;
 
-		if (!IsCrushableGem(target, s))
+		if (!CanCrushItem(player, target, s, out string? reason))
+		{
+			player.SendMessage($"[Gemcrafter] {reason}");
+			__result = false;
+			return false;
+		}
+
+		if (!s.EnableAnyItemCrushing && !IsCrushableGem(target, s))
 			return true;
 
 		List<int> spellIds = ReadGemSpellIds(target);
 		if (spellIds.Count == 0)
 		{
 			player.SendMessage("[Gemcrafter] That gem has no spells to crush.");
+			__result = false;
+			return false;
+		}
+
+		float successRate = CalculateSuccessRate(player, target, s);
+		float roll = (float)ThreadSafeRandom.Next(0.0f, 100.0f);
+		if (roll > successRate)
+		{
+			InventoryHelpers.TryRemoveOneFromPlayer(player, target, s.Verbose, out _, out _);
+			player.SendMessage("Your mortar shatters the item but fails to capture any spells.");
+			ModManager.Log($"[SpellSiphon] {player.Name} failed to crush {target.Name} (roll {roll:F1}% > {successRate:F1}%).");
 			__result = false;
 			return false;
 		}
@@ -124,6 +142,58 @@ internal static class MortarAndPestleHooks
 		}
 
 		return ids.ToList();
+	}
+
+	internal static bool CanCrushItem(Player player, WorldObject item, Settings s, out string? reason)
+	{
+		reason = null;
+
+		if (!s.EnableAnyItemCrushing)
+			return true; // legacy gem-only mode
+
+		List<int> spellIds = ReadGemSpellIds(item);
+		if (spellIds.Count == 0)
+		{
+			reason = "That item bears no spells to extract.";
+			return false;
+		}
+
+		if (s.NonCrushableWcids != null && s.NonCrushableWcids.Contains(item.WeenieClassId))
+		{
+			reason = "That item cannot be crushed.";
+			return false;
+		}
+
+		if (!s.AllowAttunedAndBonded)
+		{
+			bool isAttuned = (item.Attuned ?? AttunedStatus.Normal) >= AttunedStatus.Attuned;
+			bool isBonded = (item.Bonded ?? BondedStatus.Normal) >= BondedStatus.Bonded;
+			if (isAttuned || isBonded)
+			{
+				reason = "Attuned and bonded items cannot be crushed.";
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	internal static float CalculateSuccessRate(Player player, WorldObject item, Settings s)
+	{
+		float skill = player.GetCreatureSkill(Skill.MagicItemTinkering).Current;
+		float rate = s.BaseSuccessRate + (skill * s.SkillBonusPerPoint);
+
+		if (s.ReduceBySpellLevel)
+		{
+			foreach (int spellId in ReadGemSpellIds(item))
+			{
+				var spell = new ACE.Server.Entity.Spell(spellId);
+				if (spell.Level > 6)
+					rate -= 2.0f * ((int)spell.Level - 6);
+			}
+		}
+
+		return Math.Clamp(rate, 0f, s.MaxSuccessRate);
 	}
 }
 

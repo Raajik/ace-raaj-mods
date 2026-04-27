@@ -1,4 +1,4 @@
-namespace Gemcrafter.Features;
+namespace SpellSiphon.Features;
 
 // Restores immersive UX by intercepting generic "use on target" handling.
 // Patched manually from PatchClass.Start() so failures cannot crash the server.
@@ -263,11 +263,11 @@ internal static class UseOnTargetHooks
 					if (added >= max)
 						break;
 
-					string name = GemLootMutator.TryGetSpellName(id);
+					string name = LootMutator.TryGetSpellName(id);
 					if (ContainsAny(name, s.ExcludeTransferSpellNameContains))
 						continue;
 
-					if (GemLootMutator.TryAddSpellId(intendedTarget!, id))
+					if (LootMutator.TryAddSpellId(intendedTarget!, id))
 					{
 						added++;
 						addedNames.Add(name);

@@ -10,15 +10,17 @@ internal static class InvasionLootRewards
     /// Called at wave end. Top 3 get placement loot; if fewer than 3 participants
     /// the top player collects any unclaimed placements. Solo clear gets all 3.
     /// </summary>
-    internal static void DistributeWaveRewards(Settings s)
+    internal static void DistributeWaveRewards(Settings s, int participantCount = -1)
     {
         if (!s.InvasionGrantLoot) return;
 
         var ranked = InvasionKillTracker.GetRanked();
+        if (participantCount < 0)
+            participantCount = ranked.Count;
         if (ranked.Count == 0) return;
 
         var cfg = LootConfigStore.GetLoadedOrDefault();
-        var solo = ranked.Count == 1;
+        var solo = participantCount == 1;
 
         // Award up to 3 placement slots; unclaimed slots fold onto top player
         for (var slot = 0; slot < 3; slot++)
@@ -31,6 +33,9 @@ internal static class InvasionLootRewards
             if (player == null) continue;
 
             var floor = PlacementFloor(slot);
+            if (solo && s.SoloCompetitorBonus.Enable)
+                floor = (LootRarityFloor)Math.Min((int)floor + s.SoloCompetitorBonus.LootFloorBonus, (int)LootRarityFloor.ExtremelyRare);
+
             var label = solo && slot > 0
                 ? $"solo bonus (#{slot + 1})"
                 : PlacementLabel(slot);

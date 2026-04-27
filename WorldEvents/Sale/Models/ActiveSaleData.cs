@@ -9,6 +9,8 @@ public class ActiveSaleData
     public bool MasterMageOnly { get; set; }
     public DateTime StartsUtc { get; set; }
     public DateTime EndsUtc { get; set; }
+    public List<uint> ParticipantGuids { get; set; } = new();
+    public int ParticipantCount => ParticipantGuids.Count;
 
     public bool ContainsCenterLandblock(int lb)
     {

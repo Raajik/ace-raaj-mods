@@ -20,6 +20,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         Harmony = ModC.Harmony;
         base.Start();
         ApplyConditionalHarmonyCategories();
+        ValidateConfiguredWeenies();
     }
 
     public override async Task OnWorldOpen()
@@ -95,6 +96,75 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         LootTracker.TryApply();
         PublicExchange.TryApply();
         Lottery.TryApply();
+    }
+
+    void ValidateConfiguredWeenies()
+    {
+        if (!Settings.ValidateWeeniesAtStartup)
+            return;
+
+        var missing = new List<(uint Wcid, string Name)>();
+
+        void CheckWcid(uint wcid, string name)
+        {
+            if (wcid == 0) return;
+            if (missing.Exists(m => m.Wcid == wcid)) return;
+            if (DatabaseManager.World.GetCachedWeenie(wcid) == null)
+                missing.Add((wcid, name));
+        }
+
+        if (Settings.Items != null)
+        {
+            foreach (var item in Settings.Items)
+            {
+                if (item == null) continue;
+                CheckWcid(item.Id, item.Name);
+                if (item.VariantWeenieClassIds != null)
+                {
+                    foreach (uint v in item.VariantWeenieClassIds)
+                        CheckWcid(v, $"{item.Name} (variant)");
+                }
+            }
+        }
+
+        if (Settings.Currencies != null)
+        {
+            foreach (var currency in Settings.Currencies)
+            {
+                if (currency == null) continue;
+                CheckWcid(currency.Id, currency.Name);
+            }
+        }
+
+        if (Settings.SalvageBank?.DepositRules != null)
+        {
+            foreach (var rule in Settings.SalvageBank.DepositRules)
+            {
+                if (rule == null) continue;
+                CheckWcid(rule.WeenieClassId, $"{rule.Name} (salvage input)");
+                CheckWcid(rule.OutputBagWeenieClassId, $"{rule.Name} (salvage bag)");
+                if (rule.AdditionalDepositWeenieClassIds != null)
+                {
+                    foreach (uint a in rule.AdditionalDepositWeenieClassIds)
+                        CheckWcid(a, $"{rule.Name} (alt deposit)");
+                }
+            }
+        }
+
+        CheckWcid(Settings.LuminanceGemWeenieClassId, "Luminance Gem");
+
+        if (missing.Count == 0)
+        {
+            ModManager.Log("[LeyLineLedger] Startup validation: all configured weenies found.", ModManager.LogLevel.Info);
+            return;
+        }
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"[LeyLineLedger] Startup validation found {missing.Count} missing weenies:");
+        foreach (var (wcid, name) in missing)
+            sb.AppendLine($"  - WCID {wcid} (Configured name: \"{name}\")");
+        sb.Append("Features using these items will degrade gracefully.");
+        ModManager.Log(sb.ToString(), ModManager.LogLevel.Warn);
     }
 
     public override void Stop()
@@ -720,12 +790,16 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
 
         //See if you can create items using the /ci approach
-        if (player.TryCreateItems($"{item.Id} {amount}"))
+        if (!player.TryCreateItems($"{item.Id} {amount}"))
         {
-            player.IncBanked(item.Prop, -amount);
-            SyncZefsOnChange(player, item, -amount);
-            player.SendMessage($"Withdrew {amount} {item.Name}. {player.GetBanked(item.Prop)} banked, {player.GetNumInventoryItemsOfWCID(item.Id)} held");
+            player.SendMessage($"The bank tried to dispense {item.Name}, but that item no longer exists in the world. Contact an admin.");
+            ModManager.Log($"[LeyLineLedger] Failed to create WCID {item.Id} ({item.Name}) for player {player.Name}. Item missing from world DB.");
+            return;
         }
+
+        player.IncBanked(item.Prop, -amount);
+        SyncZefsOnChange(player, item, -amount);
+        player.SendMessage($"Withdrew {amount} {item.Name}. {player.GetBanked(item.Prop)} banked, {player.GetNumInventoryItemsOfWCID(item.Id)} held");
     }
 
     public static void HandleDeposit(Player player, BankItem item, int amount)
@@ -1444,15 +1518,15 @@ public static class BankExtensions
             return;
         }
 
-        if (player.TryCreateItems($"{singleCurrency.Id} {amount}"))
+        if (!player.TryCreateItems($"{singleCurrency.Id} {amount}"))
         {
-            player.IncCash(-singleCost);
-            player.SendMessage($"Withdrew {amount} {singleCurrency.Name} for {singleCost:N0}.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");
+            player.SendMessage($"The bank tried to dispense {singleCurrency.Name}, but that item no longer exists in the world. Contact an admin.");
+            ModManager.Log($"[LeyLineLedger] Failed to create WCID {singleCurrency.Id} ({singleCurrency.Name}) for player {player.Name}. Item missing from world DB.");
+            return;
         }
-        else
-        {
-            player.SendMessage($"Failed to withdraw {amount} {singleCurrency.Name} for {singleCost:N0}.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");
-        }
+
+        player.IncCash(-singleCost);
+        player.SendMessage($"Withdrew {amount} {singleCurrency.Name} for {singleCost:N0}.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");
     }
 
     public static void WithdrawLuminanceGem(Session session, string amountToken)
@@ -1567,34 +1641,34 @@ public static class BankExtensions
 
         var command = string.Join(" ", parts);
 
-        if (player.TryCreateItems(command))
+        if (!player.TryCreateItems(command))
         {
-            player.IncCash(-totalPyreals);
-
-            var breakdown = string.Join(", ", parts.Select(p =>
-            {
-                var tokens = p.Split(' ');
-                if (tokens.Length != 2)
-                    return p;
-
-                if (!uint.TryParse(tokens[0], out var id) || !int.TryParse(tokens[1], out var count))
-                    return p;
-
-                var curr = PatchClass.Settings.Currencies.FirstOrDefault(c => c.Id == id);
-                var name = curr is not null ? curr.Name : id.ToString();
-                long value = curr is not null ? (long)curr.Value * count : 0;
-
-                return value > 0
-                    ? $"{count} {name} ({value:N0})"
-                    : $"{count} {name}";
-            }));
-
-            player.SendMessage($"Withdrew {totalPyreals:N0} pyreals as: {breakdown}.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");
+            player.SendMessage("The bank tried to dispense currency, but one or more items no longer exist in the world. Contact an admin.");
+            ModManager.Log($"[LeyLineLedger] Failed to create currency command '{command}' for player {player.Name}. One or more items missing from world DB.");
+            return;
         }
-        else
+
+        player.IncCash(-totalPyreals);
+
+        var breakdown = string.Join(", ", parts.Select(p =>
         {
-            player.SendMessage($"Failed to withdraw {totalPyreals:N0} pyreals.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");
-        }
+            var tokens = p.Split(' ');
+            if (tokens.Length != 2)
+                return p;
+
+            if (!uint.TryParse(tokens[0], out var id) || !int.TryParse(tokens[1], out var count))
+                return p;
+
+            var curr = PatchClass.Settings.Currencies.FirstOrDefault(c => c.Id == id);
+            var name = curr is not null ? curr.Name : id.ToString();
+            long value = curr is not null ? (long)curr.Value * count : 0;
+
+            return value > 0
+                ? $"{count} {name} ({value:N0})"
+                : $"{count} {name}";
+        }));
+
+        player.SendMessage($"Withdrew {totalPyreals:N0} pyreals as: {breakdown}.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");
     }
 
     //Parsing

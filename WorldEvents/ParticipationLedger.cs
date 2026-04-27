@@ -6,7 +6,7 @@ namespace WorldEvents;
 
 public static class ParticipationLedger
 {
-    private static readonly string BasePath = Path.Combine(ModManager.ModPath, "WorldEvents", "Participation");
+    internal static readonly string BasePath = Path.Combine(ModManager.ModPath, "WorldEvents", "Participation");
     private static readonly ConcurrentDictionary<uint, object> FileLocks = new();
 
     public static void RecordCompletion(uint accountId, string eventType, string questName)
@@ -46,6 +46,30 @@ public static class ParticipationLedger
         var summary = Load(accountId);
         return summary.UniqueQuestNamesByEventType.TryGetValue(eventType, out var set)
             ? set.ToList() : new List<string>();
+    }
+
+    public static List<AccountParticipationSummary> GetLeaderboard()
+    {
+        var results = new List<AccountParticipationSummary>();
+        if (!Directory.Exists(BasePath)) return results;
+
+        foreach (var file in Directory.GetFiles(BasePath, "*.json"))
+        {
+            try
+            {
+                var fileName = Path.GetFileNameWithoutExtension(file);
+                if (uint.TryParse(fileName, out var accountId))
+                {
+                    var summary = Load(accountId);
+                    if (summary.TotalEventCompletions > 0)
+                        results.Add(summary);
+                }
+            }
+            catch { }
+        }
+
+        results.Sort((a, b) => b.TotalEventCompletions.CompareTo(a.TotalEventCompletions));
+        return results;
     }
 
     public static AccountParticipationSummary Load(uint accountId)

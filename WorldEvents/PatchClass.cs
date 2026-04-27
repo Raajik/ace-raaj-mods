@@ -304,7 +304,7 @@ public partial class PatchClass : BasicPatch<Settings>
 
     static void ShowEventsLeaderboard(Player player)
     {
-        var board = BonusQuestParticipation.GetLeaderboard();
+        var board = ParticipationLedger.GetLeaderboard();
         if (board.Count == 0)
         {
             player.SendMessage("[WorldEvents] No participation data yet.");
@@ -321,7 +321,7 @@ public partial class PatchClass : BasicPatch<Settings>
 
     static void ShowQbLeaderboard(Player player)
     {
-        var board = BonusQuestParticipation.GetLeaderboard();
+        var board = ParticipationLedger.GetLeaderboard();
         var qbBoard = board
             .Where(e => e.CompletionsByEventType.ContainsKey("BonusQuest"))
             .OrderByDescending(e => e.CompletionsByEventType["BonusQuest"])
@@ -361,8 +361,8 @@ public partial class PatchClass : BasicPatch<Settings>
                 return;
             }
 
-            var summary = BonusQuestParticipation.GetByAccountId(accountId);
-            if (summary == null)
+            var summary = ParticipationLedger.Load(accountId);
+            if (summary.TotalEventCompletions == 0)
             {
                 player.SendMessage($"[WorldEvents] No participation data for account {accountId}.");
                 return;

@@ -43,5 +43,15 @@ Always check in this order:
 ## 6. Server Logs
 - **`C:\ACE\Server\ACE_Log.txt`** is always allowed to be read and cleared if needed for diagnostics.
 
-## 7. Reference Sources
+## 7. Learning & Self-Improvement
+- **Every conversation is a learning opportunity.** When we compact chat or summarize findings, that information **must** be captured:
+  - **Technical lessons** (e.g., "ACE's ThreadSafeRandom.Next(int,int) is inclusive on both bounds") → add to **AGENTS.md** §8 as conventions/warnings.
+  - **Actionable items** (bugs, ideas, tuning needs) → add to **PLAN.md** in the appropriate section (active bugs, greenfield backlog, or mod notes).
+- **Repeat bugs are a signal.** If a bug resurfaces, it automatically escalates in priority and should be documented with root cause analysis in PLAN.md §Bug Tracker.
+
+## 8. External Knowledge Base
+- **`A:\obsidian\jeremy\AGENT.md`** — LLM Wiki Agent rulebook. At the end of every task, consult and follow its instructions for knowledge persistence.
+- **`A:\obsidian\jeremy\wiki\index.md`** — Collective second brain. Reference it for retained knowledge and write new information we want to preserve permanently using `[[Page Name]]` links per the AGENT.md conventions.
+
+## 9. Reference Sources
 - **`.references/`** contains ACE source/server files, ACRealms, and world database dumps. Check this directory when you need to inspect ACE internals, verify class/method signatures, or reference vanilla behavior.

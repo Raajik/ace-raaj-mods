@@ -20,6 +20,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         Harmony = ModC.Harmony;
         base.Start();
         ApplyConditionalHarmonyCategories();
+        ValidateConfiguredWeenies();
     }
 
     public override async Task OnWorldOpen()
@@ -95,6 +96,75 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         LootTracker.TryApply();
         PublicExchange.TryApply();
         Lottery.TryApply();
+    }
+
+    void ValidateConfiguredWeenies()
+    {
+        if (!Settings.ValidateWeeniesAtStartup)
+            return;
+
+        var missing = new List<(uint Wcid, string Name)>();
+
+        void CheckWcid(uint wcid, string name)
+        {
+            if (wcid == 0) return;
+            if (missing.Exists(m => m.Wcid == wcid)) return;
+            if (DatabaseManager.World.GetCachedWeenie(wcid) == null)
+                missing.Add((wcid, name));
+        }
+
+        if (Settings.Items != null)
+        {
+            foreach (var item in Settings.Items)
+            {
+                if (item == null) continue;
+                CheckWcid(item.Id, item.Name);
+                if (item.VariantWeenieClassIds != null)
+                {
+                    foreach (uint v in item.VariantWeenieClassIds)
+                        CheckWcid(v, $"{item.Name} (variant)");
+                }
+            }
+        }
+
+        if (Settings.Currencies != null)
+        {
+            foreach (var currency in Settings.Currencies)
+            {
+                if (currency == null) continue;
+                CheckWcid(currency.Id, currency.Name);
+            }
+        }
+
+        if (Settings.SalvageBank?.DepositRules != null)
+        {
+            foreach (var rule in Settings.SalvageBank.DepositRules)
+            {
+                if (rule == null) continue;
+                CheckWcid(rule.WeenieClassId, $"{rule.Name} (salvage input)");
+                CheckWcid(rule.OutputBagWeenieClassId, $"{rule.Name} (salvage bag)");
+                if (rule.AdditionalDepositWeenieClassIds != null)
+                {
+                    foreach (uint a in rule.AdditionalDepositWeenieClassIds)
+                        CheckWcid(a, $"{rule.Name} (alt deposit)");
+                }
+            }
+        }
+
+        CheckWcid(Settings.LuminanceGemWeenieClassId, "Luminance Gem");
+
+        if (missing.Count == 0)
+        {
+            ModManager.Log("[LeyLineLedger] Startup validation: all configured weenies found.", ModManager.LogLevel.Info);
+            return;
+        }
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"[LeyLineLedger] Startup validation found {missing.Count} missing weenies:");
+        foreach (var (wcid, name) in missing)
+            sb.AppendLine($"  - WCID {wcid} (Configured name: \"{name}\")");
+        sb.Append("Features using these items will degrade gracefully.");
+        ModManager.Log(sb.ToString(), ModManager.LogLevel.Warn);
     }
 
     public override void Stop()

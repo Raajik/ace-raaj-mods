@@ -55,12 +55,17 @@ Burn down from the top; later items need more design or ACE integration.
 | **HIGH** | Item price reduction needs EconomyBalancer decimal variance | `QOL/VendorPriceInflation.cs` casts to `(int)` — whole numbers only. No EconomyBalancer integration. | **Not Started** | 2026-04-26 |
 | **HIGH** | Salvage not depositing to bank | `/b d` auto-deposit exists via `BankSalvage`, but cross-mod property alignment (40201+ vs `ResolveMaterialBankProperty`) is unverified. | **Partial** | 2026-04-26 |
 | **HIGH** | Leave challenge = gear invisible until relog | Fix attempt: `CmQuit.cs` calls `SendInventoryAndWieldedItems()` after unequip. Needs in-game verification. | **Needs Verify** | 2026-04-26 |
-| **MEDIUM** | ~~Assess Creature bonus "chances instead of stacked items"~~ | `TrophyDrops.cs`: `extraRolls` is only a gate (`if (!TryGetValue) return;`), never consumed as loop count. One 50% roll for stack of 2–5, not guaranteed rolls. | **Fixed** | 2026-04-26 |
-| **MEDIUM** | ~~Cull event not counting Swarm-generated kills~~ | `PatchClass.CullPatches.cs` explicitly bails with `if (IsSpawnedAdd) return;` before `RecordKill`. Swarm kills are actively excluded. | **Fixed** | 2026-04-26 |
-| **MEDIUM** | ~~Offlineswear filter affects friends~~ | `QOL/OfflineSwear.cs` has no friend, fellowship, or allegiance check. | **Fixed** | 2026-04-26 |
 | **MEDIUM** | Vendor items not getting levels | No vendor-specific leveling code; `Player.OnItemLevelUp` never fires for vendor items. No allowlist or bypass exists. | **Not Started** | 2026-04-26 |
-| **MEDIUM** | ~~Lucky Gold Letter stack minimum~~ | `SharedLoot/DefaultLootConfig.cs` has `stackSizeMin = 3`, but `Lockboxes/PatchClass.cs` hardcodes `stackSize = 1`, overriding it. | **Fixed** | 2026-04-26 |
-| **LOW** | ~~Event reminders fire too often~~ | Cull/Invasion/Sale runtimes still broadcast own reminders (15m/15m/10m) on top of scheduler 5-min warning. | **Fixed** | 2026-04-26 |
+
+### Recently Fixed (2026-04-26 → 2026-04-27)
+
+| Bug | Fix Commit |
+|-----|-----------|
+| Assess Creature bonus "chances instead of stacked items" | `TrophyDrops.cs`: extra rolls now loop `for (roll = 0; roll < extraRolls; roll++)` with guaranteed stacks 2–5. |
+| Cull event not counting Swarm-generated kills | Removed `if (IsSpawnedAdd) return;` guard before `RecordKill`. Swarm kills now count. |
+| Offlineswear filter affects friends | Added `Character.HasAsFriend` and `MonarchId` allegiance checks to `OfflineSwear.cs`. |
+| Lucky Gold Letter stack minimum | `Lockboxes` now respects `stackSizeMin` from loot config instead of hardcoding `stackSize = 1`. |
+| Event reminders fire too often | Legacy event runtimes silenced when `UseUnifiedScheduler=true`; only scheduler broadcasts remain. |
 
 ## Repeat Bug Escalation
 
@@ -88,18 +93,10 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
    - ❌ Equipment bonus: No wielded-item FakeFloat bonus implemented yet.
    - Target formula: `1 + enlightPool + augmentBonus + achievementBonus + equipmentBonus`
 
-3. **~~CommonGoals Expansion — "No split XP"~~** — **DONE**
-   - `CommonGoals/NoSplitXp.cs`: Prefixes on `Fellowship.SplitXp` and `SplitLuminance` grant full credit per killer.
-   - Toggle: `EnableNoSplitXp` (default `false`).
-   - **ADD:** `+augment bonus + achievement bonus + equipment bonus`
-   - Formula: `1 + enlightPool + augmentBonus + achievementBonus + equipmentBonus`
-   - Equipment bonus from **FakeFloat on wielded items** (e.g., "Enlightenment 3 required")
-   - Cross-mod: AureatePath adds, Loremaster reads for XP mult, ChallengeModes `/cm quit` adds
-
-3. **CommonGoals Expansion** *(CommonGoals mod — already exists)*
-   - Already has: PersonalLoot (instanced corpses per player)
-   - **ADD:** "No split XP" — full credit per killer, no XP division in groups
-   - Verify integration with AutoLoot personal corpse hooks
+3. **CommonGoals Expansion** *(CommonGoals mod — shipped)*
+    - ✅ PersonalLoot (instanced corpses per player)
+    - ✅ NoSplitXp / NoSplitLuminance — full credit per killer, no XP/lum division in groups
+    - Verify integration with AutoLoot personal corpse hooks (ongoing maintenance)
 
 ---
 
@@ -149,7 +146,7 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
 
 | Mod | Description | Status |
 |-----|-------------|--------|
-| **CommonGoals** *(exists)* | Personal loot + no split XP | Needs expansion (no split XP) |
+| **CommonGoals** *(shipped)* | Personal loot + no split XP | Maintenance only |
 | **LandblockLeveling** | Dungeon/landblock XP scaling, loot tier, mob scaling | Greenfield |
 | **Landgrab** | Player-owned landblocks with decay + global buffs | Greenfield |
 

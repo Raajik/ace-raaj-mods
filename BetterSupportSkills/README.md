@@ -69,35 +69,109 @@ Adds bonus to ManaConversionMod on equipped armor and jewelry.
 
 ---
 
-### Assess Creature
+### Alchemy
 **Status:** ✅ Implemented  
-**Default:** Disabled
+**Default:** Disabled (`EnableAlchemy`)
 
-Two bonuses when Assess Creature is trained or specialized:
+Two bonuses when Alchemy is trained or specialized:
 
-#### 1. Global Damage Rating
-+10 DR (trained) or +30 DR (specialized) against all targets:
+#### 1. Potion Echo
+Drinking a potion has a chance to echo (re-apply) its effect after a short delay.
+
+- **Trained:** 25% echo chance
+- **Specialized:** 50% echo chance
+- Echo delay: 5 seconds
+
+#### 2. Bonus Potion Drops
+Extra potion drops from creature kills, stacked 2–3 per roll.
+
+- Rolls calculated from buffed Alchemy skill / 150
+- Capped at `MaxExtraRolls` (default 3)
 
 **Settings:**
 ```json
-"EnableAssessCreature": true
+"EnableAlchemy": true,
+"Alchemy": {
+  "EchoChanceTrained": 0.25,
+  "EchoChanceSpecialized": 0.50,
+  "EchoDelaySeconds": 5.0,
+  "MaxExtraRolls": 3
+}
 ```
 
-#### 2. Trophy Drops
-Extra loot rolls when killing monsters:
+---
 
-- **Trained:** +1 extra loot roll
-- **Specialized:** +2 extra loot rolls
-- Uses whichever is higher if both Assess skills trained
-- Capped at MaxExtraRolls (default 10)
+### Arcane Lore (Adaptation)
+**Status:** ✅ Implemented  
+**Default:** Disabled (`EnableArcaneLore`)
+
+When Arcane Lore is trained or specialized, taking magic damage grants **Adaptation** — temporary elemental damage reduction.
+
+- Reduction: `-10% of buffed skill` as elemental damage reduction
+- Duration: 60 seconds
+- Cap: 99% reduction
+- Applies per elemental damage type (fire, frost, acid, lightning)
+
+> **Note:** Spell dodge was moved to **Missile Defense** in v1.1.0.
+
+**Settings:**
+```json
+"EnableArcaneLore": true,
+"ArcaneLore": {
+  "EnableAdaptation": true,
+  "AdaptationReductionPerSkill": 0.10,
+  "AdaptationDurationSeconds": 60.0,
+  "AdaptationMaxReduction": 0.99
+}
+```
+
+---
+
+### Missile Defense
+**Status:** ✅ Implemented  
+**Default:** Disabled (`EnableMissileDefense`)
+
+When Missile Defense is trained or specialized, grants chance to **dodge incoming spell damage** completely.
+
+- **Trained:** 10% spell dodge
+- **Specialized:** 15% spell dodge
+- Cap: 75% dodge chance
+
+> **Note:** This replaces the old Arcane Lore spell dodge from pre-v1.1.0.
+
+**Settings:**
+```json
+"EnableMissileDefense": true,
+"MissileDefense": {
+  "SpellDodgeTrained": 0.10,
+  "SpellDodgeSpecialized": 0.15,
+  "SpellDodgeCap": 0.75
+}
+```
+
+---
+
+### Assess Creature (Trophy Drops)
+**Status:** ✅ Implemented  
+**Default:** Disabled (`EnableTrophyDrops`)
+
+When Assess Creature is trained or specialized, grants **guaranteed extra loot rolls** on creature kills.
+
+- Rolls calculated from **buffed Assess Creature skill / 150**
+- **Capped at `MaxExtraRolls`** (default 3, meaning 450+ skill for max rolls)
+- Each roll adds a stacked trophy item (2–5 stack size) from the creature's create list
+- Potions are handled separately by the **Alchemy** bonus (2–3 stack size)
+
+> **Note:** Legacy `ExtraRollsTrained` / `ExtraRollsSpecialized` settings are **DEPRECATED** and no longer used. They are kept in `Settings.cs` for backward compatibility with existing `Settings.json` files.
+
+> **Note:** `TrophyWhitelist.md` documents which items *should* be stackable, but the code currently does **not** filter by this list — it stacks any item from the creature's `PropertiesCreateList`. Enforcing the whitelist requires a future code update.
 
 **Settings:**
 ```json
 "EnableTrophyDrops": true,
 "TrophyDrops": {
-  "ExtraRollsTrained": 1,
-  "ExtraRollsSpecialized": 2,
-  "MaxExtraRolls": 10
+  "MaxExtraRolls": 3,
+  "BonusTreasureChance": 0.0
 }
 ```
 
@@ -163,22 +237,19 @@ Without AethericWeaver, falls back to vanilla ACE behavior.
 ### Placeholder Skills (Not Yet Implemented)
 The following skills have placeholder entries but no bonus effects yet:
 
-- Alchemy
-- Arcane Lore
 - Deception
 - Dual Wield
 - Fletching
 - Leadership
 - Lockpick
 - Loyalty
-- Missile Defense
 - Recklessness
 - Sneak Attack
 
 To enable a skill placeholder (currently does nothing):
 ```json
-"EnableAlchemy": true,
-"EnableArcaneLore": true,
+"EnableDeception": true,
+"EnableDualWield": true,
 // etc.
 ```
 
@@ -216,6 +287,12 @@ All features can be toggled in `Settings.json`:
 
 ## Changelog
 
+### 2026-04-27 (v1.1.0)
+- **Arcane Lore rework:** Spell dodge moved to **Missile Defense**; Arcane Lore now grants **Adaptation** (elemental damage reduction on taking magic damage)
+- **Missile Defense:** New spell dodge implementation (10% trained / 15% spec, 75% cap)
+- **Alchemy:** Implemented potion echo and bonus potion drops
+- **Trophy Drops:** Rolls now based on `skill / 150` (capped at `MaxExtraRolls`, default 3). Deprecated `ExtraRollsTrained` / `ExtraRollsSpecialized`.
+
 ### 2026-04-19
 - Initial release
 - Healing: Recuperation heal-over-time after healing kits (`Recuperation` settings; `EnableHealing`)
@@ -232,3 +309,4 @@ All features can be toggled in `Settings.json`:
 - Only harmful spells cleave (not healing/buffs)
 - Self-targeted spells are excluded from cleave
 - Dirty Fighting fully enhanced with AethericWeaver mod installed
+- Trophy drops use the creature's `PropertiesCreateList` — not all creatures have trophy items configured

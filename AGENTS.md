@@ -64,6 +64,11 @@ Always check in this order:
 - **Deprecate settings gracefully — don't remove properties from `Settings.cs`.** Existing `Settings.json` files will break if properties are removed. Instead, keep the property, update the doc comment to `DEPRECATED`, and stop using it in code. Example: `ExtraRollsTrained` / `ExtraRollsSpecialized` in `TrophyDropsSettings`.
 - **Use `IPlayer.MonarchId` for lightweight allegiance checks.** No need to call `AllegianceManager.LoadPlayer()` if you only need to test same-allegiance — compare `player.MonarchId == patron.MonarchId`.
 - **`Character.HasAsFriend(friendId, lock)` extension exists for friend checks.** Use `player.Character.HasAsFriend(patron.Guid.Full, player.CharacterDatabaseLock)` instead of manually iterating `CharacterPropertiesFriendList`.
+- **Trigger phrase: "update docs"** — When the user says this, it means perform a full documentation sweep:
+  1. Update **PLAN.md** — mark completed items, clean up duplicates, refresh the active bug tracker.
+  2. Update **AGENTS.md** — add any new conventions, warnings, or workflow lessons learned.
+  3. Add project work to the **wiki** (`A:\obsidian\jeremy\wiki\`) — write new pages or update existing ones with `[[Page Name]]` links per the wiki conventions so knowledge is preserved permanently.
+  4. Update any **mod-specific `Readme.md`** files that are stale.
 
 ## 9. External Knowledge Base
 - **`A:\obsidian\jeremy\AGENT.md`** — LLM Wiki Agent rulebook. At the end of every task, consult and follow its instructions for knowledge persistence.

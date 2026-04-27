@@ -405,6 +405,7 @@ internal static class PublicExchange
             var wo = WorldObjectFactory.CreateNewWorldObject(item.Id);
             if (wo == null)
             {
+                ModManager.Log($"[LeyLineLedger] Failed to create exchange item WCID {item.Id}. Item missing from world DB.");
                 success = false;
                 break;
             }

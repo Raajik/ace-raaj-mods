@@ -404,9 +404,10 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         for (int i = 0; i < bags; i++)
         {
             WorldObject? bag = WorldObjectFactory.CreateNewWorldObject(bagWcid);
-            if (bag is null)
+            if (bag == null)
             {
                 player.SendMessage($"Could not create salvage bag (WCID {bagWcid}). Check world DB.");
+                ModManager.Log($"[LeyLineLedger] Failed to create salvage bag WCID {bagWcid}. Item missing from world DB.");
                 break;
             }
 
@@ -775,9 +776,10 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         }
 
         WorldObject? bag = WorldObjectFactory.CreateNewWorldObject((uint)wcid);
-        if (bag is null)
+        if (bag == null)
         {
-            player.SendMessage($"Failed to create salvage bag for {materialToken}");
+            player.SendMessage($"Could not create salvage bag (WCID {wcid}). Check world DB.");
+            ModManager.Log($"[LeyLineLedger] Failed to create salvage bag WCID {wcid}. Item missing from world DB.");
             return;
         }
 
@@ -883,8 +885,12 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         for (int i = 0; i < bags; i++)
         {
             WorldObject? bag = WorldObjectFactory.CreateNewWorldObject((uint)wcid);
-            if (bag is null)
+            if (bag == null)
+            {
+                player.SendMessage($"Could not create salvage bag (WCID {wcid}). Check world DB.");
+                ModManager.Log($"[LeyLineLedger] Failed to create salvage bag WCID {wcid}. Item missing from world DB.");
                 break;
+            }
 
             bag.Name = "Salvage (100)";
             bag.Structure = 100;

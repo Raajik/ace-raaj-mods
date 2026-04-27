@@ -790,12 +790,16 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
 
         //See if you can create items using the /ci approach
-        if (player.TryCreateItems($"{item.Id} {amount}"))
+        if (!player.TryCreateItems($"{item.Id} {amount}"))
         {
-            player.IncBanked(item.Prop, -amount);
-            SyncZefsOnChange(player, item, -amount);
-            player.SendMessage($"Withdrew {amount} {item.Name}. {player.GetBanked(item.Prop)} banked, {player.GetNumInventoryItemsOfWCID(item.Id)} held");
+            player.SendMessage($"The bank tried to dispense {item.Name}, but that item no longer exists in the world. Contact an admin.");
+            ModManager.Log($"[LeyLineLedger] Failed to create WCID {item.Id} ({item.Name}) for player {player.Name}. Item missing from world DB.");
+            return;
         }
+
+        player.IncBanked(item.Prop, -amount);
+        SyncZefsOnChange(player, item, -amount);
+        player.SendMessage($"Withdrew {amount} {item.Name}. {player.GetBanked(item.Prop)} banked, {player.GetNumInventoryItemsOfWCID(item.Id)} held");
     }
 
     public static void HandleDeposit(Player player, BankItem item, int amount)
@@ -1514,15 +1518,15 @@ public static class BankExtensions
             return;
         }
 
-        if (player.TryCreateItems($"{singleCurrency.Id} {amount}"))
+        if (!player.TryCreateItems($"{singleCurrency.Id} {amount}"))
         {
-            player.IncCash(-singleCost);
-            player.SendMessage($"Withdrew {amount} {singleCurrency.Name} for {singleCost:N0}.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");
+            player.SendMessage($"The bank tried to dispense {singleCurrency.Name}, but that item no longer exists in the world. Contact an admin.");
+            ModManager.Log($"[LeyLineLedger] Failed to create WCID {singleCurrency.Id} ({singleCurrency.Name}) for player {player.Name}. Item missing from world DB.");
+            return;
         }
-        else
-        {
-            player.SendMessage($"Failed to withdraw {amount} {singleCurrency.Name} for {singleCost:N0}.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");
-        }
+
+        player.IncCash(-singleCost);
+        player.SendMessage($"Withdrew {amount} {singleCurrency.Name} for {singleCost:N0}.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");
     }
 
     public static void WithdrawLuminanceGem(Session session, string amountToken)
@@ -1637,34 +1641,34 @@ public static class BankExtensions
 
         var command = string.Join(" ", parts);
 
-        if (player.TryCreateItems(command))
+        if (!player.TryCreateItems(command))
         {
-            player.IncCash(-totalPyreals);
-
-            var breakdown = string.Join(", ", parts.Select(p =>
-            {
-                var tokens = p.Split(' ');
-                if (tokens.Length != 2)
-                    return p;
-
-                if (!uint.TryParse(tokens[0], out var id) || !int.TryParse(tokens[1], out var count))
-                    return p;
-
-                var curr = PatchClass.Settings.Currencies.FirstOrDefault(c => c.Id == id);
-                var name = curr is not null ? curr.Name : id.ToString();
-                long value = curr is not null ? (long)curr.Value * count : 0;
-
-                return value > 0
-                    ? $"{count} {name} ({value:N0})"
-                    : $"{count} {name}";
-            }));
-
-            player.SendMessage($"Withdrew {totalPyreals:N0} pyreals as: {breakdown}.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");
+            player.SendMessage("The bank tried to dispense currency, but one or more items no longer exist in the world. Contact an admin.");
+            ModManager.Log($"[LeyLineLedger] Failed to create currency command '{command}' for player {player.Name}. One or more items missing from world DB.");
+            return;
         }
-        else
+
+        player.IncCash(-totalPyreals);
+
+        var breakdown = string.Join(", ", parts.Select(p =>
         {
-            player.SendMessage($"Failed to withdraw {totalPyreals:N0} pyreals.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");
-        }
+            var tokens = p.Split(' ');
+            if (tokens.Length != 2)
+                return p;
+
+            if (!uint.TryParse(tokens[0], out var id) || !int.TryParse(tokens[1], out var count))
+                return p;
+
+            var curr = PatchClass.Settings.Currencies.FirstOrDefault(c => c.Id == id);
+            var name = curr is not null ? curr.Name : id.ToString();
+            long value = curr is not null ? (long)curr.Value * count : 0;
+
+            return value > 0
+                ? $"{count} {name} ({value:N0})"
+                : $"{count} {name}";
+        }));
+
+        player.SendMessage($"Withdrew {totalPyreals:N0} pyreals as: {breakdown}.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");
     }
 
     //Parsing

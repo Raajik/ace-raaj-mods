@@ -152,6 +152,23 @@ You should:
     - `Missing IHarmonyMod Type`
   - Use the log analyst role and apply the `ace-log` patterns to interpret and fix issues.
 
+## SQL Content Deployment (Team Responsibility)
+
+When a mod includes weenie changes (new items, NPCs, or updated properties):
+
+- **SQL files do NOT auto-deploy on build.** The `.csproj` copies only DLL + JSON to `C:\ACE\Mods\`. SQL files in `Content/SQL/` must be **manually executed** against the live MySQL `ace_world` database.
+- **ACE caches weenies at startup.** Changes to `weenie_properties_int`, `weenie_properties_string`, or any weenie table require a **server restart** to take effect. There is no hot-reload for weenie data.
+- **Use `INSERT ... ON DUPLICATE KEY UPDATE` for idempotent SQL.** `weenie_properties_int` has a `UNIQUE KEY` on `(object_Id, type)`. A plain `UPDATE` silently does nothing if the row is absent. Prefer:
+  ```sql
+  INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (42516, 94, 128)
+  ON DUPLICATE KEY UPDATE value = 128;
+  ```
+- **Verify DB state after applying SQL.** Query the database to confirm changes took effect before concluding "nothing changed":
+  ```sql
+  SELECT type, value FROM weenie_properties_int WHERE object_Id = 850200 AND type = 94;
+  ```
+- **Workflow:** Build mod → run SQL against `ace_world` → restart server → verify in-game.
+
 ## Notes and Limits
 
 - Do not spawn subagents just to appear busy; default to a single-agent flow when:

@@ -25,7 +25,10 @@ public enum Features
     TownNetworkToll,
     VendorPackBurdenRelief,
     FullKillXpPerDamager,
-    GiveNpcSingleFromStack,
+    // GiveNpcSingleFromStack has been replaced by NpcStackTurnIn. The old enum name is preserved
+    // so existing Settings.json that references it does not silently break deserialization,
+    // but the category string now resolves to NpcStackTurnIn patches.
+    NpcStackTurnIn,
     LootEconomyControl,
     VendorLootRotation,
     KillXpMessage,
@@ -175,9 +178,18 @@ public class Settings
     public string EnableFullKillXpPerDamagerDoc { get; init; } = "When true, replaces ACE kill/luminance split by damage percent: each player (or pet owner) in DamageHistory earns the full creature XpOverride and full LuminanceAward (vanilla uses proportional split). Healing credit is unchanged (ACE does not award kill XP for healing in this path).";
     public bool EnableFullKillXpPerDamager { get; set; } = false;
 
+    [JsonPropertyName("// EnableGiveNpcSingleFromStack (DEPRECATED)")]
+    public string EnableGiveNpcSingleFromStackDoc { get; init; } = "DEPRECATED: replaced by NpcStackTurnIn. Set EnableNpcStackTurnIn in Settings.json instead. Kept for backward compatibility only.";
     [JsonPropertyName("// EnableGiveNpcSingleFromStack")]
-    public string EnableGiveNpcSingleFromStackDoc { get; init; } = "When giving to a non-player container (NPC), clamp give amount to 1 for stackable WeenieTypes in GiveNpcSingleStackWeenieTypes so turn-ins do not consume an entire trophy stack.";
-    public bool EnableGiveNpcSingleFromStack { get; set; } = true;
+    public bool EnableGiveNpcSingleFromStack { get; set; } = false; // No longer used — replaced by EnableNpcStackTurnIn
+
+    [JsonPropertyName("// EnableNpcStackTurnIn")]
+    public string EnableNpcStackTurnInDoc { get; init; } = "When true, NPC quest turn-ins respect full stack size. Rewards (items, currencies) scale by stack count. Bankable rewards auto-deposit via LeyLineLedger. Equipment rewards check main-pack space before committing.";
+    public bool EnableNpcStackTurnIn { get; set; } = true;
+
+    [JsonPropertyName("// NpcStackTurnIn")]
+    public string NpcStackTurnInDoc { get; init; } = "Configuration for full-stack NPC quest turn-ins. See NpcStackTurnInSettings.";
+    public NpcStackTurnInSettings NpcStackTurnIn { get; set; } = new();
 
     [JsonPropertyName("// EnableLootEconomyControl")]
     public string EnableLootEconomyControlDoc { get; init; } = "Reduce loot value and amount to help reign in the pyreal economy. LootValueMultiplier scales item values; LootAmountReduction reduces drop count by percentage.";
@@ -205,7 +217,7 @@ public class Settings
 
     [JsonPropertyName("// EnableVendorLootRotation")]
     public string EnableVendorLootRotationDoc { get; init; } = "Enable rotating vendor stock. Clears and regenerates vendor inventory on a timer cycle.";
-    public bool EnableVendorLootRotation { get; set; } = false;
+    public bool EnableVendorLootRotation { get; set; } = true;
 
     [JsonPropertyName("// VendorLootRotationMinutes")]
     public string VendorLootRotationMinutesDoc { get; init; } = "Minutes between vendor loot rotations.";
@@ -254,6 +266,34 @@ public class Settings
     [JsonPropertyName("// VendorLootCashPropertyId")]
     public string VendorLootCashPropertyIdDoc { get; init; } = "PropertyInt64 ID for banked pyreals. Default 39999 aligns with LeyLineLedger CashProperty.";
     public int VendorLootCashPropertyId { get; set; } = 39999;
+
+    [JsonPropertyName("// VendorTierWcidMap")]
+    public string VendorTierWcidMapDoc { get; init; } = "Maps vendor WeenieClassIds to their loot tier (1-8). Starter town Academy vendors default to tier 1. Unknown vendors use DefaultVendorTier.";
+    public Dictionary<uint, int> VendorTierWcidMap { get; set; } = new()
+    {
+        // Holtburg Academy
+        [712] = 1, [713] = 1, [2304] = 1,
+        // Shoushi Academy
+        [835] = 1, [836] = 1, [831] = 1,
+        // Yaraq Academy
+        [1038] = 1, [1039] = 1, [2307] = 1,
+    };
+
+    [JsonPropertyName("// VendorTierLandblockMap")]
+    public string VendorTierLandblockMapDoc { get; init; } = "Maps vendor landblock IDs (decimal) to loot tiers (1-8). Overrides WCID map when both match. Starter towns: Holtburg=43442, Shoushi=56914, Yaraq=32100.";
+    public Dictionary<uint, int> VendorTierLandblockMap { get; set; } = new();
+
+    [JsonPropertyName("// DefaultVendorTier")]
+    public string DefaultVendorTierDoc { get; init; } = "Default loot tier (1-8) for vendors not in any tier map. Wield requirements are capped at (tier * 50) — tier 1=50, tier 2=100, tier 3=150, etc. Items roll at tier to tier+1.";
+    public int DefaultVendorTier { get; set; } = 2;
+
+    [JsonPropertyName("// VendorLootMagicItemPercent")]
+    public string VendorLootMagicItemPercentDoc { get; init; } = "Percentage of extra inventory slots filled with MagicItem-category loot (scrolls, wands, orbs) after base Item-category loot. 0 = no extra magic items.";
+    public int VendorLootMagicItemPercent { get; set; } = 25;
+
+    [JsonPropertyName("// VendorLootMundaneItemPercent")]
+    public string VendorLootMundaneItemPercentDoc { get; init; } = "Percentage of extra inventory slots filled with MundaneItem-category loot (food, potions, components) after base loot. 0 = no extra mundane items.";
+    public int VendorLootMundaneItemPercent { get; set; } = 10;
 
     [JsonPropertyName("// GiveNpcSingleStackWeenieTypes")]
     public string GiveNpcSingleStackWeenieTypesDoc { get; init; } = "WeenieTypes that receive the give clamp (typically Generic for trophies). Only applies when MaxStackSize > 1.";

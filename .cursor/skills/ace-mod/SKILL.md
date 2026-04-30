@@ -41,7 +41,7 @@ public class Mod : BasicMod
 
 ## .csproj essentials
 
-Copy an existing gameplay mod in this repo (e.g. **Xenology**, **Loremaster**). Invariants:
+Copy an existing gameplay mod in this repo (e.g. **Swarmed**, **Loremaster**). Invariants:
 
 - `net10.0`, `OutputPath` → `C:\ACE\Mods\$(AssemblyName)`, `CopyLocalLockFileAssemblies` true.
 - **`ACEmulator.ACE.Shared`** — **no** `ExcludeAssets="runtime"` (each mod bundles `ACE.Shared.dll`).
@@ -91,7 +91,7 @@ Copy an existing gameplay mod in this repo (e.g. **Xenology**, **Loremaster**). 
 - **ChallengeModes:** `/cm quit` → optional `Confirmation_CmQuit` → `CmQuit.Apply` → `PatchClass.DisableAllChallengeModesForQuit`; `CmCommands.RefreshChallengeRadar` is **internal** for shared use; `CmQuit*` booleans in `Settings` mirror enlight-style strips (level/attributes/skills/lum/society/aetheria, unequip).
 - **High-enlight QB (AureatePath only):** `VerifyEnlightenmentEligibility` may require minimum **`FakeFloat.QuestBonus`** for enlightenments after **50** completed (defaults: base **5000** + **100** per step for 51st, 52nd, …). Tunables: `EnableHighEnlightenmentQuestBonusRequirement`, `HighEnlightenmentQuestBonusFromCompletedCount`, `HighEnlightenmentQuestBonusBase`, `HighEnlightenmentQuestBonusPerStep`.
 
-### Xenology-style (loot + combat)
+### Swarmed-style (loot + combat)
 
 - **`Creature.GenerateTreasure`** is **private** — patch `typeof(Creature), "GenerateTreasure", new[] { typeof(DamageHistoryInfo), typeof(Corpse) }`.
 - **`DeathTreasure`** comes from **`DeathTreasureType`** → `DatabaseManager.World.GetCachedDeathTreasure`. To “bump tier,” **prefix** can set **`PropertyDataId.DeathTreasureType`**, then **postfix** restore after other postfixes (lower Harmony priority = runs later). **`GetAllTreasureDeath()`** for resolving another **`TreasureDeath`** row by tier.
@@ -126,6 +126,20 @@ Copy an existing gameplay mod in this repo (e.g. **Xenology**, **Loremaster**). 
 
 Null-coalesce collections before LINQ; guard **`FirstOrDefault`** on empty sequences; **`ToHashSet()`** ambiguity → `new HashSet<T>(source)`; reflection → log **`InnerException`**; empty **`RecipeManager`** lists before **`Last()`**; safe divide with **`Math.Max(1, divisor)`**.
 
+## SQL Content Deployment
+
+- **SQL does NOT auto-deploy on build.** The `.csproj` copies only DLL + JSON to `C:\ACE\Mods\`. SQL files in `Content/SQL/` must be **manually executed** against the live MySQL `ace_world` database.
+- **ACE caches weenies at startup.** Changes to `weenie_properties_int`, `weenie_properties_string`, or any weenie table require a **server restart** to take effect. There is no hot-reload for weenie data.
+- **Use `INSERT ... ON DUPLICATE KEY UPDATE` for idempotent SQL.** `weenie_properties_int` has a `UNIQUE KEY` on `(object_Id, type)`. A plain `UPDATE` silently does nothing if the row is absent. Prefer:
+  ```sql
+  INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (42516, 94, 128)
+  ON DUPLICATE KEY UPDATE value = 128;
+  ```
+- **Verify DB state after applying SQL.** Query the database to confirm changes took effect before concluding "nothing changed":
+  ```sql
+  SELECT type, value FROM weenie_properties_int WHERE object_Id = 850200 AND type = 94;
+  ```
+
 ## Workflow checklist
 
 1. Copy `.csproj` from a working mod in this repo.  
@@ -133,7 +147,9 @@ Null-coalesce collections before LINQ; guard **`FirstOrDefault`** on empty seque
 3. Hook ACE method with exact signature.  
 4. Settings in ctor + `Start()` + `OnWorldOpen()`.  
 5. Ship `Settings.json` two-band template.  
-6. Hot-reload: `/mod f [name]` after rebuild.
+6. Apply SQL to live `ace_world` database if the mod includes weenie changes.  
+7. Restart the server for weenie changes to take effect.  
+8. Hot-reload: `/mod f [name]` after rebuild (C# changes only; not weenie data).
 
 ## Links
 

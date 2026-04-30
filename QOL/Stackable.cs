@@ -14,7 +14,7 @@ internal static class Stackable
         var path = Path.Combine(modDir, cfg.WcidFile);
         if (!File.Exists(path))
         {
-            ModManager.Log($"[QOL] Stackable: {cfg.WcidFile} not found — no WCIDs loaded.", ModManager.LogLevel.Warn);
+            ModManager.Log($"[QOL] Stackable: {cfg.WcidFile} not found at '{path}' — no WCIDs loaded.", ModManager.LogLevel.Warn);
             _wcids = new();
             return;
         }

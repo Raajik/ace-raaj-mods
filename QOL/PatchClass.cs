@@ -45,7 +45,10 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         base.Start();
         Settings = SettingsContainer.Settings ?? new Settings();
 
-        var modDir = Path.GetDirectoryName(typeof(PatchClass).Assembly.Location) ?? "";
+        var modDir = Path.GetDirectoryName(typeof(PatchClass).Assembly.Location);
+        if (string.IsNullOrEmpty(modDir))
+            modDir = Path.Combine(ModManager.ModPath, "QOL");
+
         PlayerProfileStore.Initialize(modDir);
         Stackable.Initialize(modDir, Settings.Stackable);
         XpTracker.Initialize(modDir);
@@ -79,8 +82,22 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 return;
             }
 
-            ModC.Harmony?.Patch(approachVendor, new HarmonyMethod(prefix));
-            ModManager.Log("[QOL] VendorLootRotation patched to Vendor.ApproachVendor.", ModManager.LogLevel.Info);
+            var harmonyPrefix = new HarmonyMethod(prefix);
+            harmonyPrefix.priority = HarmonyLib.Priority.First;
+            ModC.Harmony?.Patch(approachVendor, harmonyPrefix);
+            ModManager.Log("[QOL] VendorLootRotation patched to Vendor.ApproachVendor (priority=First, runs before LivingEquipment).", ModManager.LogLevel.Info);
+
+            // Also patch LoadInventory to filter vanilla armor/weapons — must be explicit because method is private
+            var loadInventory = AccessTools.Method(typeof(Vendor), "LoadInventory");
+            if (loadInventory != null)
+            {
+                var filterPostfix = AccessTools.Method(typeof(VendorInventoryFilter), nameof(VendorInventoryFilter.Postfix));
+                if (filterPostfix != null)
+                {
+                    ModC.Harmony?.Patch(loadInventory, postfix: new HarmonyMethod(filterPostfix));
+                    ModManager.Log("[QOL] VendorInventoryFilter patched to Vendor.LoadInventory.", ModManager.LogLevel.Info);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -163,8 +180,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             enabledFeatures.Add(Features.VendorPackBurdenRelief);
         if (Settings.EnableFullKillXpPerDamager)
             enabledFeatures.Add(Features.FullKillXpPerDamager);
-        if (Settings.EnableGiveNpcSingleFromStack)
-            enabledFeatures.Add(Features.GiveNpcSingleFromStack);
+        // Legacy GiveNpcSingleFromStack migrated to NpcStackTurnIn; either old or new enablement works.
+        if (Settings.EnableNpcStackTurnIn || Settings.EnableGiveNpcSingleFromStack)
+            enabledFeatures.Add(Features.NpcStackTurnIn);
         if (Settings.EnableLootEconomyControl)
         {
             enabledFeatures.Add(Features.LootEconomyControl);
@@ -309,7 +327,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     }
 
     [CommandHandler("qol", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
-        "QOL hub. Usage: /qol commands | killxp [off|xp|percent|default] | toll [components|cashonly]. See also: /xp tracker | /xp spend", "")]
+        "QOL hub. Usage: /qol commands | killxp [off|xp|percent|default] | toll [components|cashonly] | vendor [rotate]. See also: /xp tracker | /xp spend", "")]
     public static void HandleQol(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
@@ -341,7 +359,18 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             return;
         }
 
-        player.SendMessage($"Unknown /qol subcommand '{head}'. Try: commands, killxp, toll.", ChatMessageType.System);
+        if (head == "vendor" && parameters.Length > 1)
+        {
+            var sub = parameters[1].Trim().ToLowerInvariant();
+            if (sub == "rotate")
+            {
+                VendorLootRotation.ClearCooldowns();
+                player.SendMessage("Vendor loot cooldowns cleared. Approach a vendor to refresh their stock.", ChatMessageType.System);
+                return;
+            }
+        }
+
+        player.SendMessage($"Unknown /qol subcommand '{head}'. Try: commands, killxp, toll, vendor rotate.", ChatMessageType.System);
     }
 
     static void HandleKillXpSub(Player player, string? arg)

@@ -392,7 +392,7 @@ internal class LootGrowthItem : Mutator
         if (imbued.HasFlag(ImbuedEffectType.NetherRending))
             ui |= (int)UiEffects.Nether;         // dark purple
         if (imbued.HasFlag(ImbuedEffectType.PierceRending))
-            ui |= (int)(UiEffects.BoostHealth | UiEffects.BoostStamina); // yellow / gold (20)
+            ui |= (int)(UiEffects.BoostHealth | UiEffects.BoostStamina); // red outline in AC client (20)
         if (imbued.HasFlag(ImbuedEffectType.SlashRending))
             ui |= (int)UiEffects.Fire;           // red / orange
 

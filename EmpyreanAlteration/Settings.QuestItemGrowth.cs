@@ -119,7 +119,7 @@ public partial class Settings
     public string LootItemPreAwakenPrefixDoc { get; init; } = "Prefix applied to pre-awakened item names, replacing the material type.";
 
     [JsonPropertyName("// LootItemPreAwakenUiEffects")]
-    public string LootItemPreAwakenUiEffectsDoc { get; init; } = "UiEffects bitmask for pre-awakened items. Default 20 = BoostHealth|BoostStamina (yellow/gold).";
+    public string LootItemPreAwakenUiEffectsDoc { get; init; } = "UiEffects bitmask for pre-awakened items. Default 20 = BoostHealth|BoostStamina (renders as red outline in AC client).";
 
     public bool EnableLootItemPreAwaken { get; set; } = true;
     public float LootItemPreAwakenChance { get; set; } = 0.2f;

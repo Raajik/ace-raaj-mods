@@ -233,11 +233,11 @@ public class Settings
 
     [JsonPropertyName("// VendorLootItemsPerTierMin")]
     public string VendorLootItemsPerTierMinDoc { get; init; } = "Minimum items to generate per tier during rotation.";
-    public int VendorLootItemsPerTierMin { get; set; } = 15;
+    public int VendorLootItemsPerTierMin { get; set; } = 25;
 
     [JsonPropertyName("// VendorLootItemsPerTierMax")]
     public string VendorLootItemsPerTierMaxDoc { get; init; } = "Maximum items to generate per tier during rotation.";
-    public int VendorLootItemsPerTierMax { get; set; } = 30;
+    public int VendorLootItemsPerTierMax { get; set; } = 50;
 
     [JsonPropertyName("// VendorLootMinValue")]
     public string VendorLootMinValueDoc { get; init; } = "Minimum item value in pyreals for vendor loot.";
@@ -246,6 +246,18 @@ public class Settings
     [JsonPropertyName("// VendorLootMaxValue")]
     public string VendorLootMaxValueDoc { get; init; } = "Maximum item value in pyreals for vendor loot.";
     public int VendorLootMaxValue { get; set; } = 10000;
+
+    [JsonPropertyName("// VendorLootUniqueItemChance")]
+    public string VendorLootUniqueItemChanceDoc { get; init; } = "Chance (0-1) for a generated vendor item to receive bonus unique treatment (extra imbue + value inflation). 0.15 = 15%.";
+    public double VendorLootUniqueItemChance { get; set; } = 0.15;
+
+    [JsonPropertyName("// VendorLootImbueValueMultiplier")]
+    public string VendorLootImbueValueMultiplierDoc { get; init; } = "Value multiplier applied to vendor items that have an imbue (ImbuedEffect != 0). 3.0 = 3x base value.";
+    public double VendorLootImbueValueMultiplier { get; set; } = 3.0;
+
+    [JsonPropertyName("// VendorLootHighWorkmanshipValueMultiplier")]
+    public string VendorLootHighWorkmanshipValueMultiplierDoc { get; init; } = "Value multiplier applied to vendor items with workmanship >= 8. 2.0 = 2x base value. Stacks with imbue multiplier.";
+    public double VendorLootHighWorkmanshipValueMultiplier { get; set; } = 2.0;
 
     [JsonPropertyName("// VendorLootCooldownMinutes")]
     public string VendorLootCooldownMinutesDoc { get; init; } = "Minutes between vendor inventory rotations for the same vendor instance.";
@@ -277,11 +289,11 @@ public class Settings
 
     [JsonPropertyName("// VendorLootMagicItemPercent")]
     public string VendorLootMagicItemPercentDoc { get; init; } = "Percentage of extra inventory slots filled with MagicItem-category loot (scrolls, wands, orbs) after base Item-category loot. 0 = no extra magic items.";
-    public int VendorLootMagicItemPercent { get; set; } = 75;
+    public int VendorLootMagicItemPercent { get; set; } = 100;
 
     [JsonPropertyName("// VendorLootMundaneItemPercent")]
     public string VendorLootMundaneItemPercentDoc { get; init; } = "Percentage of extra inventory slots filled with MundaneItem-category loot (food, potions, components) after base loot. 0 = no extra mundane items.";
-    public int VendorLootMundaneItemPercent { get; set; } = 40;
+    public int VendorLootMundaneItemPercent { get; set; } = 75;
 
     [JsonPropertyName("// GiveNpcSingleStackWeenieTypes")]
     public string GiveNpcSingleStackWeenieTypesDoc { get; init; } = "WeenieTypes that receive the give clamp (typically Generic for trophies). Only applies when MaxStackSize > 1.";

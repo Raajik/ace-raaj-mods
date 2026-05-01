@@ -419,6 +419,7 @@ public static class VendorLootRotation
 
             int subScore = RollSubScore();
             ApplyQuality(item, itemTier, subScore);
+            ApplyVendorUniqueTreatment(item, subScore);
             ClampItemValue(item, _settings?.VendorLootMinValue ?? 100, _settings?.VendorLootMaxValue ?? 10000);
 
             // Store pre-tax base price for repricing
@@ -509,6 +510,116 @@ public static class VendorLootRotation
         var wDef = item.GetProperty(PropertyFloat.WeaponDefense);
         if (wDef.HasValue && wDef.Value > 0)
             item.SetProperty(PropertyFloat.WeaponDefense, wDef.Value * (1.0 + boost * 0.5));
+    }
+
+    static void ApplyVendorUniqueTreatment(WorldObject item, int subScore)
+    {
+        if (item == null || _settings == null) return;
+
+        double valueMult = 1.0;
+
+        // Check if EmpyreanAlteration already applied an imbue
+        bool hasImbue = item.ImbuedEffect != 0;
+        bool hasHighWorkmanship = (item.ItemWorkmanship ?? 0) >= 8;
+
+        if (hasImbue)
+        {
+            valueMult *= _settings.VendorLootImbueValueMultiplier;
+        }
+
+        if (hasHighWorkmanship)
+        {
+            valueMult *= _settings.VendorLootHighWorkmanshipValueMultiplier;
+        }
+
+        // Roll for vendor-specific unique treatment (extra imbue + value boost)
+        if (!hasImbue && subScore >= 85)
+        {
+            double roll = _rng.NextDouble();
+            if (roll < _settings.VendorLootUniqueItemChance)
+            {
+                // Apply a random imbue based on item type
+                ApplyRandomVendorImbue(item);
+                hasImbue = true;
+                valueMult *= _settings.VendorLootImbueValueMultiplier;
+
+                // Give it a flashy visual
+                item.UiEffects = (UiEffects)((int)(item.UiEffects ?? 0) | 256); // Acid = green glow
+            }
+        }
+
+        // Apply value multiplier if any
+        if (valueMult > 1.0 && item.Value.HasValue)
+        {
+            item.Value = (int)(item.Value.Value * valueMult);
+        }
+    }
+
+    static void ApplyRandomVendorImbue(WorldObject item)
+    {
+        try
+        {
+            if (IsWeapon(item))
+            {
+                var rendPool = new[]
+                {
+                    ImbuedEffectType.AcidRending,
+                    ImbuedEffectType.FireRending,
+                    ImbuedEffectType.ColdRending,
+                    ImbuedEffectType.ElectricRending,
+                    ImbuedEffectType.PierceRending,
+                    ImbuedEffectType.SlashRending,
+                    ImbuedEffectType.BludgeonRending,
+                };
+                var chosen = rendPool[_rng.Next(rendPool.Length)];
+                item.ImbuedEffect |= chosen;
+
+                // Match damage type to rend
+                var damageType = chosen switch
+                {
+                    ImbuedEffectType.AcidRending => DamageType.Acid,
+                    ImbuedEffectType.FireRending => DamageType.Fire,
+                    ImbuedEffectType.ColdRending => DamageType.Cold,
+                    ImbuedEffectType.ElectricRending => DamageType.Electric,
+                    ImbuedEffectType.PierceRending => DamageType.Pierce,
+                    ImbuedEffectType.SlashRending => DamageType.Slash,
+                    ImbuedEffectType.BludgeonRending => DamageType.Bludgeon,
+                    _ => (DamageType?)null
+                };
+                if (damageType.HasValue)
+                    item.SetProperty(PropertyInt.DamageType, (int)damageType.Value);
+            }
+            else if (IsArmorOrClothing(item))
+            {
+                var defensePool = new[]
+                {
+                    ImbuedEffectType.MeleeDefense,
+                    ImbuedEffectType.MissileDefense,
+                    ImbuedEffectType.MagicDefense,
+                };
+                var chosen = defensePool[_rng.Next(defensePool.Length)];
+                item.ImbuedEffect |= chosen;
+            }
+            else if (IsJewelry(item))
+            {
+                // Jewelry: random secondary weapon imbue or defense
+                var pool = new[]
+                {
+                    ImbuedEffectType.CriticalStrike,
+                    ImbuedEffectType.CripplingBlow,
+                    ImbuedEffectType.ArmorRending,
+                    ImbuedEffectType.MeleeDefense,
+                    ImbuedEffectType.MissileDefense,
+                    ImbuedEffectType.MagicDefense,
+                };
+                var chosen = pool[_rng.Next(pool.Length)];
+                item.ImbuedEffect |= chosen;
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[VendorLoot] ApplyRandomVendorImbue failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
     }
 
     static void AddItemToVendor(Vendor vendor, WorldObject item, HashSet<ObjectGuid> rotatedSet)

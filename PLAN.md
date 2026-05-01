@@ -355,19 +355,20 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
 
 ## Immediate Reworks (Next Session)
 
-1. **BetterLootControl (BLC) Mod Creation** — **IN PROGRESS**
+1. **~~BetterLootControl (BLC) Mod Creation~~** — **DONE (2026-05-01)**
    - **Goal:** Consolidate all loot-table logic into one mod — `BetterLootControl`.
-   - **Absorb:** `SharedLoot` (models, roller, config store, salvage bag shaper) + `BetterChestLoot` (chest injection, `SelectAProfile`/`Reset`/`Close` hooks).
+   - **Absorb:** `SharedLoot` (models, roller, config store, salvage bag shaper) + `BetterChestLoot` (chest injection, `SelectAProfile`/`Reset`/`Close` hooks, GlobalRareDrops).
    - **Keep calling into:** `EmpyreanAlteration` for item mutation (pre-awaken, pre-imbue) via existing reflection bridge. Do NOT absorb EA.
-   - **New callers:** Any mod needing bonus loot pools (Loremaster repeat-solve, Lockboxes, WorldEvents placement rewards) should reference `BetterLootControl` instead of `SharedLoot`.
-   - **Migration steps:** (1) Scaffold `BetterLootControl/` folder with `.csproj`, `Meta.json`, `Settings.cs`, `PatchClass.cs`; (2) Move `SharedLoot/*.cs` into `BetterLootControl/SharedLoot/` (internal namespace); (3) Move `BetterChestLoot/PatchClass.cs` logic into `BetterLootControl/Patches/ChestLoot.cs`; (4) Update `Loremaster.csproj`, `Lockboxes.csproj`, `CommonGoals.csproj`, `WorldEvents.csproj` to reference `BetterLootControl.csproj`; (5) Disable `BetterChestLoot` + `SharedLoot` in `Meta.json`; (6) Delete folders after live migration period.
+   - **New callers:** Any mod needing bonus loot pools (Loremaster repeat-solve, Lockboxes, WorldEvents placement rewards) references `BetterLootControl` instead of `SharedLoot`.
+   - **Migration completed:** Scaffolded folder, migrated SharedLoot files (preserved `namespace SharedLoot` for zero C# changes in dependents), merged BCL patches into `BetterLootControl/PatchClass.cs` + `GlobalRareDrops.cs`, updated `Loremaster.csproj`, `CommonGoals.csproj`, `WorldEvents.csproj`, disabled old mods in `Meta.json`. Built + deployed to test server; verified clean startup (BLC Active, BCL Disabled).
+   - **Remaining (Phase 8):** Delete `SharedLoot/` and `BetterChestLoot/` folders after live migration period.
 
 2. **LivingEquipment → EmpyreanAlteration Full Absorption** — **IN PROGRESS**
    - **Goal:** Delete `LivingEquipment/` mod entirely. All remaining functionality (Coalesced Mana use-on-target awakening, vendor injection, auto-awaken on inventory add) absorbed into `EmpyreanAlteration`.
    - **Current state:** Pre-awaken/pre-imbue loot logic already moved to EA (`LootGrowthItem.TryMutateLoot`). LE now only handles Coalesced Mana use-on-target + vendor injection + auto-awaken on pickup.
    - **Remaining LE files to migrate:** `ItemAwakener.cs` (awakening engine), `PatchClass.cs` (use-on-target hooks, auto-awaken on inventory entry), `Settings.cs` (LE-specific settings), vendor injection logic.
    - **Cross-mod references to clean:**
-     - `SharedLoot/LootRoller.cs` `TryApplyLivingEquipment` reflection bridge → redirect to EA's mutator.
+     - ~~`SharedLoot/LootRoller.cs` `TryApplyLivingEquipment` reflection bridge → redirect to EA's mutator.~~ **DONE** — `BetterLootControl/LootRoller.cs` `TryApplyEmpyreanAlteration` now prefers EA, falls back to LE.
      - `QOL/PatchClass.cs` vendor approach priority comment → update to reference EA.
      - `EmpyreanAlteration/Mutators/LootGrowthItem.cs` comments → update/remove LE references.
      - `Swarmed/Settings.cs` doc comments → update LE references.

@@ -9,7 +9,7 @@ Server-side mods for **[ACEmulator](https://github.com/ACEmulator/ACE)** using *
 3. Tune behavior in each mod's **`Settings.json`** without recompiling.
 4. Restart the server or use hot-reload if the mod supports it.
 
-> **Do not edit `Meta.json` `Enabled` without understanding the dependency chain.** Some mods (e.g., `SharedLoot`, `QOL`) are depended on by others.
+> **Do not edit `Meta.json` `Enabled` without understanding the dependency chain.** Some mods (e.g., `BetterLootControl`, `QOL`) are depended on by others.
 
 ---
 
@@ -32,6 +32,14 @@ Server-side corpse autoloot using `.utl` profiles (compatible with Decal UT clas
 - Optional vendor-trash pass (sell greys automatically).
 - Optional unknown-scroll pass (keep or destroy untrained scrolls).
 - `/autoloot` toggles and profile selection.
+
+### BetterLootControl
+Consolidated loot-table control replacing `SharedLoot` + `BetterChestLoot`.
+- **Chest guaranteed drops** — adds salvage, trade notes, healing kits, keys, crystals, and gear to treasure chests.
+- **Global rare drops** — SpellSiphon tool and Mana Lattice have a small chance to drop from any creature with a treasure profile.
+- **Salvage bag shaping** — auto-shapes dropped salvage bags to 100-unit stacks.
+- **Loot rolling** — pooled rarity system (common/uncommon/rare/extremely rare) with independent salvage and gear rolls.
+- **Runtime config** — `LootConfig.json` (shared with Loremaster) controls all pools without recompiling.
 
 ### ChallengeModes
 A challenge-hub mod for alternate playstyles:
@@ -168,7 +176,7 @@ Use `/worldevents` or `/we` in-game for status and schedules.
 |------|------|
 | `AceModQa/` | Shared QA and test helpers referenced by some mod projects. Not loaded as a server mod. |
 | `tools/` | Standalone utilities: `DecalQaRunner`, `LinearSync`, `AceServerStringRef`. Not server mods. |
-| `SharedLoot/` | Shared loot-table helpers used by multiple mods. Must be enabled if any dependent mod is active. |
+| `BetterLootControl/` | Consolidated loot-table system (chest drops, rare drops, salvage shaping). Replaces `SharedLoot` + `BetterChestLoot`. Must be enabled if any dependent mod is active. |
 
 ---
 

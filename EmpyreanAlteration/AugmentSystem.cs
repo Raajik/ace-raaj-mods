@@ -140,6 +140,17 @@ public static class AugmentHelper
         return true;
     }
 
+    /// <summary>
+    /// Sets ImbuedEffect and the corresponding IconUnderlay for recognized imbue types.
+    /// Defense imbues and NetherRending have no underlay and are left as-is.
+    /// </summary>
+    static void SetImbuedEffectWithUnderlay(this WorldObject target, ImbuedEffectType effect)
+    {
+        target.ImbuedEffect = effect;
+        if (IconUnderlay.TryGetValue(effect, out var underlay))
+            target.IconUnderlayId = underlay;
+    }
+
     public static bool TryAugmentWith(this WorldObject target, Augment augment)
     {
         switch (augment)
@@ -219,13 +230,13 @@ public static class AugmentHelper
 
             #region magic item tinkering
             case Augment.Sunstone:
-                target.ImbuedEffect = ImbuedEffectType.ArmorRending;
+                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.ArmorRending);
                 return true;
             case Augment.FireOpal:
-                target.ImbuedEffect = ImbuedEffectType.CripplingBlow;
+                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.CripplingBlow);
                 return true;
             case Augment.BlackOpal:
-                target.ImbuedEffect = ImbuedEffectType.CriticalStrike;
+                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.CriticalStrike);
                 return true;
             case Augment.Opal:
                 target.ManaConversionMod = (target.ManaConversionMod ?? 0.0f) + 0.01f;
@@ -255,25 +266,25 @@ public static class AugmentHelper
                 target.WeaponOffense += 0.01f;
                 return true;
             case Augment.Emerald:
-                target.ImbuedEffect = ImbuedEffectType.AcidRending;
+                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.AcidRending);
                 return true;
             case Augment.WhiteSapphire:
-                target.ImbuedEffect = ImbuedEffectType.BludgeonRending;
+                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.BludgeonRending);
                 return true;
             case Augment.Aquamarine:
-                target.ImbuedEffect = ImbuedEffectType.ColdRending;
+                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.ColdRending);
                 return true;
             case Augment.Jet:
-                target.ImbuedEffect = ImbuedEffectType.ElectricRending;
+                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.ElectricRending);
                 return true;
             case Augment.RedGarnet:
-                target.ImbuedEffect = ImbuedEffectType.FireRending;
+                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.FireRending);
                 return true;
             case Augment.BlackGarnet:
-                target.ImbuedEffect = ImbuedEffectType.PierceRending;
+                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.PierceRending);
                 return true;
             case Augment.ImperialTopaz:
-                target.ImbuedEffect = ImbuedEffectType.SlashRending;
+                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.SlashRending);
                 return true;
             case Augment.FetishOfTheDarkIdols:
                 if (target.ImbuedEffect >= ImbuedEffectType.IgnoreAllArmor)

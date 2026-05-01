@@ -671,9 +671,9 @@ public static class VendorLootRotation
             item.SetProperty((PropertyBool)40130, true);               // IsAwakened
             item.SetProperty((PropertyInt)40131, 1);                    // AwakenedTier = Lesser
 
-            string newName = "Living " + originalName;
+            string newName = "Awakened " + originalName;
             item.SetProperty(PropertyString.Name, newName);
-            item.SetProperty(PropertyInt.UiEffects, 257);              // Magical(1) | Acid(256) = blue-green glow
+            item.SetProperty(PropertyInt.UiEffects, 32);              // Fire = red outline
             item.CalculateObjDesc();
             awakened++;
         }

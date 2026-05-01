@@ -1,0 +1,29 @@
+{
+  "Enabled": true,
+  "Verbose": false,
+  "LesserCoalescedManaWcid": 42516,
+  "GreaterCoalescedManaWcid": 42517,
+  "AethericCoalescedManaWcid": 42518,
+  "LesserMaxLevel": 25,
+  "GreaterMaxLevel": 50,
+  "AethericMaxLevel": 75,
+  "XpProfiles": [
+    { "Name": "QuickStart", "ItemBaseXp": 15000, "Description": "Fast levels 1-10, sharp curve after" },
+    { "Name": "Steady", "ItemBaseXp": 25000, "Description": "Moderate, consistent grind throughout" },
+    { "Name": "Brutal", "ItemBaseXp": 40000, "Description": "Sharp from level 1, very grindy" },
+    { "Name": "Casual", "ItemBaseXp": 8000, "Description": "Very easy, minimal grind" }
+  ],
+  "LesserProfileWeights": [0.50, 0.30, 0.15, 0.05],
+  "GreaterProfileWeights": [0.25, 0.25, 0.25, 0.25],
+  "AethericProfileWeights": [0.05, 0.20, 0.50, 0.25],
+  "EnableLootIntegration": true,
+  "PreAwakenedChance": 0.2,
+  "PreAwakenedTierWeights": [1.0, 0.3, 0.01],
+  "PreImbuedChance": 2.0,
+  "PreImbuedCountMin": 1,
+  "PreImbuedCountMax": 3,
+  "PreImbuedDoNotCountAgainstTinkerCap": true,
+  "AwakenedPrefix": "Awakened",
+  "ArcaneLoreDifficulty": 1,
+  "AwakenedItemUiEffects": 32
+}

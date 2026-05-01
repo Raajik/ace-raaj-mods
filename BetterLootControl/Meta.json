@@ -1,0 +1,10 @@
+{
+  "Name": "BetterLootControl",
+  "Author": "ace-raaj-mods",
+  "Description": "Consolidated loot table control: chest guaranteed drops, global rare drops, salvage shaping, and loot rolling. Replaces SharedLoot + BetterChestLoot.",
+  "Version": "1.0.0",
+  "Enabled": true,
+  "HotReload": true,
+  "RegisterCommands": false,
+  "ACEVersion": "0.0"
+}

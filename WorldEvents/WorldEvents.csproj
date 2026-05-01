@@ -32,7 +32,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<ProjectReference Include="..\SharedLoot\SharedLoot.csproj" />
+		<ProjectReference Include="..\BetterLootControl\BetterLootControl.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

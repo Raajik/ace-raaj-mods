@@ -1,9 +1,9 @@
 {
   "Name": "SharedLoot",
   "Author": "ace-raaj-mods",
-  "Description": "Shared loot configuration and rolling system.",
+  "Description": "DEPRECATED — functionality moved to BetterLootControl. Disable this mod.",
   "Version": "0.1.0",
-  "Enabled": true,
+  "Enabled": false,
   "HotReload": true,
   "RegisterCommands": false,
   "ACEVersion": "0.0"

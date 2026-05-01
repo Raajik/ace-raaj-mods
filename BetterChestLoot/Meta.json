@@ -1,9 +1,9 @@
 {
   "Name": "BetterChestLoot",
   "Author": "",
-  "Description": "Makes chests worth opening by adding guaranteed desirable items like trade notes, salvage bags, healing kits, and rare items.",
+  "Description": "DEPRECATED — functionality moved to BetterLootControl. Disable this mod.",
   "Version": "1.0",
-  "Enabled": true,
+  "Enabled": false,
   "HotReload": true,
   "RegisterCommands": false,
   "ACEVersion": "0.0"

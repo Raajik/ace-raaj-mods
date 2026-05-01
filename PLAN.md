@@ -354,7 +354,8 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
 
 ## Immediate Reworks (Next Session)
 
-1. **Vendor Rend/UiEffects Loss + Unlimited Supply Bug** *(EmpyreanAlteration / QOL / LivingEquipment)*
+1. **~~Vendor Rend/UiEffects Loss + Unlimited Supply Bug~~** *(QOL / SpellSiphon)* — **DONE**
+   - All mod-generated vendor items now inject into `UniqueItemsForSale` (actual WO transferred + auto-removed after purchase).
    - **Problem:** `Vendor.ItemProfileToWorldObjects()` recreates purchased items from the weenie template (`WorldObjectFactory.CreateNewWorldObject(wcid)`). Custom runtime properties — `UiEffects`, `ImbuedEffect`, `IconUnderlayId`, `Name`, `ItemMaxLevel`, `ItemTotalXp`, workmanship, spells — are lost. Default items are never removed from `DefaultItemsForSale`, giving infinite supply (free duplication of pre-imbued / pre-awakened gear).
    - **Fix approach (recommended):** Centralized Harmony patch in **EmpyreanAlteration** (already patches `FinalizeBuyTransaction` for mutators).
      - **Postfix on `Vendor.ItemProfileToWorldObjects`** — looks up original vendor item in `DefaultItemsForSale` by `itemProfile.ObjectGuid`. If found and original has any modded properties (`UiEffects != 0` || `ImbuedEffect != 0` || `IconUnderlayId != null` || custom Name), deep-copies all Biota properties (bool/int/int64/float/string/DID/spellbook) to the newly created WO. Stores original GUID in a temporary `PropertyInt` (e.g. `40200`) on the clone.
@@ -362,7 +363,8 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
    - **Alternative (simpler but requires injection changes):** Move mod-injected items to `UniqueItemsForSale` instead of `DefaultItemsForSale`. ACE already transfers actual WOs for unique items (properties preserved + auto-removed after purchase). Requires LivingEquipment and QOL injection code changes.
    - **Settings:** `EnableVendorItemPreservation` (default true), `EnableVendorOneOffModdedItems` (default true).
 
-2. **BetterChestLoot → BetterLootControl Migration + Rare Global Drops**
+2. **~~BetterChestLoot → BetterLootControl Migration + Rare Global Drops~~** *(BetterChestLoot)* — **DONE**
+   - `BetterChestLoot/Features/GlobalRareDrops.cs`: 0.5% chance for SpellSiphon tool (850200) and Mana Lattice (850201) on creature corpses with DeathTreasure.
    - **Goal:** Evolve BetterChestLoot from a chest-only guaranteed-drop system into an immutable "loot editing" mod that modifies ALL loot sources (chests, creatures, vendors).
    - **Rename:** Mod folder stays `BetterChestLoot` for now; document rename to `BetterLootControl` in backlog. After rewrite, `.csproj` AssemblyName changed, new `Meta.json` added, old folder deprecated.
    - **Feature: Global Rare Drops** — Add SpellSiphon tool (WCID 850200) and Mana Lattice (WCID 850201) as rare drops on creature corpses.

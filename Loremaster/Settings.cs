@@ -287,9 +287,9 @@ public class Settings
     public string AchievementTierThresholdsDoc { get; init; } = "Ordered list of progress-point thresholds that unlock Tier 1, 2, 3, 4 respectively. Progress points = uniqueQuestCount + floor(totalKills / KillsPerQuestEquivalent).";
     public List<int> AchievementTierThresholds { get; set; } = new() { 50, 150, 300, 500 };
 
-    [JsonPropertyName("// RestedXp")]
-    public string RestedXpSectionDoc { get; init; } = "Offline rested XP bonus: time offline converts to temporary XP multiplier that scales with enlightenment gap.";
-    public RestedXpSettings RestedXp { get; set; } = new();
+    [JsonPropertyName("// Momentum")]
+    public string MomentumSectionDoc { get; init; } = "Account-wide momentum pool + optional level parity. Replaces RestedXp.";
+    public MomentumSettings Momentum { get; set; } = new();
 
     [JsonPropertyName("// LootTierDelay")]
     public string LootTierDelaySectionDoc { get; init; } = "Delays high spell tiers on creature drops based on killer level.";

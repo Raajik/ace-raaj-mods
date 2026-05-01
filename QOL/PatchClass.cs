@@ -118,7 +118,11 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         var templateGuid = new ObjectGuid(itemProfile.ObjectGuid);
         if (!__instance.DefaultItemsForSale.TryGetValue(templateGuid, out var template))
-            return;
+        {
+            // Fall back to unique items in case a mod item is unexpectedly routed here
+            if (!__instance.UniqueItemsForSale.TryGetValue(templateGuid, out template))
+                return;
+        }
 
         foreach (var created in __result)
         {

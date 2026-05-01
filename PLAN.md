@@ -354,7 +354,25 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
 
 ## Immediate Reworks (Next Session)
 
-1. **~~Arcane Lore → Adaptation Rework~~** *(BetterSupportSkills)* — **DONE**
+1. **Vendor Rend/UiEffects Loss + Unlimited Supply Bug** *(EmpyreanAlteration / QOL / LivingEquipment)*
+   - **Problem:** `Vendor.ItemProfileToWorldObjects()` recreates purchased items from the weenie template (`WorldObjectFactory.CreateNewWorldObject(wcid)`). Custom runtime properties — `UiEffects`, `ImbuedEffect`, `IconUnderlayId`, `Name`, `ItemMaxLevel`, `ItemTotalXp`, workmanship, spells — are lost. Default items are never removed from `DefaultItemsForSale`, giving infinite supply (free duplication of pre-imbued / pre-awakened gear).
+   - **Fix approach (recommended):** Centralized Harmony patch in **EmpyreanAlteration** (already patches `FinalizeBuyTransaction` for mutators).
+     - **Postfix on `Vendor.ItemProfileToWorldObjects`** — looks up original vendor item in `DefaultItemsForSale` by `itemProfile.ObjectGuid`. If found and original has any modded properties (`UiEffects != 0` || `ImbuedEffect != 0` || `IconUnderlayId != null` || custom Name), deep-copies all Biota properties (bool/int/int64/float/string/DID/spellbook) to the newly created WO. Stores original GUID in a temporary `PropertyInt` (e.g. `40200`) on the clone.
+     - **Postfix on `Player.FinalizeBuyTransaction`** — for each `genericItems` entry, if it carries the temp property, finds the original in `vendor.DefaultItemsForSale` by GUID and removes it. This makes modded vendor items truly one-off without touching vanilla infinite-supply stock (healing kits, arrows, etc.).
+   - **Alternative (simpler but requires injection changes):** Move mod-injected items to `UniqueItemsForSale` instead of `DefaultItemsForSale`. ACE already transfers actual WOs for unique items (properties preserved + auto-removed after purchase). Requires LivingEquipment and QOL injection code changes.
+   - **Settings:** `EnableVendorItemPreservation` (default true), `EnableVendorOneOffModdedItems` (default true).
+
+2. **BetterChestLoot → BetterLootControl Migration + Rare Global Drops**
+   - **Goal:** Evolve BetterChestLoot from a chest-only guaranteed-drop system into an immutable "loot editing" mod that modifies ALL loot sources (chests, creatures, vendors).
+   - **Rename:** Mod folder stays `BetterChestLoot` for now; document rename to `BetterLootControl` in backlog. After rewrite, `.csproj` AssemblyName changed, new `Meta.json` added, old folder deprecated.
+   - **Feature: Global Rare Drops** — Add SpellSiphon tool (WCID 850200) and Mana Lattice (WCID 850201) as rare drops on creature corpses.
+     - Roll once per `Creature.GenerateTreasure` when creature has a valid `DeathTreasure` profile (i.e. anywhere an Encapsulated Spirit could drop).
+     - Chance: configurable `RareDropChance` default **0.005** (0.5%). Each item rolls independently.
+     - Items drop directly into corpse inventory via `corpse.TryAddToInventory()`.
+     - Both items remain vendor-purchasable for players with excess cash.
+   - **File:** `BetterChestLoot/Features/GlobalRareDrops.cs` (new), patch via postfix on `Creature.GenerateTreasure`.
+
+3. **~~Arcane Lore → Adaptation Rework~~** *(BetterSupportSkills)* — **DONE**
    - Spell dodge moved to `MissileDefenseBuffs.cs` (50% trained / 100% spec skill value).
    - Adaptation implemented in `ArcaneLoreBuffs.cs`: element-specific damage reduction (`skill * AdaptationReductionPerSkill`, 60s duration, cap 99%).
    - Settings: `EnableAdaptation`, `AdaptationReductionPerSkill`, `AdaptationDurationSeconds`, `AdaptationMaxReduction`.
@@ -403,6 +421,20 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
 ## Greenfield Backlog (Prioritized)
 
 ### TIER 1 — High Interest / Feasible
+
+0. **~~Momentum & Parity System~~** *(Loremaster — replaces RestedXp)* — **DONE**
+   - **Replaced:** `RestedXpSystem.cs` deleted; replaced by `Loremaster/Features/MomentumSystem.cs`.
+   - **Account-wide momentum pool** (no cap):
+     - Accrues as `% of next-level requirement` while **zero** account characters are online (`AccrualPercentPerHour`, default 5%/hr).
+     - Decays slowly while any character is online (`DecayPercentPerHour`, default 1%/hr).
+     - On XP grant: consumed fraction gets matched as bonus XP (mult = 1.0 + consumedFraction). Full level's worth of pool = next level effectively doubled.
+   - **Level Parity (optional anti-snowball):**
+     - Compute `ServerMedianLevel` hourly from online players L50+.
+     - Below median: catch-up bonus (`1 + delta * ParityBonusPerLevelDelta`).
+     - Above median: diminishing returns (`Max(ParityMinimumMultiplier, 1 - delta * ParityPenaltyPerLevelDelta)`).
+   - **Hooks:** `Player.PlayerEnterWorld` (replenish from offline time), `Player.LogOut_Final` (track last character offline), `PreGrantXP` (apply parity then momentum).
+   - **Settings:** `MomentumSettings` in `Loremaster/Settings.cs` + `Settings.json` (default `Enabled: false` for safe migration; set to `true` when ready).
+   - **Persistence:** `Data/MomentumState.json` stores per-account `MomentumPool` and `LastCharOfflineUtc`.
 
 1. **Town Network Toll v3** *(QOL)* — Variable mage pricing, fake `@tells`, reagent bypass, portal gem
 2. **Loremaster Zahir** *(Loremaster)* — Quest item turn-in economy (XP/pyreal rewards)

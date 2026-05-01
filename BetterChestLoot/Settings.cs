@@ -14,8 +14,14 @@ public class Settings
 
     // Chance that a second item is added after the guaranteed first.
     public double SecondItemChance { get; init; } = 0.1;
-    // Chance that a third item is added (independent of second).
+    // Chance for a third item to be added (independent roll after second).
     public double ThirdItemChance { get; init; } = 0.01;
+
+    // -- Global Rare Drops (SpellSiphon / Mana Lattice) --
+    public bool EnableGlobalRareDrops { get; init; } = true;
+    public double RareDropChance { get; init; } = 0.005; // 0.5%
+    public uint SpellsiphonToolWcid { get; init; } = 850200;
+    public uint ManaLatticeWcid { get; init; } = 850201;
 
     // Optional override for LootConfig.json. Empty = Mods/Loremaster/LootConfig.json.
     public string LootConfigPath { get; init; } = "";

@@ -249,7 +249,10 @@ public static class VendorLootRotation
         if (_vendorRotatedItems.TryGetValue(vendorGuid, out var oldRotated))
         {
             foreach (var guid in oldRotated)
+            {
                 vendor.DefaultItemsForSale.Remove(guid);
+                vendor.UniqueItemsForSale.Remove(guid);
+            }
         }
         _vendorRotatedItems[vendorGuid] = rotatedSet;
 
@@ -259,8 +262,16 @@ public static class VendorLootRotation
             .Where(kvp => (kvp.Value.ItemType & equipmentMask) != 0)
             .Select(kvp => kvp.Key)
             .ToList();
-        foreach (var guid in equipmentGuids)
+        var uniqueEquipmentGuids = vendor.UniqueItemsForSale
+            .Where(kvp => (kvp.Value.ItemType & equipmentMask) != 0)
+            .Select(kvp => kvp.Key)
+            .ToList();
+        equipmentGuids.AddRange(uniqueEquipmentGuids);
+        foreach (var guid in equipmentGuids.Distinct())
+        {
             vendor.DefaultItemsForSale.Remove(guid);
+            vendor.UniqueItemsForSale.Remove(guid);
+        }
 
         _originalValues.Clear();
 
@@ -315,7 +326,7 @@ public static class VendorLootRotation
 
         // -- Apply luxury tax pricing (LLL handles economy scaling via SellPrice patch) --
         var taxMult = GetLuxuryTaxMultiplier();
-        foreach (var kvp in vendor.DefaultItemsForSale)
+        foreach (var kvp in vendor.DefaultItemsForSale.Concat(vendor.UniqueItemsForSale))
         {
             if (TradeNoteWcids.Contains(kvp.Value.WeenieClassId))
                 continue;
@@ -344,7 +355,7 @@ public static class VendorLootRotation
             }
         }
 
-        ModManager.Log($"[VendorLoot] Vendor {vendor.Name}: {itemCount} equip + {magicCount} magic + {mundaneCount} mundane + {salvageCount} salvage. Tier {vendorTier}, profile {vendorProfile}.", ModManager.LogLevel.Info);
+        ModManager.Log($"[VendorLoot] Vendor {vendor.Name}: {itemCount} equip + {magicCount} magic + {mundaneCount} mundane + {salvageCount} salvage. Tier {vendorTier}, profile {vendorProfile}. Default={vendor.DefaultItemsForSale.Count}, Unique={vendor.UniqueItemsForSale.Count}", ModManager.LogLevel.Info);
     }
 
     // =====================================================================
@@ -504,7 +515,7 @@ public static class VendorLootRotation
     {
         item.ContainerId = vendor.Guid.Full;
         item.CalculateObjDesc();
-        vendor.DefaultItemsForSale.Add(item.Guid, item);
+        vendor.UniqueItemsForSale.Add(item.Guid, item);
         rotatedSet.Add(item.Guid);
     }
 

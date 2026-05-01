@@ -67,7 +67,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         TrophyBurdenXp.Initialize();
         AccountQuestFlags.Load();
         RepeatQbTracker.Load();
-        RestedXpSystem.Initialize();
+        MomentumSystem.Initialize();
 
         // OnWorldOpen never runs on hot-reload; still recalc anyone online and watch Settings.json.
         UpdateIngamePlayers();
@@ -901,10 +901,18 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 __instance.SetProperty((PropertyInt64)40126, total);
         }
 
-        // Apply rested XP bonus on top of the computed total
-        double restedMult = RestedXpSystem.ApplyRestedMultiplier(__instance, ref total);
-        if (restedMult > 1.0)
-            mult *= restedMult;
+        // Apply level parity BEFORE momentum so momentum consumes from the parity-adjusted amount
+        double parityMult = MomentumSystem.ApplyLevelParityMultiplier(__instance, ref total);
+        if (parityMult != 1.0 && __instance.Notify(LMBool.NotifyQuestXp))
+        {
+            var parityStr = parityMult > 1.0 ? $"+{(parityMult - 1.0) * 100:0.##}% parity" : $"-{Math.Abs(parityMult - 1.0) * 100:0.##}% parity";
+            // We'll just include it in the notify below
+        }
+
+        // Apply momentum multiplier (consumes from account-wide pool)
+        double momentumMult = MomentumSystem.ApplyMomentumMultiplier(__instance, ref total);
+        if (momentumMult > 1.0)
+            mult *= momentumMult;
 
         var notify = xpType == XpType.Quest && __instance.Notify(LMBool.NotifyQuestXp);
         if (notify && __instance.Session != null)
@@ -939,14 +947,14 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     public static void PostPlayerEnterWorld(Player __instance)
     {
         if (__instance?.Session?.Network != null)
-            RestedXpSystem.OnPlayerEnterWorld(__instance);
+            MomentumSystem.OnPlayerEnterWorld(__instance);
     }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), "LogOut_Final", new Type[] { typeof(bool) })]
     public static void PreLogOut_Final(bool skipAnimations, Player __instance)
     {
-        RestedXpSystem.OnPlayerLogOut(__instance);
+        MomentumSystem.OnPlayerLogOut(__instance);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

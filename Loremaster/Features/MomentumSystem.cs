@@ -349,7 +349,7 @@ public class MomentumSettings
 {
     [JsonPropertyName("// Enabled")]
     public string EnabledDoc { get; init; } = "When true, replaces RestedXp with the Momentum & Parity system.";
-    public bool Enabled { get; set; } = false; // Default false for safety while migrating
+    public bool Enabled { get; set; } = true;
 
     [JsonPropertyName("// AccrualPercentPerHour")]
     public string AccrualPercentPerHourDoc { get; init; } = "Momentum accrued per hour offline, as % of next-level requirement (5.0 = 5%/hr).";

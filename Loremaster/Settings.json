@@ -156,7 +156,7 @@
   "// Momentum": "Account-wide momentum pool + optional level parity. Replaces RestedXp. Enabled=false by default while migrating.",
   "Momentum": {
     "// Enabled": "When true, replaces RestedXp with Momentum + Parity.",
-    "Enabled": false,
+    "Enabled": true,
     "// AccrualPercentPerHour": "Momentum accrued per hour offline as % of next-level requirement (5.0 = 5%/hr).",
     "AccrualPercentPerHour": 5.0,
     "// DecayPercentPerHour": "Momentum decayed per hour while ANY character is online (1.0 = 1%/hr).",

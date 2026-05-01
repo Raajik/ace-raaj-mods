@@ -51,6 +51,45 @@ After the modern subcommands, remaining tokens are parsed as **list** / **give**
 
 ---
 
+## Auto-deposit systems
+
+### Quest salvage bags (QuestSalvageAutoBank)
+
+When `EnableQuestSalvageAutoBank` is true (default), quest reward salvage bags are automatically converted to banked material units on acquisition — **the item never lands in your inventory**.
+
+| Quest bag WCID(s) | Material | Regular salvage WCID |
+|---|---|---|
+| 29571 | Aquamarine | 21037 |
+| 29572 | Black Garnet | 21039 |
+| 29573 | Black Opal | 21040 |
+| 29574 | Emerald | 21048 |
+| 29575 | Fire Opal | 21049 |
+| 29576 | Granite | 20985 |
+| 29577 | Imperial Topaz | 21054 |
+| 29578 | Jet | 21056 |
+| 29579 | Mahogany | 20988 |
+| 29580 | Red Garnet | 21069 |
+| 29581 | Steel | 20993 |
+| 29582 | Sunstone | 21079 |
+| 30260 | White Sapphire | 21086 |
+| 33620 (Pathwarden) | Granite | 20985 |
+| 33621 (Pathwarden) | Steel | 20993 |
+
+- Each bag deposits **100 units** (1 full standard bag) to the matching material bank property.
+- Intercepted at the `Player.GiveFromEmote` level (NPC emote rewards), so this works for **Clutch of Kings NPCs** and any other quest giver using emotes.
+
+### Pathwarden rewards (PathwardenAutoBank)
+
+When `EnablePathwardenAutoBank` is true (default), returning Pathwarden armor pieces to the racial trainers deposits:
+- Granite/Steel bags → handled by the unified **QuestSalvageAutoBank** above
+- Sturdy Iron Keys (WCID 6876) → deposited to the configured `Items` bank property
+
+### Recipe salvage (SalvageDirectDeposit)
+
+When `SalvageBank.DirectDepositOnSalvage` is true, items created by salvage recipes (tinkering bench output) are instantly deposited to the material bank.
+
+---
+
 ## Vendor integration
 
 - **Debit (`Debit.cs`):** If `VendorsUseBank`, purchases spend **bank first**, then carried currency. Coin display for vendors is capped so the client does not overflow int32.

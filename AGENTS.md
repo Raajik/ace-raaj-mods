@@ -188,6 +188,7 @@ Always check in this order:
 - **Foolproof imbue salvage items must NOT stack.** Setting `MaxStackSize` on foolproof items (e.g., Foolproof Aquamarine, Foolproof Black Garnet) causes them to break or behave incorrectly. In `LootRoller.CreateItemFromCategory`, explicitly exclude items whose `Name.Contains("Foolproof")` from `MaxStackSize` assignment. Same applies to any other non-stackable modded items.
 - **Runtime JSON configs override compiled defaults.** `DefaultLootConfig.cs` is a fallback only. The active config is `Loremaster/LootConfig.json` (or whatever `LootConfigPaths.ResolveLootConfigPath` returns). Any changes to `DefaultLootConfig.cs` must be mirrored in the JSON or they won't appear at runtime.
 - **BetterLootControl is the single source of truth for all loot tables.** Any mod needing bonus loot pools (Loremaster repeat-solves, Lockboxes, WorldEvents placement rewards) should reference `BetterLootControl` (the consolidated mod absorbing `SharedLoot` + `BetterChestLoot`), not individual mods.
+- **Preserve old namespace when migrating shared-library files into a consolidated mod.** When absorbing a shared mod (e.g., `SharedLoot`) into a new consolidated mod (`BetterLootControl`), keep the original `namespace` on migrated files. This avoids cascading `using` changes across all dependent mods. Only update the `.csproj` `ProjectReference` in dependents.
 
 ## 9. External Knowledge Base
 - **`A:\obsidian\jeremy\AGENT.md`** — LLM Wiki Agent rulebook. At the end of every task, consult and follow its instructions for knowledge persistence.

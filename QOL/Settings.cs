@@ -178,9 +178,8 @@ public class Settings
     public string EnableFullKillXpPerDamagerDoc { get; init; } = "When true, replaces ACE kill/luminance split by damage percent: each player (or pet owner) in DamageHistory earns the full creature XpOverride and full LuminanceAward (vanilla uses proportional split). Healing credit is unchanged (ACE does not award kill XP for healing in this path).";
     public bool EnableFullKillXpPerDamager { get; set; } = false;
 
-    [JsonPropertyName("// EnableGiveNpcSingleFromStack (DEPRECATED)")]
-    public string EnableGiveNpcSingleFromStackDoc { get; init; } = "DEPRECATED: replaced by NpcStackTurnIn. Set EnableNpcStackTurnIn in Settings.json instead. Kept for backward compatibility only.";
     [JsonPropertyName("// EnableGiveNpcSingleFromStack")]
+    public string EnableGiveNpcSingleFromStackDoc { get; init; } = "DEPRECATED: replaced by NpcStackTurnIn. Set EnableNpcStackTurnIn in Settings.json instead. Kept for backward compatibility only.";
     public bool EnableGiveNpcSingleFromStack { get; set; } = false; // No longer used — replaced by EnableNpcStackTurnIn
 
     [JsonPropertyName("// EnableNpcStackTurnIn")]

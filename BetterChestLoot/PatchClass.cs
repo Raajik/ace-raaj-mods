@@ -282,6 +282,8 @@ if (chest == null)
 
     /// <summary>
     /// Adds guaranteed items to a chest based on configuration.
+    /// Always adds 1 regular salvage bag. Then rolls 1-3 items from common+ pools.
+    /// Then 25% imbue salvage bonus, 5% foolproof imbue salvage bonus, 25% gear bonus.
     /// </summary>
     private static void AddGuaranteedItemsToChest(Chest chest)
     {
@@ -289,38 +291,55 @@ if (chest == null)
         if (!s_bclAppliedThisFill.TryAdd(chest.Guid.Full, 0))
             return;
 
-        int numItemsToAdd = GetRandomNumberOfItems();
-        if (numItemsToAdd <= 0)
+        var cfg = LootConfigStore.GetLoadedOrDefault();
+
+        // 1. Guaranteed regular salvage bag (100%)
+        WorldObject? salvageItem = LootRoller.TryCreateSalvageItem(cfg);
+        if (salvageItem != null)
         {
-            s_bclAppliedThisFill.TryRemove(chest.Guid.Full, out _);
-            return;
+            bool added = chest.TryAddToInventory(salvageItem);
+            if (added && s_settings.EnableDebugLogging)
+                ModManager.Log($"BetterChestLoot: Added salvage {salvageItem.Name} to chest {chest.Name}", ModManager.LogLevel.Info);
         }
 
+        // 2. Random 1-3 items from common+ rarity pools
+        int numItemsToAdd = GetRandomNumberOfItems();
         for (int i = 0; i < numItemsToAdd; i++)
         {
             WorldObject? itemToAdd = SelectRandomGuaranteedItem(chest);
-            
             if (itemToAdd != null)
             {
                 bool added = chest.TryAddToInventory(itemToAdd);
-                
                 if (added && s_settings.EnableDebugLogging)
-                {
                     ModManager.Log($"BetterChestLoot: Added {itemToAdd.Name} to chest {chest.Name}", ModManager.LogLevel.Info);
-                }
             }
         }
 
-        // Bonus gear roll: ~25% chance for an extra equippable item
-        // (may be pre-awakened / pre-imbued if LivingEquipment is loaded)
-        WorldObject? gearItem = LootRoller.TryCreateGearItem(LootConfigStore.GetLoadedOrDefault());
+        // 3. Bonus imbue salvage roll (25% independent)
+        WorldObject? imbueItem = LootRoller.TryCreateImbueSalvageItem(cfg);
+        if (imbueItem != null)
+        {
+            bool added = chest.TryAddToInventory(imbueItem);
+            if (added && s_settings.EnableDebugLogging)
+                ModManager.Log($"BetterChestLoot: Added imbue salvage {imbueItem.Name} to chest {chest.Name}", ModManager.LogLevel.Info);
+        }
+
+        // 4. Bonus foolproof imbue salvage roll (5% independent)
+        WorldObject? foolproofItem = LootRoller.TryCreateFoolproofImbueSalvageItem(cfg);
+        if (foolproofItem != null)
+        {
+            bool added = chest.TryAddToInventory(foolproofItem);
+            if (added && s_settings.EnableDebugLogging)
+                ModManager.Log($"BetterChestLoot: Added foolproof {foolproofItem.Name} to chest {chest.Name}", ModManager.LogLevel.Info);
+        }
+
+        // 5. Bonus gear roll (~25% chance for extra equippable item)
+        WorldObject? gearItem = LootRoller.TryCreateGearItem(cfg);
         if (gearItem != null)
         {
             bool added = chest.TryAddToInventory(gearItem);
             if (added && s_settings.EnableDebugLogging)
-            {
                 ModManager.Log($"BetterChestLoot: Added bonus gear {gearItem.Name} to chest {chest.Name}", ModManager.LogLevel.Info);
-            }
         }
     }
 

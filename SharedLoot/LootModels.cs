@@ -21,6 +21,10 @@ public class LootConfig
     // Most gear should be normal so players manually awaken with Coalesced Mana.
     public double GearPreAwakenedChance { get; set; } = 0.10;
 
+    // Imbue salvage and foolproof imbue salvage each roll independently.
+    public double ImbueSalvageChance { get; set; } = 0.25;
+    public double FoolproofImbueSalvageChance { get; set; } = 0.05;
+
     // Rarity roll order matches LootRoller: extremely rare, then rare, then uncommon, remainder = common.
     public double ExtremelyRareChance { get; set; } = 0.0001;
     public double RareChance { get; set; } = 0.01;
@@ -31,6 +35,8 @@ public class LootConfig
     public LootCategory rare { get; set; } = new();
     public LootCategory extremelyRare { get; set; } = new();
     public LootCategory salvage { get; set; } = new();
+    public LootCategory imbueSalvage { get; set; } = new();
+    public LootCategory foolproofImbueSalvage { get; set; } = new();
     public LootCategory gear { get; set; } = new();
 }
 

@@ -15,6 +15,8 @@ public static class LootRoller
         var roll = ThreadSafeRandom.Next(0.0f, 1.0f);
 
         // Salvage rolls independently with its own chance before the normal rarity chain.
+        // Note: BetterChestLoot handles guaranteed salvage separately; this method is
+        // used by other callers (Loremaster, Lockboxes) that want a single random item.
         if (config.salvage?.items != null && config.salvage.items.Count > 0
             && roll < config.SalvageChance)
         {
@@ -43,8 +45,43 @@ public static class LootRoller
     }
 
     /// <summary>
+    /// Guaranteed regular salvage bag. Always creates one if salvage pool has items.
+    /// </summary>
+    public static WorldObject? TryCreateSalvageItem(LootConfig config)
+    {
+        if (config?.salvage?.items == null || config.salvage.items.Count == 0)
+            return null;
+        return CreateItemFromCategory(config.salvage);
+    }
+
+    /// <summary>
+    /// Bonus imbue salvage roll. 25% chance independent.
+    /// </summary>
+    public static WorldObject? TryCreateImbueSalvageItem(LootConfig config)
+    {
+        if (config?.imbueSalvage?.items == null || config.imbueSalvage.items.Count == 0)
+            return null;
+        if (ThreadSafeRandom.Next(0.0f, 1.0f) >= config.ImbueSalvageChance)
+            return null;
+        return CreateItemFromCategory(config.imbueSalvage);
+    }
+
+    /// <summary>
+    /// Bonus foolproof imbue salvage roll. 5% chance independent.
+    /// Foolproof items do NOT stack (they break if stacked).
+    /// </summary>
+    public static WorldObject? TryCreateFoolproofImbueSalvageItem(LootConfig config)
+    {
+        if (config?.foolproofImbueSalvage?.items == null || config.foolproofImbueSalvage.items.Count == 0)
+            return null;
+        if (ThreadSafeRandom.Next(0.0f, 1.0f) >= config.FoolproofImbueSalvageChance)
+            return null;
+        return CreateItemFromCategory(config.foolproofImbueSalvage);
+    }
+
+    /// <summary>
     /// Rolls independently for a bonus gear item (in addition to normal rarity loot).
-    /// If LivingEquipment is loaded, the item has a chance to be pre-awakened / pre-imbued.
+    /// If EmpyreanAlteration is loaded, item may spawn pre-awakened / pre-imbued.
     /// </summary>
     public static WorldObject? TryCreateGearItem(LootConfig config)
     {
@@ -112,10 +149,12 @@ public static class LootRoller
             bool isCrystalPearlOrJewel = item.Name.Contains("Crystal", StringComparison.OrdinalIgnoreCase)
                                       || item.Name.Contains("Pearl", StringComparison.OrdinalIgnoreCase)
                                       || item.Name.Contains("Jewel", StringComparison.OrdinalIgnoreCase)
-                                      || item.Name.Contains("Gem", StringComparison.OrdinalIgnoreCase)
-                                      || item.Name.Contains("Foolproof", StringComparison.OrdinalIgnoreCase);
+                                      || item.Name.Contains("Gem", StringComparison.OrdinalIgnoreCase);
 
-            if (isCrystalPearlOrJewel)
+            // Foolproof items must NOT stack — they break when stacked
+            bool isFoolproof = item.Name.Contains("Foolproof", StringComparison.OrdinalIgnoreCase);
+
+            if (isCrystalPearlOrJewel && !isFoolproof)
             {
                 stackSize = ThreadSafeRandom.Next(1, 3);
             }
@@ -130,8 +169,8 @@ public static class LootRoller
                     stackSize *= 2;
             }
 
-            // Enable stacking for non-salvage items when stackSize > 1
-            if (stackSize > 1 && !SalvageBagShaper.IsSalvageWcid((uint)selectedItem.wcid))
+            // Enable stacking for non-salvage, non-foolproof items when stackSize > 1
+            if (stackSize > 1 && !SalvageBagShaper.IsSalvageWcid((uint)selectedItem.wcid) && !isFoolproof)
             {
                 item.MaxStackSize = 100;
             }
@@ -152,6 +191,8 @@ public static class LootRoller
     /// <summary>
     /// Cross-mod bridge: if LivingEquipment is loaded, runs its loot mutator on the item
     /// so it may spawn pre-awakened and/or pre-imbued.
+    /// NOTE: LivingEquipment is being migrated to EmpyreanAlteration. This bridge
+    /// will be redirected once migration complete.
     /// </summary>
     static void TryApplyLivingEquipment(WorldObject item)
     {
@@ -174,6 +215,6 @@ public static class LootRoller
             // pre-awakened tier weights, so it affects rarity distribution.
             method.Invoke(null, new object[] { item, 5 });
         }
-        catch { /* swallow — LivingEquipment not present or incompatible */ }
+        catch { /* swallow -- LivingEquipment not present or incompatible */ }
     }
 }

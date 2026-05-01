@@ -355,7 +355,30 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
 
 ## Immediate Reworks (Next Session)
 
-1. **~~Vendor Rend/UiEffects Loss + Unlimited Supply Bug~~** *(QOL / SpellSiphon)* — **DONE**
+1. **BetterLootControl (BLC) Mod Creation** — **IN PROGRESS**
+   - **Goal:** Consolidate all loot-table logic into one mod — `BetterLootControl`.
+   - **Absorb:** `SharedLoot` (models, roller, config store, salvage bag shaper) + `BetterChestLoot` (chest injection, `SelectAProfile`/`Reset`/`Close` hooks).
+   - **Keep calling into:** `EmpyreanAlteration` for item mutation (pre-awaken, pre-imbue) via existing reflection bridge. Do NOT absorb EA.
+   - **New callers:** Any mod needing bonus loot pools (Loremaster repeat-solve, Lockboxes, WorldEvents placement rewards) should reference `BetterLootControl` instead of `SharedLoot`.
+   - **Migration steps:** (1) Scaffold `BetterLootControl/` folder with `.csproj`, `Meta.json`, `Settings.cs`, `PatchClass.cs`; (2) Move `SharedLoot/*.cs` into `BetterLootControl/SharedLoot/` (internal namespace); (3) Move `BetterChestLoot/PatchClass.cs` logic into `BetterLootControl/Patches/ChestLoot.cs`; (4) Update `Loremaster.csproj`, `Lockboxes.csproj`, `CommonGoals.csproj`, `WorldEvents.csproj` to reference `BetterLootControl.csproj`; (5) Disable `BetterChestLoot` + `SharedLoot` in `Meta.json`; (6) Delete folders after live migration period.
+
+2. **LivingEquipment → EmpyreanAlteration Full Absorption** — **IN PROGRESS**
+   - **Goal:** Delete `LivingEquipment/` mod entirely. All remaining functionality (Coalesced Mana use-on-target awakening, vendor injection, auto-awaken on inventory add) absorbed into `EmpyreanAlteration`.
+   - **Current state:** Pre-awaken/pre-imbue loot logic already moved to EA (`LootGrowthItem.TryMutateLoot`). LE now only handles Coalesced Mana use-on-target + vendor injection + auto-awaken on pickup.
+   - **Remaining LE files to migrate:** `ItemAwakener.cs` (awakening engine), `PatchClass.cs` (use-on-target hooks, auto-awaken on inventory entry), `Settings.cs` (LE-specific settings), vendor injection logic.
+   - **Cross-mod references to clean:**
+     - `SharedLoot/LootRoller.cs` `TryApplyLivingEquipment` reflection bridge → redirect to EA's mutator.
+     - `QOL/PatchClass.cs` vendor approach priority comment → update to reference EA.
+     - `EmpyreanAlteration/Mutators/LootGrowthItem.cs` comments → update/remove LE references.
+     - `Swarmed/Settings.cs` doc comments → update LE references.
+   - **Property ownership:** `LivingEquipmentProperties.IsAwakened` (FakeBool 40130), `AwakenedTier` (FakeInt 40131), `PreImbuedCount` (FakeInt 40132), `OriginalName` (FakeString 11033), `ProfileName` (FakeString 11034) — already documented in `AGENTS.md` as cross-mod shared IDs. EA should own these property constants after migration.
+
+3. **Overtinked Salvage Weenie Edits Visibility** *(Overtinked)* — **BACKLOG**
+   - **Problem:** Tinkering formula changes (increased armor from steel, increased damage from iron, increased protection/bane from armoredillo hide, etc.) implemented via Harmony patches may not be visible in-game because ACE caches weenie properties at startup or because the recipe system reads from weenie DB tables directly rather than from patched runtime values.
+   - **Investigation needed:** Check if `RecipeManager` / `TinkeringRules` reads from weenie `weenie_properties_int` / `weenie_properties_float` at runtime, and whether those queries bypass Harmony patches. If so, we may need SQL weenie updates alongside Harmony patches.
+   - **Plan before implementation:** Audit Overtinked's tinkering patches, identify which formulas are patched in-memory vs. which would need DB-level property changes, document findings.
+
+4. **~~Vendor Rend/UiEffects Loss + Unlimited Supply Bug~~** *(QOL / SpellSiphon)* — **DONE**
    - All mod-generated vendor items now inject into `UniqueItemsForSale` (actual WO transferred + auto-removed after purchase).
    - **Problem:** `Vendor.ItemProfileToWorldObjects()` recreates purchased items from the weenie template (`WorldObjectFactory.CreateNewWorldObject(wcid)`). Custom runtime properties — `UiEffects`, `ImbuedEffect`, `IconUnderlayId`, `Name`, `ItemMaxLevel`, `ItemTotalXp`, workmanship, spells — are lost. Default items are never removed from `DefaultItemsForSale`, giving infinite supply (free duplication of pre-imbued / pre-awakened gear).
    - **Fix approach (recommended):** Centralized Harmony patch in **EmpyreanAlteration** (already patches `FinalizeBuyTransaction` for mutators).

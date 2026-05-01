@@ -6,6 +6,11 @@ internal static class DefaultLootConfig
     {
         return new LootConfig
         {
+            SalvageChance = 1.0,          // guaranteed regular salvage
+            ImbueSalvageChance = 0.25,    // 25% bonus imbue salvage
+            FoolproofImbueSalvageChance = 0.05, // 5% bonus foolproof imbue salvage
+            GearChance = 0.25,
+            GearPreAwakenedChance = 0.10,
             ExtremelyRareChance = 0.0001,
             RareChance = 0.01,
             UncommonChance = 0.1,
@@ -57,7 +62,7 @@ internal static class DefaultLootConfig
             {
                 items = new List<LootItem>
                 {
-                    // LeyLineLedger salvage bags (clean single bags, shaped by SalvageBagShaper)
+                    // Non-imbue salvage bags (shaped by SalvageBagShaper)
                     new() { wcid = 20981, name = "Salvaged Armoredillo Hide", stackSize = 1 },
                     new() { wcid = 20982, name = "Salvaged Bronze", stackSize = 1 },
                     new() { wcid = 20983, name = "Salvaged Ceramic", stackSize = 1 },
@@ -73,71 +78,96 @@ internal static class DefaultLootConfig
                     new() { wcid = 20993, name = "Salvaged Steel", stackSize = 1 },
                     new() { wcid = 20994, name = "Salvaged Velvet", stackSize = 1 },
                     new() { wcid = 20995, name = "Salvaged Wool", stackSize = 1 },
-                    new() { wcid = 21034, name = "Salvaged Agate", stackSize = 1 },
                     new() { wcid = 21035, name = "Salvaged Amber", stackSize = 1 },
                     new() { wcid = 21036, name = "Salvaged Amethyst", stackSize = 1 },
-                    new() { wcid = 21037, name = "Salvaged Aquamarine", stackSize = 1 },
-                    new() { wcid = 21038, name = "Salvaged Azurite", stackSize = 1 },
-                    new() { wcid = 21039, name = "Salvaged Black Garnet", stackSize = 1 },
-                    new() { wcid = 21040, name = "Salvaged Black Opal", stackSize = 1 },
-                    new() { wcid = 21041, name = "Salvaged Bloodstone", stackSize = 1 },
                     new() { wcid = 21042, name = "Salvaged Brass", stackSize = 1 },
-                    new() { wcid = 21043, name = "Salvaged Carnelian", stackSize = 1 },
-                    new() { wcid = 21044, name = "Salvaged Citrine", stackSize = 1 },
                     new() { wcid = 21045, name = "Salvaged Copper", stackSize = 1 },
                     new() { wcid = 21046, name = "Salvaged Diamond", stackSize = 1 },
                     new() { wcid = 21047, name = "Salvaged Ebony", stackSize = 1 },
-                    new() { wcid = 21048, name = "Salvaged Emerald", stackSize = 1 },
-                    new() { wcid = 21049, name = "Salvaged Fire Opal", stackSize = 1 },
                     new() { wcid = 21050, name = "Salvaged Green Garnet", stackSize = 1 },
                     new() { wcid = 21051, name = "Salvaged Green Jade", stackSize = 1 },
                     new() { wcid = 21052, name = "Salvaged Gromnie Hide", stackSize = 1 },
-                    new() { wcid = 21053, name = "Salvaged Hematite", stackSize = 1 },
-                    new() { wcid = 21054, name = "Salvaged Imperial Topaz", stackSize = 1 },
                     new() { wcid = 21055, name = "Salvaged Ivory", stackSize = 1 },
-                    new() { wcid = 21056, name = "Salvaged Jet", stackSize = 1 },
-                    new() { wcid = 21057, name = "Salvaged Lapis Lazuli", stackSize = 1 },
-                    new() { wcid = 21058, name = "Salvaged Lavender Jade", stackSize = 1 },
                     new() { wcid = 21059, name = "Salvaged Leather", stackSize = 1 },
-                    new() { wcid = 21060, name = "Salvaged Malachite", stackSize = 1 },
                     new() { wcid = 21061, name = "Salvaged Marble", stackSize = 1 },
                     new() { wcid = 21062, name = "Salvaged Moonstone", stackSize = 1 },
-                    new() { wcid = 21063, name = "Salvaged Obsidian", stackSize = 1 },
-                    new() { wcid = 21064, name = "Salvaged Onyx", stackSize = 1 },
                     new() { wcid = 21065, name = "Salvaged Opal", stackSize = 1 },
-                    new() { wcid = 21066, name = "Salvaged Peridot", stackSize = 1 },
                     new() { wcid = 21067, name = "Salvaged Porcelain", stackSize = 1 },
                     new() { wcid = 21068, name = "Salvaged Pyreal", stackSize = 1 },
-                    new() { wcid = 21069, name = "Salvaged Red Garnet", stackSize = 1 },
-                    new() { wcid = 21070, name = "Salvaged Red Jade", stackSize = 1 },
-                    new() { wcid = 21071, name = "Salvaged Rose Quartz", stackSize = 1 },
                     new() { wcid = 21072, name = "Salvaged Ruby", stackSize = 1 },
                     new() { wcid = 21073, name = "Salvaged Sandstone", stackSize = 1 },
                     new() { wcid = 21074, name = "Salvaged Sapphire", stackSize = 1 },
                     new() { wcid = 21075, name = "Salvaged Serpentine", stackSize = 1 },
                     new() { wcid = 21076, name = "Salvaged Silk", stackSize = 1 },
                     new() { wcid = 21077, name = "Salvaged Silver", stackSize = 1 },
-                    new() { wcid = 21078, name = "Salvaged Smoky Quartz", stackSize = 1 },
-                    new() { wcid = 21079, name = "Salvaged Sunstone", stackSize = 1 },
                     new() { wcid = 21080, name = "Salvaged Teak", stackSize = 1 },
                     new() { wcid = 21081, name = "Salvaged Tiger Eye", stackSize = 1 },
                     new() { wcid = 21082, name = "Salvaged Tourmaline", stackSize = 1 },
                     new() { wcid = 21083, name = "Salvaged Turquoise", stackSize = 1 },
                     new() { wcid = 21084, name = "Salvaged White Jade", stackSize = 1 },
                     new() { wcid = 21085, name = "Salvaged White Quartz", stackSize = 1 },
+                    new() { wcid = 21087, name = "Salvaged Yellow Garnet", stackSize = 1 }
+                }
+            },
+            imbueSalvage = new LootCategory
+            {
+                items = new List<LootItem>
+                {
+                    // Imbue salvage bags (regular versions, shaped by SalvageBagShaper)
+                    new() { wcid = 21034, name = "Salvaged Agate", stackSize = 1 },
+                    new() { wcid = 21037, name = "Salvaged Aquamarine", stackSize = 1 },
+                    new() { wcid = 21038, name = "Salvaged Azurite", stackSize = 1 },
+                    new() { wcid = 21039, name = "Salvaged Black Garnet", stackSize = 1 },
+                    new() { wcid = 21040, name = "Salvaged Black Opal", stackSize = 1 },
+                    new() { wcid = 21041, name = "Salvaged Bloodstone", stackSize = 1 },
+                    new() { wcid = 21043, name = "Salvaged Carnelian", stackSize = 1 },
+                    new() { wcid = 21044, name = "Salvaged Citrine", stackSize = 1 },
+                    new() { wcid = 21048, name = "Salvaged Emerald", stackSize = 1 },
+                    new() { wcid = 21049, name = "Salvaged Fire Opal", stackSize = 1 },
+                    new() { wcid = 21053, name = "Salvaged Hematite", stackSize = 1 },
+                    new() { wcid = 21054, name = "Salvaged Imperial Topaz", stackSize = 1 },
+                    new() { wcid = 21056, name = "Salvaged Jet", stackSize = 1 },
+                    new() { wcid = 21057, name = "Salvaged Lapis Lazuli", stackSize = 1 },
+                    new() { wcid = 21058, name = "Salvaged Lavender Jade", stackSize = 1 },
+                    new() { wcid = 21060, name = "Salvaged Malachite", stackSize = 1 },
+                    new() { wcid = 21063, name = "Salvaged Obsidian", stackSize = 1 },
+                    new() { wcid = 21064, name = "Salvaged Onyx", stackSize = 1 },
+                    new() { wcid = 21066, name = "Salvaged Peridot", stackSize = 1 },
+                    new() { wcid = 21069, name = "Salvaged Red Garnet", stackSize = 1 },
+                    new() { wcid = 21070, name = "Salvaged Red Jade", stackSize = 1 },
+                    new() { wcid = 21071, name = "Salvaged Rose Quartz", stackSize = 1 },
+                    new() { wcid = 21078, name = "Salvaged Smoky Quartz", stackSize = 1 },
+                    new() { wcid = 21079, name = "Salvaged Sunstone", stackSize = 1 },
                     new() { wcid = 21086, name = "Salvaged White Sapphire", stackSize = 1 },
-                    new() { wcid = 21087, name = "Salvaged Yellow Garnet", stackSize = 1 },
                     new() { wcid = 21088, name = "Salvaged Yellow Topaz", stackSize = 1 },
                     new() { wcid = 21089, name = "Salvaged Zircon", stackSize = 1 }
+                }
+            },
+            foolproofImbueSalvage = new LootCategory
+            {
+                items = new List<LootItem>
+                {
+                    // Foolproof imbue salvage (never fails; do NOT stack)
+                    new() { wcid = 30094, name = "Foolproof Aquamarine", stackSize = 1 },
+                    new() { wcid = 30095, name = "Foolproof Black Garnet", stackSize = 1 },
+                    new() { wcid = 30096, name = "Foolproof Black Opal", stackSize = 1 },
+                    new() { wcid = 30097, name = "Foolproof Emerald", stackSize = 1 },
+                    new() { wcid = 30098, name = "Foolproof Fire Opal", stackSize = 1 },
+                    new() { wcid = 30099, name = "Foolproof Imperial Topaz", stackSize = 1 },
+                    new() { wcid = 30100, name = "Foolproof Jet", stackSize = 1 },
+                    new() { wcid = 30101, name = "Foolproof Peridot", stackSize = 1 },
+                    new() { wcid = 30102, name = "Foolproof Red Garnet", stackSize = 1 },
+                    new() { wcid = 30103, name = "Foolproof Sunstone", stackSize = 1 },
+                    new() { wcid = 30104, name = "Foolproof White Sapphire", stackSize = 1 },
+                    new() { wcid = 30105, name = "Foolproof Yellow Topaz", stackSize = 1 },
+                    new() { wcid = 30106, name = "Foolproof Zircon", stackSize = 1 }
                 }
             },
             rare = new LootCategory
             {
                 items = new List<LootItem>
                 {
-                    new() { wcid = 2626, name = "Trade Note (50,000)", stackSizeMin = 1, stackSizeMax = 10 },
-                    new() { wcid = 7377, name = "Trade Note (75,000)", stackSizeMin = 1, stackSizeMax = 10 },
-                    new() { wcid = 2627, name = "Trade Note (100,000)", stackSizeMin = 1, stackSizeMax = 10 },
+                    // Crystals (1-3 stackable via LootRoller logic, NOT foolproof)
                     new() { wcid = 30183, name = "Alchemist's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
                     new() { wcid = 30184, name = "Scholar's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
                     new() { wcid = 30186, name = "Smithy's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
@@ -167,19 +197,11 @@ internal static class DefaultLootConfig
                     new() { wcid = 30242, name = "Ben Ten's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
                     new() { wcid = 30245, name = "Hieromancer's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
                     new() { wcid = 30246, name = "Artist's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
-                    new() { wcid = 30094, name = "Foolproof Aquamarine", stackSize = 1 },
-                    new() { wcid = 30095, name = "Foolproof Black Garnet", stackSize = 1 },
-                    new() { wcid = 30096, name = "Foolproof Black Opal", stackSize = 1 },
-                    new() { wcid = 30097, name = "Foolproof Emerald", stackSize = 1 },
-                    new() { wcid = 30098, name = "Foolproof Fire Opal", stackSize = 1 },
-                    new() { wcid = 30099, name = "Foolproof Imperial Topaz", stackSize = 1 },
-                    new() { wcid = 30100, name = "Foolproof Jet", stackSize = 1 },
-                    new() { wcid = 30101, name = "Foolproof Peridot", stackSize = 1 },
-                    new() { wcid = 30102, name = "Foolproof Red Garnet", stackSize = 1 },
-                    new() { wcid = 30103, name = "Foolproof Sunstone", stackSize = 1 },
-                    new() { wcid = 30104, name = "Foolproof White Sapphire", stackSize = 1 },
-                    new() { wcid = 30105, name = "Foolproof Yellow Topaz", stackSize = 1 },
-                    new() { wcid = 30106, name = "Foolproof Zircon", stackSize = 1 },
+
+                    // Other rare items
+                    new() { wcid = 2626, name = "Trade Note (50,000)", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 7377, name = "Trade Note (75,000)", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 2627, name = "Trade Note (100,000)", stackSizeMin = 1, stackSizeMax = 10 },
                     new() { wcid = 6621, name = "Scintillating Gem", stackSize = 1 },
                     new() { wcid = 6329, name = "Pyreal Bar", stackSize = 1 },
                     new() { wcid = 6331, name = "Quality Pyreal Ingot", stackSize = 1 },
@@ -205,14 +227,15 @@ internal static class DefaultLootConfig
                     new() { wcid = 30110, name = "Infinite Elaborate Dried Rations", stackSize = 1 },
                     new() { wcid = 30111, name = "Infinite Simple Dried Rations", stackSize = 1 },
                     new() { wcid = 30133, name = "Rune of Dispel", stackSize = 1 },
-                    new() { wcid = 30936, name = "Pack", stackSize = 1 }
+                    new() { wcid = 30936, name = "Pack", stackSize = 1 },
+                    new() { wcid = 46441, name = "Boxed Augmentation Gem", stackSize = 1 }
                 }
             },
             gear = new LootCategory
             {
                 items = new List<LootItem>
                 {
-                    // ── Melee Weapons ──
+                    // Melee Weapons
                     new() { wcid = 300, name = "Long Sword", stackSize = 1 },
                     new() { wcid = 350, name = "Broad Sword", stackSize = 1 },
                     new() { wcid = 314, name = "Dagger", stackSize = 1 },
@@ -223,17 +246,17 @@ internal static class DefaultLootConfig
                     new() { wcid = 352, name = "Short Sword", stackSize = 1 },
                     new() { wcid = 354, name = "Takuba", stackSize = 1 },
 
-                    // ── Missile Weapons ──
+                    // Missile Weapons
                     new() { wcid = 306, name = "Longbow", stackSize = 1 },
                     new() { wcid = 307, name = "Shortbow", stackSize = 1 },
                     new() { wcid = 311, name = "Heavy Crossbow", stackSize = 1 },
                     new() { wcid = 312, name = "Light Crossbow", stackSize = 1 },
 
-                    // ── Casters ──
+                    // Casters
                     new() { wcid = 2472, name = "Wand", stackSize = 1 },
                     new() { wcid = 22080, name = "Impious Staff", stackSize = 1 },
 
-                    // ── Armor ──
+                    // Armor
                     new() { wcid = 40, name = "Platemail Breastplate", stackSize = 1 },
                     new() { wcid = 71, name = "Chainmail Hauberk", stackSize = 1 },
                     new() { wcid = 50, name = "Leather Cuirass", stackSize = 1 },
@@ -242,7 +265,7 @@ internal static class DefaultLootConfig
                     new() { wcid = 93, name = "Round Shield", stackSize = 1 },
                     new() { wcid = 95, name = "Tower Shield", stackSize = 1 },
 
-                    // ── Jewelry / Special ──
+                    // Jewelry / Special
                     new() { wcid = 14452, name = "Elysa's Favor", stackSize = 1 },
                     new() { wcid = 7886, name = "Baron's Amulet of Life Giving", stackSize = 1 },
                     new() { wcid = 28078, name = "Ring of Enchantment", stackSize = 1 },

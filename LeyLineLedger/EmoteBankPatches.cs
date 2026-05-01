@@ -40,13 +40,17 @@ internal static class EmoteBankPatches
     }
 
     /// <summary>
-    /// Intercepts Player.GiveFromEmote to deposit Pathwarden NPC rewards directly to bank.
+    /// Intercepts Player.GiveFromEmote to deposit quest salvage and Pathwarden rewards directly to bank.
     /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), nameof(Player.GiveFromEmote))]
     public static bool PrefixGiveFromEmote(Player __instance, WorldObject emoter, uint weenieClassId, int amount)
     {
-        // Let PathwardenAutoBank handle it - returns true if intercepted
+        // 1. Quest salvage bags (CoK, Pathwarden Granite/Steel, etc.)
+        if (QuestSalvageAutoBank.TryAutoDepositEmote(__instance, weenieClassId, amount))
+            return false; // skip original — item never created
+
+        // 2. Pathwarden NPC keys (Sturdy Iron Key) and any remaining legacy intercepts
         return !PathwardenAutoBank.TryInterceptReward(__instance, emoter, weenieClassId, amount);
     }
 

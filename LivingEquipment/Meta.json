@@ -1,0 +1,10 @@
+{
+  "Name": "LivingEquipment",
+  "Author": "Raajik",
+  "Description": "Awaken equipment with Coalesced Mana to unlock item leveling and growth. Tiered awakening (Lesser/Greater/Aetheric) with named XP profiles, pre-awakened loot drops, and pre-imbued bonuses.",
+  "Version": "0.1.0",
+  "Enabled": true,
+  "HotReload": true,
+  "RegisterCommands": true,
+  "ACEVersion": "0.0"
+}

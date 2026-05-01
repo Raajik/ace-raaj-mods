@@ -119,6 +119,9 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         ModC.Harmony.PatchCategory(nameof(EmoteBankPatches));
 
+        if (Settings.EnableQuestSalvageAutoBank || Settings.EnablePathwardenAutoBank)
+            ModC.Harmony.PatchCategory(nameof(QuestSalvageAutoBank));
+
         EconomyBalancer.TryApply();
         LootTracker.TryApply();
         PublicExchange.TryApply();

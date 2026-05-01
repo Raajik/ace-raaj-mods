@@ -17,8 +17,12 @@ public class Settings
     public bool EnableLockpickAutoBank { get; set; } = true;
 
     [JsonPropertyName("// EnablePathwardenAutoBank")]
-    public string EnablePathwardenAutoBankDoc { get; init; } = "When true, Pathwarden NPC rewards (Granite/Steel bags from armor returns, Sturdy Iron Keys) are deposited directly to bank instead of inventory.";
+    public string EnablePathwardenAutoBankDoc { get; init; } = "DEPRECATED — use EnableQuestSalvageAutoBank instead. Kept for backward compatibility. When true, Pathwarden NPC rewards (Sturdy Iron Keys) are deposited directly to bank. Granite/Steel bags have moved to the unified quest salvage system.";
     public bool EnablePathwardenAutoBank { get; set; } = true;
+
+    [JsonPropertyName("// EnableQuestSalvageAutoBank")]
+    public string EnableQuestSalvageAutoBankDoc { get; init; } = "When true, quest salvage bags (Clutch of Kings, Pathwarden, and similar reward bags) are automatically converted to banked material units on acquisition. Covers all sources: NPC emotes, quest scripts, and loot. Maps quest bag WCIDs to their regular salvage equivalents.";
+    public bool EnableQuestSalvageAutoBank { get; set; } = true;
 
     [JsonPropertyName("// ValidateWeeniesAtStartup")]
     public string ValidateWeeniesAtStartupDoc { get; init; } = "When true, validates required weenies at mod startup and logs missing or mismatched entries.";

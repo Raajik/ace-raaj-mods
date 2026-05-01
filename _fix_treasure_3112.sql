@@ -1,0 +1,1 @@
+UPDATE `treasure_death` SET `item_Treasure_Type_Selection_Chances` = 9, `mundane_Item_Type_Selection_Chances` = 7 WHERE `id` = 300392;

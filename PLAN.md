@@ -373,7 +373,15 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
      - `Swarmed/Settings.cs` doc comments → update LE references.
    - **Property ownership:** `LivingEquipmentProperties.IsAwakened` (FakeBool 40130), `AwakenedTier` (FakeInt 40131), `PreImbuedCount` (FakeInt 40132), `OriginalName` (FakeString 11033), `ProfileName` (FakeString 11034) — already documented in `AGENTS.md` as cross-mod shared IDs. EA should own these property constants after migration.
 
-3. **Overtinked Salvage Weenie Edits Visibility** *(Overtinked)* — **BACKLOG**
+3. **Salvage Pool Split + Guaranteed Chest Drops** *(SharedLoot/BetterChestLoot)* — **DONE (2026-05-01)**
+   - Split `salvage` into `salvage` (regular), `imbueSalvage`, `foolproofImbueSalvage` pools.
+   - `DefaultLootConfig.cs`: Moved imbue WCIDs to new pools. Removed foolproof from `rare`. Added 46441 Boxed Augmentation Gem to `extremelyRare`.
+   - `LootRoller.cs`: `TryCreateSalvageItem` (guaranteed), `TryCreateImbueSalvageItem` (25%), `TryCreateFoolproofImbueSalvageItem` (5%). Foolproof stacking bug fixed — foolproof items never get `MaxStackSize` set.
+   - `BetterChestLoot/PatchClass.cs`: Guaranteed 1 regular salvage + 1-3 common+ items + 25% imbue + 5% foolproof + 25% gear.
+   - `Loremaster/LootConfig.json`: Synced runtime config with all new pools and chances.
+   - Built, deployed to test server, verified.
+
+4. **Overtinked Salvage Weenie Edits Visibility** *(Overtinked)* — **BACKLOG**
    - **Problem:** Tinkering formula changes (increased armor from steel, increased damage from iron, increased protection/bane from armoredillo hide, etc.) implemented via Harmony patches may not be visible in-game because ACE caches weenie properties at startup or because the recipe system reads from weenie DB tables directly rather than from patched runtime values.
    - **Investigation needed:** Check if `RecipeManager` / `TinkeringRules` reads from weenie `weenie_properties_int` / `weenie_properties_float` at runtime, and whether those queries bypass Harmony patches. If so, we may need SQL weenie updates alongside Harmony patches.
    - **Plan before implementation:** Audit Overtinked's tinkering patches, identify which formulas are patched in-memory vs. which would need DB-level property changes, document findings.

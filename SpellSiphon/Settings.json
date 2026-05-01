@@ -53,5 +53,11 @@
   "// IncludeSpellNameContains": "If non-empty, only spells whose names contain one of these substrings are candidates.",
   "IncludeSpellNameContains": [],
   "// ExcludeSpellNameContains": "Spell names containing any of these substrings are excluded from the pool.",
-  "ExcludeSpellNameContains": ["Portal", "Summon", "Recall"]
+  "ExcludeSpellNameContains": ["Portal", "Summon", "Recall"],
+  "// EnableVendorSales": "When true, SpellSiphon tools are sold at jewelers (vendors selling jewelry/gems).",
+  "EnableVendorSales": true,
+  "// ManaLatticeWcid": "WCID of the Mana Lattice — dedicated base for reusable buff gems.",
+  "ManaLatticeWcid": 850201,
+  "// VendorPrice": "Price in pyreals for the SpellSiphon tool at vendors.",
+  "VendorPrice": 10000
 }

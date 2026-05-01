@@ -119,5 +119,5 @@ public class Settings
 
 	[JsonPropertyName("// VendorPrice")]
 	public string VendorPriceDoc { get; init; } = "Price in pyreals for the SpellSiphon tool at vendors.";
-	public int VendorPrice { get; set; } = 250000;
+	public int VendorPrice { get; set; } = 10000;
 }

@@ -31,7 +31,7 @@ VALUES (850301,   1,         16) /* ItemType - Creature */
      , (850301,  75,          0) /* MerchandiseMinValue */
      , (850301,  76,     100000) /* MerchandiseMaxValue */
      , (850301,  93,    2098200) /* PhysicsState - ReportCollisions, IgnoreCollisions, Gravity, ReportCollisionsAsEnvironment */
-     , (850301, 113,          1) /* Gender - Male */
+     , (850301, 113,          2) /* Gender - Female */
      , (850301, 126,        125) /* VendorHappyMean */
      , (850301, 127,        125) /* VendorHappyVariance */
      , (850301, 133,          4) /* ShowableOnRadar - ShowAlways */
@@ -164,4 +164,7 @@ VALUES
 ,(850301, 4, 40454, 1, 0, 11600, False) /* Pathwarden Trinket */
 -- SpellSiphon Tools (2 items)
 ,(850301, 4, 850200, 1, 0, 10000, False) /* SpellSiphon */
-,(850301, 4, 850201, 1, 0,  5000, False) /* Mana Lattice */;
+,(850301, 4, 850201, 1, 0,  5000, False) /* Mana Lattice */
+-- Equipped Clothing
+,(850301, 2, 40439, 0, 0, 0, False) /* Wear Pathwarden Robe (Aluvian) */
+,(850301, 2, 40452, 0, 0, 0, False) /* Wear Pathwarden Gauntlets */;

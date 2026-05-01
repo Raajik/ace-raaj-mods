@@ -164,4 +164,7 @@ VALUES
 ,(850302, 4, 40454, 1, 0, 11400, False) /* Pathwarden Trinket */
 -- SpellSiphon Tools (2 items)
 ,(850302, 4, 850200, 1, 0, 10000, False) /* SpellSiphon */
-,(850302, 4, 850201, 1, 0,  5000, False) /* Mana Lattice */;
+,(850302, 4, 850201, 1, 0,  5000, False) /* Mana Lattice */
+-- Equipped Clothing
+,(850302, 2, 40441, 0, 0, 0, False) /* Wear Pathwarden Robe (Sho) */
+,(850302, 2, 40452, 0, 0, 0, False) /* Wear Pathwarden Gauntlets */;

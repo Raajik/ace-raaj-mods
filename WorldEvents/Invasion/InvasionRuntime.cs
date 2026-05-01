@@ -19,6 +19,13 @@ internal static class InvasionRuntime
     static int _tricklePulseCount = 0;
     static bool _creatureExSpawnedThisWave = false;
     static readonly Random _rng = new();
+    static PortalStormState? _portalStormState;
+
+    class PortalStormState
+    {
+        public List<WorldObject> ActivePortals = new();
+        public DateTime NextPortalShuffleUtc = DateTime.MinValue;
+    }
 
     // ── Lifecycle ────────────────────────────────────────────────────────
 
@@ -31,7 +38,25 @@ internal static class InvasionRuntime
             if (loaded != null && DateTime.UtcNow < loaded.EndsUtc)
             {
                 ActiveInvasion = loaded;
-                InvasionKillTracker.Reset(loaded.WaveKillThreshold, loaded.BossRespawnMinutes);
+
+                // Backward compat: old saves have KillThreshold == 0 on towns
+                foreach (var t in loaded.Towns)
+                {
+                    if (t.KillThreshold == 0)
+                    {
+                        t.KillThreshold = loaded.WaveKillThreshold;
+                        t.BossRespawnMinutes = loaded.BossRespawnMinutes;
+                    }
+                }
+
+                var townStates = loaded.Towns.ToDictionary(
+                    t => t.TownName,
+                    t => new InvasionKillTracker.TownKillState
+                    {
+                        Threshold = t.KillThreshold,
+                        BossRespawnMinutes = t.BossRespawnMinutes,
+                    });
+                InvasionKillTracker.Reset(townStates);
                 foreach (var t in loaded.Towns.Where(t => t.Mode == InvasionMode.Scripted))
                     TryStartScriptedEvent(t.EventName);
             }
@@ -86,14 +111,23 @@ internal static class InvasionRuntime
                     {
                         _lastReminderUtc = now;
                         var snap = ActiveInvasion!;
-                        var kills = InvasionKillTracker.KillsSinceBoss;
-                        var threshold = InvasionKillTracker.Threshold;
-                        Task.Run(() => InvasionBroadcast.AnnounceReminder(snap, kills, threshold));
+                        Task.Run(() => InvasionBroadcast.AnnounceReminder(snap));
                     }
 
-                    // Boss respawn check
-                    if (InvasionKillTracker.IsBossRespawnDue(now))
-                        TryRespawnBoss(s, ActiveInvasion!);
+                    // Per-town boss respawn check
+                    if (ActiveInvasion != null)
+                    {
+                        foreach (var entry in ActiveInvasion.Towns)
+                        {
+                            var state = InvasionKillTracker.GetTownState(entry.TownName);
+                            if (state?.IsBossRespawnDue(now) == true)
+                            {
+                                var ts = s.InvasionTowns.FirstOrDefault(t => t.TownName == entry.TownName);
+                                if (ts != null)
+                                    SpawnBoss(ts, entry);
+                            }
+                        }
+                    }
 
                     // Trickle spawn check (30-45s chaotic reinforcements)
                     if (_nextTrickleSpawnUtc == DateTime.MinValue)
@@ -103,6 +137,12 @@ internal static class InvasionRuntime
                     {
                         _nextTrickleSpawnUtc = now.AddSeconds(_rng.Next(30, 46));
                         DoTrickleSpawn(s);
+                    }
+
+                    // Portal Storm shuffle check
+                    if (ActiveInvasion!.ChaosMode && _portalStormState != null && now >= _portalStormState.NextPortalShuffleUtc)
+                    {
+                        ShuffleStormPortals(s);
                     }
                 }
             }
@@ -141,6 +181,78 @@ internal static class InvasionRuntime
         return min + _rng.NextDouble() * (max - min);
     }
 
+    static (uint themeTypeId, string themeName, bool chaosMode) RollInvasionTheme(Settings s)
+    {
+        // Portal Storm chance: even with themes enabled, roll for chaos first
+        var stormChance = Math.Clamp(s.InvasionPortalStormChancePercent, 0, 100);
+        if (_rng.Next(1, 101) <= stormChance)
+            return (0u, "", true);
+
+        if (s.InvasionUseCreatureTypeTheme && s.InvasionCreatureTypePool.Count > 0)
+        {
+            var typeId = s.InvasionCreatureTypePool[_rng.Next(s.InvasionCreatureTypePool.Count)];
+            var name = ((CreatureType)typeId).ToString();
+            return (typeId, name, false);
+        }
+
+        return (0u, "", true);
+    }
+
+    static int RollTownCount(Settings s)
+    {
+        var weights = s.InvasionTownCountWeights;
+        if (weights == null || weights.Count == 0)
+            return _rng.Next(s.InvasionMinTowns, s.InvasionMaxTowns + 1);
+
+        var total = weights.Sum();
+        var roll = _rng.Next(total);
+        var cumulative = 0;
+        for (int i = 0; i < weights.Count; i++)
+        {
+            cumulative += weights[i];
+            if (roll < cumulative)
+                return Math.Min(i + 1, s.InvasionMaxTowns);
+        }
+        return s.InvasionMinTowns;
+    }
+
+    static int ComputeTownThreshold(Settings s, int tier, bool isSoloTown)
+    {
+        var baseMin = s.InvasionKillThresholdMin;
+        var baseMax = s.InvasionKillThresholdMax;
+
+        // Linear tier scaling: T1 = 1/6, T6 = full
+        double tierFactor = tier > 0 ? tier / 6.0 : 0.5;
+        var scaledMin = (int)(baseMin * tierFactor);
+        var scaledMax = (int)(baseMax * tierFactor);
+
+        // Cap T1-T3 at 1/3 of absolute max
+        var oneThirdMax = baseMax / 3;
+        if (tier > 0 && tier <= 3)
+            scaledMax = Math.Min(scaledMax, oneThirdMax);
+
+        var threshold = _rng.Next(scaledMin, Math.Max(scaledMin + 1, scaledMax + 1));
+
+        // Random variance +/-
+        var variance = s.InvasionTierThresholdVariance;
+        threshold += _rng.Next(-variance, variance + 1);
+        threshold = Math.Clamp(threshold, baseMin, baseMax);
+
+        // Solo town buff: higher threshold (more sustained action)
+        if (isSoloTown)
+            threshold = Math.Min(baseMax, (int)(threshold * s.InvasionSoloTownThresholdMultiplier));
+
+        return threshold;
+    }
+
+    static double ComputeTownRespawn(Settings s, int threshold, bool isSoloTown)
+    {
+        var respawn = ComputeBossRespawnMinutes(s, threshold);
+        if (isSoloTown)
+            respawn *= s.InvasionSoloTownRespawnMultiplier;
+        return Math.Max(0.5, respawn);
+    }
+
     // ── Wave startup ─────────────────────────────────────────────────────
 
     static void TryStartNextWave(Settings s, DateTime now)
@@ -148,27 +260,15 @@ internal static class InvasionRuntime
         var eligible = s.InvasionTowns.Where(t => t.Enabled && !string.IsNullOrWhiteSpace(t.TownName)).ToList();
         if (eligible.Count == 0) return;
 
-        var minT = Math.Max(1, s.InvasionMinTowns);
-        var maxT = Math.Max(minT, Math.Min(s.InvasionMaxTowns, eligible.Count));
-        var townCount = _rng.Next(minT, maxT + 1);
+        var townCount = RollTownCount(s);
+        townCount = Math.Min(townCount, eligible.Count);
 
         Shuffle(eligible);
         var selected = eligible.Take(townCount).ToList();
+        var isSolo = selected.Count == 1;
 
-        // Creature type theme
-        var themeTypeId = 0u;
-        var themeName = "";
-        if (s.InvasionUseCreatureTypeTheme && s.InvasionCreatureTypePool.Count > 0)
-        {
-            themeTypeId = s.InvasionCreatureTypePool[_rng.Next(s.InvasionCreatureTypePool.Count)];
-            themeName = ((CreatureType)themeTypeId).ToString();
-        }
-
-        // Roll kill threshold, derive boss respawn time (inverse relationship)
-        var threshMin = Math.Max(1, s.InvasionKillThresholdMin);
-        var threshMax = Math.Max(threshMin, s.InvasionKillThresholdMax);
-        var threshold = _rng.Next(threshMin, threshMax + 1);
-        var respawnMins = ComputeBossRespawnMinutes(s, threshold);
+        // Creature type theme (with Portal Storm chance)
+        var (themeTypeId, themeName, chaosMode) = RollInvasionTheme(s);
 
         var ends = now.AddMinutes(s.InvasionWindowMinutes);
         var wave = new ActiveInvasionData
@@ -176,22 +276,33 @@ internal static class InvasionRuntime
             StartedUtc = now,
             EndsUtc = ends,
             ThemeName = themeName,
-            WaveKillThreshold = threshold,
-            BossRespawnMinutes = respawnMins,
-            ChaosMode = themeTypeId == 0,
+            ChaosMode = chaosMode,
         };
+
+        var townStates = new Dictionary<string, InvasionKillTracker.TownKillState>();
 
         foreach (var town in selected)
         {
             var mode = ResolveMode(town);
             var tier = s.InvasionUseTierSystem ? _rng.Next(1, 7) : 0;
+            var threshold = ComputeTownThreshold(s, tier, isSolo);
+            var respawnMins = ComputeTownRespawn(s, threshold, isSolo);
+
             wave.Towns.Add(new TownInvasionEntry
             {
                 TownName = town.TownName,
                 EventName = town.EventName ?? "",
                 Mode = mode,
                 Tier = tier,
+                KillThreshold = threshold,
+                BossRespawnMinutes = respawnMins,
             });
+
+            townStates[town.TownName] = new InvasionKillTracker.TownKillState
+            {
+                Threshold = threshold,
+                BossRespawnMinutes = respawnMins,
+            };
 
             if (mode == InvasionMode.Scripted)
                 TryStartScriptedEvent(town.EventName);
@@ -199,7 +310,12 @@ internal static class InvasionRuntime
                 StartDynamicEntry(s, town, tier, themeTypeId);
         }
 
-        InvasionKillTracker.Reset(threshold, respawnMins);
+        // Legacy global fallback (for old save compat)
+        var firstState = townStates.Values.FirstOrDefault();
+        wave.WaveKillThreshold = firstState?.Threshold ?? s.InvasionKillThresholdMin;
+        wave.BossRespawnMinutes = firstState?.BossRespawnMinutes ?? 5.0;
+
+        InvasionKillTracker.Reset(townStates);
         _lastReminderUtc = now;
         _nextTrickleSpawnUtc = now.AddSeconds(_rng.Next(30, 46));
         _tricklePulseCount = 0;
@@ -208,9 +324,12 @@ internal static class InvasionRuntime
         InvasionPersistence.SaveActiveInvasion(wave);
 
         ModManager.Log(
-            $"[Invasion] Wave started — {string.Join(", ", wave.Towns.Select(t => $"{t.TownName}(T{t.Tier})"))} " +
-            $"theme:{(themeName.Length > 0 ? themeName : "none")} threshold:{threshold} respawn:{respawnMins:0.#}m ends:{ends:u}",
+            $"[Invasion] Wave started — {string.Join(", ", wave.Towns.Select(t => $"{t.TownName}(T{t.Tier})[{t.KillThreshold}]"))} " +
+            $"theme:{(themeName.Length > 0 ? themeName : "PortalStorm")} ends:{ends:u}",
             ModManager.LogLevel.Info);
+
+        if (wave.ChaosMode)
+            SpawnPortalStormPortals(s, wave);
 
         var snap = wave;
         Task.Run(() => InvasionBroadcast.AnnounceWaveStart(s, snap));
@@ -231,25 +350,14 @@ internal static class InvasionRuntime
             var eligible = s.InvasionTowns.Where(t => t.Enabled && !string.IsNullOrWhiteSpace(t.TownName)).ToList();
             if (eligible.Count == 0) return null;
 
-            var minT = Math.Max(1, s.InvasionMinTowns);
-            var maxT = Math.Max(minT, Math.Min(s.InvasionMaxTowns, eligible.Count));
-            var townCount = _rng.Next(minT, maxT + 1);
+            var townCount = RollTownCount(s);
+            townCount = Math.Min(townCount, eligible.Count);
 
             Shuffle(eligible);
             var selected = eligible.Take(townCount).ToList();
+            var isSolo = selected.Count == 1;
 
-            var themeTypeId = 0u;
-            var themeName = "";
-            if (s.InvasionUseCreatureTypeTheme && s.InvasionCreatureTypePool.Count > 0)
-            {
-                themeTypeId = s.InvasionCreatureTypePool[_rng.Next(s.InvasionCreatureTypePool.Count)];
-                themeName = ((CreatureType)themeTypeId).ToString();
-            }
-
-            var threshMin = Math.Max(1, s.InvasionKillThresholdMin);
-            var threshMax = Math.Max(threshMin, s.InvasionKillThresholdMax);
-            var threshold = _rng.Next(threshMin, threshMax + 1);
-            var respawnMins = ComputeBossRespawnMinutes(s, threshold);
+            var (themeTypeId, themeName, chaosMode) = RollInvasionTheme(s);
 
             var ends = now.AddMinutes(s.InvasionWindowMinutes);
             var wave = new ActiveInvasionData
@@ -257,22 +365,33 @@ internal static class InvasionRuntime
                 StartedUtc = now,
                 EndsUtc = ends,
                 ThemeName = themeName,
-                WaveKillThreshold = threshold,
-                BossRespawnMinutes = respawnMins,
-                ChaosMode = themeTypeId == 0,
+                ChaosMode = chaosMode,
             };
+
+            var townStates = new Dictionary<string, InvasionKillTracker.TownKillState>();
 
             foreach (var town in selected)
             {
                 var mode = ResolveMode(town);
                 var tier = s.InvasionUseTierSystem ? _rng.Next(1, 7) : 0;
+                var threshold = ComputeTownThreshold(s, tier, isSolo);
+                var respawnMins = ComputeTownRespawn(s, threshold, isSolo);
+
                 wave.Towns.Add(new TownInvasionEntry
                 {
                     TownName = town.TownName,
                     EventName = town.EventName ?? "",
                     Mode = mode,
                     Tier = tier,
+                    KillThreshold = threshold,
+                    BossRespawnMinutes = respawnMins,
                 });
+
+                townStates[town.TownName] = new InvasionKillTracker.TownKillState
+                {
+                    Threshold = threshold,
+                    BossRespawnMinutes = respawnMins,
+                };
 
                 if (mode == InvasionMode.Scripted)
                     TryStartScriptedEvent(town.EventName);
@@ -280,7 +399,11 @@ internal static class InvasionRuntime
                     StartDynamicEntry(s, town, tier, themeTypeId);
             }
 
-            InvasionKillTracker.Reset(threshold, respawnMins);
+            var firstState = townStates.Values.FirstOrDefault();
+            wave.WaveKillThreshold = firstState?.Threshold ?? s.InvasionKillThresholdMin;
+            wave.BossRespawnMinutes = firstState?.BossRespawnMinutes ?? 5.0;
+
+            InvasionKillTracker.Reset(townStates);
             _lastReminderUtc = now;
             _nextTrickleSpawnUtc = now.AddSeconds(_rng.Next(30, 46));
             _tricklePulseCount = 0;
@@ -289,9 +412,12 @@ internal static class InvasionRuntime
             InvasionPersistence.SaveActiveInvasion(wave);
 
             ModManager.Log(
-                $"[Invasion] Wave started (scheduler) — {string.Join(", ", wave.Towns.Select(t => $"{t.TownName}(T{t.Tier})"))} " +
-                $"theme:{(themeName.Length > 0 ? themeName : "none")} threshold:{threshold} respawn:{respawnMins:0.#}m ends:{ends:u}",
+                $"[Invasion] Wave started (scheduler) — {string.Join(", ", wave.Towns.Select(t => $"{t.TownName}(T{t.Tier})[{t.KillThreshold}]"))} " +
+                $"theme:{(themeName.Length > 0 ? themeName : "PortalStorm")} ends:{ends:u}",
                 ModManager.LogLevel.Info);
+
+            if (wave.ChaosMode)
+                SpawnPortalStormPortals(s, wave);
 
             var snap = wave;
             Task.Run(() => InvasionBroadcast.AnnounceWaveStart(s, snap));
@@ -327,26 +453,17 @@ internal static class InvasionRuntime
     // ── Boss management ───────────────────────────────────────────────────
 
     // Called from Creature.Die patch (within InvasionLock)
-    internal static void CheckBossSpawnThreshold(Settings s, InvasionTownSettings town)
+    internal static void CheckBossSpawnThreshold(Settings s, InvasionTownSettings town, TownInvasionEntry entry)
     {
-        if (InvasionKillTracker.BossIsAlive) return;
-        if (InvasionKillTracker.KillsSinceBoss < InvasionKillTracker.Threshold) return;
+        var state = InvasionKillTracker.GetTownState(town.TownName);
+        if (state == null) return;
+        if (state.BossIsAlive) return;
+        if (state.KillsSinceBoss < entry.KillThreshold) return;
         if (town.BossWcid == 0) return;
-        SpawnBoss(town);
+        SpawnBoss(town, entry);
     }
 
-    static void TryRespawnBoss(Settings s, ActiveInvasionData wave)
-    {
-        foreach (var entry in wave.Towns)
-        {
-            var ts = s.InvasionTowns.FirstOrDefault(t => t.TownName == entry.TownName);
-            if (ts?.BossWcid == 0 || ts == null) continue;
-            SpawnBoss(ts);
-            return;
-        }
-    }
-
-    static void SpawnBoss(InvasionTownSettings town)
+    static void SpawnBoss(InvasionTownSettings town, TownInvasionEntry entry)
     {
         if (town.TownCenterObjCellId == 0 || town.BossWcid == 0) return;
         try
@@ -363,7 +480,8 @@ internal static class InvasionRuntime
             var lb = LandblockManager.GetLandblock(boss.Location.LandblockId, false);
             if (lb == null) return;
 
-            var isRespawn = InvasionKillTracker.TotalKills > InvasionKillTracker.Threshold;
+            var state = InvasionKillTracker.GetTownState(town.TownName);
+            var isRespawn = state != null && state.TotalKills > entry.KillThreshold;
             var bossName = boss.Name ?? $"WCID {town.BossWcid}";
             var townName = town.TownName;
 
@@ -372,15 +490,17 @@ internal static class InvasionRuntime
                 if (!lb.AddWorldObject(boss)) return;
                 if (boss is not Creature bossCreature) return;
 
-                InvasionKillTracker.OnBossSpawned(bossCreature);
+                InvasionKillTracker.OnBossSpawned(townName, bossCreature);
+                entry.BossIsAlive = true;
 
                 ModManager.Log($"[Invasion] Boss '{bossName}' spawned at {townName}.", ModManager.LogLevel.Info);
+                var chaosMode = ActiveInvasion?.ChaosMode ?? false;
                 Task.Run(() =>
                 {
                     if (isRespawn)
-                        InvasionBroadcast.AnnounceBossRespawning(townName, bossName);
+                        InvasionBroadcast.AnnounceBossRespawning(townName, bossName, chaosMode);
                     else
-                        InvasionBroadcast.AnnounceBossSpawned(townName, bossName);
+                        InvasionBroadcast.AnnounceBossSpawned(townName, bossName, chaosMode);
                 });
             }));
         }
@@ -412,6 +532,28 @@ internal static class InvasionRuntime
         _nextTrickleSpawnUtc = DateTime.MinValue;
         _tricklePulseCount = 0;
         _creatureExSpawnedThisWave = false;
+
+        // Clear Portal Storm portals
+        if (_portalStormState != null)
+        {
+            foreach (var portal in _portalStormState.ActivePortals)
+            {
+                try
+                {
+                    if (portal != null && !portal.IsDestroyed)
+                    {
+                        portal.EnqueueBroadcast(new GameMessageScript(portal.Guid, PlayScript.PortalExit));
+                        Task.Run(async () =>
+                        {
+                            await Task.Delay(1000);
+                            try { portal.Destroy(); } catch { }
+                        });
+                    }
+                }
+                catch { }
+            }
+            _portalStormState = null;
+        }
     }
 
     internal static void ForceStart(Settings s, string? townName = null)
@@ -441,25 +583,15 @@ internal static class InvasionRuntime
                 return;
             }
 
-            var minT = Math.Max(1, s.InvasionMinTowns);
-            var maxT = Math.Max(minT, Math.Min(s.InvasionMaxTowns, eligible.Count));
-            var townCount = string.IsNullOrWhiteSpace(townName) ? _rng.Next(minT, maxT + 1) : eligible.Count;
+            var townCount = string.IsNullOrWhiteSpace(townName) ? RollTownCount(s) : eligible.Count;
+            townCount = Math.Min(townCount, eligible.Count);
 
             Shuffle(eligible);
             var selected = eligible.Take(townCount).ToList();
+            var isSolo = selected.Count == 1;
 
-            var themeTypeId = 0u;
-            var themeName = "";
-            if (s.InvasionUseCreatureTypeTheme && s.InvasionCreatureTypePool.Count > 0)
-            {
-                themeTypeId = s.InvasionCreatureTypePool[_rng.Next(s.InvasionCreatureTypePool.Count)];
-                themeName = ((CreatureType)themeTypeId).ToString();
-            }
+            var (themeTypeId, themeName, chaosMode) = RollInvasionTheme(s);
 
-            var threshMin = Math.Max(1, s.InvasionKillThresholdMin);
-            var threshMax = Math.Max(threshMin, s.InvasionKillThresholdMax);
-            var threshold = _rng.Next(threshMin, threshMax + 1);
-            var respawnMins = ComputeBossRespawnMinutes(s, threshold);
             var ends = now.AddMinutes(s.InvasionWindowMinutes);
 
             var wave = new ActiveInvasionData
@@ -467,22 +599,33 @@ internal static class InvasionRuntime
                 StartedUtc = now,
                 EndsUtc = ends,
                 ThemeName = themeName,
-                WaveKillThreshold = threshold,
-                BossRespawnMinutes = respawnMins,
-                ChaosMode = themeTypeId == 0,
+                ChaosMode = chaosMode,
             };
+
+            var townStates = new Dictionary<string, InvasionKillTracker.TownKillState>();
 
             foreach (var town in selected)
             {
                 var mode = ResolveMode(town);
                 var tier = s.InvasionUseTierSystem ? _rng.Next(1, 7) : 0;
+                var threshold = ComputeTownThreshold(s, tier, isSolo);
+                var respawnMins = ComputeTownRespawn(s, threshold, isSolo);
+
                 wave.Towns.Add(new TownInvasionEntry
                 {
                     TownName = town.TownName,
                     EventName = town.EventName ?? "",
                     Mode = mode,
                     Tier = tier,
+                    KillThreshold = threshold,
+                    BossRespawnMinutes = respawnMins,
                 });
+
+                townStates[town.TownName] = new InvasionKillTracker.TownKillState
+                {
+                    Threshold = threshold,
+                    BossRespawnMinutes = respawnMins,
+                };
 
                 if (mode == InvasionMode.Scripted)
                     TryStartScriptedEvent(town.EventName);
@@ -490,7 +633,11 @@ internal static class InvasionRuntime
                     StartDynamicEntry(s, town, tier, themeTypeId);
             }
 
-            InvasionKillTracker.Reset(threshold, respawnMins);
+            var firstState = townStates.Values.FirstOrDefault();
+            wave.WaveKillThreshold = firstState?.Threshold ?? s.InvasionKillThresholdMin;
+            wave.BossRespawnMinutes = firstState?.BossRespawnMinutes ?? 5.0;
+
+            InvasionKillTracker.Reset(townStates);
             _lastReminderUtc = now;
             _nextTrickleSpawnUtc = now.AddSeconds(_rng.Next(30, 46));
             _tricklePulseCount = 0;
@@ -499,9 +646,12 @@ internal static class InvasionRuntime
             InvasionPersistence.SaveActiveInvasion(wave);
 
             ModManager.Log(
-                $"[Invasion] Force-started — {string.Join(", ", wave.Towns.Select(t => $"{t.TownName}(T{t.Tier})"))} " +
-                $"theme:{(themeName.Length > 0 ? themeName : "none")} threshold:{threshold} respawn:{respawnMins:0.#}m ends:{ends:u}",
+                $"[Invasion] Force-started — {string.Join(", ", wave.Towns.Select(t => $"{t.TownName}(T{t.Tier})[{t.KillThreshold}]"))} " +
+                $"theme:{(themeName.Length > 0 ? themeName : "PortalStorm")} ends:{ends:u}",
                 ModManager.LogLevel.Info);
+
+            if (wave.ChaosMode)
+                SpawnPortalStormPortals(s, wave);
 
             var snap = wave;
             Task.Run(() => InvasionBroadcast.AnnounceWaveStart(s, snap));
@@ -534,6 +684,11 @@ internal static class InvasionRuntime
             var wcids = themeTypeId != 0 && town.TownCenterObjCellId != 0
                 ? QueryCreatureWcidsByType(themeTypeId, levelMin, levelMax)
                 : QueryNearbyCreatureWcids(town, levelMin, levelMax);
+
+            // Filter out blacklisted WCIDs (custom Valheel creatures, etc.)
+            var blacklist = GetCreatureBlacklist(s);
+            if (blacklist.Count > 0)
+                wcids = wcids.Where(w => !blacklist.Contains(w)).ToList();
 
             // Fallback: if nearby query is empty, search entire database globally
             if (wcids.Count == 0 && themeTypeId == 0)
@@ -627,6 +782,149 @@ internal static class InvasionRuntime
         return pos;
     }
 
+    // ── Portal Storm ─────────────────────────────────────────────────────
+
+    static void SpawnPortalStormPortals(Settings s, ActiveInvasionData wave)
+    {
+        _portalStormState = new PortalStormState();
+        var portalWcids = QueryRandomPortalWcids(50, s);
+        if (portalWcids.Count == 0)
+        {
+            ModManager.Log("[Invasion] Portal Storm: no valid portal WCIDs found in world DB.", ModManager.LogLevel.Warn);
+            return;
+        }
+
+        var rng = new Random();
+        var now = DateTime.UtcNow;
+
+        foreach (var entry in wave.Towns)
+        {
+            var town = s.InvasionTowns.FirstOrDefault(t => t.TownName == entry.TownName);
+            if (town == null || town.TownCenterObjCellId == 0) continue;
+
+            var baseCount = rng.Next(s.PortalStormMinPortals, s.PortalStormMaxPortals + 1);
+            var scaledCount = Math.Min(9, baseCount + (entry.Tier / 2) + (wave.TricklePulseCount / 2));
+
+            var shuffled = portalWcids.OrderBy(_ => rng.Next()).ToList();
+            for (int i = 0; i < scaledCount; i++)
+            {
+                var wcid = shuffled[i % shuffled.Count];
+                var portal = SpawnStormPortal(town, wcid, s);
+                if (portal != null)
+                    _portalStormState.ActivePortals.Add(portal);
+            }
+        }
+
+        _portalStormState.NextPortalShuffleUtc = now.AddSeconds(s.PortalStormShuffleIntervalSeconds);
+        ModManager.Log($"[Invasion] Portal Storm spawned {_portalStormState.ActivePortals.Count} portals across {wave.Towns.Count} town(s).", ModManager.LogLevel.Info);
+    }
+
+    static void ShuffleStormPortals(Settings s)
+    {
+        if (_portalStormState == null || ActiveInvasion == null) return;
+
+        var now = DateTime.UtcNow;
+
+        // Destroy existing portals with exit effect
+        foreach (var portal in _portalStormState.ActivePortals)
+        {
+            try
+            {
+                if (portal != null && !portal.IsDestroyed)
+                {
+                    portal.EnqueueBroadcast(new GameMessageScript(portal.Guid, PlayScript.PortalExit));
+                    var actionChain = new ActionChain();
+                    actionChain.AddDelaySeconds(1.0f);
+                    actionChain.AddAction(portal, () =>
+                    {
+                        try { portal.Destroy(); } catch { }
+                    });
+                    actionChain.EnqueueChain();
+                }
+            }
+            catch { }
+        }
+        _portalStormState.ActivePortals.Clear();
+
+        // Respawn fresh portals
+        SpawnPortalStormPortals(s, ActiveInvasion);
+    }
+
+    static List<uint> QueryRandomPortalWcids(int count, Settings s)
+    {
+        using var ctx = new WorldDbContext();
+        var portalWcids = ctx.Weenie
+            .Where(w => w.Type == (int)WeenieType.Portal)
+            .Select(w => w.ClassId)
+            .Distinct()
+            .ToList();
+
+        if (portalWcids.Count == 0) return new();
+
+        var excluded = s.PortalStormExcludedWcids ?? new List<uint> { 42841, 42842, 42843, 42844, 42845, 28728 };
+        portalWcids = portalWcids.Where(w => !excluded.Contains(w)).ToList();
+
+        var rng = new Random();
+        return portalWcids.OrderBy(_ => rng.Next()).Take(count).ToList();
+    }
+
+    static WorldObject? SpawnStormPortal(InvasionTownSettings town, uint wcid, Settings s)
+    {
+        var portal = WorldObjectFactory.CreateNewWorldObject(wcid);
+        if (portal == null) return null;
+        if (portal is not Portal p) return null;
+
+        var rng = new Random();
+        var pos = GenerateSingleSpawnPosition(town, rng);
+        if (pos == null) return null;
+
+        portal.Location = pos;
+
+        var dest = GenerateStormPortalDestination(town, s);
+        if (dest != null)
+        {
+            p.Destination = dest;
+            p.UpdatePortalDestination(dest);
+        }
+
+        if (portal.Location == null) return null;
+
+        var lb = LandblockManager.GetLandblock(portal.Location.LandblockId, false);
+        if (lb == null) return null;
+
+        lb.EnqueueAction(new ActionEventDelegate(() =>
+        {
+            if (portal == null || portal.IsDestroyed) return;
+            if (!lb.AddWorldObject(portal)) return;
+            portal.EnqueueBroadcast(new GameMessageScript(portal.Guid, PlayScript.PortalEntry));
+        }));
+
+        return portal;
+    }
+
+    static Position? GenerateStormPortalDestination(InvasionTownSettings town, Settings s)
+    {
+        var rng = new Random();
+        var angle = rng.NextDouble() * 2 * Math.PI;
+        var dist = rng.NextDouble() * town.TownSpawnRadius;
+        var ox = town.TownCenterX + (float)(Math.Cos(angle) * dist);
+        var oy = town.TownCenterY + (float)(Math.Sin(angle) * dist);
+        var oz = town.TownCenterZ;
+
+        try
+        {
+            var lbId = new LandblockId(new Position(town.TownCenterObjCellId, ox, oy, oz, 0f, 0f, 0f, 1f).GetCell());
+            var lb = LandblockManager.GetLandblock(lbId, false);
+            if (lb?.LandblockMesh != null)
+                oz = lb.LandblockMesh.GetZ(new System.Numerics.Vector2(ox, oy)) + 0.05f;
+        }
+        catch { }
+
+        var pos = new Position(town.TownCenterObjCellId, ox, oy, oz, 0f, 0f, 0f, 1f);
+        pos.LandblockId = new LandblockId(pos.GetCell());
+        return pos;
+    }
+
     static (int min, int max) ResolveLevelRange(Settings s, InvasionTownSettings town, int tier)
     {
         if (tier > 0 && s.InvasionUseTierSystem)
@@ -647,6 +945,13 @@ internal static class InvasionRuntime
                         (b.Type == npcLooksLikeTypeId && b.Value == true))
             .Select(b => b.ObjectId)
             .Distinct();
+    }
+
+    static HashSet<uint> GetCreatureBlacklist(Settings? s)
+    {
+        if (s?.InvasionCreatureBlacklist == null || s.InvasionCreatureBlacklist.Count == 0)
+            return new HashSet<uint>();
+        return new HashSet<uint>(s.InvasionCreatureBlacklist);
     }
 
     static List<uint> QueryCreatureWcidsByType(uint creatureTypeId, int levelMin, int levelMax)
@@ -802,7 +1107,9 @@ internal static class InvasionRuntime
                     Distance2D(wo.Location, town.TownCenterX, town.TownCenterY) <= town.TownSpawnRadius * 2);
             }
 
-            var scaledCap = (int)(town.DynamicMaxSpawns * scaleFactor);
+            // Target mob count: start small and ramp up, never below minimum
+            var targetMobs = Math.Max(s.InvasionTargetMobMin, (int)(s.InvasionTargetMobCount * Math.Min(1.0, pulse / 3.0)));
+            var scaledCap = (int)(targetMobs * scaleFactor);
             var refill = Math.Max(0, scaledCap - livingCount);
             var swarm = (int)(scaledCap * s.TrickleSwarmMultiplier);
             var totalToSpawn = Math.Min(refill + swarm, 100 - livingCount); // per-town cap of 100
@@ -817,6 +1124,10 @@ internal static class InvasionRuntime
 
             if (wcids.Count == 0 && !isThemed)
                 wcids = QueryCreatureWcidsGlobal(levelMin, levelMax);
+
+            // Filter out blacklisted WCIDs
+            var bl = GetCreatureBlacklist(s);
+            if (bl.Count > 0) wcids = wcids.Where(w => !bl.Contains(w)).ToList();
 
             // Themed trickle: narrow to the same 2-4 monster mix
             if (isThemed && wcids.Count > s.InvasionThemeMonsterMixMin)
@@ -928,7 +1239,7 @@ internal static class InvasionRuntime
                                     if (ActiveInvasion != null)
                                         ActiveInvasion.CreatureExSpawnedCount++;
                                     ModManager.Log($"[Invasion] Chaos Boss '{wo.Name}' spawned at {town.TownName} (depth {depth}).", ModManager.LogLevel.Info);
-                                    Task.Run(() => InvasionBroadcast.AnnounceBossSpawned(town.TownName, wo.Name ?? "CreatureEx"));
+                                    Task.Run(() => InvasionBroadcast.AnnounceBossSpawned(town.TownName, wo.Name ?? "CreatureEx", isChaos));
                                 });
                                 return;
                             }
@@ -969,7 +1280,7 @@ internal static class InvasionRuntime
                                 if (ActiveInvasion != null)
                                     ActiveInvasion.CreatureExSpawnedCount++;
                                 ModManager.Log($"[Invasion] CreatureEx '{wo.Name}' spawned at {town.TownName} (pulse 5+).", ModManager.LogLevel.Info);
-                                Task.Run(() => InvasionBroadcast.AnnounceBossSpawned(town.TownName, wo.Name ?? "CreatureEx"));
+                                Task.Run(() => InvasionBroadcast.AnnounceBossSpawned(town.TownName, wo.Name ?? "CreatureEx", isChaos));
                             });
                             return;
                         }
@@ -1085,6 +1396,10 @@ internal static class InvasionRuntime
         if (wcids.Count == 0)
             wcids = QueryCreatureWcidsGlobal(levelMin, levelMax);
         if (wcids.Count == 0) return;
+
+        // Filter out blacklisted WCIDs
+        var bl = GetCreatureBlacklist(settings);
+        if (bl.Count > 0) wcids = wcids.Where(w => !bl.Contains(w)).ToList();
 
         int spawnCount = 2; // each chaos boss spawns 2 children
         for (int i = 0; i < spawnCount; i++)

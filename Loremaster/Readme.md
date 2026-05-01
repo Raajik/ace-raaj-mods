@@ -54,9 +54,35 @@ On each quest solve (first and repeat), when enabled, the player receives a one-
 - **Listed** in `CompletionBonusXpOverrides`: that value is the **absolute** completion fraction for that quest (same meaning as the old default multiplier field). Use `0` to suppress.
 - Disable entirely with `EnableCompletionBonusXp: false`.
 
-### Repeat Quest Points
+### repeatQB System
 
-When `EnableRepeatQuestPoints` is true, repeat solves can add that quest’s QP to an **extra** pool at most once per quest per `RepeatQuestPointCooldownSeconds` (default 10 hours), persisted per character. Total stored QP = unique-quest sum + extra (milestones + repeat awards).
+The repeatQB system replaces the legacy repeat stamp system. Every repeat quest completion now creates a **unique quest entry** (e.g. `QuestName#repeatQB1`, `QuestName#repeatQB2`) in the ACE quest registry. Each unique entry counts as +1 Quest Point, meaning repeat solves naturally stack QP without a separate multiplier pool.
+
+- Account-wide cooldown is still enforced via `RepeatQbTracker` (migrated from `AccountRepeatQuestTracker`).
+- On repeat completion, if cooldown has expired, a unique entry is created and the player is notified: `[Loremaster] +1 repeatQB from {questName}`.
+- The `QuestBonus()` formula has been simplified: `1.0 + qp * BonusPerQuestPoint / 100.0` (stamp multiplier removed).
+- **Deprecated (kept for Settings.json compatibility):** `EnableRepeatStampSystem`, `RepeatStampBonusPerStamp`, `RepeatStampCooldownSeconds`, `LMFloat.RepeatStampMultiplier`.
+
+### Account-Wide Repeat Cooldown (repeatQB)
+
+When `EnableAccountWideRepeatCooldown` is true (default), repeat quest completions are tracked **across all characters on the same account** via `RepeatQbTracker`. If Character A completes a quest, Character B on the same account can still complete it, but:
+- If Character B completes it **first** (no prior character completion), it's treated as a first solve for QP and bonuses.
+- If another character on the account **already completed it**, Character B gets a repeatQB unique entry (+1 QP) and the cooldown starts.
+- If any character tries to repeat the same quest again before `AccountRepeatCooldownSeconds` (default 36000 = 10h) expires, they see the standard ACE message: `You may complete this quest again in {time}!` and no repeatQB is granted.
+
+**WorldEvents bonus quests bypass this cooldown** — they are one-off quests and are never blocked.
+
+**Questgiver blacklist:** Certain NPCs (e.g. 22753 Guardian of the Temple of Enlightenment, 22754 Guardian of the Temple of Forgetfulness) are blacklisted from awarding repeatQB to prevent rapid-fire exploitation.
+
+### Kill Task Auto-Reaccept
+
+Kill tasks that reach max solves automatically reset to 0 after their cooldown expires, allowing players to keep killing without returning to the NPC for reacceptance.
+
+- When a kill task is max-solved and the cooldown has expired, the counter resets to 0 automatically.
+- **+1 repeatQB** granted on auto-reaccept.
+- **+1 repeatQB** granted when the task reaches max solves again.
+- **Total: +2 repeatQB per full kill-task cycle.**
+- Tracked via `LMString.KillTaskAutoAcceptTimestamps` (JSON per-character).
 
 ### Quest cooldown reduction
 
@@ -185,6 +211,67 @@ When a notification fires, the message format is:
 Earned 426,711 XP! (300,501 * 142%)
 ```
 
+### Rested XP
+
+When enabled, time spent **offline** accumulates into a rested pool. On login, offline seconds × `OfflineToRestedConversionRate` (default 0.5) are added to the pool, capped at `MaxRestedHours` (default 72h). While rested, all XP gains are multiplied by:
+
+```
+BaseMultiplier + (serverMaxEnlightenment - myEnlightenment) × MultiplierPerEnlightenmentGap
+```
+
+- **BaseMultiplier** = 1.0 (default)
+- **MultiplierPerEnlightenmentGap** = 0.01 (default, i.e. +1% per enlightenment gap)
+
+The pool depletes by the raw XP amount granted and only replenishes while offline.
+
+**Example:** Server max enlightenment 50, player enlightenment 10 → gap 40 → 1.4× multiplier. 10 hours offline at 0.5 rate → 5 hours rested.
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `EnableRestedXp` | bool | `true` | Master toggle |
+| `OfflineToRestedConversionRate` | float | `0.5` | Hours of rested XP per hour offline |
+| `MaxRestedHours` | float | `72` | Cap on rested pool in hours |
+| `BaseMultiplier` | float | `1.0` | Base multiplier while rested |
+| `MultiplierPerEnlightenmentGap` | float | `0.01` | Additional multiplier per enlightenment gap |
+
+---
+
+### Loot Tier Delay
+
+Delays high spell tiers on creature drops based on the **killer's character level**.
+
+- Patching private `Creature.GenerateTreasure` via `TargetMethod()` + `AccessTools.Method`
+- Prefix on `SpellLevelChance.Roll` clamps treasure profile tier before roll
+- Configurable `Thresholds` list in `LootTierDelay`
+
+Default thresholds:
+
+| Min Level | Max Spell Tier |
+|-----------|----------------|
+| 1 | 1 |
+| 20 | 2 |
+| 40 | 3 |
+| 60 | 4 |
+| 80 | 5 |
+| 100 | 6 |
+| 125 | 7 |
+| 150 | 8 |
+
+### Quest Point Lottery Contribution
+
+`QuestPointLotteryContributionPercent` (default **10%**) — server-side match of repeatQB earned:
+- Every `AddExtraQuestPoints` call accrues 10% into `PendingLotteryContribution`
+- LeyLineLedger drains this into its pyreal pool before each weekly draw
+- **Players lose zero QP** — this is a server-side match, not a deduction
+
+### Donated Quest Points
+
+When players use `/donate qb`, their donation is tracked as a `DonatedQuestPoints` offset (`FakeFloat 11019`):
+- Effective QB = `BaseQuests + Extra - Donated`
+- The actual quest registry entries (base) are **never deleted**
+- Future earned QB still stacks normally
+- `GrantLotteryQbPrize` bypasses contribution tracking to prevent infinite loops
+
 ---
 
 ## Player Commands
@@ -257,6 +344,13 @@ All settings live in `Settings.json` in the mod folder. The file is auto-generat
 | `AchievementBonusQPBase` | float | `100` | Base value for formula. Default gives 10 QP per achievement. |
 | `AchievementBonusQPOverrides` | dict | `{}` | Per-threshold QP overrides. If a threshold is present here, that QP is used instead of the formula. |
 | `AchievementBroadcastFormat` | string | see below | Format string. `{0}` = character name, `{1}` = ordinal achievement (e.g. "50th"), `{2}` = bonus QP awarded. |
+
+### Account-Wide Repeat Cooldown
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `EnableAccountWideRepeatCooldown` | bool | `true` | When true, repeat quest completions are tracked account-wide with a per-quest cooldown. |
+| `AccountRepeatCooldownSeconds` | int | `36000` | Cooldown between account-wide repeat completions of the same quest (default 10h = 36000s). |
 
 ### Quest Cooldown Reduction
 

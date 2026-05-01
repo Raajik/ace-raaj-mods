@@ -187,6 +187,10 @@ public class Settings
     public string TrophyDropsSectionDoc { get; init; } = "Trophy drops bonus: extra rolls based on Assess Creature/Person trained/specialized.";
     public TrophyDropsSettings TrophyDrops { get; set; } = new();
 
+    [JsonPropertyName("// QuestTrophyDrops")]
+    public string QuestTrophyDropsSectionDoc { get; init; } = "High-value quest item bonus drops with daily turn-in XP caps.";
+    public QuestTrophyDropsSettings QuestTrophyDrops { get; set; } = new();
+
     [JsonPropertyName("// EnableTinkeringLootGating")]
     public string EnableTinkeringLootGatingDoc { get; init; } = "Tinkering loot gating — only characters with any tinkering skill trained/specialized can generate leveled items from loot. Matching skill boosts max level.";
     public bool EnableTinkeringLootGating { get; set; } = false;
@@ -198,6 +202,10 @@ public class Settings
     [JsonPropertyName("// EnableChaosTinkerAchievement")]
     public string EnableChaosTinkerAchievementDoc { get; init; } = "When true, failing a tinker while having tinkering trained unlocks the /chaostinker command.";
     public bool EnableChaosTinkerAchievement { get; set; } = true;
+
+    [JsonPropertyName("// ChaosTinker")]
+    public string ChaosTinkerSectionDoc { get; init; } = "Chaos Tinker: max chaos failures per item, increment NumTimesTinkered on failure.";
+    public ChaosTinkerSettings ChaosTinker { get; set; } = new();
 
     [JsonPropertyName("// EnableSummoningClasses")]
     public string EnableSummoningClassesDoc { get; init; } = "Summoning classes — auto-summon pets when specialized Summoning + secondary magic spec.";
@@ -647,25 +655,21 @@ public class LoyaltySettings
 
 public class SalvageSettings
 {
-    [JsonPropertyName("// AutoDepositPercent")]
-    public string AutoDepositPercentDoc { get; init; } = "Fraction of salvage units auto-deposited to bank (1.0 = 100%).";
-    public double AutoDepositPercent { get; set; } = 1.0;
+    [JsonPropertyName("// TrainedPercent")]
+    public string TrainedPercentDoc { get; init; } = "Fraction of salvage units auto-deposited when any tinkering skill is trained (0.25 = 25%).";
+    public double TrainedPercent { get; set; } = 0.25;
 
-    [JsonPropertyName("// AutoDepositPercentUnlocked")]
-    public string AutoDepositPercentUnlockedDoc { get; init; } = "DEPRECATED — auto-salvage is always at full rate.";
-    public double AutoDepositPercentUnlocked { get; set; } = 1.0;
-
-    [JsonPropertyName("// RequireQuestsForUnlock")]
-    public string RequireQuestsForUnlockDoc { get; init; } = "DEPRECATED — auto-salvage is always unlocked at full rate.";
-    public int RequireQuestsForUnlock { get; set; } = 0;
+    [JsonPropertyName("// SpecializedPercent")]
+    public string SpecializedPercentDoc { get; init; } = "Fraction of salvage units auto-deposited when any tinkering skill is specialized (0.50 = 50%).";
+    public double SpecializedPercent { get; set; } = 0.50;
 
     [JsonPropertyName("// UnitsPerItem")]
     public string UnitsPerItemDoc { get; init; } = "Units banked per salvage item when no workmanship/structure found.";
     public int UnitsPerItem { get; set; } = 1;
 
-    [JsonPropertyName("// MaxAutoDepositPerCommand")]
-    public string MaxAutoDepositPerCommandDoc { get; init; } = "Max items auto-deposited per salvage pickup event (prevents spam).";
-    public int MaxAutoDepositPerCommand { get; set; } = 100;
+    [JsonPropertyName("// MaterialBankPropertyBase")]
+    public string MaterialBankPropertyBaseDoc { get; init; } = "PropertyInt64 base ID for material bank deposits. Must match LeyLineLedger SalvageBank.FirstMaterialBankPropertyId (default 40201).";
+    public int MaterialBankPropertyBase { get; set; } = 40201;
 }
 
 public class TinkeringLootGatingSettings
@@ -708,6 +712,14 @@ public class CombatClassesSettings
     [JsonPropertyName("// Bloodmage")]
     public string BloodmageSectionDoc { get; init; } = "Bloodmage bonuses: hecatomb echoes on melee hit, drain spells become AoE, life-drain aura.";
     public BloodmageSettings Bloodmage { get; set; } = new();
+
+    [JsonPropertyName("// Healer")]
+    public string HealerSectionDoc { get; init; } = "Healer bonuses: AoE healing aura, Smite melee proc. Requires spec Healing + spec Life Magic.";
+    public HealerSettings Healer { get; set; } = new();
+
+    [JsonPropertyName("// Adventurer")]
+    public string AdventurerSectionDoc { get; init; } = "Adventurer bonuses: +50 all attributes/skills, +20% vitals, +10 resistances, +2 burden limit. Requires no magic trained (except Mana Conversion).";
+    public AdventurerSettings Adventurer { get; set; } = new();
 }
 
 public class RogueSettings
@@ -772,6 +784,10 @@ public class WindwalkerSettings
     [JsonPropertyName("// ManaCostMultiplier")]
     public string ManaCostMultiplierDoc { get; init; } = "Multiplier applied to auto-cast spell mana cost (0.5 = half cost).";
     public double ManaCostMultiplier { get; set; } = 0.5;
+
+    [JsonPropertyName("// SkillPerTier")]
+    public string SkillPerTierDoc { get; init; } = "War Magic skill needed per spell tier. Uses base (unbuffed) skill. 150 = tier 1 at 150, tier 2 at 300.";
+    public int SkillPerTier { get; set; } = 150;
 }
 
 public class BattlemageSettings
@@ -852,4 +868,109 @@ public class DruidPetThornsSettings
     [JsonPropertyName("// DamageMultiplier")]
     public string DamageMultiplierDoc { get; init; } = "Multiplier applied to thorns damage for pet reflection and AoE.";
     public double DamageMultiplier { get; set; } = 1.0;
+}
+
+public class HealerSettings
+{
+    [JsonPropertyName("// AuraRangeMeters")]
+    public string AuraRangeMetersDoc { get; init; } = "Radius in meters for the Healer's AoE healing aura.";
+    public double AuraRangeMeters { get; set; } = 15.0;
+
+    [JsonPropertyName("// AuraTickSeconds")]
+    public string AuraTickSecondsDoc { get; init; } = "Seconds between aura healing ticks.";
+    public double AuraTickSeconds { get; set; } = 3.0;
+
+    [JsonPropertyName("// FlatHealPerTick")]
+    public string FlatHealPerTickDoc { get; init; } = "Flat HP healed per tick to each ally in range.";
+    public int FlatHealPerTick { get; set; } = 5;
+
+    [JsonPropertyName("// SmiteChance")]
+    public string SmiteChanceDoc { get; init; } = "Chance (0-1) to proc Smite on melee hit.";
+    public double SmiteChance { get; set; } = 0.5;
+
+    [JsonPropertyName("// SmiteSpellIds")]
+    public string SmiteSpellIdsDoc { get; init; } = "Harm/Drain Health Other spell IDs from tier 1 to 8. Empty = disabled.";
+    public int[] SmiteSpellIds { get; set; } = new[] { 1093, 1094, 1095, 1096, 1097, 1098, 2326, 4641 };
+}
+
+public class AdventurerSettings
+{
+    [JsonPropertyName("// AttributeBonus")]
+    public string AttributeBonusDoc { get; init; } = "Bonus to all attributes (Strength, Endurance, Coordination, Quickness, Focus, Self).";
+    public int AttributeBonus { get; set; } = 50;
+
+    [JsonPropertyName("// SkillBonus")]
+    public string SkillBonusDoc { get; init; } = "Bonus to all skills.";
+    public int SkillBonus { get; set; } = 50;
+
+    [JsonPropertyName("// VitalPercentBonus")]
+    public string VitalPercentBonusDoc { get; init; } = "Percent bonus to max health, stamina, mana (0.20 = +20%).";
+    public double VitalPercentBonus { get; set; } = 0.20;
+
+    [JsonPropertyName("// ResistanceBonus")]
+    public string ResistanceBonusDoc { get; init; } = "Flat bonus to all resistances.";
+    public int ResistanceBonus { get; set; } = 10;
+
+    [JsonPropertyName("// BurdenLimitBonusRanks")]
+    public string BurdenLimitBonusRanksDoc { get; init; } = "Virtual burden limit augmentation ranks (not saved to DB).";
+    public int BurdenLimitBonusRanks { get; set; } = 2;
+}
+
+public class ChaosTinkerSettings
+{
+    [JsonPropertyName("// MaxChaosFailuresPerItem")]
+    public string MaxChaosFailuresPerItemDoc { get; init; } = "Maximum chaos tinker failures allowed per item before it is immune.";
+    public int MaxChaosFailuresPerItem { get; set; } = 5;
+
+    [JsonPropertyName("// IncrementNumTimesTinkeredOnFailure")]
+    public string IncrementNumTimesTinkeredOnFailureDoc { get; init; } = "When true, chaos tinker failures increment the item's NumTimesTinkered count.";
+    public bool IncrementNumTimesTinkeredOnFailure { get; set; } = true;
+}
+
+public class QuestTrophyDropsSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true, high-value quest items (tusker tusks, olthoi pincers, eater jaws) can drop as bonus trophies with daily turn-in caps.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// DailyCapPerItemType")]
+    public string DailyCapPerItemTypeDoc { get; init; } = "Maximum turn-ins per item type per day (resets on rolling window or fixed time).";
+    public int DailyCapPerItemType { get; set; } = 10;
+
+    [JsonPropertyName("// RollingWindowHours")]
+    public string RollingWindowHoursDoc { get; init; } = "Hours after first turn-in before the daily cap resets (rolling window).";
+    public double RollingWindowHours { get; set; } = 20;
+
+    [JsonPropertyName("// FixedResetTimeZone")]
+    public string FixedResetTimeZoneDoc { get; init; } = "Time zone for the fixed daily reset.";
+    public string FixedResetTimeZone { get; set; } = "Central Standard Time";
+
+    [JsonPropertyName("// FixedResetHour")]
+    public string FixedResetHourDoc { get; init; } = "Local hour (24h) for fixed daily reset. 21 = 9pm.";
+    public int FixedResetHour { get; set; } = 21;
+
+    [JsonPropertyName("// DropChance")]
+    public string DropChanceDoc { get; init; } = "Base chance (0.0-1.0) for a quest trophy to drop per valid kill. 0.01 = 1%.";
+    public double DropChance { get; set; } = 0.01;
+
+    [JsonPropertyName("// ChampionStackSizeMin")]
+    public string ChampionStackSizeMinDoc { get; init; } = "Minimum stack size for quest trophy drops from champion/special mobs.";
+    public int ChampionStackSizeMin { get; set; } = 1;
+
+    [JsonPropertyName("// ChampionStackSizeMax")]
+    public string ChampionStackSizeMaxDoc { get; init; } = "Maximum stack size for quest trophy drops from champion/special mobs.";
+    public int ChampionStackSizeMax { get; set; } = 8;
+
+    [JsonPropertyName("// QuestItemWcids")]
+    public string QuestItemWcidsDoc { get; init; } = "WCIDs of quest items that can drop as bonus trophies.";
+    public List<uint> QuestItemWcids { get; set; } = new()
+    {
+        22419, 22423, 22424, 22427, 22428, 22431, // Tusker Tusks
+        10843, 10844, 10845, 10846, 10847, 27589, 27590, 27591, 51211, 51214, // Olthoi Pincers
+        28718, 28725, 28726, 28727, 42104 // Eater Jaws
+    };
+
+    [JsonPropertyName("// XpSuppressedMessage")]
+    public string XpSuppressedMessageDoc { get; init; } = "Message sent when turn-in XP is suppressed due to daily cap.";
+    public string XpSuppressedMessage { get; init; } = "You've reached the daily turn-in limit for this item. You receive the turn-in reward but no additional experience.";
 }

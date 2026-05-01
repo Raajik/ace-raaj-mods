@@ -57,7 +57,7 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         }
 
         // Withdraw-style: spawns clean bags like /cisalvage, debits bank
-        // TODO: Interface with Candeth Keep salvage quest NPCs for quest completion
+        // NOTE: Future integration point — Candeth Keep salvage quest NPCs could auto-complete on deposit.
         if (sub.Equals("withdraw", StringComparison.OrdinalIgnoreCase) ||
             sub.Equals("w", StringComparison.OrdinalIgnoreCase))
         {

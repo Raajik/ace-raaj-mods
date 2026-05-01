@@ -164,7 +164,7 @@ When Assess Creature is trained or specialized, grants **guaranteed extra loot r
 
 > **Note:** Legacy `ExtraRollsTrained` / `ExtraRollsSpecialized` settings are **DEPRECATED** and no longer used. They are kept in `Settings.cs` for backward compatibility with existing `Settings.json` files.
 
-> **Note:** `TrophyWhitelist.md` documents which items *should* be stackable, but the code currently does **not** filter by this list — it stacks any item from the creature's `PropertiesCreateList`. Enforcing the whitelist requires a future code update.
+> **Note:** Creature-type validation is now enforced. `TrophyDrops.cs` checks the dying creature's `WeenieClassId` against a per-trophy whitelist before creating the item, preventing e.g. tusker tusks from dropping on drudges. Champion and special mobs drop stacks of 1–8.
 
 **Settings:**
 ```json
@@ -234,6 +234,96 @@ Without AethericWeaver, falls back to vanilla ACE behavior.
 
 ---
 
+### Combat Classes
+
+BetterSupportSkills includes a **class system** that activates when you specialize the right combination of skills. Use `/class` to see available classes and `/class auto` to let the mod detect your class automatically.
+
+#### Healer
+**Requirements:** Spec Healing + Spec Life Magic
+
+- **Aura:** Passive AoE heal (15m radius, 3s tick) to self and nearby allies (fellowship, same-allegiance, friends)
+- **Smite:** 50% chance on melee hit to cast Harm/Drain Health Other spell (tier scales with Life Magic skill)
+
+**Settings:**
+```json
+"CombatClasses": {
+  "Healer": {
+    "AuraRangeMeters": 15.0,
+    "AuraTickSeconds": 3.0,
+    "FlatHealPerTick": 5,
+    "SmiteChance": 0.5,
+    "SmiteSpellIds": [1093, 1094, 1095, 1096, 1097, 1098, 2326, 4641]
+  }
+}
+```
+
+#### Adventurer
+**Requirements:** No magic schools trained (except Mana Conversion)
+
+- **+50 to all attributes** (Strength, Endurance, Coordination, Quickness, Focus, Self)
+- **+50 to all skills**
+- **+20% max vitals** (Health, Stamina, Mana)
+- **+10% damage reduction** (all damage types)
+- **+2 virtual burden limit ranks** (+60×Strength capacity)
+
+All bonuses are **virtual** — they don't persist to the database and disappear if you train a magic school.
+
+**Settings:**
+```json
+"CombatClasses": {
+  "Adventurer": {
+    "AttributeBonus": 50,
+    "SkillBonus": 50,
+    "VitalPercentBonus": 0.20,
+    "ResistanceBonus": 10,
+    "BurdenLimitBonusRanks": 2
+  }
+}
+```
+
+#### Windwalker
+**Requirements:** Spec Light Weapons + Spec War Magic + Spec Mana Conversion
+
+- Melee hits launch **elemental streak spells** at nearby enemies
+- Spell tier scales with War Magic skill (configurable via `SkillPerTier`, default 200)
+- Echoes to volley when Mana Conversion is specialized
+
+**Settings:**
+```json
+"CombatClasses": {
+  "Windwalker": {
+    "StreakRangeMeters": 15.0,
+    "EchoEnabled": true,
+    "ManaCostMultiplier": 0.5,
+    "SkillPerTier": 200
+  }
+}
+```
+
+> **Note:** With `SkillPerTier: 200`, tier 1 requires 200 War Magic, tier 2 requires 400. This is a significant nerf from the old `skill/50+1` formula.
+
+---
+
+### Chaos Tinker
+**Status:** Implemented
+**Default:** Enabled (`EnableChaosTinkerAchievement`)
+
+Failing a tinker while having any tinkering trained unlocks `/chaostinker` — a toggle that forces all tinkers to fail for chaotic "positive" effects.
+
+- **Per-item cap:** Maximum 5 chaos failures per item (tracked via `PropertyInt 40120`)
+- **Increment `NumTimesTinkered`:** Chaos failures optionally increment the item's tinker count
+- **Visual pulse:** Red Aetheria effect every 10 seconds while active
+
+**Settings:**
+```json
+"ChaosTinker": {
+  "MaxChaosFailuresPerItem": 5,
+  "IncrementNumTimesTinkeredOnFailure": true
+}
+```
+
+---
+
 ### Placeholder Skills (Not Yet Implemented)
 The following skills have placeholder entries but no bonus effects yet:
 
@@ -286,6 +376,12 @@ All features can be toggled in `Settings.json`:
 - `/bss commands` - Show available commands
 
 ## Changelog
+
+### 2026-04-27 (v1.2.0)
+- **Healer class:** New combat class (Spec Healing + Spec Life Magic). AoE healing aura (15m, 3s tick) + Smite melee proc (50% chance, Harm/Drain Health Other)
+- **Adventurer class:** New combat class (no magic trained except Mana Conversion). +50 attributes/skills, +20% vitals, +10 resistances, +2 burden limit — all virtual via Harmony patches
+- **Windwalker rebalance:** Spell tier formula changed to `skill / SkillPerTier` (default 200). Tier 1 at 200 War Magic, tier 2 at 400
+- **Chaos Tinker fix:** Failures now increment `NumTimesTinkered` (toggleable). Per-item cap of 5 chaos failures via `PropertyInt 40120`
 
 ### 2026-04-27 (v1.1.0)
 - **Arcane Lore rework:** Spell dodge moved to **Missile Defense**; Arcane Lore now grants **Adaptation** (elemental damage reduction on taking magic damage)

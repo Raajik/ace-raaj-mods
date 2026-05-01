@@ -27,13 +27,13 @@ public class Settings
     public string FutureAptitudeDoc { get; init; } = "Reserved toggles for future aptitude systems (mastery tiers, attr/vital efficiency, etc.); not wired yet.";
 
     [JsonPropertyName("// MaxLevel")]
-    public string MaxLevelDoc { get; init; } = "Extended character level cap (PortalDat XP table); merged from former AureatePath.";
+    public string MaxLevelDoc { get; init; } = "DEPRECATED — moved to AureatePath. Extended character level cap is now owned by AureatePath. This property is preserved for Settings.json compatibility but ignored.";
 
     [JsonPropertyName("// CreditInterval")]
-    public string CreditIntervalDoc { get; init; } = "Interval used with extended leveling / credit progression.";
+    public string CreditIntervalDoc { get; init; } = "DEPRECATED — moved to AureatePath. Preserved for Settings.json compatibility but ignored.";
 
     [JsonPropertyName("// LevelCost")]
-    public string LevelCostSectionDoc { get; init; } = "XP cost curve for levels above vanilla table (C, Rate, Coefficient, Offset, GrowthType). Inside LevelCost: // lines first, then values (same order).";
+    public string LevelCostSectionDoc { get; init; } = "DEPRECATED — moved to AureatePath. XP cost curve is now owned by AureatePath. Preserved for Settings.json compatibility but ignored.";
 
     [JsonPropertyName("// AlternateLeveling")]
     public string AlternateLevelingSectionDoc { get; init; } = "Alternate leveling costs and property ranges. Inside AlternateLeveling: // lines first, then values (same order); each Attribute/Vital/Trained/Specialized is a LevelCost block.";

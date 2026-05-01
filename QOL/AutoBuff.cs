@@ -91,11 +91,11 @@ internal static class AutoBuff
     }
 
     // Hardcoded gem buff spells that everyone gets by default
-    static readonly uint[] GemBuffSpellIds = new[] { 2244u, 31001u }; // Blackmoor's Favor, Asheron's Benediction
+    static readonly uint[] GemBuffSpellIds = new[] { 3811u, 3810u }; // Blackmoor's Favor, Asheron's Benediction
 
     /// <summary>
     /// Gets the best buff spell per category that the player knows and has skill for,
-    /// plus hardcoded gem buffs (Blackmoor's Favor, Asheron's Benediction).
+    /// plus hardcoded gem buffs (Blackmoor's Favor 3811, Asheron's Benediction 3810).
     /// </summary>
     public static List<Spell> GetBestBuffs(Player player)
     {

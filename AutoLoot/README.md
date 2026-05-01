@@ -104,6 +104,28 @@ Server admins can expand this list in `Settings.json`.
 
 ---
 
+## Chest & Corpse Close-Phase Looting
+
+AutoLoot processes containers in two phases:
+
+1. **Kill-time / Open phase** — For corpses, immediate autoloot applies profiles, VendorTrash, unknown scrolls, and level-8 component conversion on first open. For chests, the player sees all contents on open (no hidden removal).
+2. **Close phase** — When a chest or corpse is closed, AutoLoot runs:
+   - **Immediate pass** — silent banking of currency/peas/keys/lockpicks, destruction of known scrolls, level-8 component conversion
+   - **Profile batch loot** — remaining items matching active profiles
+   - **VendorTrash** — value-to-burden filter
+   - **Unknown scrolls** — unlearned spells
+   - **Salvage + clutter destroy** — remaining items sent to salvage or destroyed
+
+This prevents the "items vanished server-side but still visible in UI" bug by deferring silent removals until container close.
+
+---
+
+## Loot Stack Consolidation
+
+When looting corpses, AutoLoot merges duplicate same-WCID items into a single stack. If an item lacks stack properties (e.g., old Generic-type quest drops like Drudge Charms), the consolidator infers `MaxStackSize=100`, `StackSize`, `StackUnitEncumbrance`, and `StackUnitValue` from the item's own burden and value, then merges them. This fixes non-stackable quest drops without requiring a weenie update (though weenie fixes are still recommended for permanent resolution).
+
+---
+
 ## Server Configuration (`Settings.json`)
 
 | Setting | Default | Description |

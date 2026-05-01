@@ -47,7 +47,11 @@ public class Settings
 
     [JsonPropertyName("// CompletionBonusPerQuestPoint")]
     public string CompletionBonusPerQuestPointDoc { get; init; } = "Added to DefaultCompletionBonusXpMultiplier when computing completion bonus: effective fraction = DefaultCompletionBonusXpMultiplier + (QP × CompletionBonusPerQuestPoint / 100), then × per-quest override.";
-    public float CompletionBonusPerQuestPoint { get; set; } = 0.005f;
+    public float CompletionBonusPerQuestPoint { get; set; } = 0.01f;
+
+    [JsonPropertyName("// QuestXpPerQuestPoint")]
+    public string QuestXpPerQuestPointDoc { get; init; } = "Minimum quest XP floor per QB: fraction of next-level XP granted when normal quest XP (after BonusXpBaseRetentionPercent) is lower. 0.00005 = 5% of a level at 1000 QB.";
+    public float QuestXpPerQuestPoint { get; set; } = 0.00005f;
 
     [JsonPropertyName("// DefaultPoints")]
     public string DefaultPointsDoc { get; init; } = "QP awarded for quests not listed in QuestBonuses; 0 = only explicit QuestBonuses grant QP.";
@@ -142,17 +146,24 @@ public class Settings
         "[Loremaster] {0} has just completed their {1} unique quest and earned {2} bonus quest points!";
 
     [JsonPropertyName("// EnableRepeatStampSystem")]
-    public string EnableRepeatStampSystemDoc { get; init; } = "Master toggle for the second-tier repeat stamp multiplier.";
+    public string EnableRepeatStampSystemDoc { get; init; } = "DEPRECATED (2026-04-27): Replaced by repeatQB unique entries. Kept for Settings.json backward compatibility.";
     public bool EnableRepeatStampSystem { get; set; } = true;
 
     [JsonPropertyName("// RepeatStampBonusPerStamp")]
-    public string RepeatStampBonusPerStampDoc { get; init; } = "The amount added to the RepeatStampMultiplier for each successful stamp (e.g., 0.01 for 1%).";
+    public string RepeatStampBonusPerStampDoc { get; init; } = "DEPRECATED (2026-04-27): Replaced by repeatQB unique entries. Kept for Settings.json backward compatibility.";
     public float RepeatStampBonusPerStamp { get; set; } = 0.00025f;
 
     [JsonPropertyName("// RepeatStampCooldownSeconds")]
-    public string RepeatStampCooldownSecondsDoc { get; init; } = "Cooldown window (in seconds) between earning the same quest stamp (e.g., 72000 for 20h).";
+    public string RepeatStampCooldownSecondsDoc { get; init; } = "DEPRECATED (2026-04-27): Replaced by repeatQB unique entries. Kept for Settings.json backward compatibility.";
     public int RepeatStampCooldownSeconds { get; set; } = 72000;
 
+    [JsonPropertyName("// EnableAccountWideRepeatCooldown")]
+    public string EnableAccountWideRepeatCooldownDoc { get; init; } = "When true, repeat quest completions are tracked account-wide with a per-quest cooldown. Alts on the same account share cooldowns.";
+    public bool EnableAccountWideRepeatCooldown { get; set; } = true;
+
+    [JsonPropertyName("// AccountRepeatCooldownSeconds")]
+    public string AccountRepeatCooldownSecondsDoc { get; init; } = "Account-wide cooldown between repeat completions of the same quest (default 10h = 36000).";
+    public int AccountRepeatCooldownSeconds { get; set; } = 36000;
 
     [JsonPropertyName("// BypassPortalMaxLevelRestriction")]
     public string BypassPortalMaxLevelRestrictionDoc { get; init; } = "When true, ACE portal max-level checks (use_portal_max_level_requirement) are bypassed so over-level characters may use those portals.";
@@ -275,6 +286,18 @@ public class Settings
     [JsonPropertyName("// AchievementTierThresholds")]
     public string AchievementTierThresholdsDoc { get; init; } = "Ordered list of progress-point thresholds that unlock Tier 1, 2, 3, 4 respectively. Progress points = uniqueQuestCount + floor(totalKills / KillsPerQuestEquivalent).";
     public List<int> AchievementTierThresholds { get; set; } = new() { 50, 150, 300, 500 };
+
+    [JsonPropertyName("// RestedXp")]
+    public string RestedXpSectionDoc { get; init; } = "Offline rested XP bonus: time offline converts to temporary XP multiplier that scales with enlightenment gap.";
+    public RestedXpSettings RestedXp { get; set; } = new();
+
+    [JsonPropertyName("// LootTierDelay")]
+    public string LootTierDelaySectionDoc { get; init; } = "Delays high spell tiers on creature drops based on killer level.";
+    public LootTierDelaySettings LootTierDelay { get; set; } = new();
+
+    [JsonPropertyName("// QuestPointLotteryContributionPercent")]
+    public string QuestPointLotteryContributionPercentDoc { get; init; } = "Fraction of repeatQB earned that gets added to the LeyLineLedger lottery pool. 10.0 = 10%. Players do NOT lose QP; this is a server-side match.";
+    public float QuestPointLotteryContributionPercent { get; set; } = 10f;
 }
 
 public class BarkeeperParchmentsSettings

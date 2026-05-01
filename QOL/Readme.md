@@ -10,6 +10,10 @@ When **`EnablePortalsStripNoRecall`** is `true` (default), every **`Portal`** cl
 
 When **`EnableTownNetworkToll`** is `true`, **`Portal.CheckUseRequirements`** (postfix) and **`Portal.ActOnUse`** (prefix) enforce a banked-pyreal toll for portals that match **`TownNetworkToll`** rules. Bank balance uses **`PropertyInt64`** id **`BankCashProperty`** (default **39999**, same convention as **Loremaster** / **LeyLineLedger** / **AutoLoot**). Base fees are **`FeeBelowLevel`** / **`FeeAtOrAboveLevel`** split by **`LevelSplit`**. **Loremaster** quest points on **`FakeFloat.QuestBonus`** reduce the fee: each full **`QpPerThousandForDiscountStep`** QP applies **`DiscountPercentPerStep`** (multiplicative stack; uncapped toward zero). **`MatchMode`**: `0` = substring on name/appraisal only, `1` = WCID list only, `2` = combined (substring **or** WCID **or** landblock). **`InsufficientFundsMode`**: `0` = block travel if bank &lt; fee; `1` = if `0 &lt; bank &lt; fee`, debit entire bank and allow. Optional **`ChargeMarketplaceRecall`**: apply the same toll to **`HandleActionTeleToMarketPlace`** (`/market`-style recall). Harmony category: **`TownNetworkToll`**.
 
+#### Generous Benefactor achievement
+
+The server tracks cumulative Town Network toll spend per player. Once a player has paid **1,000,000,000 (1 billion) pyreals** in TN tolls, they unlock the **`/tn`** command, which teleports them instantly to the Town Network (`0x0007010B`) with no portal animation.
+
 ---
 
 ## Enabling Features
@@ -251,8 +255,57 @@ No configuration required — enabling the feature is sufficient.
 | `/fship [name]` | Player | Bulk-invites players to your fellowship. Omit `name` to invite the current landblock; provide a name fragment to search all online players |
 | `/setlum` | Player | Sets your luminance to the maximum value (`MaximumLuminance`). Only works if that property has been set on your character |
 | `runas <player> <command>` | Admin | Runs a command as the named online player, bypassing normal access checks. *Experimental.* |
+| `/xp tracker` | Player | Show session XP, luminance, and bank deposit summary |
+| `/xp tracker full` | Player | Show detailed breakdown by XP type (kill, quest, etc.) |
+| `/xp tracker lifetime` | Player | Show lifetime totals from persistent storage |
+| `/xp spend` | Player | Distribute available XP across attributes, vitals, and skills proportionally |
+| `/xp spend auto` | Player | Toggle automatic XP spending whenever XP is earned |
+| `/tn` | Player | Instant teleport to Town Network (unlocked after donating 1 billion pyreals in TN tolls) |
 
 > Example: `runas alttest faction ch 5`
+
+---
+
+### XP Tracker & Auto-Spend
+
+Tracks XP, luminance, and bank deposits per session. Lifetime totals are persisted to `<modDir>/xp-tracker/<guid>.json`.
+
+#### `/xp spend`
+
+Manually distributes available XP across all trainable stats using greedy proportional allocation:
+
+1. **Attributes** (Strength, Endurance, Coordination, Quickness, Focus, Self)
+2. **Vitals** (Health, Stamina, Mana)
+3. **Skills** (all trained/specialized skills)
+
+Each stat receives `(available × weight / remaining_weight)` XP, capped at what it needs to reach `maxRank - stopBefore`. Leftover flows to lower-weight stats.
+
+Skill weights are configurable:
+- **Combat skills:** `CombatSkillWeight` (default 3)
+- **Social skills:** `SocialSkillWeight` (default 2)
+- **All others:** `SupportSkillWeight` (default 1)
+
+**Verbose messaging:**
+```
+Spent 450,000 XP into 8 stats: ItemEnchantment (+13), Strength (+4), Health (+2), WarMagic (+7). Remaining: 12,000
+```
+
+#### `/xp spend auto`
+
+When enabled, XP is automatically distributed immediately after every `GrantXP` call. Same verbose messaging prefixed with `[Auto-Spend]`.
+
+**Settings:**
+```json
+"XpSpendStopBeforeMaxRanks": 3,
+"XpSpend": {
+  "AttributeVitalWeight": 2,
+  "CombatSkillWeight": 3,
+  "SocialSkillWeight": 2,
+  "SupportSkillWeight": 1,
+  "CombatSkills": ["LightWeapons", "HeavyWeapons", "FinesseWeapons", "TwoHandedCombat", "MissileWeapons"],
+  "SocialSkills": ["Leadership", "Loyalty", "Allegiance"]
+}
+```
 
 ---
 

@@ -9,7 +9,7 @@ VALUES (300392 	/* id */
 	 , 100		/* item_Chance */
 	 , 3		/* item_Min_Amount */
 	 , 4		/* item_Max_Amount */
-	 , 12		/* item_Treasure_Type_Selection_Chances */
+	 , 9		/* item_Treasure_Type_Selection_Chances */
 	 , 100		/* magic_Item_Chance */
 	 , 12		/* magic_Item_Min_Amount */
 	 , 14		/* magic_Item_Max_Amount */
@@ -17,5 +17,5 @@ VALUES (300392 	/* id */
 	 , 100		/* mundane_Item_Chance */
 	 , 5		/* mundane_Item_Min_Amount */
 	 , 10		/* mundane_Item_Max_Amount */
-	 , 9		/* mundane_Item_Type_Selection_Chances */
+	 , 7		/* mundane_Item_Type_Selection_Chances */
 	 , '2020-03-16 12:00:00');		/* last_Modified */

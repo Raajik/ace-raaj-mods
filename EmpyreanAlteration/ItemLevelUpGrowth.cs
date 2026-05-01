@@ -24,8 +24,13 @@ public static class ItemLevelUpGrowth
 
     private static bool TryGrowItem(this WorldObject item, int level, Player player)
     {
-        Augment augment = 0;
         var cfg = ItemGrowthSettings;
+        if (cfg.ChaosTriggeredGrowth)
+        {
+            return QuestItemGrowthLevelEngine.ApplyLevelUp(item, player, level, cfg);
+        }
+
+        Augment augment = 0;
         if (!cfg.GrowthFixedLevelAugments.TryGetValue(item.WeenieType, out var levelAugments) || !levelAugments.TryGetValue(level, out augment))
         {
             if (!cfg.GrowthAugments.TryGetValue(item.WeenieType, out var augmentGroup))

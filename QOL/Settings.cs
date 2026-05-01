@@ -33,7 +33,7 @@ public enum Features
     VendorLootRotation,
     KillXpMessage,
     BundleGive,
-    VendorPriceInflation,
+    VendorPriceInflation, // DEPRECATED — vendor pricing moved to LeyLineLedger. Kept for JSON backward compatibility.
     NoDeathDrops,
     PetKillSummary,
     XpTracker,
@@ -233,11 +233,11 @@ public class Settings
 
     [JsonPropertyName("// VendorLootItemsPerTierMin")]
     public string VendorLootItemsPerTierMinDoc { get; init; } = "Minimum items to generate per tier during rotation.";
-    public int VendorLootItemsPerTierMin { get; set; } = 4;
+    public int VendorLootItemsPerTierMin { get; set; } = 15;
 
     [JsonPropertyName("// VendorLootItemsPerTierMax")]
     public string VendorLootItemsPerTierMaxDoc { get; init; } = "Maximum items to generate per tier during rotation.";
-    public int VendorLootItemsPerTierMax { get; set; } = 9;
+    public int VendorLootItemsPerTierMax { get; set; } = 30;
 
     [JsonPropertyName("// VendorLootMinValue")]
     public string VendorLootMinValueDoc { get; init; } = "Minimum item value in pyreals for vendor loot.";
@@ -251,21 +251,9 @@ public class Settings
     public string VendorLootCooldownMinutesDoc { get; init; } = "Minutes between vendor inventory rotations for the same vendor instance.";
     public int VendorLootCooldownMinutes { get; set; } = 15;
 
-    [JsonPropertyName("// VendorLootEconomyScanMinutes")]
-    public string VendorLootEconomyScanMinutesDoc { get; init; } = "How often to scan total banked pyreals across all online players.";
-    public int VendorLootEconomyScanMinutes { get; set; } = 5;
-
     [JsonPropertyName("// VendorLootLuxuryTaxPercent")]
-    public string VendorLootLuxuryTaxPercentDoc { get; init; } = "Hidden luxury tax added to vendor prices. 10 = 10% price increase.";
+    public string VendorLootLuxuryTaxPercentDoc { get; init; } = "Hidden luxury tax added to vendor prices. 10 = 10% price increase. LLL handles economy scaling via SellPrice patch.";
     public double VendorLootLuxuryTaxPercent { get; set; } = 10.0;
-
-    [JsonPropertyName("// VendorLootEconomyPyrealDivisor")]
-    public string VendorLootEconomyPyrealDivisorDoc { get; init; } = "Divisor for economy multiplier calculation. Default 100M = 100,000,000.";
-    public long VendorLootEconomyPyrealDivisor { get; set; } = 100_000_000L;
-
-    [JsonPropertyName("// VendorLootCashPropertyId")]
-    public string VendorLootCashPropertyIdDoc { get; init; } = "PropertyInt64 ID for banked pyreals. Default 39999 aligns with LeyLineLedger CashProperty.";
-    public int VendorLootCashPropertyId { get; set; } = 39999;
 
     [JsonPropertyName("// VendorTierWcidMap")]
     public string VendorTierWcidMapDoc { get; init; } = "Maps vendor WeenieClassIds to their loot tier (1-8). Starter town Academy vendors default to tier 1. Unknown vendors use DefaultVendorTier.";
@@ -289,11 +277,11 @@ public class Settings
 
     [JsonPropertyName("// VendorLootMagicItemPercent")]
     public string VendorLootMagicItemPercentDoc { get; init; } = "Percentage of extra inventory slots filled with MagicItem-category loot (scrolls, wands, orbs) after base Item-category loot. 0 = no extra magic items.";
-    public int VendorLootMagicItemPercent { get; set; } = 25;
+    public int VendorLootMagicItemPercent { get; set; } = 75;
 
     [JsonPropertyName("// VendorLootMundaneItemPercent")]
     public string VendorLootMundaneItemPercentDoc { get; init; } = "Percentage of extra inventory slots filled with MundaneItem-category loot (food, potions, components) after base loot. 0 = no extra mundane items.";
-    public int VendorLootMundaneItemPercent { get; set; } = 10;
+    public int VendorLootMundaneItemPercent { get; set; } = 40;
 
     [JsonPropertyName("// GiveNpcSingleStackWeenieTypes")]
     public string GiveNpcSingleStackWeenieTypesDoc { get; init; } = "WeenieTypes that receive the give clamp (typically Generic for trophies). Only applies when MaxStackSize > 1.";
@@ -352,7 +340,7 @@ public class Settings
     public BundleGiveSettings BundleGive { get; set; } = new();
 
     [JsonPropertyName("// EnableVendorPriceInflation")]
-    public string EnableVendorPriceInflationDoc { get; init; } = "When true, multiplies the buy rate vendors charge players by VendorBuyRateMultiplier. Does not affect how much vendors pay for items sold to them.";
+    public string EnableVendorPriceInflationDoc { get; init; } = "DEPRECATED — vendor pricing moved to LeyLineLedger. This toggle no longer has any effect.";
     public bool EnableVendorPriceInflation { get; set; } = false;
 
     [JsonPropertyName("// EnableNoDeathDrops")]
@@ -360,7 +348,7 @@ public class Settings
     public bool EnableNoDeathDrops { get; set; } = true;
 
     [JsonPropertyName("// VendorBuyRateMultiplier")]
-    public string VendorBuyRateMultiplierDoc { get; init; } = "Multiplier on vendor purchase prices (e.g. 5.0 = 5× normal cost). Only applies when EnableVendorPriceInflation is true.";
+    public string VendorBuyRateMultiplierDoc { get; init; } = "DEPRECATED — use LeyLineLedger Settings.json instead.";
     public double VendorBuyRateMultiplier { get; set; } = 5.0;
 
     [JsonPropertyName("// EnableVendorSpecialItemInflation")]

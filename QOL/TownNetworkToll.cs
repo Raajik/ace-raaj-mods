@@ -197,6 +197,7 @@ internal static class TownNetworkToll
             if (TryPayWithComponents(player, toll, out var compResult))
             {
                 SendFlavor(player, compResult);
+                RecordTollSpending(player, fee);
                 ModManager.Log($"[TownNetworkToll] {player.Name} paid {compResult.AmountTaken} {compResult.ItemName} " +
                     $"(remaining {compResult.Remaining}) for {context}.", ModManager.LogLevel.Info);
                 return true;
@@ -206,6 +207,7 @@ internal static class TownNetworkToll
         // Cash payment (fallback or CashOnly mode)
         if (TryPayWithCash(player, fee, toll, out long charge))
         {
+            RecordTollSpending(player, charge);
             SendFlavor(player, new PaymentResult(true, charge, "pyreals", (int)charge, (int)(GetBankedPyreals(player, toll.BankCashProperty))));
             // Show charge diff inline (red for negative)
             long remaining = GetBankedPyreals(player, toll.BankCashProperty);
@@ -397,8 +399,9 @@ internal static class TownNetworkToll
         if (!t.EnableDynamicPricing)
             return (long)Math.Round(baseFee * mult);
 
-        // Economy multiplier (shared with VendorLootRotation, updated every 5 min)
-        double economyMult = VendorLootRotation.GetEconomyMultiplier();
+        // Economy multiplier removed from VendorLootRotation; LLL handles all economy scaling.
+        // Town Network tolls use base fee + level scaling only. Set EnableDynamicPricing=false to disable.
+        double economyMult = 1.0;
 
         // Continuous level scaling: 1.0 at level 1 → LevelScalingMaxMultiplier at level 275
         double levelMult = 1.0 + ((player.Level ?? 1) / 275.0) * (t.LevelScalingMaxMultiplier - 1.0);
@@ -542,5 +545,39 @@ internal static class TownNetworkToll
         var msg = FreeTravelFlavors[Random.Shared.Next(FreeTravelFlavors.Length)];
         var name = MageNames[Random.Shared.Next(MageNames.Length)];
         player.SendMessage($"[{name}] {msg}", ChatMessageType.Tell);
+    }
+
+    // ── Generous Benefactor Tracking ───────────────────────────────────────
+    static void RecordTollSpending(Player player, long fee)
+    {
+        if (fee <= 0 || player == null) return;
+        var profile = PlayerProfileStore.GetOrCreate(player.Guid.Full);
+        profile.TotalTownNetworkTollSpent += fee;
+        PlayerProfileStore.Save(player.Guid.Full, profile);
+    }
+
+    // ── /tn command: instant Town Network teleport (Generous Benefactor reward) ──
+    [CommandHandler("tn", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0,
+        "Teleports directly to the Town Network. Requires donating 1,000,000,000 pyreals in tolls." +
+        "Usage: /tn")]
+    public static void HandleTn(Session session, params string[] parameters)
+    {
+        var player = session?.Player;
+        if (player == null) return;
+
+        const long threshold = 1_000_000_000L;
+        var profile = PlayerProfileStore.GetOrCreate(player.Guid.Full);
+        if (profile.TotalTownNetworkTollSpent < threshold)
+        {
+            long remaining = threshold - profile.TotalTownNetworkTollSpent;
+            player.SendMessage($"[Town Network] You have donated {profile.TotalTownNetworkTollSpent:N0} pyreals toward the Arcanum. " +
+                $"Donate {remaining:N0} more to unlock direct teleport (/tn).", ChatMessageType.System);
+            return;
+        }
+
+        // Instant teleport to Town Network (central drop point inside dungeon 0x0007)
+        var pos = new Position(0x0007010B, 3.36f, -69.93f, 0.005f, -0.712f, 0f, 0f, 0.702f);
+        player.Teleport(pos);
+        player.SendMessage("The Arcanum recognizes your generosity and opens a direct path to the Town Network.", ChatMessageType.Magic);
     }
 }

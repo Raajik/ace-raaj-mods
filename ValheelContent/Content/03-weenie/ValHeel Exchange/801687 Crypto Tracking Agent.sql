@@ -23,7 +23,7 @@ VALUES (801687,   1, True ) /* Stuck */
      , (801687,  19, False) /* Attackable */;
 
 INSERT INTO `weenie_properties_float` (`object_Id`, `type`, `value`)
-VALUES (801687,   1,      60) /* HeartbeatInterval */
+VALUES (801687,   1,    3600) /* HeartbeatInterval — reduced from 60 to 3600 to eliminate per-minute DEBUG spam from EventManager start/stop logging */
      , (801687,   2,       0) /* HeartbeatTimestamp */
      , (801687,   3,       2) /* HealthRate */
      , (801687,   4,       5) /* StaminaRate */

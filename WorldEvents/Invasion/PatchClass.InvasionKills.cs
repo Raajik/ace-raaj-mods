@@ -38,11 +38,11 @@ public partial class PatchClass
                 ? (float)(CurrentSettings?.InvasionBossPointsMultiplier ?? 0.1)
                 : 1f;
 
-            InvasionKillTracker.RecordKill(killer, basePoints);
+            InvasionKillTracker.RecordKill(townSettings.TownName, killer, basePoints);
 
             if (isBoss)
             {
-                InvasionKillTracker.OnBossDied();
+                InvasionKillTracker.OnBossDied(townSettings.TownName);
                 ModManager.Log($"[Invasion] Boss killed at {townSettings.TownName}.", ModManager.LogLevel.Info);
 
                 var s = CurrentSettings!;
@@ -53,12 +53,14 @@ public partial class PatchClass
                         InvasionLootRewards.DistributeBossKillRewards(s);
                 });
 
-                InvasionBroadcast.AnnounceBossKilled(townSettings.TownName, killer.Name ?? "Unknown");
+                InvasionBroadcast.AnnounceBossKilled(townSettings.TownName, killer.Name ?? "Unknown", wave.ChaosMode);
             }
             else
             {
                 // Check if we hit the threshold to spawn the boss
-                InvasionRuntime.CheckBossSpawnThreshold(CurrentSettings!, townSettings);
+                var entry = wave.Towns.FirstOrDefault(t => t.TownName == townSettings.TownName);
+                if (entry != null)
+                    InvasionRuntime.CheckBossSpawnThreshold(CurrentSettings!, townSettings, entry);
             }
         }
     }

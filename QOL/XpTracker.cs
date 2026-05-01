@@ -16,6 +16,8 @@ internal static class XpTracker
     static string _dataDir = "";
     static readonly object _saveLock = new();
 
+    readonly record struct SpendResult(string Name, int RanksGained, long XpSpent);
+
     internal static void Initialize(string modDirectory)
     {
         _dataDir = Path.Combine(modDirectory, "xp-tracker");
@@ -63,7 +65,16 @@ internal static class XpTracker
         {
             var player = __instance;
             var chain = new ActionChain();
-            chain.AddAction(player, () => SpendForPlayer(player));
+            chain.AddAction(player, () =>
+            {
+                var results = SpendForPlayer(player);
+                long spent = results.Sum(r => r.XpSpent);
+                if (spent > 0)
+                {
+                    var detail = string.Join(", ", results.Select(r => $"{r.Name} (+{r.RanksGained})"));
+                    player.SendMessage($"[Auto-Spend] Spent {spent:N0} XP into {results.Count} stats: {detail}. Remaining: {player.AvailableExperience ?? 0:N0}", ChatMessageType.System);
+                }
+            });
             chain.EnqueueChain();
         }
     }
@@ -122,9 +133,12 @@ internal static class XpTracker
                 else
                     HandleSpend(player);
                 break;
+            case "mob_scaling":
+                ToggleMobScaling(player);
+                break;
             default:
                 player.SendMessage(
-                    "Usage: /xp tracker [full|lifetime|add <name_or_id>|list] | /xp spend",
+                    "Usage: /xp tracker [full|lifetime|add <name_or_id>|list] | /xp spend [auto] | /xp mob_scaling",
                     ChatMessageType.System);
                 break;
         }
@@ -385,7 +399,7 @@ internal static class XpTracker
             return;
         }
         long before = player.AvailableExperience ?? 0;
-        int count   = SpendForPlayer(player);
+        var results = SpendForPlayer(player);
         long spent  = before - (player.AvailableExperience ?? 0);
         if (spent <= 0)
         {
@@ -394,7 +408,8 @@ internal static class XpTracker
         }
         else
         {
-            player.SendMessage($"Spent {spent:N0} XP across {count} stats. Remaining: {player.AvailableExperience ?? 0:N0}", ChatMessageType.System);
+            var detail = string.Join(", ", results.Select(r => $"{r.Name} (+{r.RanksGained})"));
+            player.SendMessage($"Spent {spent:N0} XP into {results.Count} stats: {detail}. Remaining: {player.AvailableExperience ?? 0:N0}", ChatMessageType.System);
         }
     }
 
@@ -415,17 +430,28 @@ internal static class XpTracker
             : "Auto-spend OFF.", ChatMessageType.System);
     }
 
-    // Returns number of stats that received XP.
+    static void ToggleMobScaling(Player player)
+    {
+        const int optOutProp = 40151; // Shared with Swarmed DynamicMobScaling
+        bool current = player.GetProperty((PropertyBool)optOutProp) ?? false;
+        bool next = !current;
+        player.SetProperty((PropertyBool)optOutProp, next);
+        player.SendMessage(next
+            ? "Mob scaling OPT-OUT enabled — nearby mobs will NOT scale to your level."
+            : "Mob scaling OPT-OUT disabled — nearby mobs WILL scale to your level.", ChatMessageType.System);
+    }
+
+    // Returns list of stats that received XP with rank gains.
     // Uses greedy proportional allocation: each stat gets (available * weight / remaining_weight),
     // capped at what it needs to reach (maxRank - stop). Leftover from caps naturally flows down.
-    static int SpendForPlayer(Player player)
+    static List<SpendResult> SpendForPlayer(Player player)
     {
         int stop = PatchClass.Settings?.XpSpendStopBeforeMaxRanks ?? 3;
         var cfg  = PatchClass.Settings?.XpSpend ?? new();
         int avw  = cfg.AttributeVitalWeight;
 
-        // Collect (weight, needed, spendFn) for every stat that still needs XP
-        var targets = new List<(int Weight, uint Needed, Func<uint, bool> Spend)>();
+        // Collect (weight, needed, name, spendFn) for every stat that still needs XP
+        var targets = new List<(int Weight, uint Needed, string Name, Func<uint, (bool success, int gained)> Spend)>();
 
         // Attributes
         var attrTable  = DatManager.PortalDat.XpTable.AttributeXpList;
@@ -440,7 +466,13 @@ internal static class XpTracker
                 if (targetXp <= attr.ExperienceSpent) continue;
                 uint needed = targetXp - attr.ExperienceSpent;
                 var a = attr;
-                targets.Add((avw, needed, amt => player.HandleActionRaiseAttribute(a.Attribute, amt)));
+                string name = a.Attribute.ToString();
+                targets.Add((avw, needed, name, amt => {
+                    int before = (int)a.Ranks;
+                    bool ok = player.HandleActionRaiseAttribute(a.Attribute, amt);
+                    int gained = (int)a.Ranks - before;
+                    return (ok, gained);
+                }));
             }
         }
 
@@ -456,7 +488,13 @@ internal static class XpTracker
                 if (targetXp <= vital.ExperienceSpent) continue;
                 uint needed = targetXp - vital.ExperienceSpent;
                 var v = vital;
-                targets.Add((avw, needed, amt => player.HandleActionRaiseVital(v.Vital, amt)));
+                string name = v.Vital.ToString().Replace("Max", "");
+                targets.Add((avw, needed, name, amt => {
+                    int before = (int)v.Ranks;
+                    bool ok = player.HandleActionRaiseVital(v.Vital, amt);
+                    int gained = (int)v.Ranks - before;
+                    return (ok, gained);
+                }));
             }
         }
 
@@ -473,28 +511,42 @@ internal static class XpTracker
             uint needed = targetXp - cs.ExperienceSpent;
             int  weight = GetSkillWeight(cs.Skill, cfg);
             var  s = cs;
-            targets.Add((weight, needed, amt => player.HandleActionRaiseSkill(s.Skill, amt)));
+            string name = s.Skill.ToString();
+            targets.Add((weight, needed, name, amt => {
+                int before = s.Ranks;
+                bool ok = player.HandleActionRaiseSkill(s.Skill, amt);
+                int gained = s.Ranks - before;
+                return (ok, gained);
+            }));
         }
 
-        if (targets.Count == 0) return 0;
+        if (targets.Count == 0) return new List<SpendResult>();
 
         // Sort highest weight first for greedy proportional pass
         targets.Sort((a, b) => b.Weight.CompareTo(a.Weight));
 
-        long available      = player.AvailableExperience ?? 0;
+        long available       = player.AvailableExperience ?? 0;
         long remainingWeight = targets.Sum(t => (long)t.Weight);
-        int  count          = 0;
+        var  results         = new List<SpendResult>();
 
-        foreach (var (weight, needed, spendFn) in targets)
+        foreach (var (weight, needed, name, spendFn) in targets)
         {
             if (available <= 0 || remainingWeight <= 0) break;
             long alloc   = available * weight / remainingWeight;
             uint toSpend = (uint)Math.Min(Math.Min((long)needed, alloc), available);
-            if (toSpend > 0 && spendFn(toSpend)) { count++; available -= toSpend; }
+            if (toSpend > 0)
+            {
+                var (success, gained) = spendFn(toSpend);
+                if (success && gained > 0)
+                {
+                    results.Add(new SpendResult(name, gained, toSpend));
+                    available -= toSpend;
+                }
+            }
             remainingWeight -= weight;
         }
 
-        return count;
+        return results;
     }
 
     static int GetSkillWeight(Skill skill, XpSpendSettings cfg)

@@ -17,6 +17,20 @@
   "// Currencies": "Pyreal denomination table: WCID and Value per unit for making change. Inside each entry: // lines first, then Name, Id, Value (same order).",
   "VendorsUseBank": true,
   "DirectDeposit": true,
+  "// EnableVendorSellRateReduction": "When true, reduces the amount vendors pay players for sold items by VendorSellRateMultiplier.",
+  "// VendorSellRateMultiplier": "Multiplier on vendor payout when players sell items (e.g. 0.03 = 3% of normal value). Patches Vendor.BuyPrice so client sell UI and server-side payouts are consistent.",
+  "EnableVendorSellRateReduction": true,
+  "VendorSellRateMultiplier": 0.03,
+  "// VendorPricingMode": "How vendor buy prices are calculated. Vanilla = retail ACE behavior, SimpleMultiplier = flat BuyPrice multiplier, EconomyBalancer = dynamic scaling based on total server banked pyreals (default).",
+  "VendorPricingMode": "EconomyBalancer",
+  "// VendorBuyPriceMultiplier": "Flat multiplier for vendor buy prices when VendorPricingMode = SimpleMultiplier. 1.0 = retail, 5.0 = 5x. WorldEvents Sale multiplier has been moved here.",
+  "VendorBuyPriceMultiplier": 5.0,
+  "// EnableDynamicVendorPricing": "DEPRECATED — use VendorPricingMode = EconomyBalancer instead. Kept for backward compatibility.",
+  "EnableDynamicVendorPricing": true,
+  "// DynamicVendorPricingBaseMultiplier": "Base multiplier for vendor buy prices. 1.0 = normal prices, 5.0 = 5x normal. Combined with economy scaling.",
+  "DynamicVendorPricingBaseMultiplier": 5.0,
+  "// DynamicVendorPricingEconomyDivisor": "Divisor for economy scaling. Total banked pyreals / divisor = additional multiplier. Default 100M means 100,000,000 pyreals = 1.0x extra multiplier.",
+  "DynamicVendorPricingEconomyDivisor": 100000000.0,
   "AccountWideBank": true,
   "MaxCoinsDropped": 0,
   "Items": [
@@ -430,6 +444,14 @@
       "Id": 20629,
       "Value": 200000
     },
+    {
+      "// Name": "Short label or code for this denomination (informational).",
+      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
+      "// Value": "Pyreal value of one unit of this WCID when computing change.",
+      "Name": "MMD",
+      "Id": 20630,
+      "Value": 250000
+    },
 {
       "// Name": "Short label or code for this denomination (informational).",
       "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
@@ -514,70 +536,6 @@
       "// Name": "Short label or code for this denomination (informational).",
       "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
       "// Value": "Pyreal value of one unit of this WCID when computing change.",
-      "Name": "PathToken",
-      "Id": 803939,
-      "Value": 1
-    },
-    {
-      "// Name": "Short label or code for this denomination (informational).",
-      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
-      "// Value": "Pyreal value of one unit of this WCID when computing change.",
-      "Name": "AshCoin",
-      "Id": 803955,
-      "Value": 1
-    },
-    {
-      "// Name": "Short label or code for this denomination (informational).",
-      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
-      "// Value": "Pyreal value of one unit of this WCID when computing change.",
-      "Name": "Luminium",
-      "Id": 803880,
-      "Value": 1
-    },
-    {
-      "// Name": "Short label or code for this denomination (informational).",
-      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
-      "// Value": "Pyreal value of one unit of this WCID when computing change.",
-      "Name": "Credit",
-      "Id": 801690,
-      "Value": 1
-    },
-    {
-      "// Name": "Short label or code for this denomination (informational).",
-      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
-      "// Value": "Pyreal value of one unit of this WCID when computing change.",
-      "Name": "ProtoKey",
-      "Id": 801669,
-      "Value": 1
-    },
-    {
-      "// Name": "Short label or code for this denomination (informational).",
-      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
-      "// Value": "Pyreal value of one unit of this WCID when computing change.",
-      "Name": "OperativeMarks",
-      "Id": 802810,
-      "Value": 1
-    },
-    {
-      "// Name": "Short label or code for this denomination (informational).",
-      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
-      "// Value": "Pyreal value of one unit of this WCID when computing change.",
-      "Name": "ValHeelKey",
-      "Id": 300191,
-      "Value": 1
-    },
-    {
-      "// Name": "Short label or code for this denomination (informational).",
-      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
-      "// Value": "Pyreal value of one unit of this WCID when computing change.",
-      "Name": "MirraEssence",
-      "Id": 803342,
-      "Value": 1
-    },
-    {
-      "// Name": "Short label or code for this denomination (informational).",
-      "// Id": "Weenie class id (WCID) of the physical coin or plaque item.",
-      "// Value": "Pyreal value of one unit of this WCID when computing change.",
       "Name": "CashSink",
       "Id": 40652,
       "Value": 12500000,
@@ -587,8 +545,8 @@
   "EconomyBalancer": {
     "Enabled": true,
     "IncludeAdminBalances": false,
-    "ScanIntervalMinutes": 60,
-    "MinScanIntervalMinutes": 15,
+    "ScanIntervalMinutes": 5,
+    "MinScanIntervalMinutes": 1,
     "MinSupplyWeight": {
       "20630": 1.0,
       "803955": 100.0,
@@ -602,16 +560,69 @@
     },
     "ValueAdjustmentSmoothing": 0.25,
     "LogChangesOnly": true,
-    "MinValueFloor": 1
+    "MinValueFloor": 1,
+    "HideZeroSupplyCurrencies": true
+  },
+  "ValheelCryptoIntegration": {
+    "// Enabled": "When true (default), auto-detect Valheel currencies and manage CryptoUp events. When false, never touches event state.",
+    "Enabled": true,
+    "// AshCoinWcid": "WCID of AshCoin (Encapsulated Luminance).",
+    "AshCoinWcid": 803955,
+    "// CreditWcid": "WCID of Credit (Crystalized Wood).",
+    "CreditWcid": 801690,
+    "// RatioThresholds": "Credit:AshCoin ratio thresholds for CryptoUp1–5. Default: 1.0, 2.0, 3.0, 4.0, 5.0.",
+    "RatioThresholds": [1.0, 2.0, 3.0, 4.0, 5.0]
   },
   "LootTracker": {
     "Enabled": true,
     "IncludeAdminBalances": false,
-    "ScanIntervalMinutes": 60,
+    "ScanIntervalMinutes": 5,
     "ReportTopN": 20,
     "IgnoreWcids": [273, 36432],
     "MinLootCountForReport": 100,
     "LootCountPropertyStart": 45000,
     "AutoAddToBankThreshold": 10000
+  },
+  "PublicExchange": {
+    "// PriceVariancePercent": "Random variance applied to each item's exchange price so identical base prices look organic. 0.25 = ±25%.",
+    "PriceVariancePercent": 0.25,
+    "// PriceVarianceResetMode": "When to reshuffle per-item price variance rolls. Options: Never (fixed for session), OnEconomyScan (reshuffle on every EconomyBalancer scan), Hourly (default), Daily.",
+    "PriceVarianceResetMode": "Hourly"
+  },
+  "Lottery": {
+    "// Enabled": "When true, /lottery commands are available.",
+    "Enabled": true,
+    "// BaseTicketPrice": "Base pyreal cost per lottery ticket.",
+    "BaseTicketPrice": 1000,
+    "// TicketPricePoolPercent": "Additional ticket cost as % of current pool (0.0001 = 0.01%).",
+    "TicketPricePoolPercent": 0.0001,
+    "// DrawIntervalMinutes": "How often the lottery auto-draws (default 10080 = 7 days).",
+    "DrawIntervalMinutes": 10080,
+    "// TicketPropertyId": "PropertyInt64 for storing virtual ticket count per character.",
+    "TicketPropertyId": 45214,
+    "// MinPoolForDraw": "Minimum pool size before auto-draw runs.",
+    "MinPoolForDraw": 10000,
+    "// MaxPoolSize": "If pool exceeds this, use MaxPoolDestructionRate for tax.",
+    "MaxPoolSize": 5000000,
+    "// SmallTaxThreshold": "Tax amounts below this use SmallTaxDestructionRate.",
+    "SmallTaxThreshold": 10000,
+    "// LargeTaxThreshold": "Tax amounts between Small and Large use MediumTaxDestructionRate.",
+    "LargeTaxThreshold": 100000,
+    "// SmallTaxDestructionRate": "Portion of tax destroyed for small transactions.",
+    "SmallTaxDestructionRate": 0.60,
+    "// MediumTaxDestructionRate": "Portion of tax destroyed for medium transactions.",
+    "MediumTaxDestructionRate": 0.75,
+    "// LargeTaxDestructionRate": "Portion of tax destroyed for large transactions.",
+    "LargeTaxDestructionRate": 0.85,
+    "// MaxPoolDestructionRate": "Portion of tax destroyed when pool exceeds MaxPoolSize.",
+    "MaxPoolDestructionRate": 0.95,
+    "// WinnerCount": "How many winners per draw. Default 3 (1st/2nd/3rd).",
+    "WinnerCount": 3,
+    "// WinnerSplits": "Portion of pool each winner receives. Must sum to 1.0. Default: 1st=50%, 2nd=30%, 3rd=20%.",
+    "WinnerSplits": [0.50, 0.30, 0.20],
+    "// EnableQpPoolContributions": "When true, drains pending QP contributions from Loremaster before each draw.",
+    "EnableQpPoolContributions": true,
+    "// DonateLuminanceRate": "How many pyreals of lottery pool value each donated luminance point contributes. 1.0 = 1 luminance = 1 pyreal.",
+    "DonateLuminanceRate": 1.0
   }
 }

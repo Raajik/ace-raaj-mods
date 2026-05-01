@@ -62,12 +62,14 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
         
         var modDir = Path.GetDirectoryName(typeof(PatchClass).Assembly.Location) ?? "";
         PlayerProfileStore.Initialize(modDir);
+        Skills.QuestTurnInTracker.Load();
 
         ModManager.Log($"[BSS] Start() - EnableTrophyDrops={Settings.EnableTrophyDrops}, EnableAssessCreature={Settings.EnableAssessCreature}", ModManager.LogLevel.Info);
         RegisterEnabledPatchCategories();
         RecuperationHoT.RefreshHealerHook(ModC.Harmony, Settings.EnableHealing);
         TryApplyPlayerEnterWorldPatch();
         TryApplyLootPatch();
+        TryApplyQuestTurnInCapPatch();
         TryApplyFoodPatch();
         TryApplyDamageEventPatch();
         TryApplyDirtyFightingPatch();
@@ -224,25 +226,6 @@ void TryApplyDamageEventPatch()
                 ModManager.Log($"[BSS] Cooking patch failed: {ex}", ModManager.LogLevel.Error);
             }
         }
-
-        // XP boost patch for "HOW DID YOU EVEN DO THAT?!" achievement
-        try
-        {
-            var grantXp = AccessTools.Method(typeof(Player), nameof(Player.GrantXP), new Type[] { typeof(long), typeof(XpType), typeof(ShareType) });
-            if (grantXp != null)
-            {
-                var xpPrefix = AccessTools.Method(typeof(Skills.XpBoostPatch), "PrefixGrantXP");
-                if (xpPrefix != null)
-                {
-                    ModC.Harmony?.Patch(grantXp, new HarmonyMethod(xpPrefix));
-                    ModManager.Log("[BSS] Player.GrantXP prefix applied for achievement XP boost", ModManager.LogLevel.Info);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[BSS] XP boost patch failed: {ex}", ModManager.LogLevel.Error);
-        }
     }
 
     static bool LootPatchApplied;
@@ -330,6 +313,46 @@ void TryApplyDamageEventPatch()
             {
                 ModManager.Log($"[BSS] GenerateTreasure patch failed: {ex}", ModManager.LogLevel.Error);
             }
+        }
+    }
+
+    static bool QuestTurnInCapPatchApplied;
+
+    void TryApplyQuestTurnInCapPatch()
+    {
+        if (QuestTurnInCapPatchApplied) return;
+        if (Settings?.QuestTrophyDrops?.Enabled != true) return;
+
+        try
+        {
+            var giveObjectToNPC = AccessTools.Method(typeof(Player), "GiveObjectToNPC", new Type[] {
+                typeof(WorldObject), typeof(WorldObject), typeof(Container), typeof(Container), typeof(bool), typeof(int) });
+            if (giveObjectToNPC != null)
+            {
+                var prefix = AccessTools.Method(typeof(Skills.QuestTurnInCap), "PreGiveObjectToNPC");
+                if (prefix != null)
+                {
+                    ModC.Harmony?.Patch(giveObjectToNPC, new HarmonyMethod(prefix));
+                    ModManager.Log("[BSS] QuestTurnInCap GiveObjectToNPC prefix applied", ModManager.LogLevel.Info);
+                }
+            }
+
+            var grantXp = AccessTools.Method(typeof(Player), nameof(Player.GrantXP), new Type[] { typeof(long), typeof(XpType), typeof(ShareType) });
+            if (grantXp != null)
+            {
+                var xpPrefix = AccessTools.Method(typeof(Skills.QuestTurnInCap), "PreGrantXP");
+                if (xpPrefix != null)
+                {
+                    ModC.Harmony?.Patch(grantXp, new HarmonyMethod(xpPrefix));
+                    ModManager.Log("[BSS] QuestTurnInCap GrantXP prefix applied", ModManager.LogLevel.Info);
+                }
+            }
+
+            QuestTurnInCapPatchApplied = true;
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] QuestTurnInCap patch failed: {ex.Message}", ModManager.LogLevel.Error);
         }
     }
 
@@ -495,6 +518,15 @@ try
                 }
                 else
                     ModManager.Log("[BSS] HybridClasses.PostDamageTargetHybridSpells not found", ModManager.LogLevel.Error);
+
+                var healerPostfix = AccessTools.Method(typeof(Skills.HealerClass), "PostDamageTargetHealerSmite");
+                if (healerPostfix != null)
+                {
+                    ModC.Harmony?.Patch(damageTarget, null, new HarmonyMethod(healerPostfix));
+                    ModManager.Log("[BSS] HealerClass DamageTarget postfix applied", ModManager.LogLevel.Info);
+                }
+                else
+                    ModManager.Log("[BSS] HealerClass.PostDamageTargetHealerSmite not found", ModManager.LogLevel.Error);
             }
         }
         catch (Exception ex)
@@ -529,6 +561,15 @@ try
                 }
                 else
                     ModManager.Log("[BSS] HybridClasses.PostHeartbeatAura not found", ModManager.LogLevel.Error);
+
+                var healerAuraPostfix = AccessTools.Method(typeof(Skills.HealerAura), "PostHeartbeatHealerAura");
+                if (healerAuraPostfix != null)
+                {
+                    ModC.Harmony?.Patch(heartbeat, null, new HarmonyMethod(healerAuraPostfix));
+                    ModManager.Log("[BSS] HealerAura Heartbeat postfix applied", ModManager.LogLevel.Info);
+                }
+                else
+                    ModManager.Log("[BSS] HealerAura.PostHeartbeatHealerAura not found", ModManager.LogLevel.Error);
             }
         }
         catch (Exception ex)
@@ -557,6 +598,12 @@ try
                     ModC.Harmony?.Patch(enterWorld, null, new HarmonyMethod(hybridEwPostfix));
                 else
                     ModManager.Log("[BSS] HybridClasses.PostEnterWorldAura not found", ModManager.LogLevel.Error);
+
+                var healerEwPostfix = AccessTools.Method(typeof(Skills.HealerAura), "PostEnterWorldHealerAura");
+                if (healerEwPostfix != null)
+                    ModC.Harmony?.Patch(enterWorld, null, new HarmonyMethod(healerEwPostfix));
+                else
+                    ModManager.Log("[BSS] HealerAura.PostEnterWorldHealerAura not found", ModManager.LogLevel.Error);
             }
         }
         catch (Exception ex)
@@ -602,17 +649,6 @@ try
 
         try
         {
-            var grantXp = AccessTools.Method(typeof(Player), nameof(Player.GrantXP), new Type[] { typeof(long), typeof(XpType), typeof(ShareType) });
-            if (grantXp != null)
-            {
-                var xpPrefix = AccessTools.Method(typeof(Skills.LoyaltyHealingAura), "PrefixGrantXP");
-                if (xpPrefix != null)
-                {
-                    ModC.Harmony?.Patch(grantXp, new HarmonyMethod(xpPrefix));
-                    ModManager.Log("[BSS] Loyalty GrantXP prefix applied", ModManager.LogLevel.Info);
-                }
-            }
-
             var grantLum = AccessTools.Method(typeof(Player), nameof(Player.GrantLuminance), new Type[] { typeof(long), typeof(XpType), typeof(ShareType) });
             if (grantLum != null)
             {

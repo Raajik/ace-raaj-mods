@@ -61,6 +61,9 @@ internal class MutatorHooks
 
             foreach (var mutator in eventType)
             {
+                if (mutator is null)
+                    continue;
+
                 if (encountered.Contains(mutator))
                     continue;
 
@@ -105,6 +108,9 @@ internal class MutatorHooks
     [HarmonyPatch(typeof(Creature), nameof(Creature.GenerateTreasure), new Type[] { typeof(DamageHistoryInfo), typeof(Corpse) })]
     public static void PostGenerateTreasure(DamageHistoryInfo killer, Corpse corpse, Creature __instance, ref List<WorldObject> __result)
     {
+        if (corpse?.Inventory == null)
+            return;
+
         var validMutators = mutators[MutationEvent.Corpse].Where(x => x.CanMutateCorpse(killer, corpse, __instance));
         if (validMutators.Count() == 0) return;
 
@@ -341,4 +347,21 @@ internal class MutatorHooks
 
     //    //Return true to execute original
     //}
+
+    /// <summary>
+    /// Filters out SpellId.Undef (0) from rolled spell levels.
+    /// ACE vanilla blast spells have Undef at levels 1-2; when Tier 1 loot rolls those levels,
+    /// the invalid spell ID enters the item spellbook and triggers Spell.Init(0) debug spam.
+    /// </summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(LootGenerationFactory), "RollSpellLevels", new Type[] { typeof(WorldObject), typeof(TreasureDeath), typeof(IEnumerable<SpellId>) })]
+    public static void PostRollSpellLevels(ref List<SpellId> __result)
+    {
+        if (__result == null || __result.Count == 0)
+            return;
+
+        var removed = __result.RemoveAll(s => s == SpellId.Undef);
+        if (removed > 0 && PatchClass.Settings.Verbose)
+            ModManager.Log($"[EmpyreanAlteration] Filtered {removed} SpellId.Undef entries from rolled spell levels.");
+    }
 }

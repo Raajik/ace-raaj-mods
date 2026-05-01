@@ -19,7 +19,6 @@ public class Settings
 		new(nameof(CripplingBlowImbueMod)),
 		new(nameof(CriticalStrikeImbueMod)),
 		new(nameof(ElementalRendingImbue)),
-		new(nameof(GrantExperience), false),
 		new(nameof(HealingDifficulty)),
 		new(nameof(LevelCost), false),
 		new(nameof(MagicWeaponCriticalChance)),

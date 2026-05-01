@@ -218,7 +218,29 @@ public static class ChaosFailureEffects
         else if (roll < 0.60)
             ApplySlayer(player, target, itemName);
         else if (roll < 0.75)
-            ApplyOvercharge(player, target, new SalvageTinkerRule { EffectKind = "DamageMod", FixedValue = 5 }, itemName, settings);
+        {
+            var overchargeRule = new SalvageTinkerRule { EffectKind = "DamageMod", FixedValue = 5 };
+            if (!IsDamageEffectApplicable(target, overchargeRule.EffectKind))
+            {
+                var validImbue = ImbueSalvageWcids.GetImbueForWcid(wcid);
+                var fallbacks = new List<Action>();
+                if (validImbue != null)
+                {
+                    fallbacks.Add(() => ApplyAccidentalImbueSuccess(player, target, wcid, itemName));
+                    fallbacks.Add(() => ApplyBonusImbue(player, target, wcid, itemName));
+                }
+                fallbacks.Add(() => ApplySlayer(player, target, itemName));
+                fallbacks.Add(() => ApplyManaSurge(player, target, itemName, settings));
+                fallbacks.Add(() => ApplyLightAsAFeather(player, target, itemName));
+
+                var chosen = fallbacks[Random.Shared.Next(fallbacks.Count)];
+                chosen();
+
+                player.SendMessage($"[Overtinked] The chaos tries to overcharge your {itemName}'s damage, but it has no damage potential! The energy discharges as something else instead!", ChatMessageType.Craft);
+                return;
+            }
+            ApplyOvercharge(player, target, overchargeRule, itemName, settings);
+        }
         else if (roll < 0.85)
             ApplyManaSurge(player, target, itemName, settings);
         else if (roll < 0.93)
@@ -333,7 +355,7 @@ public static class ChaosFailureEffects
         else if (roll < 0.55)
             ApplyCascade(player, target, rule, itemName, settings);
         else if (roll < 0.70)
-            ApplyDamageModifierShuffle(player, target, itemName);
+            ApplyDamageModifierShuffle(player, target, itemName, settings);
         else if (roll < 0.80)
             ApplyManaSurge(player, target, itemName, settings);
         else if (roll < 0.90)
@@ -342,7 +364,31 @@ public static class ChaosFailureEffects
             ApplySpellWhisper(player, target, itemName, settings);
     }
 
-    static void ApplyDamageModifierShuffle(Player player, WorldObject target, string itemName)
+    static bool IsDamageEffectApplicable(WorldObject target, string effectKind)
+    {
+        // Caster without elemental damage type: DamageMod/ElementalDamageMod does nothing
+        if (target.ItemType == ItemType.Caster || target.WeaponSkill == Skill.MagicDefense)
+        {
+            if (effectKind is "DamageMod" or "ElementalDamageMod")
+            {
+                // If no elemental damage mod is set and no damage type is elemental, skip
+                if (target.ElementalDamageMod == null && target.GetProperty(PropertyInt.DamageType) == null)
+                    return false;
+            }
+        }
+
+        // Jewelry / shield with no damage property: skip damage mods
+        if (target.ItemType is ItemType.Jewelry or ItemType.Armor &&
+            target.DamageMod == null && target.ElementalDamageMod == null)
+        {
+            if (effectKind is "DamageMod" or "ElementalDamageMod" or "WeaponOffense")
+                return false;
+        }
+
+        return true;
+    }
+
+    static void ApplyDamageModifierShuffle(Player player, WorldObject target, string itemName, Settings settings)
     {
         // Randomly boost one of the damage-related stats
         var options = new (string Name, Func<string> Apply)[]
@@ -354,6 +400,38 @@ public static class ChaosFailureEffects
         };
 
         var choice = options[Random.Shared.Next(options.Length)];
+
+        if (!IsDamageEffectApplicable(target, choice.Name))
+        {
+            bool isCaster = target.ItemType == ItemType.Caster || target.WeaponSkill == Skill.MagicDefense;
+            int fallbackRoll = Random.Shared.Next(3);
+            string fallbackDesc;
+            if (isCaster)
+            {
+                switch (fallbackRoll)
+                {
+                    case 0: ApplyManaSurge(player, target, itemName, settings); fallbackDesc = "a mana surge"; break;
+                    case 1: ApplySpellWhisper(player, target, itemName, settings); fallbackDesc = "a whispered spell"; break;
+                    default: ApplyLightAsAFeather(player, target, itemName); fallbackDesc = "weightlessness"; break;
+                }
+            }
+            else
+            {
+                switch (fallbackRoll)
+                {
+                    case 0: ApplyManaSurge(player, target, itemName, settings); fallbackDesc = "a mana surge"; break;
+                    case 1:
+                        var armorRule = new SalvageTinkerRule { EffectKind = "ArmorLevel", FixedValue = 10 };
+                        ApplyCascade(player, target, armorRule, itemName, settings);
+                        fallbackDesc = "a protective cascade";
+                        break;
+                    default: ApplyLightAsAFeather(player, target, itemName); fallbackDesc = "weightlessness"; break;
+                }
+            }
+            player.SendMessage($"[Overtinked] The chaos tries to reshuffle your {itemName}'s damage potential, but it has no damage potential! The energy discharges as {fallbackDesc} instead!", ChatMessageType.Craft);
+            return;
+        }
+
         string desc = choice.Apply();
 
         string msg = string.Format(Random.Shared.GetItems(DamageShuffleMessages, 1)[0], itemName);
@@ -405,8 +483,61 @@ public static class ChaosFailureEffects
 
     // ── Core Effect Implementations ─────────────────────────────────────
 
+    static void ApplyFallbackChaos(Player player, WorldObject target, string itemName, Settings settings)
+    {
+        bool isCaster = target.ItemType == ItemType.Caster || target.WeaponSkill == Skill.MagicDefense;
+        double roll = Random.Shared.NextDouble();
+        string fallbackDesc;
+
+        if (isCaster)
+        {
+            if (roll < 0.40)
+            {
+                ApplyManaSurge(player, target, itemName, settings);
+                fallbackDesc = "a mana surge";
+            }
+            else if (roll < 0.70)
+            {
+                ApplySpellWhisper(player, target, itemName, settings);
+                fallbackDesc = "a whispered spell";
+            }
+            else
+            {
+                ApplyLightAsAFeather(player, target, itemName);
+                fallbackDesc = "weightlessness";
+            }
+        }
+        else
+        {
+            if (roll < 0.40)
+            {
+                ApplyManaSurge(player, target, itemName, settings);
+                fallbackDesc = "a mana surge";
+            }
+            else if (roll < 0.70)
+            {
+                var armorRule = new SalvageTinkerRule { EffectKind = "ArmorLevel", FixedValue = 10 };
+                ApplyCascade(player, target, armorRule, itemName, settings);
+                fallbackDesc = "a protective cascade";
+            }
+            else
+            {
+                ApplyLightAsAFeather(player, target, itemName);
+                fallbackDesc = "weightlessness";
+            }
+        }
+
+        player.SendMessage($"[Overtinked] The chaos tries to overcharge your {itemName}'s damage, but it has no damage potential! The energy discharges as {fallbackDesc} instead!", ChatMessageType.Craft);
+    }
+
     static void ApplyOvercharge(Player player, WorldObject target, SalvageTinkerRule rule, string itemName, Settings settings)
     {
+        if (!IsDamageEffectApplicable(target, rule.EffectKind))
+        {
+            ApplyFallbackChaos(player, target, itemName, settings);
+            return;
+        }
+
         int baseValue = SalvageEffectApplier.RollValue(rule);
         int multiplier = Random.Shared.Next(2, 6);
         int overchargedValue = baseValue * multiplier;

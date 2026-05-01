@@ -16,6 +16,16 @@ public static class SalvageAutoDeposit
     static readonly ConcurrentDictionary<uint, DateTime> LastMessageTime = new();
     const int MESSAGE_INTERVAL_SECONDS = 60;
 
+    // Category MaterialTypes (no direct salvage bag) and their member types.
+    static readonly Dictionary<int, int[]> MaterialTypeCategories = new()
+    {
+        { 3, new[] { 4, 5, 6, 7, 8 } },           // Cloth
+        { 9, new[] { 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50 } }, // Gem
+        { 56, new[] { 57, 58, 59, 60, 61, 62, 63, 64 } }, // Metal
+        { 65, new[] { 66, 67, 68, 69, 70, 71 } }, // Stone
+        { 72, new[] { 73, 74, 75, 76, 77 } },     // Wood
+    };
+
     public static bool IsEnabled(Player player) => AutoSalvageEnabled.GetOrAdd(player.Guid.Full, _ => false);
 
     public static void SetEnabled(Player player, bool enabled)
@@ -27,39 +37,85 @@ public static class SalvageAutoDeposit
             AutoSalvageEnabled.TryRemove(guid, out _);
     }
 
-    // Called by AutoLoot when auto-salvage is enabled and loot priority should intercept ALL salvage
-    public static void OnPickupSalvage(Player player, WorldObject item)
+    // ── Skill gate: returns salvage rate (0.0–1.0) based on highest tinkering skill ──
+
+    public static double GetSalvageRate(Player player)
     {
-        if (player is null || item is null)
-            return;
+        var settings = PatchClass.Settings?.Salvage;
+        if (settings == null) return 0.0;
+
+        var skills = new[] { Skill.ArmorTinkering, Skill.WeaponTinkering, Skill.ItemTinkering, Skill.MagicItemTinkering };
+        var best = SkillAdvancementClass.Untrained;
+
+        foreach (var skill in skills)
+        {
+            var cs = player.GetCreatureSkill(skill);
+            if (cs != null && cs.AdvancementClass > best)
+                best = cs.AdvancementClass;
+        }
+
+        return best switch
+        {
+            SkillAdvancementClass.Specialized => Math.Clamp(settings.SpecializedPercent, 0.0, 1.0),
+            SkillAdvancementClass.Trained => Math.Clamp(settings.TrainedPercent, 0.0, 1.0),
+            _ => 0.0,
+        };
+    }
+
+    // ── Public API for cross-mod auto-salvage ────────────────────────────────────────
+
+    /// <summary>
+    /// Attempts to auto-salvage a single item. Returns true if the item was salvaged and destroyed.
+    /// Caller is responsible for removing from corpse/inventory before calling.
+    /// </summary>
+    public static bool TryAutoSalvageItem(Player player, WorldObject item)
+    {
+        if (player == null || item == null)
+            return false;
+
+        var rate = GetSalvageRate(player);
+        if (rate <= 0.0)
+            return false;
 
         var settings = PatchClass.Settings;
         if (settings?.EnableSalvage != true)
-            return;
+            return false;
 
-        var salvage = settings.Salvage;
-        if (salvage is null)
-            return;
+        var salvageSettings = settings.Salvage;
+        if (salvageSettings == null)
+            return false;
 
-        // Verify it's salvage (WCID 20981-21089)
-        if (item.WeenieClassId < 20981 || item.WeenieClassId > 21089)
-            return;
+        // Try material-type salvage first (armor/weapons with MaterialType)
+        if (TryGetMaterialSalvage(player, item, salvageSettings, out var materialIndex, out var rawUnits))
+        {
+            int bankProp = GetMaterialBankProperty(materialIndex);
+            long current = player.GetProperty((PropertyInt64)bankProp) ?? 0;
+            double depositUnits = rawUnits * rate;
+            player.SetProperty((PropertyInt64)bankProp, (long)(current + depositUnits));
 
-        int materialIndex = GetMaterialIndex(item.WeenieClassId);
-        if (materialIndex < 0)
-            return;
+            AccumulateForMessage(player, materialIndex, depositUnits);
+            return true;
+        }
 
-        // Calculate units from item (full units, no percentage when intercepting)
-        int rawUnits = GetSalvageUnits(item, salvage.UnitsPerItem);
-        if (rawUnits <= 0)
-            return;
+        // Raw salvage bags (WCID 20981–21089)
+        if (IsSalvageStack(item.WeenieClassId))
+        {
+            materialIndex = GetMaterialIndex(item.WeenieClassId);
+            if (materialIndex < 0) return false;
 
-        // Deposit full amount (100%) when auto-salvage intercepts at pickup
-        double depositUnits = rawUnits;
+            rawUnits = GetSalvageUnits(item, salvageSettings.UnitsPerItem);
+            if (rawUnits <= 0) return false;
 
-        int bankProp = 40201 + materialIndex;
-        long current = player.GetProperty((PropertyInt64)bankProp) ?? 0;
-        player.SetProperty((PropertyInt64)bankProp, (long)(current + depositUnits));
+            int bankProp = GetMaterialBankProperty(materialIndex);
+            long current = player.GetProperty((PropertyInt64)bankProp) ?? 0;
+            double depositUnits = rawUnits * rate;
+            player.SetProperty((PropertyInt64)bankProp, (long)(current + depositUnits));
+
+            AccumulateForMessage(player, materialIndex, depositUnits);
+            return true;
+        }
+
+        return false;
     }
 
     // ── Intercept salvage bags entering inventory ────────────────────────────
@@ -74,54 +130,156 @@ public static class SalvageAutoDeposit
         if (!IsEnabled(__instance))
             return true;
 
+        var rate = GetSalvageRate(__instance);
+        if (rate <= 0.0)
+            return true;
+
+        if (!IsSalvageStack(item.WeenieClassId))
+            return true;
+
         var settings = PatchClass.Settings;
         if (settings?.EnableSalvage != true)
             return true;
 
-        // Check if salvage stack (WCID 20981-21089)
-        if (!IsSalvageStack(item.WeenieClassId))
-            return true;
-
-        var salvage = settings.Salvage;
-        if (salvage is null)
+        var salvageSettings = settings.Salvage;
+        if (salvageSettings == null)
             return true;
 
         int materialIndex = GetMaterialIndex(item.WeenieClassId);
         if (materialIndex < 0)
             return true;
 
-        int rawUnits = GetSalvageUnits(item, salvage.UnitsPerItem);
+        int rawUnits = GetSalvageUnits(item, salvageSettings.UnitsPerItem);
         if (rawUnits <= 0)
             return true;
 
-        // Deposit full amount (100%)
-        int bankProp = 40201 + materialIndex;
+        int bankProp = GetMaterialBankProperty(materialIndex);
         long current = __instance.GetProperty((PropertyInt64)bankProp) ?? 0;
-        __instance.SetProperty((PropertyInt64)bankProp, current + rawUnits);
+        double depositUnits = rawUnits * rate;
+        __instance.SetProperty((PropertyInt64)bankProp, (long)(current + depositUnits));
 
-        // Accumulate for message
-        var playerId = __instance.Guid.Full;
+        AccumulateForMessage(__instance, materialIndex, depositUnits);
+
+        item.Destroy();
+        __result = true;
+        return false;
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    static bool TryGetMaterialSalvage(Player player, WorldObject item, SalvageSettings settings, out int materialIndex, out int rawUnits)
+    {
+        materialIndex = -1;
+        rawUnits = 0;
+
+        var materialType = item.GetProperty(PropertyInt.MaterialType);
+        if (!materialType.HasValue) return false;
+
+        int matType = (int)materialType.Value;
+
+        if (!Player.MaterialSalvage.TryGetValue(matType, out var salvageWcid) || salvageWcid <= 0)
+        {
+            // Category fallback: pick randomly from player's least-banked materials in the category
+            if (!MaterialTypeCategories.TryGetValue(matType, out var categoryMembers))
+                return false;
+
+            int? selectedWcid = PickLeastBankedMaterial(player, categoryMembers);
+            if (!selectedWcid.HasValue)
+                return false;
+
+            salvageWcid = selectedWcid.Value;
+        }
+
+        materialIndex = salvageWcid - 20981;
+        if (materialIndex < 0 || materialIndex > 108) return false;
+
+        int work = item.ItemWorkmanship ?? 0;
+        if (work > 0)
+            rawUnits = work;
+        else
+        {
+            int structure = item.Structure ?? 0;
+            rawUnits = structure > 0 ? structure : settings.UnitsPerItem;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Given a list of MaterialType IDs, finds the ones with the lowest banked amount
+    /// and returns a random valid salvage WCID from that subset.
+    /// </summary>
+    static int? PickLeastBankedMaterial(Player player, int[] materialTypes)
+    {
+        var candidates = new List<(int MaterialType, int SalvageWcid, long Banked)>();
+
+        foreach (var mt in materialTypes)
+        {
+            if (!Player.MaterialSalvage.TryGetValue(mt, out var wcid) || wcid <= 0)
+                continue;
+
+            int matIndex = wcid - 20981;
+            if (matIndex < 0 || matIndex > 108)
+                continue;
+
+            int bankProp = GetMaterialBankProperty(matIndex);
+            long banked = player.GetProperty((PropertyInt64)bankProp) ?? 0;
+            candidates.Add((mt, wcid, banked));
+        }
+
+        if (candidates.Count == 0)
+            return null;
+
+        long minBanked = candidates.Min(c => c.Banked);
+        var leastBanked = candidates.Where(c => c.Banked == minBanked).ToList();
+
+        var pick = leastBanked[Random.Shared.Next(leastBanked.Count)];
+        return pick.SalvageWcid;
+    }
+
+    public static int GetMaterialBankProperty(int materialIndex)
+    {
+        var baseProp = PatchClass.Settings?.Salvage?.MaterialBankPropertyBase ?? 40201;
+        return baseProp + materialIndex;
+    }
+
+    static bool IsSalvageStack(uint wcid) => wcid >= 20981 && wcid <= 21089;
+
+    static int GetMaterialIndex(uint wcid)
+    {
+        int index = (int)wcid - 20981;
+        return (index >= 0 && index <= 108) ? index : -1;
+    }
+
+    static int GetSalvageUnits(WorldObject item, int unitsPerItem)
+    {
+        int work = item.ItemWorkmanship ?? 0;
+        if (work > 0)
+            return work;
+        int structure = item.Structure ?? 0;
+        if (structure > 0)
+            return structure;
+        return unitsPerItem;
+    }
+
+    static void AccumulateForMessage(Player player, int materialIndex, double depositUnits)
+    {
+        var playerId = player.Guid.Full;
         var accum = PlayerAccumulated.GetOrAdd(playerId, _ => new Dictionary<int, double>());
         lock (accum)
         {
             if (!accum.ContainsKey(materialIndex))
                 accum[materialIndex] = 0;
-            accum[materialIndex] += rawUnits;
+            accum[materialIndex] += depositUnits;
         }
 
-        // Check if we should send a summary message
         var now = DateTime.UtcNow;
         if (!LastMessageTime.TryGetValue(playerId, out var lastTime) ||
             (now - lastTime).TotalSeconds >= MESSAGE_INTERVAL_SECONDS)
         {
             LastMessageTime[playerId] = now;
-            SendAccumulatedMessage(__instance, accum);
+            SendAccumulatedMessage(player, accum);
         }
-
-        // Destroy the item so it doesn't enter inventory
-        item.Destroy();
-        __result = true;
-        return false;
     }
 
     static void SendAccumulatedMessage(Player player, Dictionary<int, double> accum)
@@ -138,7 +296,7 @@ public static class SalvageAutoDeposit
             {
                 int matIndex = kvp.Key;
                 double units = kvp.Value;
-                double bags = units / 100.0; // Convert to bags
+                double bags = units / 100.0;
                 totalBags += bags;
                 if (bags >= 0.01)
                 {
@@ -152,7 +310,6 @@ public static class SalvageAutoDeposit
         if (parts.Count == 0)
             return;
 
-        // Sort by amount descending
         parts.Sort((a, b) => string.Compare(b, a, StringComparison.Ordinal));
 
         string msg;
@@ -166,29 +323,88 @@ public static class SalvageAutoDeposit
         player.SendMessage(msg);
     }
 
-    static bool IsSalvageStack(uint wcid) => wcid >= 20981 && wcid <= 21089;
-
-    static int GetMaterialIndex(uint wcid)
+    public static string GetMaterialName(int index)
     {
-        int index = (int)wcid - 20981;
-        return (index >= 0 && index <= 70) ? index : -1;
-    }
-
-    static int GetSalvageUnits(WorldObject item, int unitsPerItem)
-    {
-        int work = item.ItemWorkmanship ?? 0;
-        if (work > 0)
-            return work;
-        int structure = item.Structure ?? 0;
-        if (structure > 0)
-            return structure;
-        ModManager.Log($"[BSS Salvage] DEBUG: No workmanship/structure - wcid={item.WeenieClassId}, name={item.Name}, work={work}, structure={structure}, using unitsPerItem={unitsPerItem}", ModManager.LogLevel.Info);
-        return unitsPerItem;
-    }
-
-    static string GetMaterialName(int index)
-    {
-        string[] names = { "Ceramic", "Porcelain", "Cloth", "Linen", "Satin", "Silk", "Velvet", "Wool", "Gems", "Agate", "Amber", "Amethyst", "Aquamarine", "Azurite", "Black Garnet", "Black Opal", "Bloodstone", "Carnelian", "Citrine", "Diamond", "Emerald", "Fire Opal", "Green Garnet", "Green Jade", "Hematite", "Imperial Topaz", "Jet", "Lapis Lazuli", "Lavender Jade", "Leather", "Malachite", "Marble", "Moonstone", "Obsidian", "Onyx", "Opal", "Peridot", "Porcelain", "Pyreal", "Red Garnet", "Red Jade", "Rose Quartz", "Ruby", "Sandstone", "Sapphire", "Serpentine", "Silk", "Silver", "Smoky Quartz", "Sunstone", "Teak", "Tiger Eye", "Tourmaline", "Turquoise", "White Jade", "White Quartz", "White Sapphire", "Yellow Garnet", "Yellow Topaz", "Zircon", "Armoredillo Hide", "Bronze", "Gold", "Granite", "Iron", "Mahogany", "Oak", "Pine", "Reedshark Hide" };
-        return (index >= 0 && index < names.Length) ? names[index] : "Unknown";
+        if (index < 0 || index > 108) return "Unknown";
+        string[] names =
+        {
+            /* 20981 */ "Armoredillo Hide",
+            /* 20982 */ "Bronze",
+            /* 20983 */ "Ceramic",
+            /* 20984 */ "Gold",
+            /* 20985 */ "Granite",
+            /* 20986 */ "Iron",
+            /* 20987 */ "Linen",
+            /* 20988 */ "Mahogany",
+            /* 20989 */ "Oak",
+            /* 20990 */ "Pine",
+            /* 20991 */ "Reedshark Hide",
+            /* 20992 */ "Satin",
+            /* 20993 */ "Steel",
+            /* 20994 */ "Velvet",
+            /* 20995 */ "Wool",
+            /* 20996 */ "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
+            /* 21004 */ "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
+            /* 21012 */ "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
+            /* 21020 */ "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
+            /* 21028 */ "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
+            /* 21034 */ "Agate",
+            /* 21035 */ "Amber",
+            /* 21036 */ "Amethyst",
+            /* 21037 */ "Aquamarine",
+            /* 21038 */ "Azurite",
+            /* 21039 */ "Black Garnet",
+            /* 21040 */ "Black Opal",
+            /* 21041 */ "Bloodstone",
+            /* 21042 */ "Brass",
+            /* 21043 */ "Carnelian",
+            /* 21044 */ "Citrine",
+            /* 21045 */ "Copper",
+            /* 21046 */ "Diamond",
+            /* 21047 */ "Ebony",
+            /* 21048 */ "Emerald",
+            /* 21049 */ "Fire Opal",
+            /* 21050 */ "Green Garnet",
+            /* 21051 */ "Green Jade",
+            /* 21052 */ "Gromnie Hide",
+            /* 21053 */ "Hematite",
+            /* 21054 */ "Imperial Topaz",
+            /* 21055 */ "Ivory",
+            /* 21056 */ "Jet",
+            /* 21057 */ "Lapis Lazuli",
+            /* 21058 */ "Lavender Jade",
+            /* 21059 */ "Leather",
+            /* 21060 */ "Malachite",
+            /* 21061 */ "Marble",
+            /* 21062 */ "Moonstone",
+            /* 21063 */ "Obsidian",
+            /* 21064 */ "Onyx",
+            /* 21065 */ "Opal",
+            /* 21066 */ "Peridot",
+            /* 21067 */ "Porcelain",
+            /* 21068 */ "Pyreal",
+            /* 21069 */ "Red Garnet",
+            /* 21070 */ "Red Jade",
+            /* 21071 */ "Rose Quartz",
+            /* 21072 */ "Ruby",
+            /* 21073 */ "Sandstone",
+            /* 21074 */ "Sapphire",
+            /* 21075 */ "Serpentine",
+            /* 21076 */ "Silk",
+            /* 21077 */ "Silver",
+            /* 21078 */ "Smokey Quartz",
+            /* 21079 */ "Sunstone",
+            /* 21080 */ "Teak",
+            /* 21081 */ "Tiger Eye",
+            /* 21082 */ "Tourmaline",
+            /* 21083 */ "Turquoise",
+            /* 21084 */ "White Jade",
+            /* 21085 */ "White Quartz",
+            /* 21086 */ "White Sapphire",
+            /* 21087 */ "Yellow Garnet",
+            /* 21088 */ "Yellow Topaz",
+            /* 21089 */ "Zircon"
+        };
+        return names[index];
     }
 }

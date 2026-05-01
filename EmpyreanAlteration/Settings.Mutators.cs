@@ -22,11 +22,12 @@ public partial class Settings
                 Events = MutationEvent.Containers
             },
             // LootGrowthItem: generalized loot leveling + pre-imbues for eligible equipables.
+            // Also handles quest equipment (EmoteGive) with guaranteed pre-awaken + workmanship + imbue.
             new MutatorSettings(Mutation.LootGrowthItem.ToString())
             {
                 Odds = nameof(OddsGroup.Always),
                 TreasureTargets = nameof(TargetGroup.Equipables),
-                Events = MutationEvent.Containers | MutationEvent.Loot
+                Events = MutationEvent.Containers | MutationEvent.Loot | MutationEvent.EmoteGive
             },
         };
 

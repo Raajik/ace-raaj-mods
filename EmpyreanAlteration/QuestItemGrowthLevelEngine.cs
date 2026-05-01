@@ -527,7 +527,7 @@ internal static class QuestItemGrowthLevelEngine
         }
     }
 
-    private static bool TryGrantImbue(WorldObject item, Player player, int level, Settings settings, bool isArmorOrWeapon, bool emitMessages, GrowthSummary? summary)
+    internal static bool TryGrantImbue(WorldObject item, Player player, int level, Settings settings, bool isArmorOrWeapon, bool emitMessages, GrowthSummary? summary)
     {
         WeenieType wt = item.WeenieType;
         bool isQuestWeapon = (wt is WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster)

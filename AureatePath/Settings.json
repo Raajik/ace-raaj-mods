@@ -1,4 +1,21 @@
 {
+  "// MaxLevel": "Extended character level cap (PortalDat XP table). Authoritative server max level.",
+  "// CreditInterval": "Interval for bonus skill credits during extended leveling (e.g. every 10 levels).",
+  "// LevelCost": "XP cost curve for levels above vanilla table (C, Rate, Coefficient, Offset, GrowthType).",
+  "MaxLevel": 9999,
+  "CreditInterval": 10,
+  "LevelCost": {
+    "// C": "Base cost constant.",
+    "// Rate": "Growth rate / exponent parameter.",
+    "// Coefficient": "Polynomial coefficient.",
+    "// Offset": "Index offset applied before cost formulas.",
+    "// GrowthType": "Linear (0), Exponential (1), or Polynomial (2).",
+    "C": 1000000000,
+    "Rate": 1000000000,
+    "Coefficient": 0,
+    "Offset": -276,
+    "GrowthType": 0
+  },
   "// LevelReq": "Base character level for the next enlightenment; effective level required also adds Enlightenment * LevelReqPerEnlightenment.",
   "// LevelReqPerEnlightenment": "Extra required levels per enlightenment already completed (1 => 275, then 276, 277, ...).",
   "// MaxEnlightenments": "0 = unlimited enlightenments; set > 0 to cap (must stay below cap to attempt another).",

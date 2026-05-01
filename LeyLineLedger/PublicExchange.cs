@@ -1,5 +1,6 @@
 namespace LeyLineLedger;
 
+using System.Collections.Concurrent;
 using System.Timers;
 
 public class ExchangePoolEntry
@@ -20,8 +21,10 @@ public class ExchangePoolEntry
 internal static class PublicExchange
 {
     private static System.Timers.Timer? _saveTimer;
+    private static System.Timers.Timer? _varianceResetTimer;
     private static readonly object _poolLock = new();
     private static Dictionary<uint, ExchangePoolEntry> _pool = new();
+    private static readonly ConcurrentDictionary<uint, double> _priceVariance = new();
     private static DateTime _lastWealthScan = DateTime.MinValue;
     private static long _cachedServerWealth = 1;
 
@@ -45,6 +48,8 @@ internal static class PublicExchange
         _saveTimer.Elapsed += (s, e) => SavePool();
         _saveTimer.Start();
 
+        StartVarianceResetTimer();
+
         ModManager.Log("[LeyLineLedger] PublicExchange enabled.", ModManager.LogLevel.Info);
     }
 
@@ -54,6 +59,36 @@ internal static class PublicExchange
         _saveTimer?.Stop();
         _saveTimer?.Dispose();
         _saveTimer = null;
+        _varianceResetTimer?.Stop();
+        _varianceResetTimer?.Dispose();
+        _varianceResetTimer = null;
+    }
+
+    static void StartVarianceResetTimer()
+    {
+        _varianceResetTimer?.Stop();
+        _varianceResetTimer?.Dispose();
+
+        var mode = Settings.PublicExchange.PriceVarianceResetMode;
+        if (mode != PriceVarianceResetMode.Hourly && mode != PriceVarianceResetMode.Daily)
+            return;
+
+        var intervalMs = mode == PriceVarianceResetMode.Hourly
+            ? 60 * 60 * 1000       // 1 hour
+            : 24 * 60 * 60 * 1000; // 24 hours
+
+        _varianceResetTimer = new System.Timers.Timer(intervalMs);
+        _varianceResetTimer.Elapsed += (s, e) =>
+        {
+            ResetVariance();
+            ModManager.Log($"[LeyLineLedger] Price variance reshuffled ({mode}).", ModManager.LogLevel.Info);
+        };
+        _varianceResetTimer.Start();
+    }
+
+    public static void ResetVariance()
+    {
+        _priceVariance.Clear();
     }
 
     static void LoadPool()
@@ -208,18 +243,40 @@ internal static class PublicExchange
         return Math.Max(0.1, Math.Min(3.0, multiplier));
     }
 
-    public static long GetBuyPrice(uint wcid)
+    static double GetPriceVariance(uint wcid)
     {
-        var basePrice = GetBasePrice(wcid);
-        var multiplier = GetPoolDepthMultiplier(wcid);
-        return (long)Math.Ceiling(basePrice * multiplier);
+        var variance = Settings.PublicExchange.PriceVariancePercent;
+        if (variance <= 0)
+            return 1.0;
+
+        return _priceVariance.GetOrAdd(wcid, _ =>
+        {
+            var min = (float)(1.0 - variance);
+            var max = (float)(1.0 + variance);
+            return ThreadSafeRandom.Next(min, max);
+        });
     }
 
-    public static long GetSellPrice(uint wcid)
+    public static long GetBuyPrice(uint wcid, bool applyVariance = true)
     {
         var basePrice = GetBasePrice(wcid);
         var multiplier = GetPoolDepthMultiplier(wcid);
-        return (long)Math.Floor(basePrice * multiplier);
+        if (!applyVariance || Settings.PublicExchange.PriceVariancePercent <= 0)
+            return (long)Math.Ceiling(basePrice * multiplier);
+
+        var variance = GetPriceVariance(wcid);
+        return (long)Math.Ceiling(basePrice * multiplier * variance);
+    }
+
+    public static long GetSellPrice(uint wcid, bool applyVariance = true)
+    {
+        var basePrice = GetBasePrice(wcid);
+        var multiplier = GetPoolDepthMultiplier(wcid);
+        if (!applyVariance || Settings.PublicExchange.PriceVariancePercent <= 0)
+            return (long)Math.Floor(basePrice * multiplier);
+
+        var variance = GetPriceVariance(wcid);
+        return (long)Math.Floor(basePrice * multiplier * variance);
     }
 
     public static double ComputeTaxRate()
@@ -245,7 +302,7 @@ internal static class PublicExchange
         {
             foreach (var entry in _pool.Values)
             {
-                var price = GetBuyPrice(entry.Wcid);
+                var price = GetBuyPrice(entry.Wcid, applyVariance: false);
                 total += entry.Quantity * price;
             }
         }
@@ -579,6 +636,8 @@ internal static class PublicExchange
     public static List<(string name, uint wcid, long buyPrice, long sellPrice, long poolQty, bool isStatic)> GetExchangeList()
     {
         var result = new List<(string, uint, long, long, long, bool)>();
+        var supply = EconomyBalancer.LastBankedSupply;
+        var hideZero = Settings.EconomyBalancer.HideZeroSupplyCurrencies;
 
         foreach (var item in Settings.Items)
         {
@@ -590,6 +649,10 @@ internal static class PublicExchange
                 else
                     qty = entry.Quantity;
             }
+
+            long bankedSupply = supply.GetValueOrDefault(item.Id, 0);
+            if (hideZero && qty == 0 && bankedSupply == 0 && !IsStaticPrice(item.Id))
+                continue;
 
             result.Add((item.Name, item.Id, GetBuyPrice(item.Id), GetSellPrice(item.Id), qty, IsStaticPrice(item.Id)));
         }
@@ -611,6 +674,17 @@ internal static class PublicExchange
                         qty = 0;
                     else
                         qty = entry.Quantity;
+                }
+
+                // Salvage bags are never "zero supply" in the same sense — they have work-unit backing.
+                // Only hide if pool is empty AND no work units exist anywhere.
+                long bankedSupply = supply.GetValueOrDefault(rule.OutputBagWeenieClassId, 0);
+                if (hideZero && qty == 0 && bankedSupply == 0)
+                {
+                    var bankProp = rule.BankProperty != 0 ? rule.BankProperty : Settings.SalvageBank!.FirstMaterialBankPropertyId + i;
+                    long workUnits = supply.GetValueOrDefault((uint)bankProp, 0);
+                    if (workUnits <= 0)
+                        continue;
                 }
 
                 result.Add(($"{rule.Name} Bag", rule.OutputBagWeenieClassId, GetBuyPrice(rule.OutputBagWeenieClassId), GetSellPrice(rule.OutputBagWeenieClassId), qty, IsStaticPrice(rule.OutputBagWeenieClassId)));

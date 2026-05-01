@@ -89,7 +89,7 @@ internal static class HybridClasses
         if (activeClass == "Windwalker")
         {
             var damageType = GetWeaponDamageType(damageSource, __result);
-            int tier = GetSpellTier(player, Skill.WarMagic);
+            int tier = GetSpellTier(player, Skill.WarMagic, hybridSettings.Windwalker.SkillPerTier);
             CastStreakAtNearbyEnemies(player, target, damageType, tier, hybridSettings.Windwalker);
         }
         // Battlemage: Two-Handed + War Magic → elemental arc at hit target
@@ -211,12 +211,17 @@ internal static class HybridClasses
 
     // -- Helpers ---------------------------------------------------------
 
-    static int GetSpellTier(Player player, Skill magicSkill)
+    internal static int GetSpellTier(Player player, Skill magicSkill, int? skillPerTier = null)
     {
         var skill = player.GetCreatureSkill(magicSkill);
         if (skill == null) return 1;
-        int value = (int)skill.Current;
-        return Math.Min(8, (value / 50) + 1);
+        // Use base skill (unbuffed) for tier to avoid inflated tiers from short-term buffs
+        int value = (int)skill.Base;
+        int divider = skillPerTier ?? 50;
+        if (divider <= 0) divider = 50;
+        int tier = value / divider;
+        int clamped = Math.Min(8, Math.Max(1, tier));
+        return clamped;
     }
 
     static readonly DamageType[] MeleeDamageTypePriority = new[]

@@ -231,6 +231,16 @@
     "NetherBonusVsPlayersMultiplier": 1.0,
     "NetherBonusSoftCap": 0.0
   },
+  "JewelryCleaveImbue": {
+    "// SalvageWcids": "Salvage WCIDs that apply this imbue (Obsidian = 21063).",
+    "// Name": "Display name for logs.",
+    "// Enabled": "When false, this imbue type is disabled.",
+    "// BonusTargets": "Number of extra cleave targets granted. ACE subtracts 1 internally.",
+    "SalvageWcids": [21063],
+    "Name": "Jewelry Cleave",
+    "Enabled": true,
+    "BonusTargets": 1
+  },
   "BuffedImbueRules": [
     {
       "// Wcids": "Salvage/material WCIDs.",

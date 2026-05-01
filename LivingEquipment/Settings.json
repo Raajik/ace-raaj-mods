@@ -25,5 +25,5 @@
   "PreImbuedDoNotCountAgainstTinkerCap": true,
   "AwakenedPrefix": "Awakened",
   "ArcaneLoreDifficulty": 1,
-  "AwakenedItemUiEffects": 32
+  "AwakenedItemUiEffects": 20
 }

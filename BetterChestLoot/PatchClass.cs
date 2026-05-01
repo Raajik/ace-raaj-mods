@@ -310,6 +310,18 @@ if (chest == null)
                 }
             }
         }
+
+        // Bonus gear roll: ~25% chance for an extra equippable item
+        // (may be pre-awakened / pre-imbued if LivingEquipment is loaded)
+        WorldObject? gearItem = LootRoller.TryCreateGearItem(LootConfigStore.GetLoadedOrDefault());
+        if (gearItem != null)
+        {
+            bool added = chest.TryAddToInventory(gearItem);
+            if (added && s_settings.EnableDebugLogging)
+            {
+                ModManager.Log($"BetterChestLoot: Added bonus gear {gearItem.Name} to chest {chest.Name}", ModManager.LogLevel.Info);
+            }
+        }
     }
 
     private static int GetRandomNumberOfItems()

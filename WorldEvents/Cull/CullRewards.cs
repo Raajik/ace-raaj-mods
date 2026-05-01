@@ -19,7 +19,6 @@ internal static class CullRewards
             participantCount = cull.KillsByPlayer.Count;
 
         var cfg = LootConfigStore.GetLoadedOrDefault();
-        var floors = new[] { LootRarityFloor.Rare, LootRarityFloor.Uncommon, LootRarityFloor.Any };
         var top = new List<(string Name, int Kills, int Rank)>();
 
         for (var i = 0; i < ranked.Count; i++)
@@ -31,11 +30,24 @@ internal static class CullRewards
             var player = PlayerManager.GetOnlinePlayer(guid);
             if (player == null) continue;
 
-            var floor = floors[i];
-            if (participantCount == 1 && s.SoloCompetitorBonus.Enable)
-                floor = (LootRarityFloor)Math.Min((int)floor + s.SoloCompetitorBonus.LootFloorBonus, (int)LootRarityFloor.ExtremelyRare);
+            WorldObject? item;
+            LootRarityFloor floor;
 
-            var item = LootRoller.TryCreateFromMinRarity(cfg, floor);
+            if (i == 2)
+            {
+                // 3rd place: salvage bag
+                item = SalvageBagShaper.CreateRandomSalvageBag();
+                floor = LootRarityFloor.Any;
+            }
+            else
+            {
+                floor = i == 0 ? LootRarityFloor.Uncommon : LootRarityFloor.Any;
+                if (participantCount == 1 && s.SoloCompetitorBonus.Enable)
+                    floor = (LootRarityFloor)Math.Min((int)floor + s.SoloCompetitorBonus.LootFloorBonus, (int)LootRarityFloor.ExtremelyRare);
+
+                item = LootRoller.TryCreateFromMinRarity(cfg, floor);
+            }
+
             if (item == null)
             {
                 ModManager.Log($"[Cull] Loot roll empty for {name} (#{i + 1}, floor {floor}).", ModManager.LogLevel.Warn);
@@ -79,6 +91,20 @@ internal static class CullRewards
         }
 
         CullBroadcast.AnnounceResults(cull, top);
+
+        // ── Quest Points (all participants) ────────────────────────────────────
+        var allSorted = cull.KillsByPlayer
+            .Where(kv => kv.Value > 0)
+            .OrderByDescending(kv => kv.Value)
+            .ToList();
+
+        for (var i = 0; i < allSorted.Count; i++)
+        {
+            var guid = allSorted[i].Key;
+            var player = PlayerManager.GetOnlinePlayer(guid);
+            if (player == null) continue;
+            PlacementQuestPoints.GrantByRank(player, i, participantCount, "Cull");
+        }
     }
 
     static void TagSsfIfNeeded(Player player, WorldObject item)

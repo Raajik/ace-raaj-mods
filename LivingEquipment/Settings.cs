@@ -116,8 +116,8 @@ public class Settings
 
     // Visual
     [JsonPropertyName("// AwakenedItemUiEffects")]
-    public string AwakenedItemUiEffectsDoc { get; init; } = "UiEffects bitmask for awakened items. Default: Fire = 32 (red outline). Other options: Magical=1 (blue), Poisoned=2 (green), BoostHealth=4 (yellow), BoostMana=8 (blue), BoostStamina=16 (yellow), Fire=32 (red), Lightning=64 (purple), Frost=128 (white), Acid=256 (green), Nether=4096 (dark purple). Combinations are bitwise OR.";
-    public uint AwakenedItemUiEffects { get; set; } = 32; // Fire = red outline
+    public string AwakenedItemUiEffectsDoc { get; init; } = "UiEffects bitmask for awakened items. Default: BoostHealth|BoostStamina = 20 (perceived as red outline by some). Other options: Magical=1 (blue), Poisoned=2 (green), BoostHealth=4 (yellow), BoostMana=8 (blue), BoostStamina=16 (yellow), Fire=32 (red), Lightning=64 (purple), Frost=128 (white), Acid=256 (green), Nether=4096 (dark purple). Combinations are bitwise OR.";
+    public uint AwakenedItemUiEffects { get; set; } = 20; // BoostHealth|BoostStamina = perceived red outline
 }
 
 public class XpProfile

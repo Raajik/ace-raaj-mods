@@ -229,6 +229,22 @@ public class Settings
     [JsonPropertyName("// CreatureVariation")]
     public string CreatureVariationSectionDoc { get; init; } = "Global creature stat/size variation applied to ALL spawns.";
     public CreatureVariationSettings CreatureVariation { get; set; } = new();
+
+    [JsonPropertyName("// SpecialCreatureLoot")]
+    public string SpecialCreatureLootSectionDoc { get; init; } = "Guaranteed bonus loot for CreatureEx special mobs (salvage, uncommon+, and random loot auto-imbued by LivingEquipment).";
+    public SpecialCreatureLootSettings SpecialCreatureLoot { get; set; } = new();
+
+    [JsonPropertyName("// DynamicMobScaling")]
+    public string DynamicMobScalingSectionDoc { get; init; } = "Scale mob level/difficulty/loot/XP to nearby players within the same landblock.";
+    public DynamicMobScalingSettings DynamicMobScaling { get; set; } = new();
+
+    [JsonPropertyName("// DungeonPopulation")]
+    public string DungeonPopulationSectionDoc { get; init; } = "Maintains a minimum creature population inside dungeon landblocks that contain players.";
+    public DungeonPopulationSettings DungeonPopulation { get; set; } = new();
+
+    [JsonPropertyName("// CreatureExQuestPointReward")]
+    public string CreatureExQuestPointRewardDoc { get; init; } = "Quest points awarded to the killer when a CreatureEx special mob dies. 0 = disabled. Requires Loremaster for QP tracking.";
+    public float CreatureExQuestPointReward { get; set; } = 1.0f;
 }
 
 public class BuddySpawnSettings
@@ -346,6 +362,123 @@ public class CorpseExploiterFeatureSettings
     public float FeedRadiusMeters { get; set; } = 12f;
 
     [JsonPropertyName("// HealFractionOfVictimMaxHealth")]
-    public string HealFractionOfVictimMaxHealthDoc { get; init; } = "Heal amount as a fraction of the victim corpse’s max health.";
+    public string HealFractionOfVictimMaxHealthDoc { get; init; } = "Heal amount as a fraction of the victim corpse's max health.";
     public float HealFractionOfVictimMaxHealth { get; set; } = 0.08f;
+}
+
+public class SpecialCreatureLootSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true, CreatureEx special mobs drop guaranteed bonus loot (salvage, uncommon+, and random loot).";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// SalvageCountMin")]
+    public string SalvageCountMinDoc { get; init; } = "Minimum salvage items dropped by a special creature.";
+    public int SalvageCountMin { get; set; } = 1;
+
+    [JsonPropertyName("// SalvageCountMax")]
+    public string SalvageCountMaxDoc { get; init; } = "Maximum salvage items dropped by a special creature.";
+    public int SalvageCountMax { get; set; } = 3;
+
+    [JsonPropertyName("// UncommonPlusCountMin")]
+    public string UncommonPlusCountMinDoc { get; init; } = "Minimum uncommon+ items dropped by a special creature.";
+    public int UncommonPlusCountMin { get; set; } = 1;
+
+    [JsonPropertyName("// UncommonPlusCountMax")]
+    public string UncommonPlusCountMaxDoc { get; init; } = "Maximum uncommon+ items dropped by a special creature.";
+    public int UncommonPlusCountMax { get; set; } = 1;
+
+    [JsonPropertyName("// ImbuedCountMin")]
+    public string ImbuedCountMinDoc { get; init; } = "Minimum random loot items (auto-imbued by LivingEquipment) dropped.";
+    public int ImbuedCountMin { get; set; } = 2;
+
+    [JsonPropertyName("// ImbuedCountMax")]
+    public string ImbuedCountMaxDoc { get; init; } = "Maximum random loot items (auto-imbued by LivingEquipment) dropped.";
+    public int ImbuedCountMax { get; set; } = 5;
+}
+
+public class DungeonPopulationSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true, dungeon landblocks with players maintain a minimum creature population.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// TargetMobCount")]
+    public string TargetMobCountDoc { get; init; } = "Desired living creatures per dungeon landblock.";
+    public int TargetMobCount { get; set; } = 30;
+
+    [JsonPropertyName("// CheckIntervalSeconds")]
+    public string CheckIntervalSecondsDoc { get; init; } = "How often to check and top-up dungeon populations.";
+    public int CheckIntervalSeconds { get; set; } = 30;
+
+    [JsonPropertyName("// MaxSpawnsPerTick")]
+    public string MaxSpawnsPerTickDoc { get; init; } = "Maximum creatures spawned in a single tick to avoid spikes.";
+    public int MaxSpawnsPerTick { get; set; } = 5;
+
+    [JsonPropertyName("// MinSpawnDistanceFromPlayer")]
+    public string MinSpawnDistanceFromPlayerDoc { get; init; } = "Minimum distance from any player for new spawns (meters).";
+    public float MinSpawnDistanceFromPlayer { get; set; } = 50f;
+
+    [JsonPropertyName("// MaxSpawnDistanceFromPlayer")]
+    public string MaxSpawnDistanceFromPlayerDoc { get; init; } = "Maximum distance from players for new spawns (meters).";
+    public float MaxSpawnDistanceFromPlayer { get; set; } = 120f;
+}
+
+public class DynamicMobScalingSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true, mobs scale to nearby player levels.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// SoloScalePercent")]
+    public string SoloScalePercentDoc { get; init; } = "Percent of player level to scale to when solo (100 = exact match).";
+    public float SoloScalePercent { get; set; } = 100f;
+
+    [JsonPropertyName("// GroupScalePercent")]
+    public string GroupScalePercentDoc { get; init; } = "Percent of average group level to scale to (100 = exact match).";
+    public float GroupScalePercent { get; set; } = 100f;
+
+    [JsonPropertyName("// MinScaleLevel")]
+    public string MinScaleLevelDoc { get; init; } = "Minimum level a mob can be scaled to.";
+    public int MinScaleLevel { get; set; } = 1;
+
+    [JsonPropertyName("// MaxScaleLevel")]
+    public string MaxScaleLevelDoc { get; init; } = "Maximum level a mob can be scaled to. Defaults to the server's current XP table max (reads DatManager.PortalDat.XpTable.CharacterLevelXPList.Count at runtime).";
+    public int MaxScaleLevel { get; set; } = 0;
+
+    [JsonPropertyName("// LevelVariance")]
+    public string LevelVarianceDoc { get; init; } = "Random level deviation applied after target level is computed (±this value). Adds flavor variation so not every mob in an area has identical stats. Applied before min/max caps.";
+    public int LevelVariance { get; set; } = 15;
+
+    [JsonPropertyName("// LandscapeSoftCap")]
+    public string LandscapeSoftCapDoc { get; init; } = "When true, landscape mobs have soft level caps based on world area tiers.";
+    public bool LandscapeSoftCap { get; set; } = true;
+
+    [JsonPropertyName("// LandscapeTierMaxLevels")]
+    public string LandscapeTierMaxLevelsDoc { get; init; } = "Maximum scaled level per landscape tier. Tier 1 = starter areas, Tier 7 = endgame.";
+    public Dictionary<int, int> LandscapeTierMaxLevels { get; set; } = new()
+    {
+        [1] = 50, [2] = 75, [3] = 100, [4] = 125,
+        [5] = 150, [6] = 200, [7] = 275
+    };
+
+    [JsonPropertyName("// XpScaleEnabled")]
+    public string XpScaleEnabledDoc { get; init; } = "When true, XP reward scales with the difference between scaled and base level.";
+    public bool XpScaleEnabled { get; set; } = true;
+
+    [JsonPropertyName("// XpScalePercent")]
+    public string XpScalePercentDoc { get; init; } = "Percent of level difference to apply to XP (100 = full proportional scaling).";
+    public float XpScalePercent { get; set; } = 100f;
+
+    [JsonPropertyName("// OptOutProperty")]
+    public string OptOutPropertyDoc { get; init; } = "PropertyBool used to track per-player opt-out. Shared with QOL /xp mob_scaling command.";
+    public int OptOutProperty { get; set; } = 40151;
+
+    [JsonPropertyName("// AdminLevelOverrideProperty")]
+    public string AdminLevelOverridePropertyDoc { get; init; } = "PropertyInt id for admin/god players to set a custom effective level for scaling (e.g., /setproperty int 40154 999). 0 = disabled; falls back to player.Level.";
+    public int AdminLevelOverrideProperty { get; set; } = 0;
+
+    [JsonPropertyName("// DebugScaling")]
+    public string DebugScalingDoc { get; init; } = "When true, logs scaling decisions (base, target, max, highest player level) to server console for each scaled mob.";
+    public bool DebugScaling { get; set; } = false;
 }

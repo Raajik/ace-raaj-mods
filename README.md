@@ -45,11 +45,13 @@ Use `/cm` in-game to view and enroll in challenges. See `ChallengeModes/Readme.m
 ### EmpyreanAlteration
 A mutator pipeline for loot, corpses, and generators.
 - **Loot-time item XP** (`LootGrowthItem`) — items can drop with XP progress already applied.
+- **Pre-awakened drops** (~0.2%) — Living-style tiered awakening (Lesser/Greater/Aetheric) with XP profiles (QuickStart/Steady/Brutal/Casual), "Living" rename, and visual glow.
+- **Quest equipment guaranteed pre-awaken** — all NPC-given gear gets auto-awakened + workmanship + imbue.
+- **Pre-imbued loot** (~5%) — random elemental rend, slayer, cleave, or secondary imbue on weapons; defense imbue on armor.
+- **Wield requirement capping** — all loot items get `tier × 50` wield caps so drops match source creature difficulty.
 - **Slayer / ShinyPet-style mutators** — chance-based cosmetic and functional overrides.
 - **Optional Harmony extras** — additional patches for edge-case loot behaviors.
 - **Item growth on level-up** — equippables can gain bonuses as the player levels.
-
-> **Status:** Disabled by default. Enable in `Meta.json` when ready to integrate the mutator pipeline.
 
 ### EasyServerSettings
 Applies shard-wide `PropertyManager` presets from a single configuration file.
@@ -65,6 +67,7 @@ Extract spells from any spell-bearing item and infuse them into equipment.
 - **Skill-based success rate** — Magic Item Tinkering skill improves crush success (`20% + skill × 0.05%`).
 - **Level penalty** — higher-level spells reduce success rate (configurable).
 - **Attuned/bonded support** — can be allowed or blocked via `AllowAttunedAndBonded`.
+- **Vendor sales** — SpellSiphon tool sold at spell component vendors (mages/scriveners) for 50,000 pyreals. Toggle: `EnableVendorSales`; price: `VendorPrice`.
 - `/spellsiphon` or `/ss` commands to list crushable items in your pack.
 
 > **Status:** Disabled by default. Enable in `Meta.json` when ready to deploy.
@@ -75,12 +78,16 @@ Banking and ledger system for items, currency, and luminance.
 - **Pyreal/trade-note storage** — `/cash` commands for wallet-style banking.
 - **Luminance ledger** — `/lum` commands to track and transfer luminance.
 - **Vendor integration** — bankers and vendors can act as ledger access points.
+- **Vendor sell rate reduction** — configurable multiplier (default 3%) on vendor payouts to combat inflation.
 
 ### Loremaster
 Quest-progress bonuses and first-solve rewards.
 - **First-solve rewards** — bonus XP/pyraels for the first completion of a quest on the server.
+- **Account-wide repeat cooldown** — per-quest 10-hour cooldown shared across all characters on an account. Alts see repeat rewards but share the same timer. Standard ACE cooldown message when blocked. WorldEvents bonus quests bypass cooldown.
 - **Milestone bonuses** — repeatable quest rewards scale with solve count.
 - **Portal/repeat-solve hooks** — custom behavior on portal usage and repeat quest turn-ins.
+- **Rested XP** — offline time accumulates into a temporary XP multiplier based on enlightenment gap versus server max.
+- **Pre-unlock luminance banking** — luminance earned before unlocking the quest is banked to LeyLineLedger instead of silently lost.
 - **Optional barkeeper parchment contracts** — configurable in `Settings.json`.
 
 ### Numbersmith
@@ -88,6 +95,17 @@ Formula-driven server balance via [AngouriMath](https://github.com/asc-community
 - **Damage, crit, healing formulas** — replace hardcoded calculations with configurable expressions.
 - **XP and level costs** — tune curves without recompiling.
 - **Extensible expression set** — add new formula overrides in `Settings.json`.
+
+### LivingEquipment
+Player-driven item awakening system using Coalesced Mana consumables.
+- **Awaken equippables** — use Lesser (max 25), Greater (max 50), or Aetheric (max 75) Coalesced Mana to unlock item leveling.
+- **Named XP profiles** — QuickStart, Steady, Brutal, or Casual curves randomly assigned per awakening.
+- **MaterialType-based naming** — `Steel Longsword` becomes `Living Longsword`.
+- **Academy auto-awaken** — starter Academy weapons automatically awaken to Tier 1 when picked up.
+- **Vendor sales** — Academy weapons/Pathwarden armor sold at starter-town vendors with dynamic economy pricing.
+- **Visual indicator** — awakened items glow yellow/gold (`BoostHealth|BoostStamina` shader).
+
+> **Loot mutation (pre-awakened/pre-imbued drops) absorbed into EmpyreanAlteration** to eliminate double-processing. LivingEquipment now handles Coalesced Mana interaction + vendor injection only.
 
 ### Overtinked
 Extended tinkering system.
@@ -108,6 +126,7 @@ Toggleable convenience patches (no single defining feature — pick what you wan
 - **Swear filter** — `/oath` toggle; friends and allegiance bypass.
 - **Questgiver auras** — NPC glow when they have a quest for you.
 - **Town Network toll** — configurable cost or free TN access.
+- **Generous Benefactor** — track cumulative TN toll spend; unlock `/tn` instant teleport after donating 1 billion pyreals.
 - **Pet-related toggles** — pet XP, buff sharing, and command tweaks.
 
 > Many QOL features are individually toggled in `Settings.json`. Enable only what fits your server.
@@ -116,6 +135,8 @@ Toggleable convenience patches (no single defining feature — pick what you wan
 CreatureEx champion variants and reinforcement spawning.
 - **`/cex` factory roll** — spawn CreatureEx variants with custom stats and loot.
 - **Call-for-help reinforcements** — champions can summon adds on aggro or at health thresholds.
+- **Dungeon population manager** — maintains ~30 living mobs inside occupied dungeons, spawning outside player radar range.
+- **Dynamic scaling** — mobs scale to highest player level in landblock (past 275 for high-level servers) with ±15 level variance for flavor.
 - **Landscape vs dungeon behavior** — separate tuning for open-world and dungeon spawns.
 - **Optional online-player scaling** — spawn counts or stats scale with server population.
 

@@ -13,12 +13,12 @@ internal static class DefaultLootConfig
             {
                 items = new List<LootItem>
                 {
-                    new() { wcid = 2626, name = "Trade Note (50,000)", stackSizeMin = 1, stackSizeMax = 10 },
-                    new() { wcid = 2627, name = "Trade Note (100,000)", stackSizeMin = 1, stackSizeMax = 10 },
-                    new() { wcid = 7377, name = "Trade Note (75,000)", stackSizeMin = 1, stackSizeMax = 10 },
-                    new() { wcid = 20628, name = "Trade Note (150,000)", stackSizeMin = 1, stackSizeMax = 10 },
-                    new() { wcid = 20629, name = "Trade Note (200,000)", stackSizeMin = 1, stackSizeMax = 10 },
-                    new() { wcid = 20630, name = "Trade Note (250,000)", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 2621, name = "Trade Note (100)", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 2622, name = "Trade Note (500)", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 2623, name = "Trade Note (1,000)", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 2624, name = "Trade Note (5,000)", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 2625, name = "Trade Note (10,000)", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 7376, name = "Trade Note (25,000)", stackSizeMin = 1, stackSizeMax = 10 },
                     new() { wcid = 6058, name = "Dark Shard", stackSize = 1 },
                     new() { wcid = 6059, name = "Dark Sliver", stackSize = 1 },
                     new() { wcid = 6060, name = "Dark Speck", stackSize = 1 },
@@ -49,7 +49,8 @@ internal static class DefaultLootConfig
                     new() { wcid = 6623, name = "Crystal Fragment", stackSize = 1 },
                     new() { wcid = 6622, name = "Sparkling Gem", stackSize = 1 },
                     new() { wcid = 6354, name = "Pyreal Nugget", stackSize = 1 },
-                    new() { wcid = 38456, name = "Mana Forge Key", stackSizeMin = 3, stackSizeMax = 10 }
+                    new() { wcid = 38456, name = "Mana Forge Key", stackSizeMin = 3, stackSizeMax = 10 },
+                    new() { wcid = 850200, name = "Spellsiphon", stackSizeMin = 1, stackSizeMax = 10 }
                 }
             },
             salvage = new LootCategory
@@ -134,35 +135,38 @@ internal static class DefaultLootConfig
             {
                 items = new List<LootItem>
                 {
-                    new() { wcid = 30183, name = "Alchemist's Crystal", stackSize = 1 },
-                    new() { wcid = 30184, name = "Scholar's Crystal", stackSize = 1 },
-                    new() { wcid = 30186, name = "Smithy's Crystal", stackSize = 1 },
-                    new() { wcid = 30187, name = "Hunter's Crystal", stackSize = 1 },
-                    new() { wcid = 30188, name = "Observer's Crystal", stackSize = 1 },
-                    new() { wcid = 30189, name = "Thorsten's Crystal", stackSize = 1 },
-                    new() { wcid = 30194, name = "Elysa's Crystal", stackSize = 1 },
-                    new() { wcid = 30195, name = "Chef's Crystal", stackSize = 1 },
-                    new() { wcid = 30197, name = "Enchanter's Crystal", stackSize = 1 },
-                    new() { wcid = 30198, name = "Oswald's Crystal", stackSize = 1 },
-                    new() { wcid = 30199, name = "Deceiver's Crystal", stackSize = 1 },
-                    new() { wcid = 30205, name = "Fletcher's Crystal", stackSize = 1 },
-                    new() { wcid = 30209, name = "Physician's Crystal", stackSize = 1 },
-                    new() { wcid = 30214, name = "Artificer's Crystal", stackSize = 1 },
-                    new() { wcid = 30215, name = "Tinker's Crystal", stackSize = 1 },
-                    new() { wcid = 30216, name = "Vaulter's Crystal", stackSize = 1 },
-                    new() { wcid = 30217, name = "Monarch's Crystal", stackSize = 1 },
-                    new() { wcid = 30218, name = "Life Giver's Crystal", stackSize = 1 },
-                    new() { wcid = 30221, name = "Thief's Crystal", stackSize = 1 },
-                    new() { wcid = 30222, name = "Adherent's Crystal", stackSize = 1 },
-                    new() { wcid = 30224, name = "Resister's Crystal", stackSize = 1 },
-                    new() { wcid = 30225, name = "Imbuer's Crystal", stackSize = 1 },
-                    new() { wcid = 30226, name = "Converter's Crystal", stackSize = 1 },
-                    new() { wcid = 30228, name = "Evader's Crystal", stackSize = 1 },
-                    new() { wcid = 30229, name = "Dodger's Crystal", stackSize = 1 },
-                    new() { wcid = 30233, name = "Zefir's Crystal", stackSize = 1 },
-                    new() { wcid = 30242, name = "Ben Ten's Crystal", stackSize = 1 },
-                    new() { wcid = 30245, name = "Hieromancer's Crystal", stackSize = 1 },
-                    new() { wcid = 30246, name = "Artist's Crystal", stackSize = 1 },
+                    new() { wcid = 2626, name = "Trade Note (50,000)", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 7377, name = "Trade Note (75,000)", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 2627, name = "Trade Note (100,000)", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 30183, name = "Alchemist's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30184, name = "Scholar's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30186, name = "Smithy's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30187, name = "Hunter's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30188, name = "Observer's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30189, name = "Thorsten's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30194, name = "Elysa's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30195, name = "Chef's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30197, name = "Enchanter's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30198, name = "Oswald's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30199, name = "Deceiver's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30205, name = "Fletcher's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30209, name = "Physician's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30214, name = "Artificer's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30215, name = "Tinker's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30216, name = "Vaulter's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30217, name = "Monarch's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30218, name = "Life Giver's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30221, name = "Thief's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30222, name = "Adherent's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30224, name = "Resister's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30225, name = "Imbuer's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30226, name = "Converter's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30228, name = "Evader's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30229, name = "Dodger's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30233, name = "Zefir's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30242, name = "Ben Ten's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30245, name = "Hieromancer's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
+                    new() { wcid = 30246, name = "Artist's Crystal", stackSizeMin = 1, stackSizeMax = 3 },
                     new() { wcid = 30094, name = "Foolproof Aquamarine", stackSize = 1 },
                     new() { wcid = 30095, name = "Foolproof Black Garnet", stackSize = 1 },
                     new() { wcid = 30096, name = "Foolproof Black Opal", stackSize = 1 },
@@ -188,6 +192,9 @@ internal static class DefaultLootConfig
             {
                 items = new List<LootItem>
                 {
+                    new() { wcid = 20628, name = "Trade Note (150,000)", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 20629, name = "Trade Note (200,000)", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 20630, name = "Trade Note (250,000)", stackSizeMin = 1, stackSizeMax = 10 },
                     new() { wcid = 30247, name = "Eternal Health Kit", stackSize = 1 },
                     new() { wcid = 30249, name = "Eternal Stamina Kit", stackSize = 1 },
                     new() { wcid = 30248, name = "Eternal Mana Kit", stackSize = 1 },
@@ -199,6 +206,47 @@ internal static class DefaultLootConfig
                     new() { wcid = 30111, name = "Infinite Simple Dried Rations", stackSize = 1 },
                     new() { wcid = 30133, name = "Rune of Dispel", stackSize = 1 },
                     new() { wcid = 30936, name = "Pack", stackSize = 1 }
+                }
+            },
+            gear = new LootCategory
+            {
+                items = new List<LootItem>
+                {
+                    // ── Melee Weapons ──
+                    new() { wcid = 300, name = "Long Sword", stackSize = 1 },
+                    new() { wcid = 350, name = "Broad Sword", stackSize = 1 },
+                    new() { wcid = 314, name = "Dagger", stackSize = 1 },
+                    new() { wcid = 331, name = "Mace", stackSize = 1 },
+                    new() { wcid = 348, name = "Spear", stackSize = 1 },
+                    new() { wcid = 301, name = "Battle Axe", stackSize = 1 },
+                    new() { wcid = 303, name = "Hand Axe", stackSize = 1 },
+                    new() { wcid = 352, name = "Short Sword", stackSize = 1 },
+                    new() { wcid = 354, name = "Takuba", stackSize = 1 },
+
+                    // ── Missile Weapons ──
+                    new() { wcid = 306, name = "Longbow", stackSize = 1 },
+                    new() { wcid = 307, name = "Shortbow", stackSize = 1 },
+                    new() { wcid = 311, name = "Heavy Crossbow", stackSize = 1 },
+                    new() { wcid = 312, name = "Light Crossbow", stackSize = 1 },
+
+                    // ── Casters ──
+                    new() { wcid = 2472, name = "Wand", stackSize = 1 },
+                    new() { wcid = 22080, name = "Impious Staff", stackSize = 1 },
+
+                    // ── Armor ──
+                    new() { wcid = 40, name = "Platemail Breastplate", stackSize = 1 },
+                    new() { wcid = 71, name = "Chainmail Hauberk", stackSize = 1 },
+                    new() { wcid = 50, name = "Leather Cuirass", stackSize = 1 },
+                    new() { wcid = 48, name = "Studded Leather Coat", stackSize = 1 },
+                    new() { wcid = 91, name = "Kite Shield", stackSize = 1 },
+                    new() { wcid = 93, name = "Round Shield", stackSize = 1 },
+                    new() { wcid = 95, name = "Tower Shield", stackSize = 1 },
+
+                    // ── Jewelry / Special ──
+                    new() { wcid = 14452, name = "Elysa's Favor", stackSize = 1 },
+                    new() { wcid = 7886, name = "Baron's Amulet of Life Giving", stackSize = 1 },
+                    new() { wcid = 28078, name = "Ring of Enchantment", stackSize = 1 },
+                    new() { wcid = 30352, name = "Bracelet of Binding", stackSize = 1 }
                 }
             }
         };

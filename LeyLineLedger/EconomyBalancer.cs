@@ -15,6 +15,13 @@ internal static class EconomyBalancer
 
     public static Settings Settings => PatchClass.Settings;
 
+    /// <summary>
+    /// Most recent supply scan results (WCID → total server banked quantity).
+    /// Updated after every successful scan. Used by other systems (e.g. PublicExchange)
+    /// to filter zero-supply items without re-querying the database.
+    /// </summary>
+    internal static Dictionary<uint, long> LastBankedSupply { get; private set; } = new();
+
     public static void TryApply()
     {
         if (!Settings.EconomyBalancer.Enabled)
@@ -69,6 +76,8 @@ internal static class EconomyBalancer
         try
         {
             var bankedCurrency = ScanAllBankedCurrency();
+            LastBankedSupply = bankedCurrency;
+
             var changes = ComputeValueAdjustments(bankedCurrency);
 
             if (changes.Count > 0)
@@ -76,8 +85,19 @@ internal static class EconomyBalancer
                 ApplyChanges(changes);
                 LogResults(bankedCurrency, changes);
             }
+            else if (!Settings.EconomyBalancer.LogChangesOnly)
+            {
+                LogResults(bankedCurrency, changes);
+            }
 
             ComputeAndApplyZefValueAdjustment(bankedCurrency);
+            ManageValheelCryptoEvents(bankedCurrency);
+
+            if (Settings.PublicExchange.PriceVarianceResetMode == PriceVarianceResetMode.OnEconomyScan)
+            {
+                PublicExchange.ResetVariance();
+                ModManager.Log("[LeyLineLedger] Price variance reshuffled (OnEconomyScan).", ModManager.LogLevel.Info);
+            }
         }
         catch (Exception ex)
         {
@@ -231,6 +251,8 @@ internal static class EconomyBalancer
                 var currency = Settings.Currencies.FirstOrDefault(c => c.Id == wcid);
                 var oldVal = currency?.PyrealValue ?? 0;
                 var supply_ = supply.GetValueOrDefault(wcid, 0);
+                if (Settings.EconomyBalancer.HideZeroSupplyCurrencies && supply_ == 0)
+                    continue;
                 ModManager.Log($"  {currency?.Name ?? wcid.ToString()}: {oldVal:N0} -> {newVal:N0} pyreals (supply: {supply_:N0})", ModManager.LogLevel.Info);
             }
         }
@@ -241,6 +263,8 @@ internal static class EconomyBalancer
             foreach (var currency in Settings.Currencies.Where(c => c.PyrealValue > 0 && !staticWcids.Contains(c.Id)))
             {
                 var sup = supply.GetValueOrDefault(currency.Id, 0);
+                if (Settings.EconomyBalancer.HideZeroSupplyCurrencies && sup == 0)
+                    continue;
                 ModManager.Log($"  [SUPPLY] {currency.Name}: {sup:N0} total in banks, {currency.PyrealValue:N0} pyreals/unit", ModManager.LogLevel.Info);
             }
         }
@@ -271,7 +295,7 @@ internal static class EconomyBalancer
         }
         else
         {
-            ShowEconomyReport(session);
+            ShowEconomyReport(session, LastBankedSupply);
         }
     }
 
@@ -316,20 +340,150 @@ internal static class EconomyBalancer
         }
     }
 
-    internal static void ShowEconomyReport(Session session)
+    static void ManageValheelCryptoEvents(Dictionary<uint, long> supply)
     {
+        if (Settings is not { ValheelCryptoIntegration.Enabled: true })
+            return;
+
+        var ashCoinWcid = Settings.ValheelCryptoIntegration.AshCoinWcid;
+        var creditWcid = Settings.ValheelCryptoIntegration.CreditWcid;
+
+        if (!supply.ContainsKey(ashCoinWcid) || !supply.ContainsKey(creditWcid))
+            return;
+
+        long ashCoinSupply = supply[ashCoinWcid];
+        long creditSupply = supply[creditWcid];
+
+        // If neither currency exists on the server, shut down all crypto events silently
+        if (ashCoinSupply <= 0 && creditSupply <= 0)
+        {
+            for (int i = 1; i <= 5; i++)
+            {
+                string eventName = $"CryptoUp{i}";
+                if (EventManager.IsEventStarted(eventName, null, null))
+                    EventManager.StopEvent(eventName, null, null);
+            }
+            return;
+        }
+
+        if (ashCoinSupply <= 0)
+            ashCoinSupply = 1;
+
+        double ratio = (double)creditSupply / ashCoinSupply;
+        var thresholds = Settings.ValheelCryptoIntegration.RatioThresholds;
+
+        int targetLevel = 1;
+        for (int i = 0; i < thresholds.Length; i++)
+        {
+            if (ratio >= thresholds[i])
+                targetLevel = i + 1;
+            else
+                break;
+        }
+        targetLevel = Math.Clamp(targetLevel, 1, 5);
+
+        // Start target event, stop all others
+        for (int i = 1; i <= 5; i++)
+        {
+            string eventName = $"CryptoUp{i}";
+            bool shouldBeRunning = i == targetLevel;
+            bool isRunning = EventManager.IsEventStarted(eventName, null, null);
+
+            if (shouldBeRunning && !isRunning)
+            {
+                EventManager.StartEvent(eventName, null, null);
+                ModManager.Log($"[LeyLineLedger] Valheel Crypto: started {eventName} (Credit:AshCoin ratio = {ratio:F2})", ModManager.LogLevel.Info);
+            }
+            else if (!shouldBeRunning && isRunning)
+            {
+                EventManager.StopEvent(eventName, null, null);
+            }
+        }
+    }
+
+    internal static void ShowEconomyReport(Session session, Dictionary<uint, long>? supply = null)
+    {
+        supply ??= LastBankedSupply;
+
         session.Player.SendMessage("=== Economy Balancer Report ===");
         session.Player.SendMessage($"Scan interval: {Settings.EconomyBalancer.ScanIntervalMinutes}min | Smoothing: {Settings.EconomyBalancer.ValueAdjustmentSmoothing:P0}");
 
         var staticWcids = StaticWcids;
+        int shown = 0;
         foreach (var currency in Settings.Currencies.Where(c => c.PyrealValue > 0 && !staticWcids.Contains(c.Id)))
         {
+            var sup = supply.GetValueOrDefault(currency.Id, 0);
+            if (Settings.EconomyBalancer.HideZeroSupplyCurrencies && sup == 0)
+                continue;
+
             var name = currency.Name;
             var pyrealVal = currency.PyrealValue;
             var weight = Settings.EconomyBalancer.MinSupplyWeight.GetValueOrDefault(currency.Id, 1.0);
-            session.Player.SendMessage($"  {name}: {pyrealVal:N0} pyreals/unit | weight: {weight:F2}");
+            session.Player.SendMessage($"  {name}: {pyrealVal:N0} pyreals/unit | supply: {sup:N0} | weight: {weight:F2}");
+            shown++;
         }
 
+        if (shown == 0)
+            session.Player.SendMessage("  (no tracked currencies with non-zero supply)");
+
         session.Player.SendMessage($"  Zef value: {Settings.PublicExchange.ZefPyrealValue:N0} pyreals/Zef (range: {Settings.EconomyBalancer.MinZefPyrealValue:N0}-{Settings.EconomyBalancer.MaxZefPyrealValue:N0})");
+    }
+
+    /// <summary>
+    /// Unified vendor buy price multiplier.
+    /// Returns 1.0 for Vanilla, flat multiplier for SimpleMultiplier, or dynamic economy scaler.
+    /// </summary>
+    public static double GetVendorBuyPriceMultiplier()
+    {
+        if (Settings == null)
+            return 1.0;
+
+        // Backward compat: if old EnableDynamicVendorPricing is false and mode is EconomyBalancer, fall through to vanilla
+        var mode = Settings.VendorPricingMode;
+        if (mode == VendorPricingMode.EconomyBalancer && !Settings.EnableDynamicVendorPricing)
+            mode = VendorPricingMode.Vanilla;
+
+        switch (mode)
+        {
+            case VendorPricingMode.Vanilla:
+                return 1.0;
+
+            case VendorPricingMode.SimpleMultiplier:
+                return Math.Max(0.01, Settings.VendorBuyPriceMultiplier);
+
+            case VendorPricingMode.EconomyBalancer:
+                // Calculate total banked pyreals from all tracked currencies
+                double totalBankedPyreals = 0;
+                foreach (var kvp in LastBankedSupply)
+                {
+                    var currency = Settings.Currencies.FirstOrDefault(c => c.Id == kvp.Key);
+                    if (currency != null)
+                        totalBankedPyreals += kvp.Value * currency.PyrealValue;
+                }
+
+                // Also add raw pyreals (WCID 273) - these are stored directly as PropertyInt64
+                try
+                {
+                    using var context = new ShardDbContext();
+                    var rawPyreals = context.BiotaPropertiesInt64
+                        .Where(p => p.Type == 39999) // CashProperty
+                        .Sum(p => p.Value);
+                    totalBankedPyreals += rawPyreals;
+                }
+                catch { }
+
+                var divisor = Settings.DynamicVendorPricingEconomyDivisor;
+                var baseMult = Settings.DynamicVendorPricingBaseMultiplier;
+
+                // Formula: baseMultiplier * (1 + log10(totalPyreals / divisor))
+                var economyMult = 1.0 + Math.Log10(Math.Max(1, totalBankedPyreals / divisor));
+                var finalMult = baseMult * economyMult;
+
+                // Clamp to reasonable range (1x to 50x)
+                return Math.Clamp(finalMult, 1.0, 50.0);
+
+            default:
+                return 1.0;
+        }
     }
 }

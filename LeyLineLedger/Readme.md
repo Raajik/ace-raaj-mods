@@ -58,6 +58,14 @@ After the modern subcommands, remaining tokens are parsed as **list** / **give**
 
 ---
 
+## Pre-Unlock Luminance Banking
+
+When `EnablePreUnlockLuminanceBanking` is `true` (default), earned luminance is redirected to the **banked luminance** slot (`LuminanceProperty`) if the player has not yet unlocked the luminance quest (`MaximumLuminance == null` or `0`). This prevents silent loss of luminance earned before unlocking. A chat message informs the player of the banked amount.
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `EnablePreUnlockLuminanceBanking` | `true` | Redirect pre-unlock luminance to bank instead of discarding |
+
 ## AutoLoot
 
 **AutoLoot** can deposit looted pyreals/trade notes into the same bank slot: set `DepositLootedCurrencyToBank` and align `BankCashProperty` with LeyLineLedger’s `CashProperty` (often **39999**).
@@ -71,6 +79,52 @@ After the modern subcommands, remaining tokens are parsed as **list** / **give**
 
 ---
 
+## Lottery
+
+Weekly prize lottery with dual pools: **pyreals** and **Quest Bonus (QB)**.
+
+### Prize Pools
+
+| Pool | Sources | Prize Type |
+|------|---------|------------|
+| **Pyreal** | Exchange sell tax (with destruction), Sale vendor spending, `/donate pyreals`, `/donate luminance` conversion | Banked pyreals |
+| **QB** | `/donate qb` (direct 1:1) | Real `QuestPointsExtra` via `GrantLotteryQbPrize` |
+
+### Draw Mechanics
+
+- Weekly draws (default 10080 minutes = 7 days)
+- 3 winners: 1st=50%, 2nd=30%, 3rd=20% of both pools
+- No duplicate winners
+- Offline pyreal prizes credited to biota; QB prizes online-only currently
+
+### `/donate` Command
+
+| Usage | Effect |
+|-------|--------|
+| `/donate pyreals <amount>` | Donate banked pyreals to pyreal pool |
+| `/donate luminance <amount>` | Donate banked luminance (rate: `DonateLuminanceRate`) |
+| `/donate qb <amount>` | Donate effective QB to QB pool (uses `DonatedQuestPoints` offset) |
+
+### `/lottery` Command
+
+| Usage | Effect |
+|-------|--------|
+| `/lottery` | Show pyreal pool, QB pool, ticket price, your tickets |
+| `/lottery buy <n>` | Purchase n tickets |
+
+---
+
+## Vendor Sell Rate Reduction
+
+When **`EnableVendorSellRateReduction`** is `true` (default), the amount vendors pay players for sold items is multiplied by **`VendorSellRateMultiplier`** (default **0.03** = 3% of normal value). This patches `Vendor.BuyPrice` so the reduction is visible in the **client sell UI** and applied consistently in **server-side payouts** (`Vendor.GetBuyCost`). Both display and actual payout reflect the reduced rate.
+
+| Setting | Type | Default | Description |
+|---|---|---|---|
+| `EnableVendorSellRateReduction` | bool | `true` | Master toggle for vendor payout reduction |
+| `VendorSellRateMultiplier` | double | `0.03` | Payout multiplier (0.03 = 3% of normal vendor buy value) |
+
+---
+
 ## Settings (high level)
 
 See **`Settings.json`** / **`Settings.cs`** for full lists. Commonly tuned:
@@ -78,7 +132,7 @@ See **`Settings.json`** / **`Settings.cs`** for full lists. Commonly tuned:
 | Area | Examples |
 |------|-----------|
 | Bank slots | `CashProperty`, `LuminanceProperty`, `Items` (WCID + `PropertyInt64` per item) |
-| Vendors | `VendorsUseBank`, `DirectDeposit` |
+| Vendors | `VendorsUseBank`, `DirectDeposit`, `EnableVendorSellRateReduction`, `VendorSellRateMultiplier` |
 | Death | `MaxCoinsDropped`, `DeathBankPyrealPercent`, `DeathBankPyrealMaxLossPerDeath` |
 | Luminance gem | `LuminanceGemWeenieClassId`, `LuminanceGemStoredAmountProperty` |
 | Withdrawals | `Currencies` (denominations / withdrawal order) |

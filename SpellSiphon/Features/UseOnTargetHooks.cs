@@ -1,21 +1,21 @@
+using ACE.Common;
+using ACE.Database;
+using ACE.Entity.Enum;
+using ACE.Server.Network.GameMessages.Messages;
+using ACE.Server.WorldObjects;
+
 namespace SpellSiphon.Features;
 
-// Restores immersive UX by intercepting generic "use on target" handling.
-// Patched manually from PatchClass.Start() so failures cannot crash the server.
+// v2.1 — Apply step only. Extraction is handled by native RecipeManager (RecipeHooks.cs).
+// Charged Spellsiphon + equipment/gem/ManaLattice = apply (100% success).
 internal static class UseOnTargetHooks
 {
-	private static int PrefixDebugHits;
-	private static int MortarDebugHits;
-
-	internal static IEnumerable<MethodBase> FindTargets()
+	internal static IEnumerable<System.Reflection.MethodBase> FindTargets()
 	{
 		List<MethodBase> results = new();
 
 		try
 		{
-			// ACE has multiple overloads/signatures depending on build.
-			// We patch all HandleActionUseOnTarget instance methods we can find,
-			// then the prefix decides if it's actually our gemcrush/powder apply case.
 			AddTargetsFromAssembly(typeof(WorldObject).Assembly, results);
 		}
 		catch
@@ -45,8 +45,6 @@ internal static class UseOnTargetHooks
 
 			foreach (Type type in types)
 			{
-				// Only consider WorldObject-derived types. If we patch something else, our
-				// prefix signature (__instance as WorldObject) won't bind correctly.
 				if (!typeof(WorldObject).IsAssignableFrom(type))
 					continue;
 
@@ -65,20 +63,15 @@ internal static class UseOnTargetHooks
 					if (!string.Equals(method.Name, "HandleActionUseOnTarget", StringComparison.Ordinal))
 						continue;
 
-					// Harmony can't patch abstract/unimplemented methods. The base WorldObject virtual is
-					// declared but may not be implemented on all builds.
 					if (method.IsAbstract)
 						continue;
 
-					// GetMethodBody returns null for methods without an IL body.
 					if (method.GetMethodBody() == null)
 						continue;
 
-					// Avoid patching the base declared WorldObject method.
 					if (method.DeclaringType == typeof(WorldObject))
 						continue;
 
-					// Basic parameter sanity: method should accept a Player and a WorldObject.
 					ParameterInfo[] parameters = method.GetParameters();
 					if (parameters.Length < 2)
 						continue;
@@ -134,7 +127,7 @@ internal static class UseOnTargetHooks
 			if (player == null && arg is Player p)
 				player = p;
 
-					if (target == null && arg is WorldObject wo && wo != instanceNonNull)
+			if (target == null && arg is WorldObject wo && wo != instanceNonNull && wo is not Player)
 				target = wo;
 		}
 
@@ -144,237 +137,127 @@ internal static class UseOnTargetHooks
 		Player playerNonNull = player!;
 		WorldObject targetNonNull = target!;
 
-		if (s.Verbose)
+		// === Charged Spellsiphon + Equipment/Gem/ManaLattice = Apply ===
+		if (IsChargedSpellsiphon(instanceNonNull) && IsValidApplyTarget(targetNonNull, s))
 		{
-			try
-			{
-				if (PrefixDebugHits < 50)
-				{
-					PrefixDebugHits++;
-					ModManager.Log($"[Gemcrafter Debug] HandleActionUseOnTarget fired (instance={instanceNonNull.Name} wcid={instanceNonNull.WeenieClassId}) args={__args.Length}.", ModManager.LogLevel.Info);
-				}
-
-				string inst = $"{instanceNonNull.Name} (WCID {instanceNonNull.WeenieClassId}, WT {instanceNonNull.WeenieType}, ItemType {instanceNonNull.ItemType})";
-				string targ = $"{targetNonNull.Name} (WCID {targetNonNull.WeenieClassId}, WT {targetNonNull.WeenieType}, ItemType {targetNonNull.ItemType})";
-				uint effectiveCrusher = s.CrusherToolWcid != 0 ? s.CrusherToolWcid : instanceNonNull.WeenieClassId;
-				playerNonNull.SendMessage($"[Gemcrafter Debug] HandleActionUseOnTarget instance={inst} target={targ} (CrusherToolWcid={s.CrusherToolWcid}, EffectiveCrusherWcid={effectiveCrusher})");
-			}
-			catch
-			{
-			}
-		}
-
-		// Mortar & Pestle crush override
-		uint effectiveCrusherToolWcid = s.CrusherToolWcid != 0 ? s.CrusherToolWcid : __instance.WeenieClassId;
-		if (effectiveCrusherToolWcid != 0 && __instance.WeenieClassId == effectiveCrusherToolWcid)
-		{
-			if (s.Verbose)
-			{
-				try
-				{
-					playerNonNull.SendMessage("[Gemcrafter Debug] Entered mortar logic block.");
-				}
-				catch
-				{
-				}
-			}
-
-			WorldObject intendedTarget = targetNonNull;
-
-			// Some ACE builds pass a non-item "target" into HandleActionUseOnTarget.
-			// When that happens, use the player's last selected/appraised object instead.
-			try
-			{
-				var appraisalId = playerNonNull.RequestedAppraisalTarget;
-				if (appraisalId != null)
-				{
-					WorldObject? appraised = playerNonNull.FindObject(appraisalId.Value, Player.SearchLocations.Everywhere, out _, out _, out _);
-					if (appraised != null)
-						intendedTarget = appraised;
-				}
-			}
-			catch
-			{
-				// If appraisal fallback fails, keep using the raw target param.
-			}
-
-			bool canCrush = CanCrushTarget(intendedTarget!, s);
-			if (MortarDebugHits < 25)
-			{
-				MortarDebugHits++;
-				try
-				{
-					ModManager.Log($"[SpellSiphon Debug] Mortar tool used: rawTarget={targetNonNull?.Name} WCID={targetNonNull?.WeenieClassId} WT={targetNonNull?.WeenieType} ItemType={targetNonNull?.ItemType} intended={intendedTarget?.Name} WCID={intendedTarget?.WeenieClassId} WT={intendedTarget?.WeenieType} ItemType={intendedTarget?.ItemType} canCrush={canCrush}", ModManager.LogLevel.Info);
-				}
-				catch
-				{
-				}
-			}
-
-			// 1) Mortar on crushable item => consume item + store its spells on the mortar itself.
-			if (canCrush)
-			{
-				List<int> spellIds = ReadGemSpellIds(intendedTarget!);
-				if (spellIds.Count == 0)
-				{
-					playerNonNull.SendMessage("[SpellSiphon] That item has no spells to extract.");
-					return false;
-				}
-
-				// Calculate success rate and roll
-				float skill = playerNonNull.GetCreatureSkill(Skill.MagicItemTinkering).Current;
-				float rate = s.BaseSuccessRate + (skill * s.SkillBonusPerPoint);
-				if (s.ReduceBySpellLevel && intendedTarget!.Biota?.PropertiesSpellBook != null)
-				{
-					foreach (var spellId in intendedTarget.Biota.PropertiesSpellBook.Keys)
-					{
-						var spell = new ACE.Server.Entity.Spell(spellId);
-						if (spell.Level > 6)
-							rate -= 2.0f * (spell.Level - 6);
-					}
-				}
-				rate = Math.Clamp(rate, 0f, s.MaxSuccessRate);
-				float roll = (float)ThreadSafeRandom.Next(0.0f, 100.0f);
-
-				if (roll > rate)
-				{
-					InventoryHelpers.TryRemoveOneFromPlayer(playerNonNull, intendedTarget!, s.Verbose, out _, out _);
-					playerNonNull.SendMessage("Your mortar shatters the item but fails to capture any spells.");
-					ModManager.Log($"[SpellSiphon] {playerNonNull.Name} failed to crush {intendedTarget.Name} (roll {roll:F1}% > {rate:F1}%).");
-					return false;
-				}
-
-				bool consumed = InventoryHelpers.TryRemoveOneFromPlayer(playerNonNull, intendedTarget!, s.Verbose, out _, out string debug);
-				if (!consumed)
-				{
-					if (s.Verbose)
-						playerNonNull.SendMessage($"[SpellSiphon] Consume debug: {debug}");
-					playerNonNull.SendMessage("[SpellSiphon] Failed to consume the item.");
-					return false;
-				}
-
-				bool wrote = ItemPayload.TryWriteSpellPayload(__instance, spellIds);
-				if (!wrote)
-				{
-					playerNonNull.SendMessage("[SpellSiphon] Failed to infuse the mortar. (payload write failed)");
-					return false;
-				}
-
-				try { __instance.UiEffects |= UiEffects.Magical; }
-				catch { }
-
-				playerNonNull.SendMessage("[SpellSiphon] You infuse the mortar. Now use it on equipment to apply the spells.");
-				return false;
-			}
-
-			// 2) Mortar on equipment => apply stored spells from the mortar itself.
-			if (IsEligibleEquipmentTarget(intendedTarget!))
-			{
-				List<int> spellIds = ItemPayload.ReadSpellPayload(__instance);
-				if (spellIds.Count == 0)
-				{
-					playerNonNull.SendMessage("[Gemcrafter] Your mortar isn't infused with any spells yet. Crush a gem first.");
-					return false;
-				}
-
-				int max = Math.Max(1, s.TransferMaxSpellsPerApply);
-				int added = 0;
-				List<string> addedNames = new();
-
-				foreach (int id in spellIds)
-				{
-					if (added >= max)
-						break;
-
-					string name = LootMutator.TryGetSpellName(id);
-					if (ContainsAny(name, s.ExcludeTransferSpellNameContains))
-						continue;
-
-					if (LootMutator.TryAddSpellId(intendedTarget!, id))
-					{
-						added++;
-						addedNames.Add(name);
-					}
-				}
-
-				if (added <= 0)
-				{
-					playerNonNull.SendMessage("[Gemcrafter] No transferable spells were found in the mortar.");
-					return false;
-				}
-
-				ItemPayload.ClearSpellPayload(__instance);
-				playerNonNull.SendMessage($"[Gemcrafter] {intendedTarget!.Name} gains: {string.Join(", ", addedNames.Distinct())}");
-				return false;
-			}
-
-			return true;
+			return HandleApplyStep(playerNonNull, instanceNonNull, targetNonNull, s);
 		}
 
 		return true;
 	}
 
-	private static bool CanCrushTarget(WorldObject item, Settings s)
-	{
-		if (s.GemWcidAllowlist != null && s.GemWcidAllowlist.Count > 0)
-			return s.GemWcidAllowlist.Contains(item.WeenieClassId);
+	// ==================== APPLY ====================
 
-		if (s.EnableAnyItemCrushing)
+	private static bool HandleApplyStep(Player player, WorldObject chargedSpellsiphon, WorldObject targetItem, Settings s)
+	{
+		// Arcane Lore skill check (difficulty 1 — always passes, triggers skill animation)
+		var arcaneLore = player.GetCreatureSkill(Skill.ArcaneLore);
+		if (arcaneLore == null)
 		{
-			bool hasSpells = (item.Biota?.PropertiesSpellBook?.Count > 0) || (item.SpellDID > 0);
-			if (!hasSpells)
-				return false;
-			if (s.NonCrushableWcids.Contains(item.WeenieClassId))
-				return false;
-			if (!s.AllowAttunedAndBonded)
-			{
-				bool isAttuned = (item.Attuned ?? AttunedStatus.Normal) >= AttunedStatus.Attuned;
-				bool isBonded = (item.Bonded ?? BondedStatus.Normal) >= BondedStatus.Bonded;
-				if (isAttuned || isBonded)
-					return false;
-			}
+			player.SendUseDoneEvent();
 			return true;
 		}
+		var skillChance = SkillCheck.GetSkillChance((int)arcaneLore.Current, 1);
+		if (ThreadSafeRandom.Next(0.0f, 1.0f) > skillChance)
+		{
+			player.SendUseDoneEvent();
+			return true; // Should never happen with difficulty 1, but silent fallback
+		}
 
-		return (item.ItemType & ItemType.Gem) != 0 || item.WeenieType == WeenieType.Gem;
-	}
+		List<int> spellIds = ItemPayload.ReadSpellPayload(chargedSpellsiphon);
+		if (spellIds.Count == 0)
+		{
+			player.SendMessage("[SpellSiphon] That Spellsiphon holds no extracted spells.");
+			player.SendUseDoneEvent();
+			return false;
+		}
 
-	private static List<int> ReadGemSpellIds(WorldObject gem)
-	{
-		HashSet<int> ids = new();
+		bool isGem = targetItem.WeenieType == WeenieType.Gem || (targetItem.ItemType & ItemType.Gem) != 0;
+		bool isManaLattice = targetItem.WeenieClassId == s.ManaLatticeWcid;
+		int added = 0;
+		List<string> addedNames = new();
 
+		// Track existing spells for deduplication
+		var existingSpells = ReadItemSpellIds(targetItem);
+		var finalSpells = new List<int>(existingSpells);
+
+		foreach (int id in spellIds)
+		{
+			string name = LootMutator.TryGetSpellName(id);
+			if (ContainsAny(name, s.ExcludeTransferSpellNameContains))
+				continue;
+
+			if (TryMergeSpell(finalSpells, id))
+			{
+				added++;
+				addedNames.Add(name);
+			}
+		}
+
+		if (added <= 0)
+		{
+			player.SendMessage("[SpellSiphon] No transferable spells could be applied.");
+			player.SendUseDoneEvent();
+			return false;
+		}
+
+		// Write merged spells to target
+		ApplySpellsToItem(targetItem, finalSpells);
+
+		// Give default mana pool if item had no spells before
+		if (existingSpells.Count == 0)
+		{
+			GiveDefaultManaPool(targetItem, s);
+		}
+
+		// Broadcast target update so client sees new spells
+		try { targetItem.EnqueueBroadcastUpdateObject(); }
+		catch { }
+
+		if (isManaLattice)
+		{
+			// Transform Mana Lattice into reusable buff gem
+			TransformToBuffGem(targetItem, addedNames, s);
+			player.SendMessage($"[SpellSiphon] The Mana Lattice absorbs {addedNames[0]} and becomes a reusable buff gem.");
+		}
+		else if (isGem)
+		{
+			player.SendMessage($"[SpellSiphon] The gem is infused with {addedNames[0]} and can now be reused infinitely.");
+		}
+		else
+		{
+			player.SendMessage($"[SpellSiphon] {targetItem.Name} gains: {string.Join(", ", addedNames.Distinct())}");
+		}
+
+		// Destroy charged Spellsiphon properly
 		try
 		{
-			var book = gem.Biota?.PropertiesSpellBook;
-			if (book != null && book.Count > 0)
-				foreach (int id in book.Keys)
-					if (id > 0)
-						ids.Add(id);
+			chargedSpellsiphon.Destroy();
+			player.Session?.Network?.EnqueueSend(new GameMessageDeleteObject(chargedSpellsiphon));
 		}
-		catch
-		{
-		}
+		catch { }
 
-		try
-		{
-			uint? did = gem.SpellDID;
-			if (!did.HasValue)
-				did = gem.GetProperty(PropertyDataId.Spell);
-
-			if (did.HasValue && did.Value > 0)
-				ids.Add((int)did.Value);
-		}
-		catch
-		{
-		}
-
-		return ids.ToList();
+		player.SendUseDoneEvent();
+		return false;
 	}
 
-	private static bool IsEligibleEquipmentTarget(WorldObject item)
+	// ==================== HELPERS ====================
+
+	private static bool IsChargedSpellsiphon(WorldObject item)
 	{
+		return item.GetProperty((PropertyBool)ItemPayload.IsChargedSpellsiphonProp) ?? false;
+	}
+
+	private static bool IsValidApplyTarget(WorldObject item, Settings s)
+	{
+		if (item.WeenieClassId == s.ManaLatticeWcid)
+			return true;
+
 		WeenieType wt = item.WeenieType;
 		if (wt == WeenieType.MeleeWeapon || wt == WeenieType.MissileLauncher || wt == WeenieType.Caster || wt == WeenieType.Clothing)
+			return true;
+
+		if ((item.ItemType & ItemType.Gem) != 0 || item.WeenieType == WeenieType.Gem)
 			return true;
 
 		EquipMask? loc = item.ValidLocations;
@@ -393,6 +276,139 @@ internal static class UseOnTargetHooks
 		return false;
 	}
 
+	private static void TransformToBuffGem(WorldObject manaLattice, List<string> spellNames, Settings s)
+	{
+		try
+		{
+			// Update name to Endless Mana Lattice
+			try { manaLattice.Name = "Endless Mana Lattice"; }
+			catch { }
+
+			// Mark as endless gem so emotes handle it
+			manaLattice.SetProperty((PropertyBool)ItemPayload.IsEndlessManaLatticeProp, true);
+
+			// Make it bonded so it doesn't drop on death (but can be traded)
+			manaLattice.SetProperty(PropertyInt.Bonded, (int)BondedStatus.Bonded);
+
+			// Add magical overlay and recalculate visuals
+			try
+			{
+				manaLattice.UiEffects = (manaLattice.UiEffects ?? 0) | UiEffects.Magical;
+				manaLattice.CalculateObjDesc();
+			}
+			catch { }
+
+			// Broadcast update
+			try { manaLattice.EnqueueBroadcastUpdateObject(); }
+			catch { }
+		}
+		catch { }
+	}
+
+	private static List<int> ReadItemSpellIds(WorldObject item)
+	{
+		HashSet<int> ids = new();
+
+		try
+		{
+			var book = item.Biota?.PropertiesSpellBook;
+			if (book != null && book.Count > 0)
+				foreach (int id in book.Keys)
+					if (id > 0) ids.Add(id);
+		}
+		catch { }
+
+		try
+		{
+			uint? did = item.SpellDID;
+			if (!did.HasValue)
+				did = item.GetProperty(PropertyDataId.Spell);
+			if (did.HasValue && did.Value > 0)
+				ids.Add((int)did.Value);
+		}
+		catch { }
+
+		return ids.ToList();
+	}
+
+	private static bool TryMergeSpell(List<int> existingSpells, int newSpellId)
+	{
+		try
+		{
+			var newSpell = new ACE.Server.Entity.Spell(newSpellId);
+			string newPrefix = StripRomanNumerals(newSpell.Name ?? "");
+			int newLevel = (int)newSpell.Level;
+
+			for (int i = 0; i < existingSpells.Count; i++)
+			{
+				var existing = new ACE.Server.Entity.Spell(existingSpells[i]);
+				string existingPrefix = StripRomanNumerals(existing.Name ?? "");
+				if (existingPrefix == newPrefix)
+				{
+					if (newLevel > (int)existing.Level)
+					{
+						existingSpells[i] = newSpellId;
+						return true;
+					}
+					return false;
+				}
+			}
+
+			existingSpells.Add(newSpellId);
+			return true;
+		}
+		catch
+		{
+			existingSpells.Add(newSpellId);
+			return true;
+		}
+	}
+
+	private static string StripRomanNumerals(string name)
+	{
+		if (string.IsNullOrWhiteSpace(name)) return name;
+		var parts = name.Trim().Split(' ');
+		if (parts.Length > 1 && IsRomanNumeral(parts[^1]))
+			return string.Join(" ", parts[..^1]);
+		return name;
+	}
+
+	private static bool IsRomanNumeral(string text)
+	{
+		if (string.IsNullOrWhiteSpace(text)) return false;
+		string[] romans = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII" };
+		return romans.Contains(text.Trim().ToUpper());
+	}
+
+	private static void ApplySpellsToItem(WorldObject item, List<int> spellIds)
+	{
+		try
+		{
+			if (item.Biota != null)
+			{
+				item.Biota.PropertiesSpellBook ??= new Dictionary<int, float>();
+				item.Biota.PropertiesSpellBook.Clear();
+				foreach (int id in spellIds)
+				{
+					if (!item.Biota.PropertiesSpellBook.ContainsKey(id))
+						item.Biota.PropertiesSpellBook[id] = 1.0f;
+				}
+			}
+		}
+		catch { }
+	}
+
+	private static void GiveDefaultManaPool(WorldObject item, Settings s)
+	{
+		try
+		{
+			item.SetProperty(PropertyInt.ItemMaxMana, s.DefaultItemMaxMana);
+			item.SetProperty(PropertyInt.ItemCurMana, s.DefaultItemMaxMana);
+			item.SetProperty(PropertyFloat.ManaRate, s.DefaultItemManaRegen);
+		}
+		catch { }
+	}
+
 	private static bool ContainsAny(string name, List<string>? frags)
 	{
 		if (frags == null || frags.Count == 0)
@@ -402,12 +418,9 @@ internal static class UseOnTargetHooks
 		{
 			if (string.IsNullOrWhiteSpace(frag))
 				continue;
-
 			if (name.Contains(frag, StringComparison.OrdinalIgnoreCase))
 				return true;
 		}
-
 		return false;
 	}
 }
-

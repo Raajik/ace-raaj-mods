@@ -29,8 +29,8 @@ public class Settings
     public int MaxDiffLinesSentToPlayer { get; set; } = 40;
 
     [JsonPropertyName("// XpModifier")]
-    public string XpModifierDoc { get; set; } = "XP multiplier (1.0 = normal, 2.0 = double XP)";
-    public double XpModifier { get; set; } = 0.01;
+    public string XpModifierDoc { get; set; } = "XP multiplier (1.0 = normal). NOTE: XP rate is now controlled by Loremaster's StandardBaseXpRetentionPercent; this should stay at 1.0.";
+    public double XpModifier { get; set; } = 1.0;
 
     [JsonPropertyName("// RareDropRate")]
     public string RareDropRateDoc { get; set; } = "Rare item drop rate (default: 0.04)";

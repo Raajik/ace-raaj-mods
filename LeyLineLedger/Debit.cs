@@ -8,6 +8,10 @@ namespace LeyLineLedger;
 [HarmonyPatchCategory(nameof(Debit))]
 public class Debit
 {
+    // Thread-local flag so GetNumInventoryItemsOfWCID can return banked alt-currency totals
+    // when called inside GameEventApproachVendor construction.
+    [ThreadStatic] internal static bool InApproachVendor;
+    [ThreadStatic] internal static Session? ApproachVendorSession;
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), nameof(Player.UpdateCoinValue), new Type[] { typeof(bool) })]

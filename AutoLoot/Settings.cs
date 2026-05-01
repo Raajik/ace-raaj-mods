@@ -68,4 +68,24 @@ public class Settings
     [JsonPropertyName("// LockpickLootBankPercent")]
     public string LockpickLootBankPercentDoc { get; init; } = "Percent of lockpick structure banked when looted from corpses (0.10 = 10%).";
     public float LockpickLootBankPercent { get; set; } = 0.10f;
+
+    [JsonPropertyName("// EnableChestAutoLoot")]
+    public string EnableChestAutoLootDoc { get; init; } = "When true, opening a chest automatically loots matching items from your active profiles.";
+    public bool EnableChestAutoLoot { get; set; } = true;
+
+    [JsonPropertyName("// EnableLootStackConsolidation")]
+    public string EnableLootStackConsolidationDoc { get; init; } = "When true (default), duplicate same-WCID items in a corpse are merged into a single stack after loot generation. Fixes separate-drudge-charm spawns and similar multi-entry create-list drops.";
+    public bool EnableLootStackConsolidation { get; set; } = true;
+
+    [JsonPropertyName("// EnableDelayedSalvageSweep")]
+    public string EnableDelayedSalvageSweepDoc { get; init; } = "When true, leftover items in chests/corpses are auto-salvaged when the container is closed (after player has manually inspected).";
+    public bool EnableDelayedSalvageSweep { get; set; } = true;
+
+    [JsonPropertyName("// SalvageSweepDelaySeconds")]
+    public string SalvageSweepDelaySecondsDoc { get; init; } = "DEPRECATED — salvage now fires on container close. Kept for backward compatibility.";
+    public int SalvageSweepDelaySeconds { get; set; } = 15;
+
+    [JsonPropertyName("// EnableLevel8CompsConversion")]
+    public string EnableLevel8CompsConversionDoc { get; init; } = "When true, level 8 spellcrafting components (quills, inks, skill glyphs) are auto-looted and converted to pyreal value. When false, they are kept as physical items. Hidden from player toggle menu.";
+    public bool EnableLevel8CompsConversion { get; set; } = true;
 }

@@ -10,4 +10,6 @@ public class ActiveBonusQuestData
     public Dictionary<string, DateTime> QuestExpiries { get; set; } = new();
     // Per-player total completion count (guid → count)
     public Dictionary<uint, int> PlayerCompletions { get; set; } = new();
+    // Per-quest multiplier (name → repeatQB multiplier)
+    public Dictionary<string, int> QuestMultipliers { get; set; } = new();
 }

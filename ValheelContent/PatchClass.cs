@@ -93,6 +93,19 @@ public class PatchClass : BasicPatch<Settings>
         return false;
     }
 
+    // ── FindNextTarget log spam suppression ──────────────────────────────────
+    // ACE writes to Console.WriteLine when CurrentTargetingTactic is None.
+    // This fires constantly for invasion mobs and spams the server log.
+    // Pre-set the tactic to Random before the original method runs.
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Creature), "FindNextTarget")]
+    public static void FindNextTarget_Prefix(Creature __instance)
+    {
+        if (__instance.CurrentTargetingTactic == TargetingTactic.None)
+            __instance.CurrentTargetingTactic = TargetingTactic.Random;
+    }
+
     [HarmonyPrefix]
     [HarmonyPatch(typeof(QualityChance), nameof(QualityChance.GetQualityChancesForTier))]
     public static bool GetQualityChancesForTier_Prefix(ref int tier)
@@ -262,7 +275,29 @@ public class PatchClass : BasicPatch<Settings>
         base.Start();
         Settings = SettingsContainer.Settings ?? new Settings();
         _modDir = ModC.ModPath;
-        ModManager.Log($"[Valheel] Mod directory: {_modDir}", ModManager.LogLevel.Info);
+        
+        // Workaround: SettingsContainer sometimes fails to deserialize List<string> properties.
+        // Manually deserialize from Settings.json if the lists are empty.
+        var settingsPath = System.IO.Path.Combine(_modDir, "Settings.json");
+        if (System.IO.File.Exists(settingsPath) && (Settings.DisabledContentFolders == null || Settings.DisabledContentFolders.Count == 0))
+        {
+            try
+            {
+                var json = System.IO.File.ReadAllText(settingsPath);
+                var manualSettings = System.Text.Json.JsonSerializer.Deserialize<Settings>(json);
+                if (manualSettings != null)
+                {
+                    Settings = manualSettings;
+                    SettingsContainer.Settings = manualSettings;
+                    ModManager.Log($"[Valheel] Manually deserialized Settings.json — DisabledContentFolders: {Settings.DisabledContentFolders.Count}, EnabledContentFiles: {Settings.EnabledContentFiles.Count}", ModManager.LogLevel.Info);
+                }
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[Valheel] Manual deserialize failed: {ex.Message}", ModManager.LogLevel.Error);
+            }
+        }
+        
         ContentImporter.Initialize(Settings, _modDir);
     }
 

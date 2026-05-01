@@ -230,6 +230,16 @@ internal static class SaleRuntime
         }
     }
 
+    internal static void RecordLotteryContribution(long amount)
+    {
+        lock (_lock)
+        {
+            if (_activeSale == null || amount <= 0) return;
+            _activeSale.LotteryContribution += amount;
+            SalePersistence.SaveActiveSale(_activeSale);
+        }
+    }
+
     internal static bool IsVendorOnSale(int landblock, string? vendorName, uint wcid = 0)
     {
         var sale = _activeSale;

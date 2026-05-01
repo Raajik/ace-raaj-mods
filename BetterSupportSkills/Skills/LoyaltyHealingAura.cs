@@ -219,22 +219,6 @@ internal static class LoyaltyHealingAura
     }
 
     /// <summary>
-    /// Harmony prefix on Player.GrantXP — multiplies the amount by the cached loyalty bonus.
-    /// </summary>
-    public static void PrefixGrantXP(Player __instance, ref long amount)
-    {
-        if (PatchClass.Settings is not { EnableLoyalty: true, Loyalty.EnableXpBuff: true })
-            return;
-
-        double mult = GetBonusMultiplier(__instance);
-        if (mult > 1.0)
-        {
-            amount = (long)Math.Round(amount * mult);
-            DebugLog($"GrantXP boosted for {__instance.Name}: {mult:F2}x = {amount}");
-        }
-    }
-
-    /// <summary>
     /// Harmony prefix on Player.GrantLuminance — multiplies the amount by the cached loyalty bonus.
     /// </summary>
     public static void PrefixGrantLuminance(Player __instance, ref long amount)

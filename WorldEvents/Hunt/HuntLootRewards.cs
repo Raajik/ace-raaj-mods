@@ -16,23 +16,28 @@ internal static class HuntLootRewards
         var floor = RarityFloorForPlace(zeroBasedRank);
         if (participantCount == 1 && settings.SoloCompetitorBonus.Enable)
             floor = (LootRarityFloor)Math.Min((int)floor + settings.SoloCompetitorBonus.LootFloorBonus, (int)LootRarityFloor.ExtremelyRare);
-        return GrantLootRollSync(player, zeroBasedRank + 1, floor, settings);
+        return GrantLootRollSync(player, zeroBasedRank + 1, floor, settings, isSalvage: zeroBasedRank == 2);
     }
 
-    // 1st: rare or better; 2nd: uncommon or better; 3rd: any
+    // 1st: uncommon+; 2nd: common+; 3rd: salvage
     static LootRarityFloor RarityFloorForPlace(int zeroBasedRank) => zeroBasedRank switch
     {
-        0 => LootRarityFloor.Rare,
-        1 => LootRarityFloor.Uncommon,
+        0 => LootRarityFloor.Uncommon,
+        1 => LootRarityFloor.Any,
         _ => LootRarityFloor.Any,
     };
 
-    static List<string> GrantLootRollSync(Player player, int place, LootRarityFloor floor, Settings settings)
+    static List<string> GrantLootRollSync(Player player, int place, LootRarityFloor floor, Settings settings, bool isSalvage = false)
     {
         var names = new List<string>();
         var cfg = LootConfigStore.GetLoadedOrDefault();
 
-        var item = LootRoller.TryCreateFromMinRarity(cfg, floor);
+        WorldObject? item;
+        if (isSalvage)
+            item = SalvageBagShaper.CreateRandomSalvageBag();
+        else
+            item = LootRoller.TryCreateFromMinRarity(cfg, floor);
+
         if (item is null)
         {
             ModManager.Log($"[Hunt] Hunt loot roll produced no item for {player.Name} (place {place}, floor {floor}).", ModManager.LogLevel.Warn);

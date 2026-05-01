@@ -73,6 +73,25 @@ internal static class ChaosTinker
         if (rolledSuccess)
             return;
 
+        // -- Chaos failure tracking --
+        if (_wasChaosFailure && target != null)
+        {
+            var settings = PatchClass.Settings?.ChaosTinker;
+
+            // Increment NumTimesTinkered on the item (if enabled)
+            if (settings?.IncrementNumTimesTinkeredOnFailure == true)
+            {
+                int currentTinkered = target.GetProperty(PropertyInt.NumTimesTinkered) ?? 0;
+                target.SetProperty(PropertyInt.NumTimesTinkered, currentTinkered + 1);
+            }
+
+            // Track chaos failures separately
+            int currentChaosFailures = target.GetProperty((PropertyInt)40120) ?? 0;
+            target.SetProperty((PropertyInt)40120, currentChaosFailures + 1);
+
+            player.SendMessage($"The chaos takes its toll... ({currentChaosFailures + 1} chaos failures on this item)", ChatMessageType.System);
+        }
+
         // Check if player has any tinkering trained
         if (!HasAnyTinkering(player))
             return;
@@ -94,18 +113,34 @@ internal static class ChaosTinker
 
     // -- Failure Override ------------------------------------------------
 
+    [ThreadStatic]
+    static bool _wasChaosFailure;
+
     [HarmonyPrefix]
     [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.HandleRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(double) })]
     [HarmonyPriority(Priority.High)]
     public static void PrefixHandleRecipe(Player player, WorldObject source, WorldObject target, Recipe recipe, ref double successChance)
     {
+        _wasChaosFailure = false;
         if (player == null)
             return;
 
         if (ChaosModeActive.GetValueOrDefault(player.Guid.Full, false))
         {
+            var settings = PatchClass.Settings?.ChaosTinker;
+            int maxFailures = settings?.MaxChaosFailuresPerItem ?? 5;
+
+            // Check per-item chaos failure cap
+            int currentChaosFailures = target?.GetProperty((PropertyInt)40120) ?? 0;
+            if (currentChaosFailures >= maxFailures)
+            {
+                player.SendMessage("This item has endured too much chaos and resists further sabotage.", ChatMessageType.System);
+                return; // Don't force failure — allow normal tinker
+            }
+
             // Force failure when chaos mode is active
             successChance = 0;
+            _wasChaosFailure = true;
         }
     }
 

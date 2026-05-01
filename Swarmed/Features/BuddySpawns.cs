@@ -192,6 +192,16 @@ internal static class BuddySpawns
             }
 
             LandblockManager.AddObject(buddy);
+
+            // Ensure buddy spawns immediately aggro nearby players
+            var nearbyTarget = buddy.CurrentLandblock?.GetWorldObjectsForPhysicsHandling()
+                ?.OfType<Player>()
+                .Where(p => !p.IsDead && p.Session != null)
+                .OrderBy(p => p.GetDistance(buddy))
+                .FirstOrDefault();
+            if (nearbyTarget != null)
+                buddy.AttackTarget = nearbyTarget;
+
             return true;
         }
         catch (Exception ex)

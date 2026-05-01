@@ -673,7 +673,7 @@ public static class VendorLootRotation
 
             string newName = "Awakened " + originalName;
             item.SetProperty(PropertyString.Name, newName);
-            item.SetProperty(PropertyInt.UiEffects, 32);              // Fire = red outline
+            item.SetProperty(PropertyInt.UiEffects, 20);              // BoostHealth|BoostStamina = perceived red outline
             item.CalculateObjDesc();
             awakened++;
         }

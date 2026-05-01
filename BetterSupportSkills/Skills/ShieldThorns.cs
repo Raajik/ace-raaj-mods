@@ -19,8 +19,6 @@ internal static class ShieldThorns
 
     public static void PostfixCalculateDamage(DamageEvent __result, Creature attacker, Creature defender, WorldObject damageSource)
     {
-        DebugLog("PostfixCalculateDamage CALLED");
-        
         if (__result == null)
             return;
 
@@ -30,8 +28,6 @@ internal static class ShieldThorns
 
         if (defender == null || attacker == null)
             return;
-
-        DebugLog($"DamageEvent: attacker={attacker!.Name}, defender={defender!.Name}, Weapon={__result.Weapon?.GetType().Name}, isSpellProjectile={__result.Weapon is SpellProjectile}, CombatType={__result.CombatType}");
 
         // Handle pet defenders (Druid pet thorns)
         if (defender is CombatPet pet)
@@ -58,15 +54,11 @@ internal static class ShieldThorns
             return;
 
         var shield = playerDefender.GetEquippedShield();
-        
-        DebugLog($"Shield check: hasShield={shield != null}");
 
         if (shield is not null)
         {
             bool hasMagicAbsorbing = shield.GetAbsorbMagicDamage() is not null;
-            
-            DebugLog($"Magic shield check: hasMagicAbsorbing={hasMagicAbsorbing}");
-            
+
             if (!hasMagicAbsorbing)
             {
                 double magicReduction = 0.10;
@@ -74,9 +66,7 @@ internal static class ShieldThorns
             magicReduction = 0.20;
 
                 bool isSpellProjectile = __result.Weapon is SpellProjectile;
-                
-                DebugLog($"Magic reduction check: isSpellProjectile={isSpellProjectile}, Damage={__result.Damage}, DamageType={__result.DamageType}");
-                
+
                 if (isSpellProjectile && __result.Damage > 0)
                 {
                     var damageNegated = (int)(__result.DamageBeforeMitigation * magicReduction);

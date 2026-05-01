@@ -97,6 +97,50 @@ public partial class Settings
 
     public WeaponQuestGrowthSettings WeaponQuestGrowth { get; set; } = new();
 
+    [JsonPropertyName("// EnableLootItemPreAwaken")]
+    public string EnableLootItemPreAwakenDoc { get; init; } = "When true, equippable loot has a chance to drop pre-awakened with a Living profile (LE-style QuickStart/Steady/Brutal/Casual curves).";
+
+    [JsonPropertyName("// LootItemPreAwakenChance")]
+    public string LootItemPreAwakenChanceDoc { get; init; } = "Percent chance (0-100) for equippable loot to drop pre-awakened. Default 0.2 = 0.2%.";
+
+    [JsonPropertyName("// LootItemPreAwakenTierWeights")]
+    public string LootItemPreAwakenTierWeightsDoc { get; init; } = "Relative weights for pre-awakened tier (Lesser, Greater, Aetheric). Order: Lesser, Greater, Aetheric.";
+
+    [JsonPropertyName("// LootItemPreAwakenMaxLevels")]
+    public string LootItemPreAwakenMaxLevelsDoc { get; init; } = "Max levels per pre-awakened tier. Order: Lesser, Greater, Aetheric.";
+
+    [JsonPropertyName("// LootItemPreAwakenXpProfiles")]
+    public string LootItemPreAwakenXpProfilesDoc { get; init; } = "Named XP curve profiles for pre-awakened items. Each has Name, ItemBaseXp, Description.";
+
+    [JsonPropertyName("// LootItemPreAwakenProfileWeights")]
+    public string LootItemPreAwakenProfileWeightsDoc { get; init; } = "Profile weights per tier. Each entry is a list of 4 floats (QuickStart, Steady, Brutal, Casual). Order: Lesser, Greater, Aetheric.";
+
+    [JsonPropertyName("// LootItemPreAwakenPrefix")]
+    public string LootItemPreAwakenPrefixDoc { get; init; } = "Prefix applied to pre-awakened item names, replacing the material type.";
+
+    [JsonPropertyName("// LootItemPreAwakenUiEffects")]
+    public string LootItemPreAwakenUiEffectsDoc { get; init; } = "UiEffects bitmask for pre-awakened items. Default 20 = BoostHealth|BoostStamina (yellow/gold).";
+
+    public bool EnableLootItemPreAwaken { get; set; } = true;
+    public float LootItemPreAwakenChance { get; set; } = 0.2f;
+    public List<float> LootItemPreAwakenTierWeights { get; set; } = new() { 1.0f, 0.3f, 0.01f };
+    public List<int> LootItemPreAwakenMaxLevels { get; set; } = new() { 25, 50, 75 };
+    public List<PreAwakenXpProfile> LootItemPreAwakenXpProfiles { get; set; } = new()
+    {
+        new() { Name = "QuickStart", ItemBaseXp = 15000, Description = "Fast levels 1-10, sharp curve after" },
+        new() { Name = "Steady", ItemBaseXp = 25000, Description = "Moderate, consistent grind throughout" },
+        new() { Name = "Brutal", ItemBaseXp = 40000, Description = "Sharp from level 1, very grindy" },
+        new() { Name = "Casual", ItemBaseXp = 8000, Description = "Very easy, minimal grind" },
+    };
+    public List<List<float>> LootItemPreAwakenProfileWeights { get; set; } = new()
+    {
+        new() { 0.50f, 0.30f, 0.15f, 0.05f },
+        new() { 0.25f, 0.25f, 0.25f, 0.25f },
+        new() { 0.05f, 0.20f, 0.50f, 0.25f },
+    };
+    public string LootItemPreAwakenPrefix { get; set; } = "Living";
+    public uint LootItemPreAwakenUiEffects { get; set; } = 20;
+
     public bool EnableQuestItemWorkmanship { get; set; } = true;
 
     public int QuestItemWorkmanshipMin { get; set; } = 4;
@@ -470,4 +514,11 @@ public class CantripLine
     public string Name { get; set; } = "";
 
     public List<int> TierIds { get; set; } = new();
+}
+
+public class PreAwakenXpProfile
+{
+    public string Name { get; set; } = "QuickStart";
+    public long ItemBaseXp { get; set; } = 15000;
+    public string Description { get; set; } = "";
 }

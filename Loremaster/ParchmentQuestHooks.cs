@@ -263,11 +263,7 @@ public static class ParchmentQuestHooks
             ? $"parchment_{template.Tier}"
             : template.CompletionQuestStamp;
 
-        if (!player.HasReceivedRepeatReward(questKey))
-        {
-            ParchmentQuestRewards.GrantTierXpAndRepeatLoot(player, template);
-            player.MarkRepeatRewardGranted(questKey);
-        }
+        ParchmentQuestRewards.GrantTierXpAndRepeatLoot(player, template);
 
         var msg = template.CompleteMessage;
         if (string.IsNullOrWhiteSpace(msg))

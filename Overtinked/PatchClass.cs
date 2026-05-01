@@ -324,6 +324,17 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             target.SetProperty(PropertyInt.DamageType, (int)DamageType.Nether);
             return true;
         }
+        if (s.JewelryCleaveImbue?.Enabled == true && s.JewelryCleaveImbue.SalvageWcids != null && s.JewelryCleaveImbue.SalvageWcids.Contains(wcid))
+        {
+            // Only apply to jewelry items
+            if ((target.ItemType & ItemType.Jewelry) != 0)
+            {
+                int bonus = Math.Max(1, s.JewelryCleaveImbue.BonusTargets);
+                int existing = target.GetProperty(PropertyInt.Cleaving) ?? 0;
+                target.SetProperty(PropertyInt.Cleaving, Math.Max(existing, 1 + bonus));
+                return true;
+            }
+        }
         return false;
     }
 

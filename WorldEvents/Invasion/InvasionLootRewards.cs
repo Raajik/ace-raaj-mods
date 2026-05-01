@@ -40,7 +40,16 @@ internal static class InvasionLootRewards
                 ? $"solo bonus (#{slot + 1})"
                 : PlacementLabel(slot);
 
-            GrantItem(player, cfg, floor, label);
+            GrantItem(player, cfg, floor, label, isSalvage: slot == 2);
+        }
+
+        // Grant placement QP to all ranked participants
+        for (var i = 0; i < ranked.Count; i++)
+        {
+            var (guid, _, _) = ranked[i];
+            var player = PlayerManager.GetOnlinePlayer(guid);
+            if (player == null) continue;
+            PlacementQuestPoints.GrantByRank(player, i, participantCount, "Invasion");
         }
     }
 
@@ -88,11 +97,11 @@ internal static class InvasionLootRewards
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
-    // 1st=Rare, 2nd=Uncommon, 3rd=Any — same as Hunt
+    // 1st=Uncommon+, 2nd=Common+, 3rd=Salvage
     static LootRarityFloor PlacementFloor(int zeroIndex) => zeroIndex switch
     {
-        0 => LootRarityFloor.Rare,
-        1 => LootRarityFloor.Uncommon,
+        0 => LootRarityFloor.Uncommon,
+        1 => LootRarityFloor.Any,
         _ => LootRarityFloor.Any,
     };
 
@@ -103,9 +112,14 @@ internal static class InvasionLootRewards
         _ => "3rd place",
     };
 
-    static void GrantItem(Player player, LootConfig cfg, LootRarityFloor floor, string label)
+    static void GrantItem(Player player, LootConfig cfg, LootRarityFloor floor, string label, bool isSalvage = false)
     {
-        var item = LootRoller.TryCreateFromMinRarity(cfg, floor);
+        WorldObject? item;
+        if (isSalvage)
+            item = SalvageBagShaper.CreateRandomSalvageBag();
+        else
+            item = LootRoller.TryCreateFromMinRarity(cfg, floor);
+
         if (item == null)
         {
             ModManager.Log($"[Invasion] Loot roll empty for {player.Name} ({label}, floor {floor}).", ModManager.LogLevel.Warn);

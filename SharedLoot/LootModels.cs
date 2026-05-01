@@ -13,8 +13,13 @@ public enum LootRarityFloor
 
 public class LootConfig
 {
-    // Salvage rolls independently before the normal rarity chain.
+    // Salvage and gear each roll independently before the normal rarity chain.
     public double SalvageChance { get; set; } = 0.25;
+    public double GearChance { get; set; } = 0.25;
+
+    // Chance that a gear-pool item spawns pre-awakened (LivingEquipment).
+    // Most gear should be normal so players manually awaken with Coalesced Mana.
+    public double GearPreAwakenedChance { get; set; } = 0.10;
 
     // Rarity roll order matches LootRoller: extremely rare, then rare, then uncommon, remainder = common.
     public double ExtremelyRareChance { get; set; } = 0.0001;
@@ -26,6 +31,7 @@ public class LootConfig
     public LootCategory rare { get; set; } = new();
     public LootCategory extremelyRare { get; set; } = new();
     public LootCategory salvage { get; set; } = new();
+    public LootCategory gear { get; set; } = new();
 }
 
 public class LootCategory

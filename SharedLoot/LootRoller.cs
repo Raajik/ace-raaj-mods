@@ -1,6 +1,7 @@
 using ACE.Common;
 using ACE.Server.Factories;
 using ACE.Server.WorldObjects;
+using System.Reflection;
 
 namespace SharedLoot;
 
@@ -39,6 +40,25 @@ public static class LootRoller
             return null;
 
         return CreateItemFromCategory(category);
+    }
+
+    /// <summary>
+    /// Rolls independently for a bonus gear item (in addition to normal rarity loot).
+    /// If LivingEquipment is loaded, the item has a chance to be pre-awakened / pre-imbued.
+    /// </summary>
+    public static WorldObject? TryCreateGearItem(LootConfig config)
+    {
+        if (config?.gear?.items == null || config.gear.items.Count == 0)
+            return null;
+
+        if (ThreadSafeRandom.Next(0.0f, 1.0f) >= config.GearChance)
+            return null;
+
+        var item = CreateItemFromCategory(config.gear);
+        if (item != null)
+            TryApplyLivingEquipment(item);
+
+        return item;
     }
 
     // Selects uniformly from categories at or above `floor` (all with items), then picks a random item within.
@@ -127,5 +147,33 @@ public static class LootRoller
         {
             return null;
         }
+    }
+
+    /// <summary>
+    /// Cross-mod bridge: if LivingEquipment is loaded, runs its loot mutator on the item
+    /// so it may spawn pre-awakened and/or pre-imbued.
+    /// </summary>
+    static void TryApplyLivingEquipment(WorldObject item)
+    {
+        try
+        {
+            var asm = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.GetName().Name == "LivingEquipment");
+            if (asm == null) return;
+
+            var type = asm.GetType("LivingEquipment.LootMutator");
+            if (type == null) return;
+
+            // LootMutator.ApplyToLootItem(WorldObject item, int treasureTier)
+            var method = type.GetMethod("ApplyToLootItem",
+                System.Reflection.BindingFlags.NonPublic |
+                System.Reflection.BindingFlags.Static);
+            if (method == null) return;
+
+            // Pass tier 5 as a middle-tier default; LivingEquipment only uses it for
+            // pre-awakened tier weights, so it affects rarity distribution.
+            method.Invoke(null, new object[] { item, 5 });
+        }
+        catch { /* swallow — LivingEquipment not present or incompatible */ }
     }
 }

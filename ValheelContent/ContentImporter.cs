@@ -53,12 +53,32 @@ internal static class ContentImporter
         int failedFiles = 0;
         bool isFirstRun = previousState == null;
 
+        var disabledFolders = _settings?.DisabledContentFolders ?? new List<string>();
+        var enabledFiles = _settings?.EnabledContentFiles ?? new List<string>();
+
         foreach (var categoryDir in categories)
         {
             var categoryName = Path.GetFileName(categoryDir);
-            var sqlFiles = Directory.GetFiles(categoryDir, "*.sql", SearchOption.AllDirectories)
+            var allSqlFiles = Directory.GetFiles(categoryDir, "*.sql", SearchOption.AllDirectories)
                 .OrderBy(f => f, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+
+            // Filter out files in disabled subfolders, unless explicitly in EnabledContentFiles
+            var sqlFiles = allSqlFiles
+                .Where(f =>
+                {
+                    var rel = GetRelativePath(f, _contentPath);
+                    bool disabled = IsPathDisabled(rel, disabledFolders);
+                    bool excepted = IsPathExactMatch(rel, enabledFiles);
+                    return !disabled || excepted;
+                })
+                .ToList();
+
+            int skippedByFolder = allSqlFiles.Count - sqlFiles.Count;
+            if (skippedByFolder > 0)
+            {
+                ModManager.Log($"[Valheel] Skipping {skippedByFolder} file(s) in disabled subfolders under {categoryName}", ModManager.LogLevel.Info);
+            }
 
             if (sqlFiles.Count == 0)
                 continue;
@@ -234,6 +254,47 @@ internal static class ContentImporter
         {
             ModManager.Log($"[Valheel] Failed to clear spell cache: {ex.Message}", ModManager.LogLevel.Warn);
         }
+    }
+
+    private static bool IsPathDisabled(string relativePath, List<string> disabledFolders)
+    {
+        if (disabledFolders == null || disabledFolders.Count == 0)
+            return false;
+
+        foreach (var df in disabledFolders)
+        {
+            var normalized = df.Replace('\\', '/').TrimEnd('/');
+            if (string.IsNullOrWhiteSpace(normalized))
+                continue;
+
+            // Exact folder match or subfolder match
+            if (relativePath.StartsWith(normalized + "/", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(relativePath, normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool IsPathExactMatch(string relativePath, List<string> enabledFiles)
+    {
+        if (enabledFiles == null || enabledFiles.Count == 0)
+            return false;
+
+        foreach (var ef in enabledFiles)
+        {
+            var normalized = ef.Replace('\\', '/').TrimStart('/');
+            if (string.IsNullOrWhiteSpace(normalized))
+                continue;
+
+            if (string.Equals(relativePath, normalized, StringComparison.OrdinalIgnoreCase) ||
+                relativePath.StartsWith(normalized + "/", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static string ComputeHash(string content)

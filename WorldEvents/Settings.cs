@@ -265,11 +265,15 @@ public sealed class Settings
 
     [JsonPropertyName("// BonusQuestLookbackDays")]
     public string BonusQuestLookbackDaysDoc { get; init; } = "How many days back to scan for eligible recently-completed quests.";
-    public int BonusQuestLookbackDays { get; set; } = 3;
+    public int BonusQuestLookbackDays { get; set; } = 7;
 
     [JsonPropertyName("// BonusQuestMinGlobalCompletions")]
     public string BonusQuestMinGlobalCompletionsDoc { get; init; } = "Minimum number of shard-wide completions in the lookback window for a quest to be eligible.";
     public long BonusQuestMinGlobalCompletions { get; set; } = 1;
+
+    [JsonPropertyName("// BonusQuestBottomTierMinCompletions")]
+    public string BonusQuestBottomTierMinCompletionsDoc { get; init; } = "Minimum completions for a quest to be eligible for the bottom (rare) tier. Prevents uncompletable quests from being selected.";
+    public long BonusQuestBottomTierMinCompletions { get; set; } = 10;
 
     [JsonPropertyName("// BonusQuestGrantXp")]
     public string BonusQuestGrantXpDoc { get; init; } = "When true, grant bonus XP on each bonus quest completion.";
@@ -298,6 +302,15 @@ public sealed class Settings
     [JsonPropertyName("// BonusQuestDenylist")]
     public string BonusQuestDenylistDoc { get; init; } = "Quest stamps that are never selected as bonus quests (e.g. one-time story quests you don't want repeated).";
     public List<string> BonusQuestDenylist { get; set; } = new();
+
+    [JsonPropertyName("// BonusQuestGeneratedNamePatterns")]
+    public string BonusQuestGeneratedNamePatternsDoc { get; init; } = "Regex patterns for generated quest names that should never be selected (e.g. timestamped/GUID quests).";
+    public List<string> BonusQuestGeneratedNamePatterns { get; set; } = new()
+    {
+        @"\d{10,}",           // Unix timestamps
+        @"[0-9a-f]{8}-[0-9a-f]{4}", // GUID fragments
+        @"#repeatQB",         // repeatQB unique entries
+    };
 
     [JsonPropertyName("// QuestLogEnabled")]
     public string QuestLogEnabledDoc { get; init; } = "When true, every quest completion shard-wide is appended to Data/BonusQuest/QuestLog/QuestCompletionLog.jsonl. Used for future multi-step chain detection and analytics.";
@@ -387,6 +400,34 @@ public sealed class Settings
         8,  // Hollow Minion
     };
 
+    [JsonPropertyName("// InvasionPortalStormChancePercent")]
+    public string InvasionPortalStormChancePercentDoc { get; init; } = "Chance (0-100) that an invasion wave becomes a Portal Storm (chaos mode) even when creature themes are enabled. Set to 0 to disable Portal Storms entirely, 100 for always.";
+    public int InvasionPortalStormChancePercent { get; set; } = 5;
+
+    [JsonPropertyName("// InvasionTownCountWeights")]
+    public string InvasionTownCountWeightsDoc { get; init; } = "Relative weights for how many towns are attacked per wave. Index 0 = 1 town weight, index 1 = 2 towns weight, etc.";
+    public List<int> InvasionTownCountWeights { get; set; } = new() { 50, 30, 20 };
+
+    [JsonPropertyName("// InvasionTierThresholdVariance")]
+    public string InvasionTierThresholdVarianceDoc { get; init; } = "Random variance (+/-) applied to per-town kill thresholds after tier scaling.";
+    public int InvasionTierThresholdVariance { get; set; } = 25;
+
+    [JsonPropertyName("// InvasionSoloTownThresholdMultiplier")]
+    public string InvasionSoloTownThresholdMultiplierDoc { get; init; } = "When only 1 town is invaded, multiply its kill threshold by this amount (more action).";
+    public double InvasionSoloTownThresholdMultiplier { get; set; } = 1.5;
+
+    [JsonPropertyName("// InvasionSoloTownRespawnMultiplier")]
+    public string InvasionSoloTownRespawnMultiplierDoc { get; init; } = "When only 1 town is invaded, multiply boss respawn time by this (lower = faster respawn).";
+    public double InvasionSoloTownRespawnMultiplier { get; set; } = 0.5;
+
+    [JsonPropertyName("// InvasionTargetMobCount")]
+    public string InvasionTargetMobCountDoc { get; init; } = "Target living invasion mobs per town that trickle spawn tries to maintain.";
+    public int InvasionTargetMobCount { get; set; } = 50;
+
+    [JsonPropertyName("// InvasionTargetMobMin")]
+    public string InvasionTargetMobMinDoc { get; init; } = "Minimum living mobs per town that trickle spawn will never drop below.";
+    public int InvasionTargetMobMin { get; set; } = 10;
+
     [JsonPropertyName("// InvasionUseTierSystem")]
     public string InvasionUseTierSystemDoc { get; init; } = "When true, each town in a wave is assigned a random tier (1–6); tier determines the level range for Dynamic mob selection.";
     public bool InvasionUseTierSystem { get; set; } = true;
@@ -434,6 +475,50 @@ public sealed class Settings
     [JsonPropertyName("// InvasionCreatureExOnThemedPulse")]
     public string InvasionCreatureExOnThemedPulseDoc { get; init; } = "When true, themed waves also spawn a CreatureEx boss on the 5th trickle pulse (same as chaos).";
     public bool InvasionCreatureExOnThemedPulse { get; set; } = true;
+
+    [JsonPropertyName("// PortalStormMinPortals")]
+    public string PortalStormMinPortalsDoc { get; init; } = "Minimum random portals spawned during a Portal Storm.";
+    public int PortalStormMinPortals { get; set; } = 3;
+
+    [JsonPropertyName("// PortalStormMaxPortals")]
+    public string PortalStormMaxPortalsDoc { get; init; } = "Maximum random portals spawned during a Portal Storm (before tier/pulse scaling).";
+    public int PortalStormMaxPortals { get; set; } = 5;
+
+    [JsonPropertyName("// PortalStormShuffleIntervalSeconds")]
+    public string PortalStormShuffleIntervalSecondsDoc { get; init; } = "How often storm portals relocate during an active Portal Storm.";
+    public int PortalStormShuffleIntervalSeconds { get; set; } = 45;
+
+    [JsonPropertyName("// PortalStormExcludedWcids")]
+    public string PortalStormExcludedWcidsDoc { get; init; } = "Portal WCIDs to exclude from random storm selection (Town Network, marketplace, etc.).";
+    public List<uint> PortalStormExcludedWcids { get; set; } = new()
+    {
+        42841, 42842, 42843, 42844, 42845, // Town Network portals
+        28728, // Marketplace
+    };
+
+    [JsonPropertyName("// InvasionCreatureBlacklist")]
+    public string InvasionCreatureBlacklistDoc { get; init; } = "Creature WCIDs excluded from invasion spawn pools (e.g. custom Valheel creatures that shouldn't invade towns).";
+    public List<uint> InvasionCreatureBlacklist { get; set; } = new()
+    {
+        46603, 46652, // claygolemsamurai (Valheel custom)
+    };
+
+    [JsonPropertyName("// PathwardenVendorSettings")]
+    public string PathwardenVendorSettingsDoc { get; init; } = "Settings for Pathwarden vendor system - vendors in Town Network that sell Academy weapons, Pathwarden armor, and SpellSiphon tools.";
+
+    [JsonPropertyName("// EnablePathwardenVendorTracking")]
+    public string EnablePathwardenVendorTrackingDoc { get; init; } = "When true, tracks all purchases from Pathwarden vendors (player, account, item, price) for analytics.";
+    public bool EnablePathwardenVendorTracking { get; set; } = true;
+
+    [JsonPropertyName("// PathwardenVendorWcids")]
+    public string PathwardenVendorWcidsDoc { get; init; } = "WCIDs of the Pathwarden vendor NPCs. These vendors restock when WorldEvents start and are tracked for analytics.";
+    public List<uint> PathwardenVendorWcids { get; set; } = new()
+    {
+        850300, // Kaelith
+        850301, // Thornwick
+        850302, // Mirelle
+        850303, // Eldrin
+    };
 
     [JsonPropertyName("// InvasionTowns")]
     public string InvasionTownsDoc { get; init; } = "List of towns eligible for invasion. Mode: Scripted (fires ACE event from SQL), Dynamic (spawns mobs at TownCenterObjCellId), Random. TownCenterObjCellId required for Dynamic.";

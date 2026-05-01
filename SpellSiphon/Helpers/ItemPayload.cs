@@ -4,6 +4,10 @@ internal static class ItemPayload
 {
 	internal const int PayloadPrimarySpellIdProp = 40100;
 	internal const int PayloadSpellListJsonProp = 40101;
+	internal const int IsChargedSpellsiphonProp = 40102;
+	internal const int SpellsiphonTierProp = 40103;
+	internal const int SpellsiphonSpellCountProp = 40104;
+	internal const int IsEndlessManaLatticeProp = 40105;
 
 	internal static bool TryWriteSpellPayload(WorldObject item, List<int> spellIds)
 	{
@@ -68,7 +72,6 @@ internal static class ItemPayload
 
 		try
 		{
-			// Setting to empty/0 ensures ReadSpellPayload returns no spells.
 			item.SetProperty((PropertyInt)PayloadPrimarySpellIdProp, 0);
 			item.SetProperty((PropertyString)PayloadSpellListJsonProp, "[]");
 		}
@@ -77,4 +80,3 @@ internal static class ItemPayload
 		}
 	}
 }
-

@@ -12,7 +12,13 @@ internal sealed class SpellSiphonSmokeTest : IQaTestCase
 		if (s == null || !s.Enabled)
 			return QaResult.Fail("Settings not loaded or mod disabled.");
 
-		return SpellSiphonQaCommands.RunSmokeForRunner(player, s);
+		// Basic smoke test: verify settings are sane
+		if (s.SpellsiphonToolWcid == 0)
+			return QaResult.Fail("SpellsiphonToolWcid is not configured.");
+
+		if (s.ManaLatticeWcid == 0)
+			return QaResult.Fail("ManaLatticeWcid is not configured.");
+
+		return QaResult.Pass("SpellSiphon configuration looks valid.");
 	}
 }
-

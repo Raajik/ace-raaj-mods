@@ -155,5 +155,37 @@
     "DamageRatingMin": 0.92,
     "DamageRatingMax": 1.21,
     "LevelVariance": 1
-  }
+  },
+  "// DynamicMobScaling": "Scale mob level/difficulty/loot/XP to nearby players within the same landblock.",
+  "DynamicMobScaling": {
+    "// Enabled": "When true, mobs scale to nearby player levels.",
+    "Enabled": true,
+    "// SoloScalePercent": "Percent of player level to scale to when solo (100 = exact match).",
+    "SoloScalePercent": 100,
+    "// GroupScalePercent": "Percent of average group level to scale to (100 = exact match).",
+    "GroupScalePercent": 100,
+    "// MinScaleLevel": "Minimum level a mob can be scaled to.",
+    "MinScaleLevel": 1,
+    "// MaxScaleLevel": "Maximum level a mob can be scaled to. 0 = use server XP table max.",
+    "MaxScaleLevel": 0,
+    "// LandscapeSoftCap": "When true, landscape mobs have soft level caps based on world area tiers.",
+    "LandscapeSoftCap": true,
+    "// LandscapeTierMaxLevels": "Maximum scaled level per landscape tier. Tier 1 = starter areas, Tier 7 = endgame.",
+    "LandscapeTierMaxLevels": {
+      "1": 50,
+      "2": 75,
+      "3": 100,
+      "4": 125,
+      "5": 150,
+      "6": 200,
+      "7": 275
+    },
+    "// XpScaleEnabled": "When true, XP reward scales with the difference between scaled and base level.",
+    "XpScaleEnabled": true,
+    "// XpScalePercent": "Percent of level difference to apply to XP (100 = full proportional scaling).",
+    "XpScalePercent": 100,
+    "// OptOutProperty": "PropertyBool used to track per-player opt-out. Shared with QOL /xp mob_scaling command.",
+    "OptOutProperty": 40151
+  },
+  "CreatureExQuestPointReward": 1.0
 }

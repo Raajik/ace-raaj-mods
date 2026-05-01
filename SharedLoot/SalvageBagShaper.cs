@@ -1,8 +1,9 @@
+using ACE.Server.Factories;
 using ACE.Server.WorldObjects;
 
 namespace SharedLoot;
 
-internal static class SalvageBagShaper
+public static class SalvageBagShaper
 {
     // Salvage WCIDs from LeyLineLedger DepositRules (20981–21089)
     static readonly HashSet<uint> SalvageWcids = new()
@@ -28,5 +29,22 @@ internal static class SalvageBagShaper
         item.Structure = 100;
         item.ItemWorkmanship = 100;
         item.NumItemsInMaterial = 10;
+    }
+
+    /// <summary>
+    /// Creates a random shaped salvage bag (100 units, workmanship 100).
+    /// </summary>
+    public static WorldObject? CreateRandomSalvageBag()
+    {
+        if (SalvageWcids.Count == 0) return null;
+
+        var random = new System.Random();
+        var wcid = SalvageWcids.ElementAt(random.Next(SalvageWcids.Count));
+
+        var item = WorldObjectFactory.CreateNewWorldObject(wcid);
+        if (item is null) return null;
+
+        ApplyShape(item);
+        return item;
     }
 }

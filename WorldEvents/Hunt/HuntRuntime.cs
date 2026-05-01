@@ -143,7 +143,7 @@ internal static class HuntRuntime
         return picked;
     }
 
-    internal static void BeginNewHuntWindow(Settings settings, bool finalizePrevious)
+    internal static void BeginNewHuntWindow(Settings settings, bool finalizePrevious, double? customDurationMinutes = null)
     {
         ActiveHuntData? ended = null;
         lock (HuntLock)
@@ -156,7 +156,10 @@ internal static class HuntRuntime
             }
 
             var now = DateTime.UtcNow;
-            StartHuntWindow(settings, now, now.AddHours(settings.HuntIntervalHours));
+            var end = customDurationMinutes.HasValue
+                ? now.AddMinutes(customDurationMinutes.Value)
+                : now.AddHours(settings.HuntIntervalHours);
+            StartHuntWindow(settings, now, end);
         }
 
         if (ended != null)
@@ -283,6 +286,9 @@ internal static class HuntRuntime
                     }
 
                     lootLines[idx] = HuntLootRewards.GrantPlacementLoot(settings, idx, pts, recipient, participantCount);
+
+                    // Grant repeatQB quest points for placement
+                    PlacementQuestPoints.GrantByRank(recipient, idx, participantCount, "Hunt");
 
                     // 1st place claims any unfilled podium slots
                     if (idx == 0)

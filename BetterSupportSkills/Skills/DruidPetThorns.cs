@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Server.Entity;
@@ -12,6 +13,52 @@ namespace BetterSupportSkills.Skills;
 [HarmonyPatchCategory(nameof(Features.DruidPetThorns))]
 internal static class DruidPetThorns
 {
+    static readonly ConcurrentDictionary<uint, ThornsBatch> _batches = new();
+
+    sealed class ThornsBatch
+    {
+        readonly Player _owner;
+        CancellationTokenSource? _cts;
+        public float TotalDamage;
+        public readonly HashSet<uint> UniqueEnemyGuids = new();
+        public int HitCount;
+
+        public ThornsBatch(Player owner)
+        {
+            _owner = owner;
+        }
+
+        public void Add(float damage, uint enemyGuid)
+        {
+            TotalDamage += damage;
+            UniqueEnemyGuids.Add(enemyGuid);
+            HitCount++;
+            Reschedule();
+        }
+
+        void Reschedule()
+        {
+            var cts = new CancellationTokenSource();
+            var old = Interlocked.Exchange(ref _cts, cts);
+            old?.Cancel();
+            _ = Task.Delay(TimeSpan.FromSeconds(15), cts.Token)
+                    .ContinueWith(_ => Flush(), CancellationToken.None,
+                        TaskContinuationOptions.OnlyOnRanToCompletion,
+                        TaskScheduler.Default);
+        }
+
+        void Flush()
+        {
+            _batches.TryRemove(_owner.Guid.Full, out _);
+            if (_owner.Session == null) return;
+            if (TotalDamage <= 0 || UniqueEnemyGuids.Count == 0) return;
+
+            int enemies = UniqueEnemyGuids.Count;
+            string enemyWord = enemies == 1 ? "enemy" : "enemies";
+            _owner.SendMessage($"Your pets' thorns lash out, dealing {(int)TotalDamage} total damage to {enemies} nearby {enemyWord} over 15 seconds.");
+        }
+    }
+
     static bool IsDruidWithThorns(Player player)
     {
         if (PatchClass.Settings is not { EnableDruidPetThorns: true } settings)
@@ -100,7 +147,7 @@ internal static class DruidPetThorns
         if (raw == null)
             return;
 
-        int hitCount = 0;
+        var hitEnemies = new List<uint>();
         foreach (WorldObject o in raw)
         {
             if (o is not Creature victim || victim == target || victim == pet)
@@ -121,14 +168,16 @@ internal static class DruidPetThorns
             {
                 victim.TakeDamage(pet, DamageType.Bludgeon, (float)thornsDamage);
                 victim.PlayAnimation(PlayScript.EnchantUpGreen);
-                hitCount++;
+                hitEnemies.Add(victim.Guid.Full);
             }
             catch { /* ignore */ }
         }
 
-        if (hitCount > 0)
+        if (hitEnemies.Count > 0)
         {
-            owner.SendMessage($"Your pet's thorns lash out, dealing {(int)thornsDamage} damage to {hitCount} nearby enemy(ies).");
+            var batch = _batches.GetOrAdd(owner.Guid.Full, _ => new ThornsBatch(owner));
+            foreach (var enemyGuid in hitEnemies)
+                batch.Add((float)thornsDamage, enemyGuid);
         }
     }
 
@@ -156,7 +205,9 @@ internal static class DruidPetThorns
         {
             var totalDamage = attacker.TakeDamage(pet, DamageType.Bludgeon, (float)thornsDamage);
             pet.PlayAnimation(PlayScript.EnchantUpGreen);
-            owner.SendMessage($"Your pet's thorns reflect {totalDamage} damage from the {(isEvade ? "evaded" : isBlock ? "blocked" : "incoming")} attack!");
+
+            var batch = _batches.GetOrAdd(owner.Guid.Full, _ => new ThornsBatch(owner));
+            batch.Add(totalDamage, attacker.Guid.Full);
         }
         catch { /* ignore */ }
     }

@@ -18,6 +18,9 @@ public partial class Settings
     [JsonPropertyName("// ItemLevelUpGrowthEnabled")]
     public string ItemLevelUpGrowthEnabledDoc { get; init; } = "When true, applies GrowthAugments / GrowthFixedLevelAugments / AugmentGroups when items with GrowthItem level up.";
 
+    [JsonPropertyName("// ChaosTriggeredGrowth")]
+    public string ChaosTriggeredGrowthDoc { get; init; } = "When true (default), replaces random Augment growth with intelligent chaos-tinker-triggered leveling. Items spawn with ItemTotalXp=0; chaos failure triggers direct level-up with free tinkers/imbues.";
+
     [JsonPropertyName("// BonusCaps")]
     public string BonusCapsDoc { get; init; } = "Min/max caps for fake int/float property bonuses (PropertyBonusSettings).";
 
@@ -68,6 +71,9 @@ public partial class Settings
 
     // Applies GrowthAugments / GrowthFixedLevelAugments / AugmentGroups when items with GrowthItem level up.
     public bool ItemLevelUpGrowthEnabled { get; set; } = true;
+
+    // When true (default), replaces random Augment growth with intelligent chaos-tinker-triggered leveling.
+    public bool ChaosTriggeredGrowth { get; set; } = true;
 
     public PropertyBonusSettings BonusCaps { get; set; } = new();
 

@@ -12,7 +12,8 @@ internal static class LMFloat
     // ChallengeModes /cm chaos: multiplies Loremaster QuestBonus() factor when > 1 (same id is ChallengeModes CmFloat.ChaosQuestBonusMultiplier).
     internal const FakeFloat ChaosQuestBonusMultiplier = (FakeFloat)11013;
 
-    // The multiplier from the new "Repeat Stamp" tier.
+    // DEPRECATED (2026-04-27): Repeat stamp system replaced by repeatQB unique entries.
+    // Kept for backward compatibility; do not write new values here.
     internal const FakeFloat RepeatStampMultiplier = (FakeFloat)11014;
 
     // The aggregate prestige/achievement bonus pool (Achievements, Vitae Achievement, etc.).
@@ -23,15 +24,26 @@ internal static class LMFloat
 
     // Quest points accumulated during the current challenge mode run (isolated from account-wide pool).
     internal const FakeFloat ChallengeRunQuestPoints = (FakeFloat)11017;
+
+    // Per-item equipment bonus to the enlightenment pool (summed across all equipped objects).
+    internal const FakeFloat EnlightenmentPoolEquipmentBonus = (FakeFloat)11018;
+
+    // Quest points donated to the LeyLineLedger lottery pool (subtracted from display).
+    internal const FakeFloat DonatedQuestPoints = (FakeFloat)11019;
 }
 
 internal static class LMString
 {
     // JSON object: quest internal name (string) -> unix seconds when repeat QP was last awarded.
+    // DEPRECATED (2026-04-27): Replaced by RepeatQbTracker JSON file. Kept for migration reads.
     internal const PropertyString RepeatQuestPointTimestamps = (PropertyString)11030;
 
     // JSON array: quest internal names that have already given their one-time repeat reward (XP + loot).
+    // DEPRECATED (2026-04-27): One-time rewards now handled per-quest via unique entries.
     internal const PropertyString RepeatRewardsGranted = (PropertyString)11031;
+
+    // JSON object: kill task name -> unix timestamp when it was last auto-reaccepted after max solves.
+    internal const PropertyString KillTaskAutoAcceptTimestamps = (PropertyString)11032;
 }
 
 // Per-character notification and achievement flags (stored as PropertyBool via FakeBool cast).
@@ -54,6 +66,9 @@ internal static class LMInt
     // DEPRECATED (2026-04-24): Achievement tiers are now managed by AchievementUnlocked mod.
     // Kept for backward compatibility; do not write new values here.
     internal const FakeInt AchievementTier = (FakeInt)11050;
+
+    // WCID of the last NPC that stamped a quest on this player (set by EmoteManager.ExecuteEmote prefix).
+    internal const FakeInt LastQuestgiverWcid = (FakeInt)11051;
 }
 
 // Per-character parchment contract runtime state (stored as PropertyInt via FakeInt cast).
@@ -71,4 +86,16 @@ internal static class LMParchmentInt
     internal const FakeInt RuntimeFetchItemCount     = (FakeInt)11046;
     // Unix seconds until the parchment cooldown gate opens
     internal const FakeInt CooldownUntilUnix         = (FakeInt)11047;
+}
+
+// Questgiver WCIDs that are blacklisted from awarding repeatQB.
+internal static class RepeatQbQuestgiverBlacklist
+{
+    internal static readonly HashSet<uint> BlacklistedWcids = new()
+    {
+        22753, // Guardian of the Temple of Enlightenment
+        22754, // Guardian of the Temple of Forgetfulness
+    };
+
+    public static bool IsBlacklisted(uint wcid) => BlacklistedWcids.Contains(wcid);
 }

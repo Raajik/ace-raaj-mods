@@ -2,24 +2,7 @@ namespace WorldEvents;
 
 public partial class PatchClass
 {
-    // ThreadStatic: set in Creature.Die prefix, consumed in Player.GrantXP prefix on same call stack.
-    [ThreadStatic] static float _pendingCullXpMult;
-
-    // ── XP multiplier — runs before Hunt (432 > 430) so both stack multiplicatively ──
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Player), nameof(Player.GrantXP), new Type[] { typeof(long), typeof(XpType), typeof(ShareType) })]
-    [HarmonyPriority(432)]
-    public static void PreGrantXpCull(ref long amount, XpType xpType)
-    {
-        if (xpType != XpType.Kill) return;
-        var mult = _pendingCullXpMult;
-        if (mult <= 1.0f) return;
-        amount = (long)(amount * mult);
-        _pendingCullXpMult = 0;
-    }
-
-    // ── Creature.Die — XP flag, kill record, swarm spawn, death broadcast ──
+    // Cross-mod XP context: Loremaster PreGrantXP consumes PropertyFloat 40125 per-player.
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Creature), nameof(Creature.Die),
@@ -38,7 +21,17 @@ public partial class PatchClass
         var killer = ResolveKillerPlayer(lastDamager);
         if (killer == null) return;
 
-        _pendingCullXpMult = (float)s.CullXpMultiplier;
+        // Set cull multiplier on all qualifying player damagers so Loremaster can consume it.
+        foreach (var kvp in __instance.DamageHistory.TotalDamage)
+        {
+            var damager = kvp.Value.TryGetAttacker();
+            var player = damager as Player;
+            if (player == null && kvp.Value.PetOwner != null)
+                player = kvp.Value.TryGetPetOwner();
+            if (player == null) continue;
+
+            player.SetProperty((PropertyFloat)40125, (float)s.CullXpMultiplier);
+        }
     }
 
     [HarmonyPostfix]
@@ -46,7 +39,16 @@ public partial class PatchClass
         new Type[] { typeof(DamageHistoryInfo), typeof(DamageHistoryInfo) })]
     public static void PostDieCull(DamageHistoryInfo lastDamager, Creature __instance)
     {
-        _pendingCullXpMult = 0;
+        // Cleanup cull multiplier properties from all damagers (Loremaster normally consumes them during OnDeath_GrantXP).
+        foreach (var kvp in __instance.DamageHistory.TotalDamage)
+        {
+            var damager = kvp.Value.TryGetAttacker();
+            var player = damager as Player;
+            if (player == null && kvp.Value.PetOwner != null)
+                player = kvp.Value.TryGetPetOwner();
+            if (player != null)
+                player.RemoveProperty((PropertyFloat)40125);
+        }
 
         var s = CurrentSettings;
         if (s == null || !s.CullEnabled) return;

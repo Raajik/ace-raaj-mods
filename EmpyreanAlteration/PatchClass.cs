@@ -150,6 +150,11 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             }
         }
 
+        if (Settings.ChaosTriggeredGrowth)
+        {
+            ChaosTriggeredGrowth.TryApplyPatch(ModC.Harmony);
+        }
+
         if (Settings.EnableLootItemLeveling)
         {
             try

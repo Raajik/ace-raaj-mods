@@ -45,7 +45,7 @@
   "// ChallengeCharactersShareAccountAugments": "When true, challenge mode characters receive account-wide augments immediately. When false, they only get augments on /cm quit.",
   "EnableAccountWideAugments": true,
   "ChallengeCharactersShareAccountAugments": true,
-  "StandardBaseXpRetentionPercent": 0.2,
+  "StandardBaseXpRetentionPercent": 5.0,
   "BonusXpBaseRetentionPercent": 10,
   "BonusPerQuestPoint": 0.1,
   "AugmentXpMultiplier": 1,
@@ -53,7 +53,8 @@
   "ChallengeModeQuestPointsMultiplier": 1,
   "ApplyStandardBaseXpScaleToLuminance": true,
   "CooldownReductionPerQuestPoint": 0.1,
-  "CompletionBonusPerQuestPoint": 0.02,
+  "CompletionBonusPerQuestPoint": 0.01,
+  "QuestXpPerQuestPoint": 0.00005,
   "DefaultPoints": 1.0,
   "QuestBonuses": {
     "PathwardenComplete": 1.0,
@@ -151,5 +152,23 @@
   "// KillsPerQuestEquivalent": "Total creature kills (WorldEvents TotalLifetimeKills) equal to one progress point. 100 = 100 kills ≈ 1 quest.",
   "KillsPerQuestEquivalent": 100,
   "// AchievementTierThresholds": "Progress-point thresholds unlocking Tier 1/2/3/4. Progress = questCount + floor(kills / KillsPerQuestEquivalent).",
-  "AchievementTierThresholds": [50, 150, 300, 500]
+  "AchievementTierThresholds": [50, 150, 300, 500],
+  "// LootTierDelay": "Delays high spell tiers on creature drops based on killer level.",
+  "LootTierDelay": {
+    "// Enable": "When true, creature loot spell tiers are clamped based on the killer's character level.",
+    "Enable": true,
+    "// Thresholds": "Ordered list of level thresholds. Each entry: MinLevel = minimum player level, MaxTier = highest treasure profile tier allowed for spells. Evaluated from highest MinLevel downward.",
+    "Thresholds": [
+      { "// MinLevel": "Minimum player level to unlock MaxTier.", "MinLevel": 150, "// MaxTier": "Highest treasure profile tier allowed.", "MaxTier": 8 },
+      { "// MinLevel": "Minimum player level to unlock MaxTier.", "MinLevel": 125, "// MaxTier": "Highest treasure profile tier allowed.", "MaxTier": 7 },
+      { "// MinLevel": "Minimum player level to unlock MaxTier.", "MinLevel": 100, "// MaxTier": "Highest treasure profile tier allowed.", "MaxTier": 6 },
+      { "// MinLevel": "Minimum player level to unlock MaxTier.", "MinLevel": 80,  "// MaxTier": "Highest treasure profile tier allowed.", "MaxTier": 5 },
+      { "// MinLevel": "Minimum player level to unlock MaxTier.", "MinLevel": 60,  "// MaxTier": "Highest treasure profile tier allowed.", "MaxTier": 4 },
+      { "// MinLevel": "Minimum player level to unlock MaxTier.", "MinLevel": 40,  "// MaxTier": "Highest treasure profile tier allowed.", "MaxTier": 3 },
+      { "// MinLevel": "Minimum player level to unlock MaxTier.", "MinLevel": 20,  "// MaxTier": "Highest treasure profile tier allowed.", "MaxTier": 2 },
+      { "// MinLevel": "Minimum player level to unlock MaxTier.", "MinLevel": 1,   "// MaxTier": "Highest treasure profile tier allowed.", "MaxTier": 1 }
+    ]
+  },
+  "// QuestPointLotteryContributionPercent": "Fraction of repeatQB earned that gets added to the LeyLineLedger lottery pool. 10.0 = 10%. Players do NOT lose QP; this is a server-side match.",
+  "QuestPointLotteryContributionPercent": 10.0
 }

@@ -71,6 +71,15 @@ public class CleavingImbueCombatConfig : NewImbueConfig
     public float SplashDamageCapPerTarget { get; set; }
 }
 
+// Jewelry Cleave: bonus cleave targets when equipped on finger/wrist/neck slots.
+public class JewelryCleaveImbueConfig : NewImbueConfig
+{
+    [JsonPropertyName("// BonusTargets")]
+    public string BonusTargetsDoc { get; init; } = "Number of extra cleave targets granted when this imbue is worn. ACE subtracts 1 internally, so 1 bonus target = Cleaving=2.";
+
+    public int BonusTargets { get; set; } = 1;
+}
+
 // Nether Rending: extra Nether-type damage on the primary target only, keyed off the main hit's final damage.
 public class NetherRendingImbueCombatConfig : NewImbueConfig
 {

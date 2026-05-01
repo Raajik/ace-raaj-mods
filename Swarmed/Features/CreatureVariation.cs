@@ -89,22 +89,24 @@ internal static class CreatureVariation
         {
             uint newMax = (uint)Math.Max(1, creature.Health.MaxValue * multiplier);
             creature.Health.Ranks = newMax;
-            creature.Health.Current = (uint)Math.Max(1, creature.Health.Current * multiplier);
         }
 
         if (creature.Stamina != null)
         {
             uint newMax = (uint)Math.Max(1, creature.Stamina.MaxValue * multiplier);
             creature.Stamina.Ranks = newMax;
-            creature.Stamina.Current = (uint)Math.Max(1, creature.Stamina.Current * multiplier);
         }
 
         if (creature.Mana != null)
         {
             uint newMax = (uint)Math.Max(1, creature.Mana.MaxValue * multiplier);
             creature.Mana.Ranks = newMax;
-            creature.Mana.Current = (uint)Math.Max(1, creature.Mana.Current * multiplier);
         }
+
+        // Fill current vitals to true max after all Ranks have been updated.
+        // MaxValue = Ranks + StartingValue + attr_bonus, so calling SetMaxVitals()
+        // ensures Current is set to the actual computed maximum.
+        creature.SetMaxVitals();
 
         float newScale = (creature.ObjScale ?? 1.0f) * multiplier;
         creature.ObjScale = Math.Clamp(newScale, 0.1f, 5.0f);

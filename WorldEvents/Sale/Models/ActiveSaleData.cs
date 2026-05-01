@@ -10,6 +10,7 @@ public class ActiveSaleData
     public DateTime StartsUtc { get; set; }
     public DateTime EndsUtc { get; set; }
     public List<uint> ParticipantGuids { get; set; } = new();
+    public long LotteryContribution { get; set; } = 0;
     public int ParticipantCount => ParticipantGuids.Count;
 
     public bool ContainsCenterLandblock(int lb)

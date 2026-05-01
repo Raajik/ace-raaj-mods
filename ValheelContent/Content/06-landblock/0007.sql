@@ -340,9 +340,6 @@ INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `ori
 VALUES (0x70007056, 42903, 0x00070149, 65.0331, -115.12, 0.66, 1, 0, 0, 0, False, '2021-11-01 00:00:00'); /* Margul */
 /* @teleloc 0x00070149 [65.033096 -115.120003 0.660000] 1.000000 0.000000 0.000000 0.000000 */
 
-INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
-VALUES (0x70007057, 802821, 0x0007014B, 70.0227, -141.927, 0.005, 0.999761, 0, 0, -0.021878, False, '2021-11-01 00:00:00'); /* Burt the Bartender */
-/* @teleloc 0x0007014B [70.022697 -141.927002 0.005000] 0.999761 0.000000 0.000000 -0.021878 */
 
 INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
 VALUES (0x7000705A, 42811, 0x00070150, 79.939, -3.349, -0.063, -1, 0, 0, 0, False, '2021-11-01 00:00:00'); /* Stonehold Portal */
@@ -672,21 +669,12 @@ INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `ori
 VALUES (0x700070B4,  4218, 0x00070186, 146.412, -69.9525, -0.063, 0.684084, 0, 0, -0.729404, False, '2022-06-18 20:52:08'); /* Wai Jhou Portal */
 /* @teleloc 0x00070186 [146.412003 -69.952499 -0.063000] 0.684084 0.000000 0.000000 -0.729404 */
 
-INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
-VALUES (0x700070C1, 800260, 0x00070165, 87.0947, -100.054, 0.005, 0.708075, 0, 0, 0.706137, False, '2022-08-29 05:42:30'); /* Tradewinds Path Guard */
-/* @teleloc 0x00070165 [87.094704 -100.054001 0.005000] 0.708075 0.000000 0.000000 0.706137 */
 
-INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
-VALUES (0x700070C4, 801108, 0x00070145, 70.0864, -75.9111, 0.00600004, 0.0018387, 0, 0, -0.999998, False, '2022-11-30 05:48:55'); /* Shemtar's Cow */
-/* @teleloc 0x00070145 [70.086403 -75.911102 0.006000] 0.001839 0.000000 0.000000 -0.999998 */
 
 INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
 VALUES (0x700070C7, 22615, 0x00070132, 59.9439, -60.272, 0.0475003, 0.92388, 0, 0, 0.382683, False, '2022-11-30 06:02:25'); /* Portcullis */
 /* @teleloc 0x00070132 [59.943901 -60.271999 0.047500] 0.923880 0.000000 0.000000 0.382683 */
 
-INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
-VALUES (0x700070CE, 802350, 0x00070144, 69.9376, -69.5536, 3.17273, 0.999634, 0, 0, -0.0270471, False, '2023-04-08 06:19:05'); /* ColoredEggGen */
-/* @teleloc 0x00070144 [69.937599 -69.553596 3.172730] 0.999634 0.000000 0.000000 -0.027047 */
 
 INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
 VALUES (0x700070D0,  9684, 0x0007016A, 85.6441, -159.958, -0.063, -0.715552, 0, 0, 0.69856, False, '2023-10-02 02:45:44'); /* Danby's Outpost */
@@ -696,6 +684,3 @@ INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `ori
 VALUES (0x700070D2,  8586, 0x0007015F, 80.0847, -176.381, -0.063, -0.0131441, 0, 0, -0.999914, False, '2024-06-01 09:16:37'); /* Idol Spawning Grounds */
 /* @teleloc 0x0007015F [80.084702 -176.380997 -0.063000] -0.013144 0.000000 0.000000 -0.999914 */
 
-INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
-VALUES (0x700070D3, 800256, 0x00070165, 86.9763, -99.944305, -0.062999964, 0.7068796, 0, 0, 0.70733386, False, '2025-06-06 13:46:38');
-/* @teleloc 0x00070165 [86.976303 -99.944305 -0.063000] 0.706880 0.000000 0.000000 0.707334 */

@@ -25,4 +25,12 @@ public class Settings
     [JsonPropertyName("// RequireRestartAfterFirstImport")]
     public string RequireRestartAfterFirstImportDoc { get; init; } = "When true, log a reminder that a server restart is recommended after the first import to refresh all ACE caches.";
     public bool RequireRestartAfterFirstImport { get; set; } = true;
+
+    [JsonPropertyName("// DisabledContentFolders")]
+    public string DisabledContentFoldersDoc { get; init; } = "List of content folder paths (relative to Content/) to skip during import. Example: '03-weenie/Holtburg Academy' disables the training academy revamp. Changes require cleanup SQL to remove already-imported content.";
+    public List<string> DisabledContentFolders { get; set; } = new();
+
+    [JsonPropertyName("// EnabledContentFiles")]
+    public string EnabledContentFilesDoc { get; init; } = "List of specific file paths (relative to Content/) that should be imported EVEN if their parent folder is in DisabledContentFolders. Use for exceptions like Town Network platform within a disabled Buildings folder.";
+    public List<string> EnabledContentFiles { get; set; } = new();
 }

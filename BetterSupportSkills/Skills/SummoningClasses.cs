@@ -18,7 +18,7 @@ public static class SummoningClasses
 
     // -- Pet Tracking ----------------------------------------------------
     static readonly ConcurrentDictionary<uint, List<CombatPet>> ActiveSummons = new();
-    static readonly HashSet<uint> TrackedPetGuids = new();
+    static readonly ConcurrentDictionary<uint, byte> TrackedPetGuids = new();
     internal static readonly ConcurrentDictionary<uint, string> PlayerClassCache = new();
     static readonly ConcurrentDictionary<uint, Dictionary<string, DateTime>> UnlockNotifiedCooldown = new();
     static readonly TimeSpan UnlockNotifyCooldown = TimeSpan.FromMinutes(15);
@@ -593,11 +593,41 @@ public static class SummoningClasses
         {
             combatResult = "Bloodmage";
         }
+        else if (AchievementUnlockedApi.HasClassUnlocked(player, "Healer") &&
+            IsSpecialized(player, Skill.Healing) &&
+            IsSpecialized(player, Skill.LifeMagic))
+        {
+            combatResult = "Healer";
+        }
+        else if (AchievementUnlockedApi.HasClassUnlocked(player, "Adventurer") &&
+            IsAdventurer(player))
+        {
+            combatResult = "Adventurer";
+        }
 
         if (combatResult != null)
             PlayerClassCache[player.Guid.Full] = combatResult;
 
         return combatResult;
+    }
+
+    static bool IsAdventurer(Player player)
+    {
+        // Adventurer: no magic schools trained, except Mana Conversion which can be anything
+        var magicSkills = new[]
+        {
+            Skill.CreatureEnchantment, Skill.ItemEnchantment, Skill.LifeMagic,
+            Skill.WarMagic, Skill.VoidMagic
+        };
+
+        foreach (var skill in magicSkills)
+        {
+            var cs = player.GetCreatureSkill(skill);
+            if (cs != null && cs.AdvancementClass >= SkillAdvancementClass.Trained)
+                return false;
+        }
+
+        return true;
     }
 
     internal static bool IsSpecialized(Player player, Skill skill)
@@ -662,7 +692,7 @@ public static class SummoningClasses
                 pet.VisualAwarenessRange = awarenessRange;
 
                 lock (activePets) { activePets.Add(pet); }
-                TrackedPetGuids.Add(pet.Guid.Full);
+                TrackedPetGuids.TryAdd(pet.Guid.Full, 0);
 
                 int duration = PatchClass.Settings?.SummoningClasses?.SummonDurationSeconds ?? 15;
                 StartDestroyTimer(pet, duration);
@@ -806,7 +836,7 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
 
     static void RemoveFromTracking(CombatPet pet)
     {
-        TrackedPetGuids.Remove(pet.Guid.Full);
+        TrackedPetGuids.TryRemove(pet.Guid.Full, out _);
         foreach (var kvp in ActiveSummons)
         {
             lock (kvp.Value)
@@ -878,7 +908,7 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
             secondPet.VisualAwarenessRange = awarenessRange;
 
             lock (activePets) { activePets.Add(secondPet); }
-            TrackedPetGuids.Add(secondPet.Guid.Full);
+            TrackedPetGuids.TryAdd(secondPet.Guid.Full, 0);
 
             int duration = PatchClass.Settings?.SummoningClasses?.SummonDurationSeconds ?? 15;
             StartDestroyTimer(secondPet, duration);
@@ -922,7 +952,7 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
     public static void PostCreatureTakeDamage(WorldObject source, DamageType damageType, float amount, bool crit, Creature __instance, ref uint __result)
     {
         if (source is not CombatPet pet) return;
-        if (!TrackedPetGuids.Contains(pet.Guid.Full)) return;
+        if (!TrackedPetGuids.ContainsKey(pet.Guid.Full)) return;
         if (pet.P_PetOwner is not Player owner) return;
 
         string? className = GetPlayerClass(owner);
@@ -974,7 +1004,7 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
     [HarmonyPatch(typeof(Creature), nameof(Creature.Die), new Type[] { typeof(DamageHistoryInfo), typeof(DamageHistoryInfo) })]
     public static bool PreCreatureDie(Creature __instance)
     {
-        if (__instance is CombatPet pet && TrackedPetGuids.Contains(pet.Guid.Full))
+        if (__instance is CombatPet pet && TrackedPetGuids.ContainsKey(pet.Guid.Full))
         {
             // Silently destroy without broadcasting death message
             pet.Destroy();
@@ -990,7 +1020,7 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
     [HarmonyPatch(typeof(Creature), nameof(Creature.Heartbeat), new Type[] { typeof(double) })]
     public static void PostCombatPetHeartbeat(CombatPet __instance)
     {
-        if (!TrackedPetGuids.Contains(__instance.Guid.Full)) return;
+        if (!TrackedPetGuids.ContainsKey(__instance.Guid.Full)) return;
 
         var owner = __instance.P_PetOwner;
         if (owner == null || owner.IsDestroyed || owner.IsDead) return;
@@ -1084,6 +1114,8 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         ["Battlemage"] = ("Two-handed + war magic. Elemental arcs with volley echoes.", "Spec Two Handed + War Magic + Mana Conversion, specialized"),
         ["DeathKnight"] = ("Heavy/two-handed + void magic. Nether streaks/arcs + aura damage.", "Spec Heavy OR Two Handed + Void Magic + Arcane Lore, specialized"),
         ["Bloodmage"] = ("Life magic + mana conversion. Hecatomb echoes + drain AoE + aura.", "Spec Life Magic + Mana Conversion + Arcane Lore, specialized"),
+        ["Healer"] = ("Healing + life magic. AoE healing aura, Smite melee proc.", "Spec Healing + Life Magic, specialized"),
+        ["Adventurer"] = ("No magic training. +50 attributes/skills, +20% vitals, +10 resistances, +2 burden limit.", "No magic schools trained except Mana Conversion"),
     };
 
     static int GetClassReadinessScore(Player player, string className)
@@ -1162,6 +1194,28 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
                 if (IsSpec(player, Skill.LifeMagic)) score += 2; else if (IsTrained(player, Skill.LifeMagic)) score += 1;
                 if (IsSpec(player, Skill.ManaConversion)) score += 2; else if (IsTrained(player, Skill.ManaConversion)) score += 1;
                 if (IsSpec(player, Skill.ArcaneLore)) score += 2; else if (IsTrained(player, Skill.ArcaneLore)) score += 1;
+                break;
+            case "Healer":
+                maxScore = 4;
+                if (IsSpec(player, Skill.Healing)) score += 2; else if (IsTrained(player, Skill.Healing)) score += 1;
+                if (IsSpec(player, Skill.LifeMagic)) score += 2; else if (IsTrained(player, Skill.LifeMagic)) score += 1;
+                break;
+            case "Adventurer":
+                maxScore = 4;
+                // Score based on absence of magic training + presence of combat skills
+                var magicSkills = new[] { Skill.CreatureEnchantment, Skill.ItemEnchantment, Skill.LifeMagic, Skill.WarMagic, Skill.VoidMagic };
+                bool anyMagicTrained = false;
+                foreach (var sk in magicSkills)
+                {
+                    if (IsTrained(player, sk)) { anyMagicTrained = true; break; }
+                }
+                if (!anyMagicTrained) score += 4;
+                else
+                {
+                    int untrainedCount = 0;
+                    foreach (var sk in magicSkills) if (!IsTrained(player, sk)) untrainedCount++;
+                    score += untrainedCount; // 1 point per untrained magic school
+                }
                 break;
         }
 

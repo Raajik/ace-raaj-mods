@@ -33,11 +33,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     static bool _aptitudeCategoryPatched;
     static bool _alternateLevelingCategoryPatched;
     static bool _ssfHardcoreCategoryPatched;
-    static bool _challengeRewardsCategoryPatched;
     static bool _challengePassupAbsorbCategoryPatched;
-
-    static List<ulong> _storedXpTableCosts = new();
-    static List<uint> _storedXpTableCredits = new();
 
     [ThreadStatic]
     internal static int _proficiencyAwardDepth;
@@ -68,14 +64,12 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         Settings = SettingsContainer.Settings ?? new Settings();
 
         LeyLineLedgerBridge.RegisterChallengeModeResolver(PlayerHasActiveChallenge);
-        ApplyExtendedCharacterLevelTable();
         ApplyChallengeModesHarmony();
     }
 
     public override void Stop()
     {
         TryUnpatchHarmonyCategories();
-        RestoreCharacterLevelTable();
 
         EnabledByGuid.Clear();
         PermanentlyOptedOutByGuid.Clear();
@@ -129,22 +123,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             finally
             {
                 _ssfHardcoreCategoryPatched = false;
-            }
-        }
-
-        if (_challengeRewardsCategoryPatched)
-        {
-            try
-            {
-                ModC.Harmony.UnpatchCategory(nameof(ChallengeRewards));
-            }
-            catch (Exception ex)
-            {
-                ModManager.Log($"[ChallengeModes] Unpatch ChallengeRewards: {ex.Message}", ModManager.LogLevel.Warn);
-            }
-            finally
-            {
-                _challengeRewardsCategoryPatched = false;
             }
         }
 
@@ -225,85 +203,11 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             _ssfHardcoreCategoryPatched = true;
         }
 
-        var wantRewards = Settings.ChallengeAchievementRewardsEnabled;
-        if (wantRewards && !_challengeRewardsCategoryPatched)
-        {
-            ModC.Harmony.PatchCategory(nameof(ChallengeRewards));
-            _challengeRewardsCategoryPatched = true;
-        }
-        else if (!wantRewards && _challengeRewardsCategoryPatched)
-        {
-            try
-            {
-                ModC.Harmony.UnpatchCategory(nameof(ChallengeRewards));
-            }
-            catch (Exception ex)
-            {
-                ModManager.Log($"[ChallengeModes] Unpatch ChallengeRewards (toggle off): {ex.Message}", ModManager.LogLevel.Warn);
-            }
-
-            _challengeRewardsCategoryPatched = false;
-        }
-
         if (!_challengePassupAbsorbCategoryPatched)
         {
             ModC.Harmony.PatchCategory(nameof(ChallengePassupAbsorb));
             _challengePassupAbsorbCategoryPatched = true;
         }
-    }
-
-    void ApplyExtendedCharacterLevelTable()
-    {
-        var settings = Settings;
-        if (settings == null)
-            return;
-
-        var portal = DatManager.PortalDat;
-        if (portal?.XpTable == null)
-            return;
-
-        var xpList = portal.XpTable.CharacterLevelXPList;
-        var creditList = portal.XpTable.CharacterLevelSkillCreditList;
-
-        if (_storedXpTableCosts.Count == 0 && xpList.Count > 0)
-        {
-            _storedXpTableCosts = xpList.ToList();
-            _storedXpTableCredits = creditList.ToList();
-        }
-
-        RestoreCharacterLevelTable();
-
-        if (settings.MaxLevel <= xpList.Count)
-            return;
-
-        var creditEvery = settings.CreditInterval > 0 ? settings.CreditInterval : int.MaxValue;
-
-        for (var i = xpList.Count; i <= settings.MaxLevel; i++)
-        {
-            var cost = xpList.Last() + (ulong)settings.LevelCost.GetCost(i);
-            var credits = (uint)(creditEvery != int.MaxValue && i % creditEvery == 0 ? 1 : 0);
-            xpList.Add(cost);
-            creditList.Add(credits);
-        }
-
-        ModManager.Log($"[ChallengeModes] Set max level to {settings.MaxLevel}");
-    }
-
-    void RestoreCharacterLevelTable()
-    {
-        if (_storedXpTableCosts.Count == 0 || _storedXpTableCredits.Count == 0)
-            return;
-
-        var portal = DatManager.PortalDat;
-        if (portal?.XpTable == null)
-            return;
-
-        portal.XpTable.CharacterLevelXPList.Clear();
-        portal.XpTable.CharacterLevelXPList.AddRange(_storedXpTableCosts);
-        portal.XpTable.CharacterLevelSkillCreditList.Clear();
-        portal.XpTable.CharacterLevelSkillCreditList.AddRange(_storedXpTableCredits);
-
-        ModManager.Log($"[ChallengeModes] Restored XP table length to {portal.XpTable.CharacterLevelXPList.Count}");
     }
 
     static string GetPlayerDataPath(Player player)

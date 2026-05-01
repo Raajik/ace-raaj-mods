@@ -2,11 +2,14 @@ namespace LeyLineLedger;
 
 using System.Timers;
 
-internal static class Lottery
+public static class Lottery
 {
     private static System.Timers.Timer? _drawTimer;
     private static long _pool = 0;
     private static readonly object _poolLock = new();
+    private static double _qbPool = 0;
+    private static readonly object _qbPoolLock = new();
+    private static DateTime _nextDrawUtc = DateTime.MinValue;
 
     public static Settings Settings => PatchClass.Settings;
 
@@ -20,8 +23,9 @@ internal static class Lottery
         _drawTimer = new System.Timers.Timer(Settings.Lottery.DrawIntervalMinutes * 60 * 1000);
         _drawTimer.Elapsed += (s, e) => TryAutoDraw();
         _drawTimer.Start();
+        _nextDrawUtc = DateTime.UtcNow.AddMinutes(Settings.Lottery.DrawIntervalMinutes);
 
-        ModManager.Log($"[LeyLineLedger] Lottery enabled. Draw interval: {Settings.Lottery.DrawIntervalMinutes}min. Pool: {GetPool():N0}", ModManager.LogLevel.Info);
+        ModManager.Log($"[LeyLineLedger] Lottery enabled. Draw interval: {Settings.Lottery.DrawIntervalMinutes}min. Pyreal pool: {GetPool():N0}, QB pool: {GetQbPool():0.#}", ModManager.LogLevel.Info);
     }
 
     public static void Stop()
@@ -34,6 +38,32 @@ internal static class Lottery
     public static long GetPool()
     {
         lock (_poolLock) return _pool;
+    }
+
+    public static double GetQbPool()
+    {
+        lock (_qbPoolLock) return _qbPool;
+    }
+
+    public static DateTime GetNextDrawTime()
+    {
+        return _nextDrawUtc;
+    }
+
+    public static void AddToPool(long amount)
+    {
+        if (amount <= 0) return;
+        lock (_poolLock)
+            _pool += amount;
+        ModManager.Log($"[LeyLineLedger] Lottery pyreal pool +{amount:N0} = {GetPool():N0}", ModManager.LogLevel.Info);
+    }
+
+    public static void AddToQbPool(double amount)
+    {
+        if (amount <= 0) return;
+        lock (_qbPoolLock)
+            _qbPool += amount;
+        ModManager.Log($"[LeyLineLedger] Lottery QB pool +{amount:0.#} = {GetQbPool():0.#}", ModManager.LogLevel.Info);
     }
 
     public static long GetTicketPrice()
@@ -67,7 +97,7 @@ internal static class Lottery
         lock (_poolLock)
             _pool += toPool;
 
-        ModManager.Log($"[LeyLineLedger] Lottery: tax {taxAmount:N0} -> destroyed {destroyed:N0} ({destructionRate:P0}), pool +{toPool:N0} = {GetPool():N0}", ModManager.LogLevel.Info);
+        ModManager.Log($"[LeyLineLedger] Lottery: tax {taxAmount:N0} -> destroyed {destroyed:N0} ({destructionRate:P0}), pyreal pool +{toPool:N0} = {GetPool():N0}", ModManager.LogLevel.Info);
     }
 
     public static void BuyTickets(Session session, long count)
@@ -90,10 +120,8 @@ internal static class Lottery
             return;
         }
 
-        // Debit pyreals
         player.IncCash(-totalCost);
 
-        // Add tickets to virtual counter
         var prop = (PropertyInt64)Settings.Lottery.TicketPropertyId;
         var current = player.GetProperty(prop) ?? 0;
         player.SetProperty(prop, current + count);
@@ -105,6 +133,10 @@ internal static class Lottery
     {
         if (!Settings.Lottery.Enabled)
             return;
+
+        // Drain QP contributions from Loremaster before drawing
+        if (Settings.Lottery.EnableQpPoolContributions)
+            DrainQpContributions();
 
         var pool = GetPool();
         if (pool < Settings.Lottery.MinPoolForDraw)
@@ -121,6 +153,8 @@ internal static class Lottery
             ModManager.Log("[LeyLineLedger] Lottery draw skipped: pool below minimum.", ModManager.LogLevel.Info);
             return;
         }
+
+        var qbPool = GetQbPool();
 
         try
         {
@@ -147,82 +181,164 @@ internal static class Lottery
                 return;
             }
 
-            // Pick random winner
-            var rnd = new Random();
-            var winningNumber = rnd.NextInt64(0, totalTickets);
-            long cumulative = 0;
-            uint winnerId = 0;
+            var winnerCount = Math.Max(1, Settings.Lottery.WinnerCount);
+            var splits = Settings.Lottery.WinnerSplits;
+            if (splits == null || splits.Count == 0)
+                splits = new List<double> { 1.0 };
 
-            foreach (var (charId, count) in tickets)
+            // Normalize splits if they don't sum to ~1.0
+            var splitSum = splits.Sum();
+            if (splitSum <= 0) splitSum = 1;
+
+            var rnd = new Random();
+            var winners = new List<(uint CharacterId, string Name, long PyrealPrize, double QbPrize, int Place)>();
+            var remainingTickets = new List<(uint CharacterId, long Count)>(tickets);
+            long remainingPool = pool;
+            double remainingQbPool = qbPool;
+
+            for (var place = 0; place < winnerCount && remainingTickets.Count > 0; place++)
             {
-                cumulative += count;
-                if (cumulative > winningNumber)
+                var splitFrac = place < splits.Count ? splits[place] / splitSum : 0;
+                if (splitFrac <= 0) splitFrac = 1.0 / winnerCount;
+
+                var pyrealPrize = (long)(pool * splitFrac);
+                if (pyrealPrize <= 0) pyrealPrize = remainingPool;
+
+                var qbPrize = Math.Round(qbPool * splitFrac, 1);
+                if (qbPrize <= 0 && remainingQbPool > 0) qbPrize = Math.Round(remainingQbPool, 1);
+
+                // Pick winner by ticket weight
+                long ticketTotal = remainingTickets.Sum(t => t.Count);
+                var winningNumber = rnd.NextInt64(0, ticketTotal);
+                long cumulative = 0;
+                uint winnerId = 0;
+                int winnerIdx = -1;
+
+                for (var i = 0; i < remainingTickets.Count; i++)
                 {
-                    winnerId = charId;
-                    break;
+                    cumulative += remainingTickets[i].Count;
+                    if (cumulative > winningNumber)
+                    {
+                        winnerId = remainingTickets[i].CharacterId;
+                        winnerIdx = i;
+                        break;
+                    }
                 }
+
+                if (winnerId == 0) break;
+
+                var charName = GetCharacterName(winnerId);
+                winners.Add((winnerId, charName, pyrealPrize, qbPrize, place + 1));
+                remainingPool -= pyrealPrize;
+                remainingQbPool -= qbPrize;
+
+                // Remove winner from subsequent draws (no duplicate winners)
+                if (winnerIdx >= 0)
+                    remainingTickets.RemoveAt(winnerIdx);
             }
 
-            if (winnerId == 0)
+            if (winners.Count == 0)
             {
-                ModManager.Log("[LeyLineLedger] Lottery draw: failed to select winner.", ModManager.LogLevel.Warn);
+                ModManager.Log("[LeyLineLedger] Lottery draw: failed to select any winner.", ModManager.LogLevel.Warn);
                 return;
             }
 
-            // Credit winner
-            bool online = false;
-            var winnerPlayer = PlayerManager.GetAllOnline().FirstOrDefault(p => p.Guid.Full == winnerId);
-            if (winnerPlayer != null)
+            // Credit winners
+            foreach (var (charId, name, pyrealPrize, qbPrize, place) in winners)
             {
-                winnerPlayer.IncCash(pool);
-                winnerPlayer.SendMessage($"🎉 You won the lottery! {pool:N0} pyreals have been credited to your bank!");
-                online = true;
-            }
-            else
-            {
-                // Offline: add to their banked cash property directly
-                var cashProp = Settings.CashProperty;
-                var bankRow = context.BiotaPropertiesInt64
-                    .FirstOrDefault(p => p.ObjectId == winnerId && p.Type == cashProp);
-
-                if (bankRow != null)
+                var onlinePlayer = PlayerManager.GetAllOnline().FirstOrDefault(p => p.Guid.Full == charId);
+                if (onlinePlayer != null)
                 {
-                    bankRow.Value += pool;
+                    onlinePlayer.IncCash(pyrealPrize);
+                    var qbMsg = qbPrize > 0 ? $" and {qbPrize:0.#} QB" : "";
+                    onlinePlayer.SendMessage($"🎉 You won {LeyLineLedgerHelpers.Ordinal(place)} place in the lottery! {pyrealPrize:N0} pyreals{qbMsg} have been credited to you!");
                 }
                 else
                 {
-                    context.BiotaPropertiesInt64.Add(new BiotaPropertiesInt64
-                    {
-                        ObjectId = winnerId,
-                        Type = (ushort)cashProp,
-                        Value = pool
-                    });
+                    var cashProp = Settings.CashProperty;
+                    var bankRow = context.BiotaPropertiesInt64
+                        .FirstOrDefault(p => p.ObjectId == charId && p.Type == cashProp);
+
+                    if (bankRow != null)
+                        bankRow.Value += pyrealPrize;
+                    else
+                        context.BiotaPropertiesInt64.Add(new BiotaPropertiesInt64
+                        {
+                            ObjectId = charId,
+                            Type = (ushort)cashProp,
+                            Value = pyrealPrize
+                        });
                 }
-                context.SaveChanges();
+
+                // Grant QB prize (online only for now)
+                if (qbPrize > 0)
+                {
+                    var p = onlinePlayer ?? PlayerManager.GetOnlinePlayer(charId);
+                    if (p != null)
+                        LoremasterBridge.GrantLotteryQbPrize(p, (float)qbPrize);
+                }
             }
 
             // Clear all tickets
             foreach (var row in rows)
-            {
                 row.Value = 0;
-            }
             context.SaveChanges();
 
-            // Reset pool
+            // Reset pools
             lock (_poolLock)
                 _pool = 0;
+            lock (_qbPoolLock)
+                _qbPool = 0;
+
+            // Reset next draw time
+            _nextDrawUtc = DateTime.UtcNow.AddMinutes(Settings.Lottery.DrawIntervalMinutes);
 
             // Broadcast
-            var charName = GetCharacterName(winnerId);
-            var msg = $"🎉 Lottery winner: {charName} won {pool:N0} pyreals! Buy tickets with /lottery buy";
+            var winnerLines = string.Join(", ", winners.Select(w =>
+            {
+                var qbPart = w.QbPrize > 0 ? $" + {w.QbPrize:0.#} QB" : "";
+                return $"{w.Name} ({LeyLineLedgerHelpers.Ordinal(w.Place)}: {w.PyrealPrize:N0}p{qbPart})";
+            }));
+            var msg = $"🎉 Lottery winners: {winnerLines}! Total pool: {pool:N0}p + {qbPool:0.#} QB. Buy tickets with /lottery buy";
             foreach (var p in PlayerManager.GetAllOnline())
                 p.SendMessage(msg);
 
-            ModManager.Log($"[LeyLineLedger] Lottery draw complete. Winner: {charName} ({winnerId}), Prize: {pool:N0}, Tickets sold: {totalTickets:N0}, Online: {online}", ModManager.LogLevel.Info);
+            ModManager.Log($"[LeyLineLedger] Lottery draw complete. Pyreal pool: {pool:N0}, QB pool: {qbPool:0.#}, Winners: {winners.Count}, {winnerLines}, Tickets sold: {totalTickets:N0}", ModManager.LogLevel.Info);
         }
         catch (Exception ex)
         {
             ModManager.Log($"[LeyLineLedger] Lottery draw failed: {ex}", ModManager.LogLevel.Error);
+        }
+    }
+
+    static void DrainQpContributions()
+    {
+        try
+        {
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (!string.Equals(asm.GetName().Name, "Loremaster", StringComparison.Ordinal))
+                    continue;
+
+                var t = asm.GetType("Loremaster.CrossModBridge");
+                var method = t?.GetMethod("DrainPendingLotteryContributions",
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static,
+                    null, Type.EmptyTypes, null);
+
+                if (method == null) return;
+
+                var result = (long)(method.Invoke(null, null) ?? 0L);
+                if (result > 0)
+                {
+                    AddToPool(result);
+                    ModManager.Log($"[LeyLineLedger] Lottery: drained {result:N0} QP contributions from Loremaster.", ModManager.LogLevel.Info);
+                }
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger] Failed to drain QP contributions: {ex.Message}", ModManager.LogLevel.Warn);
         }
     }
 
@@ -238,5 +354,22 @@ internal static class Lottery
         {
             return $"Character {characterId}";
         }
+    }
+}
+
+internal static class LeyLineLedgerHelpers
+{
+    internal static string Ordinal(int n)
+    {
+        var lastTwo = n % 100;
+        if (lastTwo is >= 11 and <= 13)
+            return $"{n}th";
+        return (n % 10) switch
+        {
+            1 => $"{n}st",
+            2 => $"{n}nd",
+            3 => $"{n}rd",
+            _ => $"{n}th",
+        };
     }
 }

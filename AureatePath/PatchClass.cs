@@ -9,6 +9,10 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
     static bool _wieldRequirementsPatched;
     static bool _passupSuppressPatched;
+    static bool _xpTableExtended;
+
+    static List<ulong> _storedXpTableCosts = new();
+    static List<uint> _storedXpTableCredits = new();
 
     // Captured at start of enlightenment strip (PreRemoveAbility); consumed when perks apply (PreAddPerks) to contribute level/10000 to the shared Loremaster pool (FakeFloat 11012).
     static readonly ConcurrentDictionary<uint, int> _levelBeforeEnlightenmentByGuid = new();
@@ -38,6 +42,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         ModC.Harmony.PatchCategory(nameof(PassupSuppress));
         _passupSuppressPatched = true;
+
+        ApplyExtendedCharacterLevelTable(cfg);
     }
 
     public override void Stop()
@@ -74,7 +80,64 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             }
         }
 
+        if (_xpTableExtended)
+        {
+            RestoreCharacterLevelTable();
+            _xpTableExtended = false;
+        }
+
         base.Stop();
+    }
+
+    static void ApplyExtendedCharacterLevelTable(Settings settings)
+    {
+        var portal = DatManager.PortalDat;
+        if (portal?.XpTable == null)
+            return;
+
+        var xpList = portal.XpTable.CharacterLevelXPList;
+        var creditList = portal.XpTable.CharacterLevelSkillCreditList;
+
+        if (_storedXpTableCosts.Count == 0 && xpList.Count > 0)
+        {
+            _storedXpTableCosts = xpList.ToList();
+            _storedXpTableCredits = creditList.ToList();
+        }
+
+        RestoreCharacterLevelTable();
+
+        if (settings.MaxLevel <= xpList.Count)
+            return;
+
+        var creditEvery = settings.CreditInterval > 0 ? settings.CreditInterval : int.MaxValue;
+
+        for (var i = xpList.Count; i <= settings.MaxLevel; i++)
+        {
+            var cost = xpList.Last() + (ulong)settings.LevelCost.GetCost(i);
+            var credits = (uint)(creditEvery != int.MaxValue && i % creditEvery == 0 ? 1 : 0);
+            xpList.Add(cost);
+            creditList.Add(credits);
+        }
+
+        _xpTableExtended = true;
+        ModManager.Log($"[AureatePath] Extended character level table to {settings.MaxLevel}");
+    }
+
+    static void RestoreCharacterLevelTable()
+    {
+        if (_storedXpTableCosts.Count == 0 || _storedXpTableCredits.Count == 0)
+            return;
+
+        var portal = DatManager.PortalDat;
+        if (portal?.XpTable == null)
+            return;
+
+        portal.XpTable.CharacterLevelXPList.Clear();
+        portal.XpTable.CharacterLevelXPList.AddRange(_storedXpTableCosts);
+        portal.XpTable.CharacterLevelSkillCreditList.Clear();
+        portal.XpTable.CharacterLevelSkillCreditList.AddRange(_storedXpTableCredits);
+
+        ModManager.Log($"[AureatePath] Restored XP table length to {portal.XpTable.CharacterLevelXPList.Count}");
     }
 
     [CommandHandler("enlighten", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0)]

@@ -18,7 +18,6 @@ internal static class PoiHuntRewards
             .ToList();
 
         var cfg = LootConfigStore.GetLoadedOrDefault();
-        var floors = new[] { LootRarityFloor.Rare, LootRarityFloor.Uncommon, LootRarityFloor.Any };
         var topN = Math.Min(settings.PoiHunt.LootForTopN, ranked.Count);
 
         for (var i = 0; i < ranked.Count; i++)
@@ -38,8 +37,21 @@ internal static class PoiHuntRewards
             // Grant loot to top N
             if (i < topN)
             {
-                var floor = i < floors.Length ? floors[i] : LootRarityFloor.Any;
-                var item = LootRoller.TryCreateFromMinRarity(cfg, floor);
+                WorldObject? item;
+                LootRarityFloor floor;
+
+                if (i == 2)
+                {
+                    // 3rd place: salvage bag
+                    item = SalvageBagShaper.CreateRandomSalvageBag();
+                    floor = LootRarityFloor.Any;
+                }
+                else
+                {
+                    floor = i == 0 ? LootRarityFloor.Uncommon : LootRarityFloor.Any;
+                    item = LootRoller.TryCreateFromMinRarity(cfg, floor);
+                }
+
                 if (item != null)
                 {
                     TagSsfIfNeeded(player, item);

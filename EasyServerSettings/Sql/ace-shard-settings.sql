@@ -145,12 +145,6 @@ UPDATE ace_shard.config_properties_boolean SET `value` = TRUE WHERE `key` = 'cre
 UPDATE ace_shard.config_properties_boolean SET `value` = FALSE WHERE `key` = 'creatures_drop_createlist_wield';
 -- If FALSE then Wielded items in CreateList will not drop. Retail defaulted to TRUE but there are currently data errors (default is False)
 
-UPDATE ace_shard.config_properties_boolean SET `value` = TRUE WHERE `key` = 'equipmentsetid_enabled';
--- Enable this to allow adding EquipmentSetIDs to loot armor (default is True)
-
-UPDATE ace_shard.config_properties_boolean SET `value` = FALSE WHERE `key` = 'equipmentsetid_name_decoration';
--- Enable this to add the EquipmentSet name to loot armor name (default is False)
-
 UPDATE ace_shard.config_properties_boolean SET `value` = TRUE WHERE `key` = 'fastbuff';
 -- If TRUE, enables the fast buffing trick from retail (default is True)
 
@@ -196,9 +190,6 @@ UPDATE ace_shard.config_properties_boolean SET `value` = FALSE WHERE `key` = 'io
 UPDATE ace_shard.config_properties_boolean SET `value` = FALSE WHERE `key` = 'item_dispel';
 -- If enabled, allows players to dispel items. Defaults to end of retail, where item dispels could only target creatures (default is False)
 
-UPDATE ace_shard.config_properties_boolean SET `value` = FALSE WHERE `key` = 'legacy_loot_system';
--- Use the previous iteration of the ace lootgen system (default is False)
-
 UPDATE ace_shard.config_properties_boolean SET `value` = TRUE WHERE `key` = 'lifestone_broadcast_death';
 -- If true, player deaths are additionally broadcast to other players standing near the destination lifestone (default is True)
 
@@ -208,8 +199,8 @@ UPDATE ace_shard.config_properties_boolean SET `value` = FALSE WHERE `key` = 'lo
 UPDATE ace_shard.config_properties_boolean SET `value` = TRUE WHERE `key` = 'npc_hairstyle_fullrange';
 -- If TRUE, allows generated creatures to use full range of hairstyles. Retail only allowed first nine (0-8) out of 51 (default is False)
 
-UPDATE ace_shard.config_properties_boolean SET `value` = FALSE WHERE `key` = 'olthoi_play_enabled';
--- Allows players to create and play as olthoi characters (default is False)
+UPDATE ace_shard.config_properties_boolean SET `value` = TRUE WHERE `key` = 'olthoi_play_disabled';
+-- If TRUE, disables olthoi character creation (default is False)
 
 UPDATE ace_shard.config_properties_boolean SET `value` = TRUE WHERE `key` = 'override_encounter_spawn_rates';
 -- If enabled, landblock encounter spawns are overridden by double properties below (default is False)

@@ -35,7 +35,10 @@ public class Boss : CreatureEx
         //Only run if healing occurred
         if (!base.VitalHeartBeat()) return false;
 
-        //if (AttackTarget is null) return; //Require a player target
+        //Only process boss mechanics when actively fighting a player
+        if (AttackTarget is not Player)
+            return true;
+
         var time = Timers.PortalYearTicks;
         UpdateWeakness(time);
         SpamCasts(time);

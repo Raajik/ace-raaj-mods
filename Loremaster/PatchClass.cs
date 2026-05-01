@@ -29,6 +29,14 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     // Completion-bonus, parchment, and trophy/level-fraction quest XP call GrantXP with amounts already derived as fractions of next level; skip the retention/QP equipment chain (RunWithoutQuestXpMultiplier) so low StandardBaseXpRetention does not crush them.
     static int _questXpMultiplierSuppressDepth;
 
+    // Thread-static state for repeatQB unique entry creation across Harmony patch boundaries
+    [ThreadStatic] static bool _creatingRepeatQbEntry;
+    [ThreadStatic] static uint _currentStampGiverWcid;
+
+    // Lottery contribution accumulator (drained by LeyLineLedger before each draw)
+    internal static readonly object LotteryLock = new();
+    internal static double PendingLotteryContribution = 0;
+
     public static void RunWithoutQuestXpMultiplier(Action action)
     {
         _questXpMultiplierSuppressDepth++;
@@ -48,8 +56,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     // leaving Settings null.  Assigning here covers both cases.
     public override void Start()
     {
-        base.Start();
         Settings = SettingsContainer.Settings ?? new Settings();
+        base.Start();
         ReloadLootConfig();
         EnsureLootConfigFileWatcher();
         TryApplyPortalHasQuestSolvesHooks();
@@ -58,6 +66,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         RefreshAccountAugmentPatches();
         TrophyBurdenXp.Initialize();
         AccountQuestFlags.Load();
+        RepeatQbTracker.Load();
+        RestedXpSystem.Initialize();
 
         // OnWorldOpen never runs on hot-reload; still recalc anyone online and watch Settings.json.
         UpdateIngamePlayers();
@@ -590,6 +600,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
     private static void CheckQuestEligibilityChange(string questFormat, QuestManager instance, int previousSolves)
     {
+        if (PatchClass.Settings is null) return;
         var solves = instance.GetCurrentSolves(questFormat);
         if (instance.Creature is not Player player) return;
 
@@ -600,48 +611,118 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             if (quest is null)
                 return;
 
-            var beforeQp = (float)(player.GetProperty(FakeFloat.QuestBonus) ?? 0f);
-
-            if (ChallengeModesActiveBridge.PlayerHasActiveChallenge(player))
-            {
-                var qpVal = quest.Value();
-                var current = (float)(player.GetProperty(LMFloat.ChallengeRunQuestPoints) ?? 0f);
-                player.SetProperty(LMFloat.ChallengeRunQuestPoints, current + qpVal);
-            }
-
-            player.UpdateQuestPoints();
-            var afterQp = (float)(player.GetProperty(FakeFloat.QuestBonus) ?? 0f);
-            if (player.Notify(LMBool.NotifyQuest))
-            {
-                var delta = afterQp - beforeQp;
-                if (delta > 0.0001f)
-                    player.SendMessage(LoremasterExtensions.FormatQpNotification($"+{delta:0.##} QP from {questFormat}"));
-            }
-
             var questName = QuestManager.GetQuestName(questFormat) ?? questFormat;
+            var baseName = LoremasterExtensions.GetBaseQuestName(questName);
+            var isRepeatQbEntry = questName.Contains("#repeatQB", StringComparison.OrdinalIgnoreCase);
+            var accountId = player.Account?.AccountId;
+            bool isAccountRepeat = accountId.HasValue
+                && Settings.EnableAccountWideRepeatCooldown
+                && RepeatQbTracker.HasRepeatQb(accountId.Value, baseName);
+
+            // Record account-wide completion regardless (use base name for cooldown)
+            if (accountId.HasValue && Settings.EnableAccountWideRepeatCooldown)
+                RepeatQbTracker.RecordRepeatQb(accountId.Value, baseName);
 
             // Account-wide quest flag: all characters on this account treated as completed
-            if (player.Account?.AccountId is uint accountId)
-                AccountQuestFlags.AddFlag(accountId, questName);
+            if (accountId.HasValue && !isRepeatQbEntry)
+                AccountQuestFlags.AddFlag(accountId.Value, baseName);
 
-            // One-time XP + loot bonuses (QP already reflected in UpdateQuestPoints)
-            player.GrantCompletionBonuses(questName);
+            if (isAccountRepeat || isRepeatQbEntry)
+            {
+                // Repeat completion (either account-wide repeat or a repeatQB unique entry)
+                var qpVal = quest.Value();
+                bool stampGranted = player.TryAwardRepeatQuestPoints(baseName, qpVal);
 
-            // Achievement check: newCount includes the just-added quest; prevCount = newCount - 1.
-            var newAccountCount = Settings.UseAccountWideQuests
-                ? player.GetAccountUniqueQuestCount()
-                : player.QuestManager?.GetQuests().Count(q => q.HasSolves()) ?? 0;
-            var prevAccountCount = Math.Max(0, newAccountCount - 1);
-            player.CheckAndBroadcastAchievement(prevAccountCount, newAccountCount);
+                if (ChallengeModesActiveBridge.PlayerHasActiveChallenge(player) && stampGranted)
+                {
+                    var current = (float)(player.GetProperty(LMFloat.ChallengeRunQuestPoints) ?? 0f);
+                    player.SetProperty(LMFloat.ChallengeRunQuestPoints, current + qpVal);
+                }
+
+                player.UpdateQuestPoints();
+
+                // Only grant completion bonuses/loot for genuine first completions,
+                // not for repeatQB unique entries.
+                if (!isRepeatQbEntry && stampGranted)
+                {
+                    player.GrantCompletionBonuses(baseName);
+                    player.GrantRepeatSolveLoot(baseName);
+                }
+            }
+            else
+            {
+                // Genuine first completion
+                var beforeQp = (float)(player.GetProperty(FakeFloat.QuestBonus) ?? 0f);
+
+                if (ChallengeModesActiveBridge.PlayerHasActiveChallenge(player))
+                {
+                    var qpVal = quest.Value();
+                    var current = (float)(player.GetProperty(LMFloat.ChallengeRunQuestPoints) ?? 0f);
+                    player.SetProperty(LMFloat.ChallengeRunQuestPoints, current + qpVal);
+                }
+
+                player.UpdateQuestPoints();
+                var afterQp = (float)(player.GetProperty(FakeFloat.QuestBonus) ?? 0f);
+                if (player.Notify(LMBool.NotifyQuest))
+                {
+                    var delta = afterQp - beforeQp;
+                    if (delta > 0.0001f)
+                        player.SendMessage(LoremasterExtensions.FormatQpNotification($"+{delta:0.##} QP from {questFormat}"));
+                }
+
+                // One-time XP + loot bonuses (QP already reflected in UpdateQuestPoints)
+                player.GrantCompletionBonuses(baseName);
+
+                // Achievement check: newCount includes the just-added quest; prevCount = newCount - 1.
+                var newAccountCount = Settings.UseAccountWideQuests
+                    ? player.GetAccountUniqueQuestCount()
+                    : player.QuestManager?.GetQuests().Count(q => q.HasSolves()) ?? 0;
+                var prevAccountCount = Math.Max(0, newAccountCount - 1);
+                player.CheckAndBroadcastAchievement(prevAccountCount, newAccountCount);
+            }
         }
 
         // ── Repeat solve (previously solved, solve count increased) ─────────
-        if (previousSolves > 0 && solves > previousSolves)
+        if (previousSolves > 0 && solves > previousSolves && !_creatingRepeatQbEntry)
         {
             var questName = QuestManager.GetQuestName(questFormat) ?? questFormat;
+            var baseName = LoremasterExtensions.GetBaseQuestName(questName);
             var qst = instance.GetQuest(questName);
             var qpVal = qst?.Value() ?? 0f;
-            bool stampGranted = player.TryAwardRepeatQuestPoints(questName, qpVal);
+
+            // Check if questgiver is blacklisted
+            var giverWcid = (uint)(player.GetProperty(LMInt.LastQuestgiverWcid) ?? 0);
+            if (RepeatQbQuestgiverBlacklist.IsBlacklisted(giverWcid))
+            {
+                if (player.Notify(LMBool.NotifyQuest))
+                    player.SendMessage(LoremasterExtensions.FormatQpNotification($"This questgiver does not award repeatQB credit."));
+                return;
+            }
+
+            // Check account-wide cooldown
+            bool stampGranted = player.TryAwardRepeatQuestPoints(baseName, qpVal);
+
+            if (stampGranted)
+            {
+                // Create a unique quest entry so this repeat counts as +1 QP
+                _creatingRepeatQbEntry = true;
+                try
+                {
+                    var uniqueName = $"{baseName}#repeatQB{solves}";
+                    instance.Update(uniqueName);
+
+                    // Record in tracker
+                    if (player.Account?.AccountId is uint acctId)
+                        RepeatQbTracker.RecordRepeatQb(acctId, baseName);
+
+                    if (player.Notify(LMBool.NotifyQuest))
+                        player.SendMessage(LoremasterExtensions.FormatQpNotification($"+1 repeatQB from {baseName}"));
+                }
+                finally
+                {
+                    _creatingRepeatQbEntry = false;
+                }
+            }
 
             if (ChallengeModesActiveBridge.PlayerHasActiveChallenge(player) && stampGranted)
             {
@@ -650,13 +731,6 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             }
 
             player.UpdateQuestPoints();
-
-            if (stampGranted && !player.HasReceivedRepeatReward(questName))
-            {
-                player.GrantCompletionBonuses(questName);
-                player.GrantRepeatSolveLoot(questName);
-                player.MarkRepeatRewardGranted(questName);
-            }
         }
 
         // ── Quest removed (any → 0) ──────────────────────────────────────────
@@ -671,6 +745,109 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // EmoteManager — Track questgiver WCID when stamping quests
+    // ─────────────────────────────────────────────────────────────────────────
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(EmoteManager), nameof(EmoteManager.ExecuteEmote), new Type[] { typeof(PropertiesEmote), typeof(PropertiesEmoteAction), typeof(WorldObject) })]
+    public static void PreExecuteEmote(PropertiesEmote emoteSet, PropertiesEmoteAction emote, WorldObject targetObject, EmoteManager __instance)
+    {
+        if ((EmoteType)emote.Type is EmoteType.StampQuest or EmoteType.StampMyQuest)
+        {
+            _currentStampGiverWcid = __instance.WorldObject?.WeenieClassId ?? 0;
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Kill Task Auto-Reaccept
+    // ─────────────────────────────────────────────────────────────────────────
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(QuestManager), nameof(QuestManager.HandleKillTask))]
+    public static bool PreHandleKillTask(string killQuestName, WorldObject killedCreature, ref QuestManager __instance)
+    {
+        if (__instance.Creature is not Player player) return true;
+
+        var questName = QuestManager.GetQuestName(killQuestName);
+        if (string.IsNullOrEmpty(questName)) return true;
+
+        // If player doesn't have the quest yet, let vanilla handle acceptance
+        if (!__instance.HasQuest(questName))
+            return true;
+
+        // If already max-solved, check cooldown for auto-reaccept
+        if (__instance.IsMaxSolves(questName))
+        {
+            var quest = DatabaseManager.World.GetCachedQuest(questName);
+            if (quest == null) return true;
+
+            var stored = player.GetProperty(LMString.KillTaskAutoAcceptTimestamps);
+            Dictionary<string, long>? timestamps = null;
+            if (!string.IsNullOrEmpty(stored))
+            {
+                try { timestamps = JsonSerializer.Deserialize<Dictionary<string, long>>(stored); } catch { }
+            }
+            timestamps ??= new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+
+            var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var lastCompleted = timestamps.TryGetValue(questName, out var ts) ? ts : 0L;
+            var minDelta = (uint)(quest.MinDelta * PropertyManager.GetDouble("quest_mindelta_rate", 1).Item);
+
+            if (now - lastCompleted >= minDelta)
+            {
+                // Auto-reaccept: reset to 0 solves
+                __instance.SetQuestCompletions(questName, 0);
+                timestamps[questName] = now;
+                player.SetProperty(LMString.KillTaskAutoAcceptTimestamps, JsonSerializer.Serialize(timestamps));
+
+                // Grant +1 repeatQB for reaccept
+                player.AddExtraQuestPoints(1);
+                player.UpdateQuestPoints();
+                if (player.Notify(LMBool.NotifyQuest))
+                    player.SendMessage(LoremasterExtensions.FormatQpNotification($"+1 repeatQB — Kill task '{questName}' auto-reaccepted"));
+
+                // Now let vanilla handle the kill credit for this new cycle
+                return true;
+            }
+
+            // Still on cooldown — skip vanilla
+            return false;
+        }
+
+        return true;
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(QuestManager), nameof(QuestManager.HandleKillTask))]
+    public static void PostHandleKillTask(string killQuestName, WorldObject killedCreature, ref QuestManager __instance)
+    {
+        if (__instance.Creature is not Player player) return;
+
+        var questName = QuestManager.GetQuestName(killQuestName);
+        if (string.IsNullOrEmpty(questName)) return;
+
+        // If just reached max solves, grant +1 repeatQB and record timestamp
+        if (__instance.IsMaxSolves(questName))
+        {
+            var stored = player.GetProperty(LMString.KillTaskAutoAcceptTimestamps);
+            Dictionary<string, long>? timestamps = null;
+            if (!string.IsNullOrEmpty(stored))
+            {
+                try { timestamps = JsonSerializer.Deserialize<Dictionary<string, long>>(stored); } catch { }
+            }
+            timestamps ??= new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
+
+            timestamps[questName] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            player.SetProperty(LMString.KillTaskAutoAcceptTimestamps, JsonSerializer.Serialize(timestamps));
+
+            player.AddExtraQuestPoints(1);
+            player.UpdateQuestPoints();
+            if (player.Notify(LMBool.NotifyQuest))
+                player.SendMessage(LoremasterExtensions.FormatQpNotification($"+1 repeatQB — Kill task '{questName}' completed"));
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // XP / Luminance — multiplicative chain (base retention × QP × equipment × augments × enlight × challenge); luminance optional full chain.
     // ─────────────────────────────────────────────────────────────────────────
 
@@ -681,11 +858,54 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (_questXpMultiplierSuppressDepth > 0)
             return;
 
-        var mult  = __instance.GetTotalXpMultiplier();
-        var total = (long)(amount * mult);
+        double mult;
+        long total;
 
-        // Kill XP is already shown inline with the kill message (e.g. "[9 xp]");
-        // only show the detailed breakdown for quest XP.
+        if (xpType == XpType.Quest)
+        {
+            var s = Settings;
+            var baseRetention = s is null ? 1.0 : Math.Clamp(s.BonusXpBaseRetentionPercent / 100.0, 0.0, 100.0);
+            total = (long)(amount * baseRetention);
+
+            if (s is not null && s.QuestXpPerQuestPoint > 0)
+            {
+                var qb = (float)(__instance.GetProperty(FakeFloat.QuestBonus) ?? 0);
+                var floor = (long)(__instance.GetXpToNextLevel() * qb * s.QuestXpPerQuestPoint);
+                if (total < floor)
+                    total = floor;
+            }
+
+            mult = amount > 0 ? (double)total / amount : baseRetention;
+        }
+        else
+        {
+            mult = __instance.GetTotalXpMultiplier();
+
+            // Consume cross-mod context multipliers (Hunt, Cull) set by Creature.Die prefixes
+            var huntMult = __instance.GetProperty((PropertyFloat)40121);
+            var cullMult = __instance.GetProperty((PropertyFloat)40125);
+            if (huntMult.HasValue && huntMult.Value > 0)
+                mult *= huntMult.Value;
+            if (cullMult.HasValue && cullMult.Value > 0)
+                mult *= cullMult.Value;
+
+            total = (long)(amount * mult);
+
+            if (huntMult.HasValue)
+                __instance.RemoveProperty((PropertyFloat)40121);
+            if (cullMult.HasValue)
+                __instance.RemoveProperty((PropertyFloat)40125);
+
+            // Track final killer XP for WorldEvents Hunt point calculation
+            if (xpType == XpType.Kill && huntMult.HasValue && huntMult.Value > 0)
+                __instance.SetProperty((PropertyInt64)40126, total);
+        }
+
+        // Apply rested XP bonus on top of the computed total
+        double restedMult = RestedXpSystem.ApplyRestedMultiplier(__instance, ref total);
+        if (restedMult > 1.0)
+            mult *= restedMult;
+
         var notify = xpType == XpType.Quest && __instance.Notify(LMBool.NotifyQuestXp);
         if (notify && __instance.Session != null)
             __instance.SendMessage($"Earned {total:N0} XP! ({amount:N0} raw × {mult * 100.0:0.##}% of full vanilla)");
@@ -708,6 +928,25 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             __instance.SendMessage($"Earned {total:N0} luminance! ({amount:N0} raw × {mult * 100.0:0.##}% of full vanilla)");
 
         amount = total;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Rested XP — login / logout hooks
+    // ─────────────────────────────────────────────────────────────────────────
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Player), nameof(Player.PlayerEnterWorld))]
+    public static void PostPlayerEnterWorld(Player __instance)
+    {
+        if (__instance?.Session?.Network != null)
+            RestedXpSystem.OnPlayerEnterWorld(__instance);
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Player), "LogOut_Final", new Type[] { typeof(bool) })]
+    public static void PreLogOut_Final(bool skipAnimations, Player __instance)
+    {
+        RestedXpSystem.OnPlayerLogOut(__instance);
     }
 
     // ─────────────────────────────────────────────────────────────────────────

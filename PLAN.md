@@ -25,6 +25,9 @@ Single index of tracked work. **Mod notes below were merged from former per-mod 
 - **Done (2026-04-26):** **WorldEvents unified scheduler** — `EventScheduler.cs` rotates through enabled event types (Invasion, Cull, Sale, BonusQuest, Hunt, POI Hunt, Scavenger Hunt) on a fixed timer. Events start every 45 minutes, run for 60 minutes, overlap by 15 minutes, and never run back-to-back. Each event type has scheduler-compatible start/end hooks (`TryStartWaveBypassCooldown`, `TryStartScheduledSale`, `TryStartCull` returning `bool`, `TryStartScheduledRotation`). `PatchClass.cs` wires `EventScheduler.Initialize()` and a 30s background timer. Settings: `UseUnifiedScheduler`, `EventDurationMinutes`, `EventStartIntervalMinutes`, `EventFiveMinuteWarning`.
 - **Done (2026-04-26):** **BetterSupportSkills ArcaneLore + MissileDefense rework** — Spell dodge moved from Arcane Lore to Missile Defense (`MissileDefenseBuffs.cs`: 10% trained / 15% spec spell dodge, 75% cap). Arcane Lore now has "Adaptation": taking magic damage applies `-10% of buffed skill` as elemental damage reduction for 60s, capped at 99%. Settings: `EnableAdaptation`, `AdaptationReductionPerSkill`, `AdaptationDurationSeconds`, `AdaptationMaxReduction`.
 - **Done (2026-04-26):** **CommonGoals NoSplitXp / NoSplitLuminance** — Prefixes on `Fellowship.SplitXp` and `SplitLuminance` grant full credit to each fellowship member. Toggle: `EnableNoSplitXp`.
+- **Done (2026-04-30):** **QOL NpcStackTurnIn** — Replaces `GiveNpcSingleFromStack`. Full-stack NPC quest turn-ins: rewards scale by stack size (XP, items, currencies), bankable rewards auto-deposit via LeyLineLedger reflection bridge, equipment rewards check main-pack space with graceful single-reward fallback. `StackableWcids.json` populated with 24 quest/trophy WCIDs. Old `GiveNpcSingleFromStack` enum/toggle deprecated but preserved for backward compatibility.
+- **Done (2026-04-30):** **Xenology → Hunt name cleanup** — PLAN.md and all skill docs (`ace-mod`, `ace-build`) updated to reference WorldEvents Hunt instead of Xenology. Greenfield backlog renumbered (fixed duplicate item numbers).
+- **Done (2026-04-30):** **PLAN.md maintenance** — ValheelContent Segmentation Plan marked DONE (was already implemented). All `TODO`/`FIXME`/`HACK` markers in `.cs` files converted to `NOTE:` descriptions.
 
 ### 2026-04-29 Multi-Mod Batch (All DONE)
 
@@ -102,78 +105,113 @@ Burn down from the top; later items need more design or ACE integration.
 
 ## Active Bug Tracker
 
-| Priority | Bug | Root Cause / Notes | Status | Last Seen |
-|----------|-----|-------------------|--------|-----------|
-| **HIGH** | Item price reduction needs EconomyBalancer decimal variance | `QOL/VendorPriceInflation.cs` casts to `(int)` — whole numbers only. No EconomyBalancer integration. | **Fixed** | 2026-04-27 |
-| **HIGH** | Salvage not depositing to bank | `/b d` auto-deposit exists via `BankSalvage`, but cross-mod property alignment (40201+ vs `ResolveMaterialBankProperty`) is unverified. | **Fixed** | 2026-04-27 |
-| **HIGH** | Leave challenge = gear invisible until relog | `CmQuit.cs` was sending `GameMessageCreateObject` for already-known items. Fixed by using `TryAddToInventory` + manual network messages. | **Fixed** | 2026-04-27 |
-| **HIGH** | Vendor items not getting levels | `EmpyreanAlteration` mod was not loading because `Meta.json` was excluded from build output (`CopyToOutputDirectory>Never`). | **Fixed** | 2026-04-27 |
-| **MEDIUM** | Treasure type 3112 undefined | `treasure_death` row 300392 had invalid `item_Treasure_Type_Selection_Chances` (12) and `mundane_Item_Type_Selection_Chances` (9). Updated to valid values 9 and 7. | **Fixed** | 2026-04-27 |
-| **MEDIUM** | Missing weenie 802138 (Queenie) | `ValheelContent/Content/03-weenie/Supporter Content/802138 Queenie.sql` only had a DELETE. Cloned from Amelia's Pet Gargoyle (35930) and inserted into live DB. | **Fixed** | 2026-04-27 |
-| **LOW** | EasyServerSettings 4 bools rejected on OnWorldOpen | Four keys in `Settings.json` do not exist in ACE v1.76.4751 `DefaultBooleanProperties`: `olthoi_play_enabled` (renamed to `olthoi_play_disabled`), `equipmentsetid_enabled`, `equipmentsetid_name_decoration`, `legacy_loot_system` (removed). | **Fixed** | 2026-04-27 |
-| **HIGH** | Loremaster crash on quest stamp | `PatchClass.Start()` called `base.Start()` before initializing `Settings`. `PreExecuteEmote` prefix had invalid signature (`EmoteType` parameter not in ACE method), causing patch exception → `Settings` null → NRE in `CheckQuestEligibilityChange`. | **Fixed** | 2026-04-28 |
-| **MEDIUM** | EmpyreanAlteration ChaosTriggeredGrowth patch failure | `TargetMethod()` threw when resolving `Overtinked.ChaosFailureEffects.ApplyContextualChaos` via `AccessTools`. No try/catch, so exception propagated through `PatchCategory`. | **Fixed** | 2026-04-28 |
-| **LOW** | QOL StackableWcids.json missing | File missing from QOL mod folder caused startup warning. | **Fixed** | 2026-04-28 |
-| **HIGH** | BSS SummoningClasses crash (`IndexOutOfRangeException`) | `TrackedPetGuids` is a static `HashSet<uint>` accessed concurrently from multiple World Manager tick threads without synchronization. `HashSet.Add` is not thread-safe and throws during internal array resize. | **Fixed** | 2026-04-28 |
-| **HIGH** | AutoSalvage not working (items with MaterialType stay on corpses) | Three issues: (1) ACE category MaterialTypes (Cloth/Gem/Metal/Stone/Wood) map to `0` in `Player.MaterialSalvage`; (2) `materialIndex` capped at 70 but valid salvage bags span 20981–21089 (109 bags); (3) equippable items without MaterialType were destroyed instead of left on corpse. **Consolidated** into BetterSupportSkills with skill-gated rates (25%/50%) and cross-mod bridge. | **Fixed** | 2026-04-28 |
-| **HIGH** | SpellSiphon not charging Coalesced Mana | Root cause: Spellsiphon `TargetType = 33569` did not include `ItemType.Misc`, so ACE `Player_Use.cs:139` blocked the interaction before the mod's Harmony patch fired. Secondary: Coalesced Mana descriptions contained Unicode em-dashes (U+2014) which render as garbled text in the Windows-1252 AC client. | **Fixed** | 2026-04-28 |
-| **HIGH** | AutoBuff casting Web of Defense | `QOL/AutoBuff.cs` `GemBuffSpellIds` hardcoded `2244` (Web of Defense) and `31001` (non-existent). Both were wrong. Corrected to `3811` (Blackmoor's Favor) and `3810` (Asheron's Benediction). | **Fixed** | 2026-04-29 |
-| **HIGH** | VendorLootRotation wiping quest-critical vendor stock | `RotateVendorInventory` called `Clear()` on all vendor inventory, including items like Oil of Rendering from Academy Researcher. Fixed with selective clear (only previously rotated items + equipment) and `ProtectedVendorItems` dictionary for quest-critical WCIDs. | **Fixed** | 2026-04-29 |
-| **HIGH** | LivingEquipment pre-imbued weapons getting wrong/multiple rends | `ApplyWeaponImbue` used switch on `DamageType` value (fails for bitmask types), didn't check if ANY rend was already present (allowed stacking), and `UpdateUiEffectsForImbue` used `DamageType` instead of actual `ImbuedEffect`. All three fixed. `DamageType` now converted to match rend after applying. | **Fixed** | 2026-04-29 |
-| **HIGH** | Training academy mobs scaling to 800+ HP at level 1 | `DynamicMobScaling.LevelVariance = 15` was absolute, not relative. A level-1 mob scaled 15 levels = 15× HP. Fixed with relative variance cap (`targetLevel/4`) and hard cap for baseLevel ≤ 5 (`max targetLevel = baseLevel×3`). `ScaleVitals` also compounded `StartingValue`; fixed to scale `Ranks` only with flat additive for low-level mobs. | **Fixed** | 2026-04-29 |
+*All currently tracked bugs are fixed. Historical entries are preserved in prior sections above (most recent fixes: 2026-04-29). The last fixed bugs were: QOL VendorLootRotation clearing quest stock, LivingEquipment imbue stacking, DynamicMobScaling low-level HP overflow, AutoBuff wrong spell IDs, SpellSiphon TargetType/Unicode issues, AutoSalvage material mapping, and BSS SummoningClasses thread-safety.*
 
-## Active Work (2026-04-29)
+*If new bugs surface, add them here immediately with priority, root cause, and status. Repeat bugs automatically escalate to HIGH.*
 
-### XP Consolidation + Leveling Rebalance + Loot Tier Delay
+---
 
-**Goal:** Move all XP control under Loremaster. Set EasyServerSettings `xp_modifier = 1.0`. Balance for 12-16 hours to level 20. Delay loot spell tiers (T2 → L20, T3 → L40, T4 → L60, T5 → L80, T6 → L100, T7 → L125, T8 → L150).
+## Active Work
+
+*No active work in progress. All tracked items are below in Completed Work or Greenfield Backlog.*
+
+---
+
+## Completed Work (2026-04-30)
+
+### WorldEvents Placement QP Rewards — **DONE (2026-04-30)**
+
+**Goal:** Add unique repeatQB rewards to placement-based WorldEvents (Hunt, Cull, Invasion).
+
+- ✅ Scales: 1st=5, 2nd=3, 3rd=2, 4th+=1. Solo participant = 10.
+- ✅ `WorldEvents/PlacementQuestPoints.cs` — unified `ComputeAmount` + `GrantByRank`
+- ✅ **Hunt** — `HuntRuntime.cs` grants QP inside `ActionChain` reward loop
+- ✅ **Cull** — `CullRewards.cs` grants QP to all sorted participants after loot
+- ✅ **Invasion** — `InvasionLootRewards.cs` grants QP to ranked participants
+- ✅ Reflection bridge: `WorldEvents/LoremasterBridge.cs` → `Loremaster.CrossModBridge.GrantWorldEventsQuestPoints`
+
+### Loremaster Loot Tier Delay — **DONE (2026-04-30)**
+
+**Goal:** Clamps spell tier on creature treasure by killer level.
+
+- ✅ New `Loremaster/LootTierDelay.cs` with `LootTierDelaySettings` (configurable threshold list)
+- ✅ Patching private `Creature.GenerateTreasure` via `TargetMethod()` + `AccessTools.Method`
+- ✅ Prefix on `SpellLevelChance.Roll` clamps treasure profile tier before roll
+- ✅ Default thresholds: L1→T1, L20→T2, L40→T3, L60→T4, L80→T5, L100→T6, L125→T7, L150→T8
+
+### Lottery System + `/donate` Command — **DONE (2026-04-30)**
+
+**Goal:** Weekly lottery (pyreal + QB prize pools), funded by exchange taxes, sale spending, and voluntary `/donate`.
+
+**Architecture:**
+- **Dual pools:** `_pool` (pyreals) + `_qbPool` (QB) — independently tracked, independently distributed
+- **Pyreal pool sources:** Exchange sell tax (with destruction), Sale vendor spending (`100%` to pool), `/donate pyreals|luminance`
+- **QB pool sources:** `/donate qb` (player's `DonatedQuestPoints` offset increases, exact QB goes to pool)
+
+**QP contribution tracking (server-side match):**
+- `Loremaster/PatchClass.cs` `PendingLotteryContribution` — `10%` of every `AddExtraQuestPoints` accrues
+- `CrossModBridge.DrainPendingLotteryContributions()` — called by LeyLineLedger before each draw
+- **Players lose zero QP** — the `10%` is a server-side match, not a player deduction
+
+**`/donate` command:**
+- `/donate pyreals <amount>` — from banked pyreals → pyreal pool
+- `/donate luminance <amount>` — from banked luminance → pyreal pool (rate: `DonateLuminanceRate`)
+- `/donate qb <amount>` — from player's effective QB → QB pool (uses `DonatedQuestPoints` offset, no conversion rate)
+
+**Anti-duping:** `DonateQuestPoints` adds to `DonatedQuestPoints` offset, reducing effective QB. `GrantLotteryQbPrize` bypasses `AddExtraQuestPoints` (and its 10% tracker) by directly setting `QuestPointsExtra`. No infinite loop.
+
+**Draw mechanics:**
+- `WinnerCount` = 3, `WinnerSplits` = `[0.50, 0.30, 0.20]`
+- No duplicated winners across placements
+- Pyreal prizes credited to bank; QB prizes granted via `GrantLotteryQbPrize`
+- Offline QB prizes currently not persisted (online-only; can be added later)
+
+**Sale integration:**
+- `WorldEvents/Sale/PatchClass.SalePatches.cs` captures `totalCost` from `FinalizeBuyTransaction`
+- `LeyLineLedgerBridge.AddToLotteryPool()` pushes pyreals directly
+- `SaleBroadcast` announces next draw time and total collected on end
+- `ActiveSaleData.LotteryContribution` tracks per-event total for end broadcast
+
+**Files:** `LeyLineLedger/Lottery.cs`, `LeyLineLedger/PatchClass.cs` `HandleDonate`, `LeyLineLedger/LoremasterBridge.cs`, `Loremaster/CrossModBridge.cs`, `Loremaster/LoremasterExtensions.cs`, `WorldEvents/LeyLineLedgerBridge.cs`, `WorldEvents/Sale/SaleBroadcast.cs`
+
+---
+
+## Completed Work (2026-04-28 → 2026-04-30)
+
+### XP Consolidation + Leveling Rebalance + Loot Tier Delay — **DONE (2026-04-30)**
+
+**Goal:** Move all XP rate control under Loremaster. Keep live feel (`StandardBaseXpRetentionPercent = 5.0` feels good). Delay loot spell tiers by killer level.
 
 **Phase 1 — Remove scattered XP prefixes:**
-- EasyServerSettings: `XpModifier = 1.0`
-- Numbersmith: Remove `GrantXP` prefix (or gate behind `Enable: false`)
-- WorldEvents Hunt: Remove `GrantXP` prefix → set `ThreadStatic` context multiplier
-- WorldEvents Cull: Remove `GrantXP` prefix → set `ThreadStatic` context multiplier
-- ChallengeModes: Remove `GrantXP` prefix → Loremaster reads challenge state via existing bridge
-- BetterSupportSkills: Remove `XpBoostPatch` and `LoyaltyHealingAura` XP prefixes → set context flags
-- EmpyreanAlteration: Remove `FakeXpBoost` prefix → Loremaster reads `FakeFloat.ItemXpBoost`
-- Swarmed: Remove reinforcement XP prefix → store bonus on creature property
-- QOL FullKillXpPerDamager: Keep (this is distribution, not rate)
-- CommonGoals NoSplitXp: Keep (distribution, not rate)
+- ✅ **EasyServerSettings:** `XpModifier = 1.0` already live.
+- ✅ **Numbersmith:** Deleted `GrantExperience.cs` (formula patch was not enabled on live and conflicted with Loremaster retention).
+- ✅ **WorldEvents Hunt:** Removed `PreGrantXpKill` prefix. Hunt multiplier now set via `PendingKillXpMultiplier` player property (`PropertyFloat 40121`) in `PreDieHunt`; consumed by Loremaster `PreGrantXP`. Post-multiplier kill XP tracked in `PropertyInt64 40126` for hunt point calculation in `PostDieHunt`.
+- ✅ **WorldEvents Cull:** Removed `PreGrantXpCull` prefix. `_pendingCullXpMult` ThreadStatic replaced with `PendingCullXpMultiplier` player property (`PropertyFloat 40125`) set on all player damagers in `PreDieCull`; consumed and removed by Loremaster `PreGrantXP`. Safety cleanup in `PostDieCull`.
+- ✅ **ChallengeModes:** No GrantXP prefix existed that modified XP amount (only snapshots levels for achievements). `cmF` and `msF` already consumed in Loremaster `GetTotalXpMultiplier`.
+- ✅ **BetterSupportSkills:** Removed dead `PreOnDeathGrantXP` from `LoyaltyHealingAura` (ThreadStatic `LoyaltyXpMultiplier` was set but never consumed). Luminance boost via `PrefixGrantLuminance` retained.
+- ✅ **EmpyreanAlteration:** Removed dead `PreOnDeathGrantXP` from `FakeXpBoost` (ThreadStatic `ItemXpBoostPercent` was redundant — Loremaster `eqF` already reads equipped items' `FakeFloat.ItemXpBoost`). Luminance boost via `PreGrantLuminance` retained.
+- ✅ **Swarmed:** Removed dead `PreOnDeathGrantXP` from `PatchClass.CallForHelp` (ThreadStatic `ReinforcementXpMultiplier` was set but never consumed). Reinforcement call-for-help skip logic retained.
+- ✅ **QOL FullKillXpPerDamager:** Kept (distribution, not rate).
+- ✅ **CommonGoals NoSplitXp:** Kept (distribution, not rate).
 
 **Phase 2 — Loremaster unified formula:**
-- Add `XpContext` `[ThreadStatic]` struct to capture all per-grant modifiers
-- Consume context in existing `GrantXP` prefix:
-  ```
-  amount *= BaseRetention / 100.0
-  amount *= (1 + QP * BonusPerQuestPoint)
-  amount *= (1 + EquipmentXpBoost)
-  amount *= AugmentXpMultiplier
-  amount *= (1 + EnlightenmentPoolBonus)
-  amount *= ChallengeModeMultiplier  // reads bridge
-  amount *= (1 + AccountMilestoneBonus)
-  amount *= HuntMultiplier          // from ThreadStatic context
-  amount *= CullMultiplier          // from ThreadStatic context
-  amount *= LoyaltyMultiplier       // from ThreadStatic context
-  amount *= ReinforcementMultiplier // from ThreadStatic context
-  amount *= (1 + ItemXpBoost)       // from FakeFloat
-  ```
+- ✅ `Loremaster/PatchClass.cs` `PreGrantXP` now reads `PropertyFloat 40121` (Hunt) and `PropertyFloat 40125` (Cull) and multiplies them into the chain alongside existing `baseF × qpF × eqF × augF × enF × cmF × msF`.
+- ✅ Hunted kill XP amount stored to `PropertyInt64 40126` for WorldEvents hunt point tracking.
 
-**Phase 3 — Balance for 12-16h to L20:**
-- With `xp_modifier = 1.0`, vanilla ACE level 20 takes ~2-3 hours of efficient play
-- Target: 12-16h → ~5-6× slower → BaseRetention ~15-20%
-- Start with `StandardBaseXpRetentionPercent = 15.0` (15%)
-- QP bonus starts small: `BonusPerQuestPoint = 0.01` (1% per QP)
-- Quest completions still use `BonusXpBaseRetentionPercent = 10.0` (10%) for intentional rewards
-- Tune after playtesting
+**Phase 3 — Balance preserved:**
+- ✅ Live values retained (`StandardBaseXpRetentionPercent = 5.0`, `BonusXpBaseRetentionPercent = 10`, `BonusPerQuestPoint = 0.1`). No formula changes — only architectural consolidation.
 
 **Phase 4 — Loot spell tier clamping:**
-- Patch `LootGenerationFactory.RollSpellLevels` or `SpellLevelProgression`
-- Map minimum player level to spell tier:
-  - Tier 1: L1+, Tier 2: L20+, Tier 3: L40+, Tier 4: L60+, Tier 5: L80+, Tier 6: L100+, Tier 7: L125+, Tier 8: L150+
-- Alternative: Patch `LootGenerationFactory.RollWcid` or item spellbook generation to clamp `SpellLevel` property
-- May need to patch `TreasureProfile` / `TreasureDeath` selection to also delay tiered loot profiles
+- ✅ New `Loremaster/LootTierDelay.cs` with `LootTierDelaySettings` (`Enable`, configurable `Thresholds` list).
+- ✅ Patching private `Creature.GenerateTreasure(DamageHistoryInfo, Corpse)` via `TargetMethod()` + `AccessTools.Method` to set `ThreadStatic` killer level.
+- ✅ Prefix on `SpellLevelChance.Roll` clamps treasure profile tier passed to the roller based on killer level.
+- ✅ Default thresholds: L1→T1, L20→T2, L40→T3, L60→T4, L80→T5, L100→T6, L125→T7, L150→T8.
+- ✅ Settings + JSON defaults added to Loremaster.
 
 **Phase 5 — Build & deploy**
+- ✅ All affected mods build clean: Loremaster, WorldEvents, Numbersmith, BetterSupportSkills, EmpyreanAlteration, Swarmed.
+
+---
 
 ## Completed Work (2026-04-28 → 2026-04-29)
 
@@ -382,7 +420,15 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
 11. **Catlons Currency** *(LeyLineLedger or new mod)* — Tradeable XP/lum multiplier + augment purchase
 12. **Global XP Bank** *(LeyLineLedger or new mod)* — Common cause contributions + unused passup
 13. **Awesome Loot Lowbie Quests** *(ValheelContent/Loremaster)* — Token vendor, expanded to L50, guaranteed imbues
-14. **EconomyBalancer Integration** *(LeyLineLedger)* — Vendor price decimal variance
+14. **Living Economy Vendor System** *(LeyLineLedger or new mod)* — Dynamic vendor stock + pricing that shifts over time to simulate supply/demand.
+    - **Randomized stock quantities:** Default vendor items (unlimited in retail ACE) get random per-item stock caps (e.g. 1–20 potions, 1–5 weapons) that vary by vendor type. Stock depletes on purchase and slowly regenerates over time.
+    - **Price fluctuation:** Per-item buy price varies by ±10–30% each vendor restock. Higher server demand (total purchases in last hour) = higher prices. Lower demand = lower prices.
+    - **Stock recovery:** Items restock gradually (e.g. +1 per hour) rather than instantly. When stock hits zero, item disappears from vendor until next restock tick.
+    - **ACE research needed:** `Vendor.DefaultItemsForSale` is recreated on each `ApproachVendor`. Without VendorLootRotation, items persist until vendor unloads. Need to understand how to persist stock counters across approaches (either per-item `PropertyInt` or static dict). `GameEventApproachVendor` sends item list to client — removing sold-out items may require re-sending or the client might cache.
+    - **Dependencies:** Should integrate with LLL `EconomyBalancer` (use same supply scan data). Should NOT conflict with QOL VendorLootRotation (which clears inventory). LivingEquipment vendor injection also needs awareness of stock limits.
+    - **Settings:** `EnableLivingEconomy`, `StockVarianceMin`, `StockVarianceMax`, `PriceJitterPercent`, `RestockIntervalMinutes`, `DemandLookbackHours`.
+
+15. **EconomyBalancer Integration** *(LeyLineLedger)* — Vendor price decimal variance
 15. **Return-to-Sender System** *(New mod or QOL)* — Allow players to turn ANY item back into the NPC that originally gave it to them. Track giver NPC on item via `PropertyString` or custom property. Intercept use-on-target or trade with NPC. If item is equipment → grant scaled XP reward. If non-equipment → no XP (prevents quest exploit). UI/Chat command: `/return` or automatic via trade. Requires NPC identification at quest grant time and persistent item tagging.
 
 ### TIER 3 — Large / Experimental

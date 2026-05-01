@@ -18,6 +18,9 @@ public class Settings
     [JsonPropertyName("// EnableRecipeManagerPatch")]
     public string EnableRecipeManagerPatchDoc { get; init; } = "When true, patches RecipeManager.UseObjectOnTarget (and related) for tinkering flow.";
 
+    [JsonPropertyName("// EnableJewelryCleaveBonus")]
+    public string EnableJewelryCleaveBonusDoc { get; init; } = "When true, equipped jewelry with PropertyInt.Cleaving adds bonus cleave targets to melee attacks (even on non-cleaving weapons).";
+
     [JsonPropertyName("// SalvageRules")]
     public string SalvageRulesDoc { get; init; } = "Per-salvage tinker rules (random or fixed). Include both WCIDs for quest-reward pairs. Each array element: // keys first, then values.";
 
@@ -35,6 +38,9 @@ public class Settings
 
     [JsonPropertyName("// NetherRendingImbue")]
     public string NetherRendingImbueDoc { get; init; } = "Nether Rending imbue (e.g. Onyx 21064). Inside: // lines first, then values.";
+
+    [JsonPropertyName("// JewelryCleaveImbue")]
+    public string JewelryCleaveImbueDoc { get; init; } = "Jewelry cleave imbue (e.g. Obsidian 21063). Adds PropertyInt.Cleaving to jewelry so equipped pieces grant bonus cleave targets via JewelryCleaveBonus.";
 
     [JsonPropertyName("// BuffedImbueRules")]
     public string BuffedImbueRulesDoc { get; init; } = "Buffed jewelry imbues (Hematite HP, Malachite, Lavender Jade, etc.). Each array element: // keys first, then values.";
@@ -58,8 +64,14 @@ public class Settings
     // Harmony patch category for RecipeManager patches; keep distinct from other tinkering mods.
     public const string RecipeManagerCategory = "OvertinkedRecipeManagerPatch";
 
+    // Jewelry cleave bonus combat patch category.
+    public const string JewelryCleaveCategory = "OvertinkedJewelryCleave";
+
     // When true, patches RecipeManager.UseObjectOnTarget (and related) for tinkering flow.
     public bool EnableRecipeManagerPatch { get; set; } = true;
+
+    // When true, equipped jewelry with PropertyInt.Cleaving adds bonus cleave targets to melee attacks.
+    public bool EnableJewelryCleaveBonus { get; set; } = true;
 
     // Per-salvage tinker rules (random or fixed). Include both WCIDs for quest-reward pairs.
     public List<SalvageTinkerRule> SalvageRules { get; set; } = new();
@@ -78,6 +90,9 @@ public class Settings
 
     // Nether Rending imbue (e.g. Onyx 21064).
     public NetherRendingImbueCombatConfig NetherRendingImbue { get; set; } = new();
+
+    // Jewelry cleave imbue (e.g. Obsidian 21063).
+    public JewelryCleaveImbueConfig JewelryCleaveImbue { get; set; } = new();
 
     // Buffed jewelry imbues (Hematite HP, Malachite Stam + melee, Lavender Jade mana + damage from mana, etc.).
     public List<BuffedImbueRule> BuffedImbueRules { get; set; } = new();

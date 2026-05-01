@@ -3,7 +3,6 @@ namespace Swarmed;
 public partial class PatchClass
 {
     const int SwarmedReinforcementXpBonusPropertyId = 40110;
-    const int SwarmedPlayerXpBonusPropertyId = 40111;
     const int SwarmedReinforcementDepthPropertyId = 40112;
 
     static void RecordCallForHelpDebug(in CallForHelpSnapshot snapshot, int spawnsCreated = 0) =>
@@ -23,7 +22,6 @@ public partial class PatchClass
             return;
 
         var reinforcementBonusProp = (PropertyFloat)SwarmedReinforcementXpBonusPropertyId;
-        var playerBonusProp = (PropertyFloat)SwarmedPlayerXpBonusPropertyId;
 
         double? reinforcementBonus = __instance.GetProperty(reinforcementBonusProp);
 
@@ -33,17 +31,39 @@ public partial class PatchClass
 
         if (reinforcementBonus.HasValue && killerPlayer != null)
         {
-            double bonusValue = reinforcementBonus.Value;
-            if (bonusValue > 0)
-            {
-                killerPlayer.SetProperty(playerBonusProp, bonusValue);
-            }
-
+            // Reinforcement mobs do not trigger call-for-help chains.
             return;
         }
 
         if (__instance is Swarmed.Creatures.CreatureEx)
         {
+            // Grant quest points for killing a special CreatureEx mob
+            if (settings != null && settings.CreatureExQuestPointReward > 0 && killerPlayer != null)
+            {
+                try
+                {
+                    var lmExtType = AccessTools.TypeByName("Loremaster.LoremasterExtensions");
+                    if (lmExtType != null)
+                    {
+                        var incMethod = AccessTools.Method(lmExtType, "IncQuestPoints", new[] { typeof(Player), typeof(float) });
+                        var updateMethod = AccessTools.Method(lmExtType, "UpdateQuestPoints", new[] { typeof(Player) });
+                        if (incMethod != null && updateMethod != null)
+                        {
+                            incMethod.Invoke(null, new object[] { killerPlayer, settings.CreatureExQuestPointReward });
+                            updateMethod.Invoke(null, new object[] { killerPlayer });
+                            var exTypeName = __instance.GetProperty((PropertyInt)FakeInt.CreatureExType) is int exTypeVal && Enum.IsDefined((Swarmed.Creatures.CreatureExType)exTypeVal)
+                                ? ((Swarmed.Creatures.CreatureExType)exTypeVal).ToString()
+                                : "champion";
+                            killerPlayer.SendMessage($"[Swarmed] The {exTypeName} falls, and you gain insight from the battle! (+{settings.CreatureExQuestPointReward:0.##} QB)");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    ModManager.Log($"[Swarmed] Failed to award CreatureEx QP: {ex.Message}", ModManager.LogLevel.Warn);
+                }
+            }
+
             RecordCallForHelpDebug(new CallForHelpSnapshot
             {
                 UtcTime = DateTime.UtcNow,
@@ -379,7 +399,7 @@ public partial class PatchClass
 
             uint newMaxHealth = (uint)Math.Max(1, originalMaxHealth * effectiveMult);
             creature.Health.Ranks = newMaxHealth;
-            creature.Health.Current = newMaxHealth;
+            creature.SetMaxVitals(); // Fill current vitals to true max (Ranks + StartingValue + attr_bonus)
             creature.ObjScale = originalScale * effectiveMult;
 
             // Damage rating scales with depth/chaos (proxy for "30% more damage")
@@ -410,6 +430,22 @@ public partial class PatchClass
 
             LandblockManager.AddObject(creature);
             created++;
+
+            // Ensure reinforcements immediately aggro nearby players
+            if (killerPlayer != null)
+            {
+                creature.AttackTarget = killerPlayer;
+            }
+            else
+            {
+                var nearbyTarget = creature.CurrentLandblock?.GetWorldObjectsForPhysicsHandling()
+                    ?.OfType<Player>()
+                    .Where(p => !p.IsDead && p.Session != null)
+                    .OrderBy(p => p.GetDistance(creature))
+                    .FirstOrDefault();
+                if (nearbyTarget != null)
+                    creature.AttackTarget = nearbyTarget;
+            }
         }
 
         RecordCallForHelpDebug(new CallForHelpSnapshot
@@ -428,28 +464,5 @@ public partial class PatchClass
             SpawnMax = spawnMax,
             SpawnsCreated = created,
         }, created);
-    }
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Player), nameof(Player.GrantXP), new Type[] { typeof(long), typeof(XpType), typeof(ShareType) })]
-    public static void PreGrantXPKillBonus(ref long amount, XpType xpType, ShareType shareType, Player __instance)
-    {
-        if (xpType != XpType.Kill)
-            return;
-
-        var playerBonusProp = (PropertyFloat)SwarmedPlayerXpBonusPropertyId;
-        double? bonus = __instance.GetProperty(playerBonusProp);
-        if (!bonus.HasValue || bonus.Value <= 0)
-            return;
-
-        long extra = (long)(amount * bonus.Value);
-        if (extra <= 0)
-        {
-            __instance.RemoveProperty(playerBonusProp);
-            return;
-        }
-
-        amount += extra;
-        __instance.RemoveProperty(playerBonusProp);
     }
 }

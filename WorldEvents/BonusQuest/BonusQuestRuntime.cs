@@ -1,5 +1,6 @@
 namespace WorldEvents;
 
+using System.Text.RegularExpressions;
 using WorldEvents.BonusQuest.Models;
 
 internal static class BonusQuestRuntime
@@ -10,14 +11,11 @@ internal static class BonusQuestRuntime
     // Fast O(1) check for hot path (QuestManager.CanSolve / Update)
     static readonly HashSet<string> _activeQuestNames = new(StringComparer.OrdinalIgnoreCase);
 
-    // Last batch added — prevents same quests from appearing in back-to-back rotations
-    static HashSet<string> _lastAddedNames = new(StringComparer.OrdinalIgnoreCase);
-
     // Quest completion log queue — drained by background timer
     static readonly ConcurrentQueue<QuestCompletionLogEntry> _logQueue = new();
 
-    // Reminder tracking
-    static DateTime _lastReminderUtc = DateTime.MinValue;
+    // Cached regex patterns for generated quest names
+    static List<Regex>? _generatedPatterns;
 
     internal static void LoadFromDisk(Settings settings)
     {
@@ -27,13 +25,9 @@ internal static class BonusQuestRuntime
         {
             ActiveWindow = BonusQuestPersistence.LoadActiveWindow();
 
-            // Migrate old saves that lack QuestExpiries: assign a fresh lifetime to existing quests
-            if (ActiveWindow != null && ActiveWindow.QuestExpiries.Count == 0 && ActiveWindow.QuestNames.Count > 0)
-            {
-                var fallbackExpiry = DateTime.UtcNow.AddHours(settings.BonusQuestQuestLifetimeHours);
-                foreach (var q in ActiveWindow.QuestNames)
-                    ActiveWindow.QuestExpiries[q] = fallbackExpiry;
-            }
+            // Migrate old saves that lack QuestMultipliers
+            if (ActiveWindow != null && ActiveWindow.QuestMultipliers == null)
+                ActiveWindow.QuestMultipliers = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
             RebuildActiveSet();
         }
@@ -50,36 +44,17 @@ internal static class BonusQuestRuntime
         lock (BonusQuestLock)
         {
             var now = DateTime.UtcNow;
+            var nextRotation = GetNextRotationUtc();
 
             if (ActiveWindow == null)
             {
                 InitBoard(settings, now);
                 newlyAdded = ActiveWindow!.QuestNames.ToList();
             }
-            else
+            else if (now >= nextRotation)
             {
-                // Prune expired quests
-                var expired = ActiveWindow.QuestExpiries
-                    .Where(kv => now >= kv.Value)
-                    .Select(kv => kv.Key)
-                    .ToList();
-                foreach (var q in expired)
-                {
-                    ActiveWindow.QuestNames.Remove(q);
-                    ActiveWindow.QuestExpiries.Remove(q);
-                }
-
-                // Rotate: add new quests if it's time and there's room (skip if scheduler is managing rotation)
-                if (!settings.UseUnifiedScheduler && now >= ActiveWindow.WindowEndUtc)
-                {
-                    newlyAdded = AddRotationBatch(settings, now);
-                    ActiveWindow.WindowEndUtc = now.AddHours(settings.BonusQuestIntervalHours);
-                    BonusQuestPersistence.SaveActiveWindow(ActiveWindow);
-                }
-                else if (expired.Count > 0)
-                {
-                    BonusQuestPersistence.SaveActiveWindow(ActiveWindow);
-                }
+                // Daily rotation: clear board and repopulate
+                newlyAdded = RotateBoard(settings, now);
             }
 
             RebuildActiveSet();
@@ -88,18 +63,19 @@ internal static class BonusQuestRuntime
         if (newlyAdded.Count > 0)
             BonusQuestBroadcast.AnnounceQuestsAdded(settings, newlyAdded);
 
-        // Reminder
-        if (settings.BonusQuestReminderIntervalMinutes > 0)
-        {
-            var now = DateTime.UtcNow;
-            if ((now - _lastReminderUtc).TotalMinutes >= settings.BonusQuestReminderIntervalMinutes)
-            {
-                _lastReminderUtc = now;
-                BonusQuestBroadcast.AnnounceReminder(settings);
-            }
-        }
-
         FlushLogIfDue();
+    }
+
+    /// <summary>
+    /// Returns the next 9:00 PM CST rotation time in UTC.
+    /// </summary>
+    static DateTime GetNextRotationUtc()
+    {
+        var cst = TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time");
+        var nowCst = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, cst);
+        var today9pm = new DateTime(nowCst.Year, nowCst.Month, nowCst.Day, 21, 0, 0, DateTimeKind.Unspecified);
+        var nextRotationCst = nowCst.TimeOfDay >= today9pm.TimeOfDay ? today9pm.AddDays(1) : today9pm;
+        return TimeZoneInfo.ConvertTimeToUtc(nextRotationCst, cst);
     }
 
     static void InitBoard(Settings settings, DateTime now)
@@ -107,12 +83,13 @@ internal static class BonusQuestRuntime
         ActiveWindow = new ActiveBonusQuestData
         {
             WindowStartUtc = now,
-            WindowEndUtc = now.AddHours(settings.BonusQuestIntervalHours),
+            WindowEndUtc = GetNextRotationUtc(),
             QuestNames = new(),
             QuestExpiries = new(),
             PlayerCompletions = new(),
+            QuestMultipliers = new(),
         };
-        AddRotationBatch(settings, now);
+        PopulateBoard(settings);
         BonusQuestPersistence.SaveActiveWindow(ActiveWindow);
 
         ModManager.Log(
@@ -122,58 +99,142 @@ internal static class BonusQuestRuntime
 
     /// <summary>
     /// Called by the unified event scheduler to rotate bonus quests.
-    /// Initializes the board if necessary and updates the window end time.
     /// </summary>
     internal static List<string> TryStartScheduledRotation(Settings settings, DateTime now)
     {
         lock (BonusQuestLock)
         {
-            if (ActiveWindow == null)
-            {
-                ActiveWindow = new ActiveBonusQuestData
-                {
-                    WindowStartUtc = now,
-                    WindowEndUtc = now.AddHours(settings.BonusQuestIntervalHours),
-                    QuestNames = new(),
-                    QuestExpiries = new(),
-                    PlayerCompletions = new(),
-                };
-            }
-
-            ActiveWindow.WindowEndUtc = now.AddHours(settings.BonusQuestIntervalHours);
-            var newlyAdded = AddRotationBatch(settings, now);
-            BonusQuestPersistence.SaveActiveWindow(ActiveWindow);
-            RebuildActiveSet();
-            return newlyAdded;
+            return RotateBoard(settings, now);
         }
     }
 
-    // Returns newly added quest names. Must be called within BonusQuestLock.
-    static List<string> AddRotationBatch(Settings settings, DateTime now)
+    // Full board clear + repopulate. Must be called within BonusQuestLock.
+    static List<string> RotateBoard(Settings settings, DateTime now)
     {
-        var alreadyActive = new HashSet<string>(ActiveWindow!.QuestNames, StringComparer.OrdinalIgnoreCase);
-        var slots = settings.BonusQuestMaxActiveQuests - alreadyActive.Count;
-        if (slots <= 0) return new();
-
-        var count = Math.Min(settings.BonusQuestCount, slots);
-        var completions = BonusQuestQuestDb.GetRecentCompletions(settings.BonusQuestLookbackDays);
-        var picked = BonusQuestQuestDb.PickBonusQuests(settings, completions, _lastAddedNames, alreadyActive, count);
-
-        var expiry = now.AddHours(settings.BonusQuestQuestLifetimeHours);
-        foreach (var q in picked)
+        if (ActiveWindow == null)
         {
-            ActiveWindow.QuestNames.Add(q);
-            ActiveWindow.QuestExpiries[q] = expiry;
+            InitBoard(settings, now);
+            return ActiveWindow!.QuestNames.ToList();
         }
 
-        _lastAddedNames = new HashSet<string>(picked, StringComparer.OrdinalIgnoreCase);
+        ActiveWindow.WindowStartUtc = now;
+        ActiveWindow.WindowEndUtc = GetNextRotationUtc();
+        ActiveWindow.QuestNames.Clear();
+        ActiveWindow.QuestExpiries.Clear();
+        ActiveWindow.PlayerCompletions.Clear();
+        ActiveWindow.QuestMultipliers.Clear();
 
-        if (picked.Count > 0)
-            ModManager.Log(
-                $"[BonusQuest] Rotation at {now:u} UTC — added: {string.Join(", ", picked)}; board size: {ActiveWindow.QuestNames.Count}",
-                ModManager.LogLevel.Info);
+        PopulateBoard(settings);
+        BonusQuestPersistence.SaveActiveWindow(ActiveWindow);
+        RebuildActiveSet();
 
-        return picked;
+        ModManager.Log(
+            $"[BonusQuest] Daily rotation at {now:u} UTC — {ActiveWindow.QuestNames.Count} quest(s) added.",
+            ModManager.LogLevel.Info);
+
+        return ActiveWindow.QuestNames.ToList();
+    }
+
+    // Populates the board with 2 top + 5 mid + 3 bottom quests.
+    // Must be called within BonusQuestLock.
+    static void PopulateBoard(Settings settings)
+    {
+        var completions = BonusQuestQuestDb.GetRecentCompletions(settings.BonusQuestLookbackDays);
+        var ranked = completions
+            .Where(kv => !IsGeneratedQuestName(kv.Key, settings))
+            .OrderByDescending(kv => kv.Value)
+            .Select(kv => kv.Key)
+            .ToList();
+
+        var topPool = ranked.Take(25).ToList();
+        var midPool = ranked.Skip(25).Take(125).ToList();
+        var bottomPool = ranked.Skip(150)
+            .Where(q => completions[q] >= settings.BonusQuestBottomTierMinCompletions)
+            .ToList();
+
+        var random = Random.Shared;
+        var picked = new List<(string Name, int Multiplier)>();
+
+        // Pick 2 top (2x)
+        picked.AddRange(PickFromPool(topPool, 2, 2, random, completions));
+        // Pick 5 mid (5x)
+        picked.AddRange(PickFromPool(midPool, 5, 5, random, completions));
+        // Pick 3 bottom (10x)
+        picked.AddRange(PickFromPool(bottomPool, 3, 10, random, completions));
+
+        // Autofill: if any tier is short, fill from next tier down
+        if (picked.Count < 10)
+        {
+            var fallback = midPool.Concat(topPool).Where(q => !picked.Any(p => p.Name.Equals(q, StringComparison.OrdinalIgnoreCase))).ToList();
+            var needed = 10 - picked.Count;
+            picked.AddRange(PickFromPool(fallback, needed, 5, random, completions));
+        }
+        if (picked.Count < 10)
+        {
+            var fallback = topPool.Where(q => !picked.Any(p => p.Name.Equals(q, StringComparison.OrdinalIgnoreCase))).ToList();
+            var needed = 10 - picked.Count;
+            picked.AddRange(PickFromPool(fallback, needed, 2, random, completions));
+        }
+        if (picked.Count < 10)
+        {
+            // Last resort: any eligible quest regardless of tier
+            var fallback = completions.Keys
+                .Where(q => !IsGeneratedQuestName(q, settings)
+                    && !picked.Any(p => p.Name.Equals(q, StringComparison.OrdinalIgnoreCase)))
+                .ToList();
+            var needed = 10 - picked.Count;
+            picked.AddRange(PickFromPool(fallback, needed, 2, random, completions));
+        }
+
+        var expiry = GetNextRotationUtc();
+        foreach (var (name, mult) in picked)
+        {
+            ActiveWindow!.QuestNames.Add(name);
+            ActiveWindow.QuestExpiries[name] = expiry;
+            ActiveWindow.QuestMultipliers[name] = mult;
+        }
+    }
+
+    static List<(string Name, int Multiplier)> PickFromPool(List<string> pool, int count, int multiplier, Random random, Dictionary<string, long> completions)
+    {
+        var result = new List<(string, int)>();
+        var available = pool.ToList();
+
+        while (result.Count < count && available.Count > 0)
+        {
+            // Weight by inverse completion count (rarer = higher weight within tier)
+            var weights = available.Select(name =>
+            {
+                var c = completions.TryGetValue(name, out var val) ? val : 1;
+                return 1.0 / (1.0 + Math.Log10(1.0 + c));
+            }).ToList();
+
+            var sum = weights.Sum();
+            var roll = random.NextDouble() * sum;
+            double acc = 0;
+            var idx = available.Count - 1;
+            for (var i = 0; i < available.Count; i++)
+            {
+                acc += weights[i];
+                if (roll <= acc) { idx = i; break; }
+            }
+
+            result.Add((available[idx], multiplier));
+            available.RemoveAt(idx);
+        }
+
+        return result;
+    }
+
+    static bool IsGeneratedQuestName(string questName, Settings settings)
+    {
+        if (string.IsNullOrEmpty(questName)) return true;
+
+        _generatedPatterns ??= settings.BonusQuestGeneratedNamePatterns
+            .Select(p => new Regex(p, RegexOptions.IgnoreCase))
+            .ToList();
+
+        return _generatedPatterns.Any(rx => rx.IsMatch(questName));
     }
 
     static void RebuildActiveSet()
@@ -192,6 +253,7 @@ internal static class BonusQuestRuntime
     internal static void OnQuestCompleted(Player player, string questName, Settings settings)
     {
         int newCount;
+        int multiplier;
         lock (BonusQuestLock)
         {
             if (ActiveWindow == null) return;
@@ -199,6 +261,7 @@ internal static class BonusQuestRuntime
             ActiveWindow.PlayerCompletions.TryGetValue(guid, out var prev);
             newCount = prev + 1;
             ActiveWindow.PlayerCompletions[guid] = newCount;
+            ActiveWindow.QuestMultipliers.TryGetValue(questName, out multiplier);
             BonusQuestPersistence.SaveActiveWindow(ActiveWindow);
         }
 
@@ -207,16 +270,20 @@ internal static class BonusQuestRuntime
             participantCount = ActiveWindow?.PlayerCompletions.Count ?? 0;
 
         var displayName = BonusQuestDisplay.QuestDisplayName(questName);
-        var tierFraction = BonusQuestRewards.GetTierFraction(settings, newCount);
-        var tierLabel = newCount switch { 1 => "1st", 2 => "2nd", 3 => "3rd", _ => $"{newCount}th" };
 
-        if (BonusQuestRewards.TryGrantCompletionXp(settings, player, newCount, participantCount, out var awarded))
+        // Grant repeatQB instead of XP
+        if (multiplier > 0)
+        {
+            var currentQp = (float)(player.GetProperty(FakeFloat.QuestBonus) ?? 0);
+            player.SetProperty(FakeFloat.QuestBonus, currentQp + multiplier);
             player.SendMessage(
-                $"[EVENT - Bonus Quest] \"{displayName}\" bonus complete ({tierLabel} completion — {tierFraction * 100:0}% XP)! " +
-                $"+{awarded:N0} XP awarded. (Your total completions: {newCount}.)");
+                $"[EVENT - Bonus Quest] \"{displayName}\" bonus complete! +{multiplier} repeatQB awarded! (Your total completions: {newCount}.)");
+        }
         else
+        {
             player.SendMessage(
                 $"[EVENT - Bonus Quest] \"{displayName}\" is a bonus quest! (Your total completions: {newCount}.)");
+        }
 
         if (participantCount == 1 && settings.SoloCompetitorBonus.Enable && newCount == 1)
         {

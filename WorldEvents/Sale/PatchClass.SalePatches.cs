@@ -4,58 +4,46 @@ namespace WorldEvents;
 
 public partial class PatchClass
 {
-    // ── Vendor pricing: global inflation + sale discount ──────────────────
+    // ── Vendor pricing: REMOVED — LLL is the single source of truth for vendor buy/sell prices.
+    // WorldEvents sale discounts are now handled by LLL EconomyBalancer / VendorBuyPrice if desired.
 
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Vendor), nameof(Vendor.GetBuyCost), new Type[] { typeof(WorldObject) })]
-    public static void PostGetBuyCostSale(ref int __result, Vendor __instance)
-    {
-        var mult = ComputeVendorPriceMultiplier(__instance);
-        if (mult == 1.0) return;
-        __result = Math.Max(1, (int)(__result * mult));
-    }
+    // [HarmonyPostfix]
+    // [HarmonyPatch(typeof(Vendor), nameof(Vendor.GetBuyCost), new Type[] { typeof(WorldObject) })]
+    // public static void PostGetBuyCostSale(ref int __result, Vendor __instance)
+    // {
+    //     var mult = ComputeVendorPriceMultiplier(__instance);
+    //     if (mult == 1.0) return;
+    //     __result = Math.Max(1, (int)(__result * mult));
+    // }
 
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Vendor), nameof(Vendor.GetSellCost), new Type[] { typeof(WorldObject) })]
-    public static void PostGetSellCostSale(ref uint __result, Vendor __instance)
-    {
-        var mult = ComputeVendorPriceMultiplier(__instance);
-        if (mult == 1.0) return;
-        __result = (uint)Math.Max(1.0, __result * mult);
-    }
+    // [HarmonyPostfix]
+    // [HarmonyPatch(typeof(Vendor), nameof(Vendor.GetSellCost), new Type[] { typeof(WorldObject) })]
+    // public static void PostGetSellCostSale(ref uint __result, Vendor __instance)
+    // {
+    //     var mult = ComputeVendorPriceMultiplier(__instance);
+    //     if (mult == 1.0) return;
+    //     __result = (uint)Math.Max(1.0, __result * mult);
+    // }
 
-    static double ComputeVendorPriceMultiplier(Vendor vendor)
-    {
-        var s = CurrentSettings;
-        if (s == null) return 1.0;
-
-        var mult = 1.0;
-        if (s.SaleVendorPriceMultiplier > 0 && s.SaleVendorPriceMultiplier != 1.0)
-            mult *= s.SaleVendorPriceMultiplier;
-
-        if (s.SaleEnabled && s.SaleVendorDiscountMultiplier > 0 && s.SaleVendorDiscountMultiplier != 1.0)
-        {
-            var lb = (int)(vendor.Location?.LandblockId.Landblock ?? 0);
-            if (SaleRuntime.IsVendorOnSale(lb, vendor.Name, vendor.WeenieClassId))
-                mult *= s.SaleVendorDiscountMultiplier;
-        }
-
-        return mult;
-    }
+    // static double ComputeVendorPriceMultiplier(Vendor vendor)
+    // {
+    //     var s = CurrentSettings;
+    //     if (s == null) return 1.0;
+    //     var mult = 1.0;
+    //     if (s.SaleVendorPriceMultiplier > 0 && s.SaleVendorPriceMultiplier != 1.0)
+    //         mult *= s.SaleVendorPriceMultiplier;
+    //     if (s.SaleEnabled && s.SaleVendorDiscountMultiplier > 0 && s.SaleVendorDiscountMultiplier != 1.0)
+    //     {
+    //         var lb = (int)(vendor.Location?.LandblockId.Landblock ?? 0);
+    //         if (SaleRuntime.IsVendorOnSale(lb, vendor.Name, vendor.WeenieClassId))
+    //             mult *= s.SaleVendorDiscountMultiplier;
+    //     }
+    //     return mult;
+    // }
 
     // ── Sale participant tracking ─────────────────────────────────────────
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Player), nameof(Player.FinalizeBuyTransaction), new Type[] { typeof(Vendor), typeof(List<WorldObject>), typeof(List<WorldObject>), typeof(uint) })]
-    public static void PostFinalizeBuyTransactionSale(Vendor vendor, List<WorldObject> genericItems, List<WorldObject> uniqueItems, Player __instance)
-    {
-        if ((genericItems?.Count ?? 0) == 0 && (uniqueItems?.Count ?? 0) == 0) return;
-
-        var lb = (int)(vendor.Location?.LandblockId.Landblock ?? 0);
-        if (!SaleRuntime.IsVendorOnSale(lb, vendor.Name, vendor.WeenieClassId)) return;
-
-        SaleRuntime.RecordParticipant(__instance.Guid.Full);
-    }
+    // MOVED to LLL reflection bridge to avoid Harmony conflict with LLL's PreFinalizeBuyTransaction.
+    // See WorldEventsBridge.cs in LeyLineLedger.
 
     // ── Loot enhancement: boost values + bonus SharedLoot items ──────────
 

@@ -18,6 +18,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         CurrentSettings = Settings;
         ApplySwarmedPatchesAndCommands();
         Features.BuddySpawns.Start(Settings);
+        Features.DungeonPopulationManager.Start(Settings);
     }
 
     public override async Task OnWorldOpen()
@@ -26,6 +27,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         CurrentSettings = Settings;
         ApplySwarmedPatchesAndCommands();
         Features.BuddySpawns.Start(Settings);
+        Features.DungeonPopulationManager.Start(Settings);
     }
 
     // Category-gated patches and command registration must run from Start() as well as OnWorldOpen(): if the mod
@@ -35,6 +37,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     {
         ModC.Harmony.PatchCategory("SwarmedCreatureEx");
         ModC.Harmony.PatchCategory("SwarmedCreatureVariation");
+        ModC.Harmony.PatchCategory("SwarmedDynamicMobScaling");
         foreach (var creatureType in Settings.CreatureFeatures)
             ModC.Harmony.PatchCategory(creatureType.ToString());
 
@@ -50,6 +53,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     {
         _creatureExCommandsRegistered = false;
         Features.BuddySpawns.Stop();
+        Features.DungeonPopulationManager.Stop();
         base.Stop();
     }
 }

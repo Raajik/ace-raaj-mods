@@ -2,6 +2,18 @@ namespace AureatePath;
 
 public class Settings
 {
+    [JsonPropertyName("// MaxLevel")]
+    public string MaxLevelDoc { get; set; } = "Extended character level cap (PortalDat XP table). This is the authoritative server max level.";
+    public int MaxLevel { get; set; } = 9999;
+
+    [JsonPropertyName("// CreditInterval")]
+    public string CreditIntervalDoc { get; set; } = "Interval for bonus skill credits during extended leveling (e.g. every 10 levels).";
+    public int CreditInterval { get; set; } = 10;
+
+    [JsonPropertyName("// LevelCost")]
+    public string LevelCostSectionDoc { get; set; } = "XP cost curve for levels above vanilla table (C, Rate, Coefficient, Offset, GrowthType).";
+    public Progression.LevelCost LevelCost { get; set; } = new(1_000_000_000u, 1_000_000_000u, 0, -276, growthType: Progression.GrowthType.Linear);
+
     [JsonPropertyName("// LevelReq")]
     public string LevelReqDoc { get; set; } = "Base character level for the next enlightenment; effective level required also adds Enlightenment * LevelReqPerEnlightenment.";
 

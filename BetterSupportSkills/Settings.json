@@ -228,6 +228,7 @@
       "ThornsOnAllHits": true
     },
     "Windwalker": {
+      "SkillPerTier": 150,
       "StreakRangeMeters": 15.0,
       "EchoEnabled": true,
       "ManaCostMultiplier": 0.5

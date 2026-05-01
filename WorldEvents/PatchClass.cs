@@ -48,6 +48,9 @@ public partial class PatchClass : BasicPatch<Settings>
 
         EventScheduler.Initialize(CurrentSettings ?? new Settings());
         StartSchedulerBackgroundTimer();
+
+        // Initialize Pathwarden vendor tracking
+        PathwardenVendorPatches.Initialize(CurrentSettings ?? new Settings());
     }
 
     public override async Task OnWorldOpen()
@@ -69,6 +72,9 @@ public partial class PatchClass : BasicPatch<Settings>
         StartScavengerHuntBackgroundTimer();
         EventScheduler.Initialize(CurrentSettings ?? new Settings());
         StartSchedulerBackgroundTimer();
+
+        // Initialize Pathwarden vendor tracking
+        PathwardenVendorPatches.Initialize(CurrentSettings ?? new Settings());
         await base.OnWorldOpen();
     }
 
@@ -96,6 +102,16 @@ public partial class PatchClass : BasicPatch<Settings>
         catch (Exception ex)
         {
             ModManager.Log($"[WorldEvents] Stop flush failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        // Save Pathwarden vendor purchase log
+        try
+        {
+            PathwardenVendorManager.SavePurchaseLog();
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[WorldEvents] Pathwarden vendor save failed: {ex.Message}", ModManager.LogLevel.Warn);
         }
 
         base.Stop();

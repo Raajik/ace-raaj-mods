@@ -87,22 +87,109 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             ModC.Harmony?.Patch(approachVendor, harmonyPrefix);
             ModManager.Log("[QOL] VendorLootRotation patched to Vendor.ApproachVendor (priority=First, runs before LivingEquipment).", ModManager.LogLevel.Info);
 
-            // Also patch LoadInventory to filter vanilla armor/weapons — must be explicit because method is private
-            var loadInventory = AccessTools.Method(typeof(Vendor), "LoadInventory");
-            if (loadInventory != null)
+            // Patch private ItemProfileToWorldObjects so purchased items clone original stats
+            var itemProfileMethod = AccessTools.Method(typeof(Vendor), "ItemProfileToWorldObjects", new Type[] { typeof(ItemProfile) });
+            if (itemProfileMethod != null)
             {
-                var filterPostfix = AccessTools.Method(typeof(VendorInventoryFilter), nameof(VendorInventoryFilter.Postfix));
-                if (filterPostfix != null)
+                var clonePostfix = AccessTools.Method(typeof(PatchClass), nameof(PostItemProfileToWorldObjects));
+                if (clonePostfix != null)
                 {
-                    ModC.Harmony?.Patch(loadInventory, postfix: new HarmonyMethod(filterPostfix));
-                    ModManager.Log("[QOL] VendorInventoryFilter patched to Vendor.LoadInventory.", ModManager.LogLevel.Info);
+                    ModC.Harmony?.Patch(itemProfileMethod, postfix: new HarmonyMethod(clonePostfix));
+                    ModManager.Log("[QOL] VendorItemCloneFix patched to Vendor.ItemProfileToWorldObjects.", ModManager.LogLevel.Info);
                 }
+            }
+            else
+            {
+                ModManager.Log("[QOL] Vendor.ItemProfileToWorldObjects not found; clone fix skipped.", ModManager.LogLevel.Warn);
             }
         }
         catch (Exception ex)
         {
             ModManager.Log($"[QOL] VendorLootRotation patch failed: {ex}", ModManager.LogLevel.Error);
         }
+    }
+
+    // Postfix for Vendor.ItemProfileToWorldObjects — copies generated loot stats from the vendor's
+    // displayed template to the purchased clone. Preserves damage, armor, awakening, price, name, etc.
+    public static void PostItemProfileToWorldObjects(ItemProfile itemProfile, List<WorldObject> __result, Vendor __instance)
+    {
+        if (__instance?.DefaultItemsForSale == null || __result == null || __result.Count == 0)
+            return;
+
+        var templateGuid = new ObjectGuid(itemProfile.ObjectGuid);
+        if (!__instance.DefaultItemsForSale.TryGetValue(templateGuid, out var template))
+            return;
+
+        foreach (var created in __result)
+        {
+            if (created.WeenieClassId != template.WeenieClassId)
+                continue;
+
+            if (template.Value.HasValue)
+                created.Value = template.Value;
+
+            TryCopyBool(template, created, (PropertyBool)40130);   // IsAwakened
+            TryCopyInt(template, created, (PropertyInt)40131);      // AwakenedTier
+            TryCopyInt(template, created, PropertyInt.ItemMaxLevel);
+            TryCopyInt64(template, created, PropertyInt64.ItemTotalXp);
+            TryCopyString(template, created, PropertyString.Name);
+            TryCopyString(template, created, (PropertyString)11033);   // OriginalName
+            TryCopyString(template, created, (PropertyString)11034);   // ProfileName
+            TryCopyInt(template, created, PropertyInt.UiEffects);
+            TryCopyInt(template, created, PropertyInt.Damage);
+            TryCopyInt(template, created, PropertyInt.ArmorLevel);
+            TryCopyInt(template, created, PropertyInt.ImbuedEffect);        // Rend, CS, CB, AR, defense imbues
+            TryCopyInt(template, created, PropertyInt.DamageType);          // Changed by elemental rend
+            TryCopyInt(template, created, PropertyInt.SlayerCreatureType);  // Slayer imbue target
+            TryCopyInt(template, created, PropertyInt.Cleaving);              // Cleave imbue
+            TryCopyInt(template, created, PropertyInt.LumAugSurgeChanceRating); // Multistrike imbue
+            TryCopyFloat(template, created, PropertyFloat.DamageMod);
+            TryCopyFloat(template, created, PropertyFloat.WeaponOffense);
+            TryCopyFloat(template, created, PropertyFloat.WeaponDefense);
+            TryCopyFloat(template, created, PropertyFloat.SlayerDamageBonus); // Slayer bonus
+            TryCopyInt(template, created, PropertyInt.ItemWorkmanship);
+            TryCopyFloat(template, created, PropertyFloat.ManaConversionMod);
+            TryCopyFloat(template, created, PropertyFloat.ElementalDamageMod);
+
+            // Spells from loot generation — copy from template's Biota to the new item's Biota
+            if (template.Biota?.PropertiesSpellBook != null)
+            {
+                created.Biota.PropertiesSpellBook ??= new Dictionary<int, float>();
+                foreach (var spell in template.Biota.PropertiesSpellBook)
+                {
+                    if (!created.Biota.PropertiesSpellBook.ContainsKey(spell.Key))
+                        created.Biota.PropertiesSpellBook[spell.Key] = spell.Value;
+                }
+            }
+
+            created.CalculateObjDesc();
+        }
+    }
+
+    static void TryCopyBool(WorldObject src, WorldObject dst, PropertyBool prop)
+    {
+        var v = src.GetProperty(prop);
+        if (v.HasValue) dst.SetProperty(prop, v.Value);
+    }
+    static void TryCopyInt(WorldObject src, WorldObject dst, PropertyInt prop)
+    {
+        var v = src.GetProperty(prop);
+        if (v.HasValue) dst.SetProperty(prop, v.Value);
+    }
+    static void TryCopyInt64(WorldObject src, WorldObject dst, PropertyInt64 prop)
+    {
+        var v = src.GetProperty(prop);
+        if (v.HasValue) dst.SetProperty(prop, v.Value);
+    }
+    static void TryCopyFloat(WorldObject src, WorldObject dst, PropertyFloat prop)
+    {
+        var v = src.GetProperty(prop);
+        if (v.HasValue) dst.SetProperty(prop, v.Value);
+    }
+    static void TryCopyString(WorldObject src, WorldObject dst, PropertyString prop)
+    {
+        var v = src.GetProperty(prop);
+        if (v != null) dst.SetProperty(prop, v);
     }
 
     public override async Task OnWorldOpen()
@@ -195,11 +282,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (Settings.EnableBundleGive)
             enabledFeatures.Add(Features.BundleGive);
 
-        if (Settings.EnableVendorPriceInflation)
-        {
-            enabledFeatures.Add(Features.VendorPriceInflation);
-            VendorPriceInflation.Initialize(Settings);
-        }
         if (Settings.EnableVendorLootRotation)
             enabledFeatures.Add(Features.VendorLootRotation);
 

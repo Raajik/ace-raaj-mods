@@ -39,6 +39,17 @@ internal static class EmoteBankPatches
         return true; // Not our emote, run original
     }
 
+    /// <summary>
+    /// Intercepts Player.GiveFromEmote to deposit Pathwarden NPC rewards directly to bank.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Player), nameof(Player.GiveFromEmote))]
+    public static bool PrefixGiveFromEmote(Player __instance, WorldObject emoter, uint weenieClassId, int amount)
+    {
+        // Let PathwardenAutoBank handle it - returns true if intercepted
+        return !PathwardenAutoBank.TryInterceptReward(__instance, emoter, weenieClassId, amount);
+    }
+
     static bool HandleInqOwnsItems(EmoteManager emoteManager, PropertiesEmoteAction emote, WorldObject targetObject, ref float __result)
     {
         if (targetObject is not Player player)

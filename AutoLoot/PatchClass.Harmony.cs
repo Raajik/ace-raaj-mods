@@ -81,4 +81,30 @@ public partial class PatchClass
 
         return false; // skip vanilla consumption
     }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Container), nameof(Container.Open))]
+    public static void PostContainerOpen(Player player, Container __instance)
+    {
+        AutoLoot.OnContainerOpened(player, __instance);
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Container), nameof(Container.Close))]
+    public static void PreContainerClose(Player player, Container __instance)
+    {
+        AutoLoot.CancelSalvageTimer(__instance.Guid.Full);
+
+        // For chests: run silent immediate phase FIRST (known scrolls, cash, keys, lockpicks),
+        // then batch loot + salvage. Moved from OPEN to CLOSE so the chest UI stays in sync.
+        if (__instance is Chest && player != null)
+        {
+            AutoLoot.EnsureLoaded(player);
+            AutoLoot.ProcessContainerLootImmediate(player, __instance);
+        }
+
+        // For chests and corpses: run close-phase batch loot + salvage before reset clears inventory
+        if ((__instance is Chest || __instance is Corpse) && player != null)
+            AutoLoot.ProcessContainerLootClose(player, __instance);
+    }
 }

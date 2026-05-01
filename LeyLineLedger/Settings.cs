@@ -1,5 +1,12 @@
 namespace LeyLineLedger;
 
+public enum VendorPricingMode
+{
+    Vanilla,
+    SimpleMultiplier,
+    EconomyBalancer
+}
+
 public class Settings
 {
     [JsonPropertyName("// LeyLineLedgerSettings")]
@@ -8,6 +15,10 @@ public class Settings
     [JsonPropertyName("// EnableLockpickAutoBank")]
     public string EnableLockpickAutoBankDoc { get; init; } = "When true, lockpick items picked up by characters with Lockpick trained/spec'd are auto-converted to banked Lockpick Durability (PropertyInt64 40130). Limitless Lockpick (WCID 30253) activates passive regen via BetterSupportSkills.";
     public bool EnableLockpickAutoBank { get; set; } = true;
+
+    [JsonPropertyName("// EnablePathwardenAutoBank")]
+    public string EnablePathwardenAutoBankDoc { get; init; } = "When true, Pathwarden NPC rewards (Granite/Steel bags from armor returns, Sturdy Iron Keys) are deposited directly to bank instead of inventory.";
+    public bool EnablePathwardenAutoBank { get; set; } = true;
 
     [JsonPropertyName("// ValidateWeeniesAtStartup")]
     public string ValidateWeeniesAtStartupDoc { get; init; } = "When true, validates required weenies at mod startup and logs missing or mismatched entries.";
@@ -20,6 +31,38 @@ public class Settings
     [JsonPropertyName("// DirectDeposit")]
     public string DirectDepositDoc { get; init; } = "When true, incoming currency can deposit directly per mod rules.";
     public bool DirectDeposit { get; set; } = true;
+
+    [JsonPropertyName("// EnableVendorSellRateReduction")]
+    public string EnableVendorSellRateReductionDoc { get; init; } = "When true, reduces the amount vendors pay players for sold items by VendorSellRateMultiplier.";
+    public bool EnableVendorSellRateReduction { get; set; } = true;
+
+    [JsonPropertyName("// VendorSellRateMultiplier")]
+    public string VendorSellRateMultiplierDoc { get; init; } = "Multiplier on vendor payout when players sell items (e.g. 0.03 = 3% of normal value). Patches Vendor.BuyPrice so client sell UI and server-side payouts are consistent.";
+    public double VendorSellRateMultiplier { get; set; } = 0.03;
+
+    [JsonPropertyName("// VendorPricingMode")]
+    public string VendorPricingModeDoc { get; init; } = "How vendor buy prices are calculated. Vanilla = retail ACE behavior, SimpleMultiplier = flat BuyPrice multiplier, EconomyBalancer = dynamic scaling based on total server banked pyreals (default).";
+    public VendorPricingMode VendorPricingMode { get; set; } = VendorPricingMode.EconomyBalancer;
+
+    [JsonPropertyName("// VendorBuyPriceMultiplier")]
+    public string VendorBuyPriceMultiplierDoc { get; init; } = "Flat multiplier for what players PAY to BUY items from vendors when VendorPricingMode = SimpleMultiplier. 1.0 = retail, 5.0 = 5x. WorldEvents Sale multiplier has been moved here — set this to the same value you previously used in WorldEvents. Patches Vendor.SellPrice for client+server sync.";
+    public double VendorBuyPriceMultiplier { get; set; } = 5.0;
+
+    [JsonPropertyName("// VendorPriceVariance")]
+    public string VendorPriceVarianceDoc { get; init; } = "Adds a small random variance to vendor buy prices so they feel organic instead of perfectly round numbers. 0.1 = ±10% variance (e.g., 500 pyreals becomes 450–550). 0 = disabled.";
+    public double VendorPriceVariance { get; set; } = 0.1;
+
+    [JsonPropertyName("// EnableDynamicVendorPricing")]
+    public string EnableDynamicVendorPricingDoc { get; init; } = "DEPRECATED — use VendorPricingMode = EconomyBalancer instead. Kept for backward compatibility.";
+    public bool EnableDynamicVendorPricing { get; set; } = true;
+
+    [JsonPropertyName("// DynamicVendorPricingBaseMultiplier")]
+    public string DynamicVendorPricingBaseMultiplierDoc { get; init; } = "Base multiplier applied before economy scaling when VendorPricingMode = EconomyBalancer.";
+    public double DynamicVendorPricingBaseMultiplier { get; set; } = 5.0;
+
+    [JsonPropertyName("// DynamicVendorPricingEconomyDivisor")]
+    public string DynamicVendorPricingEconomyDivisorDoc { get; init; } = "Divisor for economy scaling. Total banked pyreals / divisor = additional multiplier. Default 100M means 100,000,000 pyreals = 1.0x extra multiplier.";
+    public double DynamicVendorPricingEconomyDivisor { get; set; } = 100_000_000.0;
 
     [JsonPropertyName("// AccountWideBank")]
     public string AccountWideBankDoc { get; init; } = "When true, standard (non–challenge mode) characters share LeyLineLedger bank balances per account (account id > character guid > name). Challenge mode uses per-character bank until merge on /cm quit or similar; see ChallengeModes + AccountBank API.";
@@ -46,6 +89,9 @@ public class Settings
         new() { Name = "Sturdy Steel Key", Id = 24477, Prop = 40500 },
         new() { Name = "Mana Forge Key", Id = 38456, Prop = 40750 },
         new() { Name = "Legendary Key", Id = 48746, Prop = 41000 },
+        new() { Name = "Lesser Coalesced Mana (Awaken I, Lv.25)", Id = 42516, Prop = 41100, Aliases = new() { "lcm", "lesser" } },
+        new() { Name = "Greater Coalesced Mana (Awaken II, Lv.50)", Id = 42517, Prop = 41101, Aliases = new() { "gcm", "greater" } },
+        new() { Name = "Aetheric Coalesced Mana (Awaken III, Lv.75)", Id = 42518, Prop = 41102, Aliases = new() { "acm", "aetheric" } },
     };
 
     [JsonPropertyName("// ExcessSetToMax")]
@@ -55,6 +101,10 @@ public class Settings
     [JsonPropertyName("// LuminanceProperty")]
     public string LuminancePropertyDoc { get; init; } = "Character biota PropertyInt64 id for banked luminance.";
     public int LuminanceProperty { get; set; } = 39998;
+
+    [JsonPropertyName("// EnablePreUnlockLuminanceBanking")]
+    public string EnablePreUnlockLuminanceBankingDoc { get; init; } = "When true, luminance earned before unlocking the luminance quest is banked to LeyLineLedger instead of being lost.";
+    public bool EnablePreUnlockLuminanceBanking { get; set; } = true;
 
     [JsonPropertyName("// CashProperty")]
     public string CashPropertyDoc { get; init; } = "Character biota PropertyInt64 id for banked pyreals; align with AutoLoot BankCashProperty if used (default 39999).";
@@ -129,9 +179,12 @@ public class Settings
         "Optional self-balancing economy: periodically scans player bank balances and adjusts PyrealValue per currency based on rarity. Disabled by default.";
     public EconomyBalancerSettings EconomyBalancer { get; set; } = new();
 
+    [JsonPropertyName("// ValheelCryptoIntegration")]
+    public string ValheelCryptoIntegrationDoc { get; init; } = "Optional: when Valheel custom currencies (AshCoin, Credit, etc.) are detected, manage CryptoUp1–5 event states based on supply ratio instead of random NPC heartbeats.";
+    public ValheelCryptoIntegrationSettings ValheelCryptoIntegration { get; set; } = new();
+
     [JsonPropertyName("// LootTracker")]
-    public string LootTrackerDoc { get; init; } =
-        "Optional: track WCIDs players pick up frequently to identify hot items. Useful for deciding which items should be added to the bank or have a place in the economy.";
+    public string LootTrackerDoc { get; init; } = "Tracks frequently looted items for economy insights.";
     public LootTrackerSettings LootTracker { get; set; } = new();
 
     [JsonPropertyName("// PublicExchange")]
@@ -162,6 +215,12 @@ public class BankItem
     public string VariantWeenieClassIdsDoc { get; init; } = "Optional. Extra WCIDs removed from inventory and credited to this same Prop when depositing (after canonical Id).";
     [JsonPropertyName("VariantWeenieClassIds")]
     public List<uint> VariantWeenieClassIds { get; set; } = new();
+
+    // Optional: short aliases for fuzzy command matching (e.g. "lcm" for "Lesser Coalesced Mana").
+    [JsonPropertyName("// Aliases")]
+    public string AliasesDoc { get; init; } = "Optional short aliases for fuzzy /bank withdraw matching (e.g. [\"lcm\", \"lesser\"]).";
+    [JsonPropertyName("Aliases")]
+    public List<string> Aliases { get; set; } = new();
 }
 
 public class SalvageBankSettings
@@ -392,6 +451,30 @@ public class EconomyBalancerSettings
     public string MaxZefPyrealValueDoc { get; init; } =
         "Maximum ZefPyrealValue allowed (prevents Zefs from becoming too valuable). Default 100000000 = 100M pyreals = 400 MMDs.";
     public long MaxZefPyrealValue { get; set; } = 100000000;
+
+    [JsonPropertyName("// HideZeroSupplyCurrencies")]
+    public string HideZeroSupplyCurrenciesDoc { get; init; } =
+        "When true (default), currencies with zero total server supply are hidden from economy reports and exchange lists.";
+    public bool HideZeroSupplyCurrencies { get; set; } = true;
+}
+
+public class ValheelCryptoIntegrationSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true (default), auto-detect Valheel currencies and manage CryptoUp events. When false, never touches event state.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// AshCoinWcid")]
+    public string AshCoinWcidDoc { get; init; } = "WCID of AshCoin (Encapsulated Luminance).";
+    public uint AshCoinWcid { get; set; } = 803955;
+
+    [JsonPropertyName("// CreditWcid")]
+    public string CreditWcidDoc { get; init; } = "WCID of Credit (Crystalized Wood).";
+    public uint CreditWcid { get; set; } = 801690;
+
+    [JsonPropertyName("// RatioThresholds")]
+    public string RatioThresholdsDoc { get; init; } = "Credit:AshCoin ratio thresholds for CryptoUp1–5. Default: 1.0, 2.0, 3.0, 4.0, 5.0.";
+    public double[] RatioThresholds { get; set; } = new[] { 1.0, 2.0, 3.0, 4.0, 5.0 };
 }
 
 public class LootTrackerSettings
@@ -454,6 +537,14 @@ public class LootTrackerSettings
     public int AutoAddToBankThreshold { get; set; } = 10000;
 }
 
+public enum PriceVarianceResetMode
+{
+    Never,
+    OnEconomyScan,
+    Hourly,
+    Daily
+}
+
 public class PublicExchangeSettings
 {
     [JsonPropertyName("// Enabled")]
@@ -509,6 +600,14 @@ public class PublicExchangeSettings
     [JsonPropertyName("// PoolJsonPath")]
     public string PoolJsonPathDoc { get; init; } = "Relative path to exchange pool JSON file.";
     public string PoolJsonPath { get; set; } = "ExchangePool.json";
+
+    [JsonPropertyName("// PriceVariancePercent")]
+    public string PriceVariancePercentDoc { get; init; } = "Random variance applied to each item's exchange price so identical base prices look organic. 0.25 = ±25%.";
+    public double PriceVariancePercent { get; set; } = 0.25;
+
+    [JsonPropertyName("// PriceVarianceResetMode")]
+    public string PriceVarianceResetModeDoc { get; init; } = "When to reshuffle per-item price variance rolls. Never = fixed for session (default). OnEconomyScan = reshuffle on every EconomyBalancer scan. Hourly = reshuffle every real-time hour. Daily = reshuffle every real-time day.";
+    public PriceVarianceResetMode PriceVarianceResetMode { get; set; } = PriceVarianceResetMode.Hourly;
 }
 
 public class LotterySettings
@@ -564,4 +663,20 @@ public class LotterySettings
     [JsonPropertyName("// MaxPoolDestructionRate")]
     public string MaxPoolDestructionRateDoc { get; init; } = "Portion of tax destroyed when pool exceeds MaxPoolSize.";
     public double MaxPoolDestructionRate { get; set; } = 0.95;
+
+    [JsonPropertyName("// WinnerCount")]
+    public string WinnerCountDoc { get; init; } = "How many winners per draw. Default 3 (1st/2nd/3rd).";
+    public int WinnerCount { get; set; } = 3;
+
+    [JsonPropertyName("// WinnerSplits")]
+    public string WinnerSplitsDoc { get; init; } = "Portion of pool each winner receives. Must sum to 1.0. Default: 1st=50%, 2nd=30%, 3rd=20%.";
+    public List<double> WinnerSplits { get; set; } = new() { 0.50, 0.30, 0.20 };
+
+    [JsonPropertyName("// EnableQpPoolContributions")]
+    public string EnableQpPoolContributionsDoc { get; init; } = "When true, drains pending QP contributions from Loremaster before each draw.";
+    public bool EnableQpPoolContributions { get; set; } = true;
+
+    [JsonPropertyName("// DonateLuminanceRate")]
+    public string DonateLuminanceRateDoc { get; init; } = "How many pyreals of lottery pool value each donated luminance point contributes. 1.0 = 1 luminance = 1 pyreal.";
+    public double DonateLuminanceRate { get; set; } = 1.0;
 }

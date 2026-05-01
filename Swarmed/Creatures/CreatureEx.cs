@@ -1,5 +1,7 @@
 namespace Swarmed.Creatures;
 
+using ACE.Entity.Enum;
+
 //[HarmonyPatchCategory(nameof(CreatureEx))]
 public class CreatureEx : Creature
 {
@@ -16,7 +18,11 @@ public class CreatureEx : Creature
     {
         Initialize();
     }
-    protected virtual void Initialize() { }
+    protected virtual void Initialize()
+    {
+        // Mark special creatures with a cyan/teal radar dot so they stand out in groups
+        RadarColor = ACE.Entity.Enum.RadarColor.Cyan;
+    }
 
     #region Commands
     static CreatureExType[] types = Enum.GetValues<CreatureExType>();

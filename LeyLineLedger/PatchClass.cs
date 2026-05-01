@@ -68,12 +68,33 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         try
         {
+            ModC.Harmony.UnpatchCategory(nameof(VendorBuyPrice));
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger] Unpatch VendorBuyPrice before re-apply: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(VendorSellRate));
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger] Unpatch VendorSellRate before re-apply: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
             Settings = SettingsContainer.Settings ?? new Settings();
         }
         catch
         {
             Settings ??= new Settings();
         }
+
+        VendorBuyPrice.Initialize(Settings);
+        VendorSellRate.Initialize(Settings);
 
         if (Settings.VendorsUseBank)
         {
@@ -89,6 +110,12 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         if (Settings.SalvageBank.Enabled && Settings.SalvageBank.DirectDepositOnSalvage)
             ModC.Harmony.PatchCategory(nameof(SalvageDirectDeposit));
+
+        if (Settings.EnableVendorSellRateReduction)
+            ModC.Harmony.PatchCategory(nameof(VendorSellRate));
+
+        ModC.Harmony.PatchCategory(nameof(VendorBuyPrice));
+        ModManager.Log("[LeyLineLedger] VendorBuyPrice patch category applied.", ModManager.LogLevel.Info);
 
         ModC.Harmony.PatchCategory(nameof(EmoteBankPatches));
 
@@ -196,6 +223,22 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         try
         {
             ModC.Harmony.UnpatchCategory(nameof(SalvageDirectDeposit));
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(VendorBuyPrice));
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(VendorSellRate));
         }
         catch
         {
@@ -823,7 +866,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     }
 
     /// <summary>
-    /// Fuzzy-find a bank item by partial name (e.g. "ashc" → "AshCoin").
+    /// Fuzzy-find a bank item by partial name or alias (e.g. "ashc" → "AshCoin", "lcm" → "Lesser Coalesced Mana").
     /// </summary>
     static BankItem? FuzzyFindBankItem(string token)
     {
@@ -835,15 +878,33 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (exact != null)
             return exact;
 
+        // Alias exact match
+        var aliasExact = PatchClass.Settings.Items.FirstOrDefault(x =>
+            x.Aliases != null && x.Aliases.Any(a => a.Equals(token, StringComparison.OrdinalIgnoreCase)));
+        if (aliasExact != null)
+            return aliasExact;
+
         // Starts-with match
         var startsWith = PatchClass.Settings.Items.FirstOrDefault(x => x.Name.StartsWith(token, StringComparison.OrdinalIgnoreCase));
         if (startsWith != null)
             return startsWith;
 
+        // Alias starts-with match
+        var aliasStarts = PatchClass.Settings.Items.FirstOrDefault(x =>
+            x.Aliases != null && x.Aliases.Any(a => a.StartsWith(token, StringComparison.OrdinalIgnoreCase)));
+        if (aliasStarts != null)
+            return aliasStarts;
+
         // Contains match
         var contains = PatchClass.Settings.Items.FirstOrDefault(x => x.Name.Contains(token, StringComparison.OrdinalIgnoreCase));
         if (contains != null)
             return contains;
+
+        // Alias contains match
+        var aliasContains = PatchClass.Settings.Items.FirstOrDefault(x =>
+            x.Aliases != null && x.Aliases.Any(a => a.Contains(token, StringComparison.OrdinalIgnoreCase)));
+        if (aliasContains != null)
+            return aliasContains;
 
         return null;
     }
@@ -945,10 +1006,17 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         {
             var list = PublicExchange.GetExchangeList();
             player.SendMessage("=== Exchange Prices ===");
-            foreach (var (name, wcid, buyPrice, sellPrice, poolQty, isStatic) in list)
+            if (list.Count == 0)
             {
-                var staticTag = isStatic ? " [STATIC]" : "";
-                player.SendMessage($"  {name}: pool {poolQty:N0} | buy {buyPrice:N0} | sell {sellPrice:N0}{staticTag}");
+                player.SendMessage("  (no exchangeable items with non-zero supply)");
+            }
+            else
+            {
+                foreach (var (name, wcid, buyPrice, sellPrice, poolQty, isStatic) in list)
+                {
+                    var staticTag = isStatic ? " [STATIC]" : "";
+                    player.SendMessage($"  {name}: pool {poolQty:N0} | buy {buyPrice:N0} | sell {sellPrice:N0}{staticTag}");
+                }
             }
             return;
         }
@@ -1159,15 +1227,18 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (parameters.Length == 0)
         {
             var pool = Lottery.GetPool();
+            var qbPool = Lottery.GetQbPool();
             var ticketPrice = Lottery.GetTicketPrice();
             var prop = (PropertyInt64)Settings.Lottery.TicketPropertyId;
             var myTickets = player.GetProperty(prop) ?? 0;
 
             player.SendMessage("=== Weekly Lottery ===");
-            player.SendMessage($"  Pool: {pool:N0} pyreals");
+            player.SendMessage($"  Pyreal pool: {pool:N0} pyreals");
+            player.SendMessage($"  QB prize pool: {qbPool:0.#} QB");
             player.SendMessage($"  Ticket price: {ticketPrice:N0} pyreals");
             player.SendMessage($"  Your tickets: {myTickets:N0}");
             player.SendMessage("  /lottery buy <n> — purchase tickets");
+            player.SendMessage("  /donate pyreals|luminance|qb <amount> — donate to the prize pool");
             return;
         }
 
@@ -1193,6 +1264,81 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
 
         player.SendMessage("Usage: /lottery | /lottery buy <n>");
+    }
+
+    [CommandHandler("donate", AccessLevel.Player, CommandHandlerFlag.RequiresWorld)]
+    public static void HandleDonate(Session session, params string[] parameters)
+    {
+        var player = session.Player;
+        if (player == null) return;
+
+        if (parameters.Length < 2)
+        {
+            player.SendMessage("Usage: /donate pyreals|p <amount> | /donate luminance|l <amount> | /donate questbonus|qb <amount>");
+            player.SendMessage("Donates banked resources to the lottery pool. You lose the resource; it increases the prize pool for the next draw.");
+            return;
+        }
+
+        var type = parameters[0].ToLowerInvariant();
+        if (!double.TryParse(parameters[1], out var rawAmount) || rawAmount <= 0)
+        {
+            player.SendMessage("Amount must be a positive number.");
+            return;
+        }
+
+        switch (type)
+        {
+            case "pyreals":
+            case "p":
+                var pyrealAmount = (long)rawAmount;
+                var bankedPyreals = player.GetCash();
+                if (bankedPyreals < pyrealAmount)
+                {
+                    player.SendMessage($"You only have {bankedPyreals:N0} banked pyreals.");
+                    return;
+                }
+                player.IncCash(-pyrealAmount);
+                Lottery.AddToPool(pyrealAmount);
+                player.SendMessage($"💰 You donated {pyrealAmount:N0} pyreals to the lottery pool. Prize pool is now {Lottery.GetPool():N0}.");
+                ModManager.Log($"[LeyLineLedger] {player.Name} donated {pyrealAmount:N0} pyreals to lottery pool.", ModManager.LogLevel.Info);
+                break;
+
+            case "luminance":
+            case "l":
+                var lumAmount = (long)rawAmount;
+                var lumProp = (PropertyInt64)Settings.LuminanceProperty;
+                var bankedLum = player.GetProperty(lumProp) ?? 0;
+                if (bankedLum < lumAmount)
+                {
+                    player.SendMessage($"You only have {bankedLum:N0} banked luminance.");
+                    return;
+                }
+                player.SetProperty(lumProp, bankedLum - lumAmount);
+                var lumValue = (long)(lumAmount * Settings.Lottery.DonateLuminanceRate);
+                Lottery.AddToPool(lumValue);
+                player.SendMessage($"✨ You donated {lumAmount:N0} luminance ({lumValue:N0} pyreal value) to the lottery pool. Prize pool is now {Lottery.GetPool():N0}.");
+                ModManager.Log($"[LeyLineLedger] {player.Name} donated {lumAmount:N0} lum ({lumValue:N0}p value) to lottery pool.", ModManager.LogLevel.Info);
+                break;
+
+            case "questbonus":
+            case "qb":
+                var qbAmount = (float)rawAmount;
+                // Loremaster DonateQuestPoints adds to the DonatedQuestPoints offset (reduces effective QB)
+                if (!LoremasterBridge.DonateQuestPoints(player, qbAmount))
+                {
+                    player.SendMessage("Donation failed. Loremaster may not be loaded.");
+                    return;
+                }
+                // Add donated QB directly to the QB prize pool (NOT pyreal pool)
+                Lottery.AddToQbPool(qbAmount);
+                player.SendMessage($"📜 You donated {qbAmount:0.#} QB to the lottery QB pool. QB prize pool is now {Lottery.GetQbPool():0.#}. Pyreal pool: {Lottery.GetPool():N0}.");
+                ModManager.Log($"[LeyLineLedger] {player.Name} donated {qbAmount:0.#} QB to lottery QB pool.", ModManager.LogLevel.Info);
+                break;
+
+            default:
+                player.SendMessage("Usage: /donate pyreals|p <amount> | /donate luminance|l <amount> | /donate questbonus|qb <amount>");
+                break;
+        }
     }
 }
 
@@ -1788,4 +1934,44 @@ public enum Transaction
     Give,
     Take,
     //Send,
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Pre-unlock luminance redirect — bank luminance earned before the player
+// has unlocked the luminance quest (MaximumLuminance == null or 0).
+// ─────────────────────────────────────────────────────────────────────────
+
+[HarmonyPatch]
+internal static class PreAddLuminanceRedirect
+{
+    static MethodBase? TargetMethod()
+    {
+        return AccessTools.Method(typeof(Player), "AddLuminance", new[] { typeof(long), typeof(XpType) });
+    }
+
+    static bool Prepare()
+    {
+        return TargetMethod() != null;
+    }
+
+    [HarmonyPrefix]
+    public static bool Prefix(long amount, XpType xpType, Player __instance)
+    {
+        var settings = PatchClass.Settings;
+        if (settings?.EnablePreUnlockLuminanceBanking != true)
+            return true;
+
+        // MaximumLuminance == null or 0 means luminance hasn't been unlocked yet
+        var maxLum = __instance.MaximumLuminance ?? 0;
+        if (maxLum > 0)
+            return true; // Luminance is unlocked — let vanilla handle it
+
+        // Bank the luminance instead of dropping it on the floor
+        __instance.IncBanked(settings.LuminanceProperty, amount);
+
+        if (__instance.Session != null)
+            __instance.SendMessage($"[LeyLineLedger] You earned {amount:N0} luminance, but luminance is not yet unlocked. It has been banked for later withdrawal.");
+
+        return false; // Skip original AddLuminance
+    }
 }

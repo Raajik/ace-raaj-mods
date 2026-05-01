@@ -5,12 +5,27 @@ public static class LoremasterExtensions
     // ─────────────────────────────────────────────────────────────────────────────
     // Quest Point helpers
     // ────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Strips the #repeatQB{n} suffix from a quest name to get the base name used for
+    /// QuestBonuses dictionary lookups and cooldown checks.
+    /// </summary>
+    public static string GetBaseQuestName(string questName)
+    {
+        if (string.IsNullOrEmpty(questName))
+            return questName;
+
+        var idx = questName.IndexOf("#repeatQB", StringComparison.OrdinalIgnoreCase);
+        return idx >= 0 ? questName[..idx] : questName;
+    }
+
     public static float Value(this CharacterPropertiesQuestRegistry quest)
     {
         if (PatchClass.Settings is null)
             return 0f;
 
-        return PatchClass.Settings.QuestBonuses.TryGetValue(quest.QuestName, out var points)
+        var baseName = GetBaseQuestName(quest.QuestName);
+        return PatchClass.Settings.QuestBonuses.TryGetValue(baseName, out var points)
             ? points
             : PatchClass.Settings.DefaultPoints;
     }
@@ -68,19 +83,26 @@ public static class LoremasterExtensions
             extra = (float)extraProp.Value;
         }
 
-        player.SetProperty(FakeFloat.QuestBonus, basePoints + extra);
+        var donated = (float)(player.GetProperty(LMFloat.DonatedQuestPoints) ?? 0f);
+
+        var total = basePoints + extra - donated;
+        if (total < 0) total = 0;
+        player.SetProperty(FakeFloat.QuestBonus, total);
     }
 
     public static void AddExtraQuestPoints(this Player player, float amount)
     {
         var cur = (float)(player.GetProperty(LMFloat.QuestPointsExtra) ?? 0);
         player.SetProperty(LMFloat.QuestPointsExtra, cur + amount);
-    }
 
-    public static void AddRepeatStamp(this Player player, float amount)
-    {
-        var cur = (float)(player.GetProperty(LMFloat.RepeatStampMultiplier) ?? 0);
-        player.SetProperty(LMFloat.RepeatStampMultiplier, cur + amount);
+        // Track lottery contribution (server-side match; player keeps 100% of their QP)
+        // Only track positive earnings, not donations / negative adjustments.
+        var pct = PatchClass.Settings?.QuestPointLotteryContributionPercent ?? 0;
+        if (pct > 0 && amount > 0)
+        {
+            lock (PatchClass.LotteryLock)
+                PatchClass.PendingLotteryContribution += amount * pct / 100.0;
+        }
     }
 
     public static void IncQuestPoints(this Player player, float amount)
@@ -106,32 +128,66 @@ public static class LoremasterExtensions
             return player.CalculateQuestPoints();
         }
 
-        var solvedQuestNames = GetAccountUniqueQuestNames(player, accountId.Value);
         var settings = PatchClass.Settings;
         if (settings is null)
             return 0f;
 
-        float total = 0;
-        foreach (var questName in solvedQuestNames)
+        try
         {
-            total += settings.QuestBonuses.TryGetValue(questName, out var points)
-                ? points
-                : settings.DefaultPoints;
+            using var ctx = new ShardDbContext();
+            var charIds = ctx.Character.AsNoTracking()
+                .Where(c => c.AccountId == accountId.Value && !c.IsDeleted)
+                .Select(c => c.Id)
+                .ToHashSet();
+
+            // Count every quest registry row (including repeatQB unique entries) as 1 QP,
+            // using the base quest name for the QuestBonuses lookup.
+            var dbQuests = ctx.CharacterPropertiesQuestRegistry.AsNoTracking()
+                .Where(q => charIds.Contains(q.CharacterId) && q.NumTimesCompleted > 0)
+                .Select(q => q.QuestName)
+                .ToList();
+
+            float total = 0;
+            foreach (var questName in dbQuests)
+            {
+                var baseName = GetBaseQuestName(questName);
+                total += settings.QuestBonuses.TryGetValue(baseName, out var points)
+                    ? points
+                    : settings.DefaultPoints;
+            }
+
+            // Merge in-memory quests from any online characters on the same account
+            foreach (var online in PlayerManager.GetAllOnline())
+            {
+                if (online.Account?.AccountId != accountId.Value || online.QuestManager == null)
+                    continue;
+                foreach (var q in online.QuestManager.GetQuests().Where(q => q.HasSolves()))
+                {
+                    var baseName = GetBaseQuestName(q.QuestName);
+                    total += settings.QuestBonuses.TryGetValue(baseName, out var points)
+                        ? points
+                        : settings.DefaultPoints;
+                }
+            }
+
+            return total;
         }
-        return total;
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Loremaster] CalculateAccountQuestPoints failed: {ex.Message}", ModManager.LogLevel.Warn);
+            return player.CalculateQuestPoints();
+        }
     }
 
     public static double QuestBonus(this Player player)
     {
         if (PatchClass.Settings is null) return 1.0;
         var qp = player.GetProperty(FakeFloat.QuestBonus) ?? 0;
-        var stampMult = player.GetProperty(LMFloat.RepeatStampMultiplier) ?? 0;
         var baseFactor = 1.0 + qp * PatchClass.Settings.BonusPerQuestPoint / 100.0;
-        var stampFactor = 1.0 + stampMult;
         var chaos = player.GetProperty(LMFloat.ChaosQuestBonusMultiplier);
         if (chaos is double cd && cd > 1.001)
-            return baseFactor * stampFactor * cd;
-        return baseFactor * stampFactor;
+            return baseFactor * cd;
+        return baseFactor;
     }
 
     public static double GetEquipmentXpMultiplierFactor(this Player player)
@@ -149,7 +205,9 @@ public static class LoremasterExtensions
         if (s.UseEnlightenmentPoolForXpMultiplier)
         {
             var pool = player.GetProperty(LMFloat.EnlightenmentPoolBonus) ?? 0f;
-            return Math.Max(0.0, 1.0 + pool);
+            var augBonus = player.AugmentationBonusXp * 0.05f;
+            var equipBonus = player.EnchantmentManager.GetXPBonus();
+            return Math.Max(0.0, 1.0 + pool + augBonus + equipBonus);
         }
 
         return Math.Max(0.0, 1.0 + player.Enlightenment * (s.EnlightenmentBonusPercentPer / 100.0));
@@ -321,14 +379,11 @@ public static class LoremasterExtensions
         if (s is null) return;
 
         var qp         = player.GetProperty(FakeFloat.QuestBonus) ?? 0;
-        var stampMult  = player.GetProperty(LMFloat.RepeatStampMultiplier) ?? 0;
         var extra      = player.GetProperty(LMFloat.QuestPointsExtra) ?? 0;
         var chaos      = player.GetProperty(LMFloat.ChaosQuestBonusMultiplier);
 
         if (extra > 0.0001f)
             player.SendMessage($"  QP breakdown   : {qp - extra:0.##} from flags, +{extra:0.##} bonus pool = {qp:0.##} total");
-        if (stampMult > 0.0001)
-            player.SendMessage($"  Repeat stamps  : +{stampMult * 100:0.##}% from repeat solves");
         if (chaos is double cd && cd > 1.001)
             player.SendMessage($"  Chaos mult     : ×{cd:0.####}");
 
@@ -336,20 +391,14 @@ public static class LoremasterExtensions
         player.SendMessage($"  ── How to maximize ──");
         player.SendMessage($"  Each QP is worth   : +{s.BonusPerQuestPoint / 100.0:0.#####}% XP multiplier");
         player.SendMessage($"  QP for +1% mult    : {100.0 / s.BonusPerQuestPoint:0.##} QP");
-        if (s.EnableRepeatStampSystem)
-        {
-            player.SendMessage($"  Each repeat stamp  : +{s.RepeatStampBonusPerStamp * 100:0.#####}% (1 QP quest = +{s.RepeatStampBonusPerStamp * 100:0.#####}%)");
-            player.SendMessage($"  Stamp cooldown     : {s.RepeatStampCooldownSeconds / 3600.0:0.##} hours");
-            player.SendMessage($"  Your stamps        : {stampMult / s.RepeatStampBonusPerStamp:0.##} earned");
-        }
         player.SendMessage($"  Completion bonus   : {s.DefaultCompletionBonusXpMultiplier * 100:0.##}% + (QP × {s.CompletionBonusPerQuestPoint / 100.0:0.#####}%) of next-level XP");
         var cdReduct = player.GetQuestCooldownReduction();
         if (cdReduct > 0)
             player.SendMessage($"  Cooldown reduction : {cdReduct * 100:0.##}% (cap {s.QuestCooldownReductionCap * 100:0.##}%)");
         player.SendMessage($"  Account-wide QP    : {(s.UseAccountWideQuests ? "YES — alts share QP, do not double-dip" : "NO — per-character only")}");
         player.SendMessage($"  ── Tips ──");
-        player.SendMessage($"  1) Solve NEW quests for QP (unique = multiplier growth)");
-        player.SendMessage($"  2) Repeat-solve for stamps (stamps = extra multiplier)");
+        player.SendMessage($"  1) Solve quests for QP (each completion = +1 QP)");
+        player.SendMessage($"  2) Repeat-solve for repeatQB (stacked via unique quest entries)");
         player.SendMessage($"  3) Stack equipment with ItemXpBoost for raw kill XP");
         player.SendMessage($"  4) Enlightenment + account milestones = permanent base layers");
 
@@ -363,41 +412,6 @@ public static class LoremasterExtensions
     // ─────────────────────────────────────────────────────────────────────────
     // Quest rewards — completion bonus XP, repeat stamp, loot
     // ─────────────────────────────────────────────────────────────────────────
-
-    public static bool HasReceivedRepeatReward(this Player player, string questName)
-    {
-        var s = PatchClass.Settings;
-        if (s is null || !s.EnableRepeatRewardOnceOnly) return false;
-
-        var stored = player.GetProperty(LMString.RepeatRewardsGranted);
-        if (string.IsNullOrEmpty(stored)) return false;
-
-        try
-        {
-            var timestamps = JsonSerializer.Deserialize<Dictionary<string, long>>(stored);
-            if (timestamps?.TryGetValue(questName, out var lastGranted) == true)
-            {
-                var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                return now - lastGranted < s.RepeatStampCooldownSeconds;
-            }
-        }
-        catch { }
-        return false;
-    }
-
-    public static void MarkRepeatRewardGranted(this Player player, string questName)
-    {
-        var stored = player.GetProperty(LMString.RepeatRewardsGranted);
-        Dictionary<string, long>? timestamps = null;
-        if (!string.IsNullOrEmpty(stored))
-        {
-            try { timestamps = JsonSerializer.Deserialize<Dictionary<string, long>>(stored); } catch { }
-        }
-        timestamps ??= new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-
-        timestamps[questName] = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        player.SetProperty(LMString.RepeatRewardsGranted, JsonSerializer.Serialize(timestamps));
-    }
 
     public static void GrantCompletionBonuses(this Player player, string questName)
     {
@@ -432,32 +446,32 @@ public static class LoremasterExtensions
         }
     }
 
+    /// <summary>
+    /// Checks whether a repeatQB can be awarded for this quest, respecting account-wide cooldown.
+    /// The actual repeatQB entry creation happens in the QuestManager.Update postfix patch.
+    /// </summary>
     public static bool TryAwardRepeatQuestPoints(this Player player, string questName, float qpVal)
     {
         var s = PatchClass.Settings;
-        if (s is null || !s.EnableRepeatStampSystem || qpVal <= 0) return false;
+        if (s is null || qpVal <= 0) return false;
 
-        Dictionary<string, long>? timestamps = null;
-        var stored = player.GetProperty(LMString.RepeatQuestPointTimestamps);
-        if (!string.IsNullOrEmpty(stored))
+        // Account-wide cooldown check
+        if (s.EnableAccountWideRepeatCooldown && player.Account?.AccountId is uint accountId)
         {
-            try { timestamps = JsonSerializer.Deserialize<Dictionary<string, long>>(stored); } catch { }
+            // WorldEvents bonus quests are one-offs; don't enforce account-wide cooldown on them
+            if (!WorldEventsBonusQuestBridge.IsActiveBonusQuest(questName))
+            {
+                var (onCooldown, remaining) = RepeatQbTracker.CheckRepeatQbCooldown(
+                    accountId, questName, s.AccountRepeatCooldownSeconds);
+
+                if (onCooldown)
+                {
+                    var remainStr = remaining.GetFriendlyString();
+                    player.SendMessage($"You may complete this quest again in {remainStr}.", ChatMessageType.Broadcast);
+                    return false;
+                }
+            }
         }
-        timestamps ??= new Dictionary<string, long>(StringComparer.OrdinalIgnoreCase);
-
-        var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        if (timestamps.TryGetValue(questName, out var lastAwarded)
-            && now - lastAwarded < s.RepeatStampCooldownSeconds)
-            return false;
-
-        timestamps[questName] = now;
-        player.SetProperty(LMString.RepeatQuestPointTimestamps, JsonSerializer.Serialize(timestamps));
-
-        var bonus = s.RepeatStampBonusPerStamp * qpVal;
-        player.AddRepeatStamp(bonus);
-
-        if (player.Notify(LMBool.NotifyQuest))
-            player.SendMessage(FormatQpNotification($"+{bonus:0.###} repeat stamp bonus from {questName}"));
 
         return true;
     }

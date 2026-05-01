@@ -1,4 +1,5 @@
 using ACE.Entity.Enum;
+using ACE.Server.Managers;
 using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.Network.GameMessages.Messages;
 using static ACE.Server.WorldObjects.Player;
@@ -125,12 +126,24 @@ internal static class CmQuit
                 continue;
             if (destItem is null)
                 continue;
-            if (!player.TryCreateInInventoryWithNetworking(destItem, out _))
-                continue;
 
+            // Use TryAddToInventory (not TryCreateInInventoryWithNetworking) to avoid sending
+            // GameMessageCreateObject for an item the client already knows about, which can
+            // leave gear invisible until relog.
+            if (!player.TryAddToInventory(destItem, out var container))
+            {
+                // Fallback: drop at feet if pack is full so the item isn't lost
+                destItem.Location = new Position(player.Location);
+                LandblockManager.AddObject(destItem);
+                player.SendMessage($"Your pack was full; {destItem.Name} was dropped at your feet.");
+                continue;
+            }
+
+            // Send the same container-update messages ACE uses after TryDequipObject + TryAddToInventory
             player.Session.Network.EnqueueSend(
-                new GameMessagePublicUpdateInstanceID(destItem, PropertyInstanceId.Container, destItem.Container.Guid),
-                new GameEventItemServerSaysMoveItem(player.Session, destItem));
+                new GameMessagePublicUpdateInstanceID(destItem, PropertyInstanceId.Container, container.Guid),
+                new GameEventItemServerSaysContainId(player.Session, destItem, container));
+
             destItem.EmoteManager.OnDrop(player);
             destItem.SaveBiotaToDatabase();
         }

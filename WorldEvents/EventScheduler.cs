@@ -160,6 +160,9 @@ internal static class EventScheduler
             return;
         }
 
+        // Restock Pathwarden vendors on every event start
+        PathwardenVendorManager.RestockAllVendors();
+
         var evt = new ActiveScheduledEvent(nextType, eventName ?? nextType.ToString(), now, endTime, landblocks);
         _activeEvents.Add(evt);
 
@@ -287,7 +290,8 @@ internal static class EventScheduler
             {
                 HuntRuntime.FinalizeHuntLeaderboard(s, HuntRuntime.ActiveHunt);
             }
-            HuntRuntime.BeginNewHuntWindow(s, finalizePrevious: false);
+            // Scale hunt window to the scheduler's event duration so it matches the active window
+            HuntRuntime.BeginNewHuntWindow(s, finalizePrevious: false, customDurationMinutes: EventDurationMinutes);
             return HuntRuntime.ActiveHunt != null;
         }
     }

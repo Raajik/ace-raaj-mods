@@ -16,6 +16,11 @@ public class AutoLoot
     internal static readonly ConcurrentDictionary<uint, int> autosalvageMode = new(); // 0=off, 1=short, 2=full
     static readonly ConcurrentDictionary<uint, bool> loadedPlayers = new();
 
+    // Salvage sweep timer state
+    static readonly ConcurrentDictionary<uint, SalvageTimerState> _salvageTimers = new();
+
+    record struct SalvageTimerState(uint ContainerGuid, uint PlayerGuid, DateTime ExpiresUtc, CancellationTokenSource Cts);
+
     // Achievement tracking
     static readonly ConcurrentDictionary<uint, int> keyUnlocks = new();
     static readonly ConcurrentDictionary<uint, int> lockpickUnlocks = new();
@@ -38,6 +43,19 @@ public class AutoLoot
 
     static readonly HashSet<uint> LockpickWcids = new()
         { 510, 511, 512, 513, 514, 515, 516, 545, 27672 };
+
+    // Level 8 spellcrafting components: quills, inks, skill glyphs
+    static readonly HashSet<uint> Level8CompWcids = new()
+    {
+        // Quills
+        37362, 37363, 37364, 37365,
+        // Inks
+        37353, 37354, 37355, 37356, 37357, 37358, 37359, 37360, 37361,
+        // Skill Glyphs
+        6322, 6323, 6324, 6325, 6326, 6327, 6328,
+        19400, 19401, 19402, 19403, 19404, 19405, 19406, 19407, 19408, 19409, 19410,
+        37310, 37341, 37346, 38760, 41746,
+    };
 
     static IReadOnlyList<string> GetEffectiveDefaultProfileNames(Settings settings)
     {
@@ -183,10 +201,27 @@ public class AutoLoot
         }
     }
 
+    // Coalesced Mana WCIDs → LeyLineLedger bank PropertyInt64
+    static readonly Dictionary<uint, int> CoalescedManaBankProps = new()
+    {
+        { 42516, 41100 }, // Lesser Coalesced Mana
+        { 42517, 41101 }, // Greater Coalesced Mana
+        { 42518, 41102 }, // Aetheric Coalesced Mana
+    };
+
     static bool TryBankCurrency(Player player, WorldObject item)
     {
         if (PatchClass.Settings is not { DepositLootedCurrencyToBank: true })
             return false;
+
+        // Coalesced Mana — bank to LeyLineLedger
+        if (CoalescedManaBankProps.TryGetValue(item.WeenieClassId, out var manaProp))
+        {
+            var qty = item.StackSize ?? 1;
+            var manaCurrent = player.GetProperty((PropertyInt64)manaProp) ?? 0;
+            player.SetProperty((PropertyInt64)manaProp, manaCurrent + qty);
+            return true;
+        }
 
         if (item.WeenieClassId != Player.coinStackWcid &&
             !item.WeenieClassName.StartsWith("tradenote", StringComparison.OrdinalIgnoreCase) &&
@@ -251,54 +286,27 @@ public class AutoLoot
         return true;
     }
 
-    static bool IsSalvageItem(WorldObject item)
+    // ── Level 8 spellcrafting components ─────────────────────────────────────
+
+    static bool IsLevel8Comp(WorldObject item) => item != null && Level8CompWcids.Contains(item.WeenieClassId);
+
+    static bool TryConvertLevel8Comp(Player player, WorldObject item)
     {
-        // Salvage bag WCIDs 20981-21089
-        return item.WeenieClassId >= 20981 && item.WeenieClassId <= 21089;
-    }
-
-    static bool IsEquippableItem(WorldObject item)
-    {
-        var type = item.ItemType;
-        return (type & (ItemType.Armor | ItemType.Clothing | ItemType.Jewelry | ItemType.MeleeWeapon | ItemType.MissileWeapon | ItemType.Caster | ItemType.Gem)) != 0;
-    }
-
-    static bool TryAutoSalvageMaterial(Player player, WorldObject item, out int materialIndex, out int units)
-    {
-        materialIndex = -1;
-        units = 0;
-
-        var materialType = item.GetProperty(PropertyInt.MaterialType);
-        if (!materialType.HasValue) return false;
-
-        if (!Player.MaterialSalvage.TryGetValue((int)materialType.Value, out var salvageWcid) || salvageWcid <= 0)
+        if (PatchClass.Settings?.EnableLevel8CompsConversion != true)
             return false;
 
-        materialIndex = salvageWcid - 20981;
-        if (materialIndex < 0 || materialIndex > 70) return false;
+        if (!IsLevel8Comp(item))
+            return false;
 
-        // Calculate units: workmanship → structure → fallback 1
-        int work = item.ItemWorkmanship ?? 0;
-        if (work > 0)
-            units = work;
-        else
-        {
-            int structure = item.Structure ?? 0;
-            units = structure > 0 ? structure : 1;
-        }
+        var totalValue = (long)(item.Value ?? 0) * (item.StackSize ?? 1);
+        if (totalValue <= 0)
+            return false;
 
+        var bankProp = PatchClass.Settings?.BankCashProperty ?? 39999;
+        var current = player.GetProperty((PropertyInt64)bankProp) ?? 0;
+        player.SetProperty((PropertyInt64)bankProp, current + totalValue);
+        player.UpdateCoinValue();
         return true;
-    }
-
-    static void MaybeSendAutoSalvageMessage(Player player, int materialIndex, int units)
-    {
-        var mode = autosalvageMode.GetOrAdd(LootKey(player), 1);
-        if (mode != 2) return; // full only
-
-        string[] names = { "Ceramic", "Porcelain", "Cloth", "Linen", "Satin", "Silk", "Velvet", "Wool", "Gems", "Agate", "Amber", "Amethyst", "Aquamarine", "Azurite", "Black Garnet", "Black Opal", "Bloodstone", "Carnelian", "Citrine", "Diamond", "Emerald", "Fire Opal", "Green Garnet", "Green Jade", "Hematite", "Imperial Topaz", "Jet", "Lapis Lazuli", "Lavender Jade", "Leather", "Malachite", "Marble", "Moonstone", "Obsidian", "Onyx", "Opal", "Peridot", "Porcelain", "Pyreal", "Red Garnet", "Red Jade", "Rose Quartz", "Ruby", "Sandstone", "Sapphire", "Serpentine", "Silk", "Silver", "Smoky Quartz", "Sunstone", "Teak", "Tiger Eye", "Tourmaline", "Turquoise", "White Jade", "White Quartz", "White Sapphire", "Yellow Garnet", "Yellow Topaz", "Zircon", "Armoredillo Hide", "Bronze", "Gold", "Granite", "Iron", "Mahogany", "Oak", "Pine", "Reedshark Hide" };
-        string matName = (materialIndex >= 0 && materialIndex < names.Length) ? names[materialIndex] : "Unknown";
-        double bags = units / 100.0;
-        player.SendMessage($"Auto-salvaged: {bags:F2} {matName}");
     }
 
     // ── Achievement tracking ─────────────────────────────────────────────────
@@ -378,7 +386,8 @@ public class AutoLoot
     {
         static MethodInfo? _setEnabled;
         static MethodInfo? _isEnabled;
-        static MethodInfo? _onPickupSalvage;
+        static MethodInfo? _tryAutoSalvageItem;
+        static MethodInfo? _getSalvageRate;
         static bool _resolved;
 
         static void Resolve()
@@ -395,7 +404,8 @@ public class AutoLoot
 
                 _setEnabled = t.GetMethod("SetEnabled", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player), typeof(bool) }, null);
                 _isEnabled = t.GetMethod("IsEnabled", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player) }, null);
-                _onPickupSalvage = t.GetMethod("OnPickupSalvage", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player), typeof(WorldObject) }, null);
+                _tryAutoSalvageItem = t.GetMethod("TryAutoSalvageItem", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player), typeof(WorldObject) }, null);
+                _getSalvageRate = t.GetMethod("GetSalvageRate", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player) }, null);
                 return;
             }
         }
@@ -414,11 +424,22 @@ public class AutoLoot
             try { return _isEnabled.Invoke(null, new object?[] { player }) is true; } catch { return false; }
         }
 
-        internal static void OnPickupSalvage(Player player, WorldObject item)
+        internal static double GetSalvageRate(Player player)
         {
             if (!_resolved) Resolve();
-            if (_onPickupSalvage is null) return;
-            try { _onPickupSalvage.Invoke(null, new object?[] { player, item }); } catch { }
+            if (_getSalvageRate is null) return 0.0;
+            try { return _getSalvageRate.Invoke(null, new object?[] { player }) is double rate ? rate : 0.0; } catch { return 0.0; }
+        }
+
+        /// <summary>
+        /// Delegates to BetterSupportSkills.SalvageAutoDeposit.TryAutoSalvageItem.
+        /// Returns true if the item was salvaged and destroyed by BSS.
+        /// </summary>
+        internal static bool TryAutoSalvage(Player player, WorldObject item)
+        {
+            if (!_resolved) Resolve();
+            if (_tryAutoSalvageItem is null) return false;
+            try { return _tryAutoSalvageItem.Invoke(null, new object?[] { player, item }) is true; } catch { return false; }
         }
     }
 
@@ -431,7 +452,7 @@ public class AutoLoot
         return Path.Combine(dir, $"{player.Guid.Full}.json");
     }
 
-    static void EnsureLoaded(Player player)
+    internal static void EnsureLoaded(Player player)
     {
         if (!loadedPlayers.TryAdd(player.Guid.Full, true))
             return;
@@ -886,51 +907,316 @@ public class AutoLoot
 
     // ── Patches ──────────────────────────────────────────────────────────────
 
-    internal static void OnPostGenerateTreasure(DamageHistoryInfo killer, Corpse corpse, Creature __instance, ref List<WorldObject> __result)
+    // ── Container auto-loot ──────────────────────────────────────────────────
+
+    internal static void OnContainerOpened(Player player, Container container)
+    {
+        if (player == null || container == null) return;
+        if (PatchClass.Settings?.EnableChestAutoLoot != true) return;
+
+        // Only process Chests and Corpses
+        if (container is not Chest && container is not Corpse) return;
+
+        // For corpses, run full autoloot logic at kill time (via PostGenerateTreasure).
+        // Salvage on leftovers happens when the corpse is closed.
+        if (container is Corpse corpse)
+        {
+            EnsureLoaded(player);
+            ProcessContainerLoot(player, corpse);
+            return;
+        }
+
+        // Chests: NO open-phase autoloot anymore. Player sees everything on open.
+        // All autoloot (silent banking + profiles + salvage) now runs on CLOSE
+        // so the chest UI stays in sync with server state.
+    }
+
+    /// <summary>
+    /// IMMEDIATE phase — for chests, now runs on CLOSE (before profiles + salvage).
+    /// For corpses this is a no-op because the same actions ran at kill time.
+    /// Silently banks cash/peas, keys, lockpicks, and destroys known scrolls.
+    /// Leaves everything else for the player to inspect.
+    /// </summary>
+    internal static void ProcessContainerLootImmediate(Player player, Container container)
+    {
+        if (player == null || container == null) return;
+
+        bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
+
+        var items = container.Inventory.Values.ToList();
+        foreach (var item in items)
+        {
+            if (item.IsDestroyed) continue;
+
+            // Known scrolls: silently destroy
+            if (item.WeenieType == WeenieType.Scroll)
+            {
+                var spellId = item.GetProperty(PropertyDataId.Spell) ?? 0;
+                if (spellId != 0 && player.SpellIsKnown(spellId))
+                {
+                    if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                        removed?.Destroy();
+                }
+                continue;
+            }
+
+            // Cash / peas: silently bank
+            if (TryBankCurrency(player, item))
+            {
+                if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                    removed?.Destroy();
+                continue;
+            }
+
+            // Keys: silently bank (if unlocked)
+            if (TryBankKey(player, item))
+            {
+                if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                    removed?.Destroy();
+                continue;
+            }
+
+            // Lockpicks: silently bank (if unlocked)
+            if (TryBankLockpick(player, item))
+            {
+                if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                    removed?.Destroy();
+                continue;
+            }
+
+            // Level 8 spellcrafting components: convert to pyreal value
+            if (TryConvertLevel8Comp(player, item))
+            {
+                if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                    removed?.Destroy();
+                continue;
+            }
+        }
+    }
+
+    /// <summary>
+    /// CLOSE phase — called when a chest or corpse is CLOSED.
+    /// For chests: ProcessContainerLootImmediate runs just before this (silent banking + known scroll destroy).
+    /// Then batch-loots profile matches, vendor trash, and unknown scrolls.
+    /// Finally salvages/destroys remaining clutter.
+    /// Sends ONE consolidated message.
+    /// </summary>
+    internal static void ProcessContainerLootClose(Player player, Container container)
     {
         bool debug = PatchClass.Settings?.DebugLogging == true;
-        if (debug)
-            ModManager.Log("AutoLoot: PostGenerateTreasure entered", ModManager.LogLevel.Info);
-
-        if (killer == null)
-        {
-            if (debug)
-                ModManager.Log("AutoLoot: PostGenerateTreasure early exit — killer is null", ModManager.LogLevel.Info);
-            return;
-        }
-
-        if (killer.TryGetPetOwnerOrAttacker() is not Player player)
-        {
-            if (debug)
-                ModManager.Log("AutoLoot: PostGenerateTreasure early exit — killer did not resolve to Player", ModManager.LogLevel.Info);
-            return;
-        }
-
-        if (corpse == null)
-        {
-            if (debug)
-                ModManager.Log("AutoLoot: PostGenerateTreasure early exit — corpse is null", ModManager.LogLevel.Info);
-            return;
-        }
-
-        EnsureLoaded(player);
 
         lootProfiles.TryGetValue(LootKey(player), out var playerProfiles);
-        bool hasProfiles    = playerProfiles != null && !playerProfiles.IsEmpty;
-        bool hasVT          = vendorTrashEnabled.GetOrAdd(LootKey(player), false);
-        bool hasScrolls     = unknownScrolls.GetOrAdd(LootKey(player), false);
-        bool hasSalvage     = BetterSupportSkillsBridge.IsSalvageEnabled(player);
+        bool hasProfiles = playerProfiles != null && !playerProfiles.IsEmpty;
+        bool hasVT = vendorTrashEnabled.GetOrAdd(LootKey(player), false);
+        bool hasScrolls = unknownScrolls.GetOrAdd(LootKey(player), false);
+        bool hasSalvage = BetterSupportSkillsBridge.IsSalvageEnabled(player)
+                       && BetterSupportSkillsBridge.GetSalvageRate(player) > 0.0;
 
-        if (!hasProfiles && !hasVT && !hasScrolls && !hasSalvage)
+        bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
+        if (!hasProfiles && !hasVT && !hasScrolls && !hasSalvage && !hasLevel8Comps)
         {
             if (debug)
-                ModManager.Log($"AutoLoot: PostGenerateTreasure early exit — no active loot for {player.Name}", ModManager.LogLevel.Info);
+                ModManager.Log($"AutoLoot: ProcessContainerLootClose early exit — no active loot for {player.Name}", ModManager.LogLevel.Info);
             return;
         }
 
         try
         {
-            var items = corpse.Inventory.Values.ToList();
+            var items = container.Inventory.Values.ToList();
+            var activeProfiles = hasProfiles ? playerProfiles!.Values.ToList() : new List<LootCore>();
+
+            var lootedItems = new Dictionary<string, int>();
+            var lootedSet = new HashSet<WorldObject>();
+            var scrollFallbackNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var lootedVTNames = new HashSet<string>();
+            var noDupPatterns = PatchClass.Settings?.NoDuplicateNames ?? [];
+
+            // ── Pass 1: .utl profiles ──────────────────────────────────────
+            foreach (var item in items)
+            {
+                if (item.IsDestroyed || lootedSet.Contains(item)) continue;
+
+                if (noDupPatterns.Count > 0 &&
+                    noDupPatterns.Any(p => item.Name?.Contains(p, StringComparison.OrdinalIgnoreCase) == true) &&
+                    PlayerOwnsWcid(player, item.WeenieClassId))
+                    continue;
+
+                foreach (var profile in activeProfiles)
+                {
+                    var lootAction = profile.GetLootDecision(item, player);
+                    if (lootAction.IsNoLoot) continue;
+
+                    if (!container.TryRemoveFromInventory(item.Guid, out var removed))
+                        break;
+
+                    var qty = removed.StackSize ?? 1;
+                    var lootName = LootDisplayName(removed);
+                    lootedItems.TryGetValue(lootName, out var existing);
+                    lootedItems[lootName] = existing + qty;
+                    lootedSet.Add(removed);
+                    AutolootTryCreateInInventoryWithNetworking(player, removed);
+                    break;
+                }
+            }
+
+            // ── Pass 2: VendorTrash ────────────────────────────────────────
+            if (hasVT)
+            {
+                int threshold = vendorTrashRatio.GetOrAdd(LootKey(player), 50);
+                foreach (var item in items)
+                {
+                    if (lootedSet.Contains(item) || item.IsDestroyed) continue;
+
+                    var value = item.Value ?? 0;
+                    var burden = item.EncumbranceVal ?? 1;
+                    if (burden <= 0) burden = 1;
+
+                    if (value >= threshold * burden)
+                    {
+                        if (!container.TryRemoveFromInventory(item.Guid, out var removed))
+                            continue;
+
+                        var qty = removed.StackSize ?? 1;
+                        var lootName = LootDisplayName(removed);
+                        lootedItems.TryGetValue(lootName, out var existing);
+                        lootedItems[lootName] = existing + qty;
+                        lootedSet.Add(removed);
+                        lootedVTNames.Add(lootName);
+                        AutolootTryCreateInInventoryWithNetworking(player, removed);
+                    }
+                }
+            }
+
+            // ── Pass 3: Unknown Scrolls ────────────────────────────────────
+            if (hasScrolls)
+            {
+                foreach (var item in items)
+                {
+                    if (lootedSet.Contains(item) || item.IsDestroyed) continue;
+                    if (item.WeenieType != WeenieType.Scroll) continue;
+
+                    var spellId = item.GetProperty(PropertyDataId.Spell) ?? 0;
+                    if (spellId == 0 || player.SpellIsKnown(spellId)) continue;
+
+                    var scrollName = LootDisplayName(item);
+                    if (!container.TryRemoveFromInventory(item.Guid, out var removed))
+                        continue;
+
+                    lootedItems.TryGetValue(scrollName, out var existing);
+                    lootedItems[scrollName] = existing + 1;
+                    lootedSet.Add(removed);
+                    scrollFallbackNames.Add(scrollName);
+                    AutolootTryCreateInInventoryWithNetworking(player, removed);
+                }
+            }
+
+            // ── Pass 4: Level 8 spellcrafting components ───────────────────
+            int level8CompsConverted = 0;
+            long level8CompValue = 0;
+            var remainingBeforeSalvage = container.Inventory.Values.ToList();
+            foreach (var item in remainingBeforeSalvage)
+            {
+                if (item.IsDestroyed || lootedSet.Contains(item)) continue;
+                if (TryConvertLevel8Comp(player, item))
+                {
+                    if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                    {
+                        removed?.Destroy();
+                        level8CompsConverted++;
+                        level8CompValue += (long)(item.Value ?? 0) * (item.StackSize ?? 1);
+                    }
+                }
+            }
+
+            // ── Pass 5: Immediate Salvage Sweep ────────────────────────────
+            int salvaged = 0;
+            int destroyed = 0;
+            if (hasSalvage || PatchClass.Settings?.EnableDelayedSalvageSweep == true)
+            {
+                var remaining = container.Inventory.Values.ToList();
+                foreach (var item in remaining)
+                {
+                    if (item.IsDestroyed) continue;
+
+                    if (BetterSupportSkillsBridge.TryAutoSalvage(player, item))
+                    {
+                        container.TryRemoveFromInventory(item.Guid, out _);
+                        salvaged++;
+                    }
+                    else if (!item.GetProperty(PropertyInt.MaterialType).HasValue
+                             && item.WeenieClassId is not (>= 20981 and <= 21089))
+                    {
+                        container.TryRemoveFromInventory(item.Guid, out _);
+                        item.Destroy();
+                        destroyed++;
+                    }
+                }
+            }
+
+            // ── Single consolidated message ────────────────────────────────
+            var regularItems = lootedItems
+                .Where(kvp => !scrollFallbackNames.Contains(kvp.Key))
+                .Select(kvp =>
+                {
+                    var suffix = lootedVTNames.Contains(kvp.Key) ? " [$]" : "";
+                    return kvp.Value == 1 ? $"a {kvp.Key}{suffix}" : $"{kvp.Value:N0} {kvp.Key}{suffix}";
+                })
+                .ToList();
+
+            var parts = new List<string>();
+            if (regularItems.Count > 0)
+                parts.Add($"looted {FormatItemList(regularItems)}");
+            if (level8CompsConverted > 0)
+                parts.Add($"converted {level8CompsConverted} spellcrafting component(s) to {level8CompValue:N0} pyreals");
+            if (salvaged > 0)
+                parts.Add($"salvaged {salvaged} item(s)");
+            if (destroyed > 0)
+                parts.Add($"destroyed {destroyed} clutter item(s)");
+
+            if (parts.Count > 0)
+                player.SendMessage($"[AutoLoot] {string.Join(", ", parts)}.");
+
+            foreach (var scrollName in scrollFallbackNames)
+                player.SendMessage($"[AutoLoot] [!] You can learn: {scrollName}");
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"AutoLoot: ProcessContainerLootClose exception: {ex}", ModManager.LogLevel.Error);
+        }
+    }
+
+    private static string FormatItemList(List<string> items)
+    {
+        return items.Count switch
+        {
+            1 => items[0],
+            2 => $"{items[0]} and {items[1]}",
+            _ => string.Join(", ", items.Take(items.Count - 1)) + $", and {items[^1]}"
+        };
+    }
+
+    internal static void ProcessContainerLoot(Player player, Container container)
+    {
+        bool debug = PatchClass.Settings?.DebugLogging == true;
+
+        lootProfiles.TryGetValue(LootKey(player), out var playerProfiles);
+        bool hasProfiles    = playerProfiles != null && !playerProfiles.IsEmpty;
+        bool hasVT          = vendorTrashEnabled.GetOrAdd(LootKey(player), false);
+        bool hasScrolls     = unknownScrolls.GetOrAdd(LootKey(player), false);
+        bool hasSalvage     = BetterSupportSkillsBridge.IsSalvageEnabled(player)
+                           && BetterSupportSkillsBridge.GetSalvageRate(player) > 0.0;
+
+        bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
+        if (!hasProfiles && !hasVT && !hasScrolls && !hasSalvage && !hasLevel8Comps)
+        {
+            if (debug)
+                ModManager.Log($"AutoLoot: ProcessContainerLoot early exit — no active loot for {player.Name}", ModManager.LogLevel.Info);
+            return;
+        }
+
+        try
+        {
+            var items = container.Inventory.Values.ToList();
             var activeProfiles = hasProfiles ? playerProfiles!.Values.ToList() : new List<LootCore>();
 
             var lootedItems   = new Dictionary<string, int>();
@@ -950,7 +1236,7 @@ public class AutoLoot
                 var spellId = item.GetProperty(PropertyDataId.Spell) ?? 0;
                 if (spellId != 0 && player.SpellIsKnown(spellId))
                 {
-                    corpse.TryRemoveFromInventory(item.Guid, out var scroll);
+                    container.TryRemoveFromInventory(item.Guid, out var scroll);
                     scroll?.Destroy();
                 }
             }
@@ -975,7 +1261,7 @@ public class AutoLoot
                     if (lootAction.IsNoLoot)
                         continue;
 
-                    if (!corpse.TryRemoveFromInventory(item.Guid, out var removed))
+                    if (!container.TryRemoveFromInventory(item.Guid, out var removed))
                         break;
 
                     var qty = removed.StackSize ?? 1;
@@ -998,31 +1284,9 @@ public class AutoLoot
                         lootedSet.Add(removed);
                         removed.Destroy();
                     }
-                    else if (BetterSupportSkillsBridge.IsSalvageEnabled(player) &&
-                             TryAutoSalvageMaterial(player, removed, out var materialIndex, out var salvageUnits))
+                    else if (BetterSupportSkillsBridge.TryAutoSalvage(player, removed))
                     {
-                        // Material-type auto-salvage: destroy item, credit bank directly
-                        int bankProp = 40201 + materialIndex;
-                        long current = player.GetProperty((PropertyInt64)bankProp) ?? 0;
-                        player.SetProperty((PropertyInt64)bankProp, current + salvageUnits);
-
-                        MaybeSendAutoSalvageMessage(player, materialIndex, salvageUnits);
-
                         lootedSet.Add(removed);
-                        removed.Destroy();
-                    }
-                    else if (IsSalvageItem(removed) && BetterSupportSkillsBridge.IsSalvageEnabled(player))
-                    {
-                        BetterSupportSkillsBridge.OnPickupSalvage(player, removed);
-                        lootedSet.Add(removed);
-                        removed.Destroy();
-                    }
-                    else if (BetterSupportSkillsBridge.IsSalvageEnabled(player) && IsEquippableItem(removed))
-                    {
-                        // Auto-salvage is on but item has no MaterialType → can't be salvaged.
-                        // Destroy it so it doesn't clutter inventory.
-                        lootedSet.Add(removed);
-                        removed.Destroy();
                     }
                     else
                     {
@@ -1054,7 +1318,7 @@ public class AutoLoot
 
                     if (value >= threshold * burden)
                     {
-                        if (!corpse.TryRemoveFromInventory(item.Guid, out var removed))
+                        if (!container.TryRemoveFromInventory(item.Guid, out var removed))
                             continue;
 
                         var qty = removed.StackSize ?? 1;
@@ -1113,7 +1377,7 @@ public class AutoLoot
                     if (player.SpellIsKnown(spellId))
                         continue;
 
-                    if (!corpse.TryRemoveFromInventory(item.Guid, out var removed))
+                    if (!container.TryRemoveFromInventory(item.Guid, out var removed))
                         continue;
 
                     var qty = removed.StackSize ?? 1;
@@ -1170,7 +1434,25 @@ public class AutoLoot
                 }
             }
 
-            // ── Pass 4: Unlocked key banking ─────────────────────────────────
+            // ── Pass 4: Level 8 spellcrafting components ───────────────────
+            int level8CompsConvertedCorpse = 0;
+            long level8CompValueCorpse = 0;
+            foreach (var item in items)
+            {
+                if (lootedSet.Contains(item) || item.IsDestroyed)
+                    continue;
+                if (TryConvertLevel8Comp(player, item))
+                {
+                    if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                    {
+                        removed?.Destroy();
+                        level8CompsConvertedCorpse++;
+                        level8CompValueCorpse += (long)(item.Value ?? 0) * (item.StackSize ?? 1);
+                    }
+                }
+            }
+
+            // ── Pass 5: Unlocked key banking ─────────────────────────────────
             // Keys auto-loot from corpses without requiring a .utl profile.
             if (IsKeysUnlocked(player))
             {
@@ -1180,51 +1462,11 @@ public class AutoLoot
                         continue;
                     if (!TryBankKey(player, item))
                         continue;
-                    if (corpse.TryRemoveFromInventory(item.Guid, out var removed))
+                    if (container.TryRemoveFromInventory(item.Guid, out var removed))
                     {
                         var keyName = LootDisplayName(removed);
                         lootedItems.TryGetValue(keyName, out var existing);
                         lootedItems[keyName] = existing + (removed.StackSize ?? 1);
-                        lootedSet.Add(removed);
-                        removed.Destroy();
-                    }
-                }
-            }
-
-            // ── Pass 5: AutoSalvage ──────────────────────────────────────────
-            // Salvage equippable items with MaterialType and raw salvage bags
-            // independently of .utl profiles.
-            if (hasSalvage)
-            {
-                foreach (var item in items)
-                {
-                    if (lootedSet.Contains(item) || item.IsDestroyed)
-                        continue;
-
-                    if (TryAutoSalvageMaterial(player, item, out var materialIndex, out var salvageUnits))
-                    {
-                        if (!corpse.TryRemoveFromInventory(item.Guid, out var removed))
-                            continue;
-                        int bankProp = 40201 + materialIndex;
-                        long current = player.GetProperty((PropertyInt64)bankProp) ?? 0;
-                        player.SetProperty((PropertyInt64)bankProp, current + salvageUnits);
-                        MaybeSendAutoSalvageMessage(player, materialIndex, salvageUnits);
-                        lootedSet.Add(removed);
-                        removed.Destroy();
-                    }
-                    else if (IsSalvageItem(item))
-                    {
-                        if (!corpse.TryRemoveFromInventory(item.Guid, out var removed))
-                            continue;
-                        BetterSupportSkillsBridge.OnPickupSalvage(player, removed);
-                        lootedSet.Add(removed);
-                        removed.Destroy();
-                    }
-                    else if (IsEquippableItem(item))
-                    {
-                        // Equippable but no MaterialType — destroy to avoid clutter
-                        if (!corpse.TryRemoveFromInventory(item.Guid, out var removed))
-                            continue;
                         lootedSet.Add(removed);
                         removed.Destroy();
                     }
@@ -1249,15 +1491,23 @@ public class AutoLoot
                 })
                 .ToList();
 
-            if (regularItems.Count > 0)
+            if (regularItems.Count > 0 || level8CompsConvertedCorpse > 0)
             {
-                string itemList = regularItems.Count switch
+                var parts = new List<string>();
+                if (regularItems.Count > 0)
                 {
-                    1 => regularItems[0],
-                    2 => $"{regularItems[0]} and {regularItems[1]}",
-                    _ => string.Join(", ", regularItems.Take(regularItems.Count - 1)) + $", and {regularItems[^1]}"
-                };
-                player.SendMessage($"[AutoLoot] You've looted {itemList}!");
+                    string itemList = regularItems.Count switch
+                    {
+                        1 => regularItems[0],
+                        2 => $"{regularItems[0]} and {regularItems[1]}",
+                        _ => string.Join(", ", regularItems.Take(regularItems.Count - 1)) + $", and {regularItems[^1]}"
+                    };
+                    parts.Add($"looted {itemList}");
+                }
+                if (level8CompsConvertedCorpse > 0)
+                    parts.Add($"converted {level8CompsConvertedCorpse} spellcrafting component(s) to {level8CompValueCorpse:N0} pyreals");
+
+                player.SendMessage($"[AutoLoot] {string.Join(", ", parts)}!");
             }
 
             foreach (var scrollName in scrollFallbackNames)
@@ -1265,7 +1515,99 @@ public class AutoLoot
         }
         catch (Exception ex)
         {
-            ModManager.Log($"AutoLoot: PostGenerateTreasure exception: {ex}", ModManager.LogLevel.Error);
+            ModManager.Log($"AutoLoot: ProcessContainerLoot exception: {ex}", ModManager.LogLevel.Error);
         }
+    }
+
+    // ── Salvage sweep ────────────────────────────────────────────────────────
+
+    static void StartSalvageTimer(Container container, Player player)
+    {
+        var guid = container.Guid.Full;
+        var cts = new CancellationTokenSource();
+        var delaySeconds = PatchClass.Settings?.SalvageSweepDelaySeconds ?? 15;
+
+        _salvageTimers.AddOrUpdate(guid,
+            new SalvageTimerState(guid, player.Guid.Full, DateTime.UtcNow.AddSeconds(delaySeconds), cts),
+            (_, prev) => { prev.Cts.Cancel(); return new SalvageTimerState(guid, player.Guid.Full, DateTime.UtcNow.AddSeconds(delaySeconds), cts); });
+
+        _ = Task.Delay(TimeSpan.FromSeconds(delaySeconds), cts.Token)
+            .ContinueWith(_ => ExecuteSalvageSweep(container, player), CancellationToken.None,
+                TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
+    }
+
+    static void ExecuteSalvageSweep(Container container, Player player)
+    {
+        _salvageTimers.TryRemove(container.Guid.Full, out _);
+        if (container.IsDestroyed || player.Session == null) return;
+        if (PatchClass.Settings?.EnableDelayedSalvageSweep != true) return;
+
+        var items = container.Inventory.Values.ToList();
+        int salvaged = 0;
+        int destroyed = 0;
+
+        foreach (var item in items)
+        {
+            if (BetterSupportSkillsBridge.TryAutoSalvage(player, item))
+            {
+                container.TryRemoveFromInventory(item.Guid, out _);
+                salvaged++;
+            }
+            else if (!item.GetProperty(PropertyInt.MaterialType).HasValue
+                     && item.WeenieClassId is not (>= 20981 and <= 21089))
+            {
+                // Non-salvageable equippable without material: destroy to prevent clutter
+                container.TryRemoveFromInventory(item.Guid, out _);
+                item.Destroy();
+                destroyed++;
+            }
+        }
+
+        if (salvaged > 0 || destroyed > 0)
+            player.SendMessage($"[AutoLoot] Salvage sweep: {salvaged} item(s) salvaged, {destroyed} clutter item(s) removed.");
+    }
+
+    internal static void CancelSalvageTimer(uint containerGuid)
+    {
+        if (_salvageTimers.TryRemove(containerGuid, out var state))
+            state.Cts.Cancel();
+    }
+
+    // ── Patches ──────────────────────────────────────────────────────────────
+
+    internal static void OnPostGenerateTreasure(DamageHistoryInfo killer, Corpse corpse, Creature __instance, ref List<WorldObject> __result)
+    {
+        bool debug = PatchClass.Settings?.DebugLogging == true;
+        if (debug)
+            ModManager.Log("AutoLoot: PostGenerateTreasure entered", ModManager.LogLevel.Info);
+
+        if (killer == null)
+        {
+            if (debug)
+                ModManager.Log("AutoLoot: PostGenerateTreasure early exit — killer is null", ModManager.LogLevel.Info);
+            return;
+        }
+
+        if (killer.TryGetPetOwnerOrAttacker() is not Player player)
+        {
+            if (debug)
+                ModManager.Log("AutoLoot: PostGenerateTreasure early exit — killer did not resolve to Player", ModManager.LogLevel.Info);
+            return;
+        }
+
+        if (corpse == null)
+        {
+            if (debug)
+                ModManager.Log("AutoLoot: PostGenerateTreasure early exit — corpse is null", ModManager.LogLevel.Info);
+            return;
+        }
+
+        EnsureLoaded(player);
+
+        // Merge duplicate same-WCID items into stacks before autoloot processing
+        if (PatchClass.Settings?.EnableLootStackConsolidation != false)
+            LootStackConsolidator.TryConsolidateContainer(corpse);
+
+        ProcessContainerLoot(player, corpse);
     }
 }

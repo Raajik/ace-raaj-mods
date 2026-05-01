@@ -2,9 +2,6 @@
 
 public partial class PatchClass
 {
-    [ThreadStatic] static uint _pendingKillerGuid;
-    [ThreadStatic] static long _pendingGrantedKillXp;
-
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Creature), nameof(Creature.Die), new Type[] { typeof(DamageHistoryInfo), typeof(DamageHistoryInfo) })]
     public static void PreDieHunt(DamageHistoryInfo lastDamager, DamageHistoryInfo topDamager, Creature __instance)
@@ -20,9 +17,6 @@ public partial class PatchClass
         var speciesId = (uint)(__instance.GetProperty(PropertyInt.CreatureType) ?? 0);
         if (speciesId == 0)
             return;
-
-        _pendingKillerGuid = killer.Guid.Full;
-        _pendingGrantedKillXp = 0;
 
         var guid = killer.Guid.Full;
         var data = HuntRuntime.GetOrLoadPlayer(guid);
@@ -129,7 +123,9 @@ public partial class PatchClass
             && huntNow >= HuntRuntime.ActiveHunt.WindowStartUtc
             && huntNow < HuntRuntime.ActiveHunt.WindowEndUtc)
         {
-            var huntPts = Math.Ceiling(_pendingGrantedKillXp * 0.01);
+            var grantedXp = (long)(killer.GetProperty((PropertyInt64)40126) ?? 0);
+            killer.RemoveProperty((PropertyInt64)40126);
+        var huntPts = Math.Ceiling(grantedXp * 0.01);
             lock (HuntRuntime.HuntLock)
             {
                 if (HuntRuntime.ActiveHunt != null
@@ -156,9 +152,6 @@ public partial class PatchClass
             }
         }
 
-        _pendingKillerGuid = 0;
-        _pendingGrantedKillXp = 0;
-
         HuntRuntime.PlayerData[guid] = data;
         HuntRuntime.FlushPlayer(guid, data);
         HuntRuntime.FlushGlobalIfDue(settings);
@@ -166,37 +159,6 @@ public partial class PatchClass
         killer.RemoveProperty((PropertyFloat)HuntPropertyIds.PendingKillXpMultiplier);
         killer.RemoveProperty((PropertyFloat)HuntPropertyIds.PendingTrophyChanceHint);
         killer.RemoveProperty((PropertyFloat)HuntPropertyIds.PendingHuntXpPreview);
-    }
-
-    // GrantXP prefix order (low priority first): Loremaster default ~400 → Hunt 430 → ChallengeModes 450+.
-    // Keep 430 if you add another mod that multiplies "raw" kill XP between Loremaster and challenge bonuses.
-    //
-    // One-shot: ACE fellowship SplitXp re-enters GrantXP(Kill) per member; leaving PendingKillXpMultiplier up
-    // for the whole die frame makes the multiplier apply every time and breaks kill + equipped item XP math.
-    // Consuming the property in this prefix matches stock behavior (one outer kill amount is split, not re-xped).
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Player), nameof(Player.GrantXP), new Type[] { typeof(long), typeof(XpType), typeof(ShareType) })]
-    [HarmonyPriority(430)]
-    public static void PreGrantXpKill(ref long amount, XpType xpType, ShareType shareType, Player __instance)
-    {
-        var settings = CurrentSettings;
-        if (settings?.EnableHunt != true || xpType != XpType.Kill)
-            return;
-
-        var mult = __instance.GetProperty((PropertyFloat)HuntPropertyIds.PendingKillXpMultiplier);
-        if (!mult.HasValue || mult.Value <= 0)
-            return;
-
-        var m = mult.Value;
-        if (m > 0 && !double.IsNaN(m) && !double.IsInfinity(m))
-            amount = (long)(amount * m);
-
-        // Capture the killer's post-multiplier XP for hunt point calculation (1% of XP earned).
-        if (__instance.Guid.Full == _pendingKillerGuid)
-            _pendingGrantedKillXp = amount;
-
-        // Consume immediately so fellowship / other re-entrant GrantXP(Kill) do not double-apply the same mult.
-        __instance.RemoveProperty((PropertyFloat)HuntPropertyIds.PendingKillXpMultiplier);
     }
 
     static Player? ResolveKillerPlayer(DamageHistoryInfo? lastDamager)

@@ -108,11 +108,15 @@ Always check in this order:
   1. Build the modified mods: `dotnet build ModName/ModName.csproj` for each changed mod.
   2. Copy updated DLLs from `C:\ACE\Mods\ModName\` (build output) to the test server directory.
   3. Copy updated `Settings.json` files from the repo to `C:\ACE\Mods\ModName\`.
-  4. If the test server is not running, start it in a **visible window** (not background): `cd C:\ACE\Server && start "Test Server" ACE.Server.exe` or manually start from terminal.
+  4. If the test server is not running, start it in a **visible window** using the PowerShell command below. Do NOT use `cmd /c start` or direct bash invocation — both fail or block in the agent shell.
   5. If the test server is already running, restart it: kill the process and start fresh in visible window.
   6. Watch the console output live for mod loading and any errors.
   7. SQL changes (weenie creation, biota cleanup) require applying to the test MySQL database manually — ACE caches weenies at startup, so changes take effect after server restart.
-- **Server startup** — Always start servers in visible windows (not background/hidden processes) so logs can be monitored live and commands can be issued via the console.
+- **Server startup (reliable method)** — Use PowerShell `Start-Process` to open a visible window in the correct working directory. This is the ONLY method that reliably works from the agent bash shell. `cmd /c start` silently fails; direct bash invocation blocks. Example:
+  ```powershell
+  powershell -Command "Start-Process -FilePath 'C:\ACE-WB\Server\ACE.Server.exe' -WorkingDirectory 'C:\ACE-WB\Server' -WindowStyle Normal"
+  ```
+  Substitute `C:\ACE\` for the test server. Always verify the process is running with `tasklist | grep ACE.Server`.
 - **AureatePath owns the server level cap** — `MaxLevel`, `CreditInterval`, and `LevelCost` settings live in `AureatePath` (not ChallengeModes). ChallengeModes reads the effective max level from `DatManager.PortalDat.XpTable.CharacterLevelXPList.Count` at runtime. If you need to change the server max level, edit `AureatePath/Settings.json`.
 - **`Meta.json` must copy to output directory** — In `.csproj`, ensure `<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>` for `Meta.json`. `Never` silently prevents mod loading. Always verify deployed mod directory contains `Meta.json`, `Settings.json`, and the DLL after build.
 - **ACE `PropertyManager.ModifyBool` rejects unknown keys** — Only keys present in the server's `DefaultPropertyManager.DefaultBooleanProperties` (hardcoded per ACE version) are accepted. Verify against the actual server source in `.references/`, not wiki docs or SQL. Remove or rename invalid keys in `Settings.json` and SQL.

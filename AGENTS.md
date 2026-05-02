@@ -9,10 +9,12 @@ Before any work, load applicable skills:
 
 ## 2. Starting Workflow
 Always check in this order:
-1. `PLAN.md` — Master todo index, suggested implementation order, greenfield backlog.
-2. `README.md` — Mod list, enablement status.
-3. Mod-specific `Readme.md` — Per-mod docs and configuration notes.
-4. **Skills** — Load domain-specific skills before touching code.
+1. **`PLAN.md`** — **Active** work only: bug tracker, immediate reworks, suggested implementation order, greenfield backlog, short `## Progress (recent)` pointers. **Do not** let PLAN grow into a duplicate shipped-history log.
+2. **`COMPLETED.md`** — **Shipped** milestones and retrospectives, **one dated section per ship day** (`## YYYY-MM-DD`). Canonical “what already landed.” For history or changelog detail, read here—not a bloated PLAN.
+3. **Ship workflow:** When work is verified and committed, **append `COMPLETED.md`** (dated subsection with enough detail for future you), then **trim `PLAN.md`** (remove matching “Done” bullets from Progress, collapse long shipped sections, keep PLAN scannable).
+4. `README.md` — Mod list, enablement status.
+5. Mod-specific `Readme.md` — Per-mod docs and configuration notes.
+6. **Skills** — Load domain-specific skills before touching code.
 
 ## 3. Repo Conventions
 - **Mod structure:** Each folder = deployable mod containing:
@@ -69,7 +71,7 @@ Always check in this order:
 ### 8.1 Deploy & Server Ops
 
 **Trigger phrases:**
-- `"update docs"` — Full sweep: update PLAN.md, AGENTS.md, wiki, mod Readmes.
+- `"update docs"` — Full sweep: update `PLAN.md` (active only), `COMPLETED.md` if you shipped since last sweep, `AGENTS.md`, wiki, mod Readmes.
 - `"check logs"` — Check BOTH `C:\ACE\Server\ACE_Log.txt` (test) and `C:\ACE-WB\Server\ACE_Log.txt` (live).
 - `"push test"` — Deploy to test server (`C:\ACE\`, port 9000):
   1. `dotnet build ModName/ModName.csproj`
@@ -247,11 +249,13 @@ Set via `PropertyInt.UiEffects`, then broadcast `GameMessagePublicUpdateProperty
 
 ### 8.10 Workflows & Agent Behavior
 
-**Write PLAN.md before starting any multi-phase feature work** — Before touching code for complex tasks (3+ phases or files), write the plan to `PLAN.md`. If interrupted, the plan preserves intent. When using `planning-with-files`, write into `task_plan.md` first, reference `PLAN.md` for backlog, mirror findings into `findings.md`.
+**`PLAN.md` vs `COMPLETED.md`** — `PLAN.md` is the **forward-looking** index; `COMPLETED.md` is the **archive** of finished work. After a feature or fix ships: record it under a new or existing **date heading** in `COMPLETED.md`, then **delete or one-line** the old “Done” entry in `PLAN.md` so Progress and mod sections stay small. Never duplicate long “shipped” write-ups in both files.
+
+**Write PLAN.md before starting any multi-phase feature work** — Before touching code for complex tasks (3+ phases or files), write the **intent and next steps** to `PLAN.md` (or keep them in `task_plan.md` during execution). If interrupted, the plan preserves intent. When using `planning-with-files`, write into `task_plan.md` first, reference `PLAN.md` for backlog, mirror findings into `findings.md`. **When the phase ships**, move the narrative to `COMPLETED.md` and leave PLAN with backlog + pointers only.
 
 **Commit and push after EVERY bug fix** — After verifying (build + deploy + confirm), immediately `git commit` with descriptive message and `git push`. Never leave working tree dirty with solved problems.
 
-**Auto-update docs after EVERY code push** — After `git push`, perform full "update docs" sweep: update PLAN.md, AGENTS.md, stale mod Readmes, and write findings to wiki (`A:\obsidian\jeremy\wiki\`) with `[[Page Name]]` links.
+**Auto-update docs after EVERY code push** — After `git push`, perform full "update docs" sweep: trim `PLAN.md`, append `COMPLETED.md` if something shipped, update `AGENTS.md` when conventions change, refresh stale mod Readmes, and write findings to wiki (`A:\obsidian\jeremy\wiki\`) with `[[Page Name]]` links.
 
 **Run `graphify update .` after any session that touched code** — The graphify knowledge graph (`.cursor/rules/graphify.mdc`) tracks cross-module relationships. Stale graphs mislead future agents. After modifying code, run from repo root:
 ```bash

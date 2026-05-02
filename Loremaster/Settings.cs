@@ -229,11 +229,11 @@ public class Settings
     public int TrophyEncumbranceWhenZero { get; set; } = 25;
 
     [JsonPropertyName("// TrophyQualityBonusChance")]
-    public string TrophyQualityBonusChanceDoc { get; init; } = "Per trophy item in a give action: chance (0–1) for Quality — 2× that item's burden XP. Rolled independently for each unit in a stack. Independent of Pristine.";
+    public string TrophyQualityBonusChanceDoc { get; init; } = "Per trophy item in a give action: chance (0–1) for Quality — 2× that item's burden XP. Rolled independently for each unit. If Pristine also rolls on that unit, display as Perfect (6×); there is no separate third roll.";
     public double TrophyQualityBonusChance { get; set; } = 0.10;
 
     [JsonPropertyName("// TrophyPristineBonusChance")]
-    public string TrophyPristineBonusChanceDoc { get; init; } = "Per trophy item in a give action: chance (0–1) for Pristine — 3× that item's burden XP. Rolled independently per unit; stacks with Quality on the same unit (6× if both).";
+    public string TrophyPristineBonusChanceDoc { get; init; } = "Per trophy item in a give action: chance (0–1) for Pristine — 3× that item's burden XP. Rolled independently per unit. If Quality and Pristine both roll on the same unit, that unit is Perfect — 6× (rare).";
     public double TrophyPristineBonusChance { get; set; } = 0.05;
 
     [JsonPropertyName("// TrophyCollectorWcids")]

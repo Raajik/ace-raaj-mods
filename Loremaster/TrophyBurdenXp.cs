@@ -187,7 +187,7 @@ internal static class TrophyBurdenXp
         var plain = 0;
         var qOnly = 0;
         var pOnly = 0;
-        var both = 0;
+        var perfect = 0;
 
         for (var u = 0; u < units; u++)
         {
@@ -200,7 +200,7 @@ internal static class TrophyBurdenXp
                 mult *= 3;
             multSum += mult;
             if (rolledQuality && rolledPristine)
-                both++;
+                perfect++;
             else if (rolledPristine)
                 pOnly++;
             else if (rolledQuality)
@@ -218,14 +218,14 @@ internal static class TrophyBurdenXp
         if (bonusXp > 0)
         {
             ExternalXpGrants.GrantQuestXpWithoutMultiplier(player, bonusXp);
-            AppendLog(settings, player, item, bonusXp, isAttuned, units, multSum, plain, qOnly, pOnly, both);
+            AppendLog(settings, player, item, bonusXp, isAttuned, units, multSum, plain, qOnly, pOnly, perfect);
 
             var itemName = string.IsNullOrWhiteSpace(item.Name) ? "Trophy" : item.Name.Trim();
             string lead;
             if (units == 1)
             {
-                if (both == 1)
-                    lead = "Exceptional pristine " + itemName;
+                if (perfect == 1)
+                    lead = "Perfect " + itemName;
                 else if (pOnly == 1)
                     lead = "Pristine " + itemName;
                 else if (qOnly == 1)
@@ -240,8 +240,8 @@ internal static class TrophyBurdenXp
 
             var pctOfLevelTotal = xpToNext > 0 ? bonusXp / (double)xpToNext * 100.0 : 0.0;
             var rollBits = new List<string>();
-            if (both > 0)
-                rollBits.Add($"{both} exceptional (×6)");
+            if (perfect > 0)
+                rollBits.Add($"{perfect} perfect (×6)");
             if (pOnly > 0)
                 rollBits.Add($"{pOnly} pristine (×3)");
             if (qOnly > 0)
@@ -265,7 +265,7 @@ internal static class TrophyBurdenXp
         int plain,
         int qOnly,
         int pOnly,
-        int both)
+        int perfect)
     {
         if (!settings.TrophyLogEnabled || _logPath == null)
             return;
@@ -285,7 +285,7 @@ internal static class TrophyBurdenXp
                 plain,
                 qOnly,
                 pOnly,
-                both,
+                perfect,
                 attuned = isAttuned,
                 xp = xpAwarded,
             };

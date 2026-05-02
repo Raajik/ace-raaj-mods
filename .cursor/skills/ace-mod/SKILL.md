@@ -100,13 +100,13 @@ Copy an existing gameplay mod in this repo (e.g. **Swarmed**, **Loremaster**). I
 
 ### Loremaster trophy burden XP
 
-- **`TrophyBurdenXp`:** per trophy **unit** in a give action, independent rolls (**Quality** 2×, **Pristine** 3×, both 6× on that unit); XP sums `perUnitBase × mult` over stack count; **`ThreadSafeRandom.Next(0.0f, 1.0f)`** vs configured chances; multi-item chat summarizes counts.
+- **`TrophyBurdenXp`:** per trophy **unit** in a give action, independent rolls (**Quality** 2×, **Pristine** 3×; if both hit on one unit = **Perfect** 6×); XP sums `perUnitBase × mult` over stack count; **`ThreadSafeRandom.Next(0.0f, 1.0f)`** vs configured chances; multi-item chat summarizes counts.
 
 ## Compact player chat
 
 - Prefer **one** `SendMessage` per player-facing outcome; **`[ModName]`** prefix once; avoid duplicate lines for the same event.
 - **`{x:P2}`** already prints a **percent sign** — do not append an extra `"%"`.
-- Bonus tiers (Quality / Pristine / “exceptional specimen”) = **message flavor**, not new items; keep text **short and readable** (e.g. item name + XP + one context clause).
+- Bonus tiers (Quality / Pristine / Perfect) = **message flavor**, not new items; keep text **short and readable** (e.g. item name + XP + one context clause).
 
 ## High-value snippets
 

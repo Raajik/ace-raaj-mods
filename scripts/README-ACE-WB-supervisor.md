@@ -4,6 +4,15 @@ Two supported options. Both target **only** `C:\ACE-WB\Server\ACE.Server.exe`. T
 
 ## Option A: PowerShell watchdog (no extra binaries)
 
+The task runs **at your Windows logon** as **you** (`Interactive` logon), **not** `SYSTEM`, so when the watchdog starts `ACE.Server.exe` it opens a **normal console window on your desktop** (server log output + ACE console commands). The watchdog’s own PowerShell host is **Hidden** so you do not get an extra blank PS window.
+
+If `Register-ScheduledTask` fails with a **password / credential** error while elevated, either:
+
+- Run `Register-AceWbWatchdogTask.ps1 -TaskPassword 'yourWindowsPassword'` once (plain string; do not commit it), or  
+- Create the task in **Task Scheduler** (`taskschd.msc`): trigger **At log on**, user **your account**, check **Run only when user is logged on**, action same as in `Register-AceWbWatchdogTask.ps1`.
+
+Optional: `-RunAs 'DOMAIN\User'` if the account that should own the visible ACE console is not the one elevating the script.
+
 1. **Register** (elevated PowerShell):
 
    ```powershell
@@ -11,7 +20,7 @@ Two supported options. Both target **only** `C:\ACE-WB\Server\ACE.Server.exe`. T
    .\Register-AceWbWatchdogTask.ps1
    ```
 
-2. **Start the task once** (or reboot):
+2. **Start the task once** (or reboot / log off and back on):
 
    ```powershell
    Start-ScheduledTask -TaskName ACE-WB-Watchdog

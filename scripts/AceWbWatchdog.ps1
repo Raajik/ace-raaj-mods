@@ -124,7 +124,8 @@ while ($true)
                 $wb2 = Get-WbAceProcess
                 if (-not $wb2)
                 {
-                    Start-Process -FilePath $AceExePath -WorkingDirectory $AceWbServerDir -WindowStyle Normal
+                    # Foreground console when the scheduled task runs as an interactive user (not SYSTEM).
+                    Start-Process -FilePath $AceExePath -WorkingDirectory $AceWbServerDir -WindowStyle Normal -CreateNoWindow:$false
                     Add-RestartRecord
                     Write-WatchdogLog "Start-Process issued for $AceExePath"
                 }

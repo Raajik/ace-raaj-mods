@@ -10,6 +10,7 @@ Keep this section **short**. When something ships, **append [COMPLETED.md](COMPL
 g / /mod-audit. **WorldEvents Hunt** — intervals, popularity multipliers, damage caps.
 - **Backlog:** Idea routing lives under [Greenfield Backlog](#greenfield-backlog-prioritized).
 - **Done (2026-05-02):** WorldEvents persistence — Cull/Sale/Invasion JSON under Mods/WorldEvents/Data/... (legacy paths migrated once). BLC-only repo; removed BetterChestLoot / SharedLoot folders. → **COMPLETED.md § 2026-05-02**.
+- **Done (2026-05-02):** QOL VendorLootRotation — effective approach interval uses **`min(VendorLootRotationMinutes, VendorLootCooldownMinutes)`** (each floored at 1); per-vendor cooldown advances only after a **successful** rotation; `_originalValues` cleanup per removed guid (no global clear). Docs: `AGENTS.md`, `README.md`, `QOL/Readme.md`, wiki **[[ace-raaj-mods Conventions]]**, `COMPLETED.md`.
 - **Done (2026-05-01):** Radi TN vendor, Pathwarden vendor SQL, BLC Coalesced Mana, point-based mana leveling, DisableAttunedGlobally, trophy stacking + pet fixes, LLL denominated banking + fuzzy withdraw, QOL VendorLootRotation hard-disable, CreatureEx loot rewrite, AGENTS consolidation — → **COMPLETED.md § 2026-05-01**.
 - **Done (2026-04-21–04-30):** Enlightenment pool + QB gate, release CI, unified scheduler, Swarmed expansion, QOL toll v2 + portal bypass + VendorPriceInflation fix + NpcStackTurnIn, LLL scan intervals, BSS Arcane/Missile rework, CommonGoals no-split, April multi-mod batch — → **COMPLETED.md** (search ## 2026-04).
 

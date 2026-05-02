@@ -135,7 +135,7 @@ Toggleable convenience patches (no single defining feature — pick what you wan
 - **Augmentation caps** — raise or remove aug spending limits.
 - **Fellowship improvements** — XP sharing, range, and formation tweaks.
 - **Tailoring** — easier dye/clothing interactions.
-- **Vendor improvements** — buy/sell rate adjustments, rotation hooks.
+- **Vendor improvements** — buy/sell rate adjustments (see **LeyLineLedger** for pricing); **VendorLootRotation** in QOL only rolls **equipment sale stock** on vendor approach (interval = `min` of rotation vs cooldown minutes in `Settings.json`).
 - **Stackables** — custom stack size overrides (`StackableWcids.json`).
 - **Swear filter** — `/oath` toggle; friends and allegiance bypass.
 - **Questgiver auras** — NPC glow when they have a quest for you.

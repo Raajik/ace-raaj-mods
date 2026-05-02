@@ -8,6 +8,16 @@
 
 ## 2026-05-02
 
+### QOL VendorLootRotation — effective interval + cooldown bookkeeping
+
+- **Symptom:** “Rotates once then stalls” — `VendorLootRotationMinutes` was documented and logged at init but **never applied**; only `VendorLootCooldownMinutes` gated refreshes (e.g. 15 vs 45 → 45 min wait).
+- **Fix:** `EffectiveRotationIntervalMinutes` = `min(max(1, Rotation), max(1, Cooldown))`. Advance `_vendorLastRotation` only after `RotateVendorInventory` returns **true** (no-op approaches no longer burn cooldown). Replace global `_originalValues.Clear()` with `TryRemove` per guid when stripping sale rows.
+- **Files:** `QOL/VendorLootRotation.cs`, `QOL/Settings.cs`, `QOL/Settings.json`, `QOL/Readme.md`.
+
+### Documentation — vendor stock vs LeyLineLedger pricing
+
+- **Clarified in repo + wiki:** LLL owns vendor **pricing / bank commerce**; QOL VendorLootRotation owns **equipment stock regeneration** only (`AGENTS.md` §8.2, `README.md` QOL blurb, **[[ace-raaj-mods Conventions]]**). Corrects an older COMPLETED note that implied all vendor inventory lived in LLL.
+
 ### WorldEvents JSON persistence (Cull / Sale / Invasion)
 
 - **Problem:** Cull/Sale wrote under `Mods/Data/...`, which ACE treats like a mod folder without `Meta.json` (log noise). Invasion used cwd-relative `Data/Invasion/`.
@@ -52,8 +62,8 @@
 ### QOL VendorLootRotation hard-disable
 - Root cause of three live vendor bugs (duplicate inventory, SpellSiphon missing, price desync).
 - Settings.json had an illegal trailing comma causing deserialization failure.
-- Fixed by removing trailing comma AND hardcoding `return` in `TryApplyVendorLootRotationPatch()`.
-- Vendor inventory management now belongs exclusively to LeyLineLedger.
+- Fixed by removing trailing comma and restoring the rotation patch path after triage.
+- **Ownership (current):** QOL **`VendorLootRotation`** still owns **equipment stock regeneration** on `Vendor.ApproachVendor` (Harmony First). LeyLineLedger owns **vendor pricing**, bank debit/sell deposit, and related commerce — not which random rolled items sit on the vendor.
 
 ### Radi vendor (WCID 800039)
 - New vendor "Radi" in Town Network (cell `0x00070132`) selling enlightenment, forgetlessness, and attribute gems.

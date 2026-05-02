@@ -120,7 +120,8 @@ $ > "C:\ACE\Server\ACE_Log.txt"      # test
 ### 8.2 Mod Architecture & Cross-Mod Integration
 
 **Single source of truth:**
-- **LeyLineLedger** owns ALL bank, vendor, and pricing systems. No other mod may implement vendor buy/sell price multipliers, banked currency handling, or vendor approach packet rewriting. Other mods expose public APIs; LLL calls via reflection bridge.
+- **LeyLineLedger** owns ALL bank, vendor **commerce**, and **pricing** systems (buy/sell multipliers, bank debit/deposit, `BuyPrice` / `GetBuyCost` behavior, vendor-related packet rules in LLL). No other mod may implement competing vendor price multipliers or banked-currency handling. Other mods expose public APIs; LLL calls via reflection bridge.
+- **QOL `VendorLootRotation`** (optional) only **regenerates sale stock** (`DefaultItemsForSale` / `UniqueItemsForSale` from treasure profiles on `Vendor.ApproachVendor`, Harmony **First**). It is **not** a second pricing mod; keep luxury tax / item values separate from LLL’s sell-rate patches. See `QOL/Readme.md` § Vendor loot rotation for refresh interval (`min` of rotation vs cooldown minutes).
 - **BetterLootControl** is the single source of truth for all loot tables. Any mod needing bonus loot pools references BLC, not individual mods.
 - **AureatePath** owns the server level cap (`MaxLevel`, `CreditInterval`, `LevelCost`). ChallengeModes reads `DatManager.PortalDat.XpTable.CharacterLevelXPList.Count` at runtime.
 

@@ -92,6 +92,8 @@ When `SalvageBank.DirectDepositOnSalvage` is true, items created by salvage reci
 
 ## Vendor integration
 
+**Scope:** LeyLineLedger patches vendor **money flow and displayed/buyback prices** (bank debit, sell deposit, sell-rate multiplier). It does **not** replace **QOL** optional **`VendorLootRotation`**, which regenerates **which items** appear on qualifying equipment vendors before pricing runs (Harmony priority: QOL First, then LLL). See repo **`AGENTS.md`** §8.2 and **`QOL/Readme.md`** § Vendor loot rotation.
+
 - **Debit (`Debit.cs`):** If `VendorsUseBank`, purchases spend **bank first**, then carried currency. Coin display for vendors is capped so the client does not overflow int32.
 - **Direct deposit (`DirectDeposit.cs`):** If `DirectDeposit`, vendor sale proceeds go to the bank; `/ddt` lets a player opt out per character when the server default is on.
 

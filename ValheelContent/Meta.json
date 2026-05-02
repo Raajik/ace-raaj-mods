@@ -1,7 +1,7 @@
 {
   "Name": "ValheelContent",
   "Author": "ACE Mod",
-  "Description": "Auto-imports Valheel custom content (weenies, landblocks, quests, recipes, treasure, events) from SQL files at server startup.",
+  "Description": "Optional Valheel SQL importer and Harmony loot/tier fixes. Disabled by default (Meta.json + EnableValheelContent); no automatic SQL on world open. TN landblock 0007.sql is blocklisted for importer.",
   "Version": "1.0.0",
   "MinApiVersion": "1.0",
   "Enabled": false,

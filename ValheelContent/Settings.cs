@@ -3,12 +3,12 @@ namespace ValheelContent;
 public class Settings
 {
     [JsonPropertyName("// EnableValheelContent")]
-    public string EnableValheelContentDoc { get; init; } = "Master toggle. When false, the mod does nothing and no content is imported.";
-    public bool EnableValheelContent { get; set; } = true;
+    public string EnableValheelContentDoc { get; init; } = "Master toggle for SQL execution. When false, RunImport and /valheel import do nothing until you set this true.";
+    public bool EnableValheelContent { get; set; } = false;
 
     [JsonPropertyName("// ImportOnStartup")]
-    public string ImportOnStartupDoc { get; init; } = "When true, automatically import content on server startup. When false, use /valheel import manually.";
-    public bool ImportOnStartup { get; set; } = true;
+    public string ImportOnStartupDoc { get; init; } = "When true AND EnableValheelContent, run SQL import on server world open. Keep false to avoid any automatic DB writes; use /valheel import after enabling.";
+    public bool ImportOnStartup { get; set; } = false;
 
     [JsonPropertyName("// TrackImportHash")]
     public string TrackImportHashDoc { get; init; } = "When true, skip SQL files that haven't changed since the last import. Dramatically speeds up subsequent server starts.";
@@ -33,4 +33,8 @@ public class Settings
     [JsonPropertyName("// EnabledContentFiles")]
     public string EnabledContentFilesDoc { get; init; } = "List of specific file paths (relative to Content/) that should be imported EVEN if their parent folder is in DisabledContentFolders. Use for exceptions like Town Network platform within a disabled Buildings folder.";
     public List<string> EnabledContentFiles { get; set; } = new();
+
+    [JsonPropertyName("// NeverImportFiles")]
+    public string NeverImportFilesDoc { get; init; } = "SQL paths (relative to Content/, forward slashes) never executed by the importer, including manual /valheel import. Remove an entry only if you intentionally want that file applied.";
+    public List<string> NeverImportFiles { get; set; } = new() { "06-landblock/0007.sql" };
 }

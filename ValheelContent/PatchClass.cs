@@ -298,6 +298,8 @@ public class PatchClass : BasicPatch<Settings>
             }
         }
         
+        Settings.NeverImportFiles ??= new List<string> { "06-landblock/0007.sql" };
+
         ContentImporter.Initialize(Settings, _modDir);
     }
 
@@ -325,6 +327,12 @@ public class PatchClass : BasicPatch<Settings>
         switch (cmd)
         {
             case "import":
+                if (!ContentImporter.IsSqlImportAllowed())
+                {
+                    session.Player?.SendMessage("[Valheel] Import skipped: set EnableValheelContent to true in ValheelContent/Settings.json (SQL is off by default).", ChatMessageType.System);
+                    return;
+                }
+
                 session.Player?.SendMessage("[Valheel] Starting content import...", ChatMessageType.Broadcast);
                 _ = Task.Run(() => ContentImporter.RunImport());
                 break;

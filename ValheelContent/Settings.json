@@ -1,6 +1,6 @@
 {
   "EnableValheelContent": false,
-  "ImportOnStartup": true,
+  "ImportOnStartup": false,
   "TrackImportHash": true,
   "BatchSize": 50,
   "LogImportSummary": true,
@@ -76,5 +76,8 @@
   ],
   "EnabledContentFiles": [
     "03-weenie/Buildings/1000005 townnetworkplatform.sql"
+  ],
+  "NeverImportFiles": [
+    "06-landblock/0007.sql"
   ]
 }

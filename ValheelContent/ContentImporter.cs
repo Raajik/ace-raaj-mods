@@ -21,6 +21,11 @@ internal static class ContentImporter
         _statePath = Path.Combine(modDirectory, "import-state.json");
     }
 
+    public static bool IsSqlImportAllowed()
+    {
+        return _settings?.EnableValheelContent == true;
+    }
+
     public static bool ValidateContentFolder()
     {
         if (!Directory.Exists(_contentPath))
@@ -39,6 +44,8 @@ internal static class ContentImporter
         if (!ValidateContentFolder())
             return;
 
+        var cfg = _settings!;
+
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var previousState = ContentHashTracker.LoadState(_statePath);
         var currentHashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -53,8 +60,9 @@ internal static class ContentImporter
         int failedFiles = 0;
         bool isFirstRun = previousState == null;
 
-        var disabledFolders = _settings?.DisabledContentFolders ?? new List<string>();
-        var enabledFiles = _settings?.EnabledContentFiles ?? new List<string>();
+        var disabledFolders = cfg.DisabledContentFolders ?? new List<string>();
+        var enabledFiles = cfg.EnabledContentFiles ?? new List<string>();
+        var neverImport = cfg.NeverImportFiles ?? new List<string>();
 
         foreach (var categoryDir in categories)
         {
@@ -92,6 +100,13 @@ internal static class ContentImporter
                 var relativePath = GetRelativePath(filePath, _contentPath);
                 totalFiles++;
 
+                if (IsNeverImportFile(relativePath, neverImport))
+                {
+                    ModManager.Log($"[Valheel] Skipping blocklisted file: {relativePath}", ModManager.LogLevel.Info);
+                    skippedFiles++;
+                    continue;
+                }
+
                 string content;
                 try
                 {
@@ -114,7 +129,7 @@ internal static class ContentImporter
                 var hash = ComputeHash(content);
                 currentHashes[relativePath] = hash;
 
-                if (_settings.TrackImportHash && previousState?.FileHashes != null)
+                if (cfg.TrackImportHash && previousState?.FileHashes != null)
                 {
                     if (previousState.FileHashes.TryGetValue(relativePath, out var previousHash) && previousHash == hash)
                     {
@@ -150,12 +165,12 @@ internal static class ContentImporter
 
         stopwatch.Stop();
 
-        if (_settings.LogImportSummary)
+        if (cfg.LogImportSummary)
         {
             ModManager.Log($"[Valheel] Import complete in {stopwatch.Elapsed.TotalSeconds:F1}s. Total: {totalFiles}, Imported: {importedFiles}, Skipped: {skippedFiles}, Failed: {failedFiles}", ModManager.LogLevel.Info);
         }
 
-        if (isFirstRun && _settings.RequireRestartAfterFirstImport && importedFiles > 0)
+        if (isFirstRun && cfg.RequireRestartAfterFirstImport && importedFiles > 0)
         {
             ModManager.Log("[Valheel] FIRST IMPORT COMPLETE. A server restart is strongly recommended to ensure all ACE caches are fully refreshed and new content is available.", ModManager.LogLevel.Warn);
         }
@@ -165,7 +180,7 @@ internal static class ContentImporter
     {
         int imported = 0;
         int failed = 0;
-        int batchSize = _settings?.BatchSize ?? 50;
+        int batchSize = _settings!.BatchSize > 0 ? _settings.BatchSize : 50;
 
         for (int i = 0; i < files.Count; i += batchSize)
         {
@@ -254,6 +269,25 @@ internal static class ContentImporter
         {
             ModManager.Log($"[Valheel] Failed to clear spell cache: {ex.Message}", ModManager.LogLevel.Warn);
         }
+    }
+
+    private static bool IsNeverImportFile(string relativePath, List<string> neverImportFiles)
+    {
+        if (neverImportFiles == null || neverImportFiles.Count == 0)
+            return false;
+
+        var normalizedRel = relativePath.Replace('\\', '/');
+        foreach (var entry in neverImportFiles)
+        {
+            if (string.IsNullOrWhiteSpace(entry))
+                continue;
+
+            var n = entry.Replace('\\', '/').TrimStart('/');
+            if (string.Equals(normalizedRel, n, StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+
+        return false;
     }
 
     private static bool IsPathDisabled(string relativePath, List<string> disabledFolders)

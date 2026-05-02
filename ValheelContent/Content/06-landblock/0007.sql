@@ -1,3 +1,7 @@
+/* MANUAL / DANGER: Full Town Network dungeon landblock 0x0007 replace (DELETE all instances then INSERT Valheel set).
+   Does not restore Windblown TN vendors (Pathwardens + Radi). After applying by hand, run:
+   WindblownContent/02-landblocks/0007_TownNetwork_Vendors.sql
+   ValheelContent mod SQL importer skips this file (NeverImportFiles in Settings.json). */
 DELETE FROM `landblock_instance` WHERE `landblock` = 0x0007;
 
 INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)

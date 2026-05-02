@@ -1,6 +1,22 @@
 # Completed Tasks Archive
 
-Archived completed work from PLAN.md. Move items here when done to keep PLAN.md readable.
+**Role:** Canonical log of **shipped and finished** work (by date). When something is done, **append a subsection here**, then **trim** the matching bullets or long write-ups from `PLAN.md` so `PLAN.md` stays a short **active index** (bugs, next reworks, greenfield).
+
+**Pairing:** `PLAN.md` = what to do next + backlog tables. `COMPLETED.md` = what already shipped — search here first for “when did we…?”.
+
+---
+
+## 2026-05-02
+
+### WorldEvents JSON persistence (Cull / Sale / Invasion)
+
+- **Problem:** Cull/Sale wrote under `Mods/Data/...`, which ACE treats like a mod folder without `Meta.json` (log noise). Invasion used cwd-relative `Data/Invasion/`.
+- **Fix:** Active JSON now under `Mods/WorldEvents/Data/{Cull,Sale,Invasion}/`. One-time load migrates legacy `Mods/Data/Cull|Sale` and `Data/Invasion/ActiveInvasion.json` (cwd) then deletes legacy files when possible.
+- **Files:** `WorldEvents/Cull/CullPersistence.cs`, `WorldEvents/Sale/SalePersistence.cs`, `WorldEvents/Invasion/InvasionPersistence.cs`.
+
+### PLAN vs COMPLETED hygiene
+
+- **Repo:** Removed duplicate `BetterChestLoot/` + `SharedLoot/` folders; loot stack only in `BetterLootControl/` (`namespace SharedLoot` for dependents). Long “Immediate Reworks” DONE blocks folded into this archive + short pointers left in `PLAN.md`.
 
 ---
 

@@ -1,11 +1,11 @@
 namespace Overtinked;
 
-// Custom imbue flags for weapons (Bleed, Cleaving, Nether Rending). Stored by item Guid; combat code can check these.
+// Custom imbue flags for weapons (Hemorrhage, Cleaving, Nether Rending). Stored by item Guid; combat code can check these.
 [Flags]
 public enum OvertinkedImbueFlags : byte
 {
     None = 0,
-    Bleed = 1,
+    Hemorrhage = 8,
     Cleaving = 2,
     NetherRending = 4,
 }

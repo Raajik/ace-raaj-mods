@@ -49,8 +49,8 @@ public static class ImbueSalvageWcids
     public static HashSet<uint> Build(Settings s)
     {
         var set = new HashSet<uint>(DefaultWcids);
-        if (s.BleedImbue?.SalvageWcids != null)
-            foreach (uint w in s.BleedImbue.SalvageWcids)
+        if (s.HemorrhageImbue?.SalvageWcids != null)
+            foreach (uint w in s.HemorrhageImbue.SalvageWcids)
                 set.Add(w);
         if (s.CleavingImbue?.SalvageWcids != null)
             foreach (uint w in s.CleavingImbue.SalvageWcids)

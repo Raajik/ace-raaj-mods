@@ -58,6 +58,9 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
 
         Settings cfg = Settings ?? new Settings();
+        if ((cfg.HemorrhageImbue.SalvageWcids == null || cfg.HemorrhageImbue.SalvageWcids.Length == 0) && cfg.BleedImbueLegacy != null)
+            cfg.HemorrhageImbue = cfg.BleedImbueLegacy;
+
         Settings = cfg;
         CurrentSettings = cfg;
         SalvageEffectApplier.BuildLookup(cfg);
@@ -224,7 +227,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         return false;
     }
 
-    // Prefix: custom salvage rules, new imbues (Bleed/Cleaving/Nether), buffed jewelry, or standard imbue by dataId; otherwise run original.
+    // Prefix: custom salvage rules, new imbues (Hemorrhage/Cleaving/Nether), buffed jewelry, or standard imbue by dataId; otherwise run original.
     [HarmonyPrefix]
     [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.TryMutate), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(uint), typeof(HashSet<uint>) })]
     public static bool PreTryMutate(Player player, WorldObject source, WorldObject target, Recipe recipe, uint dataId, HashSet<uint> modified, ref bool __result)
@@ -235,7 +238,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         uint wcid = source.WeenieClassId;
 
-        // 1) New imbues: Bleed (Serpentine), Cleaving (Tiger Eye), Nether Rending (Onyx).
+        // 1) New imbues: Hemorrhage (e.g. Salvaged Ruby), Cleaving (Tiger Eye), Nether Rending (Onyx).
         if (TryApplyNewImbue(s, wcid, target))
         {
             RecipeManager.HandleTinkerLog(source, target);
@@ -304,11 +307,23 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         return false;
     }
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.TryMutate), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(uint), typeof(HashSet<uint>) })]
+    public static void PostTryMutate(Player player, WorldObject source, WorldObject target, Recipe recipe, uint dataId, HashSet<uint> modified, ref bool __result)
+    {
+        if (!__result || target == null)
+            return;
+
+        HemorrhageWeaponVisual.ApplyIfHemorrhageWeapon(CurrentSettings, target);
+    }
+
     private static bool TryApplyNewImbue(Settings s, uint wcid, WorldObject target)
     {
-        if (s.BleedImbue?.Enabled == true && s.BleedImbue.SalvageWcids != null && s.BleedImbue.SalvageWcids.Contains(wcid))
+        HemorrhageImbueConfig? hem = s.HemorrhageImbue;
+        if (hem?.Enabled == true && hem.SalvageWcids != null && hem.SalvageWcids.Contains(wcid))
         {
-            OvertinkedImbueStore.Add(target.Guid.Full, OvertinkedImbueFlags.Bleed);
+            OvertinkedImbueStore.Add(target.Guid.Full, OvertinkedImbueFlags.Hemorrhage);
+            HemorrhageWeaponVisual.ApplyIfHemorrhageWeapon(s, target);
             return true;
         }
         if (s.CleavingImbue?.Enabled == true && s.CleavingImbue.SalvageWcids != null && s.CleavingImbue.SalvageWcids.Contains(wcid))

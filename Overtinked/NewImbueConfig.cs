@@ -1,10 +1,10 @@
 namespace Overtinked;
 
-// Config for a single custom imbue type (Bleed, Cleaving, Nether Rending).
+// Config for a single custom imbue type (Hemorrhage, Cleaving, Nether Rending).
 public class NewImbueConfig
 {
     [JsonPropertyName("// SalvageWcids")]
-    public string SalvageWcidsDoc { get; init; } = "Salvage WCIDs that apply this imbue (e.g. Serpentine for Bleed). Include both IDs for dual-WCID items.";
+    public string SalvageWcidsDoc { get; init; } = "Salvage WCIDs that apply this imbue (e.g. Salvaged Ruby for Hemorrhage). Include both IDs for dual-WCID items.";
 
     [JsonPropertyName("// Name")]
     public string NameDoc { get; init; } = "Display name for logs.";
@@ -18,23 +18,38 @@ public class NewImbueConfig
     public bool Enabled { get; set; } = true;
 }
 
-// Bleed-specific: stacking DoT. Stored here; combat tick logic can use these values.
-public class BleedImbueConfig : NewImbueConfig
+// Hemorrhage: flat stacking DoT + AoE stack application on primary weapon hit.
+public class HemorrhageImbueConfig : NewImbueConfig
 {
-    [JsonPropertyName("// DamagePerTick")]
-    public string DamagePerTickDoc { get; init; } = "Damage per tick (e.g. 1).";
+    [JsonPropertyName("// StacksPerApplication")]
+    public string StacksPerApplicationDoc { get; init; } = "Stacks added to primary target and each AoE victim per qualifying hit.";
 
     [JsonPropertyName("// MaxStacks")]
-    public string MaxStacksDoc { get; init; } = "Max stacks (e.g. 10 or 20).";
+    public string MaxStacksDoc { get; init; } = "Max stacks per victim (cap).";
+
+    [JsonPropertyName("// AoERadiusMeters")]
+    public string AoERadiusMetersDoc { get; init; } = "Radius from primary target for extra stack recipients.";
 
     [JsonPropertyName("// TickIntervalSeconds")]
-    public string TickIntervalSecondsDoc { get; init; } = "Tick interval in seconds (1 preferred; 3–5 if needed for performance).";
+    public string TickIntervalSecondsDoc { get; init; } = "Seconds between each burst of per-stack damage.";
 
-    public int DamagePerTick { get; set; } = 1;
+    [JsonPropertyName("// DamagePerStackPerTick")]
+    public string DamagePerStackPerTickDoc { get; init; } = "Health damage per active stack per tick (usually 1).";
 
-    public int MaxStacks { get; set; } = 10;
+    [JsonPropertyName("// StaggerBetweenHitsSeconds")]
+    public string StaggerBetweenHitsSecondsDoc { get; init; } = "Delay between each 1-damage TakeDamage in a burst so combat text streams.";
+
+    public int StacksPerApplication { get; set; } = 3;
+
+    public int MaxStacks { get; set; } = 15;
+
+    public float AoERadiusMeters { get; set; } = 10f;
 
     public float TickIntervalSeconds { get; set; } = 1f;
+
+    public int DamagePerStackPerTick { get; set; } = 1;
+
+    public float StaggerBetweenHitsSeconds { get; set; } = 0.05f;
 }
 
 // Cleaving: splash damage to other creatures/players near the primary target (separate TakeDamage calls; does not recurse DamageTarget).

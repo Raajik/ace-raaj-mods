@@ -177,7 +177,7 @@ public static class ChaosFailureEffects
         // Determine context
         bool isImbue = ImbueSalvageWcids.IsImbueSalvage(wcid, settings);
         bool isCustomImbue = false;
-        if (!isImbue && settings.BleedImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
+        if (!isImbue && settings.HemorrhageImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
         if (!isImbue && settings.CleavingImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
         if (!isImbue && settings.NetherRendingImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
 
@@ -254,7 +254,7 @@ public static class ChaosFailureEffects
         var imbue = ImbueSalvageWcids.GetImbueForWcid(wcid);
         if (imbue == null)
         {
-            // Custom imbue (Bleed, Cleaving, Nether) — fallback to bonus slayer
+            // Custom imbue (Hemorrhage, Cleaving, Nether) — fallback to bonus slayer
             ApplySlayer(player, target, itemName);
             return;
         }

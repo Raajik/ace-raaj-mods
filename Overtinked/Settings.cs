@@ -30,8 +30,8 @@ public class Settings
     [JsonPropertyName("// EnableDefaultImbueFailureWorkmanship")]
     public string EnableDefaultImbueFailureWorkmanshipDoc { get; init; } = "When true, failed imbue tinkers add +1 Workmanship instead of destroying the item, capped at 10.";
 
-    [JsonPropertyName("// BleedImbue")]
-    public string BleedImbueDoc { get; init; } = "Bleed imbue (e.g. Serpentine 21075). Apply SalvageWcids with both IDs for dual-WCID items. Inside: // lines first, then values.";
+    [JsonPropertyName("// HemorrhageImbue")]
+    public string HemorrhageImbueDoc { get; init; } = "Hemorrhage imbue (e.g. Salvaged Ruby 21072). Flat DoT stacks + AoE stack spread. Legacy JSON key BleedImbue still deserializes into BleedImbueLegacy. Inside: // lines first, then values.";
 
     [JsonPropertyName("// CleavingImbue")]
     public string CleavingImbueDoc { get; init; } = "Cleaving imbue (e.g. Tiger Eye 21081). Inside: // lines first, then values.";
@@ -82,8 +82,12 @@ public class Settings
     // When true, failed imbue tinkers (standard + custom) add +1 Workmanship to the item instead of destroying it, capped at 10.
     public bool EnableDefaultImbueFailureWorkmanship { get; set; } = true;
 
-    // Bleed imbue (e.g. Serpentine 21075). Apply SalvageWcids with both IDs for dual-WCID items.
-    public BleedImbueConfig BleedImbue { get; set; } = new();
+    // Hemorrhage imbue (replaces Bleed). Apply SalvageWcids with both IDs for dual-WCID items.
+    public HemorrhageImbueConfig HemorrhageImbue { get; set; } = new();
+
+    // Legacy Settings.json key from Bleed imbue; merged into HemorrhageImbue in RefreshSettingsAndSalvageLookup when Hemorrhage has no salvage WCIDs.
+    [JsonPropertyName("BleedImbue")]
+    public HemorrhageImbueConfig? BleedImbueLegacy { get; set; }
 
     // Cleaving imbue (e.g. Tiger Eye 21081).
     public CleavingImbueCombatConfig CleavingImbue { get; set; } = new();

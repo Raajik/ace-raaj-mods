@@ -7,6 +7,8 @@ public static class CleavingNetherImbueCombat
     [ThreadStatic]
     private static bool _inOvertinkedCleaveChain;
 
+    internal static bool IsInOvertinkedCleaveChain => _inOvertinkedCleaveChain;
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Player), nameof(Player.DamageTarget), new Type[] { typeof(Creature), typeof(WorldObject) })]
     public static void PostDamageTarget(Creature target, WorldObject damageSource, ref Player __instance, ref DamageEvent __result)

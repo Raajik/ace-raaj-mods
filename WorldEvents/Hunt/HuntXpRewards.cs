@@ -33,10 +33,18 @@ internal static class HuntXpRewards
         amount = awarded;
         var pct = fraction * 100.0;
         var label = PlacementOrdinalLabel(zeroBasedRank);
-        formulaSummary = $"{pct:0.##}% to next level ({label})";
+        formulaSummary = $"{pct:0.#}%NL";
 
-        player.SendMessage($"[Hunt] Hunt placement XP ({PlacementLabel(zeroBasedRank)}): +{awarded:N0} character XP ({pct:0.##}% to next level).");
+        player.SendMessage($"[Hunt] Hunt placement XP ({PlacementLabel(zeroBasedRank)}): +{awarded:N0} character XP ({pct:0.##}% to next level, {label}).");
         return true;
+    }
+
+    internal static string FormatAbbreviatedNextLevelFraction(Settings settings, int zeroBasedRank)
+    {
+        var frac = PlacementFraction(settings, zeroBasedRank);
+        if (frac <= 0)
+            return "";
+        return $" ({frac * 100:0.#}%NL)";
     }
 
     static string FractionSuffix(int zeroBasedRank)

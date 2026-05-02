@@ -14,4 +14,7 @@ internal static class HuntPropertyIds
 
     // Estimated Hunt XP for this kill (PreDie); used so loot tier can align with post-kill TotalHuntXp. Cleared in PostDie.
     internal const int PendingHuntXpPreview = 40122;
+
+    // Final character kill XP (after Loremaster GrantXP chain) for hunt window points; written by Loremaster PreGrantXP, read in PostDieHunt.
+    internal const int PendingGrantedCharacterXp = 40126;
 }

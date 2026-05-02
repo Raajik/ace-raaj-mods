@@ -840,7 +840,7 @@ public partial class PatchClass : BasicPatch<Settings>
                 bracketPts.TryGetValue(guid, out pts);
             player.SendMessage(pts > 0
                 ? $"[Hunt] Your hunt points this window: {pts:0.##}"
-                : "[Hunt] Your hunt points this window: 0 (no qualifying kills yet).");
+                : "[Hunt] Your hunt points this window: 0 (no hunt points recorded yet this window).");
         }
     }
 

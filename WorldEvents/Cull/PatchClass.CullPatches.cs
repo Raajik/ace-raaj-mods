@@ -18,7 +18,7 @@ public partial class PatchClass
         var creatureType = (uint)(__instance.GetProperty(PropertyInt.CreatureType) ?? 0);
         if (creatureType != cull.TargetCreatureType) return;
 
-        var killer = ResolveKillerPlayer(lastDamager);
+        var killer = HuntKillPrep.ResolveKillerPlayer(lastDamager);
         if (killer == null) return;
 
         // Set cull multiplier on all qualifying player damagers so Loremaster can consume it.
@@ -59,7 +59,7 @@ public partial class PatchClass
         var creatureType = (uint)(__instance.GetProperty(PropertyInt.CreatureType) ?? 0);
         if (creatureType != cull.TargetCreatureType) return;
 
-        var killer = ResolveKillerPlayer(lastDamager);
+        var killer = HuntKillPrep.ResolveKillerPlayer(lastDamager);
         if (killer == null) return;
 
         CullRuntime.RecordKill(killer.Guid.Full, killer.Name ?? "Unknown");

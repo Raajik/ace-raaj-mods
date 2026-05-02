@@ -2,8 +2,10 @@ namespace WorldEvents;
 
 // Shared broadcast helper for all WorldEvents announcements.
 // Players can opt out with /events off; first send after server start includes the hint.
+// ChatMessageType.Magic — client renders as purple/magenta so event lines stand out from default Broadcast (white).
 internal static class WorldEventsBroadcast
 {
+    internal const ChatMessageType EventAnnouncementType = ChatMessageType.Magic;
     // PropertyBool slot for per-character opt-out (WorldEvents range: 12000+).
     internal const FakeBool EventAnnouncementsOptOut = (FakeBool)12001;
 
@@ -28,9 +30,9 @@ internal static class WorldEventsBroadcast
         foreach (var player in PlayerManager.GetAllOnline())
         {
             if (player.GetProperty(EventAnnouncementsOptOut) == true) continue;
-            player.SendMessage(message);
+            player.SendMessage(message, EventAnnouncementType);
             if (hint != null)
-                player.SendMessage(hint);
+                player.SendMessage(hint, EventAnnouncementType);
         }
     }
 

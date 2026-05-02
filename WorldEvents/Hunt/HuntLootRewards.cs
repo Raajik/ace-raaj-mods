@@ -46,7 +46,8 @@ internal static class HuntLootRewards
             return names;
         }
 
-        names.Add($"{item.Name} [WCID {item.WeenieClassId}]");
+        names.Add(item.Name ?? "loot");
+        ModManager.Log($"[Hunt] Hunt loot roll WCID {item.WeenieClassId} ({item.Name}) place {place}, floor {floor}.");
 
         var placeTag = $"place {place}";
         if (HuntBankInterop.TryLeyLineLedgerAutoBank(player, item, placeTag))

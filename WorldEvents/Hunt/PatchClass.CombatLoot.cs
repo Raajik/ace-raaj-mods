@@ -23,7 +23,7 @@ public partial class PatchClass
             return;
 
         var data = HuntRuntime.GetOrLoadPlayer(player.Guid.Full);
-        var pct = ComputeDamageBonusPercent(data, settings);
+        var pct = HuntKillPrep.ComputeDamageBonusPercent(data, settings);
         if (pct <= 0)
             return;
 
@@ -46,7 +46,7 @@ public partial class PatchClass
             || __instance == null)
             return;
 
-        var player = ResolveKillerPlayer(killer);
+        var player = HuntKillPrep.ResolveKillerPlayer(killer);
         if (player == null)
             return;
 
@@ -101,7 +101,7 @@ public partial class PatchClass
         if (settings?.EnableHunt != true || __instance == null)
             return;
 
-        var player = ResolveKillerPlayer(killer);
+        var player = HuntKillPrep.ResolveKillerPlayer(killer);
         if (player == null)
             return;
 

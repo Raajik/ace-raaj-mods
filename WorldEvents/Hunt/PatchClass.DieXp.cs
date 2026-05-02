@@ -3,57 +3,21 @@
 public partial class PatchClass
 {
     [HarmonyPrefix]
+    [HarmonyPatch(typeof(Creature), nameof(Creature.OnDeath), new Type[] { typeof(DamageHistoryInfo), typeof(DamageType), typeof(bool) })]
+    public static void PreOnDeathHunt(DamageHistoryInfo lastDamager, DamageType damageType, bool criticalHit, Creature __instance)
+    {
+        // Player deaths call base OnDeath; skip so we do not stamp hunt pending props on PK killers using the victim's CreatureType.
+        if (__instance is Player)
+            return;
+
+        HuntKillPrep.TryApplyPendingKillBonuses(__instance, lastDamager, CurrentSettings);
+    }
+
+    [HarmonyPrefix]
     [HarmonyPatch(typeof(Creature), nameof(Creature.Die), new Type[] { typeof(DamageHistoryInfo), typeof(DamageHistoryInfo) })]
     public static void PreDieHunt(DamageHistoryInfo lastDamager, DamageHistoryInfo topDamager, Creature __instance)
     {
-        var settings = CurrentSettings;
-        if (settings?.EnableHunt != true || __instance == null)
-            return;
-
-        var killer = ResolveKillerPlayer(lastDamager);
-        if (killer == null)
-            return;
-
-        var speciesId = (uint)(__instance.GetProperty(PropertyInt.CreatureType) ?? 0);
-        if (speciesId == 0)
-            return;
-
-        var guid = killer.Guid.Full;
-        var data = HuntRuntime.GetOrLoadPlayer(guid);
-
-        HuntRuntime.GlobalSpeciesKills.TryGetValue(speciesId, out var gShardPre);
-        var speciesMap = HuntRuntime.GlobalSpeciesKills.ToDictionary(kv => kv.Key, kv => kv.Value);
-        var bottom = HuntRanks.BuildBottomSet(speciesMap, settings);
-        var popularity = bottom.Contains(speciesId) ? settings.BottomTenPopularityMultiplier : 1.0;
-
-        var hunt = HuntRuntime.GetHuntMultiplierForSpecies(speciesId);
-
-        var streakMult = 1.0;
-        if (settings.StreakMultiplierPerStack > 0
-            && data.LastKillUtc.HasValue
-            && (DateTime.UtcNow - data.LastKillUtc.Value).TotalSeconds <= settings.StreakTimeoutSeconds)
-        {
-            var bonus = data.StreakCount * settings.StreakMultiplierPerStack;
-            bonus = Math.Min(bonus, settings.StreakMaxMultiplierBonus);
-            streakMult = 1.0 + bonus;
-        }
-
-        var rarityMult = settings.RarityGlobalKillsThreshold <= 0 || gShardPre >= settings.RarityGlobalKillsThreshold
-            ? 1.0
-            : settings.RarityXpMultiplier;
-
-        var totalMult = popularity * hunt * streakMult * rarityMult;
-        if (totalMult < 0 || double.IsNaN(totalMult) || double.IsInfinity(totalMult))
-            totalMult = 1.0;
-
-        killer.SetProperty((PropertyFloat)HuntPropertyIds.PendingKillXpMultiplier, (float)totalMult);
-
-        var previewXxp = settings.BaseHuntXpPerKill * totalMult;
-        killer.SetProperty((PropertyFloat)HuntPropertyIds.PendingHuntXpPreview, (float)previewXxp);
-
-        var dmgPct = ComputeDamageBonusPercent(data, settings);
-        var trophyHint = Math.Min(settings.TrophyChanceCap, dmgPct * settings.TrophyChancePerDamagePercent);
-        killer.SetProperty((PropertyFloat)HuntPropertyIds.PendingTrophyChanceHint, (float)trophyHint);
+        HuntKillPrep.TryApplyPendingKillBonuses(__instance, lastDamager, CurrentSettings);
     }
 
     [HarmonyPostfix]
@@ -64,7 +28,7 @@ public partial class PatchClass
         if (settings?.EnableHunt != true || __instance == null)
             return;
 
-        var killer = ResolveKillerPlayer(lastDamager);
+        var killer = HuntKillPrep.ResolveKillerPlayer(lastDamager);
         if (killer == null)
             return;
 
@@ -123,9 +87,9 @@ public partial class PatchClass
             && huntNow >= HuntRuntime.ActiveHunt.WindowStartUtc
             && huntNow < HuntRuntime.ActiveHunt.WindowEndUtc)
         {
-            var grantedXp = (long)(killer.GetProperty((PropertyInt64)40126) ?? 0);
-            killer.RemoveProperty((PropertyInt64)40126);
-        var huntPts = Math.Ceiling(grantedXp * 0.01);
+            var grantedXp = (long)(killer.GetProperty((PropertyInt64)HuntPropertyIds.PendingGrantedCharacterXp) ?? 0);
+            killer.RemoveProperty((PropertyInt64)HuntPropertyIds.PendingGrantedCharacterXp);
+            var huntPts = Math.Ceiling(grantedXp * 0.01);
             lock (HuntRuntime.HuntLock)
             {
                 if (HuntRuntime.ActiveHunt != null
@@ -159,25 +123,6 @@ public partial class PatchClass
         killer.RemoveProperty((PropertyFloat)HuntPropertyIds.PendingKillXpMultiplier);
         killer.RemoveProperty((PropertyFloat)HuntPropertyIds.PendingTrophyChanceHint);
         killer.RemoveProperty((PropertyFloat)HuntPropertyIds.PendingHuntXpPreview);
-    }
-
-    static Player? ResolveKillerPlayer(DamageHistoryInfo? lastDamager)
-    {
-        if (lastDamager == null || !lastDamager.IsPlayer)
-            return null;
-        return lastDamager.TryGetPetOwnerOrAttacker() as Player;
-    }
-
-    static double ComputeDamageBonusPercent(PlayerHuntData data, Settings settings)
-    {
-        double progress = settings.DamageBonusUsesHuntXp ? data.TotalHuntXp : data.TotalLifetimeKills;
-        double coeff = settings.DamageBonusUsesHuntXp ? settings.DamageBonusPerHuntXp : settings.DamageBonusPerWeightedKill;
-        var pct = progress * coeff * 100.0;
-        if (pct > settings.DamageBonusCapPercent)
-            pct = settings.DamageBonusCapPercent;
-        if (pct < 0 || double.IsNaN(pct))
-            return 0;
-        return pct;
     }
 
     static void AnnounceAchievements(Player player, PlayerHuntData data, Settings settings)

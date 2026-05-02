@@ -24,7 +24,7 @@ public partial class PatchClass
             return;
 
         var data = HuntRuntime.GetOrLoadPlayer(player.Guid.Full);
-        var pct = ComputeDamageBonusPercent(data, settings);
+        var pct = HuntKillPrep.ComputeDamageBonusPercent(data, settings);
         if (pct <= 0)
             return;
 

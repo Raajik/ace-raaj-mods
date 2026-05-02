@@ -248,6 +248,12 @@ No configuration required — enabling the feature is sufficient.
 
 ---
 
+### Vendor loot rotation (equipment vendors)
+
+When **`EnableVendorLootRotation`** is **`true`**, a Harmony **prefix** on **`Vendor.ApproachVendor`** runs at **First** (before **LeyLineLedger** pricing on approach; **EmpyreanAlteration** vendor stock injection remains **Last**). Only vendors that sell equipment via **`MerchandiseItemTypes`** get stock stripped and regenerated for the bits they actually sell (melee, missile, caster, armor, clothing, jewelry). Counts per bit come from **`VendorLootItemsPerCategoryMin`** / **`Max`** (default 15–30). **`RollVendorItemTier`** favors tiers 1–2 near low-tier vendors; **`VendorLootLowStatMode`** keeps replacements closer to plain rolled gear. Magic/mundane/salvage extras are gated by merch bits and separate toggles/percentages (defaults favor no extra magic/mundane on pure equipment shops). Academy/Pathwarden cleanup for non-TN vendors is a **database** concern: apply **`WindblownContent/Content/SQL/RemoveAcademyPathwardenFromNonTnVendors.sql`** to **`ace_world`** and restart the server.
+
+---
+
 ## Commands
 
 | Command | Access | Description |

@@ -215,7 +215,7 @@ public class Settings
     public bool EnableLootAmountBoostWIP { get; set; } = false;
 
     [JsonPropertyName("// EnableVendorLootRotation")]
-    public string EnableVendorLootRotationDoc { get; init; } = "Enable rotating vendor stock. Clears and regenerates vendor inventory on a timer cycle.";
+    public string EnableVendorLootRotationDoc { get; init; } = "When true, QOL patches Vendor.ApproachVendor (Harmony First) to rotate equipment stock from MerchandiseItemTypes only; protected TN Pathwarden vendors 850300-850303 and 800039 are skipped. LeyLineLedger Debit still calls ApproachVendor after; EmpyreanAlteration vendor injection uses Last.";
     public bool EnableVendorLootRotation { get; set; } = true;
 
     [JsonPropertyName("// VendorLootRotationMinutes")]
@@ -224,7 +224,7 @@ public class Settings
 
     [JsonPropertyName("// VendorLootMode")]
     public string VendorLootModeDoc { get; init; } = "Whitelist: only rotate vendors in VendorLootWcids. Blacklist: rotate all EXCEPT vendors in VendorLootWcids.";
-    public string VendorLootMode { get; set; } = "Whitelist";
+    public string VendorLootMode { get; set; } = "Blacklist";
 
     [JsonPropertyName("// VendorLootWcids")]
     public string VendorLootWcidsDoc { get; init; } = "List of vendor WCIDs for whitelist/blacklist mode.";
@@ -259,8 +259,8 @@ public class Settings
     public double VendorLootHighWorkmanshipValueMultiplier { get; set; } = 2.0;
 
     [JsonPropertyName("// VendorLootCooldownMinutes")]
-    public string VendorLootCooldownMinutesDoc { get; init; } = "Minutes between vendor inventory rotations for the same vendor instance.";
-    public int VendorLootCooldownMinutes { get; set; } = 15;
+    public string VendorLootCooldownMinutesDoc { get; init; } = "Minutes between vendor inventory rotations for the same vendor instance (per player approach).";
+    public int VendorLootCooldownMinutes { get; set; } = 45;
 
     [JsonPropertyName("// VendorLootLuxuryTaxPercent")]
     public string VendorLootLuxuryTaxPercentDoc { get; init; } = "Hidden luxury tax added to vendor prices. 10 = 10% price increase. LLL handles economy scaling via SellPrice patch.";
@@ -280,19 +280,40 @@ public class Settings
 
     [JsonPropertyName("// VendorTierLandblockMap")]
     public string VendorTierLandblockMapDoc { get; init; } = "Maps vendor landblock IDs (decimal) to loot tiers (1-8). Overrides WCID map when both match. Starter towns: Holtburg=43442, Shoushi=56914, Yaraq=32100.";
-    public Dictionary<uint, int> VendorTierLandblockMap { get; set; } = new();
+    public Dictionary<uint, int> VendorTierLandblockMap { get; set; } = new()
+    {
+        [43442] = 1,
+        [56914] = 1,
+        [32100] = 1,
+    };
 
     [JsonPropertyName("// DefaultVendorTier")]
     public string DefaultVendorTierDoc { get; init; } = "Default loot tier (1-8) for vendors not in any tier map. Wield requirements are capped at (tier * 50) — tier 1=50, tier 2=100, tier 3=150, etc. Items roll at tier to tier+1.";
     public int DefaultVendorTier { get; set; } = 2;
 
     [JsonPropertyName("// VendorLootMagicItemPercent")]
-    public string VendorLootMagicItemPercentDoc { get; init; } = "Percentage of extra inventory slots filled with MagicItem-category loot (scrolls, wands, orbs) after base Item-category loot. 0 = no extra magic items.";
-    public int VendorLootMagicItemPercent { get; set; } = 100;
+    public string VendorLootMagicItemPercentDoc { get; init; } = "After Caster-tab Item batch: fraction of that batch count filled again as TreasureItemCategory.MagicItem. 0 = none. Only applies when MerchandiseItemTypes includes Caster.";
+    public int VendorLootMagicItemPercent { get; set; } = 0;
 
     [JsonPropertyName("// VendorLootMundaneItemPercent")]
-    public string VendorLootMundaneItemPercentDoc { get; init; } = "Percentage of extra inventory slots filled with MundaneItem-category loot (food, potions, components) after base loot. 0 = no extra mundane items.";
-    public int VendorLootMundaneItemPercent { get; set; } = 75;
+    public string VendorLootMundaneItemPercentDoc { get; init; } = "Percentage of extra inventory slots filled with MundaneItem-category loot (food, potions, components) after base loot. 0 = no extra mundane items. Only runs if the vendor MerchandiseItemTypes includes Food, Misc, or TinkeringMaterial.";
+    public int VendorLootMundaneItemPercent { get; set; } = 0;
+
+    [JsonPropertyName("// VendorLootItemsPerCategoryMin")]
+    public string VendorLootItemsPerCategoryMinDoc { get; init; } = "Per MerchandiseItemTypes equipment bit (melee, missile, caster, armor, clothing, jewelry), minimum rotated items for that tab.";
+    public int VendorLootItemsPerCategoryMin { get; set; } = 15;
+
+    [JsonPropertyName("// VendorLootItemsPerCategoryMax")]
+    public string VendorLootItemsPerCategoryMaxDoc { get; init; } = "Per equipment merch bit, maximum rotated items for that tab.";
+    public int VendorLootItemsPerCategoryMax { get; set; } = 30;
+
+    [JsonPropertyName("// VendorLootLowStatMode")]
+    public string VendorLootLowStatModeDoc { get; init; } = "When true, vendor-rolled gear skips heavy stat scaling and vendor imbue rolls so stock stays closer to plain loot-tier items (wield cap still applies).";
+    public bool VendorLootLowStatMode { get; set; } = true;
+
+    [JsonPropertyName("// VendorLootSalvageOnRotation")]
+    public string VendorLootSalvageOnRotationDoc { get; init; } = "When true, rotation may add random salvage bags if the vendor sells Misc or Containers. Default off.";
+    public bool VendorLootSalvageOnRotation { get; set; } = false;
 
     [JsonPropertyName("// GiveNpcSingleStackWeenieTypes")]
     public string GiveNpcSingleStackWeenieTypesDoc { get; init; } = "WeenieTypes that receive the give clamp (typically Generic for trophies). Only applies when MaxStackSize > 1.";
@@ -390,7 +411,16 @@ public class Settings
     public string XpSpendStopBeforeMaxRanksDoc { get; init; } = "Stop spending XP into a stat when it is within this many ranks of max (prevents overcapping).";
     public int XpSpendStopBeforeMaxRanks { get; set; } = 3;
 
+    [JsonPropertyName("// EnableAutoSpendRateLimit")]
+    public string EnableAutoSpendRateLimitDoc { get; init; } = "Rate-limit auto-spend messages to once per cooldown period (prevents spam).";
+    public bool EnableAutoSpendRateLimit { get; set; } = true;
+
+    [JsonPropertyName("// AutoSpendRateLimitMinutes")]
+    public string AutoSpendRateLimitMinutesDoc { get; init; } = "How often (in minutes) to show auto-spend messages when rate limit is enabled.";
+    public int AutoSpendRateLimitMinutes { get; set; } = 10;
+
     [JsonPropertyName("// XpSpend")]
+
     public string XpSpendSectionDoc { get; init; } = "XP spending skill weights for /xp spend. Skills not in CombatSkills or SocialSkills use SupportSkillWeight.";
     public XpSpendSettings XpSpend { get; set; } = new();
 

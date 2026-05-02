@@ -56,17 +56,15 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         RegisterEnabledPatchCategories();
         CollectorsAcceptAll.Initialize();
         VendorLootRotation.Initialize(Settings);
-        // HARDCODE-DISABLED: VendorLootRotation should be handled by LeyLineLedger
-        // TryApplyVendorLootRotationPatch();
+        TryApplyVendorLootRotationPatch();
         ApplyWorldOpenSideEffects();
         AutoBuff.TryApply();
     }
 
     void TryApplyVendorLootRotationPatch()
     {
-        // HARD DISABLE — all vendor inventory management moved to LeyLineLedger
-        return;
-        if (!Settings.EnableVendorLootRotation) return;
+        if (!Settings.EnableVendorLootRotation)
+            return;
 
         try
         {
@@ -88,7 +86,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             var harmonyPrefix = new HarmonyMethod(prefix);
             harmonyPrefix.priority = HarmonyLib.Priority.First;
             ModC.Harmony?.Patch(approachVendor, harmonyPrefix);
-            ModManager.Log("[QOL] VendorLootRotation patched to Vendor.ApproachVendor (priority=First, runs before EmpyreanAlteration vendor injection).", ModManager.LogLevel.Info);
+            ModManager.Log("[QOL] VendorLootRotation patched to Vendor.ApproachVendor (priority=First; LeyLineLedger Debit still invokes ApproachVendor; EmpyreanAlteration vendor stock uses Last per AGENTS.md).", ModManager.LogLevel.Info);
 
             // Patch private ItemProfileToWorldObjects so purchased items clone original stats
             var itemProfileMethod = AccessTools.Method(typeof(Vendor), "ItemProfileToWorldObjects", new Type[] { typeof(ItemProfile) });

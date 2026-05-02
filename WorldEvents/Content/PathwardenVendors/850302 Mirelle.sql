@@ -146,26 +146,25 @@ VALUES
 ,(850302, 4, 45556, 1, 0,  9800, False) /* Academy Knuckles */
 -- Pathwarden Robes (4 variants)
 ,(850302, 4, 40439, 1, 0,  8400, False) /* Pathwarden Robe (Aluvian) */
-,(850302, 4, 40454, 1, 0,  8600, False) /* Pathwarden Robe (Gharu'ndim) */
-,(850302, 4, 40455, 1, 0,  8800, False) /* Pathwarden Robe (Sho) */
-,(850302, 4, 40456, 1, 0,  9000, False) /* Pathwarden Robe (Viamontian) */
+,(850302, 4, 40440, 1, 0,  8800, False) /* Pathwarden Robe (Gharu'ndim) */
+,(850302, 4, 40441, 1, 0,  8600, False) /* Pathwarden Robe (Sho) */
+,(850302, 4, 40442, 1, 0,  9000, False) /* Pathwarden Robe (Viamontian) */
 -- Pathwarden Armor (12 items)
-,(850302, 4, 33597, 1, 0,  9200, False) /* Pathwarden Plate Hauberk */
-,(850302, 4, 33598, 1, 0,  9400, False) /* Pathwarden Scale Hauberk */
-,(850302, 4, 33599, 1, 0,  9600, False) /* Pathwarden Yoroi Hauberk */
-,(850302, 4, 33600, 1, 0,  9800, False) /* Pathwarden Diforsa Hauberk */
-,(850302, 4, 33601, 1, 0, 10000, False) /* Pathwarden Plate Leggings */
-,(850302, 4, 33602, 1, 0, 10200, False) /* Pathwarden Scale Leggings */
-,(850302, 4, 33603, 1, 0, 10400, False) /* Pathwarden Yoroi Leggings */
-,(850302, 4, 33604, 1, 0, 10600, False) /* Pathwarden Diforsa Leggings */
-,(850302, 4, 33605, 1, 0, 10800, False) /* Pathwarden Sollerets */
-,(850302, 4, 33606, 1, 0, 11000, False) /* Pathwarden Gauntlets */
-,(850302, 4, 33607, 1, 0, 11200, False) /* Pathwarden Helm */
-,(850302, 4, 41513, 1, 0, 11400, False) /* Pathwarden Trinket */
+,(850302, 4, 40443, 1, 0,  9200, False) /* Plate Hauberk */
+,(850302, 4, 40444, 1, 0,  9600, False) /* Scale Hauberk */
+,(850302, 4, 40445, 1, 0,  9400, False) /* Yoroi Hauberk */
+,(850302, 4, 40446, 1, 0,  9800, False) /* Diforsa Hauberk */
+,(850302, 4, 40447, 1, 0, 10000, False) /* Plate Leggings */
+,(850302, 4, 40448, 1, 0, 10400, False) /* Scale Leggings */
+,(850302, 4, 40449, 1, 0, 10200, False) /* Yoroi Leggings */
+,(850302, 4, 40450, 1, 0, 10600, False) /* Diforsa Leggings */
+,(850302, 4, 40451, 1, 0, 10800, False) /* Sollerets */
+,(850302, 4, 40452, 1, 0, 11000, False) /* Gauntlets */
+,(850302, 4, 40453, 1, 0, 11200, False) /* Helm */
+,(850302, 4, 40454, 1, 0, 11400, False) /* Pathwarden Trinket */
 -- SpellSiphon Tools (2 items)
-,(850302, 4, 850200, 1, 0,  5000, False) /* SpellSiphon */
-,(850302, 4, 850201, 1, 0, 12000, False) /* Mana Lattice */;
-
--- Wielded clothing (visible on NPC)
-INSERT INTO weenie_properties_create_list (object_Id, destination_Type, weenie_Class_Id, stack_Size, palette, shade, try_To_Bond)
-VALUES (850302, 2, 40455, 1, 0, 0, False);  /* Pathwarden Robe (Sho) - wielded */
+,(850302, 4, 850200, 1, 0, 10000, False) /* SpellSiphon */
+,(850302, 4, 850201, 1, 0,  5000, False) /* Mana Lattice */
+-- Equipped Clothing
+,(850302, 2, 40441, 0, 0, 0, False) /* Wear Pathwarden Robe (Sho) */
+,(850302, 2, 40452, 0, 0, 0, False) /* Wear Pathwarden Gauntlets */;

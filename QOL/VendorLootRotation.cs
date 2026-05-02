@@ -36,10 +36,8 @@ public static class VendorLootRotation
     // -- Repricing tracking ---------------------------------------------
     static readonly Random _rng = new();
 
-    /// <summary>
-    /// WCIDs that must never be rotated and must keep their SQL create_list stock intact.
-    /// Pathwarden starter vendors and any other quest-critical vendors go here.
-    /// </summary>
+    // WCIDs that must never be rotated and must keep their SQL create_list stock intact.
+    // Pathwarden starter vendors and any other quest-critical vendors go here.
     static readonly HashSet<uint> _protectedVendorWcids = new() { 850300, 850301, 850302, 850303, 800039 };
 
     public static void Initialize(Settings settings)
@@ -152,13 +150,87 @@ public static class VendorLootRotation
         return allProfiles.OrderBy(p => p.Tier).FirstOrDefault();
     }
 
-    private static (int Min, int Max) GetTiersForBaseTier(int baseTier)
+    static readonly ItemType[] RotationMerchBits =
     {
-        if (baseTier == 1)
-            return (1, 3);
-        if (baseTier == 8)
-            return (6, 8);
-        return (baseTier - 1, baseTier + 1);
+        ItemType.MeleeWeapon,
+        ItemType.MissileWeapon,
+        ItemType.Caster,
+        ItemType.Armor,
+        ItemType.Clothing,
+        ItemType.Jewelry,
+    };
+
+    static ItemType GetVendorMerchMask(Vendor vendor)
+    {
+        var merch = vendor.MerchandiseItemTypes;
+        if (!merch.HasValue)
+            return ItemType.None;
+
+        return (ItemType)merch.Value;
+    }
+
+    static ItemType GetMerchandiseEquipmentMask(Vendor vendor)
+    {
+        var full = GetVendorMerchMask(vendor);
+        const ItemType equipmentMask = ItemType.Armor | ItemType.MeleeWeapon | ItemType.MissileWeapon | ItemType.Caster | ItemType.Clothing | ItemType.Jewelry;
+        return full & equipmentMask;
+    }
+
+    static int CountRotationMerchBits(ItemType allowed)
+    {
+        int count = 0;
+        foreach (ItemType bit in RotationMerchBits)
+        {
+            if ((allowed & bit) != 0)
+                count++;
+        }
+
+        return Math.Max(1, count);
+    }
+
+    static ItemType? GetMundaneMerchFilterBit(ItemType fullMerchMask)
+    {
+        bool food = (fullMerchMask & ItemType.Food) != 0;
+        bool misc = (fullMerchMask & ItemType.Misc) != 0;
+        bool tink = (fullMerchMask & ItemType.TinkeringMaterial) != 0;
+        int n = (food ? 1 : 0) + (misc ? 1 : 0) + (tink ? 1 : 0);
+        if (n == 0)
+            return null;
+        if (n >= 2)
+            return null;
+
+        if (food)
+            return ItemType.Food;
+        if (misc)
+            return ItemType.Misc;
+        return ItemType.TinkeringMaterial;
+    }
+
+    static bool ItemMatchesMerchBit(WorldObject item, ItemType bit)
+    {
+        return (item.ItemType & bit) != 0;
+    }
+
+    static int RollVendorItemTier(int vendorTier)
+    {
+        vendorTier = Math.Clamp(vendorTier, 1, 8);
+        double r = _rng.NextDouble();
+        if (vendorTier <= 2)
+        {
+            if (r < 0.70)
+                return vendorTier;
+            if (r < 0.95)
+                return Math.Min(vendorTier + 1, 8);
+            return Math.Min(vendorTier + 2, 3);
+        }
+
+        if (vendorTier >= 4)
+            return _rng.Next(vendorTier, Math.Min(vendorTier + 2, 9));
+        if (r < 0.50)
+            return 3;
+        if (r < 0.85)
+            return Math.Min(4, 8);
+        return Math.Min(5, 8);
     }
 
     static double GetLuxuryTaxMultiplier()
@@ -208,43 +280,50 @@ public static class VendorLootRotation
         _vendorLastRotation[vendorGuid] = now;
     }
 
-    // Batch-generate items: generate a large pool, filter by profile, take top N.
-    // This avoids per-slot retry overhead when profile matching is restrictive.
-    static List<WorldObject> GenerateBatch(Vendor vendor, List<TreasureDeath> allProfiles, int vendorTier, TreasureItemCategory category, int targetCount, VendorProfile vendorProfile)
+    // Batch-generate items; optional merch bit restricts to vendor tabs (MerchandiseItemTypes).
+    static List<WorldObject> GenerateBatch(Vendor vendor, List<TreasureDeath> allProfiles, int vendorTier, TreasureItemCategory category, int targetCount, ItemType? merchFilterBit)
     {
         var batch = new List<WorldObject>();
         int attempts = 0;
-        int maxAttempts = targetCount * 5;
+        int maxAttempts = Math.Max(targetCount * 5, 25);
 
-        while (batch.Count < targetCount * 2 && attempts < maxAttempts)
+        while (batch.Count < targetCount && attempts < maxAttempts)
         {
-            var item = GenerateItem(vendor, allProfiles, vendorTier, category);
+            var item = GenerateItem(vendor, allProfiles, vendorTier, category, merchFilterBit);
             if (item != null)
             {
                 ApplyWieldRequirementCap(item, vendorTier);
-                if (vendorProfile == VendorProfile.General || ItemMatchesProfile(item, vendorProfile))
+                if (!merchFilterBit.HasValue || ItemMatchesMerchBit(item, merchFilterBit.Value))
                     batch.Add(item);
                 else
                     item.Destroy();
             }
+
             attempts++;
         }
 
-        return batch.Take(targetCount).ToList();
+        return batch;
     }
 
     static void RotateVendorInventory(Vendor vendor)
     {
-        if (_settings is null) return;
+        if (_settings is null)
+            return;
 
         var vendorGuid = vendor.Guid.Full;
         var vendorTier = GetVendorTier(vendor);
-        var vendorProfile = DetectVendorProfile(vendor);
         var profiles = GetTreasureProfiles();
+        var equipmentAllowed = GetMerchandiseEquipmentMask(vendor);
+        var fullMerch = GetVendorMerchMask(vendor);
 
-        ModManager.Log($"[VendorLoot] Rotating vendor {vendor.Name} ({vendor.WeenieClassId}) at tier {vendorTier}, profile {vendorProfile}...", ModManager.LogLevel.Info);
+        if (equipmentAllowed == ItemType.None)
+        {
+            ModManager.Log($"[VendorLoot] Vendor {vendor.Name} has no equipment MerchandiseItemTypes; skipping rotation.", ModManager.LogLevel.Warn);
+            return;
+        }
 
-        // -- Remove previously rotated items --
+        ModManager.Log($"[VendorLoot] Rotating vendor {vendor.Name} ({vendor.WeenieClassId}) tier {vendorTier}, equipment merch mask {equipmentAllowed}...", ModManager.LogLevel.Info);
+
         var rotatedSet = new HashSet<ObjectGuid>();
         if (_vendorRotatedItems.TryGetValue(vendorGuid, out var oldRotated))
         {
@@ -254,16 +333,16 @@ public static class VendorLootRotation
                 vendor.UniqueItemsForSale.Remove(guid);
             }
         }
+
         _vendorRotatedItems[vendorGuid] = rotatedSet;
 
-        // Strip all vanilla equipment so the vendor starts clean for profile-matched rotation
-        var equipmentMask = ItemType.Armor | ItemType.MeleeWeapon | ItemType.MissileWeapon | ItemType.Caster | ItemType.Clothing | ItemType.Jewelry;
+        // Strip only equipment types this vendor actually sells (MerchandiseItemTypes).
         var equipmentGuids = vendor.DefaultItemsForSale
-            .Where(kvp => (kvp.Value.ItemType & equipmentMask) != 0)
+            .Where(kvp => (kvp.Value.ItemType & equipmentAllowed) != 0)
             .Select(kvp => kvp.Key)
             .ToList();
         var uniqueEquipmentGuids = vendor.UniqueItemsForSale
-            .Where(kvp => (kvp.Value.ItemType & equipmentMask) != 0)
+            .Where(kvp => (kvp.Value.ItemType & equipmentAllowed) != 0)
             .Select(kvp => kvp.Key)
             .ToList();
         equipmentGuids.AddRange(uniqueEquipmentGuids);
@@ -275,43 +354,57 @@ public static class VendorLootRotation
 
         _originalValues.Clear();
 
-        int baseCount = _rng.Next(_settings.VendorLootItemsPerTierMin, _settings.VendorLootItemsPerTierMax + 1);
+        int perCatMin = Math.Max(1, _settings.VendorLootItemsPerCategoryMin);
+        int perCatMax = Math.Max(perCatMin, _settings.VendorLootItemsPerCategoryMax);
         int itemCount = 0, magicCount = 0, mundaneCount = 0, salvageCount = 0;
 
-        // -- Generate base equipment (Item category), filtered by vendor profile --
-        var baseItems = GenerateBatch(vendor, profiles, vendorTier, TreasureItemCategory.Item, baseCount, vendorProfile);
-        foreach (var item in baseItems)
+        foreach (ItemType bit in RotationMerchBits)
         {
-            AddItemToVendor(vendor, item, rotatedSet);
-            itemCount++;
-        }
+            if ((equipmentAllowed & bit) == 0)
+                continue;
 
-        // -- Generate magic items --
-        int magicSlots = (int)(baseCount * _settings.VendorLootMagicItemPercent / 100.0);
-        if (magicSlots > 0)
-        {
-            var magicItems = GenerateBatch(vendor, profiles, vendorTier, TreasureItemCategory.MagicItem, magicSlots, vendorProfile);
-            foreach (var item in magicItems)
+            int target = _rng.Next(perCatMin, perCatMax + 1);
+            var batch = GenerateBatch(vendor, profiles, vendorTier, TreasureItemCategory.Item, target, bit);
+            foreach (var wo in batch)
             {
-                AddItemToVendor(vendor, item, rotatedSet);
-                magicCount++;
+                AddItemToVendor(vendor, wo, rotatedSet);
+                itemCount++;
+            }
+
+            if (bit == ItemType.Caster && _settings.VendorLootMagicItemPercent > 0)
+            {
+                int magicSlots = (int)(target * (_settings.VendorLootMagicItemPercent / 100.0));
+                if (magicSlots > 0)
+                {
+                    // MagicItem loot includes scrolls and orb-type gear; do not restrict to ItemType.Caster only.
+                    var magicItems = GenerateBatch(vendor, profiles, vendorTier, TreasureItemCategory.MagicItem, magicSlots, null);
+                    foreach (var wo in magicItems)
+                    {
+                        AddItemToVendor(vendor, wo, rotatedSet);
+                        magicCount++;
+                    }
+                }
             }
         }
 
-        // -- Generate mundane items --
-        int mundaneSlots = (int)(baseCount * _settings.VendorLootMundaneItemPercent / 100.0);
-        if (mundaneSlots > 0)
+        var mundaneBit = GetMundaneMerchFilterBit(fullMerch);
+        if (mundaneBit.HasValue && _settings.VendorLootMundaneItemPercent > 0)
         {
-            var mundaneItems = GenerateBatch(vendor, profiles, vendorTier, TreasureItemCategory.MundaneItem, mundaneSlots, vendorProfile);
-            foreach (var item in mundaneItems)
+            int refSize = _rng.Next(perCatMin, perCatMax + 1);
+            int mundaneSlots = (int)(refSize * CountRotationMerchBits(equipmentAllowed) * (_settings.VendorLootMundaneItemPercent / 100.0));
+            mundaneSlots = Math.Clamp(mundaneSlots, 0, 120);
+            if (mundaneSlots > 0)
             {
-                AddItemToVendor(vendor, item, rotatedSet);
-                mundaneCount++;
+                var mundaneItems = GenerateBatch(vendor, profiles, vendorTier, TreasureItemCategory.MundaneItem, mundaneSlots, mundaneBit.Value);
+                foreach (var wo in mundaneItems)
+                {
+                    AddItemToVendor(vendor, wo, rotatedSet);
+                    mundaneCount++;
+                }
             }
         }
 
-        // -- Salvage bags --
-        if (VendorHasMiscTab(vendor) || VendorSellsContainers(vendor))
+        if (_settings.VendorLootSalvageOnRotation && (VendorHasMiscTab(vendor) || VendorSellsContainers(vendor)))
         {
             int salvageToAdd = _rng.Next(5, 10);
             int salvageAttempts = 0;
@@ -319,12 +412,16 @@ public static class VendorLootRotation
             while (salvageCount < salvageToAdd && salvageAttempts < salvageMaxAttempts)
             {
                 var salvage = GenerateSalvageBag();
-                if (salvage != null) { AddItemToVendor(vendor, salvage, rotatedSet); salvageCount++; }
+                if (salvage != null)
+                {
+                    AddItemToVendor(vendor, salvage, rotatedSet);
+                    salvageCount++;
+                }
+
                 salvageAttempts++;
             }
         }
 
-        // -- Apply luxury tax pricing (LLL handles economy scaling via SellPrice patch) --
         var taxMult = GetLuxuryTaxMultiplier();
         foreach (var kvp in vendor.DefaultItemsForSale.Concat(vendor.UniqueItemsForSale))
         {
@@ -334,20 +431,22 @@ public static class VendorLootRotation
             if (_originalValues.TryGetValue(kvp.Key, out var originalValue))
             {
                 var newValue = (int)(originalValue * taxMult);
-                if (newValue < 1) newValue = 1;
+                if (newValue < 1)
+                    newValue = 1;
                 kvp.Value.Value = newValue;
             }
         }
 
-        // -- Restore protected quest-critical items --
         if (ProtectedVendorItems.TryGetValue(vendor.WeenieClassId, out var protectedWcids))
         {
             foreach (uint wcid in protectedWcids)
             {
                 var weenie = DatabaseManager.World.GetCachedWeenie(wcid);
-                if (weenie == null) continue;
+                if (weenie == null)
+                    continue;
                 var protectedItem = WorldObjectFactory.CreateNewWorldObject(weenie);
-                if (protectedItem == null) continue;
+                if (protectedItem == null)
+                    continue;
                 protectedItem.ContainerId = vendor.Guid.Full;
                 protectedItem.CalculateObjDesc();
                 vendor.DefaultItemsForSale[protectedItem.Guid] = protectedItem;
@@ -355,7 +454,7 @@ public static class VendorLootRotation
             }
         }
 
-        ModManager.Log($"[VendorLoot] Vendor {vendor.Name}: {itemCount} equip + {magicCount} magic + {mundaneCount} mundane + {salvageCount} salvage. Tier {vendorTier}, profile {vendorProfile}. Default={vendor.DefaultItemsForSale.Count}, Unique={vendor.UniqueItemsForSale.Count}", ModManager.LogLevel.Info);
+        ModManager.Log($"[VendorLoot] Vendor {vendor.Name}: {itemCount} equipment + {magicCount} magic + {mundaneCount} mundane + {salvageCount} salvage. Tier {vendorTier}, merch {equipmentAllowed}. Default={vendor.DefaultItemsForSale.Count}, Unique={vendor.UniqueItemsForSale.Count}", ModManager.LogLevel.Info);
     }
 
     // =====================================================================
@@ -386,14 +485,7 @@ public static class VendorLootRotation
         return Math.Clamp(_settings.DefaultVendorTier, 1, 8);
     }
 
-    static int RollTier(int vendorTier)
-    {
-        return _rng.Next(vendorTier, Math.Min(vendorTier + 2, 9));
-    }
-
-    /// <summary>
-    /// Roll 0-100 with exponential decay (low scores much more common).
-    /// </summary>
+    // Roll 0-100 with exponential decay (low scores much more common).
     static int RollSubScore()
     {
         double roll = _rng.NextDouble();
@@ -401,11 +493,11 @@ public static class VendorLootRotation
         return (int)(biased * 100.0);
     }
 
-    static WorldObject? GenerateItem(Vendor vendor, List<TreasureDeath> allProfiles, int vendorTier, TreasureItemCategory category)
+    static WorldObject? GenerateItem(Vendor vendor, List<TreasureDeath> allProfiles, int vendorTier, TreasureItemCategory category, ItemType? merchFilterBit)
     {
         try
         {
-            int itemTier = RollTier(vendorTier);
+            int itemTier = RollVendorItemTier(vendorTier);
             var profile = FindProfileForTier(allProfiles, itemTier);
             if (profile == null)
             {
@@ -417,12 +509,17 @@ public static class VendorLootRotation
             if (item == null)
                 return null;
 
+            if (merchFilterBit.HasValue && !ItemMatchesMerchBit(item, merchFilterBit.Value))
+            {
+                item.Destroy();
+                return null;
+            }
+
             int subScore = RollSubScore();
             ApplyQuality(item, itemTier, subScore);
             ApplyVendorUniqueTreatment(item, subScore);
             ClampItemValue(item, _settings?.VendorLootMinValue ?? 100, _settings?.VendorLootMaxValue ?? 10000);
 
-            // Store pre-tax base price for repricing
             _originalValues[item.Guid] = item.Value ?? 0;
 
             return item;
@@ -432,25 +529,6 @@ public static class VendorLootRotation
             ModManager.Log($"[VendorLoot] Error generating item: {ex.Message}", ModManager.LogLevel.Warn);
             return null;
         }
-    }
-
-    static WorldObject? GenerateItemForProfile(Vendor vendor, List<TreasureDeath> allProfiles, int vendorTier, VendorProfile vendorProfile, TreasureItemCategory category)
-    {
-        for (int retry = 0; retry < 25; retry++)
-        {
-            var item = GenerateItem(vendor, allProfiles, vendorTier, category);
-            if (item == null) continue;
-
-            if (!ItemMatchesProfile(item, vendorProfile))
-            {
-                item.Destroy();
-                continue;
-            }
-
-            ApplyWieldRequirementCap(item, vendorTier);
-            return item;
-        }
-        return null;
     }
 
     static void ApplyWieldRequirementCap(WorldObject item, int vendorTier)
@@ -477,6 +555,12 @@ public static class VendorLootRotation
 
     static void ApplyQuality(WorldObject item, int tier, int subScore)
     {
+        if (_settings?.VendorLootLowStatMode == true)
+        {
+            item.ItemWorkmanship = _rng.Next(1, 4);
+            return;
+        }
+
         int workmanship = Math.Min(10, Math.Max(1, (subScore / 10) + _rng.Next(0, 2)));
         item.ItemWorkmanship = workmanship;
 
@@ -514,7 +598,11 @@ public static class VendorLootRotation
 
     static void ApplyVendorUniqueTreatment(WorldObject item, int subScore)
     {
-        if (item == null || _settings == null) return;
+        if (item == null || _settings == null)
+            return;
+
+        if (_settings.VendorLootLowStatMode)
+            return;
 
         double valueMult = 1.0;
 
@@ -764,12 +852,11 @@ public static class VendorLootRotation
     // -- Awakening for SQL-loaded Academy/Pathwarden gear on protected vendors ----
     static readonly HashSet<uint> _awakenableVendorWcids = new()
     {
-        // Academy weapons
         12750, 12751, 12752, 12753, 12754, 12755, 12756, 12757, 12758, 12759, 12760,
         41514, 45531, 45532, 45535, 45536, 45539, 45540, 45543, 45544, 45547, 45548, 45551, 45552, 45555, 45556,
-        // Pathwarden armor
         33597, 33598, 33599, 33600, 33601, 33602, 33603, 33604, 33605, 33606, 33607,
-        40439, 40454, 40455, 40456,
+        40439, 40440, 40441, 40442, 40443, 40444, 40445, 40446, 40447, 40448, 40449, 40450, 40451, 40452, 40453, 40454,
+        40455, 40456,
         41513,
     };
 
@@ -801,84 +888,6 @@ public static class VendorLootRotation
         }
         if (awakened > 0)
             ModManager.Log($"[VendorLoot] Awakened {awakened} Academy/Pathwarden items on {vendor.Name}", ModManager.LogLevel.Info);
-    }
-
-    // =====================================================================
-    // Vendor Profile Categories
-    // =====================================================================
-
-    [Flags]
-    enum VendorProfile
-    {
-        None = 0,
-        Blacksmith = 1 << 0,   // Armor + MeleeWeapon
-        Bowyer = 1 << 1,       // MissileWeapon
-        Archmage = 1 << 2,     // Caster + scrolls
-        Jeweler = 1 << 3,      // Jewelry
-        Tailor = 1 << 4,       // Clothing
-        General = 1 << 5,      // Everything else / mixed
-    }
-
-    static VendorProfile DetectVendorProfile(Vendor vendor)
-    {
-        var merch = vendor.MerchandiseItemTypes;
-        if (merch == null) return VendorProfile.General;
-
-        var types = merch.Value;
-        bool sellsArmor = (types & (int)ItemType.Armor) != 0;
-        bool sellsMelee = (types & (int)ItemType.MeleeWeapon) != 0;
-        bool sellsMissile = (types & (int)ItemType.MissileWeapon) != 0;
-        bool sellsCaster = (types & (int)ItemType.Caster) != 0;
-        bool sellsJewelry = (types & (int)ItemType.Jewelry) != 0;
-        bool sellsClothing = (types & (int)ItemType.Clothing) != 0;
-
-        int categoryCount = (sellsArmor ? 1 : 0) + (sellsMelee ? 1 : 0) + (sellsMissile ? 1 : 0)
-                          + (sellsCaster ? 1 : 0) + (sellsJewelry ? 1 : 0) + (sellsClothing ? 1 : 0);
-
-        if (categoryCount >= 3)
-            return VendorProfile.General;
-
-        if (categoryCount <= 1)
-        {
-            if (sellsMelee || sellsArmor) return VendorProfile.Blacksmith;
-            if (sellsMissile) return VendorProfile.Bowyer;
-            if (sellsCaster) return VendorProfile.Archmage;
-            if (sellsJewelry) return VendorProfile.Jeweler;
-            if (sellsClothing) return VendorProfile.Tailor;
-            return VendorProfile.General;
-        }
-
-        if (sellsMelee || sellsArmor) return VendorProfile.Blacksmith;
-        if (sellsMissile) return VendorProfile.Bowyer;
-        if (sellsCaster) return VendorProfile.Archmage;
-        if (sellsJewelry) return VendorProfile.Jeweler;
-        if (sellsClothing) return VendorProfile.Tailor;
-        return VendorProfile.General;
-    }
-
-    static ItemType ProfileItemTypes(VendorProfile profile) => profile switch
-    {
-        VendorProfile.Blacksmith => ItemType.Armor | ItemType.MeleeWeapon,
-        VendorProfile.Bowyer => ItemType.MissileWeapon,
-        VendorProfile.Archmage => ItemType.Caster,
-        VendorProfile.Jeweler => ItemType.Jewelry,
-        VendorProfile.Tailor => ItemType.Clothing,
-        _ => ItemType.Armor | ItemType.Clothing | ItemType.MeleeWeapon | ItemType.MissileWeapon | ItemType.Caster | ItemType.Jewelry,
-    };
-
-    static bool ItemMatchesProfile(WorldObject item, VendorProfile profile)
-    {
-        if (profile == VendorProfile.General) return true;
-        var allowed = ProfileItemTypes(profile);
-        return (item.ItemType & allowed) != 0;
-    }
-
-    static bool ItemMatchesProfileOrDefault(WorldObject item, VendorProfile profile)
-    {
-        if (ItemMatchesProfile(item, profile)) return true;
-        // Fallback: if profile-specific match fails after retries, allow generic equipment anyway
-        var genericMask = ItemType.Armor | ItemType.MeleeWeapon | ItemType.MissileWeapon | ItemType.Caster | ItemType.Jewelry | ItemType.Clothing;
-        return (item.ItemType & genericMask) != 0;
     }
 
     // =====================================================================

@@ -1,3 +1,4 @@
+using ACE.Database.Models.World;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Server.Factories;
@@ -8,7 +9,8 @@ namespace Swarmed.Features;
 
 /// <summary>
 /// Gives CreatureEx special mobs a guaranteed bonus loot package:
-/// extra random loot rolls (auto-imbued/awakened by EmpyreanAlteration if enabled).
+/// salvage bags, bumped-tier uncommon+ items, and 2-5 guaranteed special
+/// lootgen items that are imbued and/or awakened.
 /// </summary>
 [HarmonyPatchCategory(nameof(CreatureEx))]
 internal static class SpecialCreatureLoot
@@ -30,30 +32,360 @@ internal static class SpecialCreatureLoot
         if (!exType.HasValue || exType.Value == 0)
             return;
 
-        var deathTreasure = __instance.DeathTreasure;
-        if (deathTreasure == null)
-            return;
-
         int added = 0;
 
-        // Bonus loot rolls (2-5 by default) — auto-mutated by LivingEquipment hook if present
-        int lootCount = ThreadSafeRandom.Next(settings.ImbuedCountMin, settings.ImbuedCountMax);
-        for (int i = 0; i < lootCount; i++)
+        // --- 1. Guaranteed salvage bags ---
+        int salvageCount = ThreadSafeRandom.Next(settings.SalvageCountMin, settings.SalvageCountMax);
+        for (int i = 0; i < salvageCount; i++)
         {
-            var loot = LootGenerationFactory.CreateRandomLootObjects(deathTreasure);
-            foreach (var item in loot)
-            {
-                if (item != null)
-                {
-                    corpse.TryAddToInventory(item);
-                    added++;
-                }
-            }
+            var salvage = GenerateSalvageBag();
+            if (salvage != null && corpse.TryAddToInventory(salvage))
+                added++;
+        }
+
+        // --- 2. Guaranteed uncommon+ items (bumped treasure tier) ---
+        int uncommonCount = ThreadSafeRandom.Next(settings.UncommonPlusCountMin, settings.UncommonPlusCountMax);
+        for (int i = 0; i < uncommonCount; i++)
+        {
+            var item = GenerateUncommonPlusItem(__instance);
+            if (item != null && corpse.TryAddToInventory(item))
+                added++;
+        }
+
+        // --- 3. Guaranteed SPECIAL items (forced imbue + awakening) ---
+        int specialCount = ThreadSafeRandom.Next(settings.ImbuedCountMin, settings.ImbuedCountMax);
+        for (int i = 0; i < specialCount; i++)
+        {
+            var item = GenerateSpecialItem(__instance);
+            if (item != null && corpse.TryAddToInventory(item))
+                added++;
         }
 
         if (added > 0 && killer?.TryGetPetOwnerOrAttacker() is Player player)
         {
             player.SendMessage($"The tyrannical creature yields {added} bonus items!");
         }
+    }
+
+    // =====================================================================
+    // Salvage
+    // =====================================================================
+
+    static WorldObject? GenerateSalvageBag()
+    {
+        try
+        {
+            var validSalvage = Player.MaterialSalvage
+                .Where(kvp => kvp.Value > 0)
+                .Select(kvp => (uint)kvp.Value)
+                .ToList();
+
+            if (validSalvage.Count == 0)
+                return null;
+
+            uint wcid = validSalvage[ThreadSafeRandom.Next(0, validSalvage.Count - 1)];
+            var bag = WorldObjectFactory.CreateNewWorldObject(wcid);
+            if (bag == null)
+                return null;
+
+            int baseValue = bag.Value ?? 100;
+            int multiplierPercent = ThreadSafeRandom.Next(113, 918);
+            bag.Value = Math.Max(1, (int)(baseValue * multiplierPercent / 100.0));
+            return bag;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    // =====================================================================
+    // Uncommon+ (bumped tier)
+    // =====================================================================
+
+    static WorldObject? GenerateUncommonPlusItem(Creature creature)
+    {
+        var deathTreasure = creature.DeathTreasure;
+        if (deathTreasure == null)
+            return null;
+
+        // Bump tier +1 for better quality, cap at 8
+        var bumped = CopyTreasureDeath(deathTreasure);
+        bumped.Tier = Math.Min(8, bumped.Tier + 1);
+
+        var loot = LootGenerationFactory.CreateRandomLootObjects(bumped);
+        return loot.FirstOrDefault();
+    }
+
+    // =====================================================================
+    // Special (guaranteed imbue + awakening)
+    // =====================================================================
+
+    static WorldObject? GenerateSpecialItem(Creature creature)
+    {
+        var deathTreasure = creature.DeathTreasure;
+        if (deathTreasure == null)
+            return null;
+
+        // Bump tier +2 for high-quality base loot, cap at 8
+        var bumped = CopyTreasureDeath(deathTreasure);
+        bumped.Tier = Math.Min(8, bumped.Tier + 2);
+
+        var loot = LootGenerationFactory.CreateRandomLootObjects(bumped);
+        var item = loot.FirstOrDefault();
+        if (item == null)
+            return null;
+
+        // Force guaranteed special treatment
+        ApplyGuaranteedImbue(item);
+        ApplyGuaranteedAwakening(item);
+        ApplyVisualFlair(item);
+
+        return item;
+    }
+
+    static TreasureDeath CopyTreasureDeath(TreasureDeath original)
+    {
+        return new TreasureDeath
+        {
+            TreasureType = original.TreasureType,
+            Tier = original.Tier,
+            LootQualityMod = original.LootQualityMod,
+            UnknownChances = original.UnknownChances,
+            ItemChance = original.ItemChance,
+            ItemMinAmount = original.ItemMinAmount,
+            ItemMaxAmount = original.ItemMaxAmount,
+            ItemTreasureTypeSelectionChances = original.ItemTreasureTypeSelectionChances,
+            MagicItemChance = original.MagicItemChance,
+            MagicItemMinAmount = original.MagicItemMinAmount,
+            MagicItemMaxAmount = original.MagicItemMaxAmount,
+            MagicItemTreasureTypeSelectionChances = original.MagicItemTreasureTypeSelectionChances,
+            MundaneItemChance = original.MundaneItemChance,
+            MundaneItemMinAmount = original.MundaneItemMinAmount,
+            MundaneItemMaxAmount = original.MundaneItemMaxAmount,
+            MundaneItemTypeSelectionChances = original.MundaneItemTypeSelectionChances,
+        };
+    }
+
+    // =====================================================================
+    // Guaranteed Imbue
+    // =====================================================================
+
+    static void ApplyGuaranteedImbue(WorldObject item)
+    {
+        if (item == null)
+            return;
+
+        WeenieType wt = item.WeenieType;
+        bool isWeapon = wt is WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster;
+        bool isArmor = wt is WeenieType.Clothing;
+        bool isShield = IsShieldItem(item);
+
+        if (isWeapon)
+            ApplyWeaponImbue(item);
+        else if (isArmor || isShield)
+            ApplyArmorImbue(item);
+    }
+
+    static void ApplyWeaponImbue(WorldObject item)
+    {
+        // 60% elemental rend, 40% secondary imbue
+        if (ThreadSafeRandom.Next(0.0f, 1.0f) < 0.6f)
+            ApplyElementalRend(item);
+        else
+            ApplySecondaryImbue(item);
+    }
+
+    static readonly (ImbuedEffectType Rend, DamageType DamageType)[] RendPool =
+    {
+        (ImbuedEffectType.AcidRending,     DamageType.Acid),
+        (ImbuedEffectType.BludgeonRending, DamageType.Bludgeon),
+        (ImbuedEffectType.ColdRending,     DamageType.Cold),
+        (ImbuedEffectType.ElectricRending, DamageType.Electric),
+        (ImbuedEffectType.FireRending,     DamageType.Fire),
+        (ImbuedEffectType.NetherRending,   DamageType.Nether),
+        (ImbuedEffectType.PierceRending,   DamageType.Pierce),
+        (ImbuedEffectType.SlashRending,    DamageType.Slash),
+    };
+
+    static void ApplyElementalRend(WorldObject item)
+    {
+        var (rend, damageType) = RendPool[ThreadSafeRandom.Next(0, RendPool.Length - 1)];
+        item.ImbuedEffect |= rend;
+        item.SetProperty(PropertyInt.DamageType, (int)damageType);
+        UpdateWeaponNameForDamageType(item);
+    }
+
+    static void ApplySecondaryImbue(WorldObject item)
+    {
+        ImbuedEffectType[] pool =
+        {
+            ImbuedEffectType.CriticalStrike,
+            ImbuedEffectType.CripplingBlow,
+            ImbuedEffectType.ArmorRending,
+        };
+        item.ImbuedEffect |= pool[ThreadSafeRandom.Next(0, pool.Length - 1)];
+    }
+
+    static void ApplyArmorImbue(WorldObject item)
+    {
+        ImbuedEffectType[] pool =
+        {
+            ImbuedEffectType.MagicDefense,
+            ImbuedEffectType.MeleeDefense,
+            ImbuedEffectType.MissileDefense,
+        };
+        item.ImbuedEffect |= pool[ThreadSafeRandom.Next(0, pool.Length - 1)];
+    }
+
+    static bool IsShieldItem(WorldObject item)
+    {
+        // Shields are classified as Armor in ACE enum; detect by name or icon
+        string n = item.Name ?? "";
+        return n.Contains("Shield", StringComparison.OrdinalIgnoreCase)
+            || n.Contains("Buckler", StringComparison.OrdinalIgnoreCase);
+    }
+
+    static void UpdateWeaponNameForDamageType(WorldObject item)
+    {
+        var damageType = item.GetProperty(PropertyInt.DamageType);
+        if (!damageType.HasValue)
+            return;
+
+        string typeName = damageType.Value switch
+        {
+            (int)DamageType.Cold => "Frost",
+            (int)DamageType.Fire => "Fire",
+            (int)DamageType.Acid => "Acid",
+            (int)DamageType.Electric => "Electric",
+            (int)DamageType.Pierce => "Pierce",
+            (int)DamageType.Slash => "Slash",
+            (int)DamageType.Bludgeon => "Bludgeon",
+            (int)DamageType.Nether => "Nether",
+            _ => ((DamageType)damageType.Value).ToString(),
+        };
+
+        string name = item.Name ?? "Item";
+        string[] prefixes = { "Frost", "Fire", "Acid", "Electric", "Lightning", "Pierce", "Slash", "Bludgeon", "Nether", "Cold" };
+        bool replaced = false;
+        foreach (var dp in prefixes)
+        {
+            if (name.StartsWith(dp + " ", StringComparison.OrdinalIgnoreCase))
+            {
+                name = typeName + name.Substring(dp.Length);
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced)
+            name = typeName + " " + name;
+
+        item.SetProperty(PropertyString.Name, name);
+    }
+
+    // =====================================================================
+    // Guaranteed Awakening (LivingEquipment-style item leveling)
+    // =====================================================================
+
+    static void ApplyGuaranteedAwakening(WorldObject item)
+    {
+        if (item == null)
+            return;
+
+        // Skip if already awakened
+        if (item.GetProperty((PropertyBool)40130) == true)
+            return;
+
+        // Only equippable gear
+        if (!IsEquippableGear(item))
+            return;
+
+        string originalName = item.Name ?? "Item";
+        item.SetProperty((PropertyString)11033, originalName);   // OriginalName
+        item.SetProperty((PropertyString)11034, "CreatureEx");     // ProfileName
+
+        // Random cap: 5, 10, or 15
+        int[] caps = { 5, 10, 15 };
+        int maxLevel = caps[ThreadSafeRandom.Next(0, caps.Length - 1)];
+
+        item.SetProperty(PropertyInt64.ItemBaseXp, 5000);
+        item.SetProperty(PropertyInt.ItemMaxLevel, maxLevel);
+        item.SetProperty(PropertyInt.ItemXpStyle, (int)ItemXpStyle.ScalesWithLevel);
+        item.SetProperty(PropertyInt64.ItemTotalXp, 0);
+        item.SetProperty((PropertyBool)40130, true);    // IsAwakened
+        item.SetProperty((PropertyInt)40131, 0);         // AwakenedTier = Lesser
+
+        // Rename
+        string prefix = "Awakened";
+        string newName = prefix + " " + originalName;
+        item.SetProperty(PropertyString.Name, newName);
+        item.CalculateObjDesc();
+    }
+
+    static bool IsEquippableGear(WorldObject item)
+    {
+        if (item == null) return false;
+        var weenieType = item.WeenieType;
+        if (weenieType is WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster or WeenieType.Clothing)
+            return true;
+        // Jewelry and some shields are Generic with ValidLocations
+        if (weenieType == WeenieType.Generic && item.ValidLocations.HasValue && item.ValidLocations.Value != 0)
+            return true;
+        return false;
+    }
+
+    // =====================================================================
+    // Visual Flair
+    // =====================================================================
+
+    static void ApplyVisualFlair(WorldObject item)
+    {
+        if (item == null)
+            return;
+
+        int ui = item.GetProperty(PropertyInt.UiEffects) ?? 0;
+        var imbued = item.ImbuedEffect;
+
+        // Elemental rends → damage-type color
+        if (imbued.HasFlag(ImbuedEffectType.AcidRending))
+            ui |= (int)UiEffects.Acid;
+        if (imbued.HasFlag(ImbuedEffectType.BludgeonRending))
+            ui |= (int)UiEffects.Frost;
+        if (imbued.HasFlag(ImbuedEffectType.ColdRending))
+            ui |= (int)UiEffects.Frost;
+        if (imbued.HasFlag(ImbuedEffectType.ElectricRending))
+            ui |= (int)UiEffects.Lightning;
+        if (imbued.HasFlag(ImbuedEffectType.FireRending))
+            ui |= (int)UiEffects.Fire;
+        if (imbued.HasFlag(ImbuedEffectType.NetherRending))
+            ui |= (int)UiEffects.Nether;
+        if (imbued.HasFlag(ImbuedEffectType.PierceRending))
+            ui |= (int)(UiEffects.BoostHealth | UiEffects.BoostStamina);
+        if (imbued.HasFlag(ImbuedEffectType.SlashRending))
+            ui |= (int)UiEffects.Fire;
+
+        // Defense imbues
+        if (imbued.HasFlag(ImbuedEffectType.MagicDefense))
+            ui |= (int)UiEffects.Magical;
+        if (imbued.HasFlag(ImbuedEffectType.MeleeDefense))
+            ui |= (int)UiEffects.BoostStamina;
+        if (imbued.HasFlag(ImbuedEffectType.MissileDefense))
+            ui |= (int)UiEffects.Lightning;
+
+        // Secondary
+        if (imbued.HasFlag(ImbuedEffectType.CriticalStrike)
+            || imbued.HasFlag(ImbuedEffectType.CripplingBlow)
+            || imbued.HasFlag(ImbuedEffectType.ArmorRending))
+        {
+            if ((ui & ~1) == 0)
+                ui |= (int)UiEffects.Magical;
+        }
+
+        // Awakened = red outline (BoostHealth | BoostStamina = 20)
+        if (item.GetProperty((PropertyBool)40130) == true)
+            ui |= (int)(UiEffects.BoostHealth | UiEffects.BoostStamina);
+
+        item.SetProperty(PropertyInt.UiEffects, ui);
+        item.CalculateObjDesc();
     }
 }

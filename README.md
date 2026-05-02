@@ -54,15 +54,18 @@ A challenge-hub mod for alternate playstyles:
 Use `/cm` in-game to view and enroll in challenges. See `ChallengeModes/Readme.md` for full flows.
 
 ### EmpyreanAlteration
-A mutator pipeline for loot, corpses, and generators.
+A mutator pipeline for loot, corpses, generators, and player-driven item awakening.
+- **Point-based item leveling** — ALL creature kills grant +1 leveling point; QB-eligible quest completions grant +100. Items level up via discrete points instead of raw XP, decoupling from billion-XP/hour endgame player XP.
+- **Coalesced Mana awakening + upgrading** — All three tiers (Lesser 42516, Greater 42517, Aetheric 42518) can both awaken new items AND upgrade existing awakened items. QuickStart is the single configurable default profile.
 - **Loot-time item XP** (`LootGrowthItem`) — items can drop with XP progress already applied.
-- **Pre-awakened drops** (~0.2%) — Living-style tiered awakening (Lesser/Greater/Aetheric) with XP profiles (QuickStart/Steady/Brutal/Casual), "Living" rename, and visual glow.
+- **Pre-awakened drops** (~0.2%) — Living-style tiered awakening with XP profiles (QuickStart/Steady/Brutal/Casual), "Living" rename, and visual glow.
 - **Quest equipment guaranteed pre-awaken** — all NPC-given gear gets auto-awakened + workmanship + imbue.
 - **Pre-imbued loot** (~5%) — random elemental rend, slayer, cleave, or secondary imbue on weapons; defense imbue on armor.
 - **Wield requirement capping** — all loot items get `tier × 50` wield caps so drops match source creature difficulty.
 - **Slayer / ShinyPet-style mutators** — chance-based cosmetic and functional overrides.
 - **Optional Harmony extras** — additional patches for edge-case loot behaviors.
 - **Item growth on level-up** — equippables can gain bonuses as the player levels.
+- **DisableAttunedGlobally** — server-wide QOL toggle making ALL items tradeable/sellable (including quest rewards and Coalesced Mana).
 
 ### EasyServerSettings
 Applies shard-wide `PropertyManager` presets from a single configuration file.
@@ -84,8 +87,9 @@ Extract spells from any spell-bearing item and infuse them into equipment.
 > **Status:** Disabled by default. Enable in `Meta.json` when ready to deploy.
 
 ### LeyLineLedger
-Banking and ledger system for items, currency, and luminance.
+Banking and ledger system for items, currency, luminance, and denominated commodities.
 - **Item banking** — deposit/withdraw stackables and individual items.
+- **Denominated banking** — pyreal chain (mote→ingot), crystal shards (cracked→fragment), and shadow shards (speck→fragment) deposit as unified base-unit pools. Withdraw auto-denominates largest-first.
 - **Pyreal/trade-note storage** — `/cash` commands for wallet-style banking.
 - **Luminance ledger** — `/lum` commands to track and transfer luminance.
 - **Vendor integration** — bankers and vendors can act as ledger access points.

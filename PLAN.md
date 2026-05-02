@@ -28,7 +28,13 @@ Single index of tracked work. **Mod notes below were merged from former per-mod 
 - **Done (2026-04-30):** **QOL NpcStackTurnIn** — Replaces `GiveNpcSingleFromStack`. Full-stack NPC quest turn-ins: rewards scale by stack size (XP, items, currencies), bankable rewards auto-deposit via LeyLineLedger reflection bridge, equipment rewards check main-pack space with graceful single-reward fallback. `StackableWcids.json` populated with 24 quest/trophy WCIDs. Old `GiveNpcSingleFromStack` enum/toggle deprecated but preserved for backward compatibility.
 - **Done (2026-04-30):** **Xenology → Hunt name cleanup** — PLAN.md and all skill docs (`ace-mod`, `ace-build`) updated to reference WorldEvents Hunt instead of Xenology. Greenfield backlog renumbered (fixed duplicate item numbers).
 - **Done (2026-04-30):** **PLAN.md maintenance** — ValheelContent Segmentation Plan marked DONE (was already implemented). All `TODO`/`FIXME`/`HACK` markers in `.cs` files converted to `NOTE:` descriptions.
-- **Done (2026-05-01):** **QuestSalvageAutoBank (LeyLineLedger)** — Unified quest salvage bag auto-deposit for all Clutch of Kings quest bags (13 WCIDs: 29571-29582, 30260) + Pathwarden bags (33620 Granite, 33621 Steel). Intercepts `Player.GiveFromEmote` to deposit 100 material units per bag to the bank without creating the item in inventory. Uses regular salvage WCID mapping for bank property resolution. New `EnableQuestSalvageAutoBank` toggle; `PathwardenAutoBank` refactored to keep only Sturdy Iron Key handling. Container.TryAddToInventory postfix removed due to Harmony `out Container` patching failure (emote interception covers all real acquisition paths).
+- **Done (2026-05-01):** **Point-based Coalesced Mana leveling** *(EmpyreanAlteration)* — Replaced XP-based item leveling with discrete point system: +1 point per creature kill (ALL creatures via `CreatureDeathItemLeveling`), +100 points per QB-eligible quest completion (via `QuestCompletionItemLeveling` + `LoremasterBridge`). All three Coalesced Mana tiers (Lesser 42516, Greater 42517, Aetheric 42518) can both awaken AND upgrade items. QuickStart is the single configurable default profile. `AttuneOnLeveled` fully removed.
+- **Done (2026-05-01):** **DisableAttunedGlobally** *(EmpyreanAlteration)* — Server-wide QOL override making ALL items tradeable/sellable. Two patches: `WorldObject.Attuned` getter (server behavior) + `AppraiseInfo.BuildProperties` (client visual). Items no longer display "Attuned" in examine panels.
+- **Done (2026-05-01):** **Trophy stacking fix** *(BetterSupportSkills + EmpyreanAlteration SQL)* — Changed 30+ trophy weenies from `Generic` (type 1) → `Stackable` (type 51). Fixed `MaxStackSize` SQL to use `type = 11` (was incorrectly `type = 16` = `ItemUseable`). Biota cleanup applied to existing player items. Trophy burden/value formula: `baseBurden = max(5, level*3 + health/20 + xp/5000)` capped at 300, `baseValue = baseBurden * 3`.
+- **Done (2026-05-01):** **Druid pet targeting fix** *(BetterSupportSkills)* — `IsInvalidPetTarget` helper prevents pets from attacking: owner, same-owner pets, non-hostile/passive creatures (cows), undamageable players. `PostCombatPetHeartbeat` validates `AttackTarget` and syncs with owner's target when valid.
+- **Done (2026-05-01):** **BetterSupportSkills heartbeat patch fix** — `Creature.Heartbeat` is an `override` in a partial class; patching it caused the ENTIRE mod to fail loading. Fixed by patching `WorldObject.Heartbeat` (virtual base) and filtering with `is CombatPet` in the postfix.
+- **Done (2026-05-01):** **LeyLineLedger denominated banking** — Unified deposit/withdraw for pyreal chain (mote→ingot), crystal shards (cracked→fragment), and shadow shards (speck→fragment). `/bank deposit all` auto-sweeps all denominations into base-unit pools. `/bank withdraw pyreal|crystal|shadow <base-units>` auto-denominates largest-first. Consolidated single-message deposit feedback.
+- **Done (2026-05-01):** **LeyLineLedger fuzzy matching improvements** — `TryResolveDepositRuleIndex` now strips spaces from material names (`"whitesapphire"` matches `"Salvaged White Sapphire"`). `SuggestClosest` uses Levenshtein distance for typo correction. `FuzzySuggestBankItem` suggests close item names on `/bank withdraw` failures.
 
 ### 2026-04-29 Multi-Mod Batch (All DONE)
 
@@ -695,12 +701,19 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
 - **Coalesced Mana text fix** (fixed 2026-04-28) — Em-dashes (`—`, U+2014) in `weenie_properties_string` values rendered as garbled characters because the AC client uses Windows-1252 encoding. Replaced with regular hyphens.
 - **Custom spell conversion** (backlog) — Portal/Recall/Summon spells extracted via SpellSiphon should convert to custom spells to avoid bypassing quest/level restrictions. Requires AethericWeaver integration or custom spell ID mapping.
 
-### LivingWeapons (Greenfield)
+### LivingWeapons (Greenfield) → ABSORBED into EmpyreanAlteration
 
-- **Concept:** Coalesced Mana tiers (Lesser 42516, Greater 42517, Aetheric 42518) repurposed from SpellSiphon v1. Used to "awaken" weapons, granting them leveling stats (HP, damage, elemental bonus, etc.). Higher tiers = more potential levels or faster growth.
-- **Mechanic:** Use Coalesced Mana on a weapon → weapon gains `ItemTotalXp = 0` and a custom XP curve. Kills grant XP. Level-ups apply random stat growth (similar to EmpyreanAlteration's ChaosTriggeredGrowth but without chaos requirement).
-- **Placeholder name:** LivingWeapons — may change.
-- **Status:** Backlog. No code written. Requires: weapon weenie update SQL, XP tracking system, level-up stat engine, UI for showing current level/progress.
+- **Status:** **DONE (2026-05-01)** — Fully absorbed into `EmpyreanAlteration`. See "Immediate Reworks #2: LivingEquipment → EmpyreanAlteration Full Absorption" and "Point-based Coalesced Mana leveling" in Done section.
+- **Concept:** Coalesced Mana tiers (Lesser 42516, Greater 42517, Aetheric 42518) used to "awaken" items, granting them leveling stats. Kill points (+1) and quest points (+100) drive growth instead of XP.
+- **What was implemented:**
+  - `LivingItemAwakener.cs` — manual Coalesced Mana use-on-target awakening + auto-awaken on inventory entry
+  - `CreatureDeathItemLeveling.cs` — ALL creature kills award +1 point to all awakened items
+  - `QuestCompletionItemLeveling.cs` — QB-eligible quest completions award +100 points
+  - `LoremasterBridge.cs` — reflection bridge to check QB eligibility without side effects
+  - `ItemLevelingPoints.cs` — point math and curve application
+  - Profile-based custom XP curves via `QuestItemGrowthHarmony` (integrated into EA)
+  - QuickStart as single configurable default profile
+  - `DisableAttunedGlobally` for trading Coalesced Mana and all awakened items
 
 ### BetterSupportSkills
 

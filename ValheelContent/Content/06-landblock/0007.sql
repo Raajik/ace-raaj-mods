@@ -684,7 +684,3 @@ INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `ori
 VALUES (0x700070D2,  8586, 0x0007015F, 80.0847, -176.381, -0.063, -0.0131441, 0, 0, -0.999914, False, '2024-06-01 09:16:37'); /* Idol Spawning Grounds */
 /* @teleloc 0x0007015F [80.084702 -176.380997 -0.063000] -0.013144 0.000000 0.000000 -0.999914 */
 
-INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
-VALUES (0x700070D3, 800039, 0x00070132, 61.905308, -62.405346, 0.005000, 0.935749, 0, 0, 0.352668, False, '2025-02-09 10:00:00'); /* Radi */
-/* @teleloc 0x00070132 [61.905308 -62.405346 0.005000] 0.935749 0.000000 0.000000 0.352668 */
-

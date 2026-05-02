@@ -1,7 +1,7 @@
 -- Pathwarden Vendor Spawns in Town Network
 -- Landblock: 0x0007 (Town Network dungeon)
 
-DELETE FROM `landblock_instance` WHERE `weenie_Class_Id` IN (850300, 850301, 850302, 850303) AND `landblock` = 0x0007;
+DELETE FROM `landblock_instance` WHERE `weenie_Class_Id` IN (850300, 850301, 850302, 850303, 800039) AND `landblock` = 0x0007;
 
 -- Vendor 1: Kaelith (850300) - Cell 0x0007013F
 INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
@@ -18,3 +18,7 @@ VALUES (0x7000703, 850302, 0x00070178, 119.098976, -70.653809, 0.005000, 0.72736
 -- Vendor 4: Eldrin (850303) - Cell 0x0007014B
 INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
 VALUES (0x7000704, 850303, 0x0007014B, 69.448631, -138.632950, 0.005000, 0.010775, 0.000000, 0.000000, 0.999942, False, '2025-04-30 00:00:00');
+
+-- Vendor 5: Radi (800039) - Cell 0x00070132
+INSERT INTO `landblock_instance` (`guid`, `weenie_Class_Id`, `obj_Cell_Id`, `origin_X`, `origin_Y`, `origin_Z`, `angles_W`, `angles_X`, `angles_Y`, `angles_Z`, `is_Link_Child`, `last_Modified`)
+VALUES (0x700070D3, 800039, 0x00070132, 61.905308, -62.405346, 0.005000, 0.935749, 0.000000, 0.000000, 0.352668, False, '2025-02-09 10:00:00');

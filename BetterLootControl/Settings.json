@@ -10,6 +10,16 @@
   "MinResetIntervalSeconds": 600,
   "MaxResetIntervalSeconds": 1200,
 
+  "EnableGlobalRareDrops": true,
+  "RareDropChance": 0.005,
+  "SpellsiphonToolWcid": 850200,
+  "ManaLatticeWcid": 850201,
+
+  "CoalescedManaDropChance": 0.015,
+  "LesserCoalescedManaWcid": 42516,
+  "GreaterCoalescedManaWcid": 42517,
+  "AethericCoalescedManaWcid": 42518,
+
   "EnableLootRatings": true,
   "GearTierWeights": [1.0, 2.0, 3.0, 4.0, 4.0, 3.0, 2.0, 1.0],
   "RatingChancePerTier": [0.05, 0.10, 0.15, 0.25, 0.40, 0.60, 0.75, 0.90],

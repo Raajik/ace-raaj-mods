@@ -18,11 +18,17 @@ public class Settings
     // Chance for a third item to be added (independent roll after second).
     public double ThirdItemChance { get; init; } = 0.01;
 
-    // -- Global Rare Drops (SpellSiphon / Mana Lattice) --
+    // -- Global Rare Drops (SpellSiphon / Mana Lattice / Coalesced Mana) --
     public bool EnableGlobalRareDrops { get; init; } = true;
     public double RareDropChance { get; init; } = 0.005; // 0.5%
     public uint SpellsiphonToolWcid { get; init; } = 850200;
     public uint ManaLatticeWcid { get; init; } = 850201;
+
+    // -- Coalesced Mana Drops (replaces ACE vanilla TryRollMundaneAddon) --
+    public double CoalescedManaDropChance { get; init; } = 0.015; // 1.5% per corpse with DeathTreasure
+    public uint LesserCoalescedManaWcid { get; init; } = 42516;
+    public uint GreaterCoalescedManaWcid { get; init; } = 42517;
+    public uint AethericCoalescedManaWcid { get; init; } = 42518;
 
     // Optional override for LootConfig.json. Empty = Mods/Loremaster/LootConfig.json.
     public string LootConfigPath { get; init; } = "";

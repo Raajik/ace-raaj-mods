@@ -219,7 +219,7 @@ public class Settings
     public bool EnableVendorLootRotation { get; set; } = true;
 
     [JsonPropertyName("// VendorLootRotationMinutes")]
-    public string VendorLootRotationMinutesDoc { get; init; } = "Minutes between vendor loot rotations.";
+    public string VendorLootRotationMinutesDoc { get; init; } = "Target minutes between vendor stock refreshes on approach (same vendor instance). Combined with VendorLootCooldownMinutes: the effective wait is the lesser of the two (both floored at 1).";
     public int VendorLootRotationMinutes { get; set; } = 20;
 
     [JsonPropertyName("// VendorLootMode")]
@@ -259,7 +259,7 @@ public class Settings
     public double VendorLootHighWorkmanshipValueMultiplier { get; set; } = 2.0;
 
     [JsonPropertyName("// VendorLootCooldownMinutes")]
-    public string VendorLootCooldownMinutesDoc { get; init; } = "Minutes between vendor inventory rotations for the same vendor instance (per player approach).";
+    public string VendorLootCooldownMinutesDoc { get; init; } = "Second cap on minutes between rotations for the same vendor instance. Effective interval = min(RotationMinutes, CooldownMinutes). Set both the same to avoid confusion.";
     public int VendorLootCooldownMinutes { get; set; } = 45;
 
     [JsonPropertyName("// VendorLootLuxuryTaxPercent")]

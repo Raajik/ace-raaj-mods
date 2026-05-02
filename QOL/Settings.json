@@ -85,6 +85,7 @@
     "CheckPackSpaceForEquipment": true
   },
   "EnableVendorLootRotation": false,
+  "// VendorLootRotationMinutes": "Target minutes between stock refreshes on approach. Effective wait = min(this, VendorLootCooldownMinutes), each floored at 1.",
   "VendorLootRotationMinutes": 15,
   "VendorLootMode": "Blacklist",
   "VendorLootWcids": [],
@@ -100,6 +101,7 @@
   "VendorLootSalvageOnRotation": false,
   "VendorLootMinValue": 100,
   "VendorLootMaxValue": 10000,
+  "// VendorLootCooldownMinutes": "Second cap on minutes between rotations (same vendor). Effective = min(RotationMinutes, CooldownMinutes).",
   "VendorLootCooldownMinutes": 45,
   "VendorLootLuxuryTaxPercent": 10.0,
   "VendorLootUniqueItemChance": 0.15,

@@ -48,7 +48,16 @@ public static class VendorLootRotation
 
         StartBackgroundTimer();
         WarmProfileCache();
-        ModManager.Log($"[QOL] VendorLootRotation initialized: rotation every {settings.VendorLootRotationMinutes} minutes, cooldown {settings.VendorLootCooldownMinutes} min per vendor", ModManager.LogLevel.Info);
+        var eff = EffectiveRotationIntervalMinutes(settings);
+        ModManager.Log($"[QOL] VendorLootRotation initialized: effective approach interval {eff} min (min of Rotation={settings.VendorLootRotationMinutes}, Cooldown={settings.VendorLootCooldownMinutes}).", ModManager.LogLevel.Info);
+    }
+
+    // RotationMinutes was documented but never applied; CooldownMinutes alone gated stock. Use the lesser so operators who set a short rotation interval actually see refreshes.
+    static int EffectiveRotationIntervalMinutes(Settings s)
+    {
+        int rot = Math.Max(1, s.VendorLootRotationMinutes);
+        int cool = Math.Max(1, s.VendorLootCooldownMinutes);
+        return Math.Min(rot, cool);
     }
 
     private static void StartBackgroundTimer()
@@ -259,7 +268,7 @@ public static class VendorLootRotation
 
         var vendorGuid = __instance.Guid.Full;
         var now = DateTime.UtcNow;
-        var cooldown = TimeSpan.FromMinutes(_settings.VendorLootCooldownMinutes);
+        var cooldown = TimeSpan.FromMinutes(EffectiveRotationIntervalMinutes(_settings));
 
         // Check per-vendor cooldown
         if (_vendorLastRotation.TryGetValue(vendorGuid, out var lastRotation))
@@ -276,7 +285,9 @@ public static class VendorLootRotation
             return;
         }
 
-        RotateVendorInventory(__instance);
+        if (!RotateVendorInventory(__instance))
+            return;
+
         _vendorLastRotation[vendorGuid] = now;
     }
 
@@ -305,10 +316,10 @@ public static class VendorLootRotation
         return batch;
     }
 
-    static void RotateVendorInventory(Vendor vendor)
+    static bool RotateVendorInventory(Vendor vendor)
     {
         if (_settings is null)
-            return;
+            return false;
 
         var vendorGuid = vendor.Guid.Full;
         var vendorTier = GetVendorTier(vendor);
@@ -319,7 +330,7 @@ public static class VendorLootRotation
         if (equipmentAllowed == ItemType.None)
         {
             ModManager.Log($"[VendorLoot] Vendor {vendor.Name} has no equipment MerchandiseItemTypes; skipping rotation.", ModManager.LogLevel.Warn);
-            return;
+            return false;
         }
 
         ModManager.Log($"[VendorLoot] Rotating vendor {vendor.Name} ({vendor.WeenieClassId}) tier {vendorTier}, equipment merch mask {equipmentAllowed}...", ModManager.LogLevel.Info);
@@ -329,6 +340,7 @@ public static class VendorLootRotation
         {
             foreach (var guid in oldRotated)
             {
+                ForgetOriginalValue(guid);
                 vendor.DefaultItemsForSale.Remove(guid);
                 vendor.UniqueItemsForSale.Remove(guid);
             }
@@ -348,11 +360,10 @@ public static class VendorLootRotation
         equipmentGuids.AddRange(uniqueEquipmentGuids);
         foreach (var guid in equipmentGuids.Distinct())
         {
+            ForgetOriginalValue(guid);
             vendor.DefaultItemsForSale.Remove(guid);
             vendor.UniqueItemsForSale.Remove(guid);
         }
-
-        _originalValues.Clear();
 
         int perCatMin = Math.Max(1, _settings.VendorLootItemsPerCategoryMin);
         int perCatMax = Math.Max(perCatMin, _settings.VendorLootItemsPerCategoryMax);
@@ -455,7 +466,10 @@ public static class VendorLootRotation
         }
 
         ModManager.Log($"[VendorLoot] Vendor {vendor.Name}: {itemCount} equipment + {magicCount} magic + {mundaneCount} mundane + {salvageCount} salvage. Tier {vendorTier}, merch {equipmentAllowed}. Default={vendor.DefaultItemsForSale.Count}, Unique={vendor.UniqueItemsForSale.Count}", ModManager.LogLevel.Info);
+        return true;
     }
+
+    static void ForgetOriginalValue(ObjectGuid guid) => _originalValues.TryRemove(guid, out _);
 
     // =====================================================================
     // Tier & Quality Generation

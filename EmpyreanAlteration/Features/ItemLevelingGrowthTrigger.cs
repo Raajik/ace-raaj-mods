@@ -41,19 +41,21 @@ internal static class ItemLevelingGrowthTrigger
         if (newLevel <= prevLevel)
             return;
 
-        // Find the owning player
+        // Find the owning player (direct pack, wielded, or nested container chain).
         Player? owner = null;
         if (__instance.Wielder is Player p)
             owner = p;
         else if (__instance.Container is Player cp)
             owner = cp;
+        else if (__instance.Container is Container nested)
+            owner = ContainerRootPlayer.TryGetFromContainer(nested);
 
         if (owner == null)
             return;
 
         // Send the vanilla-style level-up message
         var msg = $"Your {__instance.Name} has increased in power to level {newLevel}!";
-        owner.Session.Network.EnqueueSend(new GameMessageSystemChat(msg, ChatMessageType.Broadcast));
+        owner.Session?.Network?.EnqueueSend(new GameMessageSystemChat(msg, ChatMessageType.Broadcast));
         owner.EnqueueBroadcast(new GameMessageScript(owner.Guid, PlayScript.AetheriaLevelUp));
 
         // Apply catch-up growth for all skipped levels
@@ -61,6 +63,16 @@ internal static class ItemLevelingGrowthTrigger
             __instance, prevLevel, newLevel,
             questGrowth: false, // awakened items are loot-growth path
             owner, s);
+
+        __instance.CalculateObjDesc();
+        try
+        {
+            __instance.EnqueueBroadcastUpdateObject();
+        }
+        catch
+        {
+            // Same defensive pattern as SpellSiphon item mutations; do not fail level-up if broadcast throws.
+        }
 
         if (s.Verbose)
             ModManager.Log($"[EmpyreanAlteration] Awakened item leveled up: {__instance.Name} {prevLevel} -> {newLevel}", ModManager.LogLevel.Info);

@@ -1,3 +1,4 @@
+using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Server.Network.Structure;
 using ACE.Server.WorldObjects;
@@ -34,13 +35,24 @@ internal static class DisableAttunedQOL
 internal static class DisableAttunedAppraisal
 {
     [HarmonyPostfix]
-    public static void Postfix(AppraiseInfo __instance)
+    public static void Postfix(AppraiseInfo __instance, WorldObject wo)
     {
         var s = PatchClass.Settings;
-        if (s?.Enabled != true || !s.DisableAttunedGlobally)
+        if (s?.Enabled != true)
             return;
 
-        if (__instance.PropertiesInt != null && __instance.PropertiesInt.ContainsKey(PropertyInt.Attuned))
-            __instance.PropertiesInt[PropertyInt.Attuned] = (int)ACE.Entity.Enum.AttunedStatus.Normal;
+        if (s.DisableAttunedGlobally
+            && __instance.PropertiesInt != null
+            && __instance.PropertiesInt.ContainsKey(PropertyInt.Attuned))
+            __instance.PropertiesInt[PropertyInt.Attuned] = (int)AttunedStatus.Normal;
+
+        if (!s.HideExaminedBondedIvoryableOnAwakened || wo.GetProperty(LivingEquipmentProperties.IsAwakened) != true)
+            return;
+
+        if (__instance.PropertiesInt != null && __instance.PropertiesInt.ContainsKey(PropertyInt.Bonded))
+            __instance.PropertiesInt[PropertyInt.Bonded] = (int)BondedStatus.Normal;
+
+        if (__instance.PropertiesBool != null && __instance.PropertiesBool.ContainsKey(PropertyBool.Ivoryable))
+            __instance.PropertiesBool[PropertyBool.Ivoryable] = false;
     }
 }

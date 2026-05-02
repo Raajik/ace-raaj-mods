@@ -62,7 +62,8 @@ internal static class HuntBroadcast
         {
             var r = rows[i];
             var place = (i + 1) switch { 1 => "1st", 2 => "2nd", 3 => "3rd", var n => $"{n}th" };
-            var xpPart = r.XpGranted is long xp && r.XpFormula is { } f ? $"+{xp:N0} XP ({f})" : "no XP";
+            // World line: keep placement XP visible but omit long formula (players still get the private Hunt message with detail).
+            var xpPart = r.XpGranted is long xp ? $"+{xp:N0} XP" : "no XP";
             var lootPart = settings.HuntGrantLootTableRolls && r.LootLines is { Count: > 0 }
                 ? string.Join(", ", r.LootLines) : null;
             var bonusPart = r.TopPoolBonusXxp is double bx && bx > 0 ? $" | +{bx:0.##} Hunt XP bonus" : "";

@@ -60,6 +60,10 @@ public partial class Settings
     public string ItemLevelingCapDoc { get; init; } = "Absolute hard cap for awakened item max level.";
     public int ItemLevelingCap { get; set; } = 100;
 
+    [JsonPropertyName("// HideExaminedBondedIvoryableOnAwakened")]
+    public string HideExaminedBondedIvoryableOnAwakenedDoc { get; init; } = "When true, appraisal packets for awakened items show Bonded as Normal and Ivoryable as false so examine text matches tradable behavior (server logic unchanged).";
+    public bool HideExaminedBondedIvoryableOnAwakened { get; set; } = true;
+
     [JsonPropertyName("// DisableAttunedGlobally")]
     public string DisableAttunedGloballyDoc { get; init; } = "When true, ALL items are treated as not attuned (AttunedStatus.Normal). Allows trading/selling of any item including quest rewards and Coalesced Mana.";
     public bool DisableAttunedGlobally { get; set; } = false;

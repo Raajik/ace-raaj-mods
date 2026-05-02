@@ -117,7 +117,11 @@ internal static class QuestItemGrowthLevelEngine
 
         // Generic rating scaling: ALL items with existing ratings get a bump every N levels.
         // This ensures BetterLootControl-generated ratings on weapons, armor, and jewelry all scale.
-        if (settings.EnableGenericRatingLevelUp && level % settings.RatingLevelUpInterval == 0)
+        int ratingInterval = QuestGrowthItemHelpers.IsCloakEquipment(item)
+            ? settings.CloakRatingLevelUpInterval
+            : settings.RatingLevelUpInterval;
+        ratingInterval = Math.Max(1, ratingInterval);
+        if (settings.EnableGenericRatingLevelUp && level % ratingInterval == 0)
         {
             bool scaled = TryScaleExistingRatings(item, player, level, settings, emitMessages, summary);
             if (scaled)

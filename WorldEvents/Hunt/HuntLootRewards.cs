@@ -1,4 +1,5 @@
-﻿using SharedLoot;
+﻿using ACE.Entity.Enum;
+using SharedLoot;
 
 namespace WorldEvents;
 
@@ -69,6 +70,13 @@ internal static class HuntLootRewards
         }
 
         return names;
+    }
+
+    static string FormatHuntLootBroadcastLine(WorldObject item, bool isSalvage)
+    {
+        if (isSalvage && item.MaterialType != MaterialType.Unknown)
+            return $"{item.MaterialType} salvage (1 bag)";
+        return item.Name ?? "loot";
     }
 
     static void TagHuntRewardForSsfIfNeeded(Player player, WorldObject item)

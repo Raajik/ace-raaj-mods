@@ -13,6 +13,7 @@ internal static class XpTracker
 
     static readonly ConcurrentDictionary<uint, PlayerXpSession> _sessions = new();
     internal static readonly ConcurrentDictionary<uint, bool> SpendAutoPrefs = new();
+    static readonly ConcurrentDictionary<uint, DateTime> _lastAutoSpendMsgUtc = new();
     static string _dataDir = "";
     static readonly object _saveLock = new();
 
@@ -68,12 +69,27 @@ internal static class XpTracker
             chain.AddAction(player, () =>
             {
                 var results = SpendForPlayer(player);
-                long spent = results.Sum(r => r.XpSpent);
-                if (spent > 0)
+                var meaningful = results.Where(r => r.RanksGained > 0).ToList();
+                if (meaningful.Count == 0)
+                    return;
+
+                var settings = PatchClass.Settings;
+                var now = DateTime.UtcNow;
+                if (settings != null && settings.EnableAutoSpendRateLimit)
                 {
-                    var detail = string.Join(", ", results.Select(r => $"{r.Name} (+{r.RanksGained})"));
-                    player.SendMessage($"[Auto-Spend] Spent {spent:N0} XP into {results.Count} stats: {detail}. Remaining: {player.AvailableExperience ?? 0:N0}", ChatMessageType.System);
+                    var cooldown = TimeSpan.FromMinutes(Math.Max(1, settings.AutoSpendRateLimitMinutes));
+                    if (_lastAutoSpendMsgUtc.TryGetValue(player.Guid.Full, out var last)
+                        && now - last < cooldown)
+                        return;
                 }
+
+                long spent = meaningful.Sum(r => r.XpSpent);
+                if (spent <= 0)
+                    return;
+
+                _lastAutoSpendMsgUtc[player.Guid.Full] = now;
+                var detail = string.Join(", ", meaningful.Select(r => $"{r.Name} (+{r.RanksGained})"));
+                player.SendMessage($"[Auto-Spend] Spent {spent:N0} XP into {meaningful.Count} stats: {detail}. Remaining: {player.AvailableExperience ?? 0:N0}", ChatMessageType.System);
             });
             chain.EnqueueChain();
         }

@@ -91,11 +91,16 @@ public partial class Settings
     [JsonPropertyName("// RatingLevelUpInterval")]
     public string RatingLevelUpIntervalDoc { get; init; } = "Ratings scale every N item levels (default 5). Set to 1 to scale every single level-up.";
 
+    [JsonPropertyName("// CloakRatingLevelUpInterval")]
+    public string CloakRatingLevelUpIntervalDoc { get; init; } =
+        "Same as RatingLevelUpInterval but only for items with ValidLocations including Cloak (Living cloaks). Default 1 so cloak ratings bump every item level; non-cloaks still use RatingLevelUpInterval.";
+
     [JsonPropertyName("// RatingLevelUpAmount")]
     public string RatingLevelUpAmountDoc { get; init; } = "How much each existing rating increases per interval (default 1).";
 
     public bool EnableGenericRatingLevelUp { get; set; } = true;
     public int RatingLevelUpInterval { get; set; } = 5;
+    public int CloakRatingLevelUpInterval { get; set; } = 1;
     public int RatingLevelUpAmount { get; set; } = 1;
 
     public int QuestGrowthCatchUpSummarizeMinLevels { get; set; } = 12;

@@ -25,19 +25,14 @@ public class Settings
     [JsonPropertyName("EnableUnlockChestUsingSkeletonBank")]
     public bool EnableUnlockChestUsingSkeletonBank { get; set; } = true;
 
-    [JsonPropertyName("SkeletonBankPropMax250")]
-    public int SkeletonBankPropMax250 { get; set; } = 40110;
+    // LeyLineLedger bank lines for chest-only skeleton bank debits (SSK / LEG). Must match Items[].Prop in LeyLineLedger.
+    [JsonPropertyName("SkeletonBankPropChestSsk")]
+    public int SkeletonBankPropChestSsk { get; set; } = 40500;
 
-    [JsonPropertyName("SkeletonBankPropMax500")]
-    public int SkeletonBankPropMax500 { get; set; } = 40111;
+    [JsonPropertyName("SkeletonBankPropChestLeg")]
+    public int SkeletonBankPropChestLeg { get; set; } = 41000;
 
-    [JsonPropertyName("SkeletonBankPropMax750")]
-    public int SkeletonBankPropMax750 { get; set; } = 40112;
-
-    [JsonPropertyName("SkeletonBankPropMax1000")]
-    public int SkeletonBankPropMax1000 { get; set; } = 40113;
-
-    // Bank fallback WCIDs per tier: debit that tier's PropertyInt64 when ResistLockpick is null/unpickable or no tier has balance (same behavior as Mana Forge list).
+    // Bank fallback WCIDs: debit LEG line (ResistLockpick <= 5000 tier) when resist is null/unpickable and WCID matches.
     [JsonPropertyName("LegendaryChestWcids")]
     public List<uint> LegendaryChestWcids { get; set; } =
     [
@@ -50,6 +45,7 @@ public class Settings
         38443, 38444, 38445, 38446, 38447, 38457,
     ];
 
+    // Bank fallback: debit SSK bank line (<=1000 resist tier) for these chest WCIDs when resist-based pick does not apply.
     [JsonPropertyName("SturdySteelChestWcids")]
     public List<uint> SturdySteelChestWcids { get; set; } =
     [
@@ -73,7 +69,9 @@ public class Settings
 [HarmonyPatch]
 public partial class PatchClass : BasicPatch<Settings>
 {
-    private static Dictionary<uint, int>? _keys;
+    readonly record struct SkeletonKeyCaps(int DoorMax, int ChestMax);
+
+    private static Dictionary<uint, SkeletonKeyCaps>? _keys;
 
     static readonly object LockHelperPatchLock = new();
     static bool LockHelperPatchesApplied;
@@ -559,7 +557,7 @@ public partial class PatchClass : BasicPatch<Settings>
         else
             st.Key.RemoveProperty(PropertyString.KeyCode);
 
-        if (st.Target is Chest || st.Target is Door)
+        if (st.Target is Chest || st.Target is Door || st.Target is global::ACE.Server.WorldObjects.Lock)
         {
             if (st.HadLockCode)
                 st.Target.SetProperty(PropertyString.LockCode, st.PreviousLockCode!);
@@ -582,11 +580,18 @@ public partial class PatchClass : BasicPatch<Settings>
             return true;
 
         EnsureKeyMap();
-        if (_keys is null || !_keys.TryGetValue(key.WeenieClassId, out int maxDifficulty))
+        if (_keys is null || !_keys.TryGetValue(key.WeenieClassId, out SkeletonKeyCaps caps))
             return true;
 
         int resist = LockHelper.GetResistLockpick(target) ?? 0;
-        if (resist > maxDifficulty)
+        int allowedMax = target switch
+        {
+            Chest => caps.ChestMax,
+            Door => caps.DoorMax,
+            global::ACE.Server.WorldObjects.Lock => caps.DoorMax,
+            _ => -1,
+        };
+        if (allowedMax <= 0 || resist > allowedMax)
             return true;
 
         if (target is Door woDoor && woDoor.LockCode == "")
@@ -668,13 +673,20 @@ public partial class PatchClass : BasicPatch<Settings>
         if (_keys != null)
             return;
 
-        _keys = new Dictionary<uint, int>
+        // SIK: doors only <=1000. SSK: chests only <=1000. MFK: doors only <=5000. LEG: chests only <=5000.
+        _keys = new Dictionary<uint, SkeletonKeyCaps>
         {
-            { 6876, 250 }, { 24477, 500 }, { 38456, 750 }, { 38917, 750 }, { 38918, 750 }, { 38919, 750 }, { 38920, 750 },
-            { 48746, 1000 }, { 48747, 1000 }, { 48748, 1000 }, { 48749, 1000 }, { 48750, 1000 }, { 48914, 1000 },
-            { 51558, 1000 }, { 51586, 1000 }, { 51648, 1000 }, { 51954, 1000 }, { 51963, 1000 }, { 52010, 1000 },
-            { 72048, 1000 }, { 72338, 1000 }, { 72474, 1000 }, { 72600, 1000 }, { 72628, 1000 }, { 72635, 1000 },
-            { 72669, 1000 }, { 72807, 1000 }, { 87168, 1000 }
+            { 6876, new SkeletonKeyCaps(1000, 0) },
+            { 24477, new SkeletonKeyCaps(0, 1000) },
+            { 38456, new SkeletonKeyCaps(5000, 0) }, { 38917, new SkeletonKeyCaps(5000, 0) }, { 38918, new SkeletonKeyCaps(5000, 0) },
+            { 38919, new SkeletonKeyCaps(5000, 0) }, { 38920, new SkeletonKeyCaps(5000, 0) },
+            { 48746, new SkeletonKeyCaps(0, 5000) }, { 48747, new SkeletonKeyCaps(0, 5000) }, { 48748, new SkeletonKeyCaps(0, 5000) },
+            { 48749, new SkeletonKeyCaps(0, 5000) }, { 48750, new SkeletonKeyCaps(0, 5000) }, { 48914, new SkeletonKeyCaps(0, 5000) },
+            { 51558, new SkeletonKeyCaps(0, 5000) }, { 51586, new SkeletonKeyCaps(0, 5000) }, { 51648, new SkeletonKeyCaps(0, 5000) },
+            { 51954, new SkeletonKeyCaps(0, 5000) }, { 51963, new SkeletonKeyCaps(0, 5000) }, { 52010, new SkeletonKeyCaps(0, 5000) },
+            { 72048, new SkeletonKeyCaps(0, 5000) }, { 72338, new SkeletonKeyCaps(0, 5000) }, { 72474, new SkeletonKeyCaps(0, 5000) },
+            { 72600, new SkeletonKeyCaps(0, 5000) }, { 72628, new SkeletonKeyCaps(0, 5000) }, { 72635, new SkeletonKeyCaps(0, 5000) },
+            { 72669, new SkeletonKeyCaps(0, 5000) }, { 72807, new SkeletonKeyCaps(0, 5000) }, { 87168, new SkeletonKeyCaps(0, 5000) },
         };
     }
 
@@ -700,11 +712,18 @@ public partial class PatchClass : BasicPatch<Settings>
         state = null;
 
         EnsureKeyMap();
-        if (_keys == null || !_keys.TryGetValue(key.WeenieClassId, out int maxDifficulty))
+        if (_keys == null || !_keys.TryGetValue(key.WeenieClassId, out SkeletonKeyCaps caps))
             return false;
 
         int lockDifficulty = target.GetProperty(PropertyInt.ResistLockpick) ?? 0;
-        if (lockDifficulty > maxDifficulty)
+        int capForTarget = target switch
+        {
+            Chest => caps.ChestMax,
+            Door => caps.DoorMax,
+            global::ACE.Server.WorldObjects.Lock => caps.DoorMax,
+            _ => -1,
+        };
+        if (capForTarget <= 0 || lockDifficulty > capForTarget)
             return false;
 
         string? myLockCode = LockHelper.GetLockCode(target);
@@ -719,7 +738,7 @@ public partial class PatchClass : BasicPatch<Settings>
         if (myLockCode != null)
         {
             key.SetProperty(PropertyString.KeyCode, myLockCode);
-            ModManager.Log("[BetterKeys] Skeleton key WCID " + key.WeenieClassId + " on " + target.Name + ": KeyCode matched to lock (ResistLockpick " + lockDifficulty + " <= " + maxDifficulty + ").", ModManager.LogLevel.Info);
+            ModManager.Log("[BetterKeys] Skeleton key WCID " + key.WeenieClassId + " on " + target.Name + ": KeyCode matched to lock (ResistLockpick " + lockDifficulty + " <= " + capForTarget + ").", ModManager.LogLevel.Info);
             state = st;
             return true;
         }
@@ -731,7 +750,7 @@ public partial class PatchClass : BasicPatch<Settings>
         st.HadLockCode = st.PreviousLockCode != null;
         key.SetProperty(PropertyString.KeyCode, SkeletonLockSentinel);
         target.SetProperty(PropertyString.LockCode, SkeletonLockSentinel);
-        ModManager.Log("[BetterKeys] Skeleton key WCID " + key.WeenieClassId + " on " + target.Name + ": sentinel LockCode on chest (no LockCode; ResistLockpick " + lockDifficulty + " <= " + maxDifficulty + ").", ModManager.LogLevel.Info);
+        ModManager.Log("[BetterKeys] Skeleton key WCID " + key.WeenieClassId + " on " + target.Name + ": sentinel LockCode on chest (no LockCode; ResistLockpick " + lockDifficulty + " <= " + capForTarget + ").", ModManager.LogLevel.Info);
         state = st;
         return true;
     }
@@ -752,12 +771,12 @@ public partial class PatchClass : BasicPatch<Settings>
         if (_keys == null || _keys.Count == 0)
             return true;
 
-        if (PlayerHasSkeletonKeyInInventory(player))
+        if (PlayerHasChestSkeletonKeyInInventory(player))
             return true;
 
         int? resistNullable = LockHelper.GetResistLockpick(__instance);
 
-        // Standard path: lock difficulty maps to a skeleton bank tier (250/500/750/1000).
+        // Resist maps to SSK bank (<=1000) or LEG bank (<=5000); smallest matching tier with balance wins.
         if (resistNullable != null && resistNullable.Value < 9999)
         {
             int resist = resistNullable.Value;
@@ -768,14 +787,14 @@ public partial class PatchClass : BasicPatch<Settings>
             }
         }
 
-        // Tier-specific WCID lists: ResistLockpick often null/unpickable; debit the matching bank line for configured chests only.
-        if (TryTierChestBankFallback(player, __instance, resistNullable, RuntimeSettings.LegendaryChestWcids, 1000, RuntimeSettings.SkeletonBankPropMax1000))
+        // WCID fallbacks when resist is null/unpickable or no bank line had balance for the resist value.
+        if (TryTierChestBankFallback(player, __instance, resistNullable, RuntimeSettings.LegendaryChestWcids, 5000, RuntimeSettings.SkeletonBankPropChestLeg))
             return true;
-        if (TryTierChestBankFallback(player, __instance, resistNullable, RuntimeSettings.ManaForgeChestWcids, 750, RuntimeSettings.SkeletonBankPropMax750))
+        if (TryTierChestBankFallback(player, __instance, resistNullable, RuntimeSettings.ManaForgeChestWcids, 5000, RuntimeSettings.SkeletonBankPropChestLeg))
             return true;
-        if (TryTierChestBankFallback(player, __instance, resistNullable, RuntimeSettings.SturdySteelChestWcids, 500, RuntimeSettings.SkeletonBankPropMax500))
+        if (TryTierChestBankFallback(player, __instance, resistNullable, RuntimeSettings.SturdySteelChestWcids, 1000, RuntimeSettings.SkeletonBankPropChestSsk))
             return true;
-        if (TryTierChestBankFallback(player, __instance, resistNullable, RuntimeSettings.SturdyIronChestWcids, 250, RuntimeSettings.SkeletonBankPropMax250))
+        if (TryTierChestBankFallback(player, __instance, resistNullable, RuntimeSettings.SturdyIronChestWcids, 1000, RuntimeSettings.SkeletonBankPropChestSsk))
             return true;
 
         return true;
@@ -806,9 +825,6 @@ public partial class PatchClass : BasicPatch<Settings>
         if (wcids is null || wcids.Count == 0 || !wcids.Contains(chest.WeenieClassId))
             return false;
 
-        if (!_keys!.Values.Any(m => m == tierMax))
-            return false;
-
         long banked = player.GetProperty((PropertyInt64)bankProp) ?? 0;
         if (banked < 1)
             return false;
@@ -834,42 +850,35 @@ public partial class PatchClass : BasicPatch<Settings>
     {
         return tierMax switch
         {
-            250 => "Sturdy Iron Keys",
-            500 => "Sturdy Steel Keys",
-            750 => "Mana Forge Keys",
-            1000 => "Legendary Keys",
+            1000 => "Sturdy Steel Keys (SSK)",
+            5000 => "Legendary Keys (LEG)",
             _ => "skeleton keys",
         };
     }
 
-    static bool PlayerHasSkeletonKeyInInventory(Player player)
+    static bool PlayerHasChestSkeletonKeyInInventory(Player player)
     {
         foreach (WorldObject item in player.AllItems())
         {
-            if (_keys!.ContainsKey(item.WeenieClassId))
+            if (_keys!.TryGetValue(item.WeenieClassId, out SkeletonKeyCaps caps) && caps.ChestMax > 0)
                 return true;
         }
 
         return false;
     }
 
-    // Prefer the smallest tier that can open this resist and has bank balance; tier must exist in Keys (same maxDifficulty as that bank line).
+    // Prefer the smallest chest bank tier that covers this resist and has balance (1000 then 5000).
     static bool TryPickBankTierForResist(Player player, int resist, out int tierMax, out int bankProp, out long banked)
     {
-        (int Max, int Prop)[] tiers = new (int Max, int Prop)[]
-        {
-            (250, RuntimeSettings.SkeletonBankPropMax250),
-            (500, RuntimeSettings.SkeletonBankPropMax500),
-            (750, RuntimeSettings.SkeletonBankPropMax750),
-            (1000, RuntimeSettings.SkeletonBankPropMax1000),
-        };
+        (int Max, int Prop)[] tiers =
+        [
+            (1000, RuntimeSettings.SkeletonBankPropChestSsk),
+            (5000, RuntimeSettings.SkeletonBankPropChestLeg),
+        ];
 
         foreach ((int max, int prop) in tiers)
         {
             if (resist > max)
-                continue;
-
-            if (!_keys!.Values.Any(m => m == max))
                 continue;
 
             long n = player.GetProperty((PropertyInt64)prop) ?? 0;
@@ -888,7 +897,7 @@ public partial class PatchClass : BasicPatch<Settings>
         return false;
     }
 
-    // Admin /bkkey: credits LeyLineLedger-style bank lines (same props as SkeletonBankProp* in Settings.json).
+    // Admin /bkkey: credits LeyLineLedger SSK/LEG chest bank lines.
     public static void GrantSkeletonBankChargesPerTier(Player player, long amountPerTier)
     {
         if (amountPerTier <= 0)
@@ -901,9 +910,7 @@ public partial class PatchClass : BasicPatch<Settings>
             player.SetProperty((PropertyInt64)prop, cur + amountPerTier);
         }
 
-        Add(s.SkeletonBankPropMax250);
-        Add(s.SkeletonBankPropMax500);
-        Add(s.SkeletonBankPropMax750);
-        Add(s.SkeletonBankPropMax1000);
+        Add(s.SkeletonBankPropChestSsk);
+        Add(s.SkeletonBankPropChestLeg);
     }
 }

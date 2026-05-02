@@ -4,7 +4,7 @@ namespace BetterKeys;
 public static class BetterKeysCommands
 {
     [CommandHandler("bkkey", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld, 0,
-        "[BetterKeys] No args: adds 50 charges per skeleton tier to bank (250/500/750/1000). With args: spawn key(s) in inventory.",
+        "[BetterKeys] No args: adds 50 charges to each chest skeleton bank line (SSK 40500 / LEG 41000). With args: spawn key(s) in inventory.",
         "Usage: /bkkey  |  /bkkey <count>  |  /bkkey <wcid>  |  /bkkey <wcid> <count>")]
     public static void HandleBkKey(Session session, params string[] parameters)
     {
@@ -16,12 +16,10 @@ public static class BetterKeysCommands
             const int grant = 50;
             PatchClass.GrantSkeletonBankChargesPerTier(player, grant);
             Settings s = PatchClass.RuntimeSettingsSnapshot;
-            long t250 = player.GetProperty((PropertyInt64)s.SkeletonBankPropMax250) ?? 0;
-            long t500 = player.GetProperty((PropertyInt64)s.SkeletonBankPropMax500) ?? 0;
-            long t750 = player.GetProperty((PropertyInt64)s.SkeletonBankPropMax750) ?? 0;
-            long t1000 = player.GetProperty((PropertyInt64)s.SkeletonBankPropMax1000) ?? 0;
+            long ssk = player.GetProperty((PropertyInt64)s.SkeletonBankPropChestSsk) ?? 0;
+            long leg = player.GetProperty((PropertyInt64)s.SkeletonBankPropChestLeg) ?? 0;
             player.SendMessage(
-                $"[BetterKeys] Bank +{grant} per tier (Sturdy Iron / Steel / Mana Forge / Legendary). Totals: {t250}, {t500}, {t750}, {t1000}.");
+                $"[BetterKeys] Bank +{grant} per line (SSK prop {s.SkeletonBankPropChestSsk} / LEG prop {s.SkeletonBankPropChestLeg}). Totals: SSK {ssk:N0}, LEG {leg:N0}.");
             return;
         }
 

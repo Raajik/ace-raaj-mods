@@ -220,55 +220,6 @@ public class Settings
     public string EnableOverrideCheckUseRequirementsDoc { get; init; } = "Harmony: override CheckUseRequirements when enabled.";
     public bool EnableOverrideCheckUseRequirements { get; set; } = false;
 
-    [JsonPropertyName("// EnableTrophyBurdenXp")]
-    public string EnableTrophyBurdenXpDoc { get; init; } = "Award bonus XP after a successful NPC give to a listed collector (Harmony on GiveObjectToNPC, post-emote), scaled per item by burden (StackUnitEncumbrance when stacked) and per unit given. Player message combines total XP with CoinValue delta (pyreals from emotes) when nonzero. Many collectibles have 0 encumbrance; use TrophyEncumbranceWhenZero.";
-    public bool EnableTrophyBurdenXp { get; set; } = false;
-
-    [JsonPropertyName("// TrophyEncumbranceWhenZero")]
-    public string TrophyEncumbranceWhenZeroDoc { get; init; } = "When the item’s EncumbranceVal is 0 or null, use this value only for the burden-based XP formula (treats zero-burden collectibles as lightweight trophies). Set 0 to require a positive weenie burden (vanilla-strict).";
-    public int TrophyEncumbranceWhenZero { get; set; } = 25;
-
-    [JsonPropertyName("// TrophyQualityBonusChance")]
-    public string TrophyQualityBonusChanceDoc { get; init; } = "Per trophy item in a give action: chance (0–1) for Quality — 2× that item's burden XP. Rolled independently for each unit. If Pristine also rolls on that unit, display as Perfect (6×); there is no separate third roll.";
-    public double TrophyQualityBonusChance { get; set; } = 0.10;
-
-    [JsonPropertyName("// TrophyPristineBonusChance")]
-    public string TrophyPristineBonusChanceDoc { get; init; } = "Per trophy item in a give action: chance (0–1) for Pristine — 3× that item's burden XP. Rolled independently per unit. If Quality and Pristine both roll on the same unit, that unit is Perfect — 6× (rare).";
-    public double TrophyPristineBonusChance { get; set; } = 0.05;
-
-    [JsonPropertyName("// TrophyCollectorWcids")]
-    public string TrophyCollectorWcidsDoc { get; init; } = "WCIDs of trophy collector NPCs that accept items via Give emote.";
-    public List<uint> TrophyCollectorWcids { get; set; } = new()
-    {
-        3917, // Collector (Aluvian)
-        3918, // Collector (Gharu'ndim)
-        3919, // Jewel Collector
-        3920, // Collector (Sho)
-        3921, // Stone Collector
-        3922, // Tumerok Collector
-        3923, // Wing Collector
-        11343, // Hea Riketura the Collector
-        11348, // Aun Mareura the Collector
-        21338, // Collector (Sho, Yanshi - Destroyed)
-        24215, // Black Hill Collector
-    };
-
-    [JsonPropertyName("// TrophyAttunedXpFraction")]
-    public string TrophyAttunedXpFractionDoc { get; init; } = "When the turned-in item is Attuned (PropertyInt.Attuned > 0), award this flat fraction of XP-to-next-level instead of the burden formula. Quality/Pristine multipliers still apply. Set 0 to block attuned items entirely.";
-    public float TrophyAttunedXpFraction { get; set; } = 0.10f;
-
-    [JsonPropertyName("// TrophyMinBuyValue")]
-    public string TrophyMinBuyValueDoc { get; init; } = "Minimum item Value (pyreal buy price) to be eligible for burden XP. Items worth less than this threshold are silently rejected. 0 = disabled (all values allowed). Useful for blocking cheap vendor items like training-academy consumables.";
-    public int TrophyMinBuyValue { get; set; } = 0;
-
-    [JsonPropertyName("// TrophyBlacklistWcids")]
-    public string TrophyBlacklistWcidsDoc { get; init; } = "WCIDs permanently blocked from earning trophy burden XP regardless of value or attuned status. Use this for specific vendor-bought items that slip past TrophyMinBuyValue (e.g. Oil of Rendering, spell Foci).";
-    public List<uint> TrophyBlacklistWcids { get; set; } = new();
-
-    [JsonPropertyName("// TrophyLogEnabled")]
-    public string TrophyLogEnabledDoc { get; init; } = "When true, append every trophy turn-in to Data/TrophyLog.jsonl (includes pyrealDelta vs snapshot before give) for analytics and blacklist building.";
-    public bool TrophyLogEnabled { get; set; } = false;
-
     [JsonPropertyName("// BarkeeperParchments")]
     public string BarkeeperParchmentsSectionDoc { get; init; } = "Bartender parchment contracts: cooldown, Town Criers, boards, tier XP bands, templates. Inside BarkeeperParchments: // lines first, then values (same order).";
     public BarkeeperParchmentsSettings BarkeeperParchments { get; set; } = new();

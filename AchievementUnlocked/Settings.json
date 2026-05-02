@@ -802,6 +802,20 @@
       "Hidden": false,
       "Notify": true,
       "AccountWide": true
+    },
+    {
+      "Id": "FacilityFrequenter",
+      "Name": "Facility Frequenter",
+      "Description": "Use the Facility Hub Portal Gem successfully 10 times to attune to the hub.",
+      "Category": "Exploration",
+      "Type": 1,
+      "Target": "",
+      "RequiredCount": 10,
+      "RequiredValue": 0,
+      "Prerequisites": [],
+      "Rewards": [],
+      "Hidden": false,
+      "Notify": true
     }
   ]
 }

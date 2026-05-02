@@ -38,6 +38,7 @@ public enum Features
     PetKillSummary,
     XpTracker,
     AutoBuff,
+    FacilityHub,
 }
 
 public class Settings
@@ -118,8 +119,8 @@ public class Settings
     public bool EnableOfflineSwear { get; set; } = true;
 
     [JsonPropertyName("// EnableCollectorsAcceptAll")]
-    public string EnableCollectorsAcceptAllDoc { get; init; } = "Trophy collectors accept any item (not just items with specific Give emotes).";
-    public bool EnableCollectorsAcceptAll { get; set; } = true;
+    public string EnableCollectorsAcceptAllDoc { get; init; } = "REMOVED — CollectorsAcceptAll patches deleted. JSON key kept so old Settings.json still deserializes; value is ignored.";
+    public bool EnableCollectorsAcceptAll { get; set; } = false;
 
     [JsonPropertyName("// CollectorWcids")]
     public string CollectorWcidsDoc { get; init; } = "WCIDs of collector NPCs that will accept any item when enabled.";
@@ -428,6 +429,14 @@ public class Settings
     public string EnableAutoBuffDoc { get; init; } = "Auto-buff system: /buffs to cast best known buffs, /buffs auto for timer-based recasting.";
     public bool EnableAutoBuff { get; set; } = true;
 
+    [JsonPropertyName("// EnableFacilityHub")]
+    public string EnableFacilityHubDoc { get; init; } = "Facility Hub Portal Gem (WCID 49563) achievement progress hook and /fac recall after Facility Frequenter unlock (requires AchievementUnlocked mod loaded).";
+    public bool EnableFacilityHub { get; set; } = true;
+
+    [JsonPropertyName("// FacilityHub")]
+    public string FacilityHubSectionDoc { get; init; } = "FallbackCell and origin/rotation: used by /fac on stock ACE when the linked portal Destination is not a Position (set to 0 to disable fallback). Realms builds resolve from portal weenie when possible.";
+    public FacilityHubSettings FacilityHub { get; set; } = new();
+
     [JsonPropertyName("// AutoBuff")]
     public string AutoBuffSectionDoc { get; init; } = "Auto-buff: check interval, recast buffer, toggle property id.";
     public AutoBuffSettings AutoBuff { get; set; } = new();
@@ -604,6 +613,41 @@ public class BypassPortalRestrictionsSettings
     [JsonPropertyName("// BypassOlthoiRecall")]
     public string BypassOlthoiRecallDoc { get; init; } = "Allow olthoi characters to use all recall types.";
     public bool BypassOlthoiRecall { get; set; } = true;
+}
+
+public class FacilityHubSettings
+{
+    [JsonPropertyName("// FallbackCell")]
+    public string FallbackCellDoc { get; init; } = "obj_Cell_Id for /fac when gem-linked portal destination cannot be read as ACE.Entity.Position (0 = no fallback). Default matches Val Heel landblock 0x0130 Facility Hub 2.0 tile.";
+    public uint FallbackCell { get; set; } = 0x01300105;
+
+    [JsonPropertyName("// FallbackOriginX")]
+    public string FallbackOriginXDoc { get; init; } = "Facility hub fallback spawn X.";
+    public float FallbackOriginX { get; set; } = 17.0096f;
+
+    [JsonPropertyName("// FallbackOriginY")]
+    public string FallbackOriginYDoc { get; init; } = "Facility hub fallback spawn Y.";
+    public float FallbackOriginY { get; set; } = -13.6756f;
+
+    [JsonPropertyName("// FallbackOriginZ")]
+    public string FallbackOriginZDoc { get; init; } = "Facility hub fallback spawn Z.";
+    public float FallbackOriginZ { get; set; } = 0.055f;
+
+    [JsonPropertyName("// FallbackRotationW")]
+    public string FallbackRotationWDoc { get; init; } = "Quaternion W for fallback facing.";
+    public float FallbackRotationW { get; set; } = -0.923071f;
+
+    [JsonPropertyName("// FallbackRotationX")]
+    public string FallbackRotationXDoc { get; init; } = "Quaternion X for fallback facing.";
+    public float FallbackRotationX { get; set; } = 0f;
+
+    [JsonPropertyName("// FallbackRotationY")]
+    public string FallbackRotationYDoc { get; init; } = "Quaternion Y for fallback facing.";
+    public float FallbackRotationY { get; set; } = 0f;
+
+    [JsonPropertyName("// FallbackRotationZ")]
+    public string FallbackRotationZDoc { get; init; } = "Quaternion Z for fallback facing.";
+    public float FallbackRotationZ { get; set; } = -0.384629f;
 }
 
 public class AutoBuffSettings

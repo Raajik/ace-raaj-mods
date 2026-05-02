@@ -54,7 +54,7 @@
   "EnablePetEx": true,
   "EnablePetExShareDamage": true,
   "EnableOfflineSwear": true,
-  "EnableCollectorsAcceptAll": true,
+  "EnableCollectorsAcceptAll": false,
   "CollectorWcids": [3917, 3918, 3919, 3920, 3921, 3922, 3923, 8908, 11343, 11345, 11346, 11347, 11348, 10842, 21338, 24215, 24573, 24574, 28707, 34938, 36519, 40460, 40461, 49602, 8402, 8403, 8404, 8155, 8266, 12203, 12204, 12205, 22642, 24859, 28717, 34145],
   "EnablePortalsStripNoRecall": true,
   "PortalsStripNoRecallBlockedPortalWcids": [],
@@ -67,6 +67,19 @@
     "BypassOlthoiRecall": true
   },
   "EnableTownNetworkToll": true,
+  "// EnableFacilityHub": "When true: successful Facility Hub Portal Gem (WCID 49563) portal summons increment AchievementUnlocked FacilityFrequenter; /fac teleports to the gem's linked hub after unlock.",
+  "EnableFacilityHub": true,
+  "// FacilityHub": "Stock ACE: FallbackCell + origin/rotation used for /fac when linked portal Destination is not readable as Position (defaults: Val Heel Facility Hub 2.0 @ 0x01300105). Set FallbackCell to 0 to require successful portal resolution only.",
+  "FacilityHub": {
+    "FallbackCell": 19923205,
+    "FallbackOriginX": 17.0096,
+    "FallbackOriginY": -13.6756,
+    "FallbackOriginZ": 0.055,
+    "FallbackRotationW": -0.923071,
+    "FallbackRotationX": 0,
+    "FallbackRotationY": 0,
+    "FallbackRotationZ": -0.384629
+  },
   "EnableVendorPackBurdenRelief": false,
   "VendorPackBurdenMultiplier": 0.95,
   "VendorPackBurdenWcids": [ 166, 136 ],

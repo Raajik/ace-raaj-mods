@@ -64,7 +64,6 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         RefreshEmpyreanAlterationRelocatedPatches();
         RefreshParchmentQuestPatches();
         RefreshAccountAugmentPatches();
-        TrophyBurdenXp.Initialize();
         AccountQuestFlags.Load();
         RepeatQbTracker.Load();
         MomentumSystem.Initialize();
@@ -896,7 +895,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             if (cullMult.HasValue)
                 __instance.RemoveProperty((PropertyFloat)40125);
 
-            // Track final killer XP for WorldEvents Hunt point calculation
+            // Track final killer XP for WorldEvents hunt window points (PropertyInt64 40126 = HuntPropertyIds.PendingGrantedCharacterXp).
             if (xpType == XpType.Kill && huntMult.HasValue && huntMult.Value > 0)
                 __instance.SetProperty((PropertyInt64)40126, total);
         }
@@ -957,21 +956,4 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         MomentumSystem.OnPlayerLogOut(__instance);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Trophy Burden XP (after NPC emotes so pyreal rewards are in CoinValue delta)
-    // ─────────────────────────────────────────────────────────────────────────
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Player), "GiveObjectToNPC", new Type[] { typeof(WorldObject), typeof(WorldObject), typeof(Container), typeof(Container), typeof(bool), typeof(int) })]
-    public static void PreGiveObjectToNPC(Player __instance, WorldObject target, WorldObject item, Container itemFoundInContainer, Container itemRootOwner, bool itemWasEquipped, int amount)
-    {
-        TrophyBurdenXp.OnGiveObjectToNpcPrefix(__instance, target, item, amount);
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Player), "GiveObjectToNPC", new Type[] { typeof(WorldObject), typeof(WorldObject), typeof(Container), typeof(Container), typeof(bool), typeof(int) })]
-    public static void PostGiveObjectToNPC(Player __instance, WorldObject target, WorldObject item, Container itemFoundInContainer, Container itemRootOwner, bool itemWasEquipped, int amount)
-    {
-        TrophyBurdenXp.OnGiveObjectToNpcPostfix(__instance, target, item, amount);
-    }
 }

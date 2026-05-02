@@ -160,7 +160,7 @@ public class Settings
     public RecklessnessCleaveSettings Recklessness { get; set; } = new();
 
     [JsonPropertyName("// EnableSalvage")]
-    public string EnableSalvageDoc { get; init; } = "Salvage skill bonus — auto-deposit to LeyLineLedger bank on item pickup (trained/specialized). Requires LeyLineLedger SalvageBank.Enabled.";
+    public string EnableSalvageDoc { get; init; } = "Salvage skill bonus — auto-deposit to LeyLineLedger bank on item pickup: 50% of intended units if any tinkering skill is trained, 100% if specialized. Requires LeyLineLedger SalvageBank.Enabled.";
     public bool EnableSalvage { get; set; } = false;
 
     [JsonPropertyName("// Salvage")]
@@ -656,12 +656,12 @@ public class LoyaltySettings
 public class SalvageSettings
 {
     [JsonPropertyName("// TrainedPercent")]
-    public string TrainedPercentDoc { get; init; } = "Fraction of salvage units auto-deposited when any tinkering skill is trained (0.25 = 25%).";
-    public double TrainedPercent { get; set; } = 0.25;
+    public string TrainedPercentDoc { get; init; } = "DEPRECATED — Auto-salvage uses fixed 50% trained / 100% specialized of intended units. Kept for JSON compatibility.";
+    public double TrainedPercent { get; set; } = 1.0;
 
     [JsonPropertyName("// SpecializedPercent")]
-    public string SpecializedPercentDoc { get; init; } = "Fraction of salvage units auto-deposited when any tinkering skill is specialized (0.50 = 50%).";
-    public double SpecializedPercent { get; set; } = 0.50;
+    public string SpecializedPercentDoc { get; init; } = "DEPRECATED — see TrainedPercent. Kept for JSON compatibility.";
+    public double SpecializedPercent { get; set; } = 1.0;
 
     [JsonPropertyName("// UnitsPerItem")]
     public string UnitsPerItemDoc { get; init; } = "Units banked per salvage item when no workmanship/structure found.";

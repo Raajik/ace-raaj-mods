@@ -33,6 +33,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 ModManager.Log("QOL: SkillAlterationDevice.GetTotalSpecializedCredits(Player) not found; max-spec patch skipped.", ModManager.LogLevel.Warn);
 
             VendorPackBurdenRelief.TryApplyHarmony(harmony);
+
+            if (Settings?.EnableFacilityHub == true)
+                FacilityHubPortal.ApplyHarmony(harmony);
         }
         catch (Exception ex)
         {
@@ -44,6 +47,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     {
         base.Start();
         Settings = SettingsContainer.Settings ?? new Settings();
+        FacilityHubPortal.CachedSettings = Settings;
 
         var modDir = Path.GetDirectoryName(typeof(PatchClass).Assembly.Location);
         if (string.IsNullOrEmpty(modDir))
@@ -54,7 +58,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         XpTracker.Initialize(modDir);
 
         RegisterEnabledPatchCategories();
-        CollectorsAcceptAll.Initialize();
         VendorLootRotation.Initialize(Settings);
         TryApplyVendorLootRotationPatch();
         ApplyWorldOpenSideEffects();
@@ -200,6 +203,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     public override async Task OnWorldOpen()
     {
         Settings = SettingsContainer.Settings ?? new Settings();
+        FacilityHubPortal.CachedSettings = Settings;
         ApplyWorldOpenSideEffects();
     }
 
@@ -260,8 +264,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             enabledFeatures.Add(Features.PetEx);
         if (Settings.EnablePetExShareDamage && Settings.EnablePetEx)
             enabledFeatures.Add(Features.PetExShareDamage);
-        if (Settings.EnableCollectorsAcceptAll)
-            enabledFeatures.Add(Features.CollectorsAcceptAll);
         if (Settings.EnablePortalsStripNoRecall)
             enabledFeatures.Add(Features.PortalsStripNoRecall);
         if (Settings.EnableBypassPortalRestrictions)
@@ -301,6 +303,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         if (Settings.EnableAutoBuff)
             enabledFeatures.Add(Features.AutoBuff);
+
+        if (Settings.EnableFacilityHub)
+            enabledFeatures.Add(Features.FacilityHub);
 
         ModC.RegisterPatchCategories(enabledFeatures.ToArray());
     }

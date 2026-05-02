@@ -524,11 +524,11 @@ public class Debit
 
         foreach (var item in purchaseItems)
         {
-            // Use GetBuyCost (what player pays to buy) not GetSellCost (what vendor pays when player sells)
-            var cost = __instance.GetBuyCost(item);
+            // ACE naming: GetSellCost = pyreals the player pays to BUY (SellPrice × value). GetBuyCost = vendor payout when the player SELLS (BuyPrice × value).
+            var cost = __instance.GetSellCost(item);
 
             // detect rollover?
-            totalPrice += (uint)cost;
+            totalPrice += cost;
         }
 
         // verify player has enough currency

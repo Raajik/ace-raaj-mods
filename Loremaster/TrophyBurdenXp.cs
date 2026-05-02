@@ -104,6 +104,9 @@ internal static class TrophyBurdenXp
         if (target == null || item == null || player == null)
             return;
 
+        if (giveAmount <= 0)
+            return;
+
         var targetWcid = target.WeenieClassId;
         if (!TrophyCollectors.ContainsKey(targetWcid))
             return;
@@ -116,8 +119,8 @@ internal static class TrophyBurdenXp
         }
 
         var stackSize = Math.Max(1, item.StackSize ?? 1);
-        // ACE validates giveAmount <= stack before this chain; clamp defensively.
-        var units = giveAmount <= 0 ? stackSize : Math.Min(giveAmount, stackSize);
+        // ACE validates giveAmount <= stackSize before transfer; clamp defensively.
+        var units = Math.Min(giveAmount, stackSize);
 
         // Minimum value threshold per unit — blocks cheap vendor items (stack Value is total in ACE)
         var minValue = settings.TrophyMinBuyValue;

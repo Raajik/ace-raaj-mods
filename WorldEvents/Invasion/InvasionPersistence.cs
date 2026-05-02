@@ -4,8 +4,9 @@ namespace WorldEvents;
 
 internal static class InvasionPersistence
 {
-    static readonly string DataDir = Path.Combine("Data", "Invasion");
+    static readonly string DataDir = Path.Combine(ModManager.ModPath, "WorldEvents", "Data", "Invasion");
     static readonly string ActiveFile = Path.Combine(DataDir, "ActiveInvasion.json");
+    static readonly string LegacyCwdFile = Path.Combine(Environment.CurrentDirectory, "Data", "Invasion", "ActiveInvasion.json");
 
     static readonly JsonSerializerOptions _json = new() { WriteIndented = true };
 
@@ -16,9 +17,30 @@ internal static class InvasionPersistence
     {
         try
         {
-            if (!File.Exists(ActiveFile)) return null;
-            var text = File.ReadAllText(ActiveFile);
-            return JsonSerializer.Deserialize<ActiveInvasionData>(text, _json);
+            if (File.Exists(ActiveFile))
+            {
+                var text = File.ReadAllText(ActiveFile);
+                return JsonSerializer.Deserialize<ActiveInvasionData>(text, _json);
+            }
+
+            if (File.Exists(LegacyCwdFile))
+            {
+                var text = File.ReadAllText(LegacyCwdFile);
+                var data = JsonSerializer.Deserialize<ActiveInvasionData>(text, _json);
+                if (data != null)
+                    SaveActiveInvasion(data);
+                try
+                {
+                    File.Delete(LegacyCwdFile);
+                }
+                catch
+                {
+                }
+
+                return data;
+            }
+
+            return null;
         }
         catch (Exception ex)
         {
@@ -29,7 +51,11 @@ internal static class InvasionPersistence
 
     internal static void SaveActiveInvasion(ActiveInvasionData data)
     {
-        try { File.WriteAllText(ActiveFile, JsonSerializer.Serialize(data, _json)); }
+        try
+        {
+            EnsureDirectories();
+            File.WriteAllText(ActiveFile, JsonSerializer.Serialize(data, _json));
+        }
         catch (Exception ex)
         {
             ModManager.Log($"[Invasion] Failed to save active invasion: {ex.Message}", ModManager.LogLevel.Warn);

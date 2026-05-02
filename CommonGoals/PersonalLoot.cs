@@ -102,7 +102,7 @@ internal static class PersonalLoot
             // Tag the owner so only they (or admin) can loot it.
             corpse.SetProperty((PropertyDataId)(int)CGProps.PersonalCorpseOwner, owner.Guid.Full);
 
-            // Generate loot via SharedLoot LootRoller.
+            // Generate loot via BetterLootControl LootRoller (SharedLoot namespace).
             int tier = cfg.LootTierOverride > 0 ? cfg.LootTierOverride : ResolveLootTier(source);
             if (lootConfig is not null)
             {

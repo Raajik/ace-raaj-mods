@@ -72,7 +72,7 @@ Single index of tracked work. **Mod notes below were merged from former per-mod 
 | **BetterSupportSkills** | TrophyDrops creature filtering | Validates creature WCID before dropping quest trophies. Configurable `DropChance` (default 1%). Champion/special mobs drop stacks of 1–8. |
 | **AutoLoot / SQL** | Stackable quest items | Olthoi Ichor (10864) and Dark Revenant Thighbone (7045) now stack to 100. Weenie + biota cleanup applied. |
 | **LeyLineLedger** | Vendor sell rate reduction | `EnableVendorSellRateReduction` (default true) + `VendorSellRateMultiplier` (default 0.03). Harmony postfix on `Vendor.BuyPrice` getter reduces the property value itself — client sell UI (`GameEventApproachVendor`) and server payouts (`GetBuyCost`) both see the reduced rate. |
-| **SharedLoot** | Trade note reorganization | Smaller denominations (100–25,000) added to `common` with stacks 1–10. Notes ≥50k moved to `rare` (50k–100k) and `extremelyRare` (150k–250k). All trade notes use `stackSizeMin=1, stackSizeMax=10`. |
+| **BetterLootControl** (`LootConfig.json`) | Trade note reorganization | Smaller denominations (100–25,000) added to `common` with stacks 1–10. Notes ≥50k moved to `rare` (50k–100k) and `extremelyRare` (150k–250k). All trade notes use `stackSizeMin=1, stackSizeMax=10`. |
 - **Done (2026-04-27):** **LeyLineLedger robustness** — Startup weenie validation (`ValidateWeeniesAtStartup`), runtime null guards for missing weenies, and graceful skipping of missing vendor merchandise items.
 - **Done (2026-04-27):** **Solo Competitor Bonus** *(WorldEvents)* — `SoloCompetitorBonus` settings and cross-event implementation granting bonus rewards when a single competitor dominates an event.
 - **Done (2026-04-27):** **Unified QB Ledger** *(WorldEvents)* — Shared `ParticipationLedger` service unifying account participation tracking across BonusQuest and all event types.
@@ -325,7 +325,7 @@ Burn down from the top; later items need more design or ACE integration.
 
 | Feature | Description |
 |---------|-------------|
-| **Gear Pool in SharedLoot** *(SharedLoot / BetterChestLoot)* | New `gear` category in `DefaultLootConfig.cs` with 25 verified base item WCIDs (melee, missile, casters, armor, shields, jewelry incl. Elysa's Favor 14452-14487 and Baron's Amulet 7886). `GearChance = 0.25` independent roll. `LootRoller.TryCreateGearItem` reflection-bridges to `LivingEquipment.LootMutator.ApplyToLootItem` if loaded. BetterChestLoot adds gear as bonus item on top of normal 1-3 guaranteed drops. |
+| **Gear Pool in BetterLootControl** | New `gear` category in `DefaultLootConfig.cs` with 25 verified base item WCIDs (melee, missile, casters, armor, shields, jewelry incl. Elysa's Favor 14452-14487 and Baron's Amulet 7886). `GearChance = 0.25` independent roll. `LootRoller.TryCreateGearItem` reflection-bridges to EmpyreanAlteration mutators when loaded. BLC adds gear as bonus item on top of normal 1-3 guaranteed chest drops. |
 | **LivingEquipment Imbue Fixes** *(LivingEquipment)* | `ApplyWeaponImbue`: checks `AllRendingFlags` first (no multiple rends), handles `DamageType` bitmasks via bitwise AND, converts `DamageType` to match rend imbue after application. `UpdateUiEffectsForImbue`: now reads actual `PropertyInt.ImbuedEffect` instead of `DamageType` so Fire=Fire glow, Cold=Frost glow, Acid=Acid glow, Electric=Lightning glow. `ApplyToLootItem`: idempotency guard via `PreImbuedCount > 0`. |
 | **QOL AutoBuff Spell ID Fix** *(QOL)* | `GemBuffSpellIds` had wrong IDs: `2244` (Web of Defense, not Blackmoor's Favor) and `31001` (non-existent). Corrected to `3811` (Blackmoor's Favor) and `3810` (Asheron's Benediction). Root cause: comment and code had drifted from actual DB spell IDs. |
 | **QOL VendorLootRotation Selective Clear** *(QOL)* | `RotateVendorInventory` no longer calls `vendor.DefaultItemsForSale.Clear()`. Instead: removes previously rotated items (tracked in `_vendorRotatedItems`), strips any equipment (Armor/Melee/Missile/Caster) that slipped through `VendorInventoryFilter`, leaves all vanilla non-equipment stock (healing kits, arrows, quest items, etc.) intact. |
@@ -374,7 +374,7 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
    - **Keep calling into:** `EmpyreanAlteration` for item mutation (pre-awaken, pre-imbue) via existing reflection bridge. Do NOT absorb EA.
    - **New callers:** Any mod needing bonus loot pools (Loremaster repeat-solve, Lockboxes, WorldEvents placement rewards) references `BetterLootControl` instead of `SharedLoot`.
    - **Migration completed:** Scaffolded folder, migrated SharedLoot files (preserved `namespace SharedLoot` for zero C# changes in dependents), merged BCL patches into `BetterLootControl/PatchClass.cs` + `GlobalRareDrops.cs`, updated `Loremaster.csproj`, `CommonGoals.csproj`, `WorldEvents.csproj`, disabled old mods in `Meta.json`. Built + deployed to test server; verified clean startup (BLC Active, BCL Disabled).
-   - **Remaining (Phase 8):** Delete `SharedLoot/` and `BetterChestLoot/` folders after live migration period.
+   - **Phase 8 (2026-05-02):** Removed `SharedLoot/` and `BetterChestLoot/` from the repository; only `BetterLootControl/` ships the loot stack.
 
 2. **LivingEquipment → EmpyreanAlteration Full Absorption** — **DONE (2026-05-01)**
    - **Goal:** Delete `LivingEquipment/` mod entirely. All remaining functionality absorbed into `EmpyreanAlteration`.
@@ -394,11 +394,11 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
    - **`LivingEquipment/` folder deleted.** All affected mods build clean (EA, BLC, QOL, Swarmed).
    - **Property ownership:** EA now owns all 40130/40131/40132/11033/11034 constants.
 
-3. **Salvage Pool Split + Guaranteed Chest Drops** *(SharedLoot/BetterChestLoot)* — **DONE (2026-05-01)**
+3. **Salvage Pool Split + Guaranteed Chest Drops** *(BetterLootControl)* — **DONE (2026-05-01)**
    - Split `salvage` into `salvage` (regular), `imbueSalvage`, `foolproofImbueSalvage` pools.
    - `DefaultLootConfig.cs`: Moved imbue WCIDs to new pools. Removed foolproof from `rare`. Added 46441 Boxed Augmentation Gem to `extremelyRare`.
    - `LootRoller.cs`: `TryCreateSalvageItem` (guaranteed), `TryCreateImbueSalvageItem` (25%), `TryCreateFoolproofImbueSalvageItem` (5%). Foolproof stacking bug fixed — foolproof items never get `MaxStackSize` set.
-   - `BetterChestLoot/PatchClass.cs`: Guaranteed 1 regular salvage + 1-3 common+ items + 25% imbue + 5% foolproof + 25% gear.
+   - `BetterLootControl/PatchClass.cs`: Guaranteed 1 regular salvage + 1-3 common+ items + 25% imbue + 5% foolproof + 25% gear.
    - `Loremaster/LootConfig.json`: Synced runtime config with all new pools and chances.
    - Built, deployed to test server, verified.
 
@@ -428,16 +428,9 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
    - **Alternative (simpler but requires injection changes):** Move mod-injected items to `UniqueItemsForSale` instead of `DefaultItemsForSale`. ACE already transfers actual WOs for unique items (properties preserved + auto-removed after purchase). Requires LivingEquipment and QOL injection code changes.
    - **Settings:** `EnableVendorItemPreservation` (default true), `EnableVendorOneOffModdedItems` (default true).
 
-2. **~~BetterChestLoot → BetterLootControl Migration + Rare Global Drops~~** *(BetterChestLoot)* — **DONE**
-   - `BetterChestLoot/Features/GlobalRareDrops.cs`: 0.5% chance for SpellSiphon tool (850200) and Mana Lattice (850201) on creature corpses with DeathTreasure.
-   - **Goal:** Evolve BetterChestLoot from a chest-only guaranteed-drop system into an immutable "loot editing" mod that modifies ALL loot sources (chests, creatures, vendors).
-   - **Rename:** Mod folder stays `BetterChestLoot` for now; document rename to `BetterLootControl` in backlog. After rewrite, `.csproj` AssemblyName changed, new `Meta.json` added, old folder deprecated.
-   - **Feature: Global Rare Drops** — Add SpellSiphon tool (WCID 850200) and Mana Lattice (WCID 850201) as rare drops on creature corpses.
-     - Roll once per `Creature.GenerateTreasure` when creature has a valid `DeathTreasure` profile (i.e. anywhere an Encapsulated Spirit could drop).
-     - Chance: configurable `RareDropChance` default **0.005** (0.5%). Each item rolls independently.
-     - Items drop directly into corpse inventory via `corpse.TryAddToInventory()`.
-     - Both items remain vendor-purchasable for players with excess cash.
-   - **File:** `BetterChestLoot/Features/GlobalRareDrops.cs` (new), patch via postfix on `Creature.GenerateTreasure`.
+2. **~~BetterChestLoot → BetterLootControl Migration + Rare Global Drops~~** — **DONE**
+   - Implemented in `BetterLootControl/GlobalRareDrops.cs`: configurable chance for SpellSiphon tool (850200) and Mana Lattice (850201) on creature corpses with DeathTreasure (postfix on `Creature.GenerateTreasure`).
+   - Legacy `BetterChestLoot/` and `SharedLoot/` repo folders removed 2026-05-02; only `BetterLootControl` ships.
 
 3. **~~Arcane Lore → Adaptation Rework~~** *(BetterSupportSkills)* — **DONE**
    - Spell dodge moved to `MissileDefenseBuffs.cs` (50% trained / 100% spec skill value).
@@ -514,7 +507,7 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
 
 7. **Global Invasion Counter / World Boss** *(WorldEvents)* — Track cumulative kills across ALL towns in a wave. If the wave timer expires and all per-town bosses were killed (full defense success), spawn a rare world boss at a random central location with unique loot. If the wave expires with bosses still alive (failed defense), apply a temporary global debuff or spawn extra-hard reinforcements. Requires per-town kill tracking (Phase 1) as prerequisite.
 8. **Loyalty Void Streak** *(BetterSupportSkills)* — Minions auto-cast on hit (L1 trained / L4 spec)
-9. **House Chest Upgrades** *(Lockboxes/BetterChestLoot)* — +10 slots via MMDs + writs
+9. **House Chest Upgrades** *(Lockboxes / BetterLootControl)* — +10 slots via MMDs + writs
 10. **Burden-% Backpacks** *(EmpyreanAlteration/Numbersmith)* — Worn bags reduce burden by percentage
 11. **Catlons Currency** *(LeyLineLedger or new mod)* — Tradeable XP/lum multiplier + augment purchase
 12. **Global XP Bank** *(LeyLineLedger or new mod)* — Common cause contributions + unused passup
@@ -621,7 +614,7 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
 - **Kill target:** `TargetCreatureWcid` fixed, **or** legacy `KillTargetCreatureWcidPool` (uniform), **or** **`KillTargetWeightedPool`** — `CreatureWcid`, `Weight`, `Rare`. Same rare/weight rules. If the rolled target is **rare** and template `KillCount > 1`, **effective kill count is 1** for that contract (`RuntimeKillTargetRare` on player).
 - **Fetch:** `FetchItemWcid` (legacy, count 1) **or** **`FetchItemWeightedPool`** — `Wcid`, `Weight`, `Rare`, `StackMin` / `StackMax` (rolled at start). Runtime `RuntimeFetchItemWcid` + `RuntimeFetchItemCount` on player; Town Crier consumes that stack.
 - **Objective text:** Short player-facing lines: creature/item **names** where possible (weenie lookup), clear **where** and **what**; avoid raw WCID-only lines except as fallback.
-- Tier XP + `GrantRepeatSolveLoot` (keys `LMParchmentTierEasy` / `Average` / `Challenging` — loot uses `Mods/Loremaster/LootConfig.json`, same default as BetterChestLoot).
+- Tier XP + `GrantRepeatSolveLoot` (keys `LMParchmentTierEasy` / `Average` / `Challenging` — loot uses `Mods/Loremaster/LootConfig.json`, same default pool as BetterLootControl).
 - Do not reuse **LeyLineLedger** luminance gem WCIDs for parchment **gems**.
 
 ### Swarmed

@@ -98,10 +98,10 @@ When `BypassPortalMaxLevelRestriction` is true, ACE’s portal **max level** che
 
 ### Repeat Solve Bonus Loot
 
-On every repeat solve (second completion onward) of a quest, one item is rolled from the loot pool in **`Mods/Loremaster/LootConfig.json`** (same file and tier chances **BetterChestLoot** uses by default). If the inventory is full, the item drops at their feet with a notification.
+On every repeat solve (second completion onward) of a quest, one item is rolled from the loot pool in **`Mods/Loremaster/LootConfig.json`** (same file and tier chances **BetterLootControl** uses for chests and other bonus loot). If the inventory is full, the item drops at their feet with a notification.
 
-- Edit **rarity weights** (`extremelyRareChance`, `rareChance`, `uncommonChance`) and **tier item lists** (`common` / `uncommon` / `rare` / `extremelyRare`) in that JSON beside the Loremaster mod folder; both mods read it at startup and reload when the file changes.
-- Optional `LootConfigPath` in Loremaster or BetterChestLoot `Settings.json` overrides the default `LootConfig.json` location.
+- Edit **rarity weights** (`extremelyRareChance`, `rareChance`, `uncommonChance`) and **tier item lists** (`common` / `uncommon` / `rare` / `extremelyRare`) in that JSON beside the Loremaster mod folder; Loremaster and BetterLootControl read it at startup and reload when the file changes.
+- Optional `LootConfigPath` in Loremaster or BetterLootControl `Settings.json` overrides the default `LootConfig.json` location.
 - Toggle with `EnableRepeatSolveLoot` in Loremaster `Settings.json`.
 
 ---
@@ -363,9 +363,9 @@ All settings live in `Settings.json` in the mod folder. The file is auto-generat
 
 ---
 
-## LootConfig.json (with BetterChestLoot)
+## LootConfig.json (shared with BetterLootControl)
 
-**BetterChestLoot** uses the same `LootConfig.json` by default (`Mods/Loremaster/LootConfig.json`). The JSON root defines **tier probabilities** (`extremelyRareChance`, `rareChance`, `uncommonChance`; remainder goes to `common`) and four tier buckets, each with `items` (WCIDs) and optional `stackSizeChance` for double stacks.
+**BetterLootControl** uses the same `LootConfig.json` by default (`Mods/Loremaster/LootConfig.json`). The JSON root defines **tier probabilities** (`extremelyRareChance`, `rareChance`, `uncommonChance`; remainder goes to `common`) and four tier buckets, each with `items` (WCIDs) and optional `stackSizeChance` for double stacks.
 
 Repo path: `Loremaster/LootConfig.json` (copies next to `Loremaster.dll` on build).
 

@@ -45,7 +45,7 @@ public partial class PatchClass
     // MOVED to LLL reflection bridge to avoid Harmony conflict with LLL's PreFinalizeBuyTransaction.
     // See WorldEventsBridge.cs in LeyLineLedger.
 
-    // ── Loot enhancement: boost values + bonus SharedLoot items ──────────
+    // ── Loot enhancement: boost values + bonus loot-table items (BLC) ─────
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Creature), nameof(Creature.GenerateTreasure),
@@ -70,7 +70,7 @@ public partial class PatchClass
             }
         }
 
-        // Add bonus SharedLoot items
+        // Add bonus loot-table items (BetterLootControl / SharedLoot namespace)
         if (s.SaleLootBonusItems <= 0) return;
 
         if (!Enum.TryParse<LootRarityFloor>(s.SaleLootBonusRarity, true, out var floor))

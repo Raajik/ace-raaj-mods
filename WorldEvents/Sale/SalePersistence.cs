@@ -4,8 +4,9 @@ namespace WorldEvents;
 
 internal static class SalePersistence
 {
-    static string DataDir => Path.Combine(ModManager.ModPath, "Data", "Sale");
+    static string DataDir => Path.Combine(ModManager.ModPath, "WorldEvents", "Data", "Sale");
     static string ActiveSalePath => Path.Combine(DataDir, "ActiveSale.json");
+    static string LegacyActiveSalePath => Path.Combine(ModManager.ModPath, "Data", "Sale", "ActiveSale.json");
 
     internal static void EnsureDirectories() => Directory.CreateDirectory(DataDir);
 
@@ -14,9 +15,30 @@ internal static class SalePersistence
         EnsureDirectories();
         try
         {
-            if (!File.Exists(ActiveSalePath)) return null;
-            var json = File.ReadAllText(ActiveSalePath);
-            return JsonSerializer.Deserialize<ActiveSaleData>(json);
+            if (File.Exists(ActiveSalePath))
+            {
+                var json = File.ReadAllText(ActiveSalePath);
+                return JsonSerializer.Deserialize<ActiveSaleData>(json);
+            }
+
+            if (File.Exists(LegacyActiveSalePath))
+            {
+                var json = File.ReadAllText(LegacyActiveSalePath);
+                var data = JsonSerializer.Deserialize<ActiveSaleData>(json);
+                if (data != null)
+                    SaveActiveSale(data);
+                try
+                {
+                    File.Delete(LegacyActiveSalePath);
+                }
+                catch
+                {
+                }
+
+                return data;
+            }
+
+            return null;
         }
         catch (Exception ex)
         {

@@ -30,7 +30,7 @@ jobs:
       - name: Build mods
         shell: pwsh
         run: |
-          $exclude = @('tools','AceModQa','Shared','SharedLoot','.git','.github','.references','docs','Work-In-Progress','.claude','.cursor')
+          $exclude = @('tools','AceModQa','Shared','.git','.github','.references','docs','Work-In-Progress','.claude','.cursor')
           $mods = Get-ChildItem -Path . -Directory | Where-Object { $exclude -notcontains $_.Name }
           $built = @()
           foreach ($mod in $mods) {

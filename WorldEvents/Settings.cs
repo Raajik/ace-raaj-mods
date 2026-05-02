@@ -95,7 +95,7 @@ public sealed class Settings
     public int HuntLeaderboardTopCount { get; set; } = 10;
 
     [JsonPropertyName("// HuntGrantLootTableRolls")]
-    public string HuntGrantLootTableRollsDoc { get; init; } = "When true, at hunt end grant random loot rolls from SharedLoot LootConfig (same table as Loremaster repeat-loot / BetterChestLoot).";
+    public string HuntGrantLootTableRollsDoc { get; init; } = "When true, at hunt end grant random loot rolls from BetterLootControl LootConfig (same table as Loremaster repeat-loot).";
     public bool HuntGrantLootTableRolls { get; set; } = true;
 
     [JsonPropertyName("// HuntLootNote")]
@@ -364,7 +364,7 @@ public sealed class Settings
     public int InvasionBossLootTopN { get; set; } = 5;
 
     [JsonPropertyName("// InvasionGrantLoot")]
-    public string InvasionGrantLootDoc { get; init; } = "When true, distribute SharedLoot items to participants at boss kill and wave end.";
+    public string InvasionGrantLootDoc { get; init; } = "When true, distribute BetterLootControl loot-table items to participants at boss kill and wave end.";
     public bool InvasionGrantLoot { get; set; } = true;
 
     [JsonPropertyName("// InvasionIdleTimeoutMinutes")]
@@ -615,7 +615,7 @@ public sealed class Settings
     public double SaleLootValueMultiplier { get; set; } = 1.5;
 
     [JsonPropertyName("// SaleLootBonusItems")]
-    public string SaleLootBonusItemsDoc { get; init; } = "Extra SharedLoot items added to each creature corpse in a sale landblock. 0 = disabled.";
+    public string SaleLootBonusItemsDoc { get; init; } = "Extra loot-table items (BetterLootControl) added to each creature corpse in a sale landblock. 0 = disabled.";
     public int SaleLootBonusItems { get; set; } = 1;
 
     [JsonPropertyName("// SaleLootBonusRarity")]

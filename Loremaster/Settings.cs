@@ -104,7 +104,7 @@ public class Settings
     };
 
     [JsonPropertyName("// EnableRepeatSolveLoot")]
-    public string EnableRepeatSolveLootDoc { get; init; } = "When true, award loot on repeat solves (2nd+) from LootConfig.json (same table as BetterChestLoot by default).";
+    public string EnableRepeatSolveLootDoc { get; init; } = "When true, award loot on repeat solves (2nd+) from LootConfig.json (same default pool as BetterLootControl chest/repeat loot).";
     public bool EnableRepeatSolveLoot { get; set; } = true;
 
     [JsonPropertyName("// EnableRepeatRewardOnceOnly")]

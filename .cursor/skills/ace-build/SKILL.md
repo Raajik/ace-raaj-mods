@@ -54,6 +54,7 @@ Use this skill in this repository when:
      - `ChallengeModes/ChallengeModes.csproj`
      - `AureatePath/AureatePath.csproj`
      - `AutoLoot/AutoLoot.csproj`
+     - `BetterLootControl/BetterLootControl.csproj`
      - `EmpyreanAlteration/EmpyreanAlteration.csproj`
      - `EasyServerSettings/EasyServerSettings.csproj`
      - `Gemcrafter/Gemcrafter.csproj`
@@ -63,7 +64,7 @@ Use this skill in this repository when:
      - `Overtinked/Overtinked.csproj`
      - `QOL/QOL.csproj`
      - `Swarmed/Swarmed.csproj`
-     - `Swarmed/Swarmed.csproj`
+     - `WorldEvents/WorldEvents.csproj`
 
 5. **Reporting results**
    - After running the builds, summarize succinctly:

@@ -437,7 +437,7 @@ public class ActivePoiHuntData
 5. **Event End (`PoiHuntRuntime.EndEvent`)**
    - Despawn all Zahirs (iterate `Rounds`, call `Destroy()` on each narrator object).
    - Rank players by `PlayerFindCounts`.
-   - Top `LootForTopN` get `SharedLoot.LootRoller` with rarity floor.
+   - Top `LootForTopN` get BetterLootControl's `LootRoller` (`SharedLoot` namespace) with rarity floor.
    - All participants get `XpPerFind * findCount`.
    - Broadcast results.
    - Save persistence.
@@ -605,7 +605,7 @@ public uint SelectTargetItem()
 3. If yes:
    - Consume item via `InventoryHelpers.TryRemoveOneFromPlayer()`.
    - Award QB via `ParticipationLedger.RecordCompletion(..., "ScavengerHunt", $"ScavengerHunt_{EventId}_Round{CurrentRound}")`.
-   - Award `SharedLoot` (Uncommon+ floor).
+   - Award loot-table rolls via BetterLootControl (Uncommon+ floor).
    - Award `XpPerTurnIn`.
    - Advance to next target.
    - Broadcast: *"Lorewalker Zahir accepts the [ItemName]! He now seeks [NextItemName]!"*

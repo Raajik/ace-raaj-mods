@@ -34,7 +34,7 @@ Server-side corpse autoloot using `.utl` profiles (compatible with Decal UT clas
 - `/autoloot` toggles and profile selection.
 
 ### BetterLootControl
-Consolidated loot-table control replacing `SharedLoot` + `BetterChestLoot`.
+Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot` chest mod; those folders removed from the repo).
 - **Chest guaranteed drops** — adds salvage, trade notes, healing kits, keys, crystals, and gear to treasure chests.
 - **Global rare drops** — SpellSiphon tool and Mana Lattice have a small chance to drop from any creature with a treasure profile.
 - **Salvage bag shaping** — auto-shapes dropped salvage bags to 100-unit stacks.
@@ -182,7 +182,7 @@ Use `/worldevents` or `/we` in-game for status and schedules.
 |------|------|
 | `AceModQa/` | Shared QA and test helpers referenced by some mod projects. Not loaded as a server mod. |
 | `tools/` | Standalone utilities: `DecalQaRunner`, `LinearSync`, `AceServerStringRef`. Not server mods. |
-| `BetterLootControl/` | Consolidated loot-table system (chest drops, rare drops, salvage shaping). Replaces `SharedLoot` + `BetterChestLoot`. Must be enabled if any dependent mod is active. |
+| `BetterLootControl/` | Consolidated loot-table system (chest drops, rare drops, salvage shaping). Ships the `SharedLoot` namespace inside this assembly for Loremaster / WorldEvents / CommonGoals. Must be enabled if any dependent mod is active. |
 
 ---
 

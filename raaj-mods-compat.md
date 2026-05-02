@@ -122,20 +122,18 @@ The following table covers every `[HarmonyPatch]` target across all 24 mods. Eve
 | **AchievementUnlocked** | Patches Player, Creature.Die, QuestManager — all unchanged |
 | **AureatePath** | Patches Enlightenment, WorldObject.CheckUseRequirements — all unchanged |
 | **AutoLoot** | Patches Player, Container, manually patches GenerateTreasure — all unchanged |
-| **BetterChestLoot** | Patches WorldObject.SelectAProfile, Chest — all unchanged |
+| **BetterLootControl** | Patches WorldObject.SelectAProfile, Chest, creature treasure — consolidates former BetterChestLoot + SharedLoot |
 | **BetterKeys** | AccessTools patches on LockHelper, UnlockerHelper, Key, Chest — all unchanged |
 | **ChallengeModes** | Patches Player.PlayerEnterWorld + PatchCategory system — all unchanged |
 | **CommonGoals** | Uses `PatchAll` for auto-discovery; no known breaking targets |
 | **CustomSpells** | No Harmony patches; uses ACE.Database + ACE.DatLoader |
 | **EasyServerSettings** | No Harmony patches |
-| **EmpyreanAlteration** | Patches LootGenerationFactory.CreateAndMutateWcid — signature unchanged |
+| **EmpyreanAlteration** | Patches LootGenerationFactory.CreateAndMutateWcid; absorbed LivingEquipment (item XP, awaken, living-item hooks) — see EA readme for targets |
 | **LeyLineLedger** | Patches Player.OnDeath, GetNumCoinsDropped, Gem.UseGem, PlayerEnterWorld — all unchanged |
-| **LivingEquipment** | Patches WorldObject.AddItemXP, ItemLevel getter, ExperienceSystem — all unchanged |
 | **Lockboxes** | Uses dynamic reflection patching; no known breaking targets |
 | **Numbersmith** | Uses PatchCategory only; no known breaking targets |
 | **Overtinked** | Patches RecipeManager.VerifyRequirements, TryMutate, HandleRecipe — all unchanged |
 | **QOL** | Uses AccessTools manually; no GetLandblock calls; targets unchanged |
-| **SharedLoot** | No PatchClass; no Harmony patches |
 | **SpellSiphon** | Manual hooks; no known breaking targets |
 | **Swarmed** | Patches Creature.Die + PatchCategory for variation/scaling — all unchanged |
 | **ValheelContent** | Patches 25+ factory table methods + LootGenerationFactory.CreateRandomLootObjects — all present and unchanged |

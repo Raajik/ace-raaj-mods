@@ -88,6 +88,12 @@ Substitute `C:\ACE\` for test. **Always verify with `tasklist | grep ACE.Server`
 powershell -Command "Get-Process ACE.Server -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Seconds 3"
 ```
 
+**Clear logs before every restart:** Old log output buries the current session's errors and misleads debugging. Always truncate before starting:
+```powershell
+$ > "C:\ACE-WB\Server\ACE_Log.txt"   # live
+$ > "C:\ACE\Server\ACE_Log.txt"      # test
+```
+
 **Port collision:** ACE binds `Port` and `Port+1`. Test on 9000, live on 9002 (not 9001). Always separate by ≥2 ports.
 
 **Verify deployed DLL timestamps before restarting:** After `dotnet build`, output goes to `C:\ACE\Mods\`. If you run two servers, copying DLLs to the wrong directory or forgetting to copy causes the old build to run. Always `ls -la` the deployed DLL and confirm mtime matches repo build.

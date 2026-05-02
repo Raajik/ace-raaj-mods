@@ -221,7 +221,7 @@ public class Settings
     public bool EnableOverrideCheckUseRequirements { get; set; } = false;
 
     [JsonPropertyName("// EnableTrophyBurdenXp")]
-    public string EnableTrophyBurdenXpDoc { get; init; } = "Award bonus XP when turning in trophies to a listed collector, scaled per item by burden (StackUnitEncumbrance when stacked) and multiplied by the number of items given in one action. Many collectibles have 0 encumbrance in data; use TrophyEncumbranceWhenZero for those.";
+    public string EnableTrophyBurdenXpDoc { get; init; } = "Award bonus XP after a successful NPC give to a listed collector (Harmony on GiveObjectToNPC, post-emote), scaled per item by burden (StackUnitEncumbrance when stacked) and per unit given. Player message combines total XP with CoinValue delta (pyreals from emotes) when nonzero. Many collectibles have 0 encumbrance; use TrophyEncumbranceWhenZero.";
     public bool EnableTrophyBurdenXp { get; set; } = false;
 
     [JsonPropertyName("// TrophyEncumbranceWhenZero")]
@@ -266,7 +266,7 @@ public class Settings
     public List<uint> TrophyBlacklistWcids { get; set; } = new();
 
     [JsonPropertyName("// TrophyLogEnabled")]
-    public string TrophyLogEnabledDoc { get; init; } = "When true, append every trophy turn-in to Data/TrophyLog.jsonl for analytics and blacklist building.";
+    public string TrophyLogEnabledDoc { get; init; } = "When true, append every trophy turn-in to Data/TrophyLog.jsonl (includes pyrealDelta vs snapshot before give) for analytics and blacklist building.";
     public bool TrophyLogEnabled { get; set; } = false;
 
     [JsonPropertyName("// BarkeeperParchments")]

@@ -129,7 +129,7 @@
     "TierChallengingXpPercentMax": 2.5,
     "ParchmentTemplates": []
   },
-  "// EnableTrophyBurdenXp": "Award bonus XP for trophy/collectible turn-ins to a listed collector, scaled per item by burden (unit encumbrance for stacks) and multiplied by stack count given in one action; zero-burden weenies use TrophyEncumbranceWhenZero.",
+  "// EnableTrophyBurdenXp": "After successful NPC give (post-emote), award burden-scaled XP per unit; chat combines total XP with pyreal CoinValue delta when nonzero. Zero-burden weenies use TrophyEncumbranceWhenZero.",
   "EnableTrophyBurdenXp": true,
   "// TrophyQualityBonusChance": "Per trophy item in one give: chance (0–1) for Quality — 2× that item's burden XP. Independent roll per unit. If Pristine also rolls on that unit, chat shows Perfect (6×); no third roll.",
   "TrophyQualityBonusChance": 0.10,
@@ -145,7 +145,7 @@
   "TrophyMinBuyValue": 0,
   "// TrophyBlacklistWcids": "WCIDs permanently blocked from earning trophy burden XP (e.g. cheap vendor items like Oil of Rendering, spell Foci).",
   "TrophyBlacklistWcids": [],
-  "// TrophyLogEnabled": "Append every turn-in to Data/TrophyLog.jsonl for blacklist analytics.",
+  "// TrophyLogEnabled": "Append every turn-in to Data/TrophyLog.jsonl (includes pyrealDelta) for analytics.",
   "TrophyLogEnabled": true,
   "// EnableAchievementTiers": "Track per-character achievement tier (LMInt 11050) gating features in QOL, AutoLoot, and CommonGoals.",
   "EnableAchievementTiers": true,

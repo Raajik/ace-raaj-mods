@@ -100,7 +100,7 @@ Copy an existing gameplay mod in this repo (e.g. **Swarmed**, **Loremaster**). I
 
 ### Loremaster trophy burden XP
 
-- **`TrophyBurdenXp`:** per trophy **unit** in a give action, independent rolls (**Quality** 2×, **Pristine** 3×; if both hit on one unit = **Perfect** 6×); XP sums `perUnitBase × mult` over stack count; **`ThreadSafeRandom.Next(0.0f, 1.0f)`** vs configured chances; multi-item chat summarizes counts.
+- **`TrophyBurdenXp`:** Harmony **prefix/postfix on `Player.GiveObjectToNPC`** (after NPC emotes) so **`CoinValue` delta** can include pyreals from turn-in. Per trophy **unit**, independent rolls (**Quality** 2×, **Pristine** 3×; both on one unit = **Perfect** 6×); XP sums `perUnitBase × mult`; chat: `You receive {XP} XP[ and {delta} pyreals] from turning in {list}. (~% of level to next — roll summary){burden}.` with tier lines like `Quality {Name} (x3)`; **`TrophyLog.jsonl`** includes `pyrealDelta`.
 
 ## Compact player chat
 

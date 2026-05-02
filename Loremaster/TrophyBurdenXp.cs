@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using ACE.Entity;
+using System.Linq;
+using System.Text;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Server.Entity;
@@ -15,6 +16,22 @@ internal static class TrophyBurdenXp
     private static readonly ConcurrentDictionary<uint, bool> _blacklist = new();
     private static string? _logPath;
     private static readonly object _logLock = new();
+
+    [ThreadStatic]
+    private static TrophyGiveSnapshot? _pendingGive;
+
+    private sealed class TrophyGiveSnapshot
+    {
+        public long CoinBefore;
+        public int StackBefore;
+        public int PlannedUnits;
+        public uint ItemWcid;
+        public string ItemName = "";
+        public int ItemValueSnapshot;
+        public bool IsAttuned;
+        public double PercentOfLevel;
+        public string BurdenNote = "";
+    }
 
     private static void DebugLog(string msg)
     {
@@ -96,37 +113,49 @@ internal static class TrophyBurdenXp
         }
     }
 
-    public static void HandleGiveRequest(Player player, WorldObject? target, WorldObject? item, int giveAmount)
+    // Runs before RemoveItemForGive / emotes; records coin and item stats so postfix can award XP and include pyreal delta after NPC emotes.
+    public static void OnGiveObjectToNpcPrefix(Player player, WorldObject target, WorldObject item, int amount)
     {
+        _pendingGive = null;
+
         var settings = PatchClass.Settings;
         if (settings?.EnableTrophyBurdenXp != true)
             return;
 
-        if (target == null || item == null || player == null)
+        if (player == null || target == null || item == null)
             return;
 
-        if (giveAmount <= 0)
+        if (amount <= 0)
             return;
 
-        var targetWcid = target.WeenieClassId;
-        if (!TrophyCollectors.ContainsKey(targetWcid))
+        if (!TrophyCollectors.ContainsKey(target.WeenieClassId))
             return;
 
-        // Blacklisted WCIDs are silently rejected
+        if (item.Name == "IOU" && item.WeenieType == WeenieType.Book && target.Name == "Town Crier")
+            return;
+
+        if (item is PetDevice petDevice && petDevice.Pet is not null)
+            return;
+
+        if (player.IsOlthoiPlayer && target.CreatureType != CreatureType.Olthoi)
+            return;
+
+        if (target.EmoteManager.IsBusy)
+            return;
+
+        if (player.IsTrading && item.IsBeingTradedOrContainsItemBeingTraded(player.ItemsInTradeWindow))
+            return;
+
         if (_blacklist.ContainsKey(item.WeenieClassId))
         {
             DebugLog($"Item {item.Name} (WCID {item.WeenieClassId}) is blacklisted, skipping");
             return;
         }
 
-        var stackSize = Math.Max(1, item.StackSize ?? 1);
-        // ACE validates giveAmount <= stackSize before transfer; clamp defensively.
-        var units = Math.Min(giveAmount, stackSize);
-
-        // Minimum value threshold per unit — blocks cheap vendor items (stack Value is total in ACE)
         var minValue = settings.TrophyMinBuyValue;
         if (minValue > 0)
         {
+            var stackSize = Math.Max(1, item.StackSize ?? 1);
             int unitVal = item.StackUnitValue ?? 0;
             if (unitVal <= 0)
                 unitVal = stackSize > 1 ? (item.Value ?? 0) / stackSize : (item.Value ?? 0);
@@ -143,6 +172,16 @@ internal static class TrophyBurdenXp
             DebugLog($"{player.Name} is at max level, no XP to award");
             return;
         }
+
+        var acceptAll = target.AiAcceptEverything && !item.IsStickyAttunedOrContainsStickyAttuned;
+        if (!(target.HasGiveOrRefuseEmoteForItem(item, out var emoteResult) || acceptAll))
+            return;
+
+        if (!acceptAll && !(emoteResult.Category == EmoteCategory.Give && target.AllowGive))
+            return;
+
+        var stackBefore = Math.Max(1, item.StackSize ?? 1);
+        var plannedUnits = acceptAll ? Math.Min(amount, stackBefore) : 1;
 
         var isAttuned = (item.GetProperty(PropertyInt.Attuned) ?? 0) > 0;
 
@@ -163,7 +202,7 @@ internal static class TrophyBurdenXp
         {
             var totalEnc = item.EncumbranceVal ?? 0;
             var unitEncFromProp = item.StackUnitEncumbrance;
-            var unitRaw = unitEncFromProp ?? (stackSize > 1 && totalEnc > 0 ? totalEnc / stackSize : totalEnc);
+            var unitRaw = unitEncFromProp ?? (stackBefore > 1 && totalEnc > 0 ? totalEnc / stackBefore : totalEnc);
             var minWhenZero = Math.Max(0, settings.TrophyEncumbranceWhenZero);
             var burden = unitRaw > 0 ? unitRaw : minWhenZero;
             if (burden <= 0)
@@ -177,7 +216,60 @@ internal static class TrophyBurdenXp
                 : "";
         }
 
-        var perUnitBaseXp = xpToNext * percentOfLevel;
+        _pendingGive = new TrophyGiveSnapshot
+        {
+            CoinBefore = player.CoinValue ?? 0,
+            StackBefore = stackBefore,
+            PlannedUnits = plannedUnits,
+            ItemWcid = item.WeenieClassId,
+            ItemName = string.IsNullOrWhiteSpace(item.Name) ? "Trophy" : item.Name.Trim(),
+            ItemValueSnapshot = item.Value ?? 0,
+            IsAttuned = isAttuned,
+            PercentOfLevel = percentOfLevel,
+            BurdenNote = burdenNote,
+        };
+    }
+
+    public static void OnGiveObjectToNpcPostfix(Player player, WorldObject target, WorldObject item, int amount)
+    {
+        var snap = _pendingGive;
+        _pendingGive = null;
+
+        if (snap == null)
+            return;
+
+        var settings = PatchClass.Settings;
+        if (settings?.EnableTrophyBurdenXp != true)
+            return;
+
+        if (player == null || target == null)
+            return;
+
+        if (!TrophyCollectors.ContainsKey(target.WeenieClassId))
+            return;
+
+        int stackAfter;
+        if (item == null || item.IsDestroyed)
+            stackAfter = 0;
+        else
+            stackAfter = item.StackSize ?? 0;
+
+        var removed = snap.StackBefore - stackAfter;
+        if (removed <= 0)
+        {
+            DebugLog($"{player.Name} trophy give postfix: no stack change (removed={removed}), skip XP");
+            return;
+        }
+
+        var actualUnits = Math.Min(snap.PlannedUnits, removed);
+        if (actualUnits <= 0)
+            return;
+
+        var xpToNext = player.GetXpToNextLevel();
+        if (xpToNext <= 0)
+            return;
+
+        var perUnitBaseXp = xpToNext * snap.PercentOfLevel;
 
         var qc = Math.Clamp(settings.TrophyQualityBonusChance, 0.0, 1.0);
         var pc = Math.Clamp(settings.TrophyPristineBonusChance, 0.0, 1.0);
@@ -189,7 +281,7 @@ internal static class TrophyBurdenXp
         var pOnly = 0;
         var perfect = 0;
 
-        for (var u = 0; u < units; u++)
+        for (var u = 0; u < actualUnits; u++)
         {
             var rolledQuality = qc > 0 && ThreadSafeRandom.Next(0.0f, 1.0f) < (float)qc;
             var rolledPristine = pc > 0 && ThreadSafeRandom.Next(0.0f, 1.0f) < (float)pc;
@@ -212,52 +304,82 @@ internal static class TrophyBurdenXp
             bonusXp = (long)Math.Min((double)bonusXp + chunk, long.MaxValue);
         }
 
+        var coinAfter = player.CoinValue ?? 0;
+        var pyrealDelta = coinAfter - snap.CoinBefore;
+
         DebugLog(
-            $"{player.Name} turned in {units}x {item.Name} (attuned={isAttuned}, per-unit base%={percentOfLevel:P2}), multSum={multSum}, awarding {bonusXp}");
+            $"{player.Name} turned in {actualUnits}x {snap.ItemName} (attuned={snap.IsAttuned}, per-unit base%={snap.PercentOfLevel:P2}), multSum={multSum}, awarding {bonusXp}, pyrealDelta={pyrealDelta}");
 
-        if (bonusXp > 0)
+        if (bonusXp <= 0)
+            return;
+
+        ExternalXpGrants.GrantQuestXpWithoutMultiplier(player, bonusXp);
+        AppendLog(settings, player, snap.ItemWcid, snap.ItemName, snap.ItemValueSnapshot, bonusXp, snap.IsAttuned, actualUnits, multSum, plain, qOnly, pOnly, perfect, pyrealDelta);
+
+        var show = QuestXpAwardDisplay.EstimateCharacterXpAfterAchievementChain(player, bonusXp);
+        var pctOfLevelTotal = xpToNext > 0 ? bonusXp / (double)xpToNext * 100.0 : 0.0;
+
+        var pyrealClause = pyrealDelta != 0
+            ? $" and {pyrealDelta:N0} pyreals"
+            : "";
+
+        var list = BuildTurnInList(snap.ItemName, plain, qOnly, pOnly, perfect);
+        var msg = new StringBuilder();
+        msg.Append($"You receive {show:N0} XP{pyrealClause} from turning in {list}.");
+        msg.Append($" (~{pctOfLevelTotal:F2}% of level to next");
+        var rollParts = BuildRollSummaryParts(perfect, pOnly, qOnly).ToList();
+        if (rollParts.Count > 0)
         {
-            ExternalXpGrants.GrantQuestXpWithoutMultiplier(player, bonusXp);
-            AppendLog(settings, player, item, bonusXp, isAttuned, units, multSum, plain, qOnly, pOnly, perfect);
-
-            var itemName = string.IsNullOrWhiteSpace(item.Name) ? "Trophy" : item.Name.Trim();
-            string lead;
-            if (units == 1)
-            {
-                if (perfect == 1)
-                    lead = "Perfect " + itemName;
-                else if (pOnly == 1)
-                    lead = "Pristine " + itemName;
-                else if (qOnly == 1)
-                    lead = "Quality " + itemName;
-                else
-                    lead = itemName;
-            }
-            else
-            {
-                lead = $"{units:N0}× {itemName}";
-            }
-
-            var pctOfLevelTotal = xpToNext > 0 ? bonusXp / (double)xpToNext * 100.0 : 0.0;
-            var rollBits = new List<string>();
-            if (perfect > 0)
-                rollBits.Add($"{perfect} perfect (×6)");
-            if (pOnly > 0)
-                rollBits.Add($"{pOnly} pristine (×3)");
-            if (qOnly > 0)
-                rollBits.Add($"{qOnly} quality (×2)");
-            var rollNote = rollBits.Count > 0 ? " — " + string.Join(", ", rollBits) : "";
-
-            var show = QuestXpAwardDisplay.EstimateCharacterXpAfterAchievementChain(player, bonusXp);
-            player.SendMessage(
-                $"[Loremaster] {lead} turned in for +{show:N0} XP (~{pctOfLevelTotal:F2}% of level to next{rollNote}){burdenNote}.");
+            msg.Append(" — ");
+            msg.Append(string.Join(", ", rollParts));
         }
+        msg.Append(')');
+        msg.Append(snap.BurdenNote);
+        msg.Append('.');
+
+        player.SendMessage(msg.ToString());
+    }
+
+    static string BuildTurnInList(string itemName, int plain, int qOnly, int pOnly, int perfect)
+    {
+        var parts = new List<string>();
+        if (plain > 0)
+            parts.Add($"{itemName} (x{plain:N0})");
+        if (qOnly > 0)
+            parts.Add($"Quality {itemName} (x{qOnly:N0})");
+        if (pOnly > 0)
+            parts.Add($"Pristine {itemName} (x{pOnly:N0})");
+        if (perfect > 0)
+            parts.Add($"Perfect {itemName} (x{perfect:N0})");
+
+        if (parts.Count == 0)
+            return itemName;
+
+        if (parts.Count == 1)
+            return parts[0];
+
+        if (parts.Count == 2)
+            return $"{parts[0]} and {parts[1]}";
+
+        return string.Join(", ", parts.GetRange(0, parts.Count - 1)) + ", and " + parts[^1];
+    }
+
+    static IEnumerable<string> BuildRollSummaryParts(int perfect, int pOnly, int qOnly)
+    {
+        if (perfect > 0)
+            yield return $"{perfect:N0} Perfect (×6)";
+        if (pOnly > 0)
+            yield return $"{pOnly:N0} Pristine (×3)";
+        if (qOnly > 0)
+            yield return $"{qOnly:N0} Quality (×2)";
     }
 
     private static void AppendLog(
         Settings settings,
         Player player,
-        WorldObject item,
+        uint itemWcid,
+        string itemName,
+        int itemValueSnapshot,
         long xpAwarded,
         bool isAttuned,
         int units,
@@ -265,7 +387,8 @@ internal static class TrophyBurdenXp
         int plain,
         int qOnly,
         int pOnly,
-        int perfect)
+        int perfect,
+        long pyrealDelta)
     {
         if (!settings.TrophyLogEnabled || _logPath == null)
             return;
@@ -277,9 +400,9 @@ internal static class TrophyBurdenXp
                 t = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
                 player = player.Name ?? "",
                 guid = player.Guid.Full,
-                item = item.Name ?? "",
-                wcid = item.WeenieClassId,
-                value = item.Value ?? 0,
+                item = itemName,
+                wcid = itemWcid,
+                value = itemValueSnapshot,
                 units,
                 multSum,
                 plain,
@@ -288,6 +411,7 @@ internal static class TrophyBurdenXp
                 perfect,
                 attuned = isAttuned,
                 xp = xpAwarded,
+                pyrealDelta,
             };
             var line = System.Text.Json.JsonSerializer.Serialize(entry);
             lock (_logLock)

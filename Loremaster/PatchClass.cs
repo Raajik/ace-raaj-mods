@@ -958,16 +958,20 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Trophy Burden XP
+    // Trophy Burden XP (after NPC emotes so pyreal rewards are in CoinValue delta)
     // ─────────────────────────────────────────────────────────────────────────
 
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(Player), nameof(Player.HandleActionGiveObjectRequest), new Type[] { typeof(uint), typeof(uint), typeof(int) })]
-    public static void PreHandleActionGiveObjectRequest(Player __instance, uint targetGuid, uint itemGuid, int amount)
+    [HarmonyPatch(typeof(Player), "GiveObjectToNPC", new Type[] { typeof(WorldObject), typeof(WorldObject), typeof(Container), typeof(Container), typeof(bool), typeof(int) })]
+    public static void PreGiveObjectToNPC(Player __instance, WorldObject target, WorldObject item, Container itemFoundInContainer, Container itemRootOwner, bool itemWasEquipped, int amount)
     {
-        var target = __instance.FindObject(targetGuid, Player.SearchLocations.Landblock, out _, out _, out _) as Container;
-        var item = __instance.FindObject(itemGuid, Player.SearchLocations.MyInventory | Player.SearchLocations.MyEquippedItems, out _, out _, out _);
+        TrophyBurdenXp.OnGiveObjectToNpcPrefix(__instance, target, item, amount);
+    }
 
-        TrophyBurdenXp.HandleGiveRequest(__instance, target, item, amount);
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Player), "GiveObjectToNPC", new Type[] { typeof(WorldObject), typeof(WorldObject), typeof(Container), typeof(Container), typeof(bool), typeof(int) })]
+    public static void PostGiveObjectToNPC(Player __instance, WorldObject target, WorldObject item, Container itemFoundInContainer, Container itemRootOwner, bool itemWasEquipped, int amount)
+    {
+        TrophyBurdenXp.OnGiveObjectToNpcPostfix(__instance, target, item, amount);
     }
 }

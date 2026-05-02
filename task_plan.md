@@ -1,88 +1,51 @@
-# BetterLootControl Consolidation — Task Plan
+# Coalesced Mana & Awakened Item Rework — Task Plan
 
 ## Goal
-Merge `SharedLoot` (loot models, roller, config store) and `BetterChestLoot` (chest injection, global rare drops) into a single mod: **`BetterLootControl`**. Update all dependent mods to reference the new consolidated mod.
+Rework EmpyreanAlteration's awakened item / Coalesced Mana system:
+- Lesser: +5 cap, Greater: +10 cap, Aetheric: +15 cap (all stack up to 100)
+- All can awaken OR upgrade any awakened item
+- QuickStart becomes the server-configurable default profile (items keep same profile forever)
+- Remove "attune on leveled" entirely
+- Add per-item curve versioning so future curve tweaks auto-migrate existing items
+- Loot drops use default profile and random initial cap (+5/+10/+15)
+- **Item leveling decoupled from player XP — uses monster kill / quest completion counters instead**
+- Curve tuned for discrete kill/quest counts (weeks to cap, dramatic ramp after L20)
 
 ## Phases
 
-### Phase 1 — Scaffold BetterLootControl
-- [ ] Create `BetterLootControl/` folder
-- [ ] Create `.csproj` with proper references (ACE.Shared, ACE.Server, Lib.Harmony, Krafs.Publicizer)
-- [ ] Create `Meta.json` (Enabled: true, HotReload: true)
-- [ ] Create `Settings.cs` — merged settings from BetterChestLoot
-- [ ] Create `Settings.json` — copy from BetterChestLoot
-- [ ] Create `GlobalUsings.cs` — copy from BetterChestLoot
-- [ ] Create `Mod.cs` — entry point
+### Phase 1 — Settings & Properties
+- [ ] `Settings.LivingItem.cs`: Add `DefaultXpProfileName`, `ItemXpCurveVersion`; expand `PreAwakenXpProfile` with `Divisor`/`Power`
+- [ ] `Settings.QuestItemGrowth.cs`: Remove `AttuneLeveledItemsWhenReachingLevelOne`
+- [ ] `LivingEquipmentProperties.cs`: Add `CurveVersion` (FakeInt 40133), `ProfileDivisor` (FakeFloat 11035), `ProfilePower` (FakeFloat 11036)
 
-### Phase 2 — Migrate SharedLoot Files
-- [ ] Copy `LootRoller.cs` → `BetterLootControl/` (preserve `namespace SharedLoot`)
-- [ ] Copy `DefaultLootConfig.cs` → `BetterLootControl/` (preserve `namespace SharedLoot`)
-- [ ] Copy `LootModels.cs` → `BetterLootControl/` (preserve `namespace SharedLoot`)
-- [ ] Copy `LootConfigStore.cs` → `BetterLootControl/` (preserve `namespace SharedLoot`)
-- [ ] Copy `LootConfigPaths.cs` → `BetterLootControl/` (preserve `namespace SharedLoot`)
-- [ ] Copy `LootConfigJson.cs` → `BetterLootControl/` (preserve `namespace SharedLoot`)
-- [ ] Copy `SalvageBagShaper.cs` → `BetterLootControl/` (preserve `namespace SharedLoot`)
-- [ ] Update `LootRoller.TryApplyLivingEquipment` comment → point to `EmpyreanAlteration`
+### Phase 2 — Core Awakener Rewrite
+- [ ] `LivingItemAwakener.cs`: 
+  - `GetCapIncreaseFromTier()`: +5/+10/+15
+  - `DoAwaken()`: use default profile, store Divisor/Power/CurveVersion, cap = tier bonus
+  - `DoUpgrade()`: add cap incrementally, clamp 100, allow same-tier repeat
+  - `ComputeLevelFromTotalXp()` / `ComputeTotalXpForLevel()`: use `BaseXp * (1 + L/Divisor)^Power`
+  - Add `TryMigrateCurve()` for version mismatch
 
-### Phase 3 — Migrate BetterChestLoot Logic
-- [ ] Create `PatchClass.cs` — absorb BetterChestLoot patches (chest SelectAProfile, Reset, Close)
-- [ ] Create `GlobalRareDrops.cs` — absorb rare drop patches (Creature.GenerateTreasure)
-- [ ] Update `PatchClass` namespace to `BetterLootControl`
-- [ ] Update `GlobalRareDrops` namespace to `BetterLootControl`
-- [ ] Update all internal log prefixes from `[BetterChestLoot]` to `[BetterLootControl]`
-- [ ] Fix `Mod.ModPath` reference in PatchClass to use `BetterLootControl` assembly name
+### Phase 3 — Harmony & Engine Patching
+- [ ] `QuestItemGrowthHarmony.cs`: Update `PrefixItemTotalXPToLevel` / `PrefixItemLevelToTotalXP` to use item-stored Divisor/Power, call migration
+- [ ] `LootGrowthItem.cs`: Use default profile (not random), roll random initial cap bonus (+5/10/15)
+- [ ] `QuestItemGrowthLevelEngine.cs`: Remove `EnsureAttunedIfLeveled` call
 
-### Phase 4 — Update Dependent Mods
-- [ ] `CommonGoals.csproj` — change `SharedLoot` reference → `BetterLootControl`
-- [ ] `WorldEvents.csproj` — change `SharedLoot` reference → `BetterLootControl`
-- [ ] `Loremaster.csproj` — change `SharedLoot` reference → `BetterLootControl`
-- [ ] Verify no `using BetterChestLoot;` references exist in dependent mods (none expected)
+### Phase 4 — Attune Removal
+- [ ] Delete `ItemLevelUpAttune.cs`
+- [ ] `QuestGrowthItemHelpers.cs`: Remove `EnsureAttunedIfLeveled`
+- [ ] `PatchClass.cs`: Remove all Attune patch/unpatch logic
 
-### Phase 5 — Deprecate Old Mods
-- [ ] `SharedLoot/Meta.json` — set `Enabled: false`
-- [ ] `BetterChestLoot/Meta.json` — set `Enabled: false`
-- [ ] Add deprecation comments in old `Meta.json` files
+### Phase 5 — Config & JSON
+- [ ] `Settings.json`: Update to match new defaults, remove Attune setting
 
-### Phase 6 — Build & Verify
-- [ ] `dotnet build BetterLootControl/BetterLootControl.csproj`
-- [ ] `dotnet build CommonGoals/CommonGoals.csproj`
-- [ ] `dotnet build WorldEvents/WorldEvents.csproj`
-- [ ] `dotnet build Loremaster/Loremaster.csproj`
-- [ ] Fix any compile errors
+### Phase 6 — Build & Deploy
+- [ ] `dotnet build`
+- [ ] Copy to test server
+- [ ] Restart, verify
 
-### Phase 7 — Deploy to Test
-- [ ] Copy new `BetterLootControl` build to `C:\ACE\Mods\BetterLootControl\`
-- [ ] Copy updated dependent DLLs to test server
-- [ ] Copy `Settings.json` and `Meta.json` for BetterLootControl
-- [ ] Verify old mods are disabled in test server `Meta.json`
-- [ ] Restart test server, monitor logs for mod load errors
-
-### Phase 8 — Cleanup (after live migration period)
-- [ ] Delete `SharedLoot/` folder
-- [ ] Delete `BetterChestLoot/` folder
-- [ ] Remove old entries from `.sln` file
-- [ ] Update `PLAN.md` and `README.md`
-
-## Files Created / Modified
-| File | Action |
-|------|--------|
-| `BetterLootControl/BetterLootControl.csproj` | Create |
-| `BetterLootControl/Meta.json` | Create |
-| `BetterLootControl/Settings.cs` | Create |
-| `BetterLootControl/Settings.json` | Create |
-| `BetterLootControl/GlobalUsings.cs` | Create |
-| `BetterLootControl/Mod.cs` | Create |
-| `BetterLootControl/PatchClass.cs` | Create |
-| `BetterLootControl/GlobalRareDrops.cs` | Create |
-| `BetterLootControl/LootRoller.cs` | Create (from SharedLoot) |
-| `BetterLootControl/DefaultLootConfig.cs` | Create (from SharedLoot) |
-| `BetterLootControl/LootModels.cs` | Create (from SharedLoot) |
-| `BetterLootControl/LootConfigStore.cs` | Create (from SharedLoot) |
-| `BetterLootControl/LootConfigPaths.cs` | Create (from SharedLoot) |
-| `BetterLootControl/LootConfigJson.cs` | Create (from SharedLoot) |
-| `BetterLootControl/SalvageBagShaper.cs` | Create (from SharedLoot) |
-| `CommonGoals/CommonGoals.csproj` | Edit reference |
-| `WorldEvents/WorldEvents.csproj` | Edit reference |
-| `Loremaster/Loremaster.csproj` | Edit reference |
-| `SharedLoot/Meta.json` | Disable |
-| `BetterChestLoot/Meta.json` | Disable |
+## Key Design Decisions
+- Formula: `cost(L) = BaseXp * (1 + L / Divisor)^Power`
+- QuickStart default: Base=2M, Div=10, Pow=5 → ~400M for L1-20, ~16B for L21-50, ~600B for L51-100
+- CurveVersion mismatch → compute level under old params, rewrite XP to match same level under new params
+- Loot drops: random tier roll (equal weights) for initial cap bonus

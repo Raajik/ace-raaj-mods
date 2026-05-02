@@ -5,7 +5,7 @@ public partial class Settings
 {
     [JsonPropertyName("// AttuneLeveledItemsWhenReachingLevelOne")]
     public string AttuneLeveledItemsWhenReachingLevelOneDoc { get; init; } =
-        "When true (default), any item with item XP (HasItemLevel) that reaches item level 1+ becomes Attuned on Player.OnItemLevelUp if not already.";
+        "DEPRECATED: Attune-on-level system has been removed. Kept for JSON backward compatibility.";
 
     [JsonPropertyName("// ItemXpGeometricFirstLevelTotal")]
     public string ItemXpGeometricFirstLevelTotalDoc { get; init; } = "Geometric mode: total XP to reach item level 1 from 0.";
@@ -85,6 +85,19 @@ public partial class Settings
     public string QuestGrowthCatchUpSummarizeMinLevelsDoc { get; init; } =
         "When (current item level - previous) is >= this value, growth still runs every skipped level but player chat is one combined summary (instead of many per-level lines). Per-level ModManager.Info logs for that catch-up are skipped to reduce console spam. Default 12. Raise (e.g. 25) to get more per-level chat on big jumps; lower (e.g. 5) to summarize sooner.";
 
+    [JsonPropertyName("// EnableGenericRatingLevelUp")]
+    public string EnableGenericRatingLevelUpDoc { get; init; } = "When true, ALL items with existing ratings (DamageRating, CritDamageRating, etc.) gain a small scaling bump on level-up, regardless of item type. This ensures BetterLootControl-generated ratings on weapons and armor both grow with awakened leveling.";
+
+    [JsonPropertyName("// RatingLevelUpInterval")]
+    public string RatingLevelUpIntervalDoc { get; init; } = "Ratings scale every N item levels (default 5). Set to 1 to scale every single level-up.";
+
+    [JsonPropertyName("// RatingLevelUpAmount")]
+    public string RatingLevelUpAmountDoc { get; init; } = "How much each existing rating increases per interval (default 1).";
+
+    public bool EnableGenericRatingLevelUp { get; set; } = true;
+    public int RatingLevelUpInterval { get; set; } = 5;
+    public int RatingLevelUpAmount { get; set; } = 1;
+
     public int QuestGrowthCatchUpSummarizeMinLevels { get; set; } = 12;
 
     public SpellGrowthSettings SpellGrowth { get; set; } = new();
@@ -127,10 +140,10 @@ public partial class Settings
     public List<int> LootItemPreAwakenMaxLevels { get; set; } = new() { 25, 50, 75 };
     public List<PreAwakenXpProfile> LootItemPreAwakenXpProfiles { get; set; } = new()
     {
-        new() { Name = "QuickStart", ItemBaseXp = 15000, Description = "Fast levels 1-10, sharp curve after" },
-        new() { Name = "Steady", ItemBaseXp = 25000, Description = "Moderate, consistent grind throughout" },
-        new() { Name = "Brutal", ItemBaseXp = 40000, Description = "Sharp from level 1, very grindy" },
-        new() { Name = "Casual", ItemBaseXp = 8000, Description = "Very easy, minimal grind" },
+        new() { Name = "QuickStart", ItemBaseXp = 15, Divisor = 8.0, Power = 3.2, Description = "Fast early levels, dramatic ramp after 20. ~300k total points to cap." },
+        new() { Name = "Steady",    ItemBaseXp = 25, Divisor = 15.0, Power = 2.5, Description = "Moderate, consistent grind. ~150k total points to cap." },
+        new() { Name = "Brutal",    ItemBaseXp = 50, Divisor = 5.0, Power = 4.0, Description = "Steep from level 1, very grindy. ~1M total points to cap." },
+        new() { Name = "Casual",    ItemBaseXp = 5,  Divisor = 20.0, Power = 2.0, Description = "Very easy, minimal grind. ~30k total points to cap." },
     };
     public List<List<float>> LootItemPreAwakenProfileWeights { get; set; } = new()
     {
@@ -520,5 +533,7 @@ public class PreAwakenXpProfile
 {
     public string Name { get; set; } = "QuickStart";
     public long ItemBaseXp { get; set; } = 15000;
+    public double Divisor { get; set; } = 10.0;   // level-cost multiplier: (1 + L / Divisor)
+    public double Power { get; set; } = 5.0;     // exponent on the multiplier: ^Power
     public string Description { get; set; } = "";
 }

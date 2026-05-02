@@ -4,7 +4,7 @@
   "// Verbose": "When true, extra logging for mutator and alteration diagnostics.",
   "// ItemLevelUpGrowthEnabled": "When true, applies GrowthAugments / GrowthFixedLevelAugments / AugmentGroups when items with GrowthItem level up.",
   "// ChaosTriggeredGrowth": "When true (default), replaces random Augment growth with intelligent chaos-tinker-triggered leveling. Items spawn with ItemTotalXp=0; chaos failure triggers direct level-up with free tinkers/imbues.",
-  "// AttuneLeveledItemsWhenReachingLevelOne": "When true (default), any HasItemLevel item that reaches item level 1+ becomes Attuned on level-up if not already (Harmony ItemLevelUpAttune).",
+  "// AttuneLeveledItemsWhenReachingLevelOne": "DEPRECATED: Attune-on-level system has been removed. Kept for JSON backward compatibility.",
   "// QuestRewardInitialBonusLevelsEnabled": "Quest-growth gear: after XP init, roll K phantom growth tiers (no XP); optional ItemMaxLevel +K so the earnable track stays full.",
   "// QuestRewardInitialBonusExtendItemMaxLevel": "When true (default), add K to ItemMaxLevel after K phantom tiers.",
   "// QuestRewardInitialBonusLevelsHardCap": "Max K phantom tiers (clamped by ItemMaxLevel).",
@@ -110,6 +110,9 @@
   "ItemXpDummyBaseXp": 1,
   "QuestGrowthMaxImbueEffects": 5,
   "QuestGrowthCatchUpSummarizeMinLevels": 12,
+  "EnableGenericRatingLevelUp": true,
+  "RatingLevelUpInterval": 5,
+  "RatingLevelUpAmount": 1,
   "QuestGrowthSalvageRules": [
     {
       "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
@@ -502,5 +505,42 @@
     "RareSurgeChancePerLevel": 0.01,
     "RareCleavingMax": 5,
     "RareSurgeMax": 5
-  }
+  },
+  "// LesserCoalescedManaWcid": "WCID of Lesser Coalesced Mana — raises item cap by +5 (or awakens to +5).",
+  "LesserCoalescedManaWcid": 42516,
+  "// GreaterCoalescedManaWcid": "WCID of Greater Coalesced Mana — raises item cap by +10 (or awakens to +10).",
+  "GreaterCoalescedManaWcid": 42517,
+  "// AethericCoalescedManaWcid": "WCID of Aetheric Coalesced Mana — raises item cap by +15 (or awakens to +15).",
+  "AethericCoalescedManaWcid": 42518,
+  "// ManualAwakenPrefix": "Prefix applied to manually awakened item names (Coalesced Mana use-on-target). Default 'Awakened' distinguishes player-driven awakening from loot 'Living' prefix.",
+  "ManualAwakenPrefix": "Awakened",
+  "// AutoAwakenTier1Wcids": "WCIDs that automatically awaken to default profile when entering a player's inventory. Academy starter weapons and Pathwarden starter armor.",
+  "AutoAwakenTier1Wcids": [
+    12750, 12751, 12752, 12753, 12754, 12755, 12756, 12757, 12758, 12759, 12760,
+    41514, 45531, 45532, 45535, 45536, 45539, 45540, 45543, 45544, 45547, 45548,
+    45551, 45552, 45555, 45556,
+    33597, 33598, 33599, 33600, 33601, 33602, 33603, 33604, 33605, 33606, 33607,
+    40439, 40454, 40455, 40456, 41513
+  ],
+  "// ArcaneLoreDifficulty": "Arcane Lore skill check difficulty for awakening. Default 1 (cosmetic, always passes, clears cursor).",
+  "ArcaneLoreDifficulty": 1,
+  "// DefaultXpProfileName": "Name of the default PreAwakenXpProfile used for all awakened items (loot drops, manual awaken, auto-awaken).",
+  "DefaultXpProfileName": "QuickStart",
+  "// ItemXpCurveVersion": "Global curve version. When an item's stored CurveVersion differs, the item's progress is auto-migrated to the new curve (same level, new XP).",
+  "ItemXpCurveVersion": 1,
+  "// ItemLevelingKillPoints": "Points awarded to every equipped awakened item when the player gets kill credit on a creature.",
+  "ItemLevelingKillPoints": 1,
+  "// ItemLevelingQuestCompletionPoints": "Points awarded to every equipped awakened item when the player completes a quest that would grant QB (via Loremaster bridge).",
+  "ItemLevelingQuestCompletionPoints": 100,
+  "// ItemLevelingBossKillMultiplier": "Multiplier for points from boss creature kills (Creature.IsBoss). Applied on top of base kill points. 1 = no bonus.",
+  "ItemLevelingBossKillMultiplier": 5.0,
+  "// ItemLevelingCap": "Absolute hard cap for awakened item max level.",
+  "ItemLevelingCap": 100,
+  "// DisableAttunedGlobally": "When true, ALL items are treated as not attuned (AttunedStatus.Normal). Allows trading/selling of any item including quest rewards and Coalesced Mana.",
+  "DisableAttunedGlobally": true,
+  "// Features": "Which alteration feature groups are active (AlterationFeature enum values). FakeKillTask is required for item-leveling kill points.",
+  "Features": [
+    "FakeKillTask",
+    "MutatorHooks"
+  ]
 }

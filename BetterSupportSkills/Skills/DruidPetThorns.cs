@@ -164,6 +164,18 @@ internal static class DruidPetThorns
             if (victim is Player p && !owner.CanDamage(p))
                 continue;
 
+            // Don't hit other pets from the same owner
+            if (victim is CombatPet otherPet && otherPet.P_PetOwner == owner)
+                continue;
+
+            // Don't hit non-hostile / passive creatures (cows, etc.)
+            if (victim.PlayerKillerStatus != PlayerKillerStatus.Creature && victim.PlayerKillerStatus != PlayerKillerStatus.PK)
+                continue;
+
+            // Don't hit NPCs that share the owner's faction
+            if (victim.Faction1Bits != 0 && (victim.Faction1Bits & owner.Faction1Bits) != 0)
+                continue;
+
             try
             {
                 victim.TakeDamage(pet, DamageType.Bludgeon, (float)thornsDamage);

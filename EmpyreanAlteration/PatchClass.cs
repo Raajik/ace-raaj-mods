@@ -73,20 +73,38 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         try
         {
-            ModC.Harmony.UnpatchCategory(nameof(ItemLevelUpAttune));
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[EmpyreanAlteration] Unpatch ItemLevelUpAttune: {ex.Message}", ModManager.LogLevel.Warn);
-        }
-
-        try
-        {
             ModC.Harmony.UnpatchCategory(QuestItemGrowthHarmony.Category);
         }
         catch (Exception ex)
         {
             ModManager.Log($"[EmpyreanAlteration] Unpatch QuestItemGrowth: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory("QuestCompletionItemLeveling");
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[EmpyreanAlteration] Unpatch QuestCompletionItemLeveling: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory("CreatureDeathItemLeveling");
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[EmpyreanAlteration] Unpatch CreatureDeathItemLeveling: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory("DisableAttunedQOL");
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[EmpyreanAlteration] Unpatch DisableAttunedQOL: {ex.Message}", ModManager.LogLevel.Warn);
         }
 
         QuestGrowthSalvageEffectApplier.BuildLookup(Settings.QuestGrowthSalvageRules);
@@ -126,18 +144,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         MutatorHooks.SetupMutators();
 
-        if (Settings.AttuneLeveledItemsWhenReachingLevelOne)
-        {
-            try
-            {
-                ModC.Harmony.PatchCategory(nameof(ItemLevelUpAttune));
-            }
-            catch (Exception ex)
-            {
-                ModManager.Log($"[EmpyreanAlteration] PatchCategory ItemLevelUpAttune: {ex.Message}", ModManager.LogLevel.Warn);
-            }
-        }
-
         if (Settings.ItemLevelUpGrowthEnabled)
         {
             try
@@ -164,6 +170,43 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             catch (Exception ex)
             {
                 ModManager.Log($"[EmpyreanAlteration] PatchCategory QuestItemGrowth: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+        }
+
+        // Core item-leveling point system (kill points + quest completion points)
+        if (Settings.ItemLevelingKillPoints > 0 || Settings.ItemLevelingQuestCompletionPoints > 0)
+        {
+            try
+            {
+                ModC.Harmony.PatchCategory("QuestCompletionItemLeveling");
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[EmpyreanAlteration] PatchCategory QuestCompletionItemLeveling: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+        }
+
+        if (Settings.ItemLevelingKillPoints > 0)
+        {
+            try
+            {
+                ModC.Harmony.PatchCategory("CreatureDeathItemLeveling");
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[EmpyreanAlteration] PatchCategory CreatureDeathItemLeveling: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+        }
+
+        if (Settings.DisableAttunedGlobally)
+        {
+            try
+            {
+                ModC.Harmony.PatchCategory("DisableAttunedQOL");
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[EmpyreanAlteration] PatchCategory DisableAttunedQOL: {ex.Message}", ModManager.LogLevel.Warn);
             }
         }
 

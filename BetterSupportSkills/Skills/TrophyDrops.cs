@@ -79,6 +79,22 @@ internal static class TrophyDropsBonus
         }
     }
 
+    static void ApplyTrophyBurdenValue(WorldObject trophy, Creature source)
+    {
+        int level = source.Level ?? 1;
+        int health = (int)(source.Health?.MaxValue ?? 50);
+        long xp = source.XpOverride ?? 0;
+
+        // Base burden scales with creature difficulty — min 5, soft cap 300
+        int baseBurden = Math.Max(5, level * 3 + health / 20 + (int)(xp / 5000));
+        baseBurden = Math.Min(baseBurden, 300);
+
+        int baseValue = Math.Max(1, baseBurden * 3); // 3 pyreals per burden unit
+
+        trophy.SetProperty(PropertyInt.StackUnitEncumbrance, baseBurden);
+        trophy.SetProperty(PropertyInt.StackUnitValue, baseValue);
+    }
+
     public static void PostfixGenerateTreasure(Creature __instance, DamageHistoryInfo killer, Corpse corpse, List<WorldObject> __result)
     {
         if (__result == null)
@@ -140,6 +156,8 @@ internal static class TrophyDropsBonus
                         int stackSize = ThreadSafeRandom.Next(2, 5);
                         if ((bonus.MaxStackSize ?? 0) <= 1)
                             bonus.MaxStackSize = 100;
+
+                        ApplyTrophyBurdenValue(bonus, __instance);
                         bonus.SetStackSize(stackSize);
 
                         AddOrStack(bonusStacks, bonus);

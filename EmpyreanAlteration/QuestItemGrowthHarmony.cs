@@ -106,6 +106,20 @@ internal static class QuestItemGrowthItemXpCurveHarmony
         WorldObject? item = ItemXpCurveContext.Current;
         Settings? s = PatchClass.Settings;
 
+        // Awakened items with a LivingEquipment-style profile use the profile-based curve
+        if (item != null && s != null && item.GetProperty(LivingEquipmentProperties.IsAwakened) == true)
+        {
+            LivingItemAwakener.TryMigrateCurve(item, s);
+
+            long baseXp = item.GetProperty(PropertyInt64.ItemBaseXp) ?? 15;
+            double divisor = item.GetProperty(LivingEquipmentProperties.ProfileDivisor) ?? 8.0;
+            double power = item.GetProperty(LivingEquipmentProperties.ProfilePower) ?? 3.2;
+            int cap = item.ItemMaxLevel ?? s.ItemLevelingCap;
+
+            __result = LivingItemAwakener.ComputeLevelFromTotalXp((long)gainedXP, baseXp, divisor, power, cap);
+            return false;
+        }
+
         if (item != null && s != null && ItemXpCurve.ShouldUseGeometric(item, s))
         {
             __result = ItemXpCurve.ItemLevelFromTotalXpGeometric((long)gainedXP, s.ItemXpGeometricFirstLevelTotal, s.ItemXpGeometricMultiplierPerStep, maxLevel);
@@ -137,6 +151,20 @@ internal static class QuestItemGrowthItemXpCurveHarmony
         WorldObject? item = ItemXpCurveContext.Current;
         Settings? s = PatchClass.Settings;
 
+        // Awakened items with a LivingEquipment-style profile use the profile-based curve
+        if (item != null && s != null && item.GetProperty(LivingEquipmentProperties.IsAwakened) == true)
+        {
+            LivingItemAwakener.TryMigrateCurve(item, s);
+
+            long baseXp = item.GetProperty(PropertyInt64.ItemBaseXp) ?? 15;
+            double divisor = item.GetProperty(LivingEquipmentProperties.ProfileDivisor) ?? 8.0;
+            double power = item.GetProperty(LivingEquipmentProperties.ProfilePower) ?? 3.2;
+            int cap = item.ItemMaxLevel ?? s.ItemLevelingCap;
+
+            __result = LivingItemAwakener.ComputeTotalXpForLevel(itemLevel, baseXp, divisor, power, cap);
+            return false;
+        }
+
         if (item != null && s != null && ItemXpCurve.ShouldUseGeometric(item, s))
         {
             __result = ItemXpCurve.TotalXpToReachItemLevelGeometric(itemLevel, s.ItemXpGeometricFirstLevelTotal, s.ItemXpGeometricMultiplierPerStep, maxLevel);
@@ -167,9 +195,16 @@ internal static class QuestItemGrowthOnItemLevelUpHarmony
 {
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), nameof(Player.GrantItemXP), typeof(WorldObject), typeof(long))]
-    public static void PreGrantItemXP(WorldObject item, ref int __state)
+    public static bool PreGrantItemXP(WorldObject item, ref int __state)
     {
         __state = item?.ItemLevel ?? 0;
+
+        // Awakened items use our point-based leveling system only.
+        // Suppress vanilla ACE item-XP feed (which scales with player XP).
+        if (item?.GetProperty(LivingEquipmentProperties.IsAwakened) == true)
+            return false;
+
+        return true;
     }
 
     [HarmonyPostfix]

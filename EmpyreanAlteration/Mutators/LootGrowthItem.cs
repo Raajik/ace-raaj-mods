@@ -126,43 +126,40 @@ internal class LootGrowthItem : Mutator
     // ── Pre-awaken (LivingEquipment-style profile) ──────────────────────
     private static bool TryPreAwakenLootItem(WorldObject item, int treasureTier)
     {
-        if (item.GetProperty((PropertyBool)40130) == true) // IsAwakened
+        if (item.GetProperty(LivingEquipmentProperties.IsAwakened) == true)
             return false;
 
         float chance = PatchClass.Settings.LootItemPreAwakenChance;
         if (chance <= 0) return false;
         if (Random.Shared.NextDouble() > chance / 100.0) return false;
 
-        int tier = RollWeightedIndex(PatchClass.Settings.LootItemPreAwakenTierWeights) + 1;
-        var maxLevels = PatchClass.Settings.LootItemPreAwakenMaxLevels;
-        if (tier > maxLevels.Count) return false;
-        int maxLevel = maxLevels[tier - 1];
+        var s = PatchClass.Settings;
+        var profile = LivingItemAwakener.GetDefaultProfile(s);
+        if (profile == null) return false;
 
-        var profiles = PatchClass.Settings.LootItemPreAwakenXpProfiles;
-        var profileWeights = PatchClass.Settings.LootItemPreAwakenProfileWeights;
-        if (profiles.Count == 0) return false;
-
-        // Roll profile for this tier
-        var tierWeights = tier <= profileWeights.Count ? profileWeights[tier - 1] : profileWeights[^1];
-        int profileIdx = RollWeightedIndex(tierWeights);
-        if (profileIdx >= profiles.Count) profileIdx = 0;
-        var profile = profiles[profileIdx];
+        // Random initial cap bonus: +5, +10, or +15 (equal weights)
+        int[] bonuses = { 5, 10, 15 };
+        int bonus = bonuses[Random.Shared.Next(bonuses.Length)];
+        int maxLevel = Math.Min(bonus, s.ItemLevelingCap);
 
         string originalName = item.Name ?? "Item";
-        item.SetProperty((PropertyString)11033, originalName); // OriginalName
+        item.SetProperty(LivingEquipmentProperties.OriginalName, originalName);
 
-        item.SetProperty((PropertyString)11034, profile.Name); // ProfileName
+        item.SetProperty(LivingEquipmentProperties.ProfileName, profile.Name);
         item.SetProperty(PropertyInt64.ItemBaseXp, profile.ItemBaseXp);
+        item.SetProperty(LivingEquipmentProperties.ProfileDivisor, profile.Divisor);
+        item.SetProperty(LivingEquipmentProperties.ProfilePower, profile.Power);
         item.SetProperty(PropertyInt.ItemMaxLevel, maxLevel);
         item.SetProperty(PropertyInt.ItemXpStyle, (int)ItemXpStyle.ScalesWithLevel);
         item.SetProperty(PropertyInt64.ItemTotalXp, 0);
-        item.SetProperty((PropertyBool)40130, true); // IsAwakened
-        item.SetProperty((PropertyInt)40131, tier); // AwakenedTier
+        item.SetProperty(LivingEquipmentProperties.IsAwakened, true);
+        item.SetProperty(LivingEquipmentProperties.AwakenedTier, 0);
+        item.SetProperty(LivingEquipmentProperties.CurveVersion, s.ItemXpCurveVersion);
         item.SetProperty(FakeBool.GrowthItem, true);
 
         // Rename: replace material prefix with "Living"
         string materialName = GetMaterialName(item);
-        string prefix = PatchClass.Settings.LootItemPreAwakenPrefix;
+        string prefix = s.LootItemPreAwakenPrefix;
         string newName;
         if (!string.IsNullOrEmpty(materialName) && originalName.StartsWith(materialName, StringComparison.OrdinalIgnoreCase))
             newName = prefix + originalName.Substring(materialName.Length);
@@ -172,11 +169,11 @@ internal class LootGrowthItem : Mutator
         item.CalculateObjDesc();
 
         // Visual overlay
-        uint uiFx = PatchClass.Settings.LootItemPreAwakenUiEffects;
+        uint uiFx = s.LootItemPreAwakenUiEffects;
         item.SetProperty(PropertyInt.UiEffects, (int)uiFx);
 
-        if (PatchClass.Settings.Verbose)
-            ModManager.Log($"[EmpyreanAlteration] Pre-awakened drop: {originalName} -> {newName} (tier {tier}, max {maxLevel}, profile {profile.Name})", ModManager.LogLevel.Info);
+        if (s.Verbose)
+            ModManager.Log($"[EmpyreanAlteration] Pre-awakened drop: {originalName} -> {newName} (max {maxLevel}, profile {profile.Name})", ModManager.LogLevel.Info);
 
         return true;
     }
@@ -371,12 +368,14 @@ internal class LootGrowthItem : Mutator
     }
 
     // ── UiEffects coloring for imbued items ─────────────────────────────
-    static void RefreshImbueUiEffects(WorldObject item)
+    internal static void RefreshImbueUiEffects(WorldObject item)
     {
         var imbued = item.ImbuedEffect;
-        if (imbued == 0) return;
+        if (imbued == 0 && !item.GetProperty(PropertyInt.SlayerCreatureType).HasValue)
+            return;
 
         int ui = item.GetProperty(PropertyInt.UiEffects) ?? 0;
+        bool isJewelry = IsJewelryItem(item);
 
         // Elemental rends → damage-type color
         if (imbued.HasFlag(ImbuedEffectType.AcidRending))
@@ -417,21 +416,103 @@ internal class LootGrowthItem : Mutator
         if (item.GetProperty(PropertyInt.SlayerCreatureType).HasValue)
             ui |= (int)UiEffects.Lightning;
 
-        // Elemental rends get icon underlay priority over secondary imbues
-        if (imbued == 0) return;
-
-        if (imbued.HasFlag(ImbuedEffectType.AcidRending))        item.IconUnderlayId = 0x06003355;
-        else if (imbued.HasFlag(ImbuedEffectType.BludgeonRending)) item.IconUnderlayId = 0x0600335a;
-        else if (imbued.HasFlag(ImbuedEffectType.ColdRending))    item.IconUnderlayId = 0x06003353;
-        else if (imbued.HasFlag(ImbuedEffectType.ElectricRending)) item.IconUnderlayId = 0x06003354;
-        else if (imbued.HasFlag(ImbuedEffectType.FireRending))    item.IconUnderlayId = 0x06003359;
-        else if (imbued.HasFlag(ImbuedEffectType.PierceRending))   item.IconUnderlayId = 0x0600335b;
-        else if (imbued.HasFlag(ImbuedEffectType.SlashRending))   item.IconUnderlayId = 0x0600335c;
-        else if (imbued.HasFlag(ImbuedEffectType.ArmorRending))  item.IconUnderlayId = 0x06003356;
-        else if (imbued.HasFlag(ImbuedEffectType.CripplingBlow)) item.IconUnderlayId = 0x06003357;
-        else if (imbued.HasFlag(ImbuedEffectType.CriticalStrike)) item.IconUnderlayId = 0x06003358;
+        // Jewelry override: force yellow outline + bludgeon-style underlay for visibility
+        if (isJewelry)
+        {
+            ui |= (int)UiEffects.BoostStamina;    // yellow outline
+            item.IconUnderlayId = 0x0600335a;      // bludgeon rend background
+        }
+        else
+        {
+            // Elemental rends get icon underlay priority over secondary imbues
+            if (imbued.HasFlag(ImbuedEffectType.AcidRending))        item.IconUnderlayId = 0x06003355;
+            else if (imbued.HasFlag(ImbuedEffectType.BludgeonRending)) item.IconUnderlayId = 0x0600335a;
+            else if (imbued.HasFlag(ImbuedEffectType.ColdRending))    item.IconUnderlayId = 0x06003353;
+            else if (imbued.HasFlag(ImbuedEffectType.ElectricRending)) item.IconUnderlayId = 0x06003354;
+            else if (imbued.HasFlag(ImbuedEffectType.FireRending))    item.IconUnderlayId = 0x06003359;
+            else if (imbued.HasFlag(ImbuedEffectType.PierceRending))   item.IconUnderlayId = 0x0600335b;
+            else if (imbued.HasFlag(ImbuedEffectType.SlashRending))   item.IconUnderlayId = 0x0600335c;
+            else if (imbued.HasFlag(ImbuedEffectType.ArmorRending))  item.IconUnderlayId = 0x06003356;
+            else if (imbued.HasFlag(ImbuedEffectType.CripplingBlow)) item.IconUnderlayId = 0x06003357;
+            else if (imbued.HasFlag(ImbuedEffectType.CriticalStrike)) item.IconUnderlayId = 0x06003358;
+        }
 
         item.SetProperty(PropertyInt.UiEffects, ui);
+        item.CalculateObjDesc();
+
+        // If weapon damage type changed, update name to match
+        UpdateWeaponNameForDamageType(item);
+    }
+
+    private static void UpdateWeaponNameForDamageType(WorldObject item)
+    {
+        var damageType = item.GetProperty(PropertyInt.DamageType);
+        if (!damageType.HasValue)
+            return;
+
+        string originalName = item.GetProperty(LivingEquipmentProperties.OriginalName) ?? item.Name ?? "Item";
+        string prefix = PatchClass.Settings.LootItemPreAwakenPrefix; // "Living"
+        string awakenPrefix = PatchClass.Settings.ManualAwakenPrefix; // "Awakened"
+
+        // Determine which prefix is currently applied
+        string activePrefix = prefix;
+        string baseName = originalName;
+        if (baseName.StartsWith(awakenPrefix + " ", StringComparison.OrdinalIgnoreCase))
+        {
+            activePrefix = awakenPrefix;
+            baseName = baseName.Substring(awakenPrefix.Length + 1);
+        }
+        else if (baseName.StartsWith(prefix + " ", StringComparison.OrdinalIgnoreCase))
+        {
+            baseName = baseName.Substring(prefix.Length + 1);
+        }
+
+        // Map DamageType to AC naming convention
+        string typeName = damageType.Value switch
+        {
+            (int)DamageType.Cold => "Frost",
+            (int)DamageType.Fire => "Fire",
+            (int)DamageType.Acid => "Acid",
+            (int)DamageType.Electric => "Electric",
+            (int)DamageType.Pierce => "Pierce",
+            (int)DamageType.Slash => "Slash",
+            (int)DamageType.Bludgeon => "Bludgeon",
+            (int)DamageType.Nether => "Nether",
+            _ => ((DamageType)damageType.Value).ToString(),
+        };
+
+        // Replace existing damage-type prefix or prepend
+        string[] damagePrefixes = { "Frost", "Fire", "Acid", "Electric", "Lightning", "Pierce", "Slash", "Bludgeon", "Nether", "Cold" };
+        bool replaced = false;
+        foreach (var dp in damagePrefixes)
+        {
+            if (baseName.StartsWith(dp + " ", StringComparison.OrdinalIgnoreCase))
+            {
+                baseName = typeName + baseName.Substring(dp.Length);
+                replaced = true;
+                break;
+            }
+        }
+        if (!replaced)
+            baseName = typeName + " " + baseName;
+
+        string newName = activePrefix + " " + baseName;
+        item.SetProperty(PropertyString.Name, newName);
+    }
+
+    private static bool IsJewelryItem(WorldObject item)
+    {
+        if (item == null) return false;
+        string n = item.Name ?? "";
+        if (n.Contains("Ring", StringComparison.OrdinalIgnoreCase)) return true;
+        if (n.Contains("Bracelet", StringComparison.OrdinalIgnoreCase)) return true;
+        if (n.Contains("Necklace", StringComparison.OrdinalIgnoreCase)) return true;
+        if (n.Contains("Amulet", StringComparison.OrdinalIgnoreCase)) return true;
+        if (n.Contains("Pendant", StringComparison.OrdinalIgnoreCase)) return true;
+        if (n.Contains("Charm", StringComparison.OrdinalIgnoreCase)) return true;
+        if (n.Contains("Trinket", StringComparison.OrdinalIgnoreCase)) return true;
+        if (n.Contains("Moonstone", StringComparison.OrdinalIgnoreCase)) return true;
+        return false;
     }
 
     // ── Quest equipment (emote give) ────────────────────────────────────
@@ -447,7 +528,7 @@ internal class LootGrowthItem : Mutator
         bool mutated = false;
 
         // Guaranteed pre-awaken (always tier 1 Lesser)
-        if (s.EnableLootItemPreAwaken && item.GetProperty((PropertyBool)40130) != true)
+        if (s.EnableLootItemPreAwaken && item.GetProperty(LivingEquipmentProperties.IsAwakened) != true)
         {
             mutated |= TryApplyQuestPreAwaken(item, s);
         }
@@ -476,23 +557,27 @@ internal class LootGrowthItem : Mutator
 
     private static bool TryApplyQuestPreAwaken(WorldObject item, Settings s)
     {
-        int maxLevel = s.LootItemPreAwakenMaxLevels.Count > 0 ? s.LootItemPreAwakenMaxLevels[0] : 25; // Tier 1 (Lesser)
-        var profiles = s.LootItemPreAwakenXpProfiles;
-
-        // Always Casual profile for quest items (easiest leveling)
-        var profile = profiles.FirstOrDefault(p => p.Name == "Casual") ?? (profiles.Count > 0 ? profiles[0] : null);
+        var profile = LivingItemAwakener.GetDefaultProfile(s);
         if (profile == null) return false;
 
-        string originalName = item.Name ?? "Item";
-        item.SetProperty((PropertyString)11033, originalName);
+        // Random initial cap bonus: +5, +10, or +15 (equal weights)
+        int[] bonuses = { 5, 10, 15 };
+        int bonus = bonuses[Random.Shared.Next(bonuses.Length)];
+        int maxLevel = Math.Min(bonus, s.ItemLevelingCap);
 
-        item.SetProperty((PropertyString)11034, profile.Name);
+        string originalName = item.Name ?? "Item";
+        item.SetProperty(LivingEquipmentProperties.OriginalName, originalName);
+
+        item.SetProperty(LivingEquipmentProperties.ProfileName, profile.Name);
         item.SetProperty(PropertyInt64.ItemBaseXp, profile.ItemBaseXp);
+        item.SetProperty(LivingEquipmentProperties.ProfileDivisor, profile.Divisor);
+        item.SetProperty(LivingEquipmentProperties.ProfilePower, profile.Power);
         item.SetProperty(PropertyInt.ItemMaxLevel, maxLevel);
         item.SetProperty(PropertyInt.ItemXpStyle, (int)ItemXpStyle.ScalesWithLevel);
         item.SetProperty(PropertyInt64.ItemTotalXp, 0);
-        item.SetProperty((PropertyBool)40130, true);
-        item.SetProperty((PropertyInt)40131, 1);
+        item.SetProperty(LivingEquipmentProperties.IsAwakened, true);
+        item.SetProperty(LivingEquipmentProperties.AwakenedTier, 0);
+        item.SetProperty(LivingEquipmentProperties.CurveVersion, s.ItemXpCurveVersion);
         item.SetProperty(FakeBool.GrowthItem, true);
 
         // Rename

@@ -34,4 +34,34 @@ public class Settings
 
     public int MinResetIntervalSeconds { get; init; } = 600;
     public int MaxResetIntervalSeconds { get; init; } = 1200;
+
+    // -- Loot Ratings (all tiers) --
+    public bool EnableLootRatings { get; init; } = true;
+    // Relative weights for synthetic gear tier assignment (index 0 = tier 1). Used when rolling a tier for gear items.
+    public List<double> GearTierWeights { get; init; } = new() { 1.0, 2.0, 3.0, 4.0, 4.0, 3.0, 2.0, 1.0 };
+    // Chance (0-1) for gear of each tier to roll ratings. Index 0 = tier 1.
+    public List<double> RatingChancePerTier { get; init; } = new() { 0.05, 0.10, 0.15, 0.25, 0.40, 0.60, 0.75, 0.90 };
+    // How many distinct rating properties to roll per item.
+    public int RatingRollCountMin { get; init; } = 1;
+    public int RatingRollCountMax { get; init; } = 3;
+    // Rating value ranges per tier. Index 0 = tier 1.
+    public List<int> RatingValueMinPerTier { get; init; } = new() { 1, 1, 2, 2, 3, 4, 5, 6 };
+    public List<int> RatingValueMaxPerTier { get; init; } = new() { 2, 3, 4, 5, 7, 9, 12, 15 };
+    // Which ACE PropertyInt ratings can roll. Uses the C# property/field names from WorldObject.
+    public List<string> RatingTypes { get; init; } = new()
+    {
+        "DamageRating", "CritDamageRating", "DamageResistRating",
+        "CritDamageResistRating", "CritRating", "HealingBoostRating", "GearMaxHealth"
+    };
+
+    // -- Loot Equipment Sets (all tiers) --
+    public bool EnableLootEquipmentSets { get; init; } = true;
+    // Chance (0-1) for gear of each tier to roll an equipment set. Index 0 = tier 1.
+    public List<double> EquipmentSetChancePerTier { get; init; } = new() { 0.02, 0.03, 0.05, 0.08, 0.12, 0.18, 0.25, 0.35 };
+    // Which EquipmentSet IDs can roll. Excludes 0 (Invalid), cloaks, and ultra-specific sets by default.
+    public List<int> EquipmentSetIds { get; init; } = new()
+    {
+        4, 5, 6, 7, 8, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+        26, 27, 28, 29, 30, 35, 36, 37, 38, 39, 40, 41
+    };
 }

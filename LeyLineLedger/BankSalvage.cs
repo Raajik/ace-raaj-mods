@@ -52,7 +52,8 @@ public static class BankSalvage
 if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
             sub.Equals("all", StringComparison.OrdinalIgnoreCase))
         {
-            DepositAll(player, settings);
+            if (!DepositAll(player, settings))
+                player.SendMessage("No items matched salvage deposit rules (configure LeyLineLedger SalvageBank.DepositRules).");
             return;
         }
 
@@ -446,14 +447,74 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         }
 
         string t = token.Trim();
+        string tNoSpace = t.Replace(" ", "").Replace("-", "");
+
         for (int i = 0; i < rules.Count; i++)
         {
             string label = GetDepositRuleDisplayName(rules[i]);
-            if (label.Length > 0 && label.Contains(t, StringComparison.OrdinalIgnoreCase))
-                return i;
+            if (label.Length > 0)
+            {
+                if (label.Contains(t, StringComparison.OrdinalIgnoreCase))
+                    return i;
+
+                string labelNoSpace = label.Replace(" ", "").Replace("-", "");
+                if (labelNoSpace.Contains(tNoSpace, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
         }
 
         return null;
+    }
+
+    /// <summary>Suggest the closest salvage material names for a mistyped token.</summary>
+    public static string? SuggestClosest(string token)
+    {
+        var rules = PatchClass.Settings.SalvageBank?.DepositRules;
+        if (rules == null || rules.Count == 0)
+            return null;
+
+        var lower = token.ToLowerInvariant();
+        var matches = new List<(string name, int dist)>();
+
+        foreach (var rule in rules)
+        {
+            var name = GetDepositRuleDisplayName(rule);
+            if (string.IsNullOrEmpty(name))
+                continue;
+
+            int dist = LevenshteinDistance(lower, name.ToLowerInvariant().Replace(" ", "").Replace("-", ""));
+            if (dist <= 3 || name.StartsWith(lower, StringComparison.OrdinalIgnoreCase) ||
+                lower.StartsWith(name, StringComparison.OrdinalIgnoreCase) ||
+                name.Contains(lower, StringComparison.OrdinalIgnoreCase))
+            {
+                matches.Add((name, dist));
+            }
+        }
+
+        var top = matches.OrderBy(m => m.dist).Take(3).Select(m => m.name).ToList();
+        return top.Count > 0 ? string.Join(", ", top) : null;
+    }
+
+    static int LevenshteinDistance(string a, string b)
+    {
+        if (a.Length == 0) return b.Length;
+        if (b.Length == 0) return a.Length;
+
+        var prev = new int[b.Length + 1];
+        var curr = new int[b.Length + 1];
+        for (int j = 0; j <= b.Length; j++) prev[j] = j;
+
+        for (int i = 1; i <= a.Length; i++)
+        {
+            curr[0] = i;
+            for (int j = 1; j <= b.Length; j++)
+            {
+                int cost = a[i - 1] == b[j - 1] ? 0 : 1;
+                curr[j] = Math.Min(Math.Min(curr[j - 1] + 1, prev[j] + 1), prev[j - 1] + cost);
+            }
+            var tmp = prev; prev = curr; curr = tmp;
+        }
+        return prev[b.Length];
     }
 
     static int? TryResolveDepositRuleIndexByWcid(IReadOnlyList<SalvageDepositRule> rules, uint wcid)
@@ -576,7 +637,7 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         return removed;
     }
 
-    static void DepositAll(Player player, Settings settings)
+    internal static bool DepositAll(Player player, Settings settings)
     {
         SalvageBankSettings sb = settings.SalvageBank;
         Dictionary<int, long> credits = new();
@@ -601,10 +662,7 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         }
 
         if (credits.Count == 0)
-        {
-            player.SendMessage("No items matched salvage deposit rules (configure LeyLineLedger SalvageBank.DepositRules).");
-            return;
-        }
+            return false;
 
         foreach (KeyValuePair<int, long> kv in credits)
             player.IncBanked(kv.Key, kv.Value);
@@ -622,6 +680,7 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         player.SendMessage($"Deposited {FormatDepositedSalvageSummary(items, sb.Redeem.UnitsPerBag)}. Use /bank salvage status to review.");
 
         TryGrantSalvageHoarder(player, sb);
+        return true;
     }
 
     static void TryGrantSalvageHoarder(Player player, SalvageBankSettings sb)

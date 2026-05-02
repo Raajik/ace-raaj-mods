@@ -39,6 +39,9 @@ Consolidated loot-table control replacing `SharedLoot` + `BetterChestLoot`.
 - **Global rare drops** — SpellSiphon tool and Mana Lattice have a small chance to drop from any creature with a treasure profile.
 - **Salvage bag shaping** — auto-shapes dropped salvage bags to 100-unit stacks.
 - **Loot rolling** — pooled rarity system (common/uncommon/rare/extremely rare) with independent salvage and gear rolls.
+- **Gear ratings** — all gear tiers can spawn with ratings (Damage Rating, Crit Damage Rating, Resist Rating, etc.). Higher tiers = higher values and better odds.
+- **Gear equipment sets** — all gear tiers can roll as part of an equipment set (Carraidas, Noble Relic, Ancient Relic, etc.).
+- **Rating level-up scaling** — ratings on gear grow as the item levels up via EmpyreanAlteration's awakening system (every N levels, existing ratings increase).
 - **Runtime config** — `LootConfig.json` (shared with Loremaster) controls all pools without recompiling.
 
 ### ChallengeModes
@@ -104,16 +107,15 @@ Formula-driven server balance via [AngouriMath](https://github.com/asc-community
 - **XP and level costs** — tune curves without recompiling.
 - **Extensible expression set** — add new formula overrides in `Settings.json`.
 
-### LivingEquipment
+### LivingEquipment *(absorbed into EmpyreanAlteration, 2026-05-01)*
 Player-driven item awakening system using Coalesced Mana consumables.
 - **Awaken equippables** — use Lesser (max 25), Greater (max 50), or Aetheric (max 75) Coalesced Mana to unlock item leveling.
 - **Named XP profiles** — QuickStart, Steady, Brutal, or Casual curves randomly assigned per awakening.
-- **MaterialType-based naming** — `Steel Longsword` becomes `Living Longsword`.
+- **MaterialType-based naming** — `Steel Longsword` becomes `Awakened Longsword` (player-driven) or `Living Longsword` (loot drops).
 - **Academy auto-awaken** — starter Academy weapons automatically awaken to Tier 1 when picked up.
-- **Vendor sales** — Academy weapons/Pathwarden armor sold at starter-town vendors with dynamic economy pricing.
-- **Visual indicator** — awakened items glow yellow/gold (`BoostHealth|BoostStamina` shader).
+- **Visual indicator** — awakened items glow red outline (`BoostHealth|BoostStamina = 20`).
 
-> **Loot mutation (pre-awakened/pre-imbued drops) absorbed into EmpyreanAlteration** to eliminate double-processing. LivingEquipment now handles Coalesced Mana interaction + vendor injection only.
+> **Standalone `LivingEquipment` mod deleted.** All functionality (Coalesced Mana use-on-target, auto-awaken on inventory add, custom XP curves, property tracking) now lives in **EmpyreanAlteration**. Enable `EmpyreanAlteration` to use these features.
 
 ### Overtinked
 Extended tinkering system.

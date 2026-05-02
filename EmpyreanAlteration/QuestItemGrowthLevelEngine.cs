@@ -115,7 +115,15 @@ internal static class QuestItemGrowthLevelEngine
             applied = true;
         }
 
-        QuestGrowthItemHelpers.EnsureAttunedIfLeveled(item, level);
+        // Generic rating scaling: ALL items with existing ratings get a bump every N levels.
+        // This ensures BetterLootControl-generated ratings on weapons, armor, and jewelry all scale.
+        if (settings.EnableGenericRatingLevelUp && level % settings.RatingLevelUpInterval == 0)
+        {
+            bool scaled = TryScaleExistingRatings(item, player, level, settings, emitMessages, summary);
+            if (scaled)
+                applied = true;
+        }
+
         return applied;
     }
 
@@ -751,6 +759,49 @@ internal static class QuestItemGrowthLevelEngine
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Generic rating scaling for ALL item types. Increments any existing non-zero ratings
+    /// (DamageRating, CritDamageRating, etc.) by a small amount every N levels.
+    /// This ensures BetterLootControl-generated ratings on weapons, armor, and jewelry
+    /// all grow consistently with awakened item leveling.
+    /// </summary>
+    private static bool TryScaleExistingRatings(WorldObject item, Player player, int level, Settings settings, bool emitMessages, GrowthSummary? summary)
+    {
+        if (item == null || settings.RatingLevelUpAmount <= 0)
+            return false;
+
+        var ratingProps = new (PropertyInt prop, string name, Action<int>? track)[]
+        {
+            (PropertyInt.DamageRating, "Damage Rating", v => { if (summary != null) summary.GearDamageRatingSteps += v; }),
+            (PropertyInt.CritDamageRating, "Crit Damage Rating", v => { if (summary != null) summary.GearCritDamageRatingSteps += v; }),
+            (PropertyInt.DamageResistRating, "Damage Resist Rating", v => { if (summary != null) summary.GearDamageResistRatingSteps += v; }),
+            (PropertyInt.CritDamageResistRating, "Crit Damage Resist Rating", v => { if (summary != null) summary.GearCritDamageResistRatingSteps += v; }),
+            (PropertyInt.CritRating, "Crit Rating", null),
+            (PropertyInt.HealingBoostRating, "Healing Boost Rating", v => { if (summary != null) summary.GearHealingBoostRatingGained += v; }),
+            (PropertyInt.GearMaxHealth, "Vitality Rating", v => { if (summary != null) summary.GearVitalityRatingGained += v; }),
+        };
+
+        bool anyScaled = false;
+        int amount = settings.RatingLevelUpAmount;
+
+        foreach (var (prop, name, track) in ratingProps)
+        {
+            int current = item.GetProperty(prop) ?? 0;
+            if (current > 0)
+            {
+                int next = current + amount;
+                item.SetProperty(prop, next);
+                track?.Invoke(amount);
+                anyScaled = true;
+
+                if (emitMessages)
+                    player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{amount} {name} ({current} → {next}).");
+            }
+        }
+
+        return anyScaled;
     }
 }
 

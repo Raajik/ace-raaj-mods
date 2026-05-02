@@ -8,7 +8,7 @@ namespace Swarmed.Features;
 
 /// <summary>
 /// Gives CreatureEx special mobs a guaranteed bonus loot package:
-/// extra random loot rolls (auto-imbued/awakened by LivingEquipment if enabled).
+/// extra random loot rolls (auto-imbued/awakened by EmpyreanAlteration if enabled).
 /// </summary>
 [HarmonyPatchCategory(nameof(CreatureEx))]
 internal static class SpecialCreatureLoot

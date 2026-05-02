@@ -1,4 +1,6 @@
 using ACE.Common;
+using ACE.Entity.Enum;
+using ACE.Entity.Enum.Properties;
 using ACE.Server.Factories;
 using ACE.Server.WorldObjects;
 using System.Reflection;
@@ -93,7 +95,10 @@ public static class LootRoller
 
         var item = CreateItemFromCategory(config.gear);
         if (item != null)
+        {
             TryApplyEmpyreanAlteration(item);
+            ApplyGearEnhancements(item);
+        }
 
         return item;
     }
@@ -191,11 +196,9 @@ public static class LootRoller
     /// <summary>
     /// Cross-mod bridge: if EmpyreanAlteration is loaded, runs its loot mutator on the item
     /// so it may spawn pre-awakened and/or pre-imbued.
-    /// Falls back to LivingEquipment if present (legacy, pre-migration).
     /// </summary>
     static void TryApplyEmpyreanAlteration(WorldObject item)
     {
-        // Try EmpyreanAlteration first (absorbed LivingEquipment loot mutation)
         try
         {
             var eaAsm = AppDomain.CurrentDomain.GetAssemblies()
@@ -217,24 +220,158 @@ public static class LootRoller
             }
         }
         catch { /* swallow — EA not present or incompatible */ }
+    }
 
-        // Legacy fallback: LivingEquipment (if still loaded independently)
+    /// <summary>
+    /// Rolls a synthetic tier (1-8) for gear items using the configured weights.
+    /// </summary>
+    internal static int RollGearTier()
+    {
+        var s = BetterLootControl.PatchClass.Settings;
+        var weights = s.GearTierWeights;
+        if (weights == null || weights.Count == 0)
+            return ThreadSafeRandom.Next(1, 8);
+
+        double total = 0;
+        for (int i = 0; i < weights.Count && i < 8; i++)
+            total += weights[i];
+
+        if (total <= 0)
+            return ThreadSafeRandom.Next(1, 8);
+
+        var roll = ThreadSafeRandom.Next(0.0f, (float)total);
+        double cumulative = 0;
+        for (int i = 0; i < weights.Count && i < 8; i++)
+        {
+            cumulative += weights[i];
+            if (roll <= cumulative)
+                return i + 1;
+        }
+        return Math.Min(weights.Count, 8);
+    }
+
+    /// <summary>
+    /// Applies ratings and/or equipment sets to a gear item based on its synthetic tier.
+    /// Called after gear item creation (and after EA mutator, if present).
+    /// </summary>
+    internal static void ApplyGearEnhancements(WorldObject item)
+    {
+        if (item == null)
+            return;
+
+        var s = BetterLootControl.PatchClass.Settings;
+        if (s == null)
+            return;
+
+        // Only apply to equippable gear shapes
+        if (!IsEquippableGear(item))
+            return;
+
+        int tier = RollGearTier();
+
+        // ── Ratings ──
+        if (s.EnableLootRatings)
+        {
+            var chances = s.RatingChancePerTier;
+            var mins = s.RatingValueMinPerTier;
+            var maxs = s.RatingValueMaxPerTier;
+            var types = s.RatingTypes;
+
+            float chance = tier >= 1 && tier <= chances.Count
+                ? (float)chances[tier - 1]
+                : 0.5f;
+
+            if (ThreadSafeRandom.Next(0.0f, 1.0f) < chance && types != null && types.Count > 0)
+            {
+                int minVal = tier >= 1 && tier <= mins.Count ? mins[tier - 1] : 1;
+                int maxVal = tier >= 1 && tier <= maxs.Count ? maxs[tier - 1] : 3;
+                if (minVal > maxVal) (minVal, maxVal) = (maxVal, minVal);
+
+                int rollCount = ThreadSafeRandom.Next(s.RatingRollCountMin, s.RatingRollCountMax);
+                var shuffled = types.OrderBy(_ => Random.Shared.Next()).ToList();
+
+                for (int i = 0; i < rollCount && i < shuffled.Count; i++)
+                {
+                    int value = minVal == maxVal ? minVal : ThreadSafeRandom.Next(minVal, maxVal);
+                    ApplyRating(item, shuffled[i], value);
+                }
+            }
+        }
+
+        // ── Equipment Sets ──
+        if (s.EnableLootEquipmentSets)
+        {
+            var setChances = s.EquipmentSetChancePerTier;
+            float setChance = tier >= 1 && tier <= setChances.Count
+                ? (float)setChances[tier - 1]
+                : 0.1f;
+
+            if (ThreadSafeRandom.Next(0.0f, 1.0f) < setChance)
+            {
+                var setIds = s.EquipmentSetIds;
+                if (setIds != null && setIds.Count > 0)
+                {
+                    int chosenId = setIds[ThreadSafeRandom.Next(0, setIds.Count - 1)];
+                    item.SetProperty(PropertyInt.EquipmentSetId, chosenId);
+                }
+            }
+        }
+    }
+
+    static bool IsEquippableGear(WorldObject item)
+    {
+        if (item == null)
+            return false;
+
+        var type = item.WeenieType;
+        if (type is WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster)
+            return true;
+        if (type == WeenieType.Clothing)
+            return true;
+        if (item.ValidLocations.HasValue && item.ValidLocations.Value != 0)
+            return true;
+        return false;
+    }
+
+    static void ApplyRating(WorldObject item, string ratingName, int value)
+    {
+        if (item == null || string.IsNullOrWhiteSpace(ratingName) || value <= 0)
+            return;
+
         try
         {
-            var leAsm = AppDomain.CurrentDomain.GetAssemblies()
-                .FirstOrDefault(a => a.GetName().Name == "LivingEquipment");
-            if (leAsm == null) return;
+            // Use reflection to find the WorldObject property by name (e.g., DamageRating, CritDamageRating, etc.)
+            // Most ratings are int? properties on WorldObject.
+            var prop = typeof(WorldObject).GetProperty(ratingName, BindingFlags.Instance | BindingFlags.Public);
+            if (prop != null && prop.PropertyType == typeof(int?))
+            {
+                int? current = (int?)prop.GetValue(item);
+                prop.SetValue(item, (current ?? 0) + value);
+                return;
+            }
 
-            var type = leAsm.GetType("LivingEquipment.LootMutator");
-            if (type == null) return;
+            // Fallback: map known names to PropertyInt and use SetProperty
+            PropertyInt? propInt = ratingName switch
+            {
+                "DamageRating" => PropertyInt.DamageRating,
+                "CritDamageRating" => PropertyInt.CritDamageRating,
+                "DamageResistRating" => PropertyInt.DamageResistRating,
+                "CritDamageResistRating" => PropertyInt.CritDamageResistRating,
+                "CritRating" => PropertyInt.CritRating,
+                "HealingBoostRating" => PropertyInt.HealingBoostRating,
+                "GearMaxHealth" => PropertyInt.GearMaxHealth,
+                _ => null
+            };
 
-            var method = type.GetMethod("ApplyToLootItem",
-                System.Reflection.BindingFlags.NonPublic |
-                System.Reflection.BindingFlags.Static);
-            if (method == null) return;
-
-            method.Invoke(null, new object[] { item, 5 });
+            if (propInt.HasValue)
+            {
+                int current = item.GetProperty(propInt.Value) ?? 0;
+                item.SetProperty(propInt.Value, current + value);
+            }
         }
-        catch { /* swallow — LivingEquipment not present or incompatible */ }
+        catch
+        {
+            // Swallow — bad rating name or property access failure
+        }
     }
 }

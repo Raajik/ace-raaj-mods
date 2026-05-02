@@ -1017,12 +1017,13 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
     // -- Heartbeat Patch (Follow Behavior) -------------------------------
 
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(Creature), nameof(Creature.Heartbeat), new Type[] { typeof(double) })]
-    public static void PostCombatPetHeartbeat(CombatPet __instance)
+    [HarmonyPatch(typeof(WorldObject), nameof(WorldObject.Heartbeat), new Type[] { typeof(double) })]
+    public static void PostCombatPetHeartbeat(WorldObject __instance)
     {
-        if (!TrackedPetGuids.ContainsKey(__instance.Guid.Full)) return;
+        if (__instance is not CombatPet combatPet) return;
+        if (!TrackedPetGuids.ContainsKey(combatPet.Guid.Full)) return;
 
-        var owner = __instance.P_PetOwner;
+        var owner = combatPet.P_PetOwner;
         if (owner == null || owner.IsDestroyed || owner.IsDead) return;
 
         // Combat-end cleanup: if owner hasn't dealt damage in 10s, destroy pet
@@ -1030,39 +1031,80 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         {
             if (DateTime.UtcNow - lastHit > CombatTimeout)
             {
-                __instance.Destroy();
-                RemoveFromTracking(__instance);
+                combatPet.Destroy();
+                RemoveFromTracking(combatPet);
                 return;
             }
         }
 
-        if (__instance.AttackTarget != null && !__instance.AttackTarget.IsDestroyed) return;
+        // Validate current attack target — clear if invalid
+        if (combatPet.AttackTarget != null)
+        {
+            if (IsInvalidPetTarget(combatPet, combatPet.AttackTarget, owner))
+                combatPet.AttackTarget = null;
+            else
+                return; // valid target, keep attacking
+        }
 
-        var dist = owner.GetCylinderDistance(__instance);
+        // No valid target — try to sync with owner's target
+        if (owner.AttackTarget is Creature ownerTarget && ownerTarget.IsAlive && !ownerTarget.IsDestroyed)
+        {
+            if (!IsInvalidPetTarget(combatPet, ownerTarget, owner))
+            {
+                combatPet.AttackTarget = ownerTarget;
+                return;
+            }
+        }
+
+        var dist = owner.GetCylinderDistance(combatPet);
         float maxDist = PatchClass.Settings?.SummoningClasses?.FollowMaxDistanceBeforeDestroy ?? 250f;
         float followThreshold = PatchClass.Settings?.SummoningClasses?.FollowDistanceThreshold ?? 15f;
 
         if (dist > maxDist)
         {
-            __instance.Destroy();
-            RemoveFromTracking(__instance);
+            combatPet.Destroy();
+            RemoveFromTracking(combatPet);
         }
         else if (dist > followThreshold)
         {
 #if REALM
-            var sameLandblock = owner.Location.InstancedLandblock == __instance.Location.InstancedLandblock;
+            var sameLandblock = owner.Location.InstancedLandblock == combatPet.Location.InstancedLandblock;
 #else
-            var sameLandblock = owner.Location.LandblockId == __instance.Location.LandblockId;
+            var sameLandblock = owner.Location.LandblockId == combatPet.Location.LandblockId;
 #endif
             if (sameLandblock)
             {
-                try { __instance.FakeTeleport(owner.Location.InFrontOf(0.1f)); } catch { }
+                try { combatPet.FakeTeleport(owner.Location.InFrontOf(0.1f)); } catch { }
             }
-            else if (!__instance.IsMoving)
+            else if (!combatPet.IsMoving)
             {
-                __instance.MoveTo(owner);
+                combatPet.MoveTo(owner);
             }
         }
+    }
+
+    static bool IsInvalidPetTarget(CombatPet pet, WorldObject? target, Player owner)
+    {
+        if (target == null || target.IsDestroyed) return true;
+        if (target == owner) return true;
+        if (target == pet) return true;
+
+        // Don't attack other pets from the same owner
+        if (target is CombatPet otherPet && otherPet.P_PetOwner == owner) return true;
+
+        // Don't attack non-hostile / passive creatures (cows, townsfolk, etc.)
+        if (target is Creature creature)
+        {
+            if (!creature.Attackable) return true;
+            var pk = creature.PlayerKillerStatus;
+            if (pk != PlayerKillerStatus.Creature && pk != PlayerKillerStatus.PK && pk != PlayerKillerStatus.PKLite)
+                return true;
+        }
+
+        // Don't attack players the owner can't damage
+        if (target is Player p && !owner.CanDamage(p)) return true;
+
+        return false;
     }
 
     // -- Cleanup on Logout/Teleport -------------------------------------

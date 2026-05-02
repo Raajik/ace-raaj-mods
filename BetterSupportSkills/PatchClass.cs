@@ -409,18 +409,6 @@ try
                 ModManager.Log("[BSS] SummoningClasses HandleCastSpell method not found", ModManager.LogLevel.Error);
             }
 
-            // Patch Creature.Heartbeat for follow behavior (CombatPet inherits it)
-            var heartbeat = AccessTools.Method(typeof(Creature), nameof(Creature.Heartbeat), new Type[] { typeof(double) });
-            if (heartbeat != null)
-            {
-                var hbPostfix = AccessTools.Method(typeof(Skills.SummoningClasses), "PostCombatPetHeartbeat");
-                if (hbPostfix != null)
-                {
-                    ModC.Harmony?.Patch(heartbeat, null, new HarmonyMethod(hbPostfix));
-                    ModManager.Log("[BSS] SummoningClasses CombatPet.Heartbeat postfix applied", ModManager.LogLevel.Info);
-                }
-            }
-
             // Patch Player.LogOut_Final for cleanup
             var logout = AccessTools.Method(typeof(Player), nameof(Player.LogOut_Final));
             if (logout != null)

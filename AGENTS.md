@@ -25,16 +25,16 @@ Always check in this order:
   - `FakeFloat 11012` = EnlightenmentPoolBonus (AureatePath / Loremaster / ChallengeModes)
   - `FakeInt 40113` = BuddySpawn tag (Swarmed)
   - `FakeInt 10029` = CreatureExType (Swarmed)
-  - `FakeBool 40130` = LivingEquipment.IsAwakened (LivingEquipment)
-  - `FakeInt 40131` = LivingEquipment.AwakenedTier (LivingEquipment)
-  - `FakeInt 40132` = LivingEquipment.PreImbuedCount (LivingEquipment)
-  - `FakeString 11033` = LivingEquipment.OriginalName (LivingEquipment)
-  - `FakeString 11034` = LivingEquipment.ProfileName (LivingEquipment)
-  - `FakeBool 40100` = GrowthItem (EmpyreanAlteration / LivingEquipment)
-  - `FakeBool 40130` = IsAwakened (LivingEquipment / EmpyreanAlteration)
-  - `FakeInt 40131` = AwakenedTier (LivingEquipment / EmpyreanAlteration)
-  - `FakeString 11033` = OriginalName (LivingEquipment / EmpyreanAlteration)
-  - `FakeString 11034` = ProfileName (LivingEquipment / EmpyreanAlteration)
+- `FakeBool 40130` = IsAwakened (EmpyreanAlteration)
+  - `FakeInt 40131` = AwakenedTier (EmpyreanAlteration)
+  - `FakeInt 40132` = PreImbuedCount (EmpyreanAlteration)
+  - `FakeString 11033` = OriginalName (EmpyreanAlteration)
+  - `FakeString 11034` = ProfileName (EmpyreanAlteration)
+  - `FakeBool 40100` = GrowthItem (EmpyreanAlteration)
+  - `FakeBool 40130` = IsAwakened (EmpyreanAlteration)
+  - `FakeInt 40131` = AwakenedTier (EmpyreanAlteration)
+  - `FakeString 11033` = OriginalName (EmpyreanAlteration)
+  - `FakeString 11034` = ProfileName (EmpyreanAlteration)
 
 ## 4. Agent Permissions
 - **DO:** Edit `Settings.json`, fix bugs, tune values, refactor for clarity.
@@ -133,7 +133,7 @@ Always check in this order:
 - **Static `HashSet<T>` is not thread-safe — use `ConcurrentDictionary<T, byte>` instead** — `HashSet.Add` / `.Remove` can throw `IndexOutOfRangeException` when called concurrently from multiple threads (e.g., `WorldManager` tick handlers). Replace with `ConcurrentDictionary<T, byte>` and use `TryAdd(key, 0)`, `TryRemove(key, out _)`, and `ContainsKey(key)`. This matches the existing pattern in `SummoningClasses.cs` (`TrackedPetGuids`).
 - **When investigating user-reported issues, ALWAYS ASK CLARIFYING QUESTIONS FIRST** — Do not dive into code research loops, log grepping, or file reading sprees before understanding what the user actually experiences. Ask: What commands did you run? What output did you see? What item types are affected? Is it all corpses or specific ones? This prevents wasted time and wrong assumptions.
 - **Cross-mod feature ownership: one mod owns the logic, the other calls via reflection bridge.** — When a feature (e.g., AutoSalvage) logically belongs in one mod (BetterSupportSkills) but is triggered by another (AutoLoot), consolidate ALL implementation in the owner mod and expose a single public API method. The caller mod uses a reflection bridge to invoke it. This avoids duplicating logic, prevents drift, and keeps the feature maintainable in one place. Example: `BetterSupportSkillsBridge.TryAutoSalvage(player, item)` replaces inline salvage logic in AutoLoot.
-- **Pre-awakened/pre-imbued loot mutation belongs in EmpyreanAlteration, not LivingEquipment.** — EA's `LootGrowthItem.TryMutateLoot` fires via `MutatorHooks.PostCreateAndMutateWcid`, which catches ALL loot (including vendor items) through the ACE `CreateAndMutateWcid` pipeline. LivingEquipment's `LootGenerationHook` targeted `CreateRandomLootObject` (singular) which may not fire for vendor items. Pre-awaken drops, quest equipment auto-awaken, and monster loot wield caps are all in EA. LivingEquipment retains: Coalesced Mana use-on-target, vendor injection, and auto-awaken on inventory add.
+- **LivingEquipment mod fully absorbed into EmpyreanAlteration (2026-05-01).** — The standalone `LivingEquipment` mod has been deleted. All functionality now lives in `EmpyreanAlteration`: `LivingEquipmentProperties` (FakeBool 40130 / FakeInt 40131/40132 / FakeString 11033/11034), `LivingItemAwakener` (manual Coalesced Mana use-on-target awakening + auto-awaken on inventory add), `LivingItemHooks` (`AcademyAutoAwakenHook` + `LivingEquipmentUseOnTarget`), and profile-based custom XP curves integrated into `QuestItemGrowthHarmony`. Do not recreate a standalone `LivingEquipment` mod; extend EA instead.
 - **ACE `Player_Use.cs` enforces `TargetType` compatibility before `HandleActionUseOnTarget` fires.** — Line 139 checks `((sourceItem.TargetType ?? ItemType.None) & target.ItemType) == ItemType.None` and blocks the interaction with `SendTransientError`. If a modded item-on-item workflow silently fails, verify the tool's `TargetType` bitmask includes the target's `ItemType`. SpellSiphon was blocked because `TargetType = 33569` lacked `Misc` (Coalesced Mana is `ItemType.Misc`).
 - **AC client uses Windows-1252 encoding — avoid Unicode em-dashes and smart quotes in weenie strings.** — The AC client renders `weenie_properties_string` values using Windows-1252. Unicode characters like `—` (em-dash, U+2014) and `“”` (smart quotes) display as garbled symbols. Always use ASCII equivalents (`-`, `""`) in SQL that populates `weenie_properties_string`.
 - **Bidirectional use-on-target UX pattern.** — When implementing item-on-item interactions, support both directions (`Tool → Target` and `Target → Tool`) to match player intuition. In SpellSiphon, both `Spellsiphon → Coalesced Mana` and `Coalesced Mana → Spellsiphon` now trigger charging. This requires both items to have compatible `TargetType` masks.
@@ -170,8 +170,8 @@ Always check in this order:
     - `mysql -u jeremy -pandersine11 ace_shard -e "SELECT COUNT(*) FROM biota WHERE weenie_class_id = 3669;"`
     - Apply SQL file: `mysql -u jeremy -pandersine11 ace_world < path/to/file.sql`
 - **Vendor inventory injection — use WCID detection, NOT inventory scanning** — Detecting vendor type by scanning `vendor.DefaultItemsForSale` fails when the inventory is empty at approach time (before rotation). Always detect by vendor `WeenieClassId` or `MerchandiseItemTypes` bitmask directly. Example: `AcademyBlacksmithWcids.Contains(vendor.WeenieClassId)` or `(merchTypes.Value & (int)ItemType.Armor) != 0`.
-- **Harmony prefix priority for vendor approach ordering** — When multiple mods inject items into vendor inventory on `Vendor.ApproachVendor`, set priorities so the mod that CLEARS inventory runs first (`Priority.First`) and the mod that ADDS static items runs last (`Priority.Last`). Example: QOL VendorLootRotation clears+generates at `Priority.First`; LivingEquipment injects Academy weapons at `Priority.Last`.
-- **Cross-mod vendor pricing via reflection bridge** — When one mod (LivingEquipment) needs another mod's (LeyLineLedger) economy multiplier without a project reference, use `AppDomain.CurrentDomain.GetAssemblies()` + `GetType()` + `GetMethod()` + `Invoke()`. Always wrap in try/catch with fallback (default 1.0x). Cache the reflected MethodInfo if called frequently.
+- **Harmony prefix priority for vendor approach ordering** — When multiple mods inject items into vendor inventory on `Vendor.ApproachVendor`, set priorities so the mod that CLEARS inventory runs first (`Priority.First`) and the mod that ADDS static items runs last (`Priority.Last`). Example: QOL VendorLootRotation clears+generates at `Priority.First`; EmpyreanAlteration (or any static injector) adds items at `Priority.Last`.
+- **Cross-mod vendor pricing via reflection bridge** — When one mod (e.g., EmpyreanAlteration) needs another mod's (LeyLineLedger) economy multiplier without a project reference, use `AppDomain.CurrentDomain.GetAssemblies()` + `GetType()` + `GetMethod()` + `Invoke()`. Always wrap in try/catch with fallback (default 1.0x). Cache the reflected MethodInfo if called frequently.
 - **UiEffects values for item visual overlay** — ACE `UiEffects` enum (PropertyInt=18) controls both 3D shader and inventory icon glow:
   - `Magical=1` (blue), `Poisoned=2` (green), `BoostHealth=4` (yellow), `BoostMana=8` (blue), `BoostStamina=16` (yellow)
   - `Fire=32` (red), `Lightning=64` (purple), `Frost=128` (white), `Acid=256` (green), `Nether=4096` (dark purple)
@@ -188,7 +188,8 @@ Always check in this order:
 - **Foolproof imbue salvage items must NOT stack.** Setting `MaxStackSize` on foolproof items (e.g., Foolproof Aquamarine, Foolproof Black Garnet) causes them to break or behave incorrectly. In `LootRoller.CreateItemFromCategory`, explicitly exclude items whose `Name.Contains("Foolproof")` from `MaxStackSize` assignment. Same applies to any other non-stackable modded items.
 - **Runtime JSON configs override compiled defaults.** `DefaultLootConfig.cs` is a fallback only. The active config is `Loremaster/LootConfig.json` (or whatever `LootConfigPaths.ResolveLootConfigPath` returns). Any changes to `DefaultLootConfig.cs` must be mirrored in the JSON or they won't appear at runtime.
 - **BetterLootControl is the single source of truth for all loot tables.** Any mod needing bonus loot pools (Loremaster repeat-solves, Lockboxes, WorldEvents placement rewards) should reference `BetterLootControl` (the consolidated mod absorbing `SharedLoot` + `BetterChestLoot`), not individual mods.
-- **Preserve old namespace when migrating shared-library files into a consolidated mod.** When absorbing a shared mod (e.g., `SharedLoot`) into a new consolidated mod (`BetterLootControl`), keep the original `namespace` on migrated files. This avoids cascading `using` changes across all dependent mods. Only update the `.csproj` `ProjectReference` in dependents.
+- **Use `PropertyInt` fallback when dynamically assigning ratings by string name.** — `WorldObject` exposes some ratings as nullable `int?` properties (e.g., `DamageRating`, `CritDamageRating`) while others are only accessible via `GetProperty(PropertyInt)`. When applying ratings dynamically by name (e.g., from JSON config), try reflection on the property first, then fall back to a `switch` mapping string→`PropertyInt`. This handles both patterns without compile-time dependency on every possible rating.
+- **Generic rating scaling across ALL item types** — When item ratings need to level up regardless of category (weapon/armor/jewelry/shield), add a `TryScaleExistingRatings` step after the category-specific `ApplyLevelUp` effects. Iterate over known `PropertyInt` ratings, check if current > 0, increment by configurable amount every N levels. This ensures ratings generated by any mod (BLC, EA, etc.) scale consistently.
 
 ## 9. External Knowledge Base
 - **`A:\obsidian\jeremy\AGENT.md`** — LLM Wiki Agent rulebook. At the end of every task, consult and follow its instructions for knowledge persistence.

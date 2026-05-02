@@ -399,16 +399,23 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             verbToken.Equals("d", StringComparison.OrdinalIgnoreCase))
         {
             // Always deposit salvage unless explicitly disabled
-            bool skipSalvage = parameters.Length >= 2 && 
+            bool skipSalvage = parameters.Length >= 2 &&
                 (parameters[1].Equals("no", StringComparison.OrdinalIgnoreCase) ||
                  parameters[1].Equals("skip", StringComparison.OrdinalIgnoreCase));
 
-            BankExtensions.DepositAllCash(session);
-            BankExtensions.DepositAllLuminance(session);
-            BankExtensions.DepositAllItems(session);
+            bool any = BankExtensions.DepositAllCash(session);
+            any |= BankExtensions.DepositAllLuminance(session);
+            any |= BankExtensions.DepositAllItems(session);
 
             if (!skipSalvage && Settings.SalvageBank is { Enabled: true })
-                BankSalvage.Handle(session, new[] { "salvage", "deposit" });
+            {
+                bool salvaged = BankSalvage.DepositAll(player, PatchClass.Settings);
+                if (salvaged)
+                    any = true;
+            }
+
+            if (!any)
+                player.SendMessage("You have nothing eligible for deposit.");
 
             return;
         }
@@ -469,6 +476,19 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 return;
             }
 
+            // Denominated families: /b w pyreal 100 withdraws base units in optimal denominations
+            if (DenominatedBank.TokenMatchesFamily(currencyToken, out var family))
+            {
+                var itemAmountToken = parameters[2];
+                if (!int.TryParse(itemAmountToken, out var withdrawQty) || withdrawQty <= 0)
+                {
+                    player.SendMessage($"Usage: /b w {currencyToken} <amount> - amount must be a positive number of base units.");
+                    return;
+                }
+                DenominatedBank.WithdrawFamily(player, currencyToken, withdrawQty);
+                return;
+            }
+
             if (!currencyToken.Equals("pyreals", StringComparison.OrdinalIgnoreCase) &&
                 !currencyToken.Equals("p", StringComparison.OrdinalIgnoreCase))
             {
@@ -479,7 +499,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                     var itemAmountToken = parameters[2];
                     if (!int.TryParse(itemAmountToken, out var withdrawQty) || withdrawQty <= 0)
                     {
-                        player.SendMessage($"Usage: /b w {currencyToken} <amount> — amount must be a positive number.");
+                        player.SendMessage($"Usage: /b w {currencyToken} <amount> - amount must be a positive number.");
                         return;
                     }
 
@@ -527,10 +547,19 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                         BankSalvage.Handle(session, expanded);
                         return;
                     }
+
+                    var salSuggest = BankSalvage.SuggestClosest(currencyToken);
+                    if (salSuggest != null)
+                        player.SendMessage($"Did you mean: {salSuggest}?");
                 }
+
+                var bankSuggest = DenominatedBank.SuggestFamily(currencyToken) ?? FuzzySuggestBankItem(currencyToken);
+                if (bankSuggest != null)
+                    player.SendMessage($"Did you mean: {bankSuggest}?");
 
                 player.SendMessage($"Unknown currency or item '{currencyToken}'. Use /b list to see what you have banked.");
                 player.SendMessage("Usage: /bank withdraw pyreals <amount> | withdraw luminance <amount> | withdraw salvage <material> [bags] | withdraw <item> <amount>");
+                player.SendMessage("Families: pyreal, crystal, shadow  (e.g. /b w pyreal 100)");
                 return;
             }
 
@@ -668,9 +697,11 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         foreach (var entry in ownedItems)
             sb.Append($"\n{entry.Item.Name}:\n  {entry.Banked:N0} banked, {entry.Held:N0} held");
 
+        DenominatedBank.AppendStatus(player, sb);
+
         if (ownedItems.Count == 0 && pyrealsBanked == 0 && pyrealsHeld == 0)
         {
-            sb.Append("\n  (nothing banked yet — deposit items with /bank deposit <name> <amount>)");
+            sb.Append("\n  (nothing banked yet - deposit items with /bank deposit <name> <amount>)");
         }
 
         player.SendMessage($"{sb}");
@@ -912,6 +943,34 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         return null;
     }
 
+    /// <summary>Suggest close bank item names when fuzzy find fails.</summary>
+    static string? FuzzySuggestBankItem(string token)
+    {
+        if (string.IsNullOrWhiteSpace(token) || PatchClass.Settings.Items == null)
+            return null;
+
+        var lower = token.ToLowerInvariant();
+        var matches = PatchClass.Settings.Items
+            .Where(x => x.Name.StartsWith(lower, StringComparison.OrdinalIgnoreCase) ||
+                       lower.StartsWith(x.Name, StringComparison.OrdinalIgnoreCase) ||
+                       (x.Aliases != null && x.Aliases.Any(a => a.StartsWith(lower, StringComparison.OrdinalIgnoreCase))))
+            .Select(x => x.Name)
+            .Take(3)
+            .ToList();
+
+        if (matches.Count == 0)
+        {
+            matches = PatchClass.Settings.Items
+                .Where(x => x.Name.Contains(lower, StringComparison.OrdinalIgnoreCase) ||
+                           (x.Aliases != null && x.Aliases.Any(a => a.Contains(lower, StringComparison.OrdinalIgnoreCase))))
+                .Select(x => x.Name)
+                .Take(3)
+                .ToList();
+        }
+
+        return matches.Count > 0 ? string.Join(", ", matches) : null;
+    }
+
     /// <summary>
     /// Fuzzy-find a salvage deposit rule by partial material name.
     /// </summary>
@@ -1043,7 +1102,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 player.SendMessage($"  Pool multiplier: {multiplier:F2}x");
                 player.SendMessage($"  Buy price: {buyPrice:N0} | Sell price: {sellPrice:N0}");
                 if (isStatic)
-                    player.SendMessage($"  [STATIC PRICE — not affected by pool depth]");
+                    player.SendMessage($"  [STATIC PRICE - not affected by pool depth]");
                 return;
             }
 
@@ -1064,7 +1123,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 player.SendMessage($"  Pool multiplier: {multiplier:F2}x");
                 player.SendMessage($"  Buy price: {buyPrice:N0} | Sell price: {sellPrice:N0}");
                 if (isStatic)
-                    player.SendMessage($"  [STATIC PRICE — not affected by pool depth]");
+                    player.SendMessage($"  [STATIC PRICE - not affected by pool depth]");
                 return;
             }
 
@@ -1240,8 +1299,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             player.SendMessage($"  QB prize pool: {qbPool:0.#} QB");
             player.SendMessage($"  Ticket price: {ticketPrice:N0} pyreals");
             player.SendMessage($"  Your tickets: {myTickets:N0}");
-            player.SendMessage("  /lottery buy <n> — purchase tickets");
-            player.SendMessage("  /donate pyreals|luminance|qb <amount> — donate to the prize pool");
+            player.SendMessage("  /lottery buy <n> - purchase tickets");
+            player.SendMessage("  /donate pyreals|luminance|qb <amount> - donate to the prize pool");
             return;
         }
 
@@ -1382,50 +1441,61 @@ public static class BankExtensions
     public static void IncBanked(this Player player, int prop, long amount) =>
         AccountBankStore.Add(player, prop, amount);
 
-    public static void DepositAllItems(Session session)
+    public static bool DepositAllItems(Session session)
     {
         Player player = session.Player;
         if (player is null)
-            return;
+            return false;
 
-        if (PatchClass.Settings.Items is not { Count: > 0 })
-            return;
+        bool any = false;
 
-        foreach (BankItem item in PatchClass.Settings.Items)
+        if (PatchClass.Settings.Items is { Count: > 0 })
         {
-            if (item == null || item.Id == 0)
-                continue;
-
-            // Items like MMD are still fine; if you don't want them swept, remove them from Items.
-            int totalHeld = PatchClass.CountBankableWcid(player, item.Id);
-            if (item.VariantWeenieClassIds is { Count: > 0 })
+            foreach (BankItem item in PatchClass.Settings.Items)
             {
-                foreach (uint wcid in item.VariantWeenieClassIds)
+                if (item == null || item.Id == 0)
+                    continue;
+
+                int totalHeld = PatchClass.CountBankableWcid(player, item.Id);
+                if (item.VariantWeenieClassIds is { Count: > 0 })
                 {
-                    if (wcid == 0 || wcid == item.Id)
-                        continue;
+                    foreach (uint wcid in item.VariantWeenieClassIds)
+                    {
+                        if (wcid == 0 || wcid == item.Id)
+                            continue;
 
-                    totalHeld += PatchClass.CountBankableWcid(player, wcid);
+                        totalHeld += PatchClass.CountBankableWcid(player, wcid);
+                    }
                 }
+
+                if (totalHeld <= 0)
+                    continue;
+
+                int deposited = PatchClass.TryDepositIncludingVariants(player, item, totalHeld);
+                if (deposited <= 0)
+                    continue;
+
+                player.IncBanked(item.Prop, deposited);
+                player.SendMessage($"Deposited {deposited:N0} {item.Name}. {player.GetBanked(item.Prop)} banked, {player.GetNumInventoryItemsOfWCID(item.Id):N0} held");
+                any = true;
             }
-
-            if (totalHeld <= 0)
-                continue;
-
-            int deposited = PatchClass.TryDepositIncludingVariants(player, item, totalHeld);
-            if (deposited <= 0)
-                continue;
-
-            player.IncBanked(item.Prop, deposited);
-            player.SendMessage($"Deposited {deposited:N0} {item.Name}. {player.GetBanked(item.Prop)} banked, {player.GetNumInventoryItemsOfWCID(item.Id):N0} held");
         }
+
+        var denominated = DenominatedBank.DepositAllFamilies(player);
+        foreach (var msg in denominated)
+        {
+            player.SendMessage(msg);
+            any = true;
+        }
+
+        return any;
     }
 
-    public static void DepositAllCash(Session session)
+    public static bool DepositAllCash(Session session)
     {
         var player = session.Player;
         if (player is null)
-            return;
+            return false;
 
         // Coin stacks and tradenotes: ACE uses stack Value as total pyreals for that stack (same as AutoLoot coin path).
         // Peas: pyreals = (Value per unit × stack size) via PeaPyrealWcids.
@@ -1460,34 +1530,31 @@ public static class BankExtensions
         }
 
         if (itemCount <= 0 || total <= 0)
-        {
-            player.SendMessage("You have no currency items to deposit.");
-            return;
-        }
+            return false;
 
         player.IncCash(total);
         player.SendMessage($"Deposited {itemCount} currency items for {total:N0}.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0}.");
+        return true;
     }
 
-    public static void DepositAllLuminance(Session session)
+    public static bool DepositAllLuminance(Session session)
     {
         var player = session.Player;
         if (player is null)
-            return;
+            return false;
 
         var available = player.AvailableLuminance ?? 0;
         if (available <= 0)
-        {
-            player.SendMessage("You have no luminance to store.");
-            return;
-        }
+            return false;
 
         if (player.SpendLuminance(available))
         {
             long lum = available > long.MaxValue ? long.MaxValue : (long)available;
             player.IncBanked(PatchClass.Settings.LuminanceProperty, lum);
             player.SendMessage($"Stored {available} luminance.  You now have {player.GetBanked(PatchClass.Settings.LuminanceProperty):N0}.");
+            return true;
         }
+        return false;
     }
 
     public static void TransferPyreals(Session session, string amountToken, string targetName)
@@ -1940,7 +2007,7 @@ public enum Transaction
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Pre-unlock luminance redirect — bank luminance earned before the player
+// Pre-unlock luminance redirect - bank luminance earned before the player
 // has unlocked the luminance quest (MaximumLuminance == null or 0).
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -1967,7 +2034,7 @@ internal static class PreAddLuminanceRedirect
         // MaximumLuminance == null or 0 means luminance hasn't been unlocked yet
         var maxLum = __instance.MaximumLuminance ?? 0;
         if (maxLum > 0)
-            return true; // Luminance is unlocked — let vanilla handle it
+            return true; // Luminance is unlocked - let vanilla handle it
 
         // Bank the luminance instead of dropping it on the floor
         __instance.IncBanked(settings.LuminanceProperty, amount);

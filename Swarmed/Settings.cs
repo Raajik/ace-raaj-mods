@@ -231,7 +231,7 @@ public class Settings
     public CreatureVariationSettings CreatureVariation { get; set; } = new();
 
     [JsonPropertyName("// SpecialCreatureLoot")]
-    public string SpecialCreatureLootSectionDoc { get; init; } = "Guaranteed bonus loot for CreatureEx special mobs (salvage, uncommon+, and random loot auto-imbued by LivingEquipment).";
+    public string SpecialCreatureLootSectionDoc { get; init; } = "Guaranteed bonus loot for CreatureEx special mobs (salvage, uncommon+, and random loot auto-imbued by EmpyreanAlteration).";
     public SpecialCreatureLootSettings SpecialCreatureLoot { get; set; } = new();
 
     [JsonPropertyName("// DynamicMobScaling")]
@@ -389,11 +389,11 @@ public class SpecialCreatureLootSettings
     public int UncommonPlusCountMax { get; set; } = 1;
 
     [JsonPropertyName("// ImbuedCountMin")]
-    public string ImbuedCountMinDoc { get; init; } = "Minimum random loot items (auto-imbued by LivingEquipment) dropped.";
+    public string ImbuedCountMinDoc { get; init; } = "Minimum random loot items (auto-imbued by EmpyreanAlteration) dropped.";
     public int ImbuedCountMin { get; set; } = 2;
 
     [JsonPropertyName("// ImbuedCountMax")]
-    public string ImbuedCountMaxDoc { get; init; } = "Maximum random loot items (auto-imbued by LivingEquipment) dropped.";
+    public string ImbuedCountMaxDoc { get; init; } = "Maximum random loot items (auto-imbued by EmpyreanAlteration) dropped.";
     public int ImbuedCountMax { get; set; } = 5;
 }
 

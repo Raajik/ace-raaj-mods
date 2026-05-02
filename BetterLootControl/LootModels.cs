@@ -17,7 +17,7 @@ public class LootConfig
     public double SalvageChance { get; set; } = 0.25;
     public double GearChance { get; set; } = 0.25;
 
-    // Chance that a gear-pool item spawns pre-awakened (LivingEquipment).
+    // Chance that a gear-pool item spawns pre-awakened (EmpyreanAlteration).
     // Most gear should be normal so players manually awaken with Coalesced Mana.
     public double GearPreAwakenedChance { get; set; } = 0.10;
 

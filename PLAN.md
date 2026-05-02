@@ -363,16 +363,23 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
    - **Migration completed:** Scaffolded folder, migrated SharedLoot files (preserved `namespace SharedLoot` for zero C# changes in dependents), merged BCL patches into `BetterLootControl/PatchClass.cs` + `GlobalRareDrops.cs`, updated `Loremaster.csproj`, `CommonGoals.csproj`, `WorldEvents.csproj`, disabled old mods in `Meta.json`. Built + deployed to test server; verified clean startup (BLC Active, BCL Disabled).
    - **Remaining (Phase 8):** Delete `SharedLoot/` and `BetterChestLoot/` folders after live migration period.
 
-2. **LivingEquipment → EmpyreanAlteration Full Absorption** — **IN PROGRESS**
-   - **Goal:** Delete `LivingEquipment/` mod entirely. All remaining functionality (Coalesced Mana use-on-target awakening, vendor injection, auto-awaken on inventory add) absorbed into `EmpyreanAlteration`.
-   - **Current state:** Pre-awaken/pre-imbue loot logic already moved to EA (`LootGrowthItem.TryMutateLoot`). LE now only handles Coalesced Mana use-on-target + vendor injection + auto-awaken on pickup.
-   - **Remaining LE files to migrate:** `ItemAwakener.cs` (awakening engine), `PatchClass.cs` (use-on-target hooks, auto-awaken on inventory entry), `Settings.cs` (LE-specific settings), vendor injection logic.
-   - **Cross-mod references to clean:**
-     - ~~`SharedLoot/LootRoller.cs` `TryApplyLivingEquipment` reflection bridge → redirect to EA's mutator.~~ **DONE** — `BetterLootControl/LootRoller.cs` `TryApplyEmpyreanAlteration` now prefers EA, falls back to LE.
-     - `QOL/PatchClass.cs` vendor approach priority comment → update to reference EA.
-     - `EmpyreanAlteration/Mutators/LootGrowthItem.cs` comments → update/remove LE references.
-     - `Swarmed/Settings.cs` doc comments → update LE references.
-   - **Property ownership:** `LivingEquipmentProperties.IsAwakened` (FakeBool 40130), `AwakenedTier` (FakeInt 40131), `PreImbuedCount` (FakeInt 40132), `OriginalName` (FakeString 11033), `ProfileName` (FakeString 11034) — already documented in `AGENTS.md` as cross-mod shared IDs. EA should own these property constants after migration.
+2. **LivingEquipment → EmpyreanAlteration Full Absorption** — **DONE (2026-05-01)**
+   - **Goal:** Delete `LivingEquipment/` mod entirely. All remaining functionality absorbed into `EmpyreanAlteration`.
+   - **Migrated files:**
+     - `LivingEquipmentProperties.cs` → `EmpyreanAlteration/LivingEquipmentProperties.cs` (named constants for FakeBool 40130, FakeInt 40131/40132, FakeString 11033/11034).
+     - `ItemAwakener.cs` → `EmpyreanAlteration/Features/LivingItemAwakener.cs` (manual awakening engine + auto-awaken + profile rolling + curve math).
+     - `PatchClass.cs` hooks → `EmpyreanAlteration/Features/LivingItemHooks.cs` (`AcademyAutoAwakenHook` + `LivingEquipmentUseOnTarget` for bidirectional Coalesced Mana use-on-target).
+     - `LivingEquipmentXpCurve` → integrated into `QuestItemGrowthHarmony.cs` `PrefixItemTotalXPToLevel` / `PrefixItemLevelToTotalXP` (profile-based curve check before Geometric/CharacterTable fallthrough).
+   - **Settings absorbed:**
+     - Reused EA existing: `LootItemPreAwakenMaxLevels`, `LootItemPreAwakenXpProfiles`, `LootItemPreAwakenProfileWeights`, `LootItemPreAwakenUiEffects`.
+     - Added to EA: `Lesser/Greater/AethericCoalescedManaWcid`, `ManualAwakenPrefix` ("Awakened"), `AutoAwakenTier1Wcids`, `ArcaneLoreDifficulty`.
+   - **Cross-mod references cleaned:**
+     - `BetterLootControl/LootRoller.cs` — removed LE fallback bridge.
+     - `BetterLootControl/LootModels.cs` — updated comment.
+     - `QOL/PatchClass.cs` — updated vendor priority comment.
+     - `Swarmed/Features/SpecialCreatureLoot.cs` + `Swarmed/Settings.cs` — updated comments.
+   - **`LivingEquipment/` folder deleted.** All affected mods build clean (EA, BLC, QOL, Swarmed).
+   - **Property ownership:** EA now owns all 40130/40131/40132/11033/11034 constants.
 
 3. **Salvage Pool Split + Guaranteed Chest Drops** *(SharedLoot/BetterChestLoot)* — **DONE (2026-05-01)**
    - Split `salvage` into `salvage` (regular), `imbueSalvage`, `foolproofImbueSalvage` pools.
@@ -381,6 +388,18 @@ If a bug resurfaces after being marked fixed, it **automatically escalates to HI
    - `BetterChestLoot/PatchClass.cs`: Guaranteed 1 regular salvage + 1-3 common+ items + 25% imbue + 5% foolproof + 25% gear.
    - `Loremaster/LootConfig.json`: Synced runtime config with all new pools and chances.
    - Built, deployed to test server, verified.
+
+4. **BetterLootControl Gear Ratings + Equipment Sets** — **DONE (2026-05-01)**
+   - **Goal:** All tiers of gear loot can spawn with ratings and equipment sets; ratings scale with awakened item leveling.
+   - **BLC `Settings.cs` + `Settings.json`:** Added `EnableLootRatings`, `GearTierWeights`, `RatingChancePerTier`, `RatingValueMin/MaxPerTier`, `RatingRollCountMin/Max`, `RatingTypes`, `EnableLootEquipmentSets`, `EquipmentSetChancePerTier`, `EquipmentSetIds`.
+   - **BLC `LootRoller.cs`:**
+     - `RollGearTier()` — synthetic tier 1-8 roll using configurable weights (bell curve default).
+     - `ApplyGearEnhancements(item)` — called after every gear item creation. Rolls ratings (chance + value based on tier) and equipment sets (chance based on tier).
+     - `ApplyRating()` — uses reflection against `WorldObject` properties (e.g., `DamageRating`) with `PropertyInt` fallback.
+   - **EA `QuestItemGrowthLevelEngine.cs`:**
+     - Added `EnableGenericRatingLevelUp` (default true), `RatingLevelUpInterval` (5), `RatingLevelUpAmount` (1) to `Settings.QuestItemGrowth.cs`.
+     - `TryScaleExistingRatings()` — runs for ALL item types after category-specific level-up effects. Increments any existing non-zero ratings by `RatingLevelUpAmount` every `RatingLevelUpInterval` levels. Ensures BLC-generated ratings on weapons, armor, and jewelry all scale consistently.
+   - **Build:** Both BLC and EA compile clean (0 warnings, 0 errors).
 
 4. **Overtinked Salvage Weenie Edits Visibility** *(Overtinked)* — **BACKLOG**
    - **Problem:** Tinkering formula changes (increased armor from steel, increased damage from iron, increased protection/bane from armoredillo hide, etc.) implemented via Harmony patches may not be visible in-game because ACE caches weenie properties at startup or because the recipe system reads from weenie DB tables directly rather than from patched runtime values.

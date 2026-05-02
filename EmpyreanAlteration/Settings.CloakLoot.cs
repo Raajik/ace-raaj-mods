@@ -4,7 +4,7 @@ public partial class Settings
 {
     [JsonPropertyName("// EnableCloakLootUpgrade")]
     public string EnableCloakLootUpgradeDoc { get; init; } =
-        "When true, CloakLootUpgrade mutator runs on cloak treasure rolls: strips retail cap-only item level, clears level wield, Living pre-awaken with ItemMaxLevel = min(cloakTier*5, ItemLevelingCap), guaranteed ratings + cloak equipment set re-roll, 1–5 armor cantrips.";
+        "When true, CloakLootUpgrade mutator runs on cloak treasure rolls: strips retail cap-only item level, clears level wield, Living pre-awaken with ItemMaxLevel = min(cloakTier*5, ItemLevelingCap), optional defense imbue (same as loot: EnableLootItemPreImbue + LootItemPreImbueChance), guaranteed ratings + cloak equipment set re-roll, 1–5 armor cantrips.";
 
     public bool EnableCloakLootUpgrade { get; set; } = true;
 

@@ -282,6 +282,25 @@ internal class LootGrowthItem : Mutator
         return false;
     }
 
+    // CloakLootUpgrade skips TryMutateLoot for cloaks; call this so defense imbues match EnableLootItemPreImbue + LootItemPreImbueChance.
+    internal static bool TryCloakLootDefenseImbue(WorldObject item)
+    {
+        if (item.ImbuedEffect != 0)
+            return false;
+
+        if (!PatchClass.Settings.EnableLootItemPreImbue)
+            return false;
+
+        double chance = PatchClass.Settings.LootItemPreImbueChance;
+        if (chance <= 0)
+            return false;
+
+        if (Random.Shared.NextDouble() > chance)
+            return false;
+
+        return TryApplyDefenseImbue(item);
+    }
+
     // Exclusive weighted pool for weapons — one outcome, no conflicting imbue combos.
     // Weights: Rend 40, SecondaryImbue 25, Slayer 20, Cleave 10, Multistrike 5
     private static bool TryApplyWeaponSpecial(WorldObject item)
@@ -367,7 +386,7 @@ internal class LootGrowthItem : Mutator
         return true;
     }
 
-    private static bool TryApplyDefenseImbue(WorldObject item)
+    internal static bool TryApplyDefenseImbue(WorldObject item)
     {
         ImbuedEffectType[] pool =
         {

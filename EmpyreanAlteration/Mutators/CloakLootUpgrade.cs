@@ -6,7 +6,7 @@ using ACE.Server.Factories.Tables;
 
 namespace EmpyreanAlteration.Mutators;
 
-// Post-CreateAndMutateWcid: retail cloaks get Living awaken, ratings, cloak set, armor cantrips, and no level wield.
+// Post-CreateAndMutateWcid: retail cloaks get Living awaken, optional defense imbue (LootGrowthItem parity), ratings, cloak set, armor cantrips, and no level wield.
 internal class CloakLootUpgrade : Mutator
 {
     public override bool CheckMutatesLoot(HashSet<Mutation> mutations, TreasureDeath profile, TreasureRoll roll, WorldObject? item = null)
@@ -44,6 +44,8 @@ internal class CloakLootUpgrade : Mutator
             return false;
 
         ApplyLivingPreAwakenCloak(item, s, maxLevel);
+
+        LootGrowthItem.TryCloakLootDefenseImbue(item);
 
         item.EquipmentSetId = CloakChance.RollEquipmentSet();
 

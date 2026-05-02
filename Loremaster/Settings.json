@@ -129,7 +129,7 @@
     "TierChallengingXpPercentMax": 2.5,
     "ParchmentTemplates": []
   },
-  "// EnableTrophyBurdenXp": "Award bonus XP for trophy/collectible turn-ins to a listed collector, scaled by burden; zero-burden weenies use TrophyEncumbranceWhenZero.",
+  "// EnableTrophyBurdenXp": "Award bonus XP for trophy/collectible turn-ins to a listed collector, scaled per item by burden (unit encumbrance for stacks) and multiplied by stack count given in one action; zero-burden weenies use TrophyEncumbranceWhenZero.",
   "EnableTrophyBurdenXp": true,
   "// TrophyQualityBonusChance": "Per turn-in: chance (0–1) for Quality specimen — 2× burden XP. Independent of Pristine.",
   "TrophyQualityBonusChance": 0.10,

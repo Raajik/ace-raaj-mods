@@ -80,7 +80,7 @@
   "// NpcStackTurnIn": "Bulk quest turn-in settings. StackableQuestWcids: items that can be bulk-turned-in. AutoBankLllRewards: deposit bankable rewards to LeyLineLedger. CheckPackSpaceForEquipment: block turn-in if main pack too full.",
   "NpcStackTurnIn": {
     "Enabled": true,
-    "StackableQuestWcids": [3669, 7045, 10864],
+    "StackableQuestWcids": [3669, 7045, 10864, 3680, 3681, 3682, 3683, 3684, 3685, 4133, 4134],
     "AutoBankLllRewards": true,
     "CheckPackSpaceForEquipment": true
   },

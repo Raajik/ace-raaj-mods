@@ -968,6 +968,6 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         var target = __instance.FindObject(targetGuid, Player.SearchLocations.Landblock, out _, out _, out _) as Container;
         var item = __instance.FindObject(itemGuid, Player.SearchLocations.MyInventory | Player.SearchLocations.MyEquippedItems, out _, out _, out _);
 
-        TrophyBurdenXp.HandleGiveRequest(__instance, target, item);
+        TrophyBurdenXp.HandleGiveRequest(__instance, target, item, amount);
     }
 }

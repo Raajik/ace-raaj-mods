@@ -53,6 +53,13 @@ INSERT INTO weenie_properties_int (object_Id, type, value) VALUES
 (3670, 11, 100),    -- Copper Heart
 (3674, 11, 100),    -- Ash Gromnie Tooth
 (3680, 11, 100),    -- Rat Tail
+(3681, 11, 100),    -- Black Rat Tail
+(3682, 11, 100),    -- Brown Rat Tail
+(3683, 11, 100),    -- Grey Rat Tail
+(3684, 11, 100),    -- Red Rat Tail
+(3685, 11, 100),    -- White Rat Tail
+(4133, 11, 100),    -- Tan Rat Tail
+(4134, 11, 100),    -- Russet Rat Tail
 (3686, 11, 100),    -- Black Rock
 (3692, 11, 100),    -- Black Stone
 (4233, 11, 100),    -- Armoredillo Hide

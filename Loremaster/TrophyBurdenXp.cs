@@ -95,7 +95,7 @@ internal static class TrophyBurdenXp
         }
     }
 
-    public static void HandleGiveRequest(Player player, WorldObject? target, WorldObject? item)
+    public static void HandleGiveRequest(Player player, WorldObject? target, WorldObject? item, int giveAmount)
     {
         var settings = PatchClass.Settings;
         if (settings?.EnableTrophyBurdenXp != true)
@@ -115,12 +115,22 @@ internal static class TrophyBurdenXp
             return;
         }
 
-        // Minimum value threshold — blocks cheap vendor items
+        var stackSize = Math.Max(1, item.StackSize ?? 1);
+        // ACE validates giveAmount <= stack before this chain; clamp defensively.
+        var units = giveAmount <= 0 ? stackSize : Math.Min(giveAmount, stackSize);
+
+        // Minimum value threshold per unit — blocks cheap vendor items (stack Value is total in ACE)
         var minValue = settings.TrophyMinBuyValue;
-        if (minValue > 0 && (item.Value ?? 0) < minValue)
+        if (minValue > 0)
         {
-            DebugLog($"Item {item.Name} value {item.Value ?? 0} < minimum {minValue}, skipping");
-            return;
+            int unitVal = item.StackUnitValue ?? 0;
+            if (unitVal <= 0)
+                unitVal = stackSize > 1 ? (item.Value ?? 0) / stackSize : (item.Value ?? 0);
+            if (unitVal < minValue)
+            {
+                DebugLog($"Item {item.Name} unit value {unitVal} < minimum {minValue}, skipping");
+                return;
+            }
         }
 
         var xpToNext = player.GetXpToNextLevel();
@@ -147,21 +157,23 @@ internal static class TrophyBurdenXp
         }
         else
         {
-            var rawBurden = item.EncumbranceVal ?? 0;
+            var totalEnc = item.EncumbranceVal ?? 0;
+            var unitEncFromProp = item.StackUnitEncumbrance;
+            var unitRaw = unitEncFromProp ?? (stackSize > 1 && totalEnc > 0 ? totalEnc / stackSize : totalEnc);
             var minWhenZero = Math.Max(0, settings.TrophyEncumbranceWhenZero);
-            var burden = rawBurden > 0 ? rawBurden : minWhenZero;
+            var burden = unitRaw > 0 ? unitRaw : minWhenZero;
             if (burden <= 0)
             {
                 DebugLog($"Item {item.Name} has no burden and TrophyEncumbranceWhenZero is 0, skipping");
                 return;
             }
             percentOfLevel = (burden / 100.0) * 0.15;
-            burdenNote = rawBurden <= 0 && minWhenZero > 0
-                ? $" (treat as {minWhenZero} burden; item has no listed encumbrance)"
+            burdenNote = unitRaw <= 0 && minWhenZero > 0
+                ? $" (treat as {minWhenZero} burden per item; stack has no unit encumbrance)"
                 : "";
         }
 
-        var baseBonusXp = (long)(xpToNext * percentOfLevel);
+        var baseBonusXp = (long)(xpToNext * percentOfLevel * units);
 
         var qc = Math.Clamp(settings.TrophyQualityBonusChance, 0.0, 1.0);
         var pc = Math.Clamp(settings.TrophyPristineBonusChance, 0.0, 1.0);
@@ -175,12 +187,12 @@ internal static class TrophyBurdenXp
         var bonusXp = (long)Math.Min((double)baseBonusXp * mult, long.MaxValue);
 
         DebugLog(
-            $"{player.Name} turned in {item.Name} (attuned={isAttuned}, burden-base={percentOfLevel:P2}), base={baseBonusXp}, mult={mult}, awarding {bonusXp}");
+            $"{player.Name} turned in {units}x {item.Name} (attuned={isAttuned}, burden-base={percentOfLevel:P2}), base={baseBonusXp}, mult={mult}, awarding {bonusXp}");
 
         if (bonusXp > 0)
         {
             ExternalXpGrants.GrantQuestXpWithoutMultiplier(player, bonusXp);
-            AppendLog(settings, player, item, bonusXp, isAttuned, mult);
+            AppendLog(settings, player, item, bonusXp, isAttuned, mult, units);
 
             var itemName = string.IsNullOrWhiteSpace(item.Name) ? "Trophy" : item.Name.Trim();
             var prefix = "";
@@ -191,7 +203,7 @@ internal static class TrophyBurdenXp
             else if (rolledQuality)
                 prefix = "Quality ";
 
-            var pctDisplay = percentOfLevel * mult * 100.0;
+            var pctDisplay = percentOfLevel * mult * units * 100.0;
             var yieldNote = mult switch
             {
                 2 => " — double yield",
@@ -199,14 +211,15 @@ internal static class TrophyBurdenXp
                 6 => " — exceptional specimen (×6)",
                 _ => "",
             };
+            var stackNote = units > 1 ? $"{units:N0}× " : "";
 
             var show = QuestXpAwardDisplay.EstimateCharacterXpAfterAchievementChain(player, bonusXp);
             player.SendMessage(
-                $"[Loremaster] {prefix}{itemName} turned in for +{show:N0} XP (~{pctDisplay:F2}% of level{yieldNote}){burdenNote}.");
+                $"[Loremaster] {prefix}{stackNote}{itemName} turned in for +{show:N0} XP (~{pctDisplay:F2}% of level{yieldNote}){burdenNote}.");
         }
     }
 
-    private static void AppendLog(Settings settings, Player player, WorldObject item, long xpAwarded, bool isAttuned, int mult)
+    private static void AppendLog(Settings settings, Player player, WorldObject item, long xpAwarded, bool isAttuned, int mult, int units)
     {
         if (!settings.TrophyLogEnabled || _logPath == null)
             return;
@@ -221,6 +234,7 @@ internal static class TrophyBurdenXp
                 item = item.Name ?? "",
                 wcid = item.WeenieClassId,
                 value = item.Value ?? 0,
+                units,
                 attuned = isAttuned,
                 mult,
                 xp = xpAwarded,

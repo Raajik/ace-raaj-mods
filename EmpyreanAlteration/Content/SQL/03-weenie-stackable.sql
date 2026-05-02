@@ -48,6 +48,13 @@ UPDATE weenie SET type = 51 WHERE class_Id IN (
     3670,    -- Copper Heart
     3674,    -- Ash Gromnie Tooth
     3680,    -- Rat Tail
+    3681,    -- Black Rat Tail
+    3682,    -- Brown Rat Tail
+    3683,    -- Grey Rat Tail
+    3684,    -- Red Rat Tail
+    3685,    -- White Rat Tail
+    4133,    -- Tan Rat Tail
+    4134,    -- Russet Rat Tail
     3686,    -- Black Rock
     3692,    -- Black Stone
     4233,    -- Armoredillo Hide

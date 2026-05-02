@@ -221,7 +221,7 @@ public class Settings
     public bool EnableOverrideCheckUseRequirements { get; set; } = false;
 
     [JsonPropertyName("// EnableTrophyBurdenXp")]
-    public string EnableTrophyBurdenXpDoc { get; init; } = "Award bonus XP when turning in trophies to a listed collector, scaled by item burden. Many collectibles have 0 encumbrance in data; use TrophyEncumbranceWhenZero for those.";
+    public string EnableTrophyBurdenXpDoc { get; init; } = "Award bonus XP when turning in trophies to a listed collector, scaled per item by burden (StackUnitEncumbrance when stacked) and multiplied by the number of items given in one action. Many collectibles have 0 encumbrance in data; use TrophyEncumbranceWhenZero for those.";
     public bool EnableTrophyBurdenXp { get; set; } = false;
 
     [JsonPropertyName("// TrophyEncumbranceWhenZero")]

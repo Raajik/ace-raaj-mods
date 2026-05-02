@@ -40,7 +40,7 @@ public static class VendorLootRotation
     /// WCIDs that must never be rotated and must keep their SQL create_list stock intact.
     /// Pathwarden starter vendors and any other quest-critical vendors go here.
     /// </summary>
-    static readonly HashSet<uint> _protectedVendorWcids = new() { 850300, 850301, 850302, 850303 };
+    static readonly HashSet<uint> _protectedVendorWcids = new() { 850300, 850301, 850302, 850303, 800039 };
 
     public static void Initialize(Settings settings)
     {

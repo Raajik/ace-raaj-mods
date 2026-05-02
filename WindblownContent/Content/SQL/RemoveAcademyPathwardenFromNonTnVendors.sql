@@ -5,7 +5,7 @@
 -- Mirror to wb_ace_world for live when ready. Restart ACE.Server after apply (weenie cache).
 
 DELETE cl FROM weenie_properties_create_list cl
-INNER JOIN weenie v ON v.id = cl.object_Id
+INNER JOIN weenie v ON v.class_Id = cl.object_Id
 WHERE v.class_Id NOT IN (850300, 850301, 850302, 850303)
   AND cl.weenie_Class_Id IN (
     12750, 12751, 12752, 12753, 12754, 12755, 12756, 12757, 12758, 12759, 12760,

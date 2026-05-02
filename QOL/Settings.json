@@ -84,7 +84,7 @@
     "AutoBankLllRewards": true,
     "CheckPackSpaceForEquipment": true
   },
-  "EnableVendorLootRotation": true,
+  "EnableVendorLootRotation": false,
   "VendorLootRotationMinutes": 15,
   "VendorLootMode": "Blacklist",
   "VendorLootWcids": [],
@@ -137,7 +137,7 @@
       "Pickup15": 0.0,
       "Pickup20": 0.0,
       "SkillHealSelf": 0.0,
-      "SkillHealOther": 0.0,
+      "SkillHealOther": 0.0
     }
   },
   "Defaults": {

@@ -56,13 +56,16 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         RegisterEnabledPatchCategories();
         CollectorsAcceptAll.Initialize();
         VendorLootRotation.Initialize(Settings);
-        TryApplyVendorLootRotationPatch();
+        // HARDCODE-DISABLED: VendorLootRotation should be handled by LeyLineLedger
+        // TryApplyVendorLootRotationPatch();
         ApplyWorldOpenSideEffects();
         AutoBuff.TryApply();
     }
 
     void TryApplyVendorLootRotationPatch()
     {
+        // HARD DISABLE — all vendor inventory management moved to LeyLineLedger
+        return;
         if (!Settings.EnableVendorLootRotation) return;
 
         try

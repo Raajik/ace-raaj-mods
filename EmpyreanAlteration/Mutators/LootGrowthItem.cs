@@ -15,6 +15,10 @@ internal class LootGrowthItem : Mutator
             return false;
 
         Settings settings = PatchClass.Settings;
+        // CloakLootUpgrade mutator owns cloak rolls when enabled (awaken, ratings, cantrips, wield strip).
+        if (settings.EnableCloakLootUpgrade && IsCloakRoll(roll, item))
+            return false;
+
         if (ShouldStripVanillaCapOnlyItemLevel(settings, roll, item))
             StripVanillaCapOnlyItemLevel(item);
 
@@ -75,9 +79,6 @@ internal class LootGrowthItem : Mutator
         if (!settings.LootGrowthReplaceVanillaCapWithoutItemXp)
             return false;
 
-        if (!item.HasItemLevel)
-            return false;
-
         if (item.GetProperty(FakeBool.GrowthItem) == true)
             return false;
 
@@ -90,18 +91,30 @@ internal class LootGrowthItem : Mutator
         if (!noItemXpTrack)
             return false;
 
-        if (roll.ItemType == TreasureItemType.Cloak)
+        // Retail MutateCloak: ItemMaxLevel 1–5 with no item XP track (HasItemLevel is false on these).
+        if (roll.IsCloak && item.ItemMaxLevel.HasValue && item.ItemMaxLevel.Value > 0)
             return true;
 
-        if (roll.ItemType == TreasureItemType.Undef
+        // ACE TreasureItemType_Orig.Undef == 0 (cloak WCID rolls may leave ItemType unset).
+        if ((int)roll.ItemType == 0
             && item.ValidLocations.HasValue
-            && (item.ValidLocations.Value & EquipMask.Cloak) != 0)
+            && (item.ValidLocations.Value & EquipMask.Cloak) != 0
+            && item.ItemMaxLevel.HasValue && item.ItemMaxLevel.Value > 0)
             return true;
 
         return false;
     }
 
-    static void StripVanillaCapOnlyItemLevel(WorldObject item)
+    internal static bool IsCloakRoll(TreasureRoll roll, WorldObject item)
+    {
+        if (roll.IsCloak)
+            return true;
+        return (int)roll.ItemType == 0
+            && item.ValidLocations.HasValue
+            && (item.ValidLocations.Value & EquipMask.Cloak) != 0;
+    }
+
+    internal static void StripVanillaCapOnlyItemLevel(WorldObject item)
     {
         item.ItemMaxLevel = null;
         item.ItemTotalXp = null;

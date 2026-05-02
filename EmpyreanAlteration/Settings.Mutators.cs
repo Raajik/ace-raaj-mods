@@ -14,6 +14,13 @@ public partial class Settings
     public List<MutatorSettings> Mutators { get; set; } =
         new()
         {
+            // Cloak loot: strip retail cap, clear wield, Living awaken (cap = cloakTier*5), ratings, set re-roll, cantrips.
+            new MutatorSettings(Mutation.CloakLootUpgrade.ToString())
+            {
+                Odds = nameof(OddsGroup.Always),
+                TreasureTargets = nameof(TargetGroup.Cloaks),
+                Events = MutationEvent.Containers | MutationEvent.Loot | MutationEvent.EmoteGive
+            },
             // Growth-style leveling from treasure containers.
             new MutatorSettings(Mutation.GrowthItem.ToString())
             {

@@ -96,6 +96,7 @@ public partial class Settings
         [nameof(TargetGroup.Equipables)] = TargetGroup.Equipables.SetOf(),
         [nameof(TargetGroup.Weapon)] = TargetGroup.Weapon.SetOf(),
         [nameof(TargetGroup.Wearables)] = TargetGroup.Wearables.SetOf(),
+        [nameof(TargetGroup.Cloaks)] = TargetGroup.Cloaks.SetOf(),
     };
 
     public Dictionary<string, WeenieType[]> WeenieTypeGroups { get; set; } = new()

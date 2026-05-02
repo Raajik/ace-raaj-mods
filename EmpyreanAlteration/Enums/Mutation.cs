@@ -9,6 +9,7 @@ public enum Mutation
     Enlightened,
     GrowthItem,
     LootGrowthItem,
+    CloakLootUpgrade,
     IronmanLocked,
     LocationLocked,
     ProcOnAttack,

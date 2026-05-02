@@ -537,7 +537,7 @@ internal static class XpTracker
             if (toSpend > 0)
             {
                 var (success, gained) = spendFn(toSpend);
-                if (success && gained > 0)
+                if (success)
                 {
                     results.Add(new SpendResult(name, gained, toSpend));
                     available -= toSpend;

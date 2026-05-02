@@ -1,38 +1,31 @@
-# Coalesced Mana & Vendor Fix — Task Plan
+# Task Plan — Gameplay Log Fix Sweep
 
-## Goal
-1. Move Coalesced Mana drops from vanilla ACE to BetterLootControl
-2. Fix QOL VendorLootRotation causing duplicate inventory / price desync
-3. Update all docs (PLAN.md, AGENTS.md, wiki, mod Readmes)
+## Issues (from 2026-05-02 live gameplay logs)
+
+1. **Shield thorns spam** — Messages fire every single reflect hit. Need to throttle to once per 30s max, and aggregate total/average damage in the message.
+2. **Mob scale XP messages** — Flooding chat with "[Mob Scale] +X bonus XP" on every kill. Likely inaccurate (would cause level flying). Should be removed entirely.
+3. **"/xp spend auto" failing** — "Your attempt to raise Maximum Health has failed" repeats constantly. Need to understand why `/xp spend auto` can't raise vitals.
+4. **AutoLoot scroll learning without skill** — "You are not trained in Void Magic!" fires when AutoLoot tries to learn scrolls the player doesn't have the skill for. Should pre-check `SkillAdvancementClass` before attempting.
+5. **AutoLoot vendor profile still present** — User completely removed vendor profile from AutoLoot but it still appears in-game. Need to find residual code.
+
+## Mods to investigate
+- `BetterSupportSkills` — thorns messages
+- `AureatePath` or `ChallengeModes` or `EasyServerSettings` — mob scale XP messages
+- `AureatePath` — `/xp spend auto` vital raising
+- `AutoLoot` — scroll learning + vendor profile
 
 ## Phases
+1. Investigate each issue (read source, trace message origins)
+2. Fix each issue in source
+3. Build all affected mods
+4. Deploy to test, verify
+5. Push live
 
-### Phase 1 — Disable Vanilla Coalesced Mana ✓
-- [x] `DisableVanillaCoalescedMana.cs` — Harmony prefix on `LootGenerationFactory.CreateCoalescedMana` returns null
+## Files to create/edit
+- `task_plan.md` (this)
+- `findings.md` — per-issue root cause notes
+- `progress.md` — track completion
 
-### Phase 2 — BLC Corpse Drops ✓
-- [x] `GlobalRareDrops.cs` — Added tier-appropriate Coalesced Mana drops
-- [x] `RollCoalescedManaWcid()` — T1-2 Aetheric, T3 mixed, T4 all three
-
-### Phase 3 — BLC Chest Loot ✓
-- [x] `DefaultLootConfig.cs` — Added 42516/42517/42518 to uncommon pool
-
-### Phase 4 — Settings & Config ✓
-- [x] `Settings.cs` — Added `CoalescedManaDropChance`, WCID configs
-- [x] `Settings.json` — Updated with defaults
-
-### Phase 5 — QOL VendorLootRotation Fix ✓
-- [x] Removed trailing comma in `AnimationSpeeds` JSON object
-- [x] Hardcoded `return` in `TryApplyVendorLootRotationPatch()`
-
-### Phase 6 — Docs Update ✓
-- [x] `AGENTS.md` — Consolidated 80+ bullet points into categorized sections
-- [x] `PLAN.md` — Marked all today's work as done
-- [x] Wiki — Updated `BetterLootControl.md`, created `Vendor System Architecture.md`, created `Radi.md`
-
-### Phase 7 — Build, Deploy, Verify ✓
-- [x] `dotnet build BetterLootControl` — clean (0 warnings)
-- [x] Deployed to live (`C:\ACE-WB\Mods\`)
-- [x] Restarted live server — confirmed 1 process, BLC 5 patches, no VendorLootRotation patch
-
-## All phases complete. Commit and push required.
+## Notes
+- All fixes must be committed separately
+- AGENTS.md deploy rules apply: test first, then live

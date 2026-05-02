@@ -341,7 +341,7 @@ internal static class DynamicMobScaling
             return;
 
         player.GrantXP(bonusXp, XpType.Kill, ShareType.All);
-        player.SendMessage($"[Mob Scale] +{bonusXp:N0} bonus XP from scaled {__instance.Name} (Lv.{scaledLevel.Value}).", ChatMessageType.Broadcast);
+        // Mob scale XP message removed — was too spammy and values were suspect.
     }
 
     static long GetEstimatedXpForLevel(int level)

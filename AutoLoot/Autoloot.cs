@@ -10,8 +10,6 @@ public class AutoLoot
 
     static readonly ConcurrentDictionary<uint, ConcurrentDictionary<string, LootCore>> lootProfiles = new();
     static readonly ConcurrentDictionary<uint, bool> lootNotifications = new();
-    static readonly ConcurrentDictionary<uint, bool> vendorTrashEnabled = new();
-    static readonly ConcurrentDictionary<uint, int> vendorTrashRatio = new();
     static readonly ConcurrentDictionary<uint, bool> unknownScrolls = new();
     internal static readonly ConcurrentDictionary<uint, int> autosalvageMode = new(); // 0=off, 1=short, 2=full
     static readonly ConcurrentDictionary<uint, bool> loadedPlayers = new();
@@ -491,8 +489,6 @@ public class AutoLoot
             }
 
             lootNotifications[LootKey(player)] = prefs.LootNotifications;
-            vendorTrashEnabled[LootKey(player)] = prefs.VendorTrashEnabled;
-            vendorTrashRatio[LootKey(player)] = prefs.VendorTrashRatio;
             unknownScrolls[LootKey(player)] = prefs.UnknownScrollsEnabled;
 
             keyUnlocks[LootKey(player)] = prefs.KeyUnlocks;
@@ -523,8 +519,6 @@ public class AutoLoot
                     .ToList() ?? [],
 
                 LootNotifications     = lootNotifications.GetOrAdd(LootKey(player), true),
-                VendorTrashEnabled    = vendorTrashEnabled.GetOrAdd(LootKey(player), false),
-                VendorTrashRatio      = vendorTrashRatio.GetOrAdd(LootKey(player), 50),
                 UnknownScrollsEnabled = unknownScrolls.GetOrAdd(LootKey(player), false),
 
                 KeyUnlocks = keyUnlocks.GetOrAdd(LootKey(player), 0),
@@ -687,28 +681,6 @@ public class AutoLoot
                 lootNotifications[LootKey(player)] = !current;
                 SavePrefs(player);
                 player.SendMessage($"Loot notifications: {(!current ? "ON" : "OFF")}");
-                return;
-            }
-
-            if (arg.Equals("vt", StringComparison.OrdinalIgnoreCase))
-            {
-                if (parameters.Length > 1 && int.TryParse(parameters[1], out int newRatio) && newRatio > 0)
-                {
-                    vendorTrashRatio[LootKey(player)] = newRatio;
-                    vendorTrashEnabled[LootKey(player)] = true;
-                    SavePrefs(player);
-                    player.SendMessage($"VendorTrash ON at {newRatio}:1 (loot items worth ≥ {newRatio}× their burden)");
-                }
-                else
-                {
-                    bool current = vendorTrashEnabled.GetOrAdd(LootKey(player), false);
-                    vendorTrashEnabled[LootKey(player)] = !current;
-                    int ratio = vendorTrashRatio.GetOrAdd(LootKey(player), 50);
-                    SavePrefs(player);
-                    player.SendMessage(!current
-                        ? $"VendorTrash ON at {ratio}:1 (loot items worth ≥ {ratio}× their burden)"
-                        : "VendorTrash OFF");
-                }
                 return;
             }
 
@@ -1007,13 +979,12 @@ public class AutoLoot
 
         lootProfiles.TryGetValue(LootKey(player), out var playerProfiles);
         bool hasProfiles = playerProfiles != null && !playerProfiles.IsEmpty;
-        bool hasVT = vendorTrashEnabled.GetOrAdd(LootKey(player), false);
         bool hasScrolls = unknownScrolls.GetOrAdd(LootKey(player), false);
         bool hasSalvage = BetterSupportSkillsBridge.IsSalvageEnabled(player)
                        && BetterSupportSkillsBridge.GetSalvageRate(player) > 0.0;
 
         bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
-        if (!hasProfiles && !hasVT && !hasScrolls && !hasSalvage && !hasLevel8Comps)
+        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps)
         {
             if (debug)
                 ModManager.Log($"AutoLoot: ProcessContainerLootClose early exit — no active loot for {player.Name}", ModManager.LogLevel.Info);
@@ -1028,7 +999,6 @@ public class AutoLoot
             var lootedItems = new Dictionary<string, int>();
             var lootedSet = new HashSet<WorldObject>();
             var scrollFallbackNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var lootedVTNames = new HashSet<string>();
             var noDupPatterns = PatchClass.Settings?.NoDuplicateNames ?? [];
 
             // ── Pass 1: .utl profiles ──────────────────────────────────────
@@ -1059,33 +1029,7 @@ public class AutoLoot
                 }
             }
 
-            // ── Pass 2: VendorTrash ────────────────────────────────────────
-            if (hasVT)
-            {
-                int threshold = vendorTrashRatio.GetOrAdd(LootKey(player), 50);
-                foreach (var item in items)
-                {
-                    if (lootedSet.Contains(item) || item.IsDestroyed) continue;
-
-                    var value = item.Value ?? 0;
-                    var burden = item.EncumbranceVal ?? 1;
-                    if (burden <= 0) burden = 1;
-
-                    if (value >= threshold * burden)
-                    {
-                        if (!container.TryRemoveFromInventory(item.Guid, out var removed))
-                            continue;
-
-                        var qty = removed.StackSize ?? 1;
-                        var lootName = LootDisplayName(removed);
-                        lootedItems.TryGetValue(lootName, out var existing);
-                        lootedItems[lootName] = existing + qty;
-                        lootedSet.Add(removed);
-                        lootedVTNames.Add(lootName);
-                        AutolootTryCreateInInventoryWithNetworking(player, removed);
-                    }
-                }
-            }
+            // ── Pass 2: VendorTrash (removed — no longer supported) ─────────
 
             // ── Pass 3: Unknown Scrolls ────────────────────────────────────
             if (hasScrolls)
@@ -1158,8 +1102,7 @@ public class AutoLoot
                 .Where(kvp => !scrollFallbackNames.Contains(kvp.Key))
                 .Select(kvp =>
                 {
-                    var suffix = lootedVTNames.Contains(kvp.Key) ? " [$]" : "";
-                    return kvp.Value == 1 ? $"a {kvp.Key}{suffix}" : $"{kvp.Value:N0} {kvp.Key}{suffix}";
+                    return kvp.Value == 1 ? $"a {kvp.Key}" : $"{kvp.Value:N0} {kvp.Key}";
                 })
                 .ToList();
 
@@ -1201,13 +1144,12 @@ public class AutoLoot
 
         lootProfiles.TryGetValue(LootKey(player), out var playerProfiles);
         bool hasProfiles    = playerProfiles != null && !playerProfiles.IsEmpty;
-        bool hasVT          = vendorTrashEnabled.GetOrAdd(LootKey(player), false);
         bool hasScrolls     = unknownScrolls.GetOrAdd(LootKey(player), false);
         bool hasSalvage     = BetterSupportSkillsBridge.IsSalvageEnabled(player)
                            && BetterSupportSkillsBridge.GetSalvageRate(player) > 0.0;
 
         bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
-        if (!hasProfiles && !hasVT && !hasScrolls && !hasSalvage && !hasLevel8Comps)
+        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps)
         {
             if (debug)
                 ModManager.Log($"AutoLoot: ProcessContainerLoot early exit — no active loot for {player.Name}", ModManager.LogLevel.Info);
@@ -1222,7 +1164,6 @@ public class AutoLoot
             var lootedItems   = new Dictionary<string, int>();
             var lootedSet     = new HashSet<WorldObject>();
             var scrollFallbackNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var lootedVTNames = new HashSet<string>();
 
             var noDupPatterns = PatchClass.Settings?.NoDuplicateNames ?? [];
 
@@ -1301,52 +1242,7 @@ public class AutoLoot
                 }
             }
 
-            // ── Pass 2: VendorTrash ──────────────────────────────────────────
-
-            if (hasVT)
-            {
-                int threshold = vendorTrashRatio.GetOrAdd(LootKey(player), 50);
-
-                foreach (var item in items)
-                {
-                    if (lootedSet.Contains(item))
-                        continue;
-
-                    var value  = item.Value ?? 0;
-                    var burden = item.EncumbranceVal ?? 1;
-                    if (burden <= 0) burden = 1;
-
-                    if (value >= threshold * burden)
-                    {
-                        if (!container.TryRemoveFromInventory(item.Guid, out var removed))
-                            continue;
-
-                        var qty = removed.StackSize ?? 1;
-
-                        if (TryBankCurrency(player, removed))
-                        {
-                            lootedItems.TryGetValue("Pyreals (banked)", out var existingBanked);
-                            long bankAddVt = PeaPyrealWcids.IsPea(removed.WeenieClassId)
-                                ? PeaPyrealWcids.GetPyrealValue(removed)
-                                : (long)(removed.Value ?? 0) * qty;
-                            int bankDeltaVt = bankAddVt > int.MaxValue ? int.MaxValue : (int)bankAddVt;
-                            lootedItems["Pyreals (banked)"] = existingBanked + bankDeltaVt;
-                            lootedSet.Add(removed);
-                            lootedVTNames.Add("Pyreals (banked)");
-                        }
-                        else
-                        {
-                            var lootName = LootDisplayName(removed);
-                            lootedItems.TryGetValue(lootName, out var existing);
-                            lootedItems[lootName] = existing + qty;
-
-                            lootedSet.Add(removed);
-                            lootedVTNames.Add(lootName);
-                            AutolootTryCreateInInventoryWithNetworking(player, removed);
-                        }
-                    }
-                }
-            }
+            // ── Pass 2: VendorTrash (removed — no longer supported) ─────────
 
             // ── Pass 3: Unknown Scrolls ──────────────────────────────────────
 
@@ -1377,16 +1273,8 @@ public class AutoLoot
                     if (player.SpellIsKnown(spellId))
                         continue;
 
-                    if (!container.TryRemoveFromInventory(item.Guid, out var removed))
+                    if (item is not Scroll scroll || scroll.Spell == null)
                         continue;
-
-                    var qty = removed.StackSize ?? 1;
-
-                    if (removed is not Scroll scroll || scroll.Spell == null)
-                    {
-                        FallbackLootScrollToInventory(removed, LootDisplayName(removed), qty);
-                        continue;
-                    }
 
                     // Custom scroll requirement: skill must be trained AND current skill >= spell level * 50 - 50
                     var scrollSkill = scroll.Spell.GetMagicSkill();
@@ -1395,15 +1283,14 @@ public class AutoLoot
                     bool canReadScroll = playerScrollSkill.AdvancementClass >= SkillAdvancementClass.Trained
                                       && playerScrollSkill.Current >= requiredSkill;
 
+                    // Silently skip scrolls the player cannot read (leave them in the corpse)
                     if (!canReadScroll)
-                    {
-                        string msg = playerScrollSkill.AdvancementClass < SkillAdvancementClass.Trained
-                            ? $"You are not trained in {playerScrollSkill.Skill.ToSentence()}!"
-                            : $"You are not skilled enough in {playerScrollSkill.Skill.ToSentence()} to learn this spell. (Requires {requiredSkill}, you have {playerScrollSkill.Current})";
-                        player.Session?.Network.EnqueueSend(new GameMessageSystemChat(msg, ChatMessageType.Broadcast));
-                        removed.Destroy(); // Don't pick up scrolls you can't read
                         continue;
-                    }
+
+                    if (!container.TryRemoveFromInventory(item.Guid, out var removed))
+                        continue;
+
+                    var qty = removed.StackSize ?? 1;
 
                     if (!DatManager.PortalDat.SpellTable.Spells.ContainsKey(spellId))
                     {
@@ -1486,8 +1373,7 @@ public class AutoLoot
                 .Where(kvp => !scrollFallbackNames.Contains(kvp.Key))
                 .Select(kvp =>
                 {
-                    var suffix = lootedVTNames.Contains(kvp.Key) ? " [$]" : "";
-                    return kvp.Value == 1 ? $"a {kvp.Key}{suffix}" : $"{kvp.Value:N0} {kvp.Key}{suffix}";
+                    return kvp.Value == 1 ? $"a {kvp.Key}" : $"{kvp.Value:N0} {kvp.Key}";
                 })
                 .ToList();
 

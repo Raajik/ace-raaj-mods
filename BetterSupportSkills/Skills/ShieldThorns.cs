@@ -17,6 +17,10 @@ internal static class ShieldThorns
         ModManager.Log($"[BSS ShieldThorns] {msg}", ModManager.LogLevel.Debug);
     }
 
+    static readonly ConcurrentDictionary<uint, ThornsMessageState> _thornsMsgState = new();
+
+    record ThornsMessageState(DateTime NextAllowedUtc, float AccumulatedDamage, int HitCount);
+
     public static void PostfixCalculateDamage(DamageEvent __result, Creature attacker, Creature defender, WorldObject damageSource)
     {
         if (__result == null)
@@ -127,15 +131,31 @@ internal static class ShieldThorns
             // Green burst visual on defender
             defender.PlayAnimation(PlayScript.EnchantUpGreen);
 
-            string msg;
-            if (onAllHits && !isEvade && !isBlock)
-                msg = $"Your crusader's wrath reflects {totalDamage} damage!";
-            else
-                msg = isEvade
-                    ? $"Your shield thorns reflect {totalDamage} damage from the evaded attack!"
-                    : $"Your shield thorns reflect {totalDamage} damage from the blocked attack!";
-
-            defender.SendMessage(msg);
+            // Throttle messages to once per 30s per player; accumulate damage during cooldown
+            var now = DateTime.UtcNow;
+            var guid = defender.Guid.Full;
+            var state = _thornsMsgState.AddOrUpdate(guid,
+                _ => new ThornsMessageState(now.AddSeconds(30), totalDamage, 1),
+                (_, old) =>
+                {
+                    var newAcc = old.AccumulatedDamage + totalDamage;
+                    var newCount = old.HitCount + 1;
+                    if (now >= old.NextAllowedUtc)
+                    {
+                        // Time to emit the aggregated message
+                        float avg = newCount > 0 ? newAcc / newCount : 0;
+                        string msg;
+                        if (onAllHits && !isEvade && !isBlock)
+                            msg = $"Your crusader's wrath reflects {newAcc:F0} total damage ({avg:F1} avg) over {newCount} hits!";
+                        else
+                            msg = isEvade
+                                ? $"Your shield thorns reflect {newAcc:F0} total damage ({avg:F1} avg) over {newCount} evaded attacks!"
+                                : $"Your shield thorns reflect {newAcc:F0} total damage ({avg:F1} avg) over {newCount} blocked attacks!";
+                        defender.SendMessage(msg);
+                        return new ThornsMessageState(now.AddSeconds(30), 0, 0);
+                    }
+                    return new ThornsMessageState(old.NextAllowedUtc, newAcc, newCount);
+                });
 
             DebugLog($"Shield thorns dealt {totalDamage} to {attacker.Name} (evade:{isEvade}, block:{isBlock}, allHits:{onAllHits}, amount:{damageAmount})");
         }

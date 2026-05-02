@@ -4,8 +4,6 @@ public class PlayerPrefs
 {
     public List<string> ActiveProfileNames { get; set; } = new();
     public bool LootNotifications { get; set; } = true;
-    public bool VendorTrashEnabled { get; set; } = false;
-    public int VendorTrashRatio { get; set; } = 50;
     public bool UnknownScrollsEnabled { get; set; } = false;
 
     // Achievement tracking

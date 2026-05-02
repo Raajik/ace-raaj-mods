@@ -16,7 +16,6 @@ internal static class LootStackConsolidator
             return;
 
         // Group by WCID for ALL items, not just those already marked stackable.
-        // Items spawned from old weenies (Generic type, no stack props) still need fixing.
         var groups = container.Inventory.Values
             .GroupBy(i => i.WeenieClassId)
             .Where(g => g.Count() > 1)
@@ -27,16 +26,10 @@ internal static class LootStackConsolidator
             var items = group.ToList();
             var baseItem = items[0];
 
-            // If the base item lacks stack properties, force-fix it from its own values or sensible defaults
+            // Only consolidate items that are naturally stackable (weenie already has MaxStackSize > 1).
+            // Do NOT force non-stackable items (e.g. quest items like drudge charms) to stack.
             if (!baseItem.MaxStackSize.HasValue || baseItem.MaxStackSize <= 1)
-            {
-                int unitEncumbrance = baseItem.EncumbranceVal ?? 1;
-                int unitValue = baseItem.Value ?? 1;
-                baseItem.SetProperty(PropertyInt.MaxStackSize, 100);
-                baseItem.SetProperty(PropertyInt.StackSize, baseItem.StackSize ?? 1);
-                baseItem.SetProperty(PropertyInt.StackUnitEncumbrance, unitEncumbrance);
-                baseItem.SetProperty(PropertyInt.StackUnitValue, unitValue);
-            }
+                continue;
 
             int total = baseItem.StackSize ?? 1;
 
@@ -45,17 +38,6 @@ internal static class LootStackConsolidator
                 var item = items[i];
                 if (item.IsDestroyed)
                     continue;
-
-                // Fix the incoming item if it lacks stack props too
-                if (!item.MaxStackSize.HasValue || item.MaxStackSize <= 1)
-                {
-                    int unitEncumbrance = item.EncumbranceVal ?? 1;
-                    int unitValue = item.Value ?? 1;
-                    item.SetProperty(PropertyInt.MaxStackSize, 100);
-                    item.SetProperty(PropertyInt.StackSize, item.StackSize ?? 1);
-                    item.SetProperty(PropertyInt.StackUnitEncumbrance, unitEncumbrance);
-                    item.SetProperty(PropertyInt.StackUnitValue, unitValue);
-                }
 
                 int added = item.StackSize ?? 1;
                 int maxStack = baseItem.MaxStackSize ?? 100;

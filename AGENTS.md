@@ -117,6 +117,11 @@ Always check in this order:
   powershell -Command "Start-Process -FilePath 'C:\ACE-WB\Server\ACE.Server.exe' -WorkingDirectory 'C:\ACE-WB\Server' -WindowStyle Normal"
   ```
   Substitute `C:\ACE\` for the test server. Always verify the process is running with `tasklist | grep ACE.Server`.
+- **ACE.Server zombie processes on restart** — `taskkill /F /IM ACE.Server.exe` often reports success but leaves orphaned/zombie processes behind, especially when the server is actively logging. This causes multiple ACE.Server.exe instances to accumulate, leading to port collisions and unpredictable behavior. If `tasklist` shows ANY surviving `ACE.Server.exe` after a kill, use the PowerScript double-whammy until `tasklist` confirms zero:
+  ```powershell
+  powershell -Command "Get-Process ACE.Server -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Seconds 3"
+  ```
+  Always re-verify with `tasklist` before launching a fresh instance.
 - **AureatePath owns the server level cap** — `MaxLevel`, `CreditInterval`, and `LevelCost` settings live in `AureatePath` (not ChallengeModes). ChallengeModes reads the effective max level from `DatManager.PortalDat.XpTable.CharacterLevelXPList.Count` at runtime. If you need to change the server max level, edit `AureatePath/Settings.json`.
 - **`Meta.json` must copy to output directory** — In `.csproj`, ensure `<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>` for `Meta.json`. `Never` silently prevents mod loading. Always verify deployed mod directory contains `Meta.json`, `Settings.json`, and the DLL after build.
 - **ACE `PropertyManager.ModifyBool` rejects unknown keys** — Only keys present in the server's `DefaultPropertyManager.DefaultBooleanProperties` (hardcoded per ACE version) are accepted. Verify against the actual server source in `.references/`, not wiki docs or SQL. Remove or rename invalid keys in `Settings.json` and SQL.

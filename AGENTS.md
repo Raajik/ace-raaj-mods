@@ -99,6 +99,11 @@ $ > "C:\ACE\Server\ACE_Log.txt"      # test
 
 **Port collision:** ACE binds `Port` and `Port+1`. Test on 9000, live on 9002 (not 9001). Always separate by ≥2 ports.
 
+**Live ACE-WB auto-restart (crash only, never touches test `C:\ACE\`):** Scripts under `scripts/` — see `scripts/README-ACE-WB-supervisor.md`.
+- **Watchdog (default in repo):** Scheduled task name `ACE-WB-Watchdog` runs `AceWbWatchdog.ps1` (polls `Win32_Process` for `ACE.Server.exe` whose path contains `ACE-WB`, then `Start-Process` with working dir `C:\ACE-WB\Server`). Restart delay and hourly restart cap are in the script; storm trip creates `C:\ACE-WB\Server\ace_wb_watchdog_BLOCKED.txt`. **Disable for debugging:** `scripts\Unregister-AceWbWatchdogTask.ps1` (elevated), then stop the stray `powershell` hosting the watchdog if any.
+- **NSSM (optional):** `scripts\Setup-NssmAceWb.ps1` installs service `ACE-WB`; do **not** run NSSM and the scheduled watchdog for the same instance (double-start risk).
+- **Never** use blanket `taskkill /IM ACE.Server.exe` when both servers run; it kills both processes. Scope by path/PID.
+
 **Verify deployed DLL timestamps before restarting:** After `dotnet build`, output goes to `C:\ACE\Mods\`. If you run two servers, copying DLLs to the wrong directory or forgetting to copy causes the old build to run. Always `ls -la` the deployed DLL and confirm mtime matches repo build.
 
 **MySQL Database Access:**

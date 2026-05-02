@@ -487,21 +487,28 @@ internal static class InvasionRuntime
 
             lb.EnqueueAction(new ActionEventDelegate(() =>
             {
-                if (!lb.AddWorldObject(boss)) return;
-                if (boss is not Creature bossCreature) return;
-
-                InvasionKillTracker.OnBossSpawned(townName, bossCreature);
-                entry.BossIsAlive = true;
-
-                ModManager.Log($"[Invasion] Boss '{bossName}' spawned at {townName}.", ModManager.LogLevel.Info);
-                var chaosMode = ActiveInvasion?.ChaosMode ?? false;
-                Task.Run(() =>
+                try
                 {
-                    if (isRespawn)
-                        InvasionBroadcast.AnnounceBossRespawning(townName, bossName, chaosMode);
-                    else
-                        InvasionBroadcast.AnnounceBossSpawned(townName, bossName, chaosMode);
-                });
+                    if (!lb.AddWorldObject(boss)) return;
+                    if (boss is not Creature bossCreature) return;
+
+                    InvasionKillTracker.OnBossSpawned(townName, bossCreature);
+                    entry.BossIsAlive = true;
+
+                    ModManager.Log($"[Invasion] Boss '{bossName}' spawned at {townName}.", ModManager.LogLevel.Info);
+                    var chaosMode = ActiveInvasion?.ChaosMode ?? false;
+                    Task.Run(() =>
+                    {
+                        if (isRespawn)
+                            InvasionBroadcast.AnnounceBossRespawning(townName, bossName, chaosMode);
+                        else
+                            InvasionBroadcast.AnnounceBossSpawned(townName, bossName, chaosMode);
+                    });
+                }
+                catch (Exception ex)
+                {
+                    ModManager.Log($"[Invasion] Boss spawn lambda failed at {townName}: {ex.Message}", ModManager.LogLevel.Warn);
+                }
             }));
         }
         catch (Exception ex)
@@ -894,9 +901,16 @@ internal static class InvasionRuntime
 
         lb.EnqueueAction(new ActionEventDelegate(() =>
         {
-            if (portal == null || portal.IsDestroyed) return;
-            if (!lb.AddWorldObject(portal)) return;
-            portal.EnqueueBroadcast(new GameMessageScript(portal.Guid, PlayScript.PortalEntry));
+            try
+            {
+                if (portal == null || portal.IsDestroyed) return;
+                if (!lb.AddWorldObject(portal)) return;
+                portal.EnqueueBroadcast(new GameMessageScript(portal.Guid, PlayScript.PortalEntry));
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[Invasion] Portal spawn lambda failed: {ex.Message}", ModManager.LogLevel.Warn);
+            }
         }));
 
         return portal;
@@ -1327,14 +1341,22 @@ internal static class InvasionRuntime
         }
         lb.EnqueueAction(new ActionEventDelegate(() =>
         {
-            if (lb.AddWorldObject(wo))
+            try
             {
-                lock (_dynamicSpawns)
-                    _dynamicSpawns.Add(wo);
-                onSuccess?.Invoke();
+                if (lb.AddWorldObject(wo))
+                {
+                    lock (_dynamicSpawns)
+                        _dynamicSpawns.Add(wo);
+                    onSuccess?.Invoke();
+                }
+                else
+                {
+                    onFail?.Invoke();
+                }
             }
-            else
+            catch (Exception ex)
             {
+                ModManager.Log($"[Invasion] AddWorldObject failed for {wo.Name} (WCID {wo.WeenieClassId}): {ex.Message}", ModManager.LogLevel.Warn);
                 onFail?.Invoke();
             }
         }));

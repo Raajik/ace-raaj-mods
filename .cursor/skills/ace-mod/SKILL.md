@@ -100,7 +100,7 @@ Copy an existing gameplay mod in this repo (e.g. **Swarmed**, **Loremaster**). I
 
 ### Loremaster trophy burden XP
 
-- **`TrophyBurdenXp`:** optional independent rolls (**Quality** 2×, **Pristine** 3×, stack 6×); **`ThreadSafeRandom.Next(0.0f, 1.0f)`** vs configured chances; flavor prefixes on **chat only** (same item).
+- **`TrophyBurdenXp`:** per trophy **unit** in a give action, independent rolls (**Quality** 2×, **Pristine** 3×, both 6× on that unit); XP sums `perUnitBase × mult` over stack count; **`ThreadSafeRandom.Next(0.0f, 1.0f)`** vs configured chances; multi-item chat summarizes counts.
 
 ## Compact player chat
 

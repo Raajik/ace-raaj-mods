@@ -37,6 +37,7 @@ Always check in this order:
 
 ## 4. Agent Permissions
 - **DO:** Edit `Settings.json`, fix bugs, tune values, refactor for clarity.
+- **DO:** Apply SQL you add or change under mod `Content/SQL/` (or equivalent) to the target MySQL database yourself—**test `ace_world`** by default—using the repo’s MySQL credentials, then verify with `SELECT`. Do not leave “run this manually” as the only step unless the user forbids DB writes.
 - **DO:** Commit and push after every bug fix or problem solved. Never accumulate uncommitted fixes.
 - **DO NOT:** Change `Meta.json` enablement without explicit user direction.
 - **DO NOT:** Create new mods without confirming scope.
@@ -201,7 +202,9 @@ Set via `PropertyInt.UiEffects`, then broadcast `GameMessagePublicUpdateProperty
 
 ### 8.7 SQL, Weenies & Biota
 
-**SQL content files do NOT auto-deploy** — `.csproj` only copies DLL + JSON. SQL in `Content/SQL/` must be manually executed against MySQL `ace_world`. Restart server for weenie changes (ACE caches weenies at startup; no hot-reload).
+**SQL content files do NOT auto-deploy** — `.csproj` only copies DLL + JSON. SQL in `Content/SQL/` is not applied at build time.
+
+**Agents always apply world SQL** — When you create or edit SQL meant for weenie/treasure/world data, **run it against `ace_world` in the same working session** (`mysql ... ace_world < path/to/file.sql`), then verify critical rows with `SELECT`. Use **`wb_ace_world`** only when the user says **push live** or explicitly targets live. If the user forbids database writes, say so and skip. Restart the test ACE server after weenie-defining changes (ACE caches weenies at startup; no hot-reload).
 
 **Biota cleanup required for existing items** — ACE copies weenie properties to `ace_shard` biota at creation. Updating `ace_world` only affects future drops. After applying world template SQL, run matching biota cleanup against `ace_shard`.
 

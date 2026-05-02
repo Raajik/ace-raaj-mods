@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
@@ -176,53 +177,95 @@ internal static class TrophyBurdenXp
                 : "";
         }
 
-        var baseBonusXp = (long)(xpToNext * percentOfLevel * units);
+        var perUnitBaseXp = xpToNext * percentOfLevel;
 
         var qc = Math.Clamp(settings.TrophyQualityBonusChance, 0.0, 1.0);
         var pc = Math.Clamp(settings.TrophyPristineBonusChance, 0.0, 1.0);
-        var rolledQuality = qc > 0 && ThreadSafeRandom.Next(0.0f, 1.0f) < (float)qc;
-        var rolledPristine = pc > 0 && ThreadSafeRandom.Next(0.0f, 1.0f) < (float)pc;
 
-        var mult = 1;
-        if (rolledQuality) mult *= 2;
-        if (rolledPristine) mult *= 3;
+        long bonusXp = 0;
+        var multSum = 0;
+        var plain = 0;
+        var qOnly = 0;
+        var pOnly = 0;
+        var both = 0;
 
-        var bonusXp = (long)Math.Min((double)baseBonusXp * mult, long.MaxValue);
+        for (var u = 0; u < units; u++)
+        {
+            var rolledQuality = qc > 0 && ThreadSafeRandom.Next(0.0f, 1.0f) < (float)qc;
+            var rolledPristine = pc > 0 && ThreadSafeRandom.Next(0.0f, 1.0f) < (float)pc;
+            var mult = 1;
+            if (rolledQuality)
+                mult *= 2;
+            if (rolledPristine)
+                mult *= 3;
+            multSum += mult;
+            if (rolledQuality && rolledPristine)
+                both++;
+            else if (rolledPristine)
+                pOnly++;
+            else if (rolledQuality)
+                qOnly++;
+            else
+                plain++;
+
+            var chunk = (long)Math.Min(perUnitBaseXp * mult, long.MaxValue);
+            bonusXp = (long)Math.Min((double)bonusXp + chunk, long.MaxValue);
+        }
 
         DebugLog(
-            $"{player.Name} turned in {units}x {item.Name} (attuned={isAttuned}, burden-base={percentOfLevel:P2}), base={baseBonusXp}, mult={mult}, awarding {bonusXp}");
+            $"{player.Name} turned in {units}x {item.Name} (attuned={isAttuned}, per-unit base%={percentOfLevel:P2}), multSum={multSum}, awarding {bonusXp}");
 
         if (bonusXp > 0)
         {
             ExternalXpGrants.GrantQuestXpWithoutMultiplier(player, bonusXp);
-            AppendLog(settings, player, item, bonusXp, isAttuned, mult, units);
+            AppendLog(settings, player, item, bonusXp, isAttuned, units, multSum, plain, qOnly, pOnly, both);
 
             var itemName = string.IsNullOrWhiteSpace(item.Name) ? "Trophy" : item.Name.Trim();
-            var prefix = "";
-            if (rolledQuality && rolledPristine)
-                prefix = "Exceptional pristine ";
-            else if (rolledPristine)
-                prefix = "Pristine ";
-            else if (rolledQuality)
-                prefix = "Quality ";
-
-            var pctDisplay = percentOfLevel * mult * units * 100.0;
-            var yieldNote = mult switch
+            string lead;
+            if (units == 1)
             {
-                2 => " — double yield",
-                3 => " — triple yield",
-                6 => " — exceptional specimen (×6)",
-                _ => "",
-            };
-            var stackNote = units > 1 ? $"{units:N0}× " : "";
+                if (both == 1)
+                    lead = "Exceptional pristine " + itemName;
+                else if (pOnly == 1)
+                    lead = "Pristine " + itemName;
+                else if (qOnly == 1)
+                    lead = "Quality " + itemName;
+                else
+                    lead = itemName;
+            }
+            else
+            {
+                lead = $"{units:N0}× {itemName}";
+            }
+
+            var pctOfLevelTotal = xpToNext > 0 ? bonusXp / (double)xpToNext * 100.0 : 0.0;
+            var rollBits = new List<string>();
+            if (both > 0)
+                rollBits.Add($"{both} exceptional (×6)");
+            if (pOnly > 0)
+                rollBits.Add($"{pOnly} pristine (×3)");
+            if (qOnly > 0)
+                rollBits.Add($"{qOnly} quality (×2)");
+            var rollNote = rollBits.Count > 0 ? " — " + string.Join(", ", rollBits) : "";
 
             var show = QuestXpAwardDisplay.EstimateCharacterXpAfterAchievementChain(player, bonusXp);
             player.SendMessage(
-                $"[Loremaster] {prefix}{stackNote}{itemName} turned in for +{show:N0} XP (~{pctDisplay:F2}% of level{yieldNote}){burdenNote}.");
+                $"[Loremaster] {lead} turned in for +{show:N0} XP (~{pctOfLevelTotal:F2}% of level to next{rollNote}){burdenNote}.");
         }
     }
 
-    private static void AppendLog(Settings settings, Player player, WorldObject item, long xpAwarded, bool isAttuned, int mult, int units)
+    private static void AppendLog(
+        Settings settings,
+        Player player,
+        WorldObject item,
+        long xpAwarded,
+        bool isAttuned,
+        int units,
+        int multSum,
+        int plain,
+        int qOnly,
+        int pOnly,
+        int both)
     {
         if (!settings.TrophyLogEnabled || _logPath == null)
             return;
@@ -238,8 +281,12 @@ internal static class TrophyBurdenXp
                 wcid = item.WeenieClassId,
                 value = item.Value ?? 0,
                 units,
+                multSum,
+                plain,
+                qOnly,
+                pOnly,
+                both,
                 attuned = isAttuned,
-                mult,
                 xp = xpAwarded,
             };
             var line = System.Text.Json.JsonSerializer.Serialize(entry);

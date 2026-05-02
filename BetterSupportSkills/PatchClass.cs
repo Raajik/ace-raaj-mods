@@ -522,6 +522,31 @@ try
             ModManager.Log($"[BSS] DamageTarget patch failed: {ex}", ModManager.LogLevel.Error);
         }
 
+        // Patch Creature.GetDamageResistRating for Crusader +10 DRR when shield equipped
+        try
+        {
+            var getDamageResistRating = AccessTools.Method(typeof(Creature), nameof(Creature.GetDamageResistRating), new Type[] { typeof(CombatType?), typeof(bool) });
+            if (getDamageResistRating == null)
+            {
+                ModManager.Log("[BSS] Creature.GetDamageResistRating method not found", ModManager.LogLevel.Error);
+            }
+            else
+            {
+                var resistPostfix = AccessTools.Method(typeof(Skills.CombatClasses), "PostfixGetDamageResistRating");
+                if (resistPostfix != null)
+                {
+                    ModC.Harmony?.Patch(getDamageResistRating, null, new HarmonyMethod(resistPostfix));
+                    ModManager.Log("[BSS] CombatClasses GetDamageResistRating postfix applied", ModManager.LogLevel.Info);
+                }
+                else
+                    ModManager.Log("[BSS] CombatClasses.PostfixGetDamageResistRating not found", ModManager.LogLevel.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] GetDamageResistRating patch failed: {ex}", ModManager.LogLevel.Error);
+        }
+
         // Patch WorldObject.Heartbeat for Crusader passive heal and Death Knight aura
         try
         {

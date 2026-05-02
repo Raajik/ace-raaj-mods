@@ -289,6 +289,7 @@ AST-only, no API cost. Graph output moved out of repo to keep working tree clean
 ## 9. External Knowledge Base
 - **`A:\obsidian\jeremy\AGENT.md`** — LLM Wiki Agent rulebook. Consult at end of every task for knowledge persistence instructions.
 - **`A:\obsidian\jeremy\wiki\index.md`** — Collective second brain. Reference for retained knowledge; write new info with `[[Page Name]]` links.
+- **`BetterSupportSkills/ClassPerks.md`** — **Reference for ALL BetterSupportSkills class-related work.** Contains prerequisites, perks, and formulas for every combat/hybrid/summoning class. Consult before changing class logic or answering class-related questions.
 
 ## 10. graphify
 Before answering architecture questions, read `graphify-out/GRAPH_REPORT.md`. For cross-module questions, prefer `graphify query`, `graphify path`, `graphify explain` over grep. After modifying code, run `graphify update . --out-dir="A:/obsidian/jeremy/raw/graphify-out"`.

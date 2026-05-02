@@ -104,10 +104,8 @@ internal static class ShieldThorns
 
         double thornsDamage = shieldSkillValue * basePercent;
 
-        if (isCrusader && crusaderSettings != null && crusaderSettings.ThornsMultiplier > 1.0)
-        {
-            thornsDamage *= crusaderSettings.ThornsMultiplier;
-        }
+        // Crusader multiplier removed — thorns already do enough damage at base scaling.
+        // The ThornsOnAllHits flag still applies so Crusaders get thorns on every hit.
 
         ApplyThornsDamage(playerDefender, attacker, thornsDamage, isEvade, isBlock, thornsOnAllHits);
     }

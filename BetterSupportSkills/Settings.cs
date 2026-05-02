@@ -763,8 +763,8 @@ public class CrusaderSettings
     public double CritDamageMultiplier { get; set; } = 1.5;
 
     [JsonPropertyName("// ThornsMultiplier")]
-    public string ThornsMultiplierDoc { get; init; } = "Multiplier to shield thorns damage when Crusader class is active.";
-    public double ThornsMultiplier { get; set; } = 2.0;
+    public string ThornsMultiplierDoc { get; init; } = "DEPRECATED — no longer used. Crusader thorns uses base damage only.";
+    public double ThornsMultiplier { get; set; } = 1.0;
 
     [JsonPropertyName("// ThornsOnAllHits")]
     public string ThornsOnAllHitsDoc { get; init; } = "When true, thorns applies on all incoming melee/missile hits, not just evades/blocks.";

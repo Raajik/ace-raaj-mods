@@ -55,6 +55,12 @@ internal static class CombatClasses
                 ApplyCrusaderCritBonus(__instance, target, ref __result, combatSettings.Crusader);
             }
         }
+
+        // Crusader melee thorns bonus: deal thorns damage as bonus on every melee hit
+        if (activeClass == "Crusader")
+        {
+            ApplyCrusaderMeleeThornsBonus(__instance, target, __result, damageSource);
+        }
     }
 
     static void ApplyRogueBleed(Player player, Creature target, RogueSettings rs)
@@ -117,6 +123,57 @@ internal static class CombatClasses
             target.TakeDamage(player, damageEvent.DamageType, bonusDamage, false);
             player.SendMessage($"Your righteous fury deals {(int)bonusDamage} bonus damage!");
         }
+    }
+
+    static readonly ConcurrentDictionary<uint, DateTime> _crusaderMeleeMsgCooldown = new();
+
+    static void ApplyCrusaderMeleeThornsBonus(Player player, Creature target, DamageEvent damageEvent, WorldObject damageSource)
+    {
+        var shield = player.GetEquippedShield();
+        if (shield == null)
+            return;
+
+        var shieldSkill = player.GetCreatureSkill(Skill.Shield);
+        var dfSkill = player.GetCreatureSkill(Skill.DirtyFighting);
+        if (shieldSkill.AdvancementClass < SkillAdvancementClass.Trained ||
+            dfSkill.AdvancementClass < SkillAdvancementClass.Trained)
+            return;
+
+        var profile = PlayerProfileStore.GetOrCreate(player.Guid.Full);
+        if (!profile.ThornsEnabled)
+            return;
+
+        double basePercent = shieldSkill.AdvancementClass == SkillAdvancementClass.Specialized ? 0.05 : 0.025;
+        double bonusDamage = shieldSkill.Current * basePercent;
+        if (bonusDamage <= 0)
+            return;
+
+        target.TakeDamage(player, damageEvent.DamageType, (float)bonusDamage, false);
+
+        // Throttle message to once per 5 seconds per player
+        var now = DateTime.UtcNow;
+        var guid = player.Guid.Full;
+        if (!_crusaderMeleeMsgCooldown.TryGetValue(guid, out var nextAllowed) || now >= nextAllowed)
+        {
+            _crusaderMeleeMsgCooldown[guid] = now.AddSeconds(5);
+            player.SendMessage($"Your crusader's zeal adds {(int)bonusDamage} bonus damage!");
+        }
+    }
+
+    // -- Crusader Damage Resist Rating (shield equipped) -----------------
+
+    public static void PostfixGetDamageResistRating(Creature __instance, ref int __result)
+    {
+        if (__instance is not Player player)
+            return;
+
+        if (SummoningClasses.GetPlayerClass(player) != "Crusader")
+            return;
+
+        if (player.GetEquippedShield() == null)
+            return;
+
+        __result += 10;
     }
 
     // -- Crusader Passive Heal -------------------------------------------

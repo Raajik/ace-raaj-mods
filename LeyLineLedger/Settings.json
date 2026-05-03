@@ -308,7 +308,7 @@
       { "// Name": "Salvaged White Jade", "Category": "Useless", "WeenieClassId": 21084, "UnitsPerItem": 1, "Description": "No Apparent Use" },
       { "// Name": "Salvaged White Quartz", "Category": "Useless", "WeenieClassId": 21085, "UnitsPerItem": 1, "Description": "No Apparent Use" },
       { "// Name": "Salvaged White Sapphire", "Category": "WeaponTinkering", "WeenieClassId": 21086, "UnitsPerItem": 1, "Description": "Imbues Bludgeon Rending" },
-      { "// Name": "Salvaged Yellow Garnet", "Category": "Useless", "WeenieClassId": 21087, "UnitsPerItem": 1, "Description": "No Apparent Use" },
+      { "// Name": "Salvaged Yellow Garnet", "Category": "WeaponTinkering", "WeenieClassId": 21087, "UnitsPerItem": 1, "Description": "Imbues Hemorrhage (Overtinked)" },
       { "// Name": "Salvaged Yellow Topaz", "Category": "ArmorTinkering", "WeenieClassId": 21088, "UnitsPerItem": 1, "Description": "Imbues +5 Missile Defense" },
       { "// Name": "Salvaged Zircon", "Category": "ArmorTinkering", "WeenieClassId": 21089, "UnitsPerItem": 1, "Description": "Imbues +5 Magic Defense" },
       { "// Name": "Salvaged Alabaster", "Category": "ArmorTinkering", "WeenieClassId": 20980, "UnitsPerItem": 1, "Effect": "+2.0 PierceRes", "Description": "Increases Armor's Piercing Protection by 0.2" }

@@ -4,7 +4,7 @@ namespace Overtinked;
 public class NewImbueConfig
 {
     [JsonPropertyName("// SalvageWcids")]
-    public string SalvageWcidsDoc { get; init; } = "Salvage WCIDs that apply this imbue (e.g. Salvaged Ruby for Hemorrhage). Include both IDs for dual-WCID items.";
+    public string SalvageWcidsDoc { get; init; } = "Salvage WCIDs that apply this imbue (e.g. Salvaged Yellow Garnet for Hemorrhage). Include both IDs for dual-WCID items.";
 
     [JsonPropertyName("// Name")]
     public string NameDoc { get; init; } = "Display name for logs.";

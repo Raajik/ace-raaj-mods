@@ -32,7 +32,7 @@ public class Settings
     public string EnableDefaultImbueFailureWorkmanshipDoc { get; init; } = "When true, failed imbue tinkers add +1 Workmanship instead of destroying the item, capped at 10.";
 
     [JsonPropertyName("// HemorrhageImbue")]
-    public string HemorrhageImbueDoc { get; init; } = "Hemorrhage imbue (e.g. Salvaged Ruby 21072). Flat DoT stacks + AoE stack spread. Legacy JSON key BleedImbue still deserializes into BleedImbueLegacy. Inside: // lines first, then values.";
+    public string HemorrhageImbueDoc { get; init; } = "Hemorrhage imbue (e.g. Salvaged Yellow Garnet 21087). Flat DoT stacks + AoE stack spread. Legacy JSON key BleedImbue still deserializes into BleedImbueLegacy. Inside: // lines first, then values.";
 
     [JsonPropertyName("// CleavingImbue")]
     public string CleavingImbueDoc { get; init; } = "Cleaving imbue (e.g. Tiger Eye 21081). Inside: // lines first, then values.";

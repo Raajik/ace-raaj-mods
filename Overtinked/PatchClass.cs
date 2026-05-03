@@ -238,7 +238,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         uint wcid = source.WeenieClassId;
 
-        // 1) New imbues: Hemorrhage (e.g. Salvaged Ruby), Cleaving (Tiger Eye), Nether Rending (Onyx).
+        // 1) New imbues: Hemorrhage (e.g. Salvaged Yellow Garnet), Cleaving (Tiger Eye), Nether Rending (Onyx).
         if (TryApplyNewImbue(s, wcid, target))
         {
             RecipeManager.HandleTinkerLog(source, target);

@@ -1,8 +1,11 @@
+using ACE.Server.Network.Enum;
 using ACE.Server.Network.Structure;
 
 namespace Overtinked;
 
-// Hemorrhage / Cleaving / Nether Rending: OvertinkedImbueStore (40133) + vanilla Nether bit. One short line in appraisal string table (Inscription) so it sits with other property rows; salvage bags carry the fuller LongDesc (SQL).
+// Hemorrhage / Cleaving / Nether Rending: OvertinkedImbueStore (40133) + vanilla Nether bit.
+// Retail client imbue names come only from PropertyInt.ImbuedEffect; custom imbues cannot appear in that bitmask without a client patch.
+// After full AppraiseInfo.BuildProfile, prepend a summary line to appraisal LongDesc (identify panel text) and refresh StringStatsTable.
 [HarmonyPatchCategory(Settings.RecipeManagerCategory)]
 internal static class CustomImbueAppraise
 {
@@ -11,10 +14,10 @@ internal static class CustomImbueAppraise
 
     [HarmonyPostfix]
     [HarmonyPriority(Priority.Last)]
-    [HarmonyPatch(typeof(AppraiseInfo), "BuildProperties")]
-    public static void PostBuildProperties(AppraiseInfo __instance, WorldObject wo)
+    [HarmonyPatch(typeof(AppraiseInfo), nameof(AppraiseInfo.BuildProfile))]
+    public static void PostBuildProfile(AppraiseInfo __instance, WorldObject wo, Player examiner, bool success)
     {
-        if (wo == null || __instance == null)
+        if (wo == null || __instance == null || !success)
             return;
 
         StripLegacyImbueLongDesc(__instance);
@@ -34,21 +37,17 @@ internal static class CustomImbueAppraise
         if (__instance.PropertiesString == null)
             __instance.PropertiesString = new Dictionary<PropertyString, string>();
 
-        string existing = string.Empty;
-        if (__instance.PropertiesString.TryGetValue(PropertyString.Inscription, out string? fromPacket) && !string.IsNullOrEmpty(fromPacket))
-            existing = fromPacket.Trim();
-        else if (!string.IsNullOrEmpty(wo.Inscription))
-            existing = wo.Inscription.Trim();
+        __instance.PropertiesString.TryGetValue(PropertyString.LongDesc, out string? longDescPacket);
+        string existingLd = string.IsNullOrEmpty(longDescPacket) ? string.Empty : longDescPacket.Trim();
+        if (existingLd.StartsWith(imbueLine, StringComparison.Ordinal))
+            return;
 
-        if (!string.IsNullOrEmpty(existing))
-        {
-            if (existing.Contains(imbueLine, StringComparison.Ordinal))
-                return;
+        string combined = string.IsNullOrEmpty(existingLd)
+            ? imbueLine
+            : imbueLine + "\n\n" + existingLd;
 
-            __instance.PropertiesString[PropertyString.Inscription] = existing + " | " + imbueLine;
-        }
-        else
-            __instance.PropertiesString[PropertyString.Inscription] = imbueLine;
+        __instance.PropertiesString[PropertyString.LongDesc] = combined;
+        __instance.Flags |= IdentifyResponseFlags.StringStatsTable;
     }
 
     private static void StripLegacyImbueLongDesc(AppraiseInfo info)

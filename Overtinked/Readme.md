@@ -89,8 +89,8 @@ Each entry: **Wcids**, **Name**, **PrimaryStat** (`MaxHealth` / `MaxStamina` / `
 - **CraftInventorySync.cs** — Mirrors `RecipeManager.UpdateObj` inventory half (`GameMessageUpdateObject` + `MoveItemToFirstContainerSlot`) for diagnostics / optional second sync.
 - **RecipeManagerEx.cs** — Craft flow (`UseObjectOnTarget` when `EnableRecipeManagerPatch` is true).
 - **HemorrhageImbueCombat.cs** — Hemorrhage stacks + AoE stacks + staggered DoT on hit (uses `HemorrhageImbue` config).
-- **HemorrhageWeaponVisual.cs** — Crippling Blow underlay + red tint when Hemorrhage is on a weapon (over rend for display).
-- **CustomImbueAppraise.cs** — `AppraiseInfo.BuildProperties` postfix: append Hemorrhage/Cleaving explain text to `LongDesc` for at-a-glance examine.
+- **HemorrhageWeaponVisual.cs** — Crippling Blow underlay + blue `UiEffects.Magical` when Hemorrhage is on a weapon (matches CS/CB/AR secondary cue; not Fire Rending).
+- **CustomImbueAppraise.cs** — `AppraiseInfo.BuildProfile` postfix (last): prepend Hemorrhage/Cleaving/Nether summary to appraisal **`LongDesc`** (identify text); retail imbue-name list is `ImbuedEffect`-only and cannot show custom names server-side.
 - **HemorrhageAoE.cs** — Resolves Hemorrhage splash radius from `AoERadiusYards` (or legacy `AoERadiusMeters` when yards is 0).
 - **CleavingNetherImbueCombat.cs** — Cleaving splash + Nether Rending bonus on `Player.DamageTarget`.
 - **ImbueSalvageWcids.cs** — Standard imbue WCID list used for failure → Workmanship.
@@ -99,7 +99,7 @@ Each entry: **Wcids**, **Name**, **PrimaryStat** (`MaxHealth` / `MaxStamina` / `
 - **ComparisonHelpers.cs** — Requirement comparison helpers.
 - **Settings.cs** — Config model.
 
-Hemorrhage, Cleaving, and Nether Rending are applied on the weapon (Hemorrhage/Cleaving/Nether flags in **`PropertyInt` 40133** on the item biota via `OvertinkedImbueStore`; Nether also sets `ImbuedEffect`), and handled in combat by `HemorrhageImbueCombat` and `CleavingNetherImbueCombat` (same Harmony category as recipe/tinkering patches). **`CustomImbueAppraise`** adds a short combined line to appraisal **`Inscription`** (string stats table) so examine stays tidy; salvage bags carry the fuller **`LongDesc`** in SQL. Hemorrhage AoE radius: **`AoERadiusYards`** (default **10**, converted with 0.9144 m/yd); if `AoERadiusYards` is **0**, **`AoERadiusMeters`** is used instead.
+Hemorrhage, Cleaving, and Nether Rending are applied on the weapon (Hemorrhage/Cleaving/Nether flags in **`PropertyInt` 40133** on the item biota via `OvertinkedImbueStore`; Nether also sets `ImbuedEffect`), and handled in combat by `HemorrhageImbueCombat` and `CleavingNetherImbueCombat` (same Harmony category as recipe/tinkering patches). **`CustomImbueAppraise`** prepends a short combined line to appraisal **`LongDesc`** after the full profile is built (so it appears in the examine description area). Salvage bags may still carry fuller **`LongDesc`** in SQL. Hemorrhage AoE radius: **`AoERadiusYards`** (default **10**, converted with 0.9144 m/yd); if `AoERadiusYards` is **0**, **`AoERadiusMeters`** is used instead.
 
 ### World database (custom imbue salvage bags)
 

@@ -20,7 +20,8 @@ internal static class HemorrhageWeaponVisual
 
         int ui = item.GetProperty(PropertyInt.UiEffects) ?? 0;
         ui &= ~RendishUiMask;
-        ui |= (int)UiEffects.Fire;
+        // Match secondary weapon imbue cue (CS/CB/AR): blue magical glow, not Fire Rending orange/red.
+        ui |= (int)UiEffects.Magical;
 
         item.IconUnderlayId = CripplingBlowIconUnderlay;
         item.SetProperty(PropertyInt.UiEffects, ui);

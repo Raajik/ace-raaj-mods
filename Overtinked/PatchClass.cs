@@ -411,6 +411,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         HemorrhageImbueConfig? hem = s.HemorrhageImbue;
         if (hem?.Enabled == true && hem.SalvageWcids != null && hem.SalvageWcids.Contains(wcid))
         {
+            // Hemorrhage is custom (40133); clear vanilla rend bits so ChaosAppearance / DamageType do not keep fire/cold rend UI.
+            target.ImbuedEffect &= ~AllRendingFlags;
             OvertinkedImbueStore.Add(target, OvertinkedImbueFlags.Hemorrhage);
             HemorrhageWeaponVisual.ApplyIfHemorrhageWeapon(s, target);
             return true;

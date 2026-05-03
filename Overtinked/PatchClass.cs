@@ -235,9 +235,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     }
 
     // Prefix: custom salvage rules, new imbues (Hemorrhage/Cleaving/Nether), buffed jewelry, or standard imbue by dataId; otherwise run original.
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.TryMutate), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(uint), typeof(HashSet<ulong>) })]
-    public static bool PreTryMutate(Player player, WorldObject source, WorldObject target, Recipe recipe, uint dataId, HashSet<ulong> modified, ref bool __result)
+    static bool PreTryMutateCore(Player player, WorldObject source, WorldObject target, Recipe recipe, uint dataId, ref bool __result, Action markTargetModified)
     {
         Settings? s = CurrentSettings;
         if (s == null)
@@ -251,7 +249,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (TryApplyNewImbue(s, wcid, target))
         {
             RecipeManager.HandleTinkerLog(source, target);
-            MarkTargetModifiedForCraftUpdate(modified, target);
+            markTargetModified();
             if (s.ShowPlayerSalvageMessage)
                 player.SendMessage($"You apply the imbue to your {target.NameWithMaterial}.");
             __result = true;
@@ -282,7 +280,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                         player.SendMessage($"Your {target.NameWithMaterial}: {desc}.", ChatMessageType.Craft);
                 }
                 ModManager.Log($"[Overtinked] {player?.Name} applied {rule.Name ?? wcid.ToString()} -> {rule.EffectKind} {value} on {target.Guid}", ModManager.LogLevel.Debug);
-                MarkTargetModifiedForCraftUpdate(modified, target);
+                markTargetModified();
                 __result = true;
                 _tryMutateShortCircuitSuccess = true;
                 return false;
@@ -293,7 +291,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (TryApplyBuffedImbue(s, wcid, target, player))
         {
             RecipeManager.HandleTinkerLog(source, target);
-            MarkTargetModifiedForCraftUpdate(modified, target);
+            markTargetModified();
             __result = true;
             _tryMutateShortCircuitSuccess = true;
             return false;
@@ -318,23 +316,24 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (RecipeManager.incItemTinkered.Contains(dataId))
             RecipeManager.HandleTinkerLog(source, target);
 
-        MarkTargetModifiedForCraftUpdate(modified, target);
+        markTargetModified();
         __result = true;
         _tryMutateShortCircuitSuccess = true;
         return false;
     }
 
-    // Vanilla TryMutate ends with modified.Add(target.Guid.Full). When this prefix short-circuits, the same
-    // entry must exist so RecipeManager.HandleRecipe calls UpdateObj and the client gets GameMessageUpdateObject.
-    static void MarkTargetModifiedForCraftUpdate(HashSet<ulong>? modified, WorldObject target)
+#if REALM
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.TryMutate), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(uint), typeof(HashSet<ulong>) })]
+    public static bool PreTryMutate(Player player, WorldObject source, WorldObject target, Recipe recipe, uint dataId, HashSet<ulong> modified, ref bool __result)
     {
-        if (modified == null)
+        return PreTryMutateCore(player, source, target, recipe, dataId, ref __result, () =>
         {
-            ModManager.Log("[Overtinked] TryMutate: modified set is null (e.g. CreateDestroyItems aborted); HandleRecipe will skip UpdateObj.", ModManager.LogLevel.Error);
-            return;
-        }
-
-        modified.Add(target.Guid.Full);
+            if (modified == null)
+                ModManager.Log("[Overtinked] TryMutate: modified set is null (e.g. CreateDestroyItems aborted); HandleRecipe will skip UpdateObj.", ModManager.LogLevel.Error);
+            else
+                modified.Add(target.Guid.Full);
+        });
     }
 
     [HarmonyPostfix]
@@ -346,6 +345,30 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         HemorrhageWeaponVisual.ApplyIfHemorrhageWeapon(CurrentSettings, target);
     }
+#else
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.TryMutate), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(uint), typeof(HashSet<uint>) })]
+    public static bool PreTryMutate(Player player, WorldObject source, WorldObject target, Recipe recipe, uint dataId, HashSet<uint> modified, ref bool __result)
+    {
+        return PreTryMutateCore(player, source, target, recipe, dataId, ref __result, () =>
+        {
+            if (modified == null)
+                ModManager.Log("[Overtinked] TryMutate: modified set is null (e.g. CreateDestroyItems aborted); HandleRecipe will skip UpdateObj.", ModManager.LogLevel.Error);
+            else
+                modified.Add(target.Guid.Full);
+        });
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.TryMutate), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(uint), typeof(HashSet<uint>) })]
+    public static void PostTryMutate(Player player, WorldObject source, WorldObject target, Recipe recipe, uint dataId, HashSet<uint> modified, ref bool __result)
+    {
+        if (!__result || target == null)
+            return;
+
+        HemorrhageWeaponVisual.ApplyIfHemorrhageWeapon(CurrentSettings, target);
+    }
+#endif
 
     private static bool TryApplyNewImbue(Settings s, uint wcid, WorldObject target)
     {
@@ -456,6 +479,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     }
 
     // Postfix: optional craft inventory diagnostics; safety net if successful tinkering returns modified without target (UpdateObj would skip).
+#if REALM
     [HarmonyPostfix]
     [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.CreateDestroyItems), new Type[] { typeof(Player), typeof(Recipe), typeof(WorldObject), typeof(WorldObject), typeof(double), typeof(bool) })]
     public static void PostCreateDestroyItems(Player player, Recipe recipe, WorldObject source, WorldObject target, double successChance, bool success, HashSet<ulong>? __result)
@@ -482,6 +506,34 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (__result == null && success)
             ModManager.Log($"[Overtinked][CraftInventorySync] modified is null on tinkering success (recipe {recipe.Id}); HandleRecipe skips all UpdateObj. Check SuccessWCID/FailWCID weenie exists.", ModManager.LogLevel.Warn);
     }
+#else
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.CreateDestroyItems), new Type[] { typeof(Player), typeof(Recipe), typeof(WorldObject), typeof(WorldObject), typeof(double), typeof(bool) })]
+    public static void PostCreateDestroyItems(Player player, Recipe recipe, WorldObject source, WorldObject target, double successChance, bool success, HashSet<uint>? __result)
+    {
+        if (recipe.IsTinkering())
+            _tinkerCraftSuccessFromLastCreateDestroy = success;
+
+        Settings? cfg = CurrentSettings;
+
+        if (recipe.IsTinkering() && success && target != null && __result != null && !__result.Contains(target.Guid.Full))
+        {
+            ModManager.Log($"[Overtinked][CraftInventorySync] WARNING: tinkering success but target {target.Guid} missing from modified (recipe {recipe.Id}); running UpdateObj mirror so pack slot can sync.", ModManager.LogLevel.Warn);
+            CraftInventorySync.MirrorRecipeManagerUpdateObj(player, target);
+        }
+
+        if (cfg?.DebugCraftInventorySync != true || !recipe.IsTinkering())
+            return;
+
+        bool inSet = __result?.Contains(target?.Guid.Full ?? 0) ?? false;
+        string wield = target?.CurrentWieldedLocation?.ToString() ?? "null";
+        bool inInv = target != null && player.FindObject(target.Guid.Full, Player.SearchLocations.MyInventory, out _, out _, out _) != null;
+        ModManager.Log($"[Overtinked][CraftInventorySync] recipe={recipe.Id} success={success} modifiedNull={__result == null} modifiedCount={__result?.Count ?? -1} targetInModified={inSet} wieldedLoc={wield} targetInMyInventory={inInv} targetGuid={target?.Guid}", ModManager.LogLevel.Info);
+
+        if (__result == null && success)
+            ModManager.Log($"[Overtinked][CraftInventorySync] modified is null on tinkering success (recipe {recipe.Id}); HandleRecipe skips all UpdateObj. Check SuccessWCID/FailWCID weenie exists.", ModManager.LogLevel.Warn);
+    }
+#endif
 
     // Postfix: optional second UpdateObj mirror after Overtinked TryMutate short-circuit (operator toggle; see Settings).
     [HarmonyPostfix]

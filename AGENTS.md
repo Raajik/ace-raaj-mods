@@ -40,6 +40,7 @@ Always check in this order:
 ## 4. Agent Permissions
 - **DO:** Edit `Settings.json`, fix bugs, tune values, refactor for clarity.
 - **DO:** Apply SQL you add or change under mod `Content/SQL/` (or equivalent) to the target MySQL database yourself—**test `ace_world`** by default—using the repo’s MySQL credentials, then verify with `SELECT`. Do not leave “run this manually” as the only step unless the user forbids DB writes.
+- **DO:** **Back up before SQL that adds or mutates world/shard data** — `mysqldump` (scoped to the rows/tables you will touch) into `WindblownContent/sql-backups/YYYY-MM-DD/` before `mysql ... <` applies the change. Same for live `wb_*` when the user authorizes it. See §8.7.
 - **DO:** Commit and push after every bug fix or problem solved. Never accumulate uncommitted fixes.
 - **DO NOT:** Change `Meta.json` enablement without explicit user direction.
 - **DO NOT:** Create new mods without confirming scope.
@@ -213,6 +214,8 @@ Set via `PropertyInt.UiEffects`, then broadcast `GameMessagePublicUpdateProperty
 **SQL content files do NOT auto-deploy** — `.csproj` only copies DLL + JSON. SQL in `Content/SQL/` is not applied at build time.
 
 **Agents always apply world SQL** — When you create or edit SQL meant for weenie/treasure/world data, **run it against `ace_world` in the same working session** (`mysql ... ace_world < path/to/file.sql`), then verify critical rows with `SELECT`. Use **`wb_ace_world`** only when the user says **push live** or explicitly targets live. If the user forbids database writes, say so and skip. Restart the test ACE server after weenie-defining changes (ACE caches weenies at startup; no hot-reload).
+
+**Backup before SQL apply (revert path)** — Any session that **applies** additive or mutating SQL must **dump first** with `mysqldump` (same install dir as `mysql.exe`, e.g. `C:/Program Files/MySQL/MySQL Server 8.0/bin/mysqldump.exe`). Scope each dump to what your script changes: one table per `--where=` when MySQL allows it (e.g. `landblock_instance` plus `--where="landblock=304"` for `0x0130` if stored as decimal); for weenies, dump the `weenie` row and each `weenie_properties_*` slice for that `object_Id` (resolve `object_Id` from `class_Id` first). Store files under **`WindblownContent/sql-backups/YYYY-MM-DD/`** with obvious names (`pre-0130-landblock_instance.sql`, `pre-wcid-850200-weenie.sql`). Keep the forward migration `.sql` in git or beside the dump. Revert path is **`mysql ... < pre-....sql`** (stop ACE first if restoring hot-loaded templates). **Never** apply world-changing SQL without a restorable artifact on disk.
 
 **Biota cleanup required for existing items** — ACE copies weenie properties to `ace_shard` biota at creation. Updating `ace_world` only affects future drops. After applying world template SQL, run matching biota cleanup against `ace_shard`.
 

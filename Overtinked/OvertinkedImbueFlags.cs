@@ -1,6 +1,6 @@
 namespace Overtinked;
 
-// Custom imbue flags for weapons (Hemorrhage, Cleaving, Nether Rending). Stored by item Guid; combat code can check these.
+// Custom imbue flags for weapons (Hemorrhage, Cleaving, Nether Rending). Persisted on item biota as PropertyInt 40133 (bitmask).
 [Flags]
 public enum OvertinkedImbueFlags : byte
 {
@@ -10,29 +10,47 @@ public enum OvertinkedImbueFlags : byte
     NetherRending = 4,
 }
 
-// Tracks which items have which custom imbues. Key = target.Guid.Full.
 public static class OvertinkedImbueStore
 {
-    private static readonly Dictionary<uint, OvertinkedImbueFlags> _flags = new();
+    // Biota-persisted bitmask on items. Not in stock PropertyInt enum; adjacent to Empyrean 40131–40132 in operator FakeInt space.
+    public const int CustomImbuePropertyInt = 40133;
 
-    public static void Add(uint objectId, OvertinkedImbueFlags flags)
+    private static readonly PropertyInt CustomProp = (PropertyInt)CustomImbuePropertyInt;
+
+    private const int AllowedBits = (int)(OvertinkedImbueFlags.Hemorrhage | OvertinkedImbueFlags.Cleaving | OvertinkedImbueFlags.NetherRending);
+
+    public static OvertinkedImbueFlags Get(WorldObject? wo)
     {
-        lock (_flags)
-        {
-            _flags.TryGetValue(objectId, out var existing);
-            _flags[objectId] = existing | flags;
-        }
+        if (wo == null)
+            return OvertinkedImbueFlags.None;
+
+        int raw = wo.GetProperty(CustomProp) ?? 0;
+        OvertinkedImbueFlags f = (OvertinkedImbueFlags)(raw & AllowedBits);
+        // Nether also sets ImbuedEffect; older items may lack 40133 until re-tinkered.
+        if (wo.ImbuedEffect.HasFlag(ImbuedEffectType.NetherRending))
+            f |= OvertinkedImbueFlags.NetherRending;
+
+        return f;
     }
 
-    public static OvertinkedImbueFlags Get(uint objectId)
+    public static void Add(WorldObject target, OvertinkedImbueFlags flags)
     {
-        lock (_flags)
-            return _flags.TryGetValue(objectId, out var f) ? f : OvertinkedImbueFlags.None;
+        if (target == null || flags == OvertinkedImbueFlags.None)
+            return;
+
+        OvertinkedImbueFlags cur = Get(target);
+        OvertinkedImbueFlags next = cur | flags;
+        if (next == cur)
+            return;
+
+        target.SetProperty(CustomProp, (int)next);
     }
 
-    public static void Remove(uint objectId)
+    public static void Remove(WorldObject target)
     {
-        lock (_flags)
-            _flags.Remove(objectId);
+        if (target == null)
+            return;
+
+        target.RemoveProperty(CustomProp);
     }
 }

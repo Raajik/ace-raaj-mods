@@ -23,7 +23,7 @@ public static class CleavingNetherImbueCombat
         if (s == null)
             return;
 
-        OvertinkedImbueFlags flags = OvertinkedImbueStore.Get(damageSource.Guid.Full);
+        OvertinkedImbueFlags flags = OvertinkedImbueStore.Get(damageSource);
         float baseDamage = __result.Damage;
         if (baseDamage <= 0)
             return;

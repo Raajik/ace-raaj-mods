@@ -15,7 +15,7 @@ internal static class HemorrhageWeaponVisual
         if (settings?.HemorrhageImbue?.Enabled != true)
             return;
 
-        if ((OvertinkedImbueStore.Get(item.Guid.Full) & OvertinkedImbueFlags.Hemorrhage) == 0)
+        if ((OvertinkedImbueStore.Get(item) & OvertinkedImbueFlags.Hemorrhage) == 0)
             return;
 
         int ui = item.GetProperty(PropertyInt.UiEffects) ?? 0;

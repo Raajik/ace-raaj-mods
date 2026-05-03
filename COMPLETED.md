@@ -64,6 +64,12 @@
 - **Fix:** `AppraiseInfo.BuildProperties` postfix (after defense salvage text) appends a short Hemorrhage/Cleaving blurb to appraisal `LongDesc` using configured `Name` and tuning numbers.
 - **Files:** `Overtinked/CustomImbueAppraise.cs`, `Overtinked/Readme.md`.
 
+### Overtinked — custom imbue persistence + Hemorrhage AoE in yards
+
+- **Persistence:** `OvertinkedImbueStore` now reads/writes **`PropertyInt` 40133** on the item (`SetProperty` → shard biota). `Get` still ORs Nether from `ImbuedEffect` for older Nether-tinkered items missing 40133.
+- **AoE:** `HemorrhageImbue` gains **`AoERadiusYards`** (default **10**); combat uses `yards × 0.9144` m for `GetDistance`. **`AoERadiusMeters`** remains when `AoERadiusYards` is **0** (legacy JSON).
+- **Files:** `Overtinked/OvertinkedImbueFlags.cs`, `Overtinked/HemorrhageAoE.cs`, `Overtinked/HemorrhageImbueCombat.cs`, `Overtinked/PatchClass.cs`, `Overtinked/NewImbueConfig.cs`, `Overtinked/Settings.json`, `Overtinked/Readme.md`, `AGENTS.md` (40133 row).
+
 ---
 
 ### AutoLoot — close-time, material-only auto-salvage (no clutter destruction)

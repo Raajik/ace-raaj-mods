@@ -35,6 +35,7 @@ Always check in this order:
 | `FakeBool 40130` | IsAwakened | EmpyreanAlteration |
 | `FakeInt 40131` | AwakenedTier | EmpyreanAlteration |
 | `FakeInt 40132` | PreImbuedCount | EmpyreanAlteration |
+| `FakeInt 40133` | Overtinked custom imbue bitmask (Hemorrhage/Cleaving/Nether on item) | Overtinked |
 | `FakeString 11033` | OriginalName | EmpyreanAlteration |
 | `FakeString 11034` | ProfileName | EmpyreanAlteration |
 
@@ -45,6 +46,7 @@ Always check in this order:
 - **DO:** Commit and push after every bug fix or problem solved. Never accumulate uncommitted fixes.
 - **DO NOT:** Change `Meta.json` enablement without explicit user direction.
 - **DO NOT:** Create new mods without confirming scope.
+- **DO NOT:** Use, reference, modify, or deploy `ValheelContent` for any reason unless specifically asked by the user.
 - **DEPLOYMENT WORKFLOW:** **ALWAYS deploy to test server (`C:\ACE\`) first.** Never push directly to live (`C:\ACE-WB\`) unless user explicitly says "push live". Test → Verify → Then request permission.
 
 ## 5. Build & Deploy

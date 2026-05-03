@@ -30,8 +30,11 @@ public class HemorrhageImbueConfig : NewImbueConfig
     [JsonPropertyName("// MaxStacks")]
     public string MaxStacksDoc { get; init; } = "Max stacks per victim (cap).";
 
+    [JsonPropertyName("// AoERadiusYards")]
+    public string AoERadiusYardsDoc { get; init; } = "Radius in yards (×0.9144 for GetDistance meters). Default 10. When 0, AoERadiusMeters is used (legacy).";
+
     [JsonPropertyName("// AoERadiusMeters")]
-    public string AoERadiusMetersDoc { get; init; } = "Radius from primary target for extra stack recipients.";
+    public string AoERadiusMetersDoc { get; init; } = "Legacy fallback when AoERadiusYards is 0.";
 
     [JsonPropertyName("// TickIntervalSeconds")]
     public string TickIntervalSecondsDoc { get; init; } = "Seconds between each burst of per-stack damage.";
@@ -47,6 +50,8 @@ public class HemorrhageImbueConfig : NewImbueConfig
     public int StacksPerApplication { get; set; } = 3;
 
     public int MaxStacks { get; set; } = 15;
+
+    public float AoERadiusYards { get; set; } = 10f;
 
     public float AoERadiusMeters { get; set; } = 10f;
 

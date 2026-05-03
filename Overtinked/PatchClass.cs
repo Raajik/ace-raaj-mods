@@ -411,19 +411,19 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         HemorrhageImbueConfig? hem = s.HemorrhageImbue;
         if (hem?.Enabled == true && hem.SalvageWcids != null && hem.SalvageWcids.Contains(wcid))
         {
-            OvertinkedImbueStore.Add(target.Guid.Full, OvertinkedImbueFlags.Hemorrhage);
+            OvertinkedImbueStore.Add(target, OvertinkedImbueFlags.Hemorrhage);
             HemorrhageWeaponVisual.ApplyIfHemorrhageWeapon(s, target);
             return true;
         }
         if (s.CleavingImbue?.Enabled == true && s.CleavingImbue.SalvageWcids != null && s.CleavingImbue.SalvageWcids.Contains(wcid))
         {
-            OvertinkedImbueStore.Add(target.Guid.Full, OvertinkedImbueFlags.Cleaving);
+            OvertinkedImbueStore.Add(target, OvertinkedImbueFlags.Cleaving);
             return true;
         }
         if (s.NetherRendingImbue?.Enabled == true && s.NetherRendingImbue.SalvageWcids != null && s.NetherRendingImbue.SalvageWcids.Contains(wcid))
         {
             target.ImbuedEffect &= ~AllRendingFlags;
-            OvertinkedImbueStore.Add(target.Guid.Full, OvertinkedImbueFlags.NetherRending);
+            OvertinkedImbueStore.Add(target, OvertinkedImbueFlags.NetherRending);
             target.ImbuedEffect |= ImbuedEffectType.NetherRending;
             target.SetProperty(PropertyInt.DamageType, (int)DamageType.Nether);
             return true;

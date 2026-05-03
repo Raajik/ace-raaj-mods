@@ -30,12 +30,12 @@ public static class HemorrhageImbueCombat
         if (cfg?.Enabled != true)
             return;
 
-        if ((OvertinkedImbueStore.Get(damageSource.Guid.Full) & OvertinkedImbueFlags.Hemorrhage) == 0)
+        if ((OvertinkedImbueStore.Get(damageSource) & OvertinkedImbueFlags.Hemorrhage) == 0)
             return;
 
         int add = Math.Max(1, cfg.StacksPerApplication);
         int maxStacks = Math.Max(1, cfg.MaxStacks);
-        float radius = Math.Clamp(cfg.AoERadiusMeters, 0.5f, 50f);
+        float radius = HemorrhageAoE.GetRadiusMeters(cfg);
 
         TryAddStacksAndMaybeStartChain(__instance, target, add, maxStacks);
 

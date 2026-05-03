@@ -20,7 +20,7 @@ internal static class CustomImbueAppraise
         if (s == null)
             return;
 
-        OvertinkedImbueFlags flags = OvertinkedImbueStore.Get(wo.Guid.Full);
+        OvertinkedImbueFlags flags = OvertinkedImbueStore.Get(wo);
         if (flags == OvertinkedImbueFlags.None)
             return;
 
@@ -30,8 +30,9 @@ internal static class CustomImbueAppraise
         {
             HemorrhageImbueConfig h = s.HemorrhageImbue;
             string label = string.IsNullOrWhiteSpace(h.Name) ? "Hemorrhage" : h.Name.Trim();
+            float aoeM = HemorrhageAoE.GetRadiusMeters(h);
             lines.Add(
-                $"{label}: stacking damage over time on hit (+{h.StacksPerApplication} stacks per hit, max {h.MaxStacks}); spreads stacks to nearby foes within {h.AoERadiusMeters:0.#}m.");
+                $"{label}: stacking damage over time on hit (+{h.StacksPerApplication} stacks per hit, max {h.MaxStacks}); spreads stacks within ~{aoeM:0.#}m (~{(aoeM / HemorrhageAoE.YardsToMeters):0.#} yd).");
         }
 
         if ((flags & OvertinkedImbueFlags.Cleaving) != 0 && s.CleavingImbue?.Enabled == true)

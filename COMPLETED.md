@@ -40,6 +40,12 @@
 - **Problem:** `PreHandleRecipe` compared `Random * 100` to `successChance`, but ACE passes **fraction 0..1** (`GetSkillChance`), so almost every attempt looked like a “failure” (wrong chaos / imbue hijack rate). Failure redesign skips `HandleRecipe`, so chaos property changes never ran `CalculateObjDesc` / `UpdateObj` / pack reorder — no Slayer glow, item stayed buried.
 - **Fix:** Compare `Random.Shared.NextDouble() < successChance` in `Overtinked/PatchClass.cs` and `BetterSupportSkills/Skills/ChaosTinker.cs` postfix. After imbue-failure chaos, workmanship fallback, and numeric-salvage chaos, call `CalculateObjDesc` + `CraftInventorySync.MirrorRecipeManagerUpdateObj`.
 
+### Overtinked — second `HandleRecipe` roll still ran vanilla `CreateDestroyItems` (real destroys + “target destroyed”)
+
+- **Problem:** `PreHandleRecipe` rolled once; on “success” it returned `true` and vanilla `HandleRecipe` rolled **again** vs `successChance`. On that miss, `CreateDestroyItems(..., success: false)` used the template recipe’s fail branch (`FailDestroyTargetChance`, etc.), so Hemorrhage / imbue attempts could still destroy the weapon while chaos messages from other paths looked unrelated.
+- **Fix:** Harmony prefix `Priority.First` on `RecipeManager.CreateDestroyItems` (REALM: `HashSet<ulong>?`, else `HashSet<uint>?`): when `!success` and tinkering, and redesign applies (imbue list + chaos/workmanship flags, or configured numeric salvage rule + `EnableFailureRedesign`), skip vanilla method, run shared `ApplyImbueTinkerFailure` / same salvage chaos path as `PreHandleRecipe`, set `__result` to target guid so `UpdateObj` still runs. Refactored imbue failure body into `ApplyImbueTinkerFailure`.
+- **Files:** `Overtinked/PatchClass.cs`. Commit `7ad6dbf`.
+
 ---
 
 ### AutoLoot — close-time, material-only auto-salvage (no clutter destruction)

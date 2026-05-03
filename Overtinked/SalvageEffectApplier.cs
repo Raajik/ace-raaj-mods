@@ -1,8 +1,110 @@
+using System.Globalization;
+
 namespace Overtinked;
 
 // Resolves salvage rules by WCID (including dual-WCID pairs) and applies numeric effects to the target.
 public static class SalvageEffectApplier
 {
+    private const string DefaultDefenseSalvagedLongFormat = "Apply this material to treasure-generated armor to imbue the target with a +{0} bonus to {1} Defense.";
+    private const string DefaultDefenseFoolproofLongFormat = "Apply this material to a treasure-generated armor to imbue the target with a +{0} bonus to {1} Defense.";
+
+    private static readonly Dictionary<uint, (string Kind, bool Foolproof)> DefenseSalvageByWcid = new()
+    {
+        [21066] = ("Melee", false),
+        [21088] = ("Missile", false),
+        [21089] = ("Magic", false),
+        [30101] = ("Melee", true),
+        [30105] = ("Missile", true),
+        [30106] = ("Magic", true),
+    };
+
+    /// <summary>
+    /// Optional effect + description for /bank salvage status. Null fields mean LeyLineLedger should use its JSON rule.
+    /// Called via reflection from LeyLineLedger (assembly name Overtinked).
+    /// </summary>
+    public readonly record struct SalvageBankLines(string? Effect, string? Description);
+
+    /// <summary>
+    /// Interop helper: returns [effect, description] or null when Overtinked has nothing to add (LeyLineLedger uses static JSON).
+    /// </summary>
+    public static string?[]? GetSalvageBankLinesForInterop(uint wcid, string? materialDisplayName)
+    {
+        SalvageBankLines lines = ResolveSalvageBankLines(wcid, materialDisplayName);
+        if (string.IsNullOrWhiteSpace(lines.Effect) && string.IsNullOrWhiteSpace(lines.Description))
+            return null;
+        return new[] { lines.Effect, lines.Description };
+    }
+
+    /// <summary>
+    /// Single source for bank status strings: defense imbue (bonus + templates), SalvageRules by WCID, then name-based GetMaterialEffect.
+    /// </summary>
+    public static SalvageBankLines ResolveSalvageBankLines(uint wcid, string? materialDisplayName)
+    {
+        Settings? s = PatchClass.CurrentSettings;
+        if (s == null)
+            return default;
+
+        if (DefenseSalvageByWcid.TryGetValue(wcid, out var defense) && s.DefenseImbueBonus > 0)
+        {
+            string shortLine = string.Format(CultureInfo.InvariantCulture, "Imbues +{0} {1} Defense", s.DefenseImbueBonus, defense.Kind);
+            string longLine = FormatDefenseLongDesc(s, defense.Kind, defense.Foolproof);
+            return new SalvageBankLines(shortLine, longLine);
+        }
+
+        SalvageTinkerRule? rule = GetRule(s, wcid);
+        if (rule != null && rule.Enabled)
+        {
+            int rep = rule.FixedValue ?? (rule.MinValue + rule.MaxValue) / 2;
+            string? eff = GetEffectDescription(rule, rep, false);
+            if (string.IsNullOrWhiteSpace(eff))
+                eff = null;
+            string? desc = BuildSalvageRuleBankDescription(rule);
+            return new SalvageBankLines(eff, desc);
+        }
+
+        string? mat = GetMaterialEffect(materialDisplayName ?? "");
+        if (!string.IsNullOrWhiteSpace(mat))
+            return new SalvageBankLines(mat, null);
+
+        return default;
+    }
+
+    /// <summary>
+    /// Long examine text for defense salvage bags; respects OverrideDefenseSalvageLongDescInAppraise and DefenseImbueBonus.
+    /// </summary>
+    public static bool TryGetDefenseSalvageAppraiseLongDesc(Settings s, uint weenieClassId, out string longDesc)
+    {
+        longDesc = "";
+        if (s.DefenseImbueBonus <= 0 || !s.OverrideDefenseSalvageLongDescInAppraise)
+            return false;
+        if (!DefenseSalvageByWcid.TryGetValue(weenieClassId, out var entry))
+            return false;
+        longDesc = FormatDefenseLongDesc(s, entry.Kind, entry.Foolproof);
+        return true;
+    }
+
+    static string FormatDefenseLongDesc(Settings s, string kind, bool foolproof)
+    {
+        string fmt = foolproof
+            ? (string.IsNullOrWhiteSpace(s.DefenseSalvageLongDescFoolproofFormat) ? DefaultDefenseFoolproofLongFormat : s.DefenseSalvageLongDescFoolproofFormat.Trim())
+            : (string.IsNullOrWhiteSpace(s.DefenseSalvageLongDescSalvagedFormat) ? DefaultDefenseSalvagedLongFormat : s.DefenseSalvageLongDescSalvagedFormat.Trim());
+        return string.Format(CultureInfo.InvariantCulture, fmt, s.DefenseImbueBonus, kind);
+    }
+
+    static string? BuildSalvageRuleBankDescription(SalvageTinkerRule rule)
+    {
+        string name = string.IsNullOrWhiteSpace(rule.Name) ? (rule.EffectKind ?? "Salvage") : rule.Name.Trim();
+        if (rule.BaneSpellIds != null && rule.BaneSpellIds.Length > 0)
+            return $"{name}: bane spell chain ({rule.BaneSpellIds.Length} tiers)";
+        if (rule.FixedValue.HasValue)
+            return $"{name}: fixed value {rule.FixedValue.Value} ({rule.EffectKind})";
+        if (rule.MinValue != rule.MaxValue)
+            return $"{name}: rolls {rule.MinValue}-{rule.MaxValue} ({rule.EffectKind})";
+        if (!string.IsNullOrWhiteSpace(rule.EffectKind))
+            return $"{name}: {rule.EffectKind}";
+        return name;
+    }
+
     /// <summary>
     /// Maps material name (case-insensitive) to its actual Overtinked effect value.
     /// Returns null if the material has no overtinked effect or is not recognized.

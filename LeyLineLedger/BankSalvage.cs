@@ -49,7 +49,7 @@ public static class BankSalvage
             return;
         }
 
-if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
+        if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
             sub.Equals("all", StringComparison.OrdinalIgnoreCase))
         {
             if (!DepositAll(player, settings))
@@ -148,38 +148,45 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         return TryGetCachedWeenieName(rule.WeenieClassId)?.Trim() ?? "";
     }
 
-    static string? _overtinkedEffectMethod;
+    static MethodInfo? _overtinkedSalvageBankInterop;
+    static bool _overtinkedSalvageBankInteropTried;
 
-    static string GetDynamicEffect(SalvageDepositRule rule)
+    // Overtinked.SalvageEffectApplier.GetSalvageBankLinesForInterop — single source for effect + description (defense bonus, SalvageRules, GetMaterialEffect).
+    static string?[]? TryInvokeOvertinkedSalvageBankLines(uint wcid, string materialDisplayName)
     {
-        var name = GetDepositRuleDisplayName(rule);
-        if (string.IsNullOrWhiteSpace(name)) return rule.Effect;
-
-        // Try Overtinked.SalvageEffectApplier.GetMaterialEffect via reflection
-        if (_overtinkedEffectMethod == null)
+        if (!_overtinkedSalvageBankInteropTried)
         {
-            _overtinkedEffectMethod = "";
+            _overtinkedSalvageBankInteropTried = true;
             try
             {
-                var asm = AppDomain.CurrentDomain.GetAssemblies()
+                Assembly? asm = AppDomain.CurrentDomain.GetAssemblies()
                     .FirstOrDefault(a => string.Equals(a.GetName().Name, "Overtinked", StringComparison.Ordinal));
-                var t = asm?.GetType("Overtinked.SalvageEffectApplier");
-                var mi = t?.GetMethod("GetMaterialEffect", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(string) }, null);
-                if (mi != null)
-                {
-                    var result = mi.Invoke(null, new object[] { name });
-                    if (result is string s && !string.IsNullOrWhiteSpace(s))
-                        return s;
-                }
+                Type? t = asm?.GetType("Overtinked.SalvageEffectApplier");
+                _overtinkedSalvageBankInterop = t?.GetMethod(
+                    "GetSalvageBankLinesForInterop",
+                    BindingFlags.Public | BindingFlags.Static,
+                    null,
+                    new[] { typeof(uint), typeof(string) },
+                    null);
             }
-            catch { }
-        }
-        else if (_overtinkedEffectMethod == "")
-        {
-            // Already tried and failed, use static effect
+            catch
+            {
+                _overtinkedSalvageBankInterop = null;
+            }
         }
 
-        return rule.Effect;
+        if (_overtinkedSalvageBankInterop == null)
+            return null;
+
+        try
+        {
+            object? ret = _overtinkedSalvageBankInterop.Invoke(null, new object?[] { wcid, materialDisplayName });
+            return ret as string?[];
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     static string FormatSalvageBagUnitsLine(long units, int unitsPerBag, SalvageDepositRule rule, bool showWcid)
@@ -198,12 +205,16 @@ if (sub.Equals("deposit", StringComparison.OrdinalIgnoreCase) ||
         else
             line = $"  {amount} {compact}";
 
-        var effect = GetDynamicEffect(rule);
-        if (!string.IsNullOrWhiteSpace(effect))
-            line += $", {effect.Trim()}";
+        string matName = GetDepositRuleDisplayName(rule);
+        string?[]? ot = TryInvokeOvertinkedSalvageBankLines(rule.WeenieClassId, matName);
 
-        if (!string.IsNullOrWhiteSpace(rule.Description))
-            line += $" — {rule.Description.Trim()}";
+        string effectPart = !string.IsNullOrWhiteSpace(ot?[0]) ? ot[0]!.Trim() : (rule.Effect?.Trim() ?? "");
+        if (!string.IsNullOrWhiteSpace(effectPart))
+            line += $", {effectPart}";
+
+        string descPart = !string.IsNullOrWhiteSpace(ot?[1]) ? ot[1]!.Trim() : (rule.Description?.Trim() ?? "");
+        if (!string.IsNullOrWhiteSpace(descPart))
+            line += $" — {descPart}";
 
         return line;
     }

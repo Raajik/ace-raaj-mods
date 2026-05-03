@@ -15,6 +15,7 @@ Always check in this order:
 4. `README.md` — Mod list, enablement status.
 5. Mod-specific `Readme.md` — Per-mod docs and configuration notes.
 6. **Skills** — Load domain-specific skills before touching code.
+7. **Game mechanics / vanilla ACE behavior** — Follow **§7.0** (wiki first, then live tree, then `.references/`, then graphify/rg). Do not invent behavior from memory.
 
 ## 3. Repo Conventions
 - **Mod structure:** Each folder = deployable mod containing:
@@ -57,8 +58,21 @@ Always check in this order:
 - Hand-written summaries for user-facing changes are strongly preferred.
 
 ## 7. External Paths (Always Allowed)
+
+### 7.0 Game mechanics: ACE / ACRealms source lookup
+
+**Primary source of truth for “how does the game work?” questions:** the wiki hub **`A:\obsidian\jeremy\wiki\game-engine\ACE-Realms-Source-Map.md`** (Obsidian: `[[ACE-Realms-Source-Map]]`). It links topic pages (WorldObject, Player commerce/use, Creature combat, RecipeManager, Vendor/Emotes/Quests, Landblock/Realms, loot, spells) with start files and grep seeds.
+
+**Order of evidence:**
+
+1. **Wiki** — curated paths and traps; extend topic pages when you discover new behavior.
+2. **Live fork** — `C:\ACE-REALMS\Source\` (layout follows upstream; `ACE.Server` project under `Source\`) for the code that **actually runs** on your instance.
+3. **Pinned snapshots** — `ace-raaj-mods/.references/` (e.g. `ACRealms.WorldServer-2.1.4\Source\`) for **stable line citations** and agents without the live drive.
+4. **graphify / ripgrep** — §10 graphify for **this repo’s mods**; for upstream **ACE.Server** AST overview see `A:\obsidian\jeremy\raw\graphify-out-ace-realms\GRAPH_REPORT.md` when present. Use targeted `rg` on `ACE.Server` for symbols/strings.
+
 - **`A:\`** — Full drive access for research, data mining, configuration, code analysis, deployment.
-- **`C:\ACE\`** — Full ACE test server installation (port 9000).
+- **`C:\ACE\`** — Test server installation (port 9000). Use when **"push test"** or comparing against a non-Realms tree; keep **`$(ACEPath)`** on mod projects pointed at the **`ACE.Server.dll`** you actually run here.
+- **`C:\ACE-REALMS`** — **ACRealms** fork (Windblown primary upstream target). Clone/build: [ACRealms/ACRealmsForkMirror](https://github.com/ACRealms/ACRealmsForkMirror) (mirror for visibility/diffs); narrative “main” repo: [ACRealms/ACRealms.WorldServer](https://github.com/ACRealms/ACRealms.WorldServer) — **some doc links still land on WorldServer**; treat mirror + WorldServer as paired sources of truth. **Build:** `cd C:\ACE-REALMS\Source` then `dotnet restore ACRealms.sln` and `dotnet build ACRealms.sln -c Release` (TFM follows branch; `master` has used **net9.0** with output under `Source\ACE.Server\bin\x64\Release\net9.0\`). **First run:** copy `Config.js.example` → `Config.js`, `Config.realms.js.example` → `Config.realms.js`; pick a **Port** at least **2** away from `C:\ACE` (9000) and `C:\ACE-WB` (9002). Operator DB/migration notes: [Docs/setup-tips.md](https://github.com/ACRealms/ACRealmsForkMirror/blob/master/Docs/setup-tips.md). When ACRealms is canonical, aim mod **`$(ACEPath)`** at the same DLL set this server loads (avoid mixing vanilla ACE `ACE.Server.dll` with Realms-shaped mods).
 - **`C:\ACE-WB\`** — Live Windblown server (port 9002). **Never deploy here without explicit "push live".**
 - **`A:\ai\projects\ace-sql`** — External ACE SQL content repository.
 - **`A:\obsidian\jeremy\wiki\*`** — Persistent knowledge wiki; read and edit freely.
@@ -67,13 +81,76 @@ Always check in this order:
 - **`B:\Backup\ac custom stuff\reference\`** — Mod frameworks preserved for reference.
 - **`.references/`** — ACE source/server files, ACRealms, world database dumps. Check this directory when investigating ACE internals.
 
+### ACRealms operator snapshot (`C:\ACE-REALMS\Server\Config.js`)
+
+**Values from the live file (keep in sync when you change ops):** `Server.WorldName` **Dust**; **`Network.Port` 9004** (server binds **9004 and 9005**). **MySQL** `127.0.0.1:3306` — **`dust_ace_auth`**, **`dust_ace_shard`**, **`dust_ace_world`**. **Paths:** `DatFilesDirectory` `c:\ACE-REALMS\Dats\`; `ModsDirectory` `c:\ACE-REALMS\Mods\`. **Offline / DB automation:** `AutoApplyDatabaseUpdates`, `AutoUpdateWorldDatabase`, `AutoApplyWorldCustomizations` are enabled there—know that before hand-applying conflicting SQL. **Do not** paste DB passwords into repo docs; use `Config.js` on the host (same local MySQL user pattern as §8.7 when unchanged). **User trigger for this log:** say **`check logs dust`** (see §8.1).
+
+### ACRealms — realms, rulesets, and what JSON can (and cannot) do
+
+**Mission (from upstream README):** ACRealms targets servers with **heavy customization**: **instanced landblocks**, **ruleset composition**, **ephemeral realms** (temporary rules layered on landblocks—think “map device” style), and **automated tests**. Branch policy upstream: **`master`** = latest dev; **`v2.1`** = beta balance; **`v2.0`** = most stable even branch—back up databases before upgrades.
+
+| Concept | Meaning |
+|--------|---------|
+| **Realm** (`"type": "Realm"` in JSONC) | A **persistent world** players can attach to. May be a **homeworld** (`CanBeHomeworld`, neutral zone, hideout, PK rules, recalls, classical instances, etc.). |
+| **Ruleset** (`"type": "Ruleset"`) | **Not** a homeworld. A **bag of composed `RealmProperty*` values** layered on a realm (or other rulesets) via `parent`, `apply_rulesets`, `apply_rulesets_random`. |
+| **Composition** | `parent` inherits; `apply_rulesets` runs in order; `apply_rulesets_random` picks weighted or nested-random rulesets (see upstream `Content/json/realms/ruleset/random-test.jsonc` on WorldServer). Per-property entries support `value`, `low`/`high`, `reroll` (`landblock` / `always` / `never`), `compose` (`add` / `multiply` / `replace`), `locked`, `probability`. |
+| **`realms.jsonc`** | **Auto-generated** (per upstream README, May 2024+). Realm **IDs** must stay stable after first run; do not invent ad-hoc ID churn. |
+
+**Where to edit:** `Content/json/realms/realm/*.jsonc` and `Content/json/realms/ruleset/*.jsonc`. Use **VS Code with `Content/` as workspace root**; after a successful **ACE.Server** build, **generated JSON schema** under `Content/json-schema/` drives autocomplete for property keys.
+
+**Examples you can ship with data alone:**
+1. **Two homeworlds** — e.g. a “standard” realm and a “chaos” realm, both `CanBeHomeworld: true`, sharing a base ruleset via `parent` / `apply_rulesets`, with the chaos realm adding a second ruleset that raises creature tuning floats.
+2. **Ephemeral / stamped rulesets** — `RealmPropertyInt.RulesetStampVendorCategory` ties vendor stamps to rulesets players can apply in instanced content (see enum descriptions in upstream `RealmPropertyInt.cs`).
+3. **Randomized dungeon feel** — `apply_rulesets_random` + `properties_random_count` for weighted rolls at landblock load.
+
+```mermaid
+flowchart TB
+  subgraph realms [Permanent_realms]
+    R1[Realm_Standard]
+    R2[Realm_Chaos]
+  end
+  subgraph rulesets [Composable_rulesets]
+    RS1[Ruleset_Base]
+    RS2[Ruleset_HardCreatures]
+  end
+  R1 -->|apply_rulesets| RS1
+  R2 -->|apply_rulesets| RS1
+  R2 -->|apply_rulesets| RS2
+```
+
+**“Chaos realm” = higher aggro + adds on kill?** Under **one** `ACE.Server` process you **can** run **multiple realms** with **different composed rulesets**—that is the core model. **Creature stat / HP pressure** is partly covered today: upstream code reads ruleset floats such as **`CreatureSpawnHPMultiplier`** and attribute multipliers when spawning/scaling creatures (see `ACE.Server` `Creature.cs` + `RealmPropertyFloat.cs` in `.references/ACRealms.WorldServer-*` or your `C:\ACE-REALMS` tree). **PK, recalls, spell windup/angle caps, landblock unload interval, classical instances**, and many bools are also ruleset-driven via `RealmRuleset.GetProperty(...)`.
+
+**Not covered as `RealmProperty*` today (v2.1-era enums in `.references/`):** per-realm **aggro / awareness radius** knobs and a generic **“extra adds on death”** probability are **not** exposed as composed realm properties—those remain **weenie/treasure/emote + server logic**, or a **Harmony mod** that branches on **`player.RealmRuleset` / landblock realm** (README: *“many features not implemented as a realm property”*). To get exactly your vision, plan either **realm-aware mods** or **contributing new `RealmProperty*` + engine reads** upstream.
+
+**Known limitations (README):** **Landblock static content is global** across realms until upstream per-realm landblock work lands (README cites **v2.3** milestone). **Ruleset JSON hot-reload** is not reliable—expect **restart** when iterating realms/rulesets.
+
+**Reserved ID ranges (do not collide in custom content):** `PropertyInt` / `PositionType` **42000–42999** and **`RealmProperty*` 0–9999** reserved for ACRealms core. **License / community:** ACRealms is **AGPL v3**; upstream repeats ACE-style **no financial solicitation** tied to the project—do not design agent workflows that violate that policy.
+
+**This repo vs ACRealms:** Most gameplay mods reference **`ACRealms.ACE.Shared`** NuGet alongside `ACEmulator.ACE.Shared`; **twelve** mods set `global using Position = ACE.Server.Realms.InstancedPosition`. **`CustomSpells`** is special-cased (`REALM` define / local `ACE.Shared` project reference)—treat as dual-path. Always compile mods against the **same** `ACE.Server.dll` you deploy.
+
+#### Agent prompt block (ACRealms + ace-raaj-mods)
+
+Paste when onboarding an agent for Windblown server work:
+
+```
+Windblown server target is ACRealms (fork of ACE), not stock ACEmulator alone.
+- Canonical tree: C:\ACE-REALMS (mirror https://github.com/ACRealms/ACRealmsForkMirror ; docs may link ACRealms.WorldServer).
+- Build server: cd C:\ACE-REALMS\Source && dotnet build ACRealms.sln -c Release. Match mod $(ACEPath) to the ACE.Server.dll set that instance runs.
+- Realms JSON: Content/json/realms/realm/*.jsonc and ruleset/*.jsonc ; keys must exist in RealmProperty*.cs ; use Content/ as VS Code root and generated json-schema after ACE.Server build.
+- One process, many realm IDs; rulesets compose on realms via parent / apply_rulesets / apply_rulesets_random. realms.jsonc is auto-generated—do not shuffle realm IDs casually.
+- Behavior not in RealmProperty enums → Harmony mod (realm-aware) or upstream change—not JSON alone.
+- Reserved: PropertyInt/PositionType 42000–42999 ; RealmProperty 0–9999 for core. AGPL v3 ; no donation-gated ACRealms features.
+- DB backups before upgrades: see ACRealms Docs/setup-tips.md . Port spacing: keep ≥2 from other instances (9000 test ACE, 9002 live WB, etc.).
+```
+
 ## 8. Conventions, Warnings & Lessons Learned
 
 ### 8.1 Deploy & Server Ops
 
 **Trigger phrases:**
 - `"update docs"` — Full sweep: update `PLAN.md` (active only), `COMPLETED.md` if you shipped since last sweep, `AGENTS.md`, wiki, mod Readmes.
-- `"check logs"` — Check BOTH `C:\ACE\Server\ACE_Log.txt` (test) and `C:\ACE-WB\Server\ACE_Log.txt` (live).
+- `"check logs"` — Check `C:\ACE\Server\ACE_Log.txt` (legacy test ACE), `C:\ACE-WB\Server\ACE_Log.txt` (live), and when running **ACRealms** from `C:\ACE-REALMS`, the `ACE_Log.txt` next to the **actual working directory** of `ACE.Server.exe` (often build output under `Source\ACE.Server\bin\...` or a staged `C:\ACE-REALMS\Server` folder).
+- `"check logs dust"` — Same intent as ACRealms in `"check logs"`, but pinned to the **Dust** install: `Server.WorldName` **Dust** in `C:\ACE-REALMS\Server\Config.js`. Default log file **`C:\ACE-REALMS\Server\ACE_Log.txt`**; if you start `ACE.Server.exe` from another cwd (e.g. `Source\ACE.Server\bin\...`), read `ACE_Log.txt` there instead.
 - `"push test"` — Deploy to test server (`C:\ACE\`, port 9000):
   1. `dotnet build ModName/ModName.csproj`
   2. Copy DLLs from `C:\ACE\Mods\ModName\` to test server.
@@ -92,10 +169,12 @@ Substitute `C:\ACE\` for test. **Always verify with `tasklist | grep ACE.Server`
 powershell -Command "Get-Process ACE.Server -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Seconds 3"
 ```
 
-**Clear logs before every restart:** Old log output buries the current session's errors and misleads debugging. Always truncate before starting:
+**Clear logs before every restart:** Old log output buries the current session's errors and misleads debugging. Always truncate before starting (use the same path you use for `"check logs"` / `"check logs dust"` for each instance):
 ```powershell
 $ > "C:\ACE-WB\Server\ACE_Log.txt"   # live
-$ > "C:\ACE\Server\ACE_Log.txt"      # test
+$ > "C:\ACE\Server\ACE_Log.txt"      # test (legacy ACE)
+# ACRealms: truncate the log beside the working dir you start from, e.g.:
+# $ > "C:\ACE-REALMS\Server\ACE_Log.txt"
 ```
 
 **Port collision:** ACE binds `Port` and `Port+1`. Test on 9000, live on 9002 (not 9001). Always separate by ≥2 ports.
@@ -103,6 +182,7 @@ $ > "C:\ACE\Server\ACE_Log.txt"      # test
 **Live ACE-WB auto-restart (crash only, never touches test `C:\ACE\`):** Scripts under `scripts/` — see `scripts/README-ACE-WB-supervisor.md`.
 - **Watchdog (default in repo):** Scheduled task name `ACE-WB-Watchdog` runs `AceWbWatchdog.ps1` (polls `Win32_Process` for `ACE.Server.exe` whose path contains `ACE-WB`, then `Start-Process` with working dir `C:\ACE-WB\Server`). The task is registered **at logon as the interactive user** (not `SYSTEM`) so **ACE.Server.exe opens in a visible foreground console** on your desktop for live logs and server commands; the watchdog PowerShell host stays hidden. Re-register after script changes: `scripts\Register-AceWbWatchdogTask.ps1`. Restart delay and hourly restart cap are in the script; storm trip creates `C:\ACE-WB\Server\ace_wb_watchdog_BLOCKED.txt`. **Disable for debugging:** `scripts\Unregister-AceWbWatchdogTask.ps1` (elevated), then stop the stray `powershell` hosting the watchdog if any.
 - **NSSM (optional):** `scripts\Setup-NssmAceWb.ps1` installs service `ACE-WB`; do **not** run NSSM and the scheduled watchdog for the same instance (double-start risk).
+- **ACRealms auto-restart (`C:\ACE-REALMS\`, never touches `C:\ACE\` or `C:\ACE-WB\`):** `scripts/README-ACE-REALMS-supervisor.md`. Scheduled task **`ACE-REALMS-Watchdog`** runs `AceRealmsWatchdog.ps1` (polls `Win32_Process` for `ACE.Server.exe` whose path contains **`ACE-REALMS`**, then `Start-Process` with working dir `C:\ACE-REALMS\Server`). Register elevated: `scripts\Register-AceRealmsWatchdogTask.ps1`. Storm block file: `C:\ACE-REALMS\Server\ace_realms_watchdog_BLOCKED.txt`. **Disable:** `scripts\Unregister-AceRealmsWatchdogTask.ps1` (elevated), then stop stray `powershell` hosting that watchdog if any.
 - **Never** use blanket `taskkill /IM ACE.Server.exe` when both servers run; it kills both processes. Scope by path/PID.
 
 **Verify deployed DLL timestamps before restarting:** After `dotnet build`, output goes to `C:\ACE\Mods\`. If you run two servers, copying DLLs to the wrong directory or forgetting to copy causes the old build to run. Always `ls -la` the deployed DLL and confirm mtime matches repo build.
@@ -254,7 +334,7 @@ Set via `PropertyInt.UiEffects`, then broadcast `GameMessagePublicUpdateProperty
 
 **Never assume AC enum or ID values are sequential** — `SpellId`, `PropertyInt`, `WCID`, and other ID spaces have arbitrary gaps. `(uint)(SpellId.HealSelf1 + 3)` silently produces wrong spell or crashes `Spell.Init()`. Always use hardcoded arrays of known-valid IDs or query the database.
 
-**Always check `.references/` ACE source before guessing** — Key files: `WorldObject_Properties.cs`, `WorldObjectFactory.cs`, `WeenieConverter.cs`, `Vendor.cs`, `Player_Commerce.cs`. The source is the single source of truth.
+**Evidence for vanilla behavior** — Follow **§7.0** (wiki hub first, then live `C:\ACE-REALMS\Source`, then `.references/` for pinned line cites). Frequent entry files: `WorldObject_Properties.cs`, `WorldObjectFactory.cs`, `WeenieConverter.cs`, `Vendor.cs`, `Player_Commerce.cs` (paths under `ACE.Server/` or `ACE.Entity/` per topic pages).
 
 ### 8.10 Workflows & Agent Behavior
 
@@ -302,10 +382,73 @@ AST-only, no API cost. Graph output moved out of repo to keep working tree clean
 
 **MaterialType-based dynamic renaming** — Read `item.MaterialType`, call `.ToString()`, replace that word in `item.Name`. Store original in `PropertyString` (e.g., `(PropertyString)11033`). Fallback to prepending prefix.
 
+### Overtinked Imbue Hang Investigation (2026-05-03)
+
+**Symptom:** Using Peridot (21066), Yellow Topaz (21088), or Zircon (21089) salvage on armor causes server hang - client shows hourglass, request never completes, connection eventually resets.
+
+**What works:** Other imbues (Hemorrhage, Cleaving, Nether Rending) and tinker salvages work fine. Defense imbues on weapons likely work too - the hang is specific to **armor targets**.
+
+**Key ACE Source Findings (`.references/ACE-1.76.4751/`):**
+
+1. **ImbuedEffectType enum** (`ACE.Entity/Enum/ImbuedEffectType.cs`): Defense and rending imbues use distinct bit patterns with no overlap:
+   - Defense: `MeleeDefense=0x0400`, `MissileDefense=0x0800`, `MagicDefense=0x1000`
+   - Rending: `ArmorRending=0x0004`, `CriticalStrike=0x0001`, etc.
+   - Using `|=` (bitwise OR) is correct for combining these.
+
+2. **RecipeManager.TryMutateNative** (`Managers/RecipeManager.cs`): Vanilla ACE uses direct assignment (`=`) for defense imbues:
+   ```csharp
+   case 0x38000038: // Peridot
+       target.ImbuedEffect = ImbuedEffectType.MeleeDefense;
+   ```
+   Overtinked uses `|=` - both approaches work correctly since defense bits don't overlap with existing rending bits.
+
+3. **GetDefenseImbues** (`WorldObjects/Creature_Combat.cs`): Simple count of equipped items with the imbue flag:
+   ```csharp
+   public int GetDefenseImbues(ImbuedEffectType imbuedEffectType)
+   {
+       return EquippedObjects.Values.Count(i => i.ImbuedEffect.HasFlag(imbuedEffectType));
+   }
+   ```
+   No complexity that would cause a hang.
+
+4. **ImbuedEffect property** (`WorldObjects/WorldObject_Properties.cs`): Standard getter/setter for PropertyInt - no recursion or loops.
+
+**Hang Location Hypothesis:**
+
+The log message `Status: unconfirmed` indicates the code reaches `RecipeManagerEx.PreUseObjectOnTarget` with `confirmed=false`. After this:
+
+1. `GetRecipeChance()` is called
+2. `StartCraftAnimation()` builds an action chain
+3. If `showDialog && !confirmed` → `RecipeManager.ShowDialog()` sends confirmation to client and waits for response
+4. If `!showDialog || confirmed` → `RecipeManager.HandleRecipe()` is called directly
+
+The hang likely occurs in **ShowDialog** (waiting for client confirmation response) or in the **mutation step** specific to defense imbues on armor. ShowDialog would affect all tinkering recipes, so the issue may be specific to how defense imbue recipes differ from others.
+
+**Database Findings:**
+- All defense imbue salvages (21066, 21088, 21089) have identical weenie properties: `ItemType=1073741824` (Salvage), `ItemUseable=524296`
+- This matches working attack imbues (21079, 21049, 21040) - no difference in base weenie
+
+**Next Investigation Steps:**
+1. Check server logs for confirmationManager related errors or timeouts
+2. Compare recipe requirements between defense imbue recipes and working imbue recipes in database
+3. Try disabling Overtinked entirely to confirm issue is in the mod (not base ACE)
+4. Add debug logging to RecipeManagerEx to trace exactly where hang occurs
+5. Check if the issue is specifically in the target item (armor) having certain properties that cause problems
+
+**Reference Files:**
+- Overtinked/PatchClass.cs - PreTryMutate handles standard imbue path (#4)
+- Overtinked/RecipeManagerEx.cs - PreUseObjectOnTarget replaces vanilla flow
+- Overtinked/LesserImbueUpgrade.cs - Handles rending imbues, no defense handling needed
+
+---
+
 ## 9. External Knowledge Base
 - **`A:\obsidian\jeremy\AGENT.md`** — LLM Wiki Agent rulebook. Consult at end of every task for knowledge persistence instructions.
+- **`A:\obsidian\jeremy\wiki\game-engine\ACE-Realms-Source-Map.md`** — **Primary** mechanics / ACE.Server **source routing** (which files answer “how does X work?”). Obsidian wikilink: `[[ACE-Realms-Source-Map]]`. Read before deep-diving `.references/` or live `C:\ACE-REALMS`.
 - **`A:\obsidian\jeremy\wiki\index.md`** — Collective second brain. Reference for retained knowledge; write new info with `[[Page Name]]` links.
 - **`BetterSupportSkills/ClassPerks.md`** — **Reference for ALL BetterSupportSkills class-related work.** Contains prerequisites, perks, and formulas for every combat/hybrid/summoning class. Consult before changing class logic or answering class-related questions.
 
 ## 10. graphify
-Before answering architecture questions, read `graphify-out/GRAPH_REPORT.md`. For cross-module questions, prefer `graphify query`, `graphify path`, `graphify explain` over grep. After modifying code, run `graphify update . --out-dir="A:/obsidian/jeremy/raw/graphify-out"`.
+Before answering **ace-raaj-mods** architecture questions, read `A:/obsidian/jeremy/raw/graphify-out/GRAPH_REPORT.md` (from `graphify update . --out-dir="A:/obsidian/jeremy/raw/graphify-out"` on this repo). For cross-module questions, prefer `graphify query`, `graphify path`, `graphify explain` over grep. After modifying code in this repo, run that same update.
+
+**Upstream ACE.Server (ACRealms):** optional AST graph is separate — see **§7.0** and `A:/obsidian/jeremy/raw/graphify-out-ace-realms/GRAPH_REPORT.md` (vault copy of the report; full `graph.json` lives under `.references/.../ACE.Server/graphify-out/` next to the scanned tree). Do not confuse the two outputs when choosing which `GRAPH_REPORT.md` to read.

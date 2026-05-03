@@ -209,7 +209,14 @@ public static class SalvageEffectApplier
             case "Damage":
                 return $"Damage {(signed >= 0 ? "+" : "")}{signed}";
             case "DamageVariance":
-                return signed >= 0 ? "Damage variance reduced" : "Damage variance increased";
+                if (signed >= 0)
+                {
+                    float factor = 1f - (signed / 100f);
+                    if (factor <= 0f)
+                        factor = 0.01f;
+                    return $"Damage variance reduced (×{factor.ToString("0.###", CultureInfo.InvariantCulture)})";
+                }
+                return "Damage variance increased";
             case "WeaponSpeed":
                 return signed >= 0
                     ? $"Weapon speed faster by {signed}"

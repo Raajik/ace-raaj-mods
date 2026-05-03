@@ -242,6 +242,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (TryApplyNewImbue(s, wcid, target))
         {
             RecipeManager.HandleTinkerLog(source, target);
+            MarkTargetModifiedForCraftUpdate(modified, target);
             if (s.ShowPlayerSalvageMessage)
                 player.SendMessage($"You apply the imbue to your {target.NameWithMaterial}.");
             __result = true;
@@ -271,6 +272,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                         player.SendMessage($"Your {target.NameWithMaterial}: {desc}.", ChatMessageType.Craft);
                 }
                 ModManager.Log($"[Overtinked] {player?.Name} applied {rule.Name ?? wcid.ToString()} -> {rule.EffectKind} {value} on {target.Guid}", ModManager.LogLevel.Debug);
+                MarkTargetModifiedForCraftUpdate(modified, target);
                 __result = true;
                 return false;
             }
@@ -280,6 +282,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (TryApplyBuffedImbue(s, wcid, target, player))
         {
             RecipeManager.HandleTinkerLog(source, target);
+            MarkTargetModifiedForCraftUpdate(modified, target);
             __result = true;
             return false;
         }
@@ -303,8 +306,16 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (RecipeManager.incItemTinkered.Contains(dataId))
             RecipeManager.HandleTinkerLog(source, target);
 
+        MarkTargetModifiedForCraftUpdate(modified, target);
         __result = true;
         return false;
+    }
+
+    // Vanilla TryMutate ends with modified.Add(target.Guid.Full). When this prefix short-circuits, the same
+    // entry must exist so RecipeManager.HandleRecipe calls UpdateObj and the client gets GameMessageUpdateObject.
+    static void MarkTargetModifiedForCraftUpdate(HashSet<uint> modified, WorldObject target)
+    {
+        modified.Add((uint)target.Guid.Full);
     }
 
     [HarmonyPostfix]

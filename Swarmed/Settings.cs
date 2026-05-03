@@ -405,7 +405,7 @@ public class DungeonPopulationSettings
 
     [JsonPropertyName("// TargetMobCount")]
     public string TargetMobCountDoc { get; init; } = "Desired living creatures per dungeon landblock.";
-    public int TargetMobCount { get; set; } = 30;
+    public int TargetMobCount { get; set; } = 50;
 
     [JsonPropertyName("// CheckIntervalSeconds")]
     public string CheckIntervalSecondsDoc { get; init; } = "How often to check and top-up dungeon populations.";

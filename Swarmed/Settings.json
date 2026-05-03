@@ -204,5 +204,20 @@
     "// ImbuedCountMax": "Maximum random loot items (EmpyreanAlteration auto-imbued) dropped.",
     "ImbuedCountMax": 5
   },
+  "// DungeonPopulation": "Maintains minimum living creatures in dungeon landblocks with players (template clones, not link respawn).",
+  "DungeonPopulation": {
+    "// Enabled": "When true, dungeon landblocks with players maintain a minimum creature population.",
+    "Enabled": true,
+    "// TargetMobCount": "Desired living creatures per dungeon landblock; top-up spawns when count is below this.",
+    "TargetMobCount": 50,
+    "// CheckIntervalSeconds": "How often to check and top-up dungeon populations.",
+    "CheckIntervalSeconds": 30,
+    "// MaxSpawnsPerTick": "Maximum creatures spawned in a single tick to avoid spikes.",
+    "MaxSpawnsPerTick": 5,
+    "// MinSpawnDistanceFromPlayer": "Minimum distance from any player for new spawns (meters).",
+    "MinSpawnDistanceFromPlayer": 50,
+    "// MaxSpawnDistanceFromPlayer": "Maximum distance from players for new spawns (meters).",
+    "MaxSpawnDistanceFromPlayer": 120
+  },
   "CreatureExQuestPointReward": 1.0
 }

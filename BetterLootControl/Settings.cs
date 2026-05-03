@@ -18,6 +18,9 @@ public class Settings
     // Chance for a third item to be added (independent roll after second).
     public double ThirdItemChance { get; init; } = 0.01;
 
+    // When true, scrolls on monster corpses that the killing player cannot read (Player.CanReadScroll) are destroyed after treasure gen.
+    public bool FilterUnusableScrollDropsForKiller { get; init; } = true;
+
     // -- Global Rare Drops (SpellSiphon / Mana Lattice / Coalesced Mana) --
     public bool EnableGlobalRareDrops { get; init; } = true;
     public double RareDropChance { get; init; } = 0.005; // 0.5%

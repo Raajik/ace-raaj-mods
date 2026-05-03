@@ -10,6 +10,8 @@
   "MinResetIntervalSeconds": 600,
   "MaxResetIntervalSeconds": 1200,
 
+  "FilterUnusableScrollDropsForKiller": true,
+
   "EnableGlobalRareDrops": true,
   "RareDropChance": 0.007,
   "SpellsiphonToolWcid": 850200,

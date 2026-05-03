@@ -60,6 +60,25 @@ Vanilla `RecipeManager.TryMutate` ends with `modified.Add(target.Guid.Full)` so 
 - [x] **Hemorrhage / Cleaving / Nether** — `TryApplyNewImbue`; Hemorrhage weapon tint / `CalculateObjDesc` in `HemorrhageWeaponVisual`.
 - [x] **Buffed jewelry** — `TryApplyBuffedImbue` + `BuffedImbueRule` / secondary store.
 - [x] **Failure redesign** — `HandleRecipe` patches elsewhere in `PatchClass` (numeric opposite / imbue workmanship); not part of display matrix above.
+
+## `PreTryMutate` → `modified` audit (backpack / `UpdateObj`)
+
+Every `PreTryMutate` exit with `__result = true` and `return false` (Harmony short-circuit) calls `MarkTargetModifiedForCraftUpdate(modified, target)` before returning:
+
+1. **New imbues** — `TryApplyNewImbue` (Hemorrhage, Cleaving, Nether, Jewelry cleave on jewelry).
+2. **Numeric `SalvageRules`** — only when `ApplyEffect` succeeds (`__result = true`); failed apply falls through to vanilla.
+3. **Buffed jewelry** — `TryApplyBuffedImbue`.
+4. **Standard imbue by `dataId`** — after `target.ImbuedEffect` / rend damage type updates (including when `HandleTinkerLog` is skipped for non-`incItemTinkered` dataIds); still calls `MarkTargetModifiedForCraftUpdate`.
+
+`MarkTargetModifiedForCraftUpdate` now logs **Error** if `modified` is null (vanilla `CreateDestroyItems` can return null when Success/Fail WCID weenie is missing — then `HandleRecipe` skips all `UpdateObj`).
+
+**Failure bypass:** `PreHandleRecipe` returns `false` on imbue failure redesign or numeric salvage chaos — **original `HandleRecipe` does not run**, so there is no `CreateDestroyItems` / `UpdateObj` / `MoveItemToFirstContainerSlot` for that path (chaos handlers must refresh the client themselves where needed).
+
+## Craft inventory sync helpers (`CraftInventorySync`, `Settings`)
+
+- **`DebugCraftInventorySync`** — logs `[CraftInventorySync]` per tinkering `CreateDestroyItems`: `modified` null/count, `targetInModified`, wield slot, `FindObject(MyInventory)`. Operator: grep `ACE_Log.txt` for `MoveItemToFirstContainerSlot` errors and `[CraftInventorySync]`.
+- **Automatic safety net** — if tinkering **succeeds** but `target` is **not** in `modified`, log **Warn** and call `CraftInventorySync.MirrorRecipeManagerUpdateObj` once (same steps as `RecipeManager.UpdateObj` inventory half).
+- **`MirrorRecipeUpdateObjAfterOvertinkedShortCircuit`** (default **false**) — after successful tinkering `HandleRecipe`, runs the same mirror again when Overtinked short-circuited `TryMutate`; use only if client/server pack order is still wrong after vanilla `UpdateObj` (duplicate `GameMessageUpdateObject` / slot move).
 - [x] **Defense appraise** — `DefenseSalvageAppraise` + `DefenseImbueBonus` settings.
 - [x] **LLL bank** — `GetSalvageBankLinesForInterop` (separate mod).
 

@@ -44,6 +44,8 @@ Edit `Settings.json` in the mod folder (e.g. `C:\ACE\Mods\Overtinked\`).
 | `DefenseImbueBonus` | 0 | Multiplier on vanilla defense-imbue skill add (imbued-piece count). 0 = vanilla (+1 per piece). 5 = +5 per piece (Peridot / Yellow Topaz / Zircon → Melee / Missile / Magic Defense). |
 | `OverrideDefenseSalvageLongDescInAppraise` | true | When true and `DefenseImbueBonus` > 0, examine `LongDesc` for defense salvage WCIDs uses built-in or optional format strings (no SQL to change displayed +N). |
 | `DefenseSalvageLongDescSalvagedFormat` / `DefenseSalvageLongDescFoolproofFormat` | null | Optional `string.Format` patterns; `{0}` = `DefenseImbueBonus`, `{1}` = Melee \| Missile \| Magic. Empty uses built-in English. |
+| `DebugCraftInventorySync` | false | Log `[CraftInventorySync]` after each tinkering `CreateDestroyItems` (modified set, target in set, wield, in MyInventory). Grep `ACE_Log.txt` for `MoveItemToFirstContainerSlot` / `[CraftInventorySync]`. |
+| `MirrorRecipeUpdateObjAfterOvertinkedShortCircuit` | false | Second `UpdateObj`-style broadcast + `MoveItemToFirstContainerSlot` after successful tinkering when Overtinked short-circuited `TryMutate`. Enable only if pack slot still wrong after vanilla `UpdateObj` (duplicate packets). |
 
 ### Salvage rules (`SalvageRules`)
 
@@ -81,7 +83,8 @@ Each entry: **Wcids**, **Name**, **PrimaryStat** (`MaxHealth` / `MaxStamina` / `
 
 - **[docs/Salvage-Tinker-Display-Audit.md](docs/Salvage-Tinker-Display-Audit.md)** — SalvageRules WCID matrix, six-material notes, bank/craft surfaces, `modified`/UpdateObject behavior.
 - **Mod.cs** — Entry; registers patch class.
-- **PatchClass.cs** — Difficulty list, `VerifyRequirements`, `TryMutate` (salvage rules, imbues, buffed jewelry), `HandleRecipe` (failure redesign, imbue → Workmanship).
+- **PatchClass.cs** — Difficulty list, `VerifyRequirements`, `TryMutate` (salvage rules, imbues, buffed jewelry), `HandleRecipe` (failure redesign, imbue → Workmanship), craft inventory sync hooks (`CreateDestroyItems` / `HandleRecipe` postfixes).
+- **CraftInventorySync.cs** — Mirrors `RecipeManager.UpdateObj` inventory half (`GameMessageUpdateObject` + `MoveItemToFirstContainerSlot`) for diagnostics / optional second sync.
 - **RecipeManagerEx.cs** — Craft flow (`UseObjectOnTarget` when `EnableRecipeManagerPatch` is true).
 - **HemorrhageImbueCombat.cs** — Hemorrhage stacks + AoE stacks + staggered DoT on hit (uses `HemorrhageImbue` config).
 - **HemorrhageWeaponVisual.cs** — Crippling Blow underlay + red tint when Hemorrhage is on a weapon (over rend for display).

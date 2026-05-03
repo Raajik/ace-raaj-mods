@@ -306,5 +306,9 @@
   "OverrideDefenseSalvageLongDescInAppraise": true,
   "DefenseSalvageLongDescSalvagedFormat": null,
   "DefenseSalvageLongDescFoolproofFormat": null,
-  "EnableLesserImbueUpgradeToFull": true
+  "EnableLesserImbueUpgradeToFull": true,
+  "// DebugCraftInventorySync": "When true, log [CraftInventorySync] line per tinkering CreateDestroyItems (modified set, target in set, wield, in MyInventory).",
+  "// MirrorRecipeUpdateObjAfterOvertinkedShortCircuit": "When true, second UpdateObj-style sync after successful tinkering if Overtinked short-circuited TryMutate. Default false (vanilla already updates once).",
+  "DebugCraftInventorySync": false,
+  "MirrorRecipeUpdateObjAfterOvertinkedShortCircuit": false
 }

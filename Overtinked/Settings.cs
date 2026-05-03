@@ -65,6 +65,14 @@ public class Settings
     public string EnableLesserImbueUpgradeToFullDoc { get; init; } =
         "When true (default), before OR-ing the new imbue bit, strip the weaker effect on the item: Armor Cleaving (IgnoreArmor) for Sunstone; Biting Strike (CriticalFrequency) for Black Opal; Crushing Blow-style crit mult (CriticalMultiplier) for Fire Opal; quest Resistance Cleaving (ResistanceModifierType + ResistanceModifier) when upgrading to the matching elemental/physical rending imbue.";
 
+    [JsonPropertyName("// DebugCraftInventorySync")]
+    public string DebugCraftInventorySyncDoc { get; init; } =
+        "When true, logs one line per tinkering CreateDestroyItems: recipe id, success, whether modified is null, target in modified set, wield slot, FindObject(MyInventory). Use to verify HandleRecipe UpdateObj / MoveItemToFirstContainerSlot prerequisites; grep ACE_Log for [CraftInventorySync].";
+
+    [JsonPropertyName("// MirrorRecipeUpdateObjAfterOvertinkedShortCircuit")]
+    public string MirrorRecipeUpdateObjAfterOvertinkedShortCircuitDoc { get; init; } =
+        "When true, after a successful tinkering HandleRecipe, runs the same broadcast + MoveItemToFirstContainerSlot as RecipeManager.UpdateObj again when Overtinked short-circuited TryMutate (custom imbue/salvage). Vanilla already runs UpdateObj once when target is in modified; enable only if client/server pack order still wrong. Default false to avoid duplicate packets.";
+
     // Max number of tinkers allowed per item (recipe check uses MaxTries - 1).
     public int MaxTries { get; set; } = 10;
 
@@ -130,4 +138,10 @@ public class Settings
 
     // When true, strip weaker fixed stats / quest fields before applying the matching imbue (see LesserImbueUpgrade).
     public bool EnableLesserImbueUpgradeToFull { get; set; } = true;
+
+    // Logs tinkering craft inventory sync diagnostics (see doc property).
+    public bool DebugCraftInventorySync { get; set; } = false;
+
+    // Second UpdateObj-style sync after Overtinked TryMutate short-circuit (see doc property).
+    public bool MirrorRecipeUpdateObjAfterOvertinkedShortCircuit { get; set; } = false;
 }

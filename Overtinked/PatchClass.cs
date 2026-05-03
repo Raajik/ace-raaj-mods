@@ -67,6 +67,13 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
     }
 
+    // Set when PreTryMutate short-circuits TryMutate with success; cleared in PostHandleRecipe / failure paths.
+    [ThreadStatic]
+    static bool _tryMutateShortCircuitSuccess;
+
+    // Last tinkering CreateDestroyItems success flag; reset at HandleRecipe entry (prefix First).
+    static bool _tinkerCraftSuccessFromLastCreateDestroy;
+
     // Snapshot of default TinkeringDifficulty; can be used to restore on shutdown.
     static readonly List<float> difficulty = RecipeManager.TinkeringDifficulty.ToList();
 
@@ -236,6 +243,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (s == null)
             return true;
 
+        _tryMutateShortCircuitSuccess = false;
+
         uint wcid = source.WeenieClassId;
 
         // 1) New imbues: Hemorrhage (e.g. Salvaged Yellow Garnet), Cleaving (Tiger Eye), Nether Rending (Onyx).
@@ -246,6 +255,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             if (s.ShowPlayerSalvageMessage)
                 player.SendMessage($"You apply the imbue to your {target.NameWithMaterial}.");
             __result = true;
+            _tryMutateShortCircuitSuccess = true;
             return false;
         }
 
@@ -274,6 +284,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 ModManager.Log($"[Overtinked] {player?.Name} applied {rule.Name ?? wcid.ToString()} -> {rule.EffectKind} {value} on {target.Guid}", ModManager.LogLevel.Debug);
                 MarkTargetModifiedForCraftUpdate(modified, target);
                 __result = true;
+                _tryMutateShortCircuitSuccess = true;
                 return false;
             }
         }
@@ -284,6 +295,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             RecipeManager.HandleTinkerLog(source, target);
             MarkTargetModifiedForCraftUpdate(modified, target);
             __result = true;
+            _tryMutateShortCircuitSuccess = true;
             return false;
         }
 
@@ -308,13 +320,20 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         MarkTargetModifiedForCraftUpdate(modified, target);
         __result = true;
+        _tryMutateShortCircuitSuccess = true;
         return false;
     }
 
     // Vanilla TryMutate ends with modified.Add(target.Guid.Full). When this prefix short-circuits, the same
     // entry must exist so RecipeManager.HandleRecipe calls UpdateObj and the client gets GameMessageUpdateObject.
-    static void MarkTargetModifiedForCraftUpdate(HashSet<ulong> modified, WorldObject target)
+    static void MarkTargetModifiedForCraftUpdate(HashSet<ulong>? modified, WorldObject target)
     {
+        if (modified == null)
+        {
+            ModManager.Log("[Overtinked] TryMutate: modified set is null (e.g. CreateDestroyItems aborted); HandleRecipe will skip UpdateObj.", ModManager.LogLevel.Error);
+            return;
+        }
+
         modified.Add(target.Guid.Full);
     }
 
@@ -366,6 +385,15 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
     const int ImbueFailureWorkmanshipCap = 10;
 
+    // Clears per-HandleRecipe tinkering success latch before CreateDestroyItems (so early HandleRecipe returns do not reuse stale state).
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.First)]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.HandleRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(double) })]
+    public static void PreHandleRecipeResetTinkerCraftSuccess(Player player, WorldObject source, WorldObject target, Recipe recipe, double successChance)
+    {
+        _tinkerCraftSuccessFromLastCreateDestroy = false;
+    }
+
     // Prefix: when a tinker fails, apply chaotic positive effects instead of destruction/damage.
     // Note: failures now increment NumTimesTinkered normally, but chaos effects can rewind it.
     [HarmonyPrefix]
@@ -409,6 +437,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 }
                 RecipeManager.HandleTinkerLog(source, target);
             }
+            _tryMutateShortCircuitSuccess = false;
             return false;
         }
 
@@ -422,7 +451,56 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         ChaosFailureEffects.ApplyContextualChaos(player, target, rule, s, wcid);
         RecipeManager.HandleTinkerLog(source, target);
 
+        _tryMutateShortCircuitSuccess = false;
         return false;
+    }
+
+    // Postfix: optional craft inventory diagnostics; safety net if successful tinkering returns modified without target (UpdateObj would skip).
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.CreateDestroyItems), new Type[] { typeof(Player), typeof(Recipe), typeof(WorldObject), typeof(WorldObject), typeof(double), typeof(bool) })]
+    public static void PostCreateDestroyItems(Player player, Recipe recipe, WorldObject source, WorldObject target, double successChance, bool success, HashSet<ulong>? __result)
+    {
+        if (recipe.IsTinkering())
+            _tinkerCraftSuccessFromLastCreateDestroy = success;
+
+        Settings? cfg = CurrentSettings;
+
+        if (recipe.IsTinkering() && success && target != null && __result != null && !__result.Contains(target.Guid.Full))
+        {
+            ModManager.Log($"[Overtinked][CraftInventorySync] WARNING: tinkering success but target {target.Guid} missing from modified (recipe {recipe.Id}); running UpdateObj mirror so pack slot can sync.", ModManager.LogLevel.Warn);
+            CraftInventorySync.MirrorRecipeManagerUpdateObj(player, target);
+        }
+
+        if (cfg?.DebugCraftInventorySync != true || !recipe.IsTinkering())
+            return;
+
+        bool inSet = __result?.Contains(target?.Guid.Full ?? 0) ?? false;
+        string wield = target?.CurrentWieldedLocation?.ToString() ?? "null";
+        bool inInv = target != null && player.FindObject(target.Guid.Full, Player.SearchLocations.MyInventory, out _, out _, out _) != null;
+        ModManager.Log($"[Overtinked][CraftInventorySync] recipe={recipe.Id} success={success} modifiedNull={__result == null} modifiedCount={__result?.Count ?? -1} targetInModified={inSet} wieldedLoc={wield} targetInMyInventory={inInv} targetGuid={target?.Guid}", ModManager.LogLevel.Info);
+
+        if (__result == null && success)
+            ModManager.Log($"[Overtinked][CraftInventorySync] modified is null on tinkering success (recipe {recipe.Id}); HandleRecipe skips all UpdateObj. Check SuccessWCID/FailWCID weenie exists.", ModManager.LogLevel.Warn);
+    }
+
+    // Postfix: optional second UpdateObj mirror after Overtinked TryMutate short-circuit (operator toggle; see Settings).
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.HandleRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(double) })]
+    public static void PostHandleRecipe(Player player, WorldObject source, WorldObject target, Recipe recipe, double successChance)
+    {
+        Settings? cfg = CurrentSettings;
+        try
+        {
+            if (cfg == null || !recipe.IsTinkering() || target == null || player == null)
+                return;
+
+            if (cfg.MirrorRecipeUpdateObjAfterOvertinkedShortCircuit && _tryMutateShortCircuitSuccess && _tinkerCraftSuccessFromLastCreateDestroy)
+                CraftInventorySync.MirrorRecipeManagerUpdateObj(player, target);
+        }
+        finally
+        {
+            _tryMutateShortCircuitSuccess = false;
+        }
     }
 
     private static bool TryApplyBuffedImbue(Settings s, uint wcid, WorldObject target, Player? player)

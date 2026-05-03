@@ -161,7 +161,10 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             ChaosTriggeredGrowth.TryApplyPatch(ModC.Harmony);
         }
 
-        if (Settings.EnableLootItemLeveling)
+        if (Settings.EnableLootItemLeveling
+            || Settings.EnableCloakLootUpgrade
+            || Settings.ItemLevelingKillPoints > 0
+            || Settings.ItemLevelingQuestCompletionPoints > 0)
         {
             try
             {

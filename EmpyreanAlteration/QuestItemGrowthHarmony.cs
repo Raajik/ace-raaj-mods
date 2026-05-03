@@ -7,10 +7,17 @@ internal static class QuestItemGrowthHarmony
 {
     internal const string Category = "EmpyreanAlterationQuestItemGrowth";
 
-    // ExperienceSystem + ItemXpCurveContext patches must run for loot GrowthItem appraisal when LootItemLeveling
-    // is true even if QuestItemLeveling is false; otherwise the client XP bar / level math is wrong or hidden.
+    // ExperienceSystem + ItemXpCurveContext patches must run whenever awakened / scaled items need correct
+    // ItemLevel (not only full loot leveling): cloak loot upgrade, kill/quest item points, or EnableLootItemLeveling.
+    // Without this, ACE uses vanilla ItemTotalXp→level math and cloak equipment-set tiers / weave procs stay at 0.
     internal static bool IsItemXpCurveHarmonyEnabled(Settings? s) =>
-        s is { Enabled: true } && s.EnableLootItemLeveling;
+        s is { Enabled: true }
+        && (
+            s.EnableLootItemLeveling
+            || s.EnableCloakLootUpgrade
+            || s.ItemLevelingKillPoints > 0
+            || s.ItemLevelingQuestCompletionPoints > 0
+        );
 
     internal static MethodBase? TargetMethodContainerTryAddToInventory()
     {

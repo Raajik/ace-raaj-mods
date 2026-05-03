@@ -238,6 +238,7 @@ internal static class LivingItemAwakener
 
         ApplyAwakenWorkmanship(item);
         AwakenedSpellBridge.TryRollSpellsOntoItem(item, s);
+        AwakenedCloakWeaveXpSeed.EnsureMinimumXpForWeave(item, s);
 
         if (player != null)
         {

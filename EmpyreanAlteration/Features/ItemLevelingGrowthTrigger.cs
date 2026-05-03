@@ -64,6 +64,11 @@ internal static class ItemLevelingGrowthTrigger
             questGrowth: false, // awakened items are loot-growth path
             owner, s);
 
+        // Vanilla Player.GrantItemXP is skipped for awakened items; ACE never calls OnItemLevelUp, so equipment-set
+        // cloak spells (tiered by sum of ItemLevel) never refresh. Mirror retail here when the item has a set.
+        if (__instance.HasItemSet)
+            owner.OnItemLevelUp(__instance, prevLevel);
+
         __instance.CalculateObjDesc();
         try
         {

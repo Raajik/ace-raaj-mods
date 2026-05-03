@@ -8,6 +8,12 @@
 
 ## 2026-05-03
 
+### EmpyreanAlteration — Awakened cloak equipment-set spells + weave (ItemLevel / OnItemLevelUp)
+
+- **Cause:** Awakened cloaks skip `Player.GrantItemXP`, so ACE never called `OnItemLevelUp` → `GetSpellSet` tier (sum of `ItemLevel`) never refreshed when the cloak leveled via `AddItemXP`. `Cloak.RollProc` also requires `ItemLevel >= 1`; XP curve Harmony was gated on `EnableLootItemLeveling` only, so with cloak loot upgrade + loot leveling off, `ItemLevel` could stay wrong vs profile XP.
+- **Fix:** After awakened level-up in `ItemLevelingGrowthTrigger`, call `owner.OnItemLevelUp` when `HasItemSet`. Patch QuestItemGrowth category when `EnableCloakLootUpgrade` or item-leveling kill/quest points are on; align `IsItemXpCurveHarmonyEnabled` with the same. `TryAutoAwaken` now calls `AwakenedCloakWeaveXpSeed.EnsureMinimumXpForWeave` (parity with manual awaken).
+- **Files:** `EmpyreanAlteration/Features/ItemLevelingGrowthTrigger.cs`, `EmpyreanAlteration/QuestItemGrowthHarmony.cs`, `EmpyreanAlteration/PatchClass.cs`, `EmpyreanAlteration/Features/LivingItemAwakener.cs`.
+
 ### Defense Imbue Bonus — Peridot/Yellow Topaz/Zircon from +1 to +5
 
 - **Goal:** Change the defense skill bonus from salvage/imbue materials from +1 to +5 for Melee Defense (Peridot), Missile Defense (Yellow Topaz), and Magic Defense (Zircon).

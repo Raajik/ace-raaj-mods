@@ -187,5 +187,22 @@
     "// OptOutProperty": "PropertyBool used to track per-player opt-out. Shared with QOL /xp mob_scaling command.",
     "OptOutProperty": 40151
   },
+  "// SpecialCreatureLoot": "Guaranteed bonus loot for CreatureEx special mobs (salvage, uncommon+, random imbued gear).",
+  "SpecialCreatureLoot": {
+    "// Enabled": "When true, CreatureEx special mobs drop guaranteed bonus loot.",
+    "Enabled": true,
+    "// SalvageCountMin": "Minimum salvage items dropped by a special creature.",
+    "SalvageCountMin": 1,
+    "// SalvageCountMax": "Maximum salvage items dropped by a special creature.",
+    "SalvageCountMax": 3,
+    "// UncommonPlusCountMin": "Minimum uncommon+ items dropped by a special creature.",
+    "UncommonPlusCountMin": 1,
+    "// UncommonPlusCountMax": "Maximum uncommon+ items dropped by a special creature.",
+    "UncommonPlusCountMax": 1,
+    "// ImbuedCountMin": "Minimum random loot items (EmpyreanAlteration auto-imbued) dropped.",
+    "ImbuedCountMin": 2,
+    "// ImbuedCountMax": "Maximum random loot items (EmpyreanAlteration auto-imbued) dropped.",
+    "ImbuedCountMax": 5
+  },
   "CreatureExQuestPointReward": 1.0
 }

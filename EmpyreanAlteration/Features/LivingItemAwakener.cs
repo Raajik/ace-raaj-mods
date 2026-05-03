@@ -1,3 +1,4 @@
+using ACE.Common;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Server.Network.GameMessages.Messages;
@@ -77,6 +78,9 @@ internal static class LivingItemAwakener
         // Refresh any pre-existing imbue visuals
         Mutators.LootGrowthItem.RefreshImbueUiEffects(item);
 
+        ApplyAwakenWorkmanship(item);
+        AwakenedSpellBridge.TryRollSpellsOntoItem(item, s);
+
         SendInventoryPropertyUpdates(player, item, originalName, uiFx, maxLevel);
 
         player.SendMessage($"Your {originalName} awakens with new potential! Maximum level increased to {maxLevel}.", ChatMessageType.Craft);
@@ -124,6 +128,24 @@ internal static class LivingItemAwakener
         var imbued = item.ImbuedEffect;
         if (imbued != 0)
             player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.ImbuedEffect, (int)imbued));
+
+        var wm = item.GetProperty(PropertyInt.ItemWorkmanship);
+        if (wm.HasValue)
+            player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.ItemWorkmanship, wm.Value));
+        var tink = item.GetProperty(PropertyInt.NumTimesTinkered);
+        if (tink.HasValue)
+            player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.NumTimesTinkered, tink.Value));
+    }
+
+    static void ApplyAwakenWorkmanship(WorldObject item)
+    {
+        int? wm = item.GetProperty(PropertyInt.ItemWorkmanship);
+        if (!wm.HasValue || wm.Value <= 0)
+            item.SetProperty(PropertyInt.ItemWorkmanship, ThreadSafeRandom.Next(1, 10));
+
+        int tink = item.GetProperty(PropertyInt.NumTimesTinkered) ?? 0;
+        if (tink <= 0)
+            item.SetProperty(PropertyInt.NumTimesTinkered, ThreadSafeRandom.Next(1, 10));
     }
 
     internal static void ApplyAwakenedName(WorldObject item, Settings s)
@@ -211,6 +233,9 @@ internal static class LivingItemAwakener
 
         uint uiFx = s.LootItemPreAwakenUiEffects;
         item.UiEffects = (UiEffects)uiFx;
+
+        ApplyAwakenWorkmanship(item);
+        AwakenedSpellBridge.TryRollSpellsOntoItem(item, s);
 
         if (player != null)
         {

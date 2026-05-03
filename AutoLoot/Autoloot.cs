@@ -14,10 +14,10 @@ public class AutoLoot
     internal static readonly ConcurrentDictionary<uint, int> autosalvageMode = new(); // 0=off, 1=short, 2=full
     static readonly ConcurrentDictionary<uint, bool> loadedPlayers = new();
 
-    // Salvage sweep timer state
-    static readonly ConcurrentDictionary<uint, SalvageTimerState> _salvageTimers = new();
+    // Salvage sweep timer state (key = container ObjectGuid.Full)
+    static readonly ConcurrentDictionary<ulong, SalvageTimerState> _salvageTimers = new();
 
-    record struct SalvageTimerState(uint ContainerGuid, uint PlayerGuid, DateTime ExpiresUtc, CancellationTokenSource Cts);
+    readonly record struct SalvageTimerState(ulong ContainerGuid, ulong PlayerGuid, uint LandblockRaw, uint Instance, CancellationTokenSource Cts);
 
     // Achievement tracking
     static readonly ConcurrentDictionary<uint, int> keyUnlocks = new();
@@ -206,6 +206,43 @@ public class AutoLoot
         { 42517, 41101 }, // Greater Coalesced Mana
         { 42518, 41102 }, // Aetheric Coalesced Mana
     };
+
+    static bool ContainerHasCoalescedMana(Container container)
+    {
+        foreach (var i in container.Inventory.Values)
+        {
+            if (CoalescedManaBankProps.ContainsKey(i.WeenieClassId))
+                return true;
+        }
+        return false;
+    }
+
+    // House / player storage chests: never auto-salvage or destroy leftovers.
+    static bool ShouldScheduleDeferredSalvageSweep(Container container)
+    {
+        if (container is Corpse)
+            return true;
+        if (container is Chest c)
+            return !c.HouseOwner.HasValue;
+        return false;
+    }
+
+    // Bank LeyLineLedger coalesced mana stacks without requiring a .utl profile.
+    static void BankCoalescedManaFromContainer(Player player, Container container)
+    {
+        if (PatchClass.Settings is not { DepositLootedCurrencyToBank: true })
+            return;
+
+        foreach (var item in container.Inventory.Values.ToList())
+        {
+            if (item.IsDestroyed || !CoalescedManaBankProps.ContainsKey(item.WeenieClassId))
+                continue;
+            if (!TryBankCurrency(player, item))
+                continue;
+            if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                removed?.Destroy();
+        }
+    }
 
     static bool TryBankCurrency(Player player, WorldObject item)
     {
@@ -913,6 +950,8 @@ public class AutoLoot
     {
         if (player == null || container == null) return;
 
+        BankCoalescedManaFromContainer(player, container);
+
         bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
 
         var items = container.Inventory.Values.ToList();
@@ -984,7 +1023,10 @@ public class AutoLoot
                        && BetterSupportSkillsBridge.GetSalvageRate(player) > 0.0;
 
         bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
-        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps)
+        bool hasCoalesced = ContainerHasCoalescedMana(container);
+        bool deferSweep = ShouldScheduleDeferredSalvageSweep(container)
+                          && (hasSalvage || PatchClass.Settings?.EnableDelayedSalvageSweep == true);
+        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps && !hasCoalesced && !deferSweep)
         {
             if (debug)
                 ModManager.Log($"AutoLoot: ProcessContainerLootClose early exit — no active loot for {player.Name}", ModManager.LogLevel.Info);
@@ -993,6 +1035,8 @@ public class AutoLoot
 
         try
         {
+            BankCoalescedManaFromContainer(player, container);
+
             var items = container.Inventory.Values.ToList();
             var activeProfiles = hasProfiles ? playerProfiles!.Values.ToList() : new List<LootCore>();
 
@@ -1072,30 +1116,11 @@ public class AutoLoot
                 }
             }
 
-            // ── Pass 5: Immediate Salvage Sweep ────────────────────────────
+            // ── Pass 5: Deferred salvage + clutter (corpses + non-house chests only) ──
             int salvaged = 0;
             int destroyed = 0;
-            if (hasSalvage || PatchClass.Settings?.EnableDelayedSalvageSweep == true)
-            {
-                var remaining = container.Inventory.Values.ToList();
-                foreach (var item in remaining)
-                {
-                    if (item.IsDestroyed) continue;
-
-                    if (BetterSupportSkillsBridge.TryAutoSalvage(player, item))
-                    {
-                        container.TryRemoveFromInventory(item.Guid, out _);
-                        salvaged++;
-                    }
-                    else if (!item.GetProperty(PropertyInt.MaterialType).HasValue
-                             && item.WeenieClassId is not (>= 20981 and <= 21089))
-                    {
-                        container.TryRemoveFromInventory(item.Guid, out _);
-                        item.Destroy();
-                        destroyed++;
-                    }
-                }
-            }
+            if (deferSweep)
+                ScheduleDeferredSalvageSweep(container, player);
 
             // ── Single consolidated message ────────────────────────────────
             var regularItems = lootedItems
@@ -1149,7 +1174,8 @@ public class AutoLoot
                            && BetterSupportSkillsBridge.GetSalvageRate(player) > 0.0;
 
         bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
-        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps)
+        bool hasCoalesced = ContainerHasCoalescedMana(container);
+        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps && !hasCoalesced)
         {
             if (debug)
                 ModManager.Log($"AutoLoot: ProcessContainerLoot early exit — no active loot for {player.Name}", ModManager.LogLevel.Info);
@@ -1158,6 +1184,8 @@ public class AutoLoot
 
         try
         {
+            BankCoalescedManaFromContainer(player, container);
+
             var items = container.Inventory.Values.ToList();
             var activeProfiles = hasProfiles ? playerProfiles!.Values.ToList() : new List<LootCore>();
 
@@ -1405,55 +1433,114 @@ public class AutoLoot
         }
     }
 
-    // ── Salvage sweep ────────────────────────────────────────────────────────
+    // ── Salvage sweep (deferred; re-resolves container on landblock after delay) ─
 
-    static void StartSalvageTimer(Container container, Player player)
+    static void ScheduleDeferredSalvageSweep(Container container, Player player)
     {
-        var guid = container.Guid.Full;
+        if (!ShouldScheduleDeferredSalvageSweep(container))
+            return;
+
+        ulong cGuid = container.Guid.Full;
+        ulong pGuid = player.Guid.Full;
+        var loc = container.Location;
+        uint lbRaw = loc?.LandblockId.Raw ?? 0u;
+#if REALM
+        uint inst = loc?.Instance ?? 0u;
+#else
+        uint inst = 0u;
+#endif
         var cts = new CancellationTokenSource();
-        var delaySeconds = PatchClass.Settings?.SalvageSweepDelaySeconds ?? 15;
+        int delaySeconds = Math.Max(1, PatchClass.Settings?.SalvageSweepDelaySeconds ?? 20);
 
-        _salvageTimers.AddOrUpdate(guid,
-            new SalvageTimerState(guid, player.Guid.Full, DateTime.UtcNow.AddSeconds(delaySeconds), cts),
-            (_, prev) => { prev.Cts.Cancel(); return new SalvageTimerState(guid, player.Guid.Full, DateTime.UtcNow.AddSeconds(delaySeconds), cts); });
+        _salvageTimers.AddOrUpdate(
+            cGuid,
+            new SalvageTimerState(cGuid, pGuid, lbRaw, inst, cts),
+            (_, prev) =>
+            {
+                prev.Cts.Cancel();
+                return new SalvageTimerState(cGuid, pGuid, lbRaw, inst, cts);
+            });
 
-        _ = Task.Delay(TimeSpan.FromSeconds(delaySeconds), cts.Token)
-            .ContinueWith(_ => ExecuteSalvageSweep(container, player), CancellationToken.None,
-                TaskContinuationOptions.OnlyOnRanToCompletion, TaskScheduler.Default);
+        _ = Task.Delay(TimeSpan.FromSeconds(delaySeconds), cts.Token).ContinueWith(
+            t =>
+            {
+                if (t.IsCanceled)
+                    return;
+                RunDeferredSalvageSweep(cGuid, pGuid, lbRaw, inst);
+            },
+            CancellationToken.None,
+            TaskContinuationOptions.None,
+            TaskScheduler.Default);
     }
 
-    static void ExecuteSalvageSweep(Container container, Player player)
+    static void RunDeferredSalvageSweep(ulong containerGuid, ulong playerGuid, uint landblockRaw, uint instance)
     {
-        _salvageTimers.TryRemove(container.Guid.Full, out _);
-        if (container.IsDestroyed || player.Session == null) return;
-        if (PatchClass.Settings?.EnableDelayedSalvageSweep != true) return;
+        if (!_salvageTimers.TryRemove(containerGuid, out _))
+            return;
 
-        var items = container.Inventory.Values.ToList();
-        int salvaged = 0;
-        int destroyed = 0;
+        if (landblockRaw == 0)
+            return;
 
-        foreach (var item in items)
-        {
-            if (BetterSupportSkillsBridge.TryAutoSalvage(player, item))
-            {
-                container.TryRemoveFromInventory(item.Guid, out _);
-                salvaged++;
-            }
-            else if (!item.GetProperty(PropertyInt.MaterialType).HasValue
-                     && item.WeenieClassId is not (>= 20981 and <= 21089))
-            {
-                // Non-salvageable equippable without material: destroy to prevent clutter
-                container.TryRemoveFromInventory(item.Guid, out _);
-                item.Destroy();
-                destroyed++;
-            }
-        }
+#if REALM
+        Landblock? lb = LandblockManager.GetLandblock(new LandblockId(landblockRaw), instance, null, false);
+#else
+        Landblock? lb = LandblockManager.GetLandblock(new LandblockId(landblockRaw), false);
+#endif
+        if (lb == null)
+            return;
+
+        WorldObject? wo = lb.GetObject(new ObjectGuid((uint)containerGuid));
+        if (wo is not Container container || container.IsDestroyed)
+            return;
+
+        Player? player = PlayerManager.GetOnlinePlayer((uint)playerGuid);
+        if (player?.Session == null)
+            return;
+
+        bool salvage = BetterSupportSkillsBridge.IsSalvageEnabled(player)
+                         && BetterSupportSkillsBridge.GetSalvageRate(player) > 0.0;
+        bool destroyClutter = PatchClass.Settings?.EnableDelayedSalvageSweep == true;
+        if (!salvage && !destroyClutter)
+            return;
+
+        RunSalvageDestroyPass(container, player, salvage, destroyClutter, out int salvaged, out int destroyed);
 
         if (salvaged > 0 || destroyed > 0)
             player.SendMessage($"[AutoLoot] Salvage sweep: {salvaged} item(s) salvaged, {destroyed} clutter item(s) removed.");
     }
 
-    internal static void CancelSalvageTimer(uint containerGuid)
+    static void RunSalvageDestroyPass(Container container, Player player, bool salvageEnabled, bool destroyClutter, out int salvaged, out int destroyed)
+    {
+        salvaged = 0;
+        destroyed = 0;
+        var items = container.Inventory.Values.ToList();
+
+        foreach (var item in items)
+        {
+            if (item.IsDestroyed)
+                continue;
+
+            if (salvageEnabled && BetterSupportSkillsBridge.TryAutoSalvage(player, item))
+            {
+                container.TryRemoveFromInventory(item.Guid, out _);
+                salvaged++;
+                continue;
+            }
+
+            if (!destroyClutter)
+                continue;
+
+            if (!item.GetProperty(PropertyInt.MaterialType).HasValue
+                && item.WeenieClassId is not (>= 20981 and <= 21089))
+            {
+                container.TryRemoveFromInventory(item.Guid, out _);
+                item.Destroy();
+                destroyed++;
+            }
+        }
+    }
+
+    internal static void CancelSalvageTimer(ulong containerGuid)
     {
         if (_salvageTimers.TryRemove(containerGuid, out var state))
             state.Cts.Cancel();

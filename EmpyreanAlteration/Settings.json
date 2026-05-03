@@ -533,6 +533,12 @@
   "AethericCoalescedManaWcid": 42518,
   "// ManualAwakenPrefix": "Prefix applied to manually awakened item names (Coalesced Mana use-on-target). Default 'Awakened' distinguishes player-driven awakening from loot 'Living' prefix.",
   "ManualAwakenPrefix": "Awakened",
+  "// EnableAwakenRandomSpells": "When true and SpellSiphon is loaded, awakened items roll bonus spells from SpellSiphon's gem pool.",
+  "EnableAwakenRandomSpells": true,
+  "// AwakenRandomSpellCountMin": "Minimum bonus spells on awaken (SpellSiphon pool).",
+  "AwakenRandomSpellCountMin": 2,
+  "// AwakenRandomSpellCountMax": "Maximum bonus spells on awaken (SpellSiphon pool).",
+  "AwakenRandomSpellCountMax": 5,
   "// AutoAwakenTier1Wcids": "WCIDs that automatically awaken to default profile when entering a player's inventory. Academy starter weapons and Pathwarden starter armor.",
   "AutoAwakenTier1Wcids": [
     12750, 12751, 12752, 12753, 12754, 12755, 12756, 12757, 12758, 12759, 12760,

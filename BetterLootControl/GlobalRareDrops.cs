@@ -46,6 +46,7 @@ internal static class GlobalRareDrops
             var lattice = WorldObjectFactory.CreateNewWorldObject(s.ManaLatticeWcid);
             if (lattice != null)
             {
+                ManaLatticeSpellBootstrap.TryRollSpellsOntoLattice(lattice);
                 corpse.TryAddToInventory(lattice);
                 if (s.EnableDebugLogging)
                     ModManager.Log($"[BetterLootControl] Rare drop: {lattice.Name} on {__instance.Name}", ModManager.LogLevel.Info);

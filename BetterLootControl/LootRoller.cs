@@ -174,8 +174,10 @@ public static class LootRoller
                     stackSize *= 2;
             }
 
+            // Drudge charm (3669) must stay low-stack for quest turn-ins; do not force 100 stacks.
             // Enable stacking for non-salvage, non-foolproof items when stackSize > 1
-            if (stackSize > 1 && !SalvageBagShaper.IsSalvageWcid((uint)selectedItem.wcid) && !isFoolproof)
+            if (stackSize > 1 && !SalvageBagShaper.IsSalvageWcid((uint)selectedItem.wcid) && !isFoolproof
+                && (uint)selectedItem.wcid != 3669u)
             {
                 item.MaxStackSize = 100;
             }

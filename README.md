@@ -32,11 +32,13 @@ Server-side corpse autoloot using `.utl` profiles (compatible with Decal UT clas
 - Optional vendor-trash pass (sell greys automatically).
 - Optional unknown-scroll pass (keep or destroy untrained scrolls).
 - `/autoloot` toggles and profile selection.
+- **Deferred salvage sweep** — after closing a corpse or non-house chest, optional delayed pass runs BetterSupportSkills auto-salvage and/or clutter cleanup (timer cancelled if the container is opened again). Coalesced Mana in those containers can bank to LeyLineLedger on loot/close without a profile match.
+- **Loot stack consolidation** — merges duplicate same-WCID stackable rows in freshly generated corpses (e.g. multiple drudge charm create-list entries).
 
 ### BetterLootControl
 Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot` chest mod; those folders removed from the repo).
 - **Chest guaranteed drops** — adds salvage, trade notes, healing kits, keys, crystals, and gear to treasure chests.
-- **Global rare drops** — SpellSiphon tool and Mana Lattice have a small chance to drop from any creature with a treasure profile.
+- **Global rare drops** — SpellSiphon tool and Mana Lattice have a small chance to drop from any creature with a treasure profile. Mana Lattice can pre-roll bonus spells from SpellSiphon's gem pool when that mod is loaded.
 - **Salvage bag shaping** — auto-shapes dropped salvage bags to 100-unit stacks.
 - **Loot rolling** — pooled rarity system (common/uncommon/rare/extremely rare) with independent salvage and gear rolls.
 - **Gear ratings** — all gear tiers can spawn with ratings (Damage Rating, Crit Damage Rating, Resist Rating, etc.). Higher tiers = higher values and better odds.
@@ -66,6 +68,7 @@ A mutator pipeline for loot, corpses, generators, and player-driven item awakeni
 - **Optional Harmony extras** — additional patches for edge-case loot behaviors.
 - **Item growth on level-up** — equippables can gain bonuses as the player levels.
 - **DisableAttunedGlobally** — server-wide QOL toggle making ALL items tradeable/sellable (including quest rewards and Coalesced Mana).
+- **Awaken workmanship** — first awakening sets sensible `ItemWorkmanship` / `NumTimesTinkered` when missing. Optional **bonus spells** from SpellSiphon's pool when that mod is present (`EnableAwakenRandomSpells`).
 
 ### EasyServerSettings
 Applies shard-wide `PropertyManager` presets from a single configuration file.
@@ -94,6 +97,7 @@ Banking and ledger system for items, currency, luminance, and denominated commod
 - **Luminance ledger** — `/lum` commands to track and transfer luminance.
 - **Vendor integration** — bankers and vendors can act as ledger access points.
 - **Vendor sell rate reduction** — configurable multiplier (default 3%) on vendor payouts to combat inflation.
+- **Vendor sell payout floor** — optional minimum pyreals when selling items to vendors (`VendorMinSellPayoutPyreals`), applied after other vendor patches.
 
 ### Loremaster
 Quest-progress bonuses and first-solve rewards.
@@ -149,6 +153,8 @@ Toggleable convenience patches (no single defining feature — pick what you wan
 ### Swarmed
 CreatureEx champion variants and reinforcement spawning.
 - **`/cex` factory roll** — spawn CreatureEx variants with custom stats and loot.
+- **SpecialCreatureLoot** — CreatureEx specials can drop guaranteed salvage, uncommon+ gear, and random auto-imbued loot (see `Settings.json`).
+- **Duelist** — frontal cone reduces damage taken instead of negating it entirely.
 - **Call-for-help reinforcements** — champions can summon adds on aggro or at health thresholds.
 - **Dungeon population manager** — maintains ~30 living mobs inside occupied dungeons, spawning outside player radar range.
 - **Dynamic scaling** — mobs scale to highest player level in landblock (past 275 for high-level servers) with ±15 level variance for flavor.

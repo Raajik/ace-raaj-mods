@@ -25,6 +25,8 @@
   "// VendorSellRateMultiplier": "Multiplier on vendor payout when players sell items (e.g. 0.03 = 3% of normal value). Patches Vendor.BuyPrice so client sell UI and server-side payouts are consistent.",
   "EnableVendorSellRateReduction": true,
   "VendorSellRateMultiplier": 0.03,
+  "// VendorMinSellPayoutPyreals": "When > 0, floors vendor buy payouts (player selling) below this value. Set 0 to disable.",
+  "VendorMinSellPayoutPyreals": 1500,
   "// VendorPricingMode": "How vendor buy prices are calculated. Vanilla = retail ACE behavior, SimpleMultiplier = flat BuyPrice multiplier, EconomyBalancer = dynamic scaling based on total server banked pyreals (default).",
   "VendorPricingMode": "EconomyBalancer",
   "// VendorBuyPriceMultiplier": "Flat multiplier for vendor buy prices when VendorPricingMode = SimpleMultiplier. 1.0 = retail, 5.0 = 5x. WorldEvents Sale multiplier has been moved here.",

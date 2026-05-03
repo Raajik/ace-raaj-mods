@@ -82,8 +82,8 @@ public class Settings
     public bool EnableDelayedSalvageSweep { get; set; } = true;
 
     [JsonPropertyName("// SalvageSweepDelaySeconds")]
-    public string SalvageSweepDelaySecondsDoc { get; init; } = "DEPRECATED — salvage now fires on container close. Kept for backward compatibility.";
-    public int SalvageSweepDelaySeconds { get; set; } = 15;
+    public string SalvageSweepDelaySecondsDoc { get; init; } = "Seconds after closing a corpse or non-house chest before salvage + clutter destroy runs. Cancelled if the same container is opened before the timer fires.";
+    public int SalvageSweepDelaySeconds { get; set; } = 20;
 
     [JsonPropertyName("// EnableLevel8CompsConversion")]
     public string EnableLevel8CompsConversionDoc { get; init; } = "When true, level 8 spellcrafting components (quills, inks, skill glyphs) are auto-looted and converted to pyreal value. When false, they are kept as physical items. Hidden from player toggle menu.";

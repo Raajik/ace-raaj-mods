@@ -44,6 +44,10 @@ public class Settings
     public string VendorSellRateMultiplierDoc { get; init; } = "Multiplier on vendor payout when players sell items (e.g. 0.03 = 3% of normal value). Patches Vendor.BuyPrice so client sell UI and server-side payouts are consistent.";
     public double VendorSellRateMultiplier { get; set; } = 0.03;
 
+    [JsonPropertyName("// VendorMinSellPayoutPyreals")]
+    public string VendorMinSellPayoutPyrealsDoc { get; init; } = "When > 0, GetBuyCost payouts (player selling to vendor) are raised to at least this many pyreals when the computed payout is positive but below the floor. 0 disables.";
+    public int VendorMinSellPayoutPyreals { get; set; } = 1500;
+
     [JsonPropertyName("// VendorPricingMode")]
     public string VendorPricingModeDoc { get; init; } = "How vendor buy prices are calculated. Vanilla = retail ACE behavior, SimpleMultiplier = flat BuyPrice multiplier, EconomyBalancer = dynamic scaling based on total server banked pyreals (default).";
     public VendorPricingMode VendorPricingMode { get; set; } = VendorPricingMode.EconomyBalancer;

@@ -25,17 +25,25 @@ public class Duelist : CreatureEx
         base.Heartbeat(currentUnixTime);
     }
 
+    // Frontal "parry" cone: same facing as the attacker used to zero all damage (felt immune in melee).
+    // Now incoming damage in the cone is mitigated instead of negated.
     const float HalfAngle = 40.0f / 2;
+    const float ParryDamageMultiplier = 0.45f;
+
     public override uint TakeDamage(WorldObject source, DamageType damageType, float amount, bool crit = false)
     {
         if (source is not Player p)
             return base.TakeDamage(source, damageType, amount, crit);
 
-        var angle = GetAngle(p);        //Creature to player angle
+        var angle = GetAngle(p);
         if (Math.Abs(angle) > HalfAngle)
             return base.TakeDamage(source, damageType, amount, crit);
 
-        p.SendMessage($"{Name} avoided {amount} damage by facing {angle}/{HalfAngle}");
-        return 0;
+        float mitigated = amount * ParryDamageMultiplier;
+        if (mitigated < 1f && amount >= 1f)
+            mitigated = 1f;
+
+        p.SendMessage($"{Name} parries part of your strike ({angle:F0}° / ±{HalfAngle:F0}°): {(int)amount} → {(int)mitigated}.");
+        return base.TakeDamage(source, damageType, mitigated, crit);
     }
 }

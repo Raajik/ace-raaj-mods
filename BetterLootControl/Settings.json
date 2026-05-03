@@ -11,9 +11,11 @@
   "MaxResetIntervalSeconds": 1200,
 
   "EnableGlobalRareDrops": true,
-  "RareDropChance": 0.005,
+  "RareDropChance": 0.007,
   "SpellsiphonToolWcid": 850200,
   "ManaLatticeWcid": 850201,
+  "ManaLatticeSpellCountMin": 3,
+  "ManaLatticeSpellCountMax": 7,
 
   "CoalescedManaDropChance": 0.015,
   "LesserCoalescedManaWcid": 42516,

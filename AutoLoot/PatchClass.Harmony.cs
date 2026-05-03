@@ -86,6 +86,8 @@ public partial class PatchClass
     [HarmonyPatch(typeof(Container), nameof(Container.Open))]
     public static void PostContainerOpen(Player player, Container __instance)
     {
+        // Anyone reopening the container cancels a pending deferred salvage sweep for that GUID.
+        AutoLoot.CancelSalvageTimer(__instance.Guid.Full);
         AutoLoot.OnContainerOpened(player, __instance);
     }
 
@@ -93,8 +95,6 @@ public partial class PatchClass
     [HarmonyPatch(typeof(Container), nameof(Container.Close))]
     public static void PreContainerClose(Player player, Container __instance)
     {
-        AutoLoot.CancelSalvageTimer(__instance.Guid.Full);
-
         // For chests: run silent immediate phase FIRST (known scrolls, cash, keys, lockpicks),
         // then batch loot + salvage. Moved from OPEN to CLOSE so the chest UI stays in sync.
         if (__instance is Chest && player != null)

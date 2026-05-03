@@ -19,6 +19,18 @@ public partial class Settings
     public string ManualAwakenPrefixDoc { get; init; } = "Prefix applied to manually awakened item names (Coalesced Mana use-on-target). Default 'Awakened' distinguishes player-driven awakening from loot 'Living' prefix.";
     public string ManualAwakenPrefix { get; set; } = "Awakened";
 
+    [JsonPropertyName("// EnableAwakenRandomSpells")]
+    public string EnableAwakenRandomSpellsDoc { get; init; } = "When true and SpellSiphon is loaded, newly awakened items roll bonus magic spells using SpellSiphon's gem spell pool.";
+    public bool EnableAwakenRandomSpells { get; set; } = true;
+
+    [JsonPropertyName("// AwakenRandomSpellCountMin")]
+    public string AwakenRandomSpellCountMinDoc { get; init; } = "Minimum bonus spells rolled onto an awakened item (SpellSiphon pool).";
+    public int AwakenRandomSpellCountMin { get; set; } = 2;
+
+    [JsonPropertyName("// AwakenRandomSpellCountMax")]
+    public string AwakenRandomSpellCountMaxDoc { get; init; } = "Maximum bonus spells rolled onto an awakened item (SpellSiphon pool).";
+    public int AwakenRandomSpellCountMax { get; set; } = 5;
+
     [JsonPropertyName("// AutoAwakenTier1Wcids")]
     public string AutoAwakenTier1WcidsDoc { get; init; } = "WCIDs that automatically awaken to default profile when entering a player's inventory. Academy starter weapons and Pathwarden starter armor.";
     public List<uint> AutoAwakenTier1Wcids { get; set; } = new()

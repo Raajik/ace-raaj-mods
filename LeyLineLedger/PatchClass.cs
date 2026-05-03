@@ -78,6 +78,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         try
         {
             ModC.Harmony.UnpatchCategory(nameof(VendorSellRate));
+            ModC.Harmony.UnpatchCategory(nameof(VendorBuyPayoutFloor));
         }
         catch (Exception ex)
         {
@@ -95,6 +96,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         VendorBuyPrice.Initialize(Settings);
         VendorSellRate.Initialize(Settings);
+        VendorBuyPayoutFloor.Initialize(Settings);
 
         if (Settings.VendorsUseBank)
         {
@@ -113,6 +115,9 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         if (Settings.EnableVendorSellRateReduction)
             ModC.Harmony.PatchCategory(nameof(VendorSellRate));
+
+        if (Settings.VendorMinSellPayoutPyreals > 0)
+            ModC.Harmony.PatchCategory(nameof(VendorBuyPayoutFloor));
 
         ModC.Harmony.PatchCategory(nameof(VendorBuyPrice));
         ModManager.Log("[LeyLineLedger] VendorBuyPrice patch category applied.", ModManager.LogLevel.Info);
@@ -242,6 +247,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         try
         {
             ModC.Harmony.UnpatchCategory(nameof(VendorSellRate));
+            ModC.Harmony.UnpatchCategory(nameof(VendorBuyPayoutFloor));
         }
         catch
         {

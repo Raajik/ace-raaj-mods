@@ -719,7 +719,7 @@ public sealed class Settings
         new() { TownName = "Shoyanen",            CenterLandblocks = new() { 0xEA31 },               HasMasterMage = true  },
         new() { TownName = "Celdiseth",           CenterLandblocks = new() { 0x9AEB },               HasMasterMage = true  },
         new() { TownName = "Olutanga's Refuge",   CenterLandblocks = new() { 0xF682 },               HasMasterMage = true  },
-        new() { TownName = "Ayan Baqur",          CenterLandblocks = new() { },                      HasMasterMage = true  },
+        new() { TownName = "Ayan Baqur",          CenterLandblocks = new() { 0x1134 },               HasMasterMage = true  },
     };
 
     static List<InvasionTownSettings> DefaultInvasionTowns() => new()
@@ -877,7 +877,9 @@ public sealed class Settings
         new() { TownName = "Shadow Spire",    EventName = "GspireAttack", Mode = InvasionMode.Scripted },
         new() { TownName = "Shadow Sanctum",  EventName = "Shadowattack", Mode = InvasionMode.Scripted },
         new() { TownName = "Withered",        EventName = "WitherAttack", Mode = InvasionMode.Scripted },
-        new() { TownName = "Ayan Baqur",      EventName = "AyanAttack" },
+        new() { TownName = "Ayan Baqur",      EventName = "AyanAttack",
+            TownCenterObjCellId = 0x1134001D, TownCenterX = 77.731384f, TownCenterY = 104.264702f, TownCenterZ = 42.005001f,
+            DynamicLandblocks = new() { 0x1132, 0x1133, 0x1134, 0x1135, 0x1136 } },
     };
 }
 

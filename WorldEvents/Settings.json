@@ -180,7 +180,7 @@
     { "TownName": "Shoyanen",            "Enabled": true, "CenterLandblocks": [59953],               "HasMasterMage": true  },
     { "TownName": "Celdiseth",           "Enabled": true, "CenterLandblocks": [39659],               "HasMasterMage": true  },
     { "TownName": "Olutanga's Refuge",   "Enabled": true, "CenterLandblocks": [63106],               "HasMasterMage": true  },
-    { "TownName": "Ayan Baqur",          "Enabled": true, "CenterLandblocks": [],                    "HasMasterMage": true  }
+    { "TownName": "Ayan Baqur",          "Enabled": true, "CenterLandblocks": [4404],                "HasMasterMage": true  }
   ],
 
   "// InvasionSettings": "Invasion world event: periodically triggers a town attack via ACE events (Scripted) or programmatic vanilla mob spawns (Dynamic).",
@@ -287,6 +287,6 @@
     { "TownName": "Shadow Spire",        "EventName": "GspireAttack",    "Enabled": true, "Mode": "Scripted" },
     { "TownName": "Shadow Sanctum",      "EventName": "Shadowattack",    "Enabled": true, "Mode": "Scripted" },
     { "TownName": "Withered",            "EventName": "WitherAttack",    "Enabled": true, "Mode": "Scripted" },
-    { "TownName": "Ayan Baqur",          "EventName": "AyanAttack",      "Enabled": true }
+    { "TownName": "Ayan Baqur",          "EventName": "AyanAttack",      "Enabled": true, "TownCenterObjCellId": 288620573, "TownCenterX": 77.731384, "TownCenterY": 104.264702, "TownCenterZ": 42.005001, "DynamicLandblocks": [4402, 4403, 4404, 4405, 4406] }
   ]
 }

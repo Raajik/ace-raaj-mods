@@ -474,31 +474,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         // Imbue failures → contextual chaos (accidental success, bonus imbue, slayer, etc.)
         if (imbueWcids.Contains(wcid))
         {
-            player.TryConsumeFromInventoryWithNetworking(wcid, 1);
-
-            if (s.EnableFailureRedesign)
-            {
-                ChaosFailureEffects.ApplyContextualChaos(player, target, null, s, wcid);
-                RecipeManager.HandleTinkerLog(source, target);
-                SyncTinkerTargetAfterOvertinkedFailure(player, target);
-            }
-            else if (s.EnableDefaultImbueFailureWorkmanship)
-            {
-                // Legacy: +1 workmanship
-                int currentInt = GetWorkmanship(target);
-                if (currentInt < ImbueFailureWorkmanshipCap)
-                {
-                    SetWorkmanship(target, currentInt + 1);
-                    player.Session?.Network?.EnqueueSend(new GameMessageSystemChat($"Your imbue attempt failed, but the {target.NameWithMaterial} gains a point of workmanship.", ChatMessageType.Craft));
-                    ModManager.Log($"[Overtinked] Imbue failure Workmanship: {player.Name} +1 Workmanship on {target.Guid} (now {currentInt + 1}).");
-                }
-                else
-                {
-                    player.Session?.Network?.EnqueueSend(new GameMessageSystemChat($"Your imbue attempt failed. The {target.NameWithMaterial} is already at maximum workmanship.", ChatMessageType.Craft));
-                }
-                RecipeManager.HandleTinkerLog(source, target);
-                SyncTinkerTargetAfterOvertinkedFailure(player, target);
-            }
+            ApplyImbueTinkerFailure(player, source, target, s, wcid);
             _tryMutateShortCircuitSuccess = false;
             return false;
         }
@@ -528,8 +504,77 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         CraftInventorySync.MirrorRecipeManagerUpdateObj(player, target);
     }
 
-    // Postfix: optional craft inventory diagnostics; safety net if successful tinkering returns modified without target (UpdateObj would skip).
+    // Shared imbue-fail body (PreHandleRecipe first-roll miss, or CreateDestroyItems when vanilla second roll fails).
+    static void ApplyImbueTinkerFailure(Player player, WorldObject source, WorldObject target, Settings s, uint wcid)
+    {
+        player.TryConsumeFromInventoryWithNetworking(wcid, 1);
+
+        if (s.EnableFailureRedesign)
+        {
+            ChaosFailureEffects.ApplyContextualChaos(player, target, null, s, wcid);
+            RecipeManager.HandleTinkerLog(source, target);
+            SyncTinkerTargetAfterOvertinkedFailure(player, target);
+        }
+        else if (s.EnableDefaultImbueFailureWorkmanship)
+        {
+            int currentInt = GetWorkmanship(target);
+            if (currentInt < ImbueFailureWorkmanshipCap)
+            {
+                SetWorkmanship(target, currentInt + 1);
+                player.Session?.Network?.EnqueueSend(new GameMessageSystemChat($"Your imbue attempt failed, but the {target.NameWithMaterial} gains a point of workmanship.", ChatMessageType.Craft));
+                ModManager.Log($"[Overtinked] Imbue failure Workmanship: {player.Name} +1 Workmanship on {target.Guid} (now {currentInt + 1}).");
+            }
+            else
+            {
+                player.Session?.Network?.EnqueueSend(new GameMessageSystemChat($"Your imbue attempt failed. The {target.NameWithMaterial} is already at maximum workmanship.", ChatMessageType.Craft));
+            }
+            RecipeManager.HandleTinkerLog(source, target);
+            SyncTinkerTargetAfterOvertinkedFailure(player, target);
+        }
+    }
+
+    // When PreHandleRecipe roll passes but HandleRecipe's second roll fails, vanilla CreateDestroyItems would still run fail-branch (destroy target / wrong fail mods). Intercept and reuse redesign path.
 #if REALM
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.First)]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.CreateDestroyItems), new Type[] { typeof(Player), typeof(Recipe), typeof(WorldObject), typeof(WorldObject), typeof(double), typeof(bool) })]
+    public static bool PreCreateDestroyItemsTinkerFailure(Player player, Recipe recipe, WorldObject source, WorldObject target, double successChance, bool success, ref HashSet<ulong>? __result)
+    {
+        if (success || player == null || source == null || target == null || !recipe.IsTinkering())
+            return true;
+
+        Settings? s = CurrentSettings;
+        if (s == null)
+            return true;
+
+        uint wcid = source.WeenieClassId;
+        HashSet<uint> imbueWcids = ImbueSalvageWcids.Build(s);
+
+        if (imbueWcids.Contains(wcid))
+        {
+            if (!s.EnableFailureRedesign && !s.EnableDefaultImbueFailureWorkmanship)
+                return true;
+
+            ApplyImbueTinkerFailure(player, source, target, s, wcid);
+            __result = new HashSet<ulong> { (ulong)target.Guid.Full };
+            _tryMutateShortCircuitSuccess = false;
+            return false;
+        }
+
+        SalvageTinkerRule? rule = SalvageEffectApplier.GetRule(s, wcid);
+        if (rule == null || !s.EnableFailureRedesign)
+            return true;
+
+        player.TryConsumeFromInventoryWithNetworking(wcid, 1);
+        ChaosFailureEffects.ApplyContextualChaos(player, target, rule, s, wcid);
+        RecipeManager.HandleTinkerLog(source, target);
+        SyncTinkerTargetAfterOvertinkedFailure(player, target);
+        __result = new HashSet<ulong> { (ulong)target.Guid.Full };
+        _tryMutateShortCircuitSuccess = false;
+        return false;
+    }
+
+    // Postfix: optional craft inventory diagnostics; safety net if successful tinkering returns modified without target (UpdateObj would skip).
     [HarmonyPostfix]
     [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.CreateDestroyItems), new Type[] { typeof(Player), typeof(Recipe), typeof(WorldObject), typeof(WorldObject), typeof(double), typeof(bool) })]
     public static void PostCreateDestroyItems(Player player, Recipe recipe, WorldObject source, WorldObject target, double successChance, bool success, HashSet<ulong>? __result)
@@ -557,6 +602,45 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             ModManager.Log($"[Overtinked][CraftInventorySync] modified is null on tinkering success (recipe {recipe.Id}); HandleRecipe skips all UpdateObj. Check SuccessWCID/FailWCID weenie exists.", ModManager.LogLevel.Warn);
     }
 #else
+    [HarmonyPrefix]
+    [HarmonyPriority(Priority.First)]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.CreateDestroyItems), new Type[] { typeof(Player), typeof(Recipe), typeof(WorldObject), typeof(WorldObject), typeof(double), typeof(bool) })]
+    public static bool PreCreateDestroyItemsTinkerFailure(Player player, Recipe recipe, WorldObject source, WorldObject target, double successChance, bool success, ref HashSet<uint>? __result)
+    {
+        if (success || player == null || source == null || target == null || !recipe.IsTinkering())
+            return true;
+
+        Settings? s = CurrentSettings;
+        if (s == null)
+            return true;
+
+        uint wcid = source.WeenieClassId;
+        HashSet<uint> imbueWcids = ImbueSalvageWcids.Build(s);
+
+        if (imbueWcids.Contains(wcid))
+        {
+            if (!s.EnableFailureRedesign && !s.EnableDefaultImbueFailureWorkmanship)
+                return true;
+
+            ApplyImbueTinkerFailure(player, source, target, s, wcid);
+            __result = new HashSet<uint> { target.Guid.Full };
+            _tryMutateShortCircuitSuccess = false;
+            return false;
+        }
+
+        SalvageTinkerRule? rule = SalvageEffectApplier.GetRule(s, wcid);
+        if (rule == null || !s.EnableFailureRedesign)
+            return true;
+
+        player.TryConsumeFromInventoryWithNetworking(wcid, 1);
+        ChaosFailureEffects.ApplyContextualChaos(player, target, rule, s, wcid);
+        RecipeManager.HandleTinkerLog(source, target);
+        SyncTinkerTargetAfterOvertinkedFailure(player, target);
+        __result = new HashSet<uint> { target.Guid.Full };
+        _tryMutateShortCircuitSuccess = false;
+        return false;
+    }
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.CreateDestroyItems), new Type[] { typeof(Player), typeof(Recipe), typeof(WorldObject), typeof(WorldObject), typeof(double), typeof(bool) })]
     public static void PostCreateDestroyItems(Player player, Recipe recipe, WorldObject source, WorldObject target, double successChance, bool success, HashSet<uint>? __result)

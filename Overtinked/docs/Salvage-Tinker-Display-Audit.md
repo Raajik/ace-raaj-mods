@@ -53,7 +53,7 @@ Generated from repo audit (Settings.json, `SalvageEffectApplier`, `PatchClass`, 
 
 Vanilla `RecipeManager.TryMutate` ends with `modified.Add(target.Guid.Full)` so `HandleRecipe` can call `UpdateObj` → `GameMessageUpdateObject`. When Overtinked’s prefix returns early with `__result = true`, that add never ran, so **examine/HUD could stay stale** until another refresh.
 
-**Fix:** `PatchClass.MarkTargetModifiedForCraftUpdate` adds `(uint)target.Guid.Full` to `modified` on every successful short-circuit (new imbues, numeric salvage rules, buffed jewelry, standard imbue path). Matches the Harmony patch signature `HashSet<uint>` used against your `ACE.Server` reference.
+**Fix:** `PatchClass.MarkTargetModifiedForCraftUpdate` adds `target.Guid.Full` (full `ulong`) to `modified` on every successful short-circuit (new imbues, numeric salvage rules, buffed jewelry, standard imbue path). The Harmony patch targets `RecipeManager.TryMutate(..., HashSet<ulong> modified)` (ACRealms / current ACE). Using `HashSet<uint>` or casting `Guid.Full` to `uint` breaks `HandleRecipe`’s `modified.Contains(target.Guid.Full)` so **no `UpdateObj` / tooltips stay stale**.
 
 ## Other Overtinked features (checklist)
 

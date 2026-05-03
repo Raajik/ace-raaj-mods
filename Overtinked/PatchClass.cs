@@ -229,8 +229,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
     // Prefix: custom salvage rules, new imbues (Hemorrhage/Cleaving/Nether), buffed jewelry, or standard imbue by dataId; otherwise run original.
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.TryMutate), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(uint), typeof(HashSet<uint>) })]
-    public static bool PreTryMutate(Player player, WorldObject source, WorldObject target, Recipe recipe, uint dataId, HashSet<uint> modified, ref bool __result)
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.TryMutate), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(uint), typeof(HashSet<ulong>) })]
+    public static bool PreTryMutate(Player player, WorldObject source, WorldObject target, Recipe recipe, uint dataId, HashSet<ulong> modified, ref bool __result)
     {
         Settings? s = CurrentSettings;
         if (s == null)
@@ -313,14 +313,14 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
     // Vanilla TryMutate ends with modified.Add(target.Guid.Full). When this prefix short-circuits, the same
     // entry must exist so RecipeManager.HandleRecipe calls UpdateObj and the client gets GameMessageUpdateObject.
-    static void MarkTargetModifiedForCraftUpdate(HashSet<uint> modified, WorldObject target)
+    static void MarkTargetModifiedForCraftUpdate(HashSet<ulong> modified, WorldObject target)
     {
-        modified.Add((uint)target.Guid.Full);
+        modified.Add(target.Guid.Full);
     }
 
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.TryMutate), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(uint), typeof(HashSet<uint>) })]
-    public static void PostTryMutate(Player player, WorldObject source, WorldObject target, Recipe recipe, uint dataId, HashSet<uint> modified, ref bool __result)
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.TryMutate), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(uint), typeof(HashSet<ulong>) })]
+    public static void PostTryMutate(Player player, WorldObject source, WorldObject target, Recipe recipe, uint dataId, HashSet<ulong> modified, ref bool __result)
     {
         if (!__result || target == null)
             return;

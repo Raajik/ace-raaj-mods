@@ -119,6 +119,8 @@ internal class CloakLootUpgrade : Mutator
         item.SetProperty(PropertyInt.UiEffects, (int)uiFx);
 
         LootGrowthItem.RefreshImbueUiEffects(item);
+
+        AwakenedCloakWeaveXpSeed.EnsureMinimumXpForWeave(item, s);
     }
 
     static string GetMaterialName(WorldObject item)

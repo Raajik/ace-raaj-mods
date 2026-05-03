@@ -8,17 +8,20 @@ internal class ProcOnHit
     [HarmonyPatch(typeof(Cloak), nameof(Cloak.TryProcSpell), new Type[] { typeof(Creature), typeof(WorldObject), typeof(WorldObject), typeof(float) })]
     public static bool PreTryProcSpell(Creature defender, WorldObject attacker, WorldObject cloak, float damage_percent, ref Cloak __instance, ref bool __result)
     {
-        //Override to skip cloak check
+        // Override vanilla TryProcSpell: still roll the equipped cloak (vanilla behavior), then allow procs from other equipped items with HasProc.
         __result = false;
 
+        if (cloak != null && Cloak.IsCloak(cloak))
+        {
+            if (Cloak.RollProc(cloak, damage_percent) && Cloak.HandleProcSpell(defender, attacker, cloak))
+                __result = true;
+        }
 
         if (defender is Player wielder)
         {
-            //Get proccing non-cloaks
             var equipped = wielder.EquippedObjects.Values.Where(i => i.HasProc && !Aetheria.IsAetheria(i.WeenieClassId) && !Cloak.IsCloak(i));
-            var count = equipped.Count();
 
-            foreach (var c in equipped)
+            foreach (WorldObject c in equipped)
             {
                 if (!Cloak.RollProc(c, damage_percent))
                     continue;
@@ -28,7 +31,6 @@ internal class ProcOnHit
             }
         }
 
-        //Override
         return false;
     }
 }

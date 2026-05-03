@@ -81,6 +81,8 @@ internal static class LivingItemAwakener
         ApplyAwakenWorkmanship(item);
         AwakenedSpellBridge.TryRollSpellsOntoItem(item, s);
 
+        AwakenedCloakWeaveXpSeed.EnsureMinimumXpForWeave(item, s);
+
         SendInventoryPropertyUpdates(player, item, originalName, uiFx, maxLevel);
 
         player.SendMessage($"Your {originalName} awakens with new potential! Maximum level increased to {maxLevel}.", ChatMessageType.Craft);
@@ -120,7 +122,7 @@ internal static class LivingItemAwakener
         player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.UiEffects, (int)uiFx));
         player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.ItemMaxLevel, maxLevel));
         player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.ItemXpStyle, (int)ItemXpStyle.ScalesWithLevel));
-        player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt64(item, PropertyInt64.ItemTotalXp, 0));
+        player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt64(item, PropertyInt64.ItemTotalXp, item.GetProperty(PropertyInt64.ItemTotalXp) ?? 0));
         player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt64(item, PropertyInt64.ItemBaseXp, item.GetProperty(PropertyInt64.ItemBaseXp) ?? 15));
         player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyString(item, PropertyString.Name, item.Name ?? originalName));
 

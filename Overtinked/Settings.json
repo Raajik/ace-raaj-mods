@@ -12,7 +12,10 @@
   "// NetherRendingImbue": "Nether Rending imbue (e.g. Onyx 21064).",
   "// BuffedImbueRules": "Buffed jewelry imbues. Each array element: // keys first, then values.",
   "// ShowPlayerSalvageMessage": "When true, send the player a short message when a custom salvage/imbue is applied.",
-  "// DefenseImbueBonus": "Defense skill bonus from imbued armor (Melee/Missile/Magic Defense). Default 0 uses vanilla +1 per item. Set to 5 for +5 bonus per item with defense imbue.",
+  "// DefenseImbueBonus": "Multiplier on vanilla defense-imbue skill add (imbued-piece count). 0 = vanilla (+1 per piece). 5 = +5 per piece (two pieces => +10).",
+  "// OverrideDefenseSalvageLongDescInAppraise": "When true and DefenseImbueBonus > 0, examine LongDesc for defense salvage WCIDs uses the format strings below (no SQL needed to change displayed bonus).",
+  "// DefenseSalvageLongDescSalvagedFormat": "Optional. {0} = DefenseImbueBonus, {1} = Melee|Missile|Magic. Empty = built-in English for salvaged bags.",
+  "// DefenseSalvageLongDescFoolproofFormat": "Optional. Same placeholders for foolproof Peridot/Topaz/Zircon. Empty = built-in English.",
   "// EnableLesserImbueUpgradeToFull": "Strip weaker effects before imbue: IgnoreArmor (armor cleaving) for Sunstone; CriticalFrequency (biting strike) for Black Opal; CriticalMultiplier (crushing-style) for Fire Opal; ResistanceModifier* for matching rending salvage.",
   "MaxTries": 10,
   "Scale": 0.5,
@@ -294,5 +297,8 @@
   ],
   "ShowPlayerSalvageMessage": true,
   "DefenseImbueBonus": 5,
+  "OverrideDefenseSalvageLongDescInAppraise": true,
+  "DefenseSalvageLongDescSalvagedFormat": null,
+  "DefenseSalvageLongDescFoolproofFormat": null,
   "EnableLesserImbueUpgradeToFull": true
 }

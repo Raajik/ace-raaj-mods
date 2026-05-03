@@ -41,7 +41,9 @@ Edit `Settings.json` in the mod folder (e.g. `C:\ACE\Mods\Overtinked\`).
 | `EnableFailureRedesign` | true | Failed *numeric* tinkers apply opposite effect instead of destroying the item. |
 | `EnableDefaultImbueFailureWorkmanship` | true | Failed *imbue* tinkers add +1 Workmanship (cap 10) instead of destroying the item. |
 | `ShowPlayerSalvageMessage` | true | Send a short chat message when a custom salvage/imbue is applied. |
-| `DefenseImbueBonus` | 0 | Defense skill bonus from imbued armor (Melee/Missile/Magic Defense). Default 0 uses vanilla +1 per item. Set to 5 for +5 bonus per item with defense imbue (Peridot → Melee Defense, Yellow Topaz → Missile Defense, Zircon → Magic Defense). |
+| `DefenseImbueBonus` | 0 | Multiplier on vanilla defense-imbue skill add (imbued-piece count). 0 = vanilla (+1 per piece). 5 = +5 per piece (Peridot / Yellow Topaz / Zircon → Melee / Missile / Magic Defense). |
+| `OverrideDefenseSalvageLongDescInAppraise` | true | When true and `DefenseImbueBonus` > 0, examine `LongDesc` for defense salvage WCIDs uses built-in or optional format strings (no SQL to change displayed +N). |
+| `DefenseSalvageLongDescSalvagedFormat` / `DefenseSalvageLongDescFoolproofFormat` | null | Optional `string.Format` patterns; `{0}` = `DefenseImbueBonus`, `{1}` = Melee \| Missile \| Magic. Empty uses built-in English. |
 
 ### Salvage rules (`SalvageRules`)
 
@@ -56,7 +58,7 @@ Per-salvage numeric effects. Each entry:
 
 ### Defense imbue bonus
 
-The vanilla ACE defense imbues (Peridot → Melee Defense, Yellow Topaz → Missile Defense, Zircon → Magic Defense) give +1 per equipped item. `DefenseImbueBonus` overrides this: if set > 0, returns that value instead of the item count. Set to 5 for a fixed +5 bonus per item.
+Vanilla adds the **count** of equipped pieces with that defense imbue directly to effective defense skill (+1 per piece). If `DefenseImbueBonus` > 0, that count is **multiplied** (e.g. 5 → two imbued pieces add +10). Examine text for salvaged and foolproof Peridot / Topaz / Zircon can follow the same number via `OverrideDefenseSalvageLongDescInAppraise` and optional format strings in `Settings.json`.
 
 ### New imbues
 

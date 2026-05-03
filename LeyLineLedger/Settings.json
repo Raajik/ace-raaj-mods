@@ -287,7 +287,7 @@
       { "// Name": "Salvaged Obsidian", "Category": "WeaponTinkering", "WeenieClassId": 21063, "UnitsPerItem": 1, "Effect": "Nether Rending", "Description": "Imbues Nether Rending" },
       { "// Name": "Salvaged Onyx", "Category": "Useless", "WeenieClassId": 21064, "UnitsPerItem": 1, "Description": "No Apparent Use" },
       { "// Name": "Salvaged Opal", "Category": "MagicItemTinkering", "WeenieClassId": 21065, "UnitsPerItem": 1, "Description": "Increases Mana Conversion by 1%" },
-      { "// Name": "Salvaged Peridot", "Category": "ArmorTinkering", "WeenieClassId": 21066, "UnitsPerItem": 1, "Description": "Imbues +1 Melee Defense" },
+      { "// Name": "Salvaged Peridot", "Category": "ArmorTinkering", "WeenieClassId": 21066, "UnitsPerItem": 1, "Description": "Imbues +5 Melee Defense" },
       { "// Name": "Salvaged Porcelain", "Category": "ItemTinkering", "WeenieClassId": 21067, "UnitsPerItem": 1, "Description": "Changes heritage requirement to Sho" },
       { "// Name": "Salvaged Pyreal", "Category": "ItemTinkering", "WeenieClassId": 21068, "UnitsPerItem": 1, "Description": "Trinket: Augmented Understanding" },
       { "// Name": "Salvaged Red Garnet", "Category": "WeaponTinkering", "WeenieClassId": 21069, "UnitsPerItem": 1, "Description": "Imbues Fire Rending" },
@@ -309,8 +309,8 @@
       { "// Name": "Salvaged White Quartz", "Category": "Useless", "WeenieClassId": 21085, "UnitsPerItem": 1, "Description": "No Apparent Use" },
       { "// Name": "Salvaged White Sapphire", "Category": "WeaponTinkering", "WeenieClassId": 21086, "UnitsPerItem": 1, "Description": "Imbues Bludgeon Rending" },
       { "// Name": "Salvaged Yellow Garnet", "Category": "Useless", "WeenieClassId": 21087, "UnitsPerItem": 1, "Description": "No Apparent Use" },
-      { "// Name": "Salvaged Yellow Topaz", "Category": "ArmorTinkering", "WeenieClassId": 21088, "UnitsPerItem": 1, "Description": "Imbues +1 Missile Defense" },
-      { "// Name": "Salvaged Zircon", "Category": "ArmorTinkering", "WeenieClassId": 21089, "UnitsPerItem": 1, "Description": "Imbues +1 Magic Defense" },
+      { "// Name": "Salvaged Yellow Topaz", "Category": "ArmorTinkering", "WeenieClassId": 21088, "UnitsPerItem": 1, "Description": "Imbues +5 Missile Defense" },
+      { "// Name": "Salvaged Zircon", "Category": "ArmorTinkering", "WeenieClassId": 21089, "UnitsPerItem": 1, "Description": "Imbues +5 Magic Defense" },
       { "// Name": "Salvaged Alabaster", "Category": "ArmorTinkering", "WeenieClassId": 20980, "UnitsPerItem": 1, "Effect": "+2.0 PierceRes", "Description": "Increases Armor's Piercing Protection by 0.2" }
     ],
     "Redeem": {

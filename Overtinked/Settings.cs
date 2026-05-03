@@ -49,7 +49,16 @@ public class Settings
     public string ShowPlayerSalvageMessageDoc { get; init; } = "When true, send the player a short message when a custom salvage/imbue is applied.";
 
     [JsonPropertyName("// DefenseImbueBonus")]
-    public string DefenseImbueBonusDoc { get; init; } = "Defense skill bonus from imbued armor (Melee/Missile/Magic Defense). Default 0 uses vanilla +1 per item. Set to 5 for +5 bonus per item with defense imbue.";
+    public string DefenseImbueBonusDoc { get; init; } = "Multiplier on vanilla defense-imbue contribution (imbued-piece count is added to effective Melee/Missile/Magic Defense skill). 0 = vanilla (+1 per imbued piece). 5 = +5 per imbued piece (two pieces => +10).";
+
+    [JsonPropertyName("// OverrideDefenseSalvageLongDescInAppraise")]
+    public string OverrideDefenseSalvageLongDescInAppraiseDoc { get; init; } = "When true and DefenseImbueBonus > 0, examine LongDesc for defense salvage WCIDs is taken from JSON format strings below (so operators can change bonus text without SQL).";
+
+    [JsonPropertyName("// DefenseSalvageLongDescSalvagedFormat")]
+    public string DefenseSalvageLongDescSalvagedFormatDoc { get; init; } = "Optional format for salvaged Peridot/Topaz/Zircon long description. Placeholders: {0} = DefenseImbueBonus, {1} = Melee or Missile or Magic. Empty = built-in English.";
+
+    [JsonPropertyName("// DefenseSalvageLongDescFoolproofFormat")]
+    public string DefenseSalvageLongDescFoolproofFormatDoc { get; init; } = "Optional format for foolproof Peridot/Topaz/Zircon long description. Same placeholders as salvaged. Empty = built-in English.";
 
     [JsonPropertyName("// EnableLesserImbueUpgradeToFull")]
     public string EnableLesserImbueUpgradeToFullDoc { get; init; } =
@@ -107,8 +116,16 @@ public class Settings
     // When true, send the player a short message when a custom salvage/imbue is applied.
     public bool ShowPlayerSalvageMessage { get; set; } = true;
 
-    // Defense skill bonus from imbued armor (Melee/Missile/Magic Defense). Default 0 uses vanilla +1 per item. Set to 5 for +5 bonus per item with defense imbue.
+    // Multiplier on imbued-piece count added to effective defense skill (Melee/Missile/Magic). 0 = vanilla (+1 per piece).
     public int DefenseImbueBonus { get; set; } = 0;
+
+    // When true and DefenseImbueBonus > 0, rewrite examine LongDesc for defense salvage bags from optional format strings.
+    public bool OverrideDefenseSalvageLongDescInAppraise { get; set; } = true;
+
+    // Optional LongDesc formats; see doc properties. Null/whitespace uses hardcoded defaults.
+    public string? DefenseSalvageLongDescSalvagedFormat { get; set; }
+
+    public string? DefenseSalvageLongDescFoolproofFormat { get; set; }
 
     // When true, strip weaker fixed stats / quest fields before applying the matching imbue (see LesserImbueUpgrade).
     public bool EnableLesserImbueUpgradeToFull { get; set; } = true;

@@ -562,14 +562,14 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         [ImbuedEffectType.SlashRending]    = DamageType.Slash,
     };
 
-    // Defense imbue bonus override: instead of +1 per item, return +5 if any item has the defense imbue.
+    // Defense imbue: vanilla adds +1 effective defense per equipped piece with that imbue (count). When DefenseImbueBonus > 0, multiply that count (e.g. 5 => +5 per piece).
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Creature), nameof(Creature.GetDefenseImbues))]
     public static void PostGetDefenseImbues(Creature __instance, ImbuedEffectType imbuedEffectType, ref int __result)
     {
-        // If the setting is enabled and there's at least 1 item with defense imbue, return +5 instead of count
-        if (CurrentSettings?.DefenseImbueBonus > 0 && __result > 0)
-            __result = CurrentSettings.DefenseImbueBonus;
+        int mult = CurrentSettings?.DefenseImbueBonus ?? 0;
+        if (mult > 0 && __result > 0)
+            __result *= mult;
     }
 
     // Maps recipe mutation dataIds to ImbuedEffectType flags so we can set target.ImbuedEffect when the recipe applies an imbue.

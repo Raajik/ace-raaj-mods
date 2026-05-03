@@ -1,3 +1,4 @@
+-- Optional world DB seed for weenie LongDesc. With Overtinked enabled, examine text for these WCIDs also comes from Overtinked Settings.json (DefenseImbueBonus + format strings) at runtime.
 -- Update Salvaged Peridot description: +5 Melee Defense instead of +1
 UPDATE weenie_properties_string 
 SET value = 'Apply this material to treasure-generated armor to imbue the target with a +5 bonus to Melee Defense.'

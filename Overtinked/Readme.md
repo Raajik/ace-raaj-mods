@@ -41,6 +41,7 @@ Edit `Settings.json` in the mod folder (e.g. `C:\ACE\Mods\Overtinked\`).
 | `EnableFailureRedesign` | true | Failed *numeric* tinkers apply opposite effect instead of destroying the item. |
 | `EnableDefaultImbueFailureWorkmanship` | true | Failed *imbue* tinkers add +1 Workmanship (cap 10) instead of destroying the item. |
 | `ShowPlayerSalvageMessage` | true | Send a short chat message when a custom salvage/imbue is applied. |
+| `DefenseImbueBonus` | 0 | Defense skill bonus from imbued armor (Melee/Missile/Magic Defense). Default 0 uses vanilla +1 per item. Set to 5 for +5 bonus per item with defense imbue (Peridot → Melee Defense, Yellow Topaz → Missile Defense, Zircon → Magic Defense). |
 
 ### Salvage rules (`SalvageRules`)
 
@@ -52,6 +53,10 @@ Per-salvage numeric effects. Each entry:
 - **MinValue**, **MaxValue** — Random range (inclusive). Ignored if `FixedValue` is set.
 - **FixedValue** — If set, use this value instead of rolling.
 - **Enabled** — If false, rule is skipped.
+
+### Defense imbue bonus
+
+The vanilla ACE defense imbues (Peridot → Melee Defense, Yellow Topaz → Missile Defense, Zircon → Magic Defense) give +1 per equipped item. `DefenseImbueBonus` overrides this: if set > 0, returns that value instead of the item count. Set to 5 for a fixed +5 bonus per item.
 
 ### New imbues
 

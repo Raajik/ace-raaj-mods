@@ -6,6 +6,48 @@
 
 ---
 
+## 2026-05-03
+
+### Defense Imbue Bonus — Peridot/Yellow Topaz/Zircon from +1 to +5
+
+- **Goal:** Change the defense skill bonus from salvage/imbue materials from +1 to +5 for Melee Defense (Peridot), Missile Defense (Yellow Topaz), and Magic Defense (Zircon).
+- **Problem:** The actual bonus value comes from `Creature.GetDefenseImbues()` which counts equipped items with the ImbuedEffect flag. Each item adds +1. This is hardcoded in ACE with no database property storing the value.
+- **Solution:**
+  - SQL (WindblownContent): Updated descriptions (property type 14) for all 6 items to say "+5 bonus" instead of "+1 bonus"
+  - Overtinked Harmony patch: Added postfix to `Creature.GetDefenseImbues` to return `DefenseImbueBonus` setting value (5) instead of item count when > 0
+  - Settings: Added `DefenseImbueBonus` property (default 0, set to 5 to enable)
+- **Files:**
+  - `WindblownContent/Content/zzz_Salvage_Defense_Bonus_Update.sql` — descriptions updated in database
+  - `Overtinked/PatchClass.cs` — Harmony patch added
+  - `Overtinked/Settings.cs` — DefenseImbueBonus property added
+  - `Overtinked/Settings.json` — DefenseImbueBonus: 5
+- **Items affected:**
+  - Salvaged Peridot (21066) — Melee Defense
+  - Salvaged Yellow Topaz (21088) — Missile Defense  
+  - Salvaged Zircon (21089) — Magic Defense
+  - Foolproof Peridot (30101) — Melee Defense
+  - Foolproof Yellow Topaz (30105) — Missile Defense
+  - Foolproof Zircon (30106) — Magic Defense
+
+---
+
+### AutoLoot — close-time, material-only auto-salvage (no clutter destruction)
+
+- **Goal:** Restore an immediate (no-delay) AutoSalvage pass on container/corpse close, but only act on items that BSS actually accepts. Stop destroying non-material clutter so players keep anything still worth looting. House storage chests stay excluded.
+- **Behavior (final):**
+  - `Container.Close` → `ProcessContainerLootClose` runs Pass 5 inline only when `EnableDelayedSalvageSweep && BSS salvage enabled && rate > 0` and the container is a `Corpse` or a `Chest` **without** `HouseOwner`.
+  - Sweep delegates to `BetterSupportSkillsBridge.TryAutoSalvage(player, item)`. BSS already filters to `PropertyInt.MaterialType` items + raw salvage bags (WCID 20981–21089). Items it accepts are removed from the container and banked; everything else stays put.
+  - Salvage count (when > 0) is folded into the existing single `[AutoLoot] looted …, salvaged N item(s).` close message. The legacy “destroyed N clutter item(s)” phrasing is gone.
+- **Removed infrastructure:**
+  - `_salvageTimers`, `SalvageTimerState`, `ScheduleDeferredSalvageSweep`, `RunDeferredSalvageSweep`, `CancelSalvageTimer` in `AutoLoot/Autoloot.cs`.
+  - `AutoLoot.CancelSalvageTimer(...)` call from `PostContainerOpen` in `AutoLoot/PatchClass.Harmony.cs`.
+  - `Settings.SalvageSweepDelaySeconds` (and JSON entry). `EnableDelayedSalvageSweep` repurposed as the global on/off for the close-time material sweep; default stays `true`.
+  - `RunSalvageDestroyPass(Container, Player, bool, bool, out int, out int)` collapsed to `RunSalvageDestroyPass(Container, Player, out int salvaged)`; predicate `ShouldScheduleDeferredSalvageSweep` renamed to `ShouldRunCloseSalvageSweep` (logic identical: corpse OR chest without `HouseOwner`).
+- **Files:** `AutoLoot/Autoloot.cs`, `AutoLoot/PatchClass.Harmony.cs`, `AutoLoot/Settings.cs`, `AutoLoot/Settings.json`. Build deploys to `C:\ACE\Mods\AutoLoot\`; Settings.json copied alongside DLL. BSS-side `SalvageAutoDeposit.TryAutoSalvageItem` unchanged — still the source of truth for "is this salvageable?".
+- **Player-facing:** `/autoloot salvage off` still bypasses everything via the BSS bridge `IsSalvageEnabled` gate, unchanged.
+
+---
+
 ## 2026-05-02
 
 ### QOL VendorLootRotation — effective interval + cooldown bookkeeping

@@ -134,6 +134,7 @@ Extended tinkering system.
 - **Quest/loot init for equippables** — special handling for quest-reward and loot-drop items.
 - **Level-up growth hooks** — items can improve when the player levels.
 - **Custom imbue examine text** — Hemorrhage / Cleaving / Nether Rending use a full appraisal `LongDesc` replace (and strip `AppraisalLongDescDecoration`) so the client does not splice workmanship/material lines into custom imbue stats.
+- **World SQL for custom imbue bags** — yellow garnet / tiger eye / onyx need `Content/SQL/` on **each** database (`ace_world` and live `wb_ace_world`); JSON + DLL alone do not set `ItemUseable` / `TargetType` on those WCIDs (see `Overtinked/Readme.md` § Push live).
 
 ### QOL
 Toggleable convenience patches (no single defining feature — pick what you want).

@@ -24,6 +24,8 @@ Keep this section **short**. When something ships, **append [COMPLETED.md](COMPL
 
 Windblown **9002**, test **9000**; full mod zip deploy + Academy/quest/trophy SQL — one-liner audit trail in **COMPLETED.md** § Live Deployment.
 
+**2026-05-03 addendum:** Full mod DLL/`Settings.json` copy to `C:\ACE-WB\Mods\` is not enough for **Overtinked custom imbue salvage weenies** — apply the same `Overtinked/Content/SQL/*.sql` to **`wb_ace_world`** as on `ace_world`, then restart (weenie cache). Details in **COMPLETED.md** § 2026-05-03 “Windblown live”.
+
 ## Suggested order (simplest → most complex)
 
 Burn down from the top; later items need more design or ACE integration.
@@ -31,7 +33,7 @@ Burn down from the top; later items need more design or ACE integration.
 1. **Active bugs** — See [§ Active Bug Tracker](#active-bug-tracker). Fix verified issues before adding features.
 2. **Immediate reworks** — See [§ Immediate Reworks](#immediate-reworks). Small scope, high impact.
 3. **AureatePath — tuning + shipped mechanics** — Core flow includes **enlightenment pool** (11012), **high-enlight QB gate**, eligibility in `VerifyEnlightenmentEligibility`, and existing luminance/society gates. Prefer **`Settings.json`** for gates, level curve, removes, QB formula, and pool-adjacent behavior; see [§ AureatePath](#aureatepath) and [§ Loremaster](#loremaster) / [§ ChallengeModes](#challengemodes) for cross-mod **11012** alignment.
-4. **Overtinked — JSON tuning only** — No open backlog. Tune `Settings.json` (splash caps, `CanDamage` gate, Nether multipliers / soft cap, imbue combat configs in `NewImbueConfig.cs`, etc.).
+4. **Overtinked — JSON + per-world SQL** — Tune `Settings.json` (splash caps, `CanDamage` gate, Nether multipliers / soft cap, imbue combat configs in `NewImbueConfig.cs`, etc.). **Custom imbue salvage bags** (yellow garnet / tiger eye / onyx) also require `Overtinked/Content/SQL/*.sql` on **each** `ace_world` / `wb_ace_world` so `ItemUseable` / `TargetType` / long desc match tinkering salvage; DLL deploy alone is not enough (see `COMPLETED.md` § 2026-05-03 Windblown live).
 5. **Maintenance sweeps** — `rg -i "todo|fixme|hack" --glob "*.cs"` (filter false positives like `Convert.ToDouble`). Before a release, run `/mod-audit` on a mod or a fresh targeted `rg` pass; cleared audit sections below are historical only.
 6. **Loremaster — Barkeeper parchments** — ~~Weighted pools, fetch stacks, messaging~~ **shipped**; tune `Settings.json` / templates on your shard. Spec in [§ Loremaster](#loremaster).
 7. **Swarmed (deprioritized)** — *CreatureEx per-landblock* is **not on the near-term roadmap**; theoretically possible via post-placement / `EnterWorld` / landblock hooks, but unlikely to receive attention. Landblock-aware **reinforcement** scaling is already implemented (see [§ Swarmed](#swarmed)).
@@ -110,12 +112,11 @@ Long-form **done** write-ups that used to live here (placement QP, lottery, XP c
      - `TryScaleExistingRatings()` — runs for ALL item types after category-specific level-up effects. Increments any existing non-zero ratings by `RatingLevelUpAmount` every `RatingLevelUpInterval` levels. Ensures BLC-generated ratings on weapons, armor, and jewelry all scale consistently.
    - **Build:** Both BLC and EA compile clean (0 warnings, 0 errors).
 
-4. **Overtinked Salvage Weenie Edits Visibility** *(Overtinked)* — **BACKLOG**
-   - **Problem:** Tinkering formula changes (increased armor from steel, increased damage from iron, increased protection/bane from armoredillo hide, etc.) implemented via Harmony patches may not be visible in-game because ACE caches weenie properties at startup or because the recipe system reads from weenie DB tables directly rather than from patched runtime values.
-   - **Investigation needed:** Check if `RecipeManager` / `TinkeringRules` reads from weenie `weenie_properties_int` / `weenie_properties_float` at runtime, and whether those queries bypass Harmony patches. If so, we may need SQL weenie updates alongside Harmony patches.
-   - **Plan before implementation:** Audit Overtinked's tinkering patches, identify which formulas are patched in-memory vs. which would need DB-level property changes, document findings.
+4. **Overtinked Salvage Weenie Edits Visibility** *(Overtinked)* — **PARTIAL (2026-05-03)**
+   - **Resolved for:** Hemorrhage / Cleaving / Nether **imbue salvage WCIDs** — confirmed `ItemUseable` / `TargetType` / palette must live in world SQL per shard; live `wb_ace_world` was synced from repo scripts (see `COMPLETED.md` same date).
+   - **Still backlog:** Other numeric / formula tweaks driven only by Harmony may differ from what clients show if ACE reads cached weenie floats/ints; audit `RecipeManager` / tinkering paths when tuning those.
 
-4. **~~Vendor Rend/UiEffects Loss + Unlimited Supply Bug~~** *(QOL / SpellSiphon)* — **DONE**
+5. **~~Vendor Rend/UiEffects Loss + Unlimited Supply Bug~~** *(QOL / SpellSiphon)* — **DONE**
    - All mod-generated vendor items now inject into `UniqueItemsForSale` (actual WO transferred + auto-removed after purchase).
    - **Problem:** `Vendor.ItemProfileToWorldObjects()` recreates purchased items from the weenie template (`WorldObjectFactory.CreateNewWorldObject(wcid)`). Custom runtime properties — `UiEffects`, `ImbuedEffect`, `IconUnderlayId`, `Name`, `ItemMaxLevel`, `ItemTotalXp`, workmanship, spells — are lost. Default items are never removed from `DefaultItemsForSale`, giving infinite supply (free duplication of pre-imbued / pre-awakened gear).
    - **Fix approach (recommended):** Centralized Harmony patch in **EmpyreanAlteration** (already patches `FinalizeBuyTransaction` for mutators).

@@ -2,6 +2,16 @@
 
 Extends tinkering limits and adds configurable salvage behavior: per-salvage rules, new imbues (Hemorrhage, Cleaving, Nether Rending), buffed jewelry, and failure options (opposite effect or +1 Workmanship).
 
+## Push live (mods + world DB)
+
+**`Settings.json` + DLL** control server logic (recipes, `BaseRecipeId`, combat, appraise postfixes). They **do not** rewrite stock weenie templates on the MySQL host.
+
+For **Windblown / `wb_ace_world`**, after copying `Overtinked` to `C:\ACE-WB\Mods\`:
+
+1. Run the same **`Content/SQL/`** scripts against **`wb_ace_world`** as you already ran on **`ace_world`** for custom imbue salvages (at minimum: `SalvagedYellowGarnet-Hemorrhage-weapon-style.sql`, `SalvageCleavingNether-tinker-bags.sql`, `SalvageCleavingNether-longdesc.sql`). Without this, clients often still show **unusable salvage** (`ItemUseable` / missing `TargetType`) even when tinkering works server-side.
+2. **Restart** the live ACE process so weenie templates reload from the DB.
+3. Optional: scoped **`mysqldump`** into `WindblownContent/sql-backups/YYYY-MM-DD/` before applying (see repo `AGENTS.md` §8.7).
+
 ---
 
 ## EmpyreanAlteration and item leveling

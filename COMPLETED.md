@@ -76,6 +76,13 @@
 - **AoE:** `HemorrhageImbue` gains **`AoERadiusYards`** (default **10**); combat uses `yards × 0.9144` m for `GetDistance`. **`AoERadiusMeters`** remains when `AoERadiusYards` is **0** (legacy JSON).
 - **Files:** `Overtinked/OvertinkedImbueFlags.cs`, `Overtinked/HemorrhageAoE.cs`, `Overtinked/HemorrhageImbueCombat.cs`, `Overtinked/PatchClass.cs`, `Overtinked/NewImbueConfig.cs`, `Overtinked/Settings.json`, `Overtinked/Readme.md`, `AGENTS.md` (40133 row).
 
+### Windblown live — Overtinked custom imbue salvages “unusable” after DLL-only deploy
+
+- **Symptom:** After copying mods to `C:\ACE-WB\Mods\`, players still saw Hemorrhage / Cleaving / Nether salvage as **unusable** (and vanilla “no apparent use” long desc on template) while some mod-driven examine visuals updated.
+- **Cause:** `Settings.json` + DLL fix **server recipe** behavior (`BaseRecipeId`, `GetRecipe` postfix, etc.) but **do not** replace weenie template ints. Live **`wb_ace_world`** still had vanilla rows for WCIDs **21087**, **21081**, **21064**: `ItemUseable` = 1, missing **`TargetType` (type 94)**, wrong palette vs `ace_world`.
+- **Fix:** Scoped `mysqldump` backup under `WindblownContent/sql-backups/2026-05-03/`, then applied repo SQL to **`wb_ace_world`**: `SalvagedYellowGarnet-Hemorrhage-weapon-style.sql`, `SalvageCleavingNether-tinker-bags.sql`, `SalvageCleavingNether-longdesc.sql`. Restart live ACE so weenie cache reloads.
+- **Lesson:** JSON alone cannot set **`ItemUseable` / `TargetType` / palette** on stock WCIDs; ship **`Content/SQL/`** to every world DB that runs the server. See `Overtinked/Readme.md` § Push live and wiki [[ace-raaj-mods Conventions]] § Mod JSON vs weenie SQL.
+
 ---
 
 ### AutoLoot — close-time, material-only auto-salvage (no clutter destruction)

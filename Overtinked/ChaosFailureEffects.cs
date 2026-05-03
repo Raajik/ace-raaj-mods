@@ -156,7 +156,7 @@ public static class ChaosFailureEffects
         ImbuedEffectType.MeleeDefense, ImbuedEffectType.MissileDefense, ImbuedEffectType.MagicDefense,
     };
 
-    private static readonly ImbuedEffectType AllRendingFlags =
+    internal static readonly ImbuedEffectType AllRendingFlags =
         ImbuedEffectType.AcidRending | ImbuedEffectType.BludgeonRending | ImbuedEffectType.ColdRending |
         ImbuedEffectType.ElectricRending | ImbuedEffectType.FireRending | ImbuedEffectType.NetherRending |
         ImbuedEffectType.PierceRending | ImbuedEffectType.SlashRending;
@@ -167,43 +167,51 @@ public static class ChaosFailureEffects
     {
         string itemName = target.NameWithMaterial ?? "item";
 
-        // Rare universal catastrophic blessing: 1% chance for any failure
-        if (Random.Shared.NextDouble() < 0.01)
+        try
         {
-            ApplyHowDidYouEven(player, target, settings, itemName);
-            return;
-        }
+            // Rare universal catastrophic blessing: 1% chance for any failure
+            if (Random.Shared.NextDouble() < 0.01)
+            {
+                ApplyHowDidYouEven(player, target, settings, itemName);
+                return;
+            }
 
-        // Determine context
-        bool isImbue = ImbueSalvageWcids.IsImbueSalvage(wcid, settings);
-        bool isCustomImbue = false;
-        if (!isImbue && settings.HemorrhageImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
-        if (!isImbue && settings.CleavingImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
-        if (!isImbue && settings.NetherRendingImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
+            // Determine context
+            bool isImbue = ImbueSalvageWcids.IsImbueSalvage(wcid, settings);
+            bool isCustomImbue = false;
+            if (!isImbue && settings.HemorrhageImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
+            if (!isImbue && settings.CleavingImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
+            if (!isImbue && settings.NetherRendingImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
 
-        string effectKind = rule?.EffectKind ?? "";
-        bool isDamageTinker = effectKind is "Damage" or "DamageMod" or "ElementalDamageMod";
-        bool isArmorModTinker = effectKind.StartsWith("ArmorModVs");
-        bool isArmorLevelTinker = effectKind == "ArmorLevel";
+            string effectKind = rule?.EffectKind ?? "";
+            bool isDamageTinker = effectKind is "Damage" or "DamageMod" or "ElementalDamageMod";
+            bool isArmorModTinker = effectKind.StartsWith("ArmorModVs");
+            bool isArmorLevelTinker = effectKind == "ArmorLevel";
 
-        double roll = Random.Shared.NextDouble();
+            double roll = Random.Shared.NextDouble();
 
-        // Route to context-specific pool
-        if (isImbue || isCustomImbue)
-        {
-            ApplyImbueChaos(player, target, settings, wcid, itemName, roll);
+            // Route to context-specific pool
+            if (isImbue || isCustomImbue)
+            {
+                ApplyImbueChaos(player, target, settings, wcid, itemName, roll);
+            }
+            else if (isDamageTinker)
+            {
+                ApplyDamageChaos(player, target, rule!, settings, itemName, roll);
+            }
+            else if (isArmorModTinker || isArmorLevelTinker)
+            {
+                ApplyArmorChaos(player, target, rule, settings, itemName, roll);
+            }
+            else
+            {
+                ApplyGenericChaos(player, target, rule, settings, itemName, roll);
+            }
         }
-        else if (isDamageTinker)
+        finally
         {
-            ApplyDamageChaos(player, target, rule!, settings, itemName, roll);
-        }
-        else if (isArmorModTinker || isArmorLevelTinker)
-        {
-            ApplyArmorChaos(player, target, rule, settings, itemName, roll);
-        }
-        else
-        {
-            ApplyGenericChaos(player, target, rule, settings, itemName, roll);
+            if (player != null && target != null)
+                ChaosAppearance.Apply(target, settings);
         }
     }
 

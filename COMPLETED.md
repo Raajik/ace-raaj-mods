@@ -52,6 +52,12 @@
 - **Fix:** Drop the `PreHandleRecipe` failure prefix; single roll stays in vanilla `HandleRecipe`; failure redesign only in `PreCreateDestroyItemsTinkerFailure`.
 - **Files:** `Overtinked/PatchClass.cs`, `Overtinked/docs/Salvage-Tinker-Display-Audit.md`.
 
+### Overtinked — chaos failure client icon / glow (`ChaosAppearance`)
+
+- **Goal:** After failure-redesign chaos (including `/chaostinker` forced fails that still run this path), align **icon underlay** and **UiEffects** with new imbue/slayer/mana state so weapons read correctly at a glance.
+- **Fix:** New `ChaosAppearance.Apply` from `ApplyContextualChaos` `finally`: set `IconUnderlayId` via `RecipeManager.IconUnderlay` priority, OR `UiEffects` from rend / defense / armor-imbue / slayer / mana / `DamageType`, then `HemorrhageWeaponVisual.ApplyIfHemorrhageWeapon` + `CalculateObjDesc` (existing `SyncTinkerTargetAfterOvertinkedFailure` still sends `GameMessageUpdateObject`). `ChaosFailureEffects.AllRendingFlags` made `internal` for shared checks.
+- **Files:** `Overtinked/ChaosAppearance.cs`, `Overtinked/ChaosFailureEffects.cs`, `Overtinked/Readme.md`.
+
 ---
 
 ### AutoLoot — close-time, material-only auto-salvage (no clutter destruction)

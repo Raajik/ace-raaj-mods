@@ -2,11 +2,12 @@ using ACE.Server.Network.Structure;
 
 namespace Overtinked;
 
-// Hemorrhage / Cleaving live only in OvertinkedImbueStore (no PropertyInt.ImbuedEffect). Client imbue list stays empty unless we add text here.
+// Hemorrhage / Cleaving / Nether Rending: OvertinkedImbueStore (40133) + vanilla Nether bit. One short line in appraisal string table (Inscription) so it sits with other property rows; salvage bags carry the fuller LongDesc (SQL).
 [HarmonyPatchCategory(Settings.RecipeManagerCategory)]
 internal static class CustomImbueAppraise
 {
-    private const string BlockMarker = "\n--- ";
+    // Legacy: multi-line block appended to LongDesc (remove from appraisal only; DB LongDesc cleanup optional).
+    private const string BlockMarkerLegacy = "\n--- ";
 
     [HarmonyPostfix]
     [HarmonyPriority(Priority.Last)]
@@ -16,6 +17,8 @@ internal static class CustomImbueAppraise
         if (wo == null || __instance == null)
             return;
 
+        StripLegacyImbueLongDesc(__instance);
+
         Settings? s = PatchClass.CurrentSettings;
         if (s == null)
             return;
@@ -24,15 +27,58 @@ internal static class CustomImbueAppraise
         if (flags == OvertinkedImbueFlags.None)
             return;
 
-        List<string> lines = new List<string>(3);
+        string imbueLine = BuildImbuePropertyLine(flags, s);
+        if (string.IsNullOrEmpty(imbueLine))
+            return;
+
+        if (__instance.PropertiesString == null)
+            __instance.PropertiesString = new Dictionary<PropertyString, string>();
+
+        string existing = string.Empty;
+        if (__instance.PropertiesString.TryGetValue(PropertyString.Inscription, out string? fromPacket) && !string.IsNullOrEmpty(fromPacket))
+            existing = fromPacket.Trim();
+        else if (!string.IsNullOrEmpty(wo.Inscription))
+            existing = wo.Inscription.Trim();
+
+        if (!string.IsNullOrEmpty(existing))
+        {
+            if (existing.Contains(imbueLine, StringComparison.Ordinal))
+                return;
+
+            __instance.PropertiesString[PropertyString.Inscription] = existing + " | " + imbueLine;
+        }
+        else
+            __instance.PropertiesString[PropertyString.Inscription] = imbueLine;
+    }
+
+    private static void StripLegacyImbueLongDesc(AppraiseInfo info)
+    {
+        if (info.PropertiesString == null)
+            return;
+
+        if (!info.PropertiesString.TryGetValue(PropertyString.LongDesc, out string? ld) || ld == null)
+            return;
+
+        int i = ld.IndexOf(BlockMarkerLegacy, StringComparison.Ordinal);
+        if (i < 0)
+            return;
+
+        info.PropertiesString[PropertyString.LongDesc] = ld.Substring(0, i).TrimEnd();
+    }
+
+    private static string BuildImbuePropertyLine(OvertinkedImbueFlags flags, Settings s)
+    {
+        List<string> parts = new List<string>(3);
 
         if ((flags & OvertinkedImbueFlags.Hemorrhage) != 0 && s.HemorrhageImbue?.Enabled == true)
         {
             HemorrhageImbueConfig h = s.HemorrhageImbue;
             string label = string.IsNullOrWhiteSpace(h.Name) ? "Hemorrhage" : h.Name.Trim();
-            float aoeM = HemorrhageAoE.GetRadiusMeters(h);
-            lines.Add(
-                $"{label}: stacking damage over time on hit (+{h.StacksPerApplication} stacks per hit, max {h.MaxStacks}); spreads stacks within ~{aoeM:0.#}m (~{(aoeM / HemorrhageAoE.YardsToMeters):0.#} yd).");
+            float yards = h.AoERadiusYards > 0f
+                ? h.AoERadiusYards
+                : HemorrhageAoE.GetRadiusMeters(h) / HemorrhageAoE.YardsToMeters;
+            yards = (float)Math.Round(yards, 1);
+            parts.Add($"{label}: +{h.StacksPerApplication} stacks/hit, max {h.MaxStacks}, {yards:0.#} yd AoE");
         }
 
         if ((flags & OvertinkedImbueFlags.Cleaving) != 0 && s.CleavingImbue?.Enabled == true)
@@ -40,24 +86,21 @@ internal static class CustomImbueAppraise
             CleavingImbueCombatConfig c = s.CleavingImbue;
             string label = string.IsNullOrWhiteSpace(c.Name) ? "Cleaving" : c.Name.Trim();
             int pct = (int)Math.Round(100f * c.SplashDamageFraction);
-            lines.Add(
-                $"{label}: splashes {pct}% of primary hit damage to foes within {c.SplashRadiusMeters:0.#}m (up to {c.MaxSplashTargets} extra targets).");
+            float splashYd = (float)Math.Round(c.SplashRadiusMeters / HemorrhageAoE.YardsToMeters, 1);
+            parts.Add($"{label}: {pct}% splash, {splashYd:0.#} yd radius, up to {c.MaxSplashTargets} extra targets");
         }
 
-        if (lines.Count == 0)
-            return;
+        if ((flags & OvertinkedImbueFlags.NetherRending) != 0 && s.NetherRendingImbue?.Enabled == true)
+        {
+            NetherRendingImbueCombatConfig n = s.NetherRendingImbue;
+            string label = string.IsNullOrWhiteSpace(n.Name) ? "Nether Rending" : n.Name.Trim();
+            int pct = (int)Math.Round(100f * n.NetherDamageFraction);
+            parts.Add($"{label}: +{pct}% Nether from primary hit");
+        }
 
-        string block = BlockMarker + string.Join("\n", lines);
-        if (__instance.PropertiesString == null)
-            __instance.PropertiesString = new Dictionary<PropertyString, string>();
+        if (parts.Count == 0)
+            return string.Empty;
 
-        string baseDesc = __instance.PropertiesString.TryGetValue(PropertyString.LongDesc, out string? ld) && ld != null
-            ? ld
-            : (wo.LongDesc ?? string.Empty);
-
-        if (baseDesc.Contains(BlockMarker, StringComparison.Ordinal))
-            return;
-
-        __instance.PropertiesString[PropertyString.LongDesc] = baseDesc + block;
+        return string.Join("; ", parts);
     }
 }

@@ -46,6 +46,12 @@
 - **Fix:** Harmony prefix `Priority.First` on `RecipeManager.CreateDestroyItems` (REALM: `HashSet<ulong>?`, else `HashSet<uint>?`): when `!success` and tinkering, and redesign applies (imbue list + chaos/workmanship flags, or configured numeric salvage rule + `EnableFailureRedesign`), skip vanilla method, run shared `ApplyImbueTinkerFailure` / same salvage chaos path as `PreHandleRecipe`, set `__result` to target guid so `UpdateObj` still runs. Refactored imbue failure body into `ApplyImbueTinkerFailure`.
 - **Files:** `Overtinked/PatchClass.cs`. Commit `7ad6dbf`.
 
+### Overtinked — removed duplicate `HandleRecipe` roll (`PreHandleRecipe`)
+
+- **Problem:** With both `PreHandleRecipe` and vanilla `HandleRecipe` each rolling `NextDouble() < successChance`, success probability was **p²** (e.g. 40% → 16%), so players saw almost only failure-redesign chaos, not “chaostinker”.
+- **Fix:** Drop the `PreHandleRecipe` failure prefix; single roll stays in vanilla `HandleRecipe`; failure redesign only in `PreCreateDestroyItemsTinkerFailure`.
+- **Files:** `Overtinked/PatchClass.cs`, `Overtinked/docs/Salvage-Tinker-Display-Audit.md`.
+
 ---
 
 ### AutoLoot — close-time, material-only auto-salvage (no clutter destruction)

@@ -72,7 +72,7 @@ Every `PreTryMutate` exit with `__result = true` and `return false` (Harmony sho
 
 `MarkTargetModifiedForCraftUpdate` now logs **Error** if `modified` is null (vanilla `CreateDestroyItems` can return null when Success/Fail WCID weenie is missing — then `HandleRecipe` skips all `UpdateObj`).
 
-**Failure bypass:** `PreHandleRecipe` returns `false` on imbue failure redesign or numeric salvage chaos — **original `HandleRecipe` does not run**, so there is no `CreateDestroyItems` / `UpdateObj` / `MoveItemToFirstContainerSlot` for that path (chaos handlers must refresh the client themselves where needed).
+**Failure bypass:** `PreCreateDestroyItemsTinkerFailure` skips vanilla `CreateDestroyItems` on tinkering miss and applies redesign chaos/workmanship; `SyncTinkerTargetAfterOvertinkedFailure` mirrors `UpdateObj` because the vanilla fail path is not taken.
 
 ## Craft inventory sync helpers (`CraftInventorySync`, `Settings`)
 

@@ -453,48 +453,10 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         _tinkerCraftSuccessFromLastCreateDestroy = false;
     }
 
-    // Prefix: when a tinker fails, apply chaotic positive effects instead of destruction/damage.
-    // Note: failures now increment NumTimesTinkered normally, but chaos effects can rewind it.
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.HandleRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(Recipe), typeof(double) })]
-    public static bool PreHandleRecipe(Player player, WorldObject source, WorldObject target, Recipe recipe, double successChance)
-    {
-        Settings? s = CurrentSettings;
-        if (s == null || (!s.EnableFailureRedesign && !s.EnableDefaultImbueFailureWorkmanship))
-            return true;
+    // Imbue/salvage failure redesign runs only in PreCreateDestroyItemsTinkerFailure (after vanilla's single roll in HandleRecipe).
+    // Do not prefix HandleRecipe with a second roll here — that made success rate chance^2 and felt like "only chaos fails".
 
-        // successChance is 0..1 (same as RecipeManager.HandleRecipe / GetRecipeChance), not 0..100.
-        bool rolledSuccess = Random.Shared.NextDouble() < successChance;
-        if (rolledSuccess)
-            return true;
-
-        uint wcid = source.WeenieClassId;
-        HashSet<uint> imbueWcids = ImbueSalvageWcids.Build(s);
-
-        // Imbue failures → contextual chaos (accidental success, bonus imbue, slayer, etc.)
-        if (imbueWcids.Contains(wcid))
-        {
-            ApplyImbueTinkerFailure(player, source, target, s, wcid);
-            _tryMutateShortCircuitSuccess = false;
-            return false;
-        }
-
-        SalvageTinkerRule? rule = SalvageEffectApplier.GetRule(s, wcid);
-        if (rule == null || !s.EnableFailureRedesign)
-            return true;
-
-        player.TryConsumeFromInventoryWithNetworking(wcid, 1);
-
-        // Phase 3: Context-aware chaotic positive failure effects
-        ChaosFailureEffects.ApplyContextualChaos(player, target, rule, s, wcid);
-        RecipeManager.HandleTinkerLog(source, target);
-        SyncTinkerTargetAfterOvertinkedFailure(player, target);
-
-        _tryMutateShortCircuitSuccess = false;
-        return false;
-    }
-
-    // Failure redesign skips HandleRecipe, so no vanilla UpdateObj — refresh objdesc, broadcast, pack order.
+    // Failure redesign skips vanilla fail-branch in CreateDestroyItems; refresh objdesc, broadcast, pack order.
     static void SyncTinkerTargetAfterOvertinkedFailure(Player player, WorldObject target)
     {
         if (player == null || target == null)
@@ -504,7 +466,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         CraftInventorySync.MirrorRecipeManagerUpdateObj(player, target);
     }
 
-    // Shared imbue-fail body (PreHandleRecipe first-roll miss, or CreateDestroyItems when vanilla second roll fails).
+    // Shared imbue-fail body when vanilla HandleRecipe roll fails (PreCreateDestroyItemsTinkerFailure).
     static void ApplyImbueTinkerFailure(Player player, WorldObject source, WorldObject target, Settings s, uint wcid)
     {
         player.TryConsumeFromInventoryWithNetworking(wcid, 1);
@@ -533,7 +495,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
     }
 
-    // When PreHandleRecipe roll passes but HandleRecipe's second roll fails, vanilla CreateDestroyItems would still run fail-branch (destroy target / wrong fail mods). Intercept and reuse redesign path.
+    // When HandleRecipe's roll fails, vanilla CreateDestroyItems would run fail-branch (destroy target / wrong fail mods). Intercept and reuse redesign path.
 #if REALM
     [HarmonyPrefix]
     [HarmonyPriority(Priority.First)]

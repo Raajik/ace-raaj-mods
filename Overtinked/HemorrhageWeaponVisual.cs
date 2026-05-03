@@ -1,14 +1,20 @@
 namespace Overtinked;
 
-// Crippling Blow icon underlay (dark red frame); matches EmpyreanAlteration / AugmentSystem.
+// Crippling Blow / Fire Opal family: dark red frame underlay + red Fire glow (not blue Magical).
+// Clears all client UiEffects bits so Hemorrhage wins over rend / defense / other mods that OR glow later.
 internal static class HemorrhageWeaponVisual
 {
     internal const uint CripplingBlowIconUnderlay = 0x06003357;
 
-    // Strip elemental-rend UiEffects bits so Hemorrhage can own tint over rend.
-    private const int RendishUiMask =
-        (int)(UiEffects.Acid | UiEffects.Frost | UiEffects.Lightning | UiEffects.Fire | UiEffects.Nether
-            | UiEffects.BoostHealth | UiEffects.BoostStamina);
+    internal const int AllUiEffectsGlowMask =
+        (int)(UiEffects.Magical | UiEffects.Poisoned | UiEffects.BoostHealth | UiEffects.BoostMana | UiEffects.BoostStamina
+            | UiEffects.Fire | UiEffects.Lightning | UiEffects.Frost | UiEffects.Acid
+            | UiEffects.Bludgeoning | UiEffects.Slashing | UiEffects.Piercing | UiEffects.Nether);
+
+    [ThreadStatic]
+    private static int _applyDepth;
+
+    internal static bool IsApplyingVisual => _applyDepth > 0;
 
     internal static void ApplyIfHemorrhageWeapon(Settings? settings, WorldObject item)
     {
@@ -18,21 +24,42 @@ internal static class HemorrhageWeaponVisual
         if ((OvertinkedImbueStore.Get(item) & OvertinkedImbueFlags.Hemorrhage) == 0)
             return;
 
-        int ui = item.GetProperty(PropertyInt.UiEffects) ?? 0;
-        ui &= ~RendishUiMask;
-        // Match secondary weapon imbue cue (CS/CB/AR): blue magical glow, not Fire Rending orange/red.
-        ui |= (int)UiEffects.Magical;
+        int desiredUi = (int)UiEffects.Fire;
 
-        item.IconUnderlayId = CripplingBlowIconUnderlay;
-        item.SetProperty(PropertyInt.UiEffects, ui);
-        item.CalculateObjDesc();
+        _applyDepth++;
         try
         {
-            item.EnqueueBroadcastUpdateObject();
+            int ui = item.GetProperty(PropertyInt.UiEffects) ?? 0;
+            ui &= ~AllUiEffectsGlowMask;
+            ui |= desiredUi;
+
+            item.IconUnderlayId = CripplingBlowIconUnderlay;
+            item.SetProperty(PropertyInt.UiEffects, ui);
+            item.CalculateObjDesc();
+            try
+            {
+                item.EnqueueBroadcastUpdateObject();
+            }
+            catch
+            {
+                // Non-broadcast contexts: appearance still updated server-side.
+            }
         }
-        catch
+        finally
         {
-            // Non-broadcast contexts: appearance still updated server-side.
+            _applyDepth--;
         }
+    }
+
+    internal static bool HasHemorrhageWeaponLook(WorldObject item)
+    {
+        if (item == null)
+            return false;
+
+        int ui = item.GetProperty(PropertyInt.UiEffects) ?? 0;
+        if ((ui & AllUiEffectsGlowMask) != (int)UiEffects.Fire)
+            return false;
+
+        return (item.IconUnderlayId ?? 0) == CripplingBlowIconUnderlay;
     }
 }

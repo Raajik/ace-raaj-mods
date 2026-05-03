@@ -89,7 +89,7 @@ Each entry: **Wcids**, **Name**, **PrimaryStat** (`MaxHealth` / `MaxStamina` / `
 - **CraftInventorySync.cs** — Mirrors `RecipeManager.UpdateObj` inventory half (`GameMessageUpdateObject` + `MoveItemToFirstContainerSlot`) for diagnostics / optional second sync.
 - **RecipeManagerEx.cs** — Craft flow (`UseObjectOnTarget` when `EnableRecipeManagerPatch` is true).
 - **HemorrhageImbueCombat.cs** — Hemorrhage stacks + AoE stacks + staggered DoT on hit (uses `HemorrhageImbue` config).
-- **HemorrhageWeaponVisual.cs** — Crippling Blow underlay + blue `UiEffects.Magical` when Hemorrhage is on a weapon (matches CS/CB/AR secondary cue; not Fire Rending).
+- **HemorrhageWeaponVisual.cs** — Fire Opal / Crippling Blow family: CB underlay (`0x06003357`) + **`UiEffects.Fire`** only (clears all other glow bits). **`HemorrhageWeaponVisualReassert.cs`** — postfixes `WorldObject.SetProperty` for `UiEffects` and `IconUnderlay` so other mods (e.g. EA `RefreshImbueUiEffects`) cannot override Hemorrhage look.
 - **CustomImbueAppraise.cs** — `AppraiseInfo.BuildProfile` postfix (last): prepend Hemorrhage/Cleaving/Nether summary to appraisal **`LongDesc`** (identify text); retail imbue-name list is `ImbuedEffect`-only and cannot show custom names server-side.
 - **HemorrhageAoE.cs** — Resolves Hemorrhage splash radius from `AoERadiusYards` (or legacy `AoERadiusMeters` when yards is 0).
 - **CleavingNetherImbueCombat.cs** — Cleaving splash + Nether Rending bonus on `Player.DamageTarget`.

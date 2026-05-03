@@ -28,6 +28,18 @@ public class SalvageTinkerRule
     [JsonPropertyName("// BaneSpellIds")]
     public string BaneSpellIdsDoc { get; init; } = "Optional: spell IDs to apply or upgrade on success. First ID = initial spell, each subsequent ID = upgrade tier.";
 
+    [JsonPropertyName("// EffectSummaryFormat")]
+    public string EffectSummaryFormatDoc { get; init; } =
+        "Optional craft chat line. string.Format(InvariantCulture, format, args): {0} rolled magnitude, {1} signed value (failure flips sign), {2} Name, {3} EffectKind. When set, overrides built-in wording for this rule.";
+
+    [JsonPropertyName("// BankEffectFormat")]
+    public string BankEffectFormatDoc { get; init; } =
+        "Optional short line for /bank salvage (LLL) when this rule applies. Same placeholders as EffectSummaryFormat. Empty = EffectSummaryFormat if set, else built-in summary.";
+
+    [JsonPropertyName("// BankDescriptionFormat")]
+    public string BankDescriptionFormatDoc { get; init; } =
+        "Optional long /bank description line. Same placeholders. Empty = generic description from rule name + ranges.";
+
     public uint[] Wcids { get; set; } = Array.Empty<uint>();
 
     public string? Name { get; set; }
@@ -42,4 +54,10 @@ public class SalvageTinkerRule
     public bool Enabled { get; set; } = true;
 
     public int[] BaneSpellIds { get; set; } = Array.Empty<int>();
+
+    public string? EffectSummaryFormat { get; set; }
+
+    public string? BankEffectFormat { get; set; }
+
+    public string? BankDescriptionFormat { get; set; }
 }

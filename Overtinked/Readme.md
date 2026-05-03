@@ -50,11 +50,16 @@ Edit `Settings.json` in the mod folder (e.g. `C:\ACE\Mods\Overtinked\`).
 Per-salvage numeric effects. Each entry:
 
 - **Wcids** — One or more WCIDs (include both for quest-reward pairs, e.g. Steel `[20993, 29581]`).
-- **Name** — Optional label for logs.
+- **Name** — Label for logs and for **/bank material-name hints** (normalize + case-insensitive match, e.g. `Steel` matches bank string `Salvaged Steel`).
 - **EffectKind** — e.g. `Damage`, `DamageVariance`, `WeaponSpeed`, `ArmorLevel`, `DamageMod`, `WeaponDefense`, `WeaponOffense`, `ArmorModVsAcid`, `ArmorModVsSlash`, etc.
 - **MinValue**, **MaxValue** — Random range (inclusive). Ignored if `FixedValue` is set.
-- **FixedValue** — If set, use this value instead of rolling.
+- **FixedValue** — If set, use this value instead of rolling. **Example:** set Steel `FixedValue` to `100` to add 100 armor level on the next tinker; server applies it to `ArmorLevel` and sends update packets — **no SQL**.
 - **Enabled** — If false, rule is skipped.
+- **EffectSummaryFormat** (optional) — Overrides the craft chat line for this rule. `string.Format` invariant: `{0}` magnitude, `{1}` signed value, `{2}` `Name`, `{3}` `EffectKind`.
+- **BankEffectFormat** (optional) — Short `/bank` salvage line (LLL); same placeholders. If empty, `EffectSummaryFormat` or built-in summary is used.
+- **BankDescriptionFormat** (optional) — Long `/bank` description; same placeholders.
+
+**Single source of truth:** tuning numbers lives in JSON only. Legacy `/bank` hints for materials **not** listed in `SalvageRules` (e.g. Gold, Linen, Moonstone, Pine) still use a small built-in table until you add rules for them.
 
 ### Defense imbue bonus
 

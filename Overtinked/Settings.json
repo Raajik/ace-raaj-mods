@@ -4,7 +4,7 @@
   "// Scale": "Difficulty step between each extra tinker tier.",
   "// MaxImbueEffects": "Max imbue effects allowed on an item (checked via bit count of ImbuedEffect).",
   "// EnableRecipeManagerPatch": "When true, patches RecipeManager.UseObjectOnTarget (and related) for tinkering flow.",
-  "// SalvageRules": "Per-salvage tinker rules (random or fixed). Include both WCIDs for quest-reward pairs.",
+  "// SalvageRules": "Per-salvage rules: FixedValue/Min/Max + EffectKind = server math (no SQL). Optional EffectSummaryFormat, BankEffectFormat, BankDescriptionFormat on each entry — string.Format InvariantCulture: {0}=magnitude, {1}=signed, {2}=Name, {3}=EffectKind. /bank hints by material name use Name match (e.g. Steel).",
   "// EnableFailureRedesign": "When true, failed tinkers apply chaotic positive effects instead of destroying the item.",
   "// EnableDefaultImbueFailureWorkmanship": "When true, failed imbue tinkers add +1 Workmanship instead of destroying the item, capped at 10.",
   "// HemorrhageImbue": "Hemorrhage imbue (e.g. Salvaged Ruby 21072). Legacy key BleedImbue still loads. Inside: // lines first, then values.",
@@ -31,6 +31,9 @@
       "// FixedValue": "If set, use this value instead of rolling.",
       "// Enabled": "When false, this salvage rule is skipped.",
       "// BaneSpellIds": "Optional: spell IDs to apply or upgrade on success.",
+      "// EffectSummaryFormat": "Optional craft chat override; placeholders {0}-{3} — see root SalvageRules doc.",
+      "// BankEffectFormat": "Optional short /bank line; same placeholders.",
+      "// BankDescriptionFormat": "Optional long /bank line; same placeholders.",
       "Wcids": [20986],
       "Name": "Iron",
       "EffectKind": "Damage",
@@ -48,7 +51,10 @@
       "MaxValue": 0,
       "FixedValue": 60,
       "Enabled": true,
-      "BaneSpellIds": [4407, 6095]
+      "BaneSpellIds": [4407, 6095],
+      "EffectSummaryFormat": "Armor Level +{0}",
+      "BankEffectFormat": "+{0} armor level",
+      "BankDescriptionFormat": "{2}: +{0} armor level on success ({3})."
     },
     {
       "Wcids": [20985, 29576],

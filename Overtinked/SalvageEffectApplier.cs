@@ -54,11 +54,11 @@ public static class SalvageEffectApplier
         SalvageTinkerRule? rule = GetRule(s, wcid);
         if (rule != null && rule.Enabled)
         {
-            int rep = rule.FixedValue ?? (rule.MinValue + rule.MaxValue) / 2;
-            string? eff = GetEffectDescription(rule, rep, false);
+            int rep = RepresentativeValue(rule);
+            string? eff = SummarizeRuleBankEffectLine(rule, rep, isFailure: false);
             if (string.IsNullOrWhiteSpace(eff))
                 eff = null;
-            string? desc = BuildSalvageRuleBankDescription(rule);
+            string? desc = BuildSalvageRuleBankDescription(rule, rep);
             return new SalvageBankLines(eff, desc);
         }
 
@@ -91,8 +91,15 @@ public static class SalvageEffectApplier
         return string.Format(CultureInfo.InvariantCulture, fmt, s.DefenseImbueBonus, kind);
     }
 
-    static string? BuildSalvageRuleBankDescription(SalvageTinkerRule rule)
+    static string? BuildSalvageRuleBankDescription(SalvageTinkerRule rule, int representativeValue)
     {
+        if (!string.IsNullOrWhiteSpace(rule.BankDescriptionFormat))
+        {
+            string? formatted = TryFormatRuleLine(rule, rule.BankDescriptionFormat.Trim(), representativeValue, isFailure: false);
+            if (!string.IsNullOrWhiteSpace(formatted))
+                return formatted;
+        }
+
         string name = string.IsNullOrWhiteSpace(rule.Name) ? (rule.EffectKind ?? "Salvage") : rule.Name.Trim();
         if (rule.BaneSpellIds != null && rule.BaneSpellIds.Length > 0)
             return $"{name}: bane spell chain ({rule.BaneSpellIds.Length} tiers)";
@@ -105,76 +112,138 @@ public static class SalvageEffectApplier
         return name;
     }
 
-    /// <summary>
-    /// Maps material name (case-insensitive) to its actual Overtinked effect value.
-    /// Returns null if the material has no overtinked effect or is not recognized.
-    /// </summary>
-    public static string? GetMaterialEffect(string materialName)
+    static int RepresentativeValue(SalvageTinkerRule rule)
     {
-        if (string.IsNullOrWhiteSpace(materialName)) return null;
-        var key = materialName.Trim().Replace("Salvaged ", "", StringComparison.OrdinalIgnoreCase);
+        if (rule.FixedValue.HasValue)
+            return rule.FixedValue.Value;
+        return (rule.MinValue + rule.MaxValue) / 2;
+    }
 
-        return key.ToLowerInvariant() switch
+    static string NormalizeMaterialName(string name)
+    {
+        return name.Trim()
+            .Replace("Salvaged ", "", StringComparison.OrdinalIgnoreCase)
+            .ToLowerInvariant();
+    }
+
+    static bool TryGetRuleByMaterialName(Settings? settings, string normalizedName, out SalvageTinkerRule? rule)
+    {
+        rule = null;
+        if (settings == null || normalizedName.Length == 0)
+            return false;
+        if (_ruleByNormalizedName == null)
+            BuildLookup(settings);
+        return _ruleByNormalizedName != null && _ruleByNormalizedName.TryGetValue(normalizedName, out rule);
+    }
+
+    static string? TryFormatRuleLine(SalvageTinkerRule rule, string format, int value, bool isFailure)
+    {
+        try
         {
-            // Armor Tinkering — resistances maxed to 2.0
-            "alabaster" => "+2.0 PierceRes",
-            "armoredillo hide" => "+2.0 AcidRes",
-            "bronze" => "+2.0 SlashRes",
-            "ceramic" => "+2.0 FireRes",
-            "marble" => "+2.0 BludgRes",
-            "reedshark hide" => "+2.0 ElecRes",
-            "steel" => "+60 AL",
-            "wool" => "+2.0 ColdRes",
+            int signed = isFailure ? -value : value;
+            return string.Format(CultureInfo.InvariantCulture, format, value, signed, rule.Name ?? "", rule.EffectKind ?? "");
+        }
+        catch (FormatException ex)
+        {
+            ModManager.Log($"[Overtinked] Invalid format string for rule '{rule.Name}' ({rule.EffectKind}): {ex.Message}", ModManager.LogLevel.Warn);
+            return null;
+        }
+    }
 
-            // Weapon Tinkering
-            "brass" => "+3 WepDef",
-            "granite" => "+60 DmgVar",
-            "iron" => "+3 Damage",
-            "mahogany" => "+12 DmgMod",
-            "oak" => "+150 WepSpd",
-            "obsidian" => "Nether Rending",
-            "velvet" => "+3 WepOff",
+    static string SummarizeRuleBankEffectLine(SalvageTinkerRule rule, int rep, bool isFailure)
+    {
+        if (!string.IsNullOrWhiteSpace(rule.BankEffectFormat))
+        {
+            string? line = TryFormatRuleLine(rule, rule.BankEffectFormat.Trim(), rep, isFailure);
+            if (!string.IsNullOrWhiteSpace(line))
+                return line;
+        }
 
-            // Magic Item Tinkering
-            "green garnet" => "+3 EleDmg",
+        if (!string.IsNullOrWhiteSpace(rule.EffectSummaryFormat))
+        {
+            string? line = TryFormatRuleLine(rule, rule.EffectSummaryFormat.Trim(), rep, isFailure);
+            if (!string.IsNullOrWhiteSpace(line))
+                return line;
+        }
 
-            // Item Tinkering
+        return GetEffectDescription(rule, rep, isFailure);
+    }
+
+    static string? LegacyMaterialHintByNormalizedName(string keyLower)
+    {
+        return keyLower switch
+        {
             "gold" => "+25% Value",
             "linen" => "-25% Burden",
             "moonstone" => "+500 Mana",
             "pine" => "-25% Value",
-
             _ => null,
         };
     }
 
+    /// <summary>
+    /// Maps material display name (case-insensitive) to a short effect hint for /bank when LLL passes the name, not WCID.
+    /// Prefer SalvageRules: <see cref="SalvageTinkerRule.Name"/> normalized must match. Falls back to legacy hints for materials without rules (Gold, Linen, etc.).
+    /// </summary>
+    public static string? GetMaterialEffect(string materialName)
+    {
+        if (string.IsNullOrWhiteSpace(materialName))
+            return null;
+        string key = NormalizeMaterialName(materialName);
+        if (key.Length == 0)
+            return null;
+
+        Settings? s = PatchClass.CurrentSettings;
+        if (TryGetRuleByMaterialName(s, key, out SalvageTinkerRule? byName) && byName != null)
+        {
+            int rep = RepresentativeValue(byName);
+            return SummarizeRuleBankEffectLine(byName, rep, isFailure: false);
+        }
+
+        return LegacyMaterialHintByNormalizedName(key);
+    }
+
     // WCID -> rule lookup built from Settings.SalvageRules (each rule's Wcids all point to that rule).
     private static Dictionary<uint, SalvageTinkerRule>? _ruleByWcid;
+
+    // Normalized rule.Name -> rule (last enabled rule wins if duplicate names).
+    private static Dictionary<string, SalvageTinkerRule>? _ruleByNormalizedName;
 
     public static void BuildLookup(Settings settings)
     {
         if (settings.SalvageRules == null || settings.SalvageRules.Count == 0)
         {
             _ruleByWcid = null;
+            _ruleByNormalizedName = null;
             return;
         }
 
         var dict = new Dictionary<uint, SalvageTinkerRule>();
+        var byName = new Dictionary<string, SalvageTinkerRule>(StringComparer.Ordinal);
         foreach (SalvageTinkerRule rule in settings.SalvageRules)
         {
             if (!rule.Enabled || rule.Wcids == null)
                 continue;
             foreach (uint w in rule.Wcids)
                 dict[w] = rule;
+
+            if (!string.IsNullOrWhiteSpace(rule.Name))
+            {
+                string nk = NormalizeMaterialName(rule.Name);
+                if (nk.Length > 0)
+                    byName[nk] = rule;
+            }
         }
+
         _ruleByWcid = dict;
+        _ruleByNormalizedName = byName;
     }
 
     public static SalvageTinkerRule? GetRule(Settings? settings, uint sourceWcid)
     {
         if (settings == null)
             return null;
-        if (_ruleByWcid == null)
+        if (_ruleByWcid == null || _ruleByNormalizedName == null)
             BuildLookup(settings);
         return _ruleByWcid != null && _ruleByWcid.TryGetValue(sourceWcid, out var r) ? r : null;
     }
@@ -194,10 +263,16 @@ public static class SalvageEffectApplier
 
     public static string GetEffectDescription(SalvageTinkerRule rule, int value, bool isFailure)
     {
+        if (!string.IsNullOrWhiteSpace(rule.EffectSummaryFormat))
+        {
+            string? custom = TryFormatRuleLine(rule, rule.EffectSummaryFormat.Trim(), value, isFailure);
+            if (!string.IsNullOrWhiteSpace(custom))
+                return custom;
+        }
+
         int signed = isFailure ? -value : value;
         string kind = rule.EffectKind ?? "";
 
-        // Armor mod salvages max out resistance in one application
         if (kind.StartsWith("ArmorModVs"))
         {
             string element = kind.Substring("ArmorModVs".Length);

@@ -22,7 +22,8 @@ public class Settings
     public string EnableJewelryCleaveBonusDoc { get; init; } = "When true, equipped jewelry with PropertyInt.Cleaving adds bonus cleave targets to melee attacks (even on non-cleaving weapons).";
 
     [JsonPropertyName("// SalvageRules")]
-    public string SalvageRulesDoc { get; init; } = "Per-salvage tinker rules (random or fixed). Include both WCIDs for quest-reward pairs. Each array element: // keys first, then values.";
+    public string SalvageRulesDoc { get; init; } =
+        "Per-salvage tinker rules (random or fixed). Include both WCIDs for quest-reward pairs. Server math: FixedValue / MinValue..MaxValue + EffectKind (no SQL). Optional per-rule strings EffectSummaryFormat, BankEffectFormat, BankDescriptionFormat — string.Format InvariantCulture with {0}=magnitude, {1}=signed value, {2}=Name, {3}=EffectKind. /bank material hints match rule.Name (e.g. Steel) so bank lines track JSON.";
 
     [JsonPropertyName("// EnableFailureRedesign")]
     public string EnableFailureRedesignDoc { get; init; } = "When true, failed tinkers trigger chaotic POSITIVE effects (overcharge, cascade, mana surge, workmanship bloom, spell whisper) instead of destruction.";

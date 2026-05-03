@@ -37,11 +37,26 @@ internal static class ManaLatticeSpellBootstrap
             if (idsObj is not List<int> ids || ids.Count == 0)
                 return;
 
+            bool any = false;
             foreach (int id in ids)
             {
                 if (id == 0)
                     continue;
-                addSpell.Invoke(null, new object[] { lattice, id });
+                object? ok = addSpell.Invoke(null, new object[] { lattice, id });
+                if (ok is bool b && b)
+                    any = true;
+            }
+
+            if (any)
+            {
+                try
+                {
+                    lattice.CalculateObjDesc();
+                    lattice.EnqueueBroadcastUpdateObject();
+                }
+                catch
+                {
+                }
             }
         }
         catch

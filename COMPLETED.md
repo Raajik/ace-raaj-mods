@@ -8,6 +8,15 @@
 
 ## 2026-05-03
 
+### Combined: AutoLoot scroll line, LLL salvage + key appraisal, Mana Lattice (850201)
+
+- **AutoLoot:** Pass 3 no longer appends learned scroll name to `lootedItems` after `LearnSpellWithNetworking` (avoids duplicate chat line vs vanilla).
+- **LeyLineLedger:** `SalvageBank.DepositRules` — **21064** Onyx → Nether Rending / weapon tinkering; **21063** Obsidian → `Useless`. New **`SkeletonKeyAppraisal`** (`AppraiseInfo.BuildProperties` postfix): suffixes **`(1kD)`** / **`(1kC)`** / **`(5kD)`** / **`(5kC)`** aligned with **BetterKeys** `EnsureKeyMap`; optional `SuffixByWcid` in `Settings.json`.
+- **SpellSiphon:** `PrefixOnCastSpell` handles **Mana Lattice WCID** whenever spellbook non-empty (not only Endless/name). Log string updated.
+- **BetterLootControl:** `ManaLatticeSpellBootstrap` broadcasts object update after spell adds (glow / examine refresh; `TryAddSpellId` already sets Magical).
+- **SQL:** `850201` weenie aligned to Gem pattern (`WindblownContent/08-custom-items/03_ManaLattice_850201.sql`, `SpellSiphon/Content/SQL/ManaLattice_Create.sql`); applied to **`ace_world`** with scoped mysqldump backup under `WindblownContent/sql-backups/2026-05-03/`.
+- **Docs:** `LeyLineLedger/Readme.md`, `SpellSiphon/Readme.md`, new `BetterLootControl/Readme.md`.
+
 ### EmpyreanAlteration — Awakened cloak equipment-set spells + weave (ItemLevel / OnItemLevelUp)
 
 - **Cause:** Awakened cloaks skip `Player.GrantItemXP`, so ACE never called `OnItemLevelUp` → `GetSpellSet` tier (sum of `ItemLevel`) never refreshed when the cloak leveled via `AddItemXP`. `Cloak.RollProc` also requires `ItemLevel >= 1`; XP curve Harmony was gated on `EnableLootItemLeveling` only, so with cloak loot upgrade + loot leveling off, `ItemLevel` could stay wrong vs profile XP.

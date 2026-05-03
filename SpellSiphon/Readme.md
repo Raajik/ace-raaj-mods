@@ -28,6 +28,10 @@ The SpellSiphon tool is automatically added to **spell component vendors** (mage
 
 When enabled, all gem spells are reusable and do not consume the gem on use.
 
+### Mana Lattice (WCID 850201)
+
+Template is a **Gem** with **Contained** use and **Creature** target (same pattern as stock buff gems such as Asheron's Benediction). **SpellSiphon** `OnCastSpell` prefix casts every spell in the item **spellbook** on the activator — works for **Endless Mana Lattice** after Spellsiphon infusion and for **BetterLootControl** loot that pre-rolls spells onto a lattice. Apply `Content/SQL/ManaLattice_Create.sql` to `ace_world` and restart the server after weenie changes.
+
 ## Settings Reference
 
 | Setting | Type | Default | Description |

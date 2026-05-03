@@ -18,6 +18,7 @@
   "// LuminanceGemStoredAmountProperty": "PropertyInt64 on the gem item storing credited luminance on use; pick an unused id for your shard.",
   "// DeathBankPyrealPercent": "On death, remove floor(banked × percent / 100) pyreals from bank; 0 = no loss.",
   "// DeathBankPyrealMaxLossPerDeath": "0 = unlimited. When > 0, caps pyreals removed per death after percent.",
+  "// SkeletonKeyAppraisal": "Appraisal postfix for skeleton keys (lock caps vs BetterKeys).",
   "// Currencies": "Pyreal denomination table: WCID and Value per unit for making change. Inside each entry: // lines first, then Name, Id, Value (same order).",
   "VendorsUseBank": true,
   "DirectDeposit": true,
@@ -224,6 +225,12 @@
   "LuminanceGemStoredAmountProperty": 45213,
   "DeathBankPyrealPercent": 0,
   "DeathBankPyrealMaxLossPerDeath": 0,
+  "SkeletonKeyAppraisal": {
+    "// Enabled": "When false, no AppraiseInfo postfix for keys.",
+    "Enabled": true,
+    "// SuffixByWcid": "Optional WCID→suffix map; {} uses built-in defaults (EnsureKeyMap WCIDs).",
+    "SuffixByWcid": {}
+  },
   "SalvageBank": {
     "// Enabled": "When true, /bank salvage lists or deposits salvage units per DepositRules.",
     "// FirstMaterialBankPropertyId": "Base PropertyInt64 for row 0; row i uses this + i unless the rule sets BankProperty. Reserve FirstMaterialBankPropertyId .. + DepositRules.Count.",
@@ -284,8 +291,8 @@
       { "// Name": "Salvaged Malachite", "Category": "MagicItemTinkering", "WeenieClassId": 21060, "UnitsPerItem": 1, "Description": "Imbues Warrior's Vigor" },
       { "// Name": "Salvaged Marble", "Category": "ArmorTinkering", "WeenieClassId": 21061, "UnitsPerItem": 1, "Effect": "+2.0 BludgRes", "Description": "Increases Armor's Bludgeon Protection by 0.2" },
       { "// Name": "Salvaged Moonstone", "Category": "ItemTinkering", "WeenieClassId": 21062, "UnitsPerItem": 1, "Effect": "+500 Mana", "Description": "Increases Max Mana by 500" },
-      { "// Name": "Salvaged Obsidian", "Category": "WeaponTinkering", "WeenieClassId": 21063, "UnitsPerItem": 1, "Effect": "Nether Rending", "Description": "Imbues Nether Rending" },
-      { "// Name": "Salvaged Onyx", "Category": "Useless", "WeenieClassId": 21064, "UnitsPerItem": 1, "Description": "No Apparent Use" },
+      { "// Name": "Salvaged Obsidian", "Category": "Useless", "WeenieClassId": 21063, "UnitsPerItem": 1, "Description": "No Apparent Use" },
+      { "// Name": "Salvaged Onyx", "Category": "WeaponTinkering", "WeenieClassId": 21064, "UnitsPerItem": 1, "Effect": "Nether Rending", "Description": "Imbues Nether Rending" },
       { "// Name": "Salvaged Opal", "Category": "MagicItemTinkering", "WeenieClassId": 21065, "UnitsPerItem": 1, "Description": "Increases Mana Conversion by 1%" },
       { "// Name": "Salvaged Peridot", "Category": "ArmorTinkering", "WeenieClassId": 21066, "UnitsPerItem": 1, "Description": "Imbues +5 Melee Defense" },
       { "// Name": "Salvaged Porcelain", "Category": "ItemTinkering", "WeenieClassId": 21067, "UnitsPerItem": 1, "Description": "Changes heritage requirement to Sho" },

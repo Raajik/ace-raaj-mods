@@ -88,6 +88,12 @@ When `EnablePathwardenAutoBank` is true (default), returning Pathwarden armor pi
 
 When `SalvageBank.DirectDepositOnSalvage` is true, items created by salvage recipes (tinkering bench output) are instantly deposited to the material bank.
 
+**DepositRules metadata (Windblown):** Nether Rending is credited on **Salvaged Onyx (WCID 21064)** under weapon tinkering; **Salvaged Obsidian (21063)** is **`Useless`** / no apparent use (matches Overtinked + vanilla Obsidian). Row order in `Settings.json` must stay fixed so bank `PropertyInt64` indices do not shift.
+
+### Skeleton key appraisal (`SkeletonKeyAppraisal`)
+
+When `SkeletonKeyAppraisal.Enabled` is true (default), `AppraiseInfo.BuildProperties` appends a short suffix to key **LongDesc** for Windblown skeleton key WCIDs — **`(1kD)`**, **`(1kC)`**, **`(5kD)`**, **`(5kC)`** — matching **BetterKeys** `PatchClass.EnsureKeyMap` door/chest resist caps. Override or extend with `SuffixByWcid` in `Settings.json`.
+
 ---
 
 ## Vendor integration

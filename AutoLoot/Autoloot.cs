@@ -1129,18 +1129,13 @@ public class AutoLoot
                     if (!container.TryRemoveFromInventory(item.Guid, out var removed))
                         continue;
 
-                    var qty = removed.StackSize ?? 1;
-                    var scrollName = LootDisplayName(removed);
-
                     // Try to learn the spell
                     if (DatManager.PortalDat.SpellTable.Spells.ContainsKey(spellId))
                         player.LearnSpellWithNetworking(spellId, uiOutput: true);
 
                     if (player.SpellIsKnown(spellId))
                     {
-                        // Learned successfully — destroy the entire stack, count for notification
-                        lootedItems.TryGetValue(scrollName, out var existing);
-                        lootedItems[scrollName] = existing + qty;
+                        // Learned successfully — destroy entire stack. Do not bump lootedItems: vanilla already announced learn (uiOutput: true).
                         lootedSet.Add(removed);
                         removed.Destroy();
                     }

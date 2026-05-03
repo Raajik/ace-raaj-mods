@@ -127,6 +127,18 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (Settings.EnableQuestSalvageAutoBank || Settings.EnablePathwardenAutoBank)
             ModC.Harmony.PatchCategory(nameof(QuestSalvageAutoBank));
 
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(SkeletonKeyAppraise));
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger] Unpatch SkeletonKeyAppraise: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
+        if (Settings.SkeletonKeyAppraisal.Enabled)
+            ModC.Harmony.PatchCategory(nameof(SkeletonKeyAppraise));
+
         EconomyBalancer.TryApply();
         LootTracker.TryApply();
         PublicExchange.TryApply();
@@ -272,6 +284,14 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         try
         {
             ModC.Harmony.UnpatchCategory(nameof(LootTracker));
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            ModC.Harmony.UnpatchCategory(nameof(SkeletonKeyAppraise));
         }
         catch
         {

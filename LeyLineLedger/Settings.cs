@@ -199,6 +199,11 @@ public class Settings
     public string PublicExchangeDoc { get; init; } = "Public exchange: players can buy/sell banked items with dynamic pool pricing.";
     public PublicExchangeSettings PublicExchange { get; set; } = new();
 
+    [JsonPropertyName("// SkeletonKeyAppraisal")]
+    public string SkeletonKeyAppraisalDoc { get; init; } =
+        "Optional appraisal postfix on skeleton key LongDesc: lock cap hint (1kD/1kC/5kD/5kC) aligned with BetterKeys PatchClass.EnsureKeyMap.";
+    public SkeletonKeyAppraisalSettings SkeletonKeyAppraisal { get; set; } = new();
+
     [JsonPropertyName("// Lottery")]
     public string LotteryDoc { get; init; } = "Weekly lottery fed by exchange sell tax. Virtual tickets purchased with banked pyreals.";
     public LotterySettings Lottery { get; set; } = new();
@@ -543,6 +548,19 @@ public class LootTrackerSettings
     public string AutoAddToBankThresholdDoc { get; init; } =
         "If a non-tracked WCID exceeds this many total loots across the server, log a suggestion to add it to bank Items. Set to 0 to disable.";
     public int AutoAddToBankThreshold { get; set; } = 10000;
+}
+
+public class SkeletonKeyAppraisalSettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } =
+        "When true, appraisal LongDesc for skeleton keys in the default cap map appends a suffix (e.g. (1kD)). Matches BetterKeys EnsureKeyMap unless SuffixByWcid overrides.";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// SuffixByWcid")]
+    public string SuffixByWcidDoc { get; init; } =
+        "Optional WCID to suffix. When empty, built-in defaults (BetterKeys skeleton key WCIDs) apply.";
+    public Dictionary<uint, string> SuffixByWcid { get; set; } = new();
 }
 
 public enum PriceVarianceResetMode

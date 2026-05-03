@@ -31,6 +31,7 @@ Server-side corpse autoloot using `.utl` profiles (compatible with Decal UT clas
 - Auto-loot corpses on kill or on approach.
 - Optional vendor-trash pass (sell greys automatically).
 - Optional unknown-scroll pass (keep or destroy untrained scrolls).
+- **Learned scroll summary** — after a successful learn, the mod does not echo the scroll name again in the aggregated loot line (vanilla message only).
 - `/autoloot` toggles and profile selection.
 - **Close-time material salvage** — after closing a corpse or non-house chest (house storage excluded), optional pass sends **material-type items and raw salvage bags** (WCID 20981–21089) through BetterSupportSkills auto-salvage into the material bank; other loot stays in the container. Coalesced Mana can still bank to LeyLineLedger on loot/close without a profile match.
 - **Loot stack consolidation** — merges duplicate same-WCID stackable rows in freshly generated corpses (e.g. multiple drudge charm create-list entries).
@@ -38,7 +39,7 @@ Server-side corpse autoloot using `.utl` profiles (compatible with Decal UT clas
 ### BetterLootControl
 Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot` chest mod; those folders removed from the repo).
 - **Chest guaranteed drops** — adds salvage, trade notes, healing kits, keys, crystals, and gear to treasure chests.
-- **Global rare drops** — SpellSiphon tool and Mana Lattice have a small chance to drop from any creature with a treasure profile. Mana Lattice can pre-roll bonus spells from SpellSiphon's gem pool when that mod is loaded.
+- **Global rare drops** — SpellSiphon tool and Mana Lattice have a small chance to drop from any creature with a treasure profile. Mana Lattice can pre-roll bonus spells from SpellSiphon's gem pool when that mod is loaded; lattice uses gem-style self-cast when the item spellbook is non-empty (SpellSiphon hook + client refresh after bootstrap).
 - **Salvage bag shaping** — auto-shapes dropped salvage bags to 100-unit stacks.
 - **Loot rolling** — pooled rarity system (common/uncommon/rare/extremely rare) with independent salvage and gear rolls.
 - **Gear ratings** — all gear tiers can spawn with ratings (Damage Rating, Crit Damage Rating, Resist Rating, etc.). Higher tiers = higher values and better odds.
@@ -87,6 +88,7 @@ Extract spells from any spell-bearing item and infuse them into equipment.
 - **Attuned/bonded support** — can be allowed or blocked via `AllowAttunedAndBonded`.
 - **Vendor sales** — SpellSiphon tool sold at spell component vendors (mages/scriveners) for 50,000 pyreals. Toggle: `EnableVendorSales`; price: `VendorPrice`.
 - `/spellsiphon` or `/ss` commands to list crushable items in your pack.
+- **Mana Lattice (850201)** — `OnCastSpell` prefix applies every spell in the lattice spellbook to the activator for both Endless and BLC-pre-rolled lattices (see `Content/SQL/ManaLattice_Create.sql`).
 
 > **Status:** Disabled by default. Enable in `Meta.json` when ready to deploy.
 
@@ -99,6 +101,8 @@ Banking and ledger system for items, currency, luminance, and denominated commod
 - **Vendor integration** — bankers and vendors can act as ledger access points.
 - **Vendor sell rate reduction** — configurable multiplier (default 3%) on vendor payouts to combat inflation.
 - **Vendor sell payout floor** — optional minimum pyreals when selling items to vendors (`VendorMinSellPayoutPyreals`), applied after other vendor patches.
+- **Salvage bank metadata** — Nether Rending credits **Salvaged Onyx (21064)**; **Salvaged Obsidian (21063)** is junk (`Useless`), matching Overtinked. Do not reorder `DepositRules` rows without shifting bank `PropertyInt64` indices.
+- **Skeleton key appraisal** — optional `AppraiseInfo` postfix appends lock-cap suffixes `(1kD)` / `(1kC)` / `(5kD)` / `(5kC)` for Windblown key WCIDs (aligned with BetterKeys).
 
 ### Loremaster
 Quest-progress bonuses and first-solve rewards.

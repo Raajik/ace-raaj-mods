@@ -100,7 +100,7 @@ public class PatchClass : BasicPatch<Settings>
 				// 2. Native recipe hooks (extraction dialog + skill check)
 				TryPatchRecipeHooks();
 
-				// 3. OnCastSpell hook (Endless Mana Lattice activation)
+				// 3. OnCastSpell hook (Mana Lattice WCID: spellbook self-cast, Endless or BLC-pre-rolled)
 				TryPatchOnCastSpell();
 
 				// 4. Infinite gem hooks (all gems reusable)
@@ -211,7 +211,7 @@ public class PatchClass : BasicPatch<Settings>
 				if (prefix != null)
 				{
 					ModC.Harmony.Patch(onCastSpell, prefix: new HarmonyMethod(prefix));
-					ModManager.Log("[SpellSiphon] OnCastSpell hook applied (Endless Mana Lattice).", ModManager.LogLevel.Info);
+					ModManager.Log("[SpellSiphon] OnCastSpell hook applied (Mana Lattice self-cast).", ModManager.LogLevel.Info);
 				}
 			}
 		}

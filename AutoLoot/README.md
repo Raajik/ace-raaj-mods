@@ -12,7 +12,7 @@ Each kill is processed in three passes:
 
 1. **Profile pass** — checks every item against the server's available `.utl` loot profiles (VirindiTank-compatible rule files placed by server admins)
 2. **VendorTrash pass** — picks up any unclaimed item whose sell value is at least N× its burden (configurable ratio)
-3. **Unknown Scrolls pass** — picks up any unclaimed scroll the player hasn't learned yet
+3. **Unknown Scrolls pass** — picks up any unclaimed scroll the player hasn't learned yet (learn-and-destroy on the corpse). When a spell is learned, only the vanilla **You learn the … spell.** line is shown; the post-kill AutoLoot summary does **not** repeat the scroll name.
 
 After looting, a chat summary tells you what was picked up and why.
 

@@ -397,25 +397,27 @@ internal static class RecipeHooks
 		if (s == null || !s.Enabled)
 			return true;
 
-		// Check if this is an Endless Mana Lattice
-		bool isEndless = (__instance.GetProperty((PropertyBool)ItemPayload.IsEndlessManaLatticeProp) ?? false)
-			|| __instance.Name?.Contains("Endless Mana Lattice", StringComparison.OrdinalIgnoreCase) == true;
-
-		if (!isEndless)
-			return true; // Not our item, let vanilla handle it
-
 		if (activator is not Player player)
 			return true;
 
-		// Read spells from spellbook
-		var spellIds = ReadItemSpellIdsForCast(__instance);
+		if (__instance.WeenieClassId != s.ManaLatticeWcid)
+			return true;
+
+		bool isEndless = (__instance.GetProperty((PropertyBool)ItemPayload.IsEndlessManaLatticeProp) ?? false)
+			|| __instance.Name?.Contains("Endless Mana Lattice", StringComparison.OrdinalIgnoreCase) == true;
+
+		List<int> spellIds = ReadItemSpellIdsForCast(__instance);
 		if (spellIds.Count == 0)
 		{
-			player.SendMessage("[SpellSiphon] The Endless Mana Lattice holds no spells.");
-			return false;
+			if (isEndless)
+			{
+				player.SendMessage("[SpellSiphon] The Endless Mana Lattice holds no spells.");
+				return false;
+			}
+
+			return true;
 		}
 
-		// Cast each spell on the player
 		int castCount = 0;
 		foreach (int spellId in spellIds)
 		{
@@ -430,16 +432,17 @@ internal static class RecipeHooks
 			}
 			catch (Exception ex)
 			{
-				ModManager.Log($"[SpellSiphon] EndlessGem cast error for spell {spellId}: {ex.Message}", ModManager.LogLevel.Warn);
+				ModManager.Log($"[SpellSiphon] ManaLattice cast error for spell {spellId}: {ex.Message}", ModManager.LogLevel.Warn);
 			}
 		}
 
 		if (castCount > 0)
 		{
-			player.SendMessage($"[SpellSiphon] The Endless Mana Lattice pulses with {castCount} spell(s).");
+			string label = isEndless ? "Endless Mana Lattice" : "Mana Lattice";
+			player.SendMessage($"[SpellSiphon] The {label} pulses with {castCount} spell(s).");
 		}
 
-		return false; // Skip vanilla OnCastSpell
+		return false;
 	}
 
 	private static List<int> ReadItemSpellIdsForCast(WorldObject item)

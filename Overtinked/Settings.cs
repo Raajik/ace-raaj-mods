@@ -48,6 +48,9 @@ public class Settings
     [JsonPropertyName("// ShowPlayerSalvageMessage")]
     public string ShowPlayerSalvageMessageDoc { get; init; } = "When true, send the player a short message when a custom salvage/imbue is applied.";
 
+    [JsonPropertyName("// DefenseImbueBonus")]
+    public string DefenseImbueBonusDoc { get; init; } = "Defense skill bonus from imbued armor (Melee/Missile/Magic Defense). Default 0 uses vanilla +1 per item. Set to 5 for +5 bonus per item with defense imbue.";
+
     [JsonPropertyName("// EnableLesserImbueUpgradeToFull")]
     public string EnableLesserImbueUpgradeToFullDoc { get; init; } =
         "When true (default), before OR-ing the new imbue bit, strip the weaker effect on the item: Armor Cleaving (IgnoreArmor) for Sunstone; Biting Strike (CriticalFrequency) for Black Opal; Crushing Blow-style crit mult (CriticalMultiplier) for Fire Opal; quest Resistance Cleaving (ResistanceModifierType + ResistanceModifier) when upgrading to the matching elemental/physical rending imbue.";
@@ -103,6 +106,9 @@ public class Settings
 
     // When true, send the player a short message when a custom salvage/imbue is applied.
     public bool ShowPlayerSalvageMessage { get; set; } = true;
+
+    // Defense skill bonus from imbued armor (Melee/Missile/Magic Defense). Default 0 uses vanilla +1 per item. Set to 5 for +5 bonus per item with defense imbue.
+    public int DefenseImbueBonus { get; set; } = 0;
 
     // When true, strip weaker fixed stats / quest fields before applying the matching imbue (see LesserImbueUpgrade).
     public bool EnableLesserImbueUpgradeToFull { get; set; } = true;

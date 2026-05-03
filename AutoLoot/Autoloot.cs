@@ -974,154 +974,6 @@ public class AutoLoot
         }
     }
 
-    /// <summary>
-    /// CLOSE phase — called when a chest or corpse is CLOSED.
-    /// For chests: ProcessContainerLootImmediate runs just before this (silent banking + known scroll destroy).
-    /// Then batch-loots profile matches, vendor trash, and unknown scrolls.
-    /// Finally salvages/destroys remaining clutter.
-    /// Sends ONE consolidated message.
-    /// </summary>
-    internal static void ProcessContainerLootClose(Player player, Container container)
-    {
-        bool debug = PatchClass.Settings?.DebugLogging == true;
-
-        lootProfiles.TryGetValue(LootKey(player), out var playerProfiles);
-        bool hasProfiles = playerProfiles != null && !playerProfiles.IsEmpty;
-        bool hasScrolls = unknownScrolls.GetOrAdd(LootKey(player), false);
-        bool hasSalvage = BetterSupportSkillsBridge.IsSalvageEnabled(player)
-                       && BetterSupportSkillsBridge.GetSalvageRate(player) > 0.0;
-
-        bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
-        bool hasCoalesced = ContainerHasCoalescedMana(container);
-        // Material-only auto-salvage runs immediately on close for corpses and non-house chests.
-        // Items without MaterialType are left in the container — never destroyed.
-        bool runCloseSalvage = hasSalvage
-                               && PatchClass.Settings?.EnableDelayedSalvageSweep == true
-                               && ShouldRunCloseSalvageSweep(container);
-        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps && !hasCoalesced && !runCloseSalvage)
-        {
-            if (debug)
-                ModManager.Log($"AutoLoot: ProcessContainerLootClose early exit — no active loot for {player.Name}", ModManager.LogLevel.Info);
-            return;
-        }
-
-        try
-        {
-            BankCoalescedManaFromContainer(player, container);
-
-            var items = container.Inventory.Values.ToList();
-            var activeProfiles = hasProfiles ? playerProfiles!.Values.ToList() : new List<LootCore>();
-
-            var lootedItems = new Dictionary<string, int>();
-            var lootedSet = new HashSet<WorldObject>();
-            var scrollFallbackNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var noDupPatterns = PatchClass.Settings?.NoDuplicateNames ?? [];
-
-            // ── Pass 1: .utl profiles ──────────────────────────────────────
-            foreach (var item in items)
-            {
-                if (item.IsDestroyed || lootedSet.Contains(item)) continue;
-
-                if (noDupPatterns.Count > 0 &&
-                    noDupPatterns.Any(p => item.Name?.Contains(p, StringComparison.OrdinalIgnoreCase) == true) &&
-                    PlayerOwnsWcid(player, item.WeenieClassId))
-                    continue;
-
-                foreach (var profile in activeProfiles)
-                {
-                    var lootAction = profile.GetLootDecision(item, player);
-                    if (lootAction.IsNoLoot) continue;
-
-                    if (!container.TryRemoveFromInventory(item.Guid, out var removed))
-                        break;
-
-                    var qty = removed.StackSize ?? 1;
-                    var lootName = LootDisplayName(removed);
-                    lootedItems.TryGetValue(lootName, out var existing);
-                    lootedItems[lootName] = existing + qty;
-                    lootedSet.Add(removed);
-                    AutolootTryCreateInInventoryWithNetworking(player, removed);
-                    break;
-                }
-            }
-
-            // ── Pass 2: VendorTrash (removed — no longer supported) ─────────
-
-            // ── Pass 3: Unknown Scrolls ────────────────────────────────────
-            if (hasScrolls)
-            {
-                foreach (var item in items)
-                {
-                    if (lootedSet.Contains(item) || item.IsDestroyed) continue;
-                    if (item.WeenieType != WeenieType.Scroll) continue;
-
-                    var spellId = item.GetProperty(PropertyDataId.Spell) ?? 0;
-                    if (spellId == 0 || player.SpellIsKnown(spellId)) continue;
-
-                    var scrollName = LootDisplayName(item);
-                    if (!container.TryRemoveFromInventory(item.Guid, out var removed))
-                        continue;
-
-                    lootedItems.TryGetValue(scrollName, out var existing);
-                    lootedItems[scrollName] = existing + 1;
-                    lootedSet.Add(removed);
-                    scrollFallbackNames.Add(scrollName);
-                    AutolootTryCreateInInventoryWithNetworking(player, removed);
-                }
-            }
-
-            // ── Pass 4: Level 8 spellcrafting components ───────────────────
-            int level8CompsConverted = 0;
-            long level8CompValue = 0;
-            var remainingBeforeSalvage = container.Inventory.Values.ToList();
-            foreach (var item in remainingBeforeSalvage)
-            {
-                if (item.IsDestroyed || lootedSet.Contains(item)) continue;
-                if (TryConvertLevel8Comp(player, item))
-                {
-                    if (container.TryRemoveFromInventory(item.Guid, out var removed))
-                    {
-                        removed?.Destroy();
-                        level8CompsConverted++;
-                        level8CompValue += (long)(item.Value ?? 0) * (item.StackSize ?? 1);
-                    }
-                }
-            }
-
-            // ── Pass 5: Material-only salvage (corpses + non-house chests) ─
-            int salvaged = 0;
-            if (runCloseSalvage)
-                RunSalvageDestroyPass(container, player, out salvaged);
-
-            // ── Single consolidated message ────────────────────────────────
-            var regularItems = lootedItems
-                .Where(kvp => !scrollFallbackNames.Contains(kvp.Key))
-                .Select(kvp =>
-                {
-                    return kvp.Value == 1 ? $"a {kvp.Key}" : $"{kvp.Value:N0} {kvp.Key}";
-                })
-                .ToList();
-
-            var parts = new List<string>();
-            if (regularItems.Count > 0)
-                parts.Add($"looted {FormatItemList(regularItems)}");
-            if (level8CompsConverted > 0)
-                parts.Add($"converted {level8CompsConverted} spellcrafting component(s) to {level8CompValue:N0} pyreals");
-            if (salvaged > 0)
-                parts.Add($"salvaged {salvaged} item(s)");
-
-            if (parts.Count > 0)
-                player.SendMessage($"[AutoLoot] {string.Join(", ", parts)}.");
-
-            foreach (var scrollName in scrollFallbackNames)
-                player.SendMessage($"[AutoLoot] [!] You can learn: {scrollName}");
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"AutoLoot: ProcessContainerLootClose exception: {ex}", ModManager.LogLevel.Error);
-        }
-    }
-
     private static string FormatItemList(List<string> items)
     {
         return items.Count switch
@@ -1160,7 +1012,6 @@ public class AutoLoot
 
             var lootedItems   = new Dictionary<string, int>();
             var lootedSet     = new HashSet<WorldObject>();
-            var scrollFallbackNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var noDupPatterns = PatchClass.Settings?.NoDuplicateNames ?? [];
 
@@ -1242,18 +1093,10 @@ public class AutoLoot
             // ── Pass 2: VendorTrash (removed — no longer supported) ─────────
 
             // ── Pass 3: Unknown Scrolls ──────────────────────────────────────
-
+            // If the player can read the scroll (trained skill + high enough), learn the spell
+            // and DESTROY the entire scroll stack. NEVER loot scrolls to the backpack.
             if (hasScrolls)
             {
-                void FallbackLootScrollToInventory(WorldObject scrollObj, string scrollName, int quantity)
-                {
-                    lootedItems.TryGetValue(scrollName, out var existingInv);
-                    lootedItems[scrollName] = existingInv + quantity;
-                    lootedSet.Add(scrollObj);
-                    scrollFallbackNames.Add(scrollName);
-                    AutolootTryCreateInInventoryWithNetworking(player, scrollObj);
-                }
-
                 foreach (var item in items)
                 {
                     if (lootedSet.Contains(item))
@@ -1273,14 +1116,13 @@ public class AutoLoot
                     if (item is not Scroll scroll || scroll.Spell == null)
                         continue;
 
-                    // Custom scroll requirement: skill must be trained AND current skill >= spell level * 50 - 50
                     var scrollSkill = scroll.Spell.GetMagicSkill();
                     var playerScrollSkill = player.GetCreatureSkill(scrollSkill);
                     int requiredSkill = (int)(scroll.Spell.Level * 50 - 50);
                     bool canReadScroll = playerScrollSkill.AdvancementClass >= SkillAdvancementClass.Trained
                                       && playerScrollSkill.Current >= requiredSkill;
 
-                    // Silently skip scrolls the player cannot read (leave them in the corpse)
+                    // Cannot read — leave it in the container untouched
                     if (!canReadScroll)
                         continue;
 
@@ -1288,33 +1130,26 @@ public class AutoLoot
                         continue;
 
                     var qty = removed.StackSize ?? 1;
+                    var scrollName = LootDisplayName(removed);
 
-                    if (!DatManager.PortalDat.SpellTable.Spells.ContainsKey(spellId))
+                    // Try to learn the spell
+                    if (DatManager.PortalDat.SpellTable.Spells.ContainsKey(spellId))
+                        player.LearnSpellWithNetworking(spellId, uiOutput: true);
+
+                    if (player.SpellIsKnown(spellId))
                     {
-                        FallbackLootScrollToInventory(removed, LootDisplayName(removed), qty);
-                        continue;
-                    }
-
-                    player.LearnSpellWithNetworking(spellId, uiOutput: true);
-
-                    if (!player.SpellIsKnown(spellId))
-                    {
-                        FallbackLootScrollToInventory(removed, LootDisplayName(removed), qty);
-                        continue;
-                    }
-
-                    if (qty <= 1)
-                    {
+                        // Learned successfully — destroy the entire stack, count for notification
+                        lootedItems.TryGetValue(scrollName, out var existing);
+                        lootedItems[scrollName] = existing + qty;
+                        lootedSet.Add(removed);
                         removed.Destroy();
-                        continue;
                     }
-
-                    removed.SetStackSize(qty - 1);
-                    var remainderName = LootDisplayName(removed);
-                    lootedItems.TryGetValue(remainderName, out var existingRemainder);
-                    lootedItems[remainderName] = existingRemainder + (qty - 1);
-                    lootedSet.Add(removed);
-                    AutolootTryCreateInInventoryWithNetworking(player, removed);
+                    else
+                    {
+                        // Failed to learn despite meeting requirements (e.g. spell not in dat).
+                        // Put it back in the container — do NOT destroy, do NOT backpack.
+                        container.TryAddToInventory(removed);
+                    }
                 }
             }
 
@@ -1364,7 +1199,6 @@ public class AutoLoot
                 return;
 
             var regularItems = lootedItems
-                .Where(kvp => !scrollFallbackNames.Contains(kvp.Key))
                 .Select(kvp =>
                 {
                     return kvp.Value == 1 ? $"a {kvp.Key}" : $"{kvp.Value:N0} {kvp.Key}";
@@ -1389,9 +1223,6 @@ public class AutoLoot
 
                 player.SendMessage($"[AutoLoot] {string.Join(", ", parts)}!");
             }
-
-            foreach (var scrollName in scrollFallbackNames)
-                player.SendMessage($"[AutoLoot] [!] You can learn: {scrollName}");
         }
         catch (Exception ex)
         {

@@ -64,10 +64,10 @@
 - **Fix:** New `ChaosAppearance.Apply` from `ApplyContextualChaos` `finally`: set `IconUnderlayId` via `RecipeManager.IconUnderlay` priority, OR `UiEffects` from rend / defense / armor-imbue / slayer / mana / `DamageType`, then `HemorrhageWeaponVisual.ApplyIfHemorrhageWeapon` + `CalculateObjDesc` (existing `SyncTinkerTargetAfterOvertinkedFailure` still sends `GameMessageUpdateObject`). `ChaosFailureEffects.AllRendingFlags` made `internal` for shared checks.
 - **Files:** `Overtinked/ChaosAppearance.cs`, `Overtinked/ChaosFailureEffects.cs`, `Overtinked/Readme.md`.
 
-### Overtinked — Hemorrhage / Cleaving missing on examine (`CustomImbueAppraise`)
+### Overtinked — Hemorrhage / Cleaving / custom imbues on examine (`CustomImbueAppraise`)
 
-- **Cause:** Hemorrhage and Cleaving are tracked only in `OvertinkedImbueStore`, not `PropertyInt.ImbuedEffect`, so the client imbue block stayed empty while Slayer (real int) still showed.
-- **Fix:** `AppraiseInfo.BuildProperties` postfix (after defense salvage text) appends a short Hemorrhage/Cleaving blurb to appraisal `LongDesc` using configured `Name` and tuning numbers.
+- **Cause:** Hemorrhage and Cleaving are tracked in `OvertinkedImbueStore` (and flags), not only `PropertyInt.ImbuedEffect`, so vanilla imbue lines do not cover them; appending to template `LongDesc` let the client splice workmanship/material into the middle of custom text.
+- **Fix:** `AppraiseInfo.BuildProfile` postfix (`Priority.Last`): strip legacy appended block, then **full replace** of appraisal `LongDesc` with item name + configured imbue stat lines; remove `PropertyInt.AppraisalLongDescDecoration`; set `IdentifyResponseFlags.StringStatsTable`.
 - **Files:** `Overtinked/CustomImbueAppraise.cs`, `Overtinked/Readme.md`.
 
 ### Overtinked — custom imbue persistence + Hemorrhage AoE in yards

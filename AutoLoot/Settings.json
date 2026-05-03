@@ -44,10 +44,8 @@
   "EnableChestAutoLoot": true,
   "// EnableLootStackConsolidation": "When true, duplicate same-WCID stackable items in a corpse merge into one stack (e.g. multiple drudge charm entries).",
   "EnableLootStackConsolidation": true,
-  "// EnableDelayedSalvageSweep": "When true, deferred pass can salvage/destroy leftovers in corpses and non-house chests after delay (see SalvageSweepDelaySeconds).",
+  "// EnableDelayedSalvageSweep": "When true, on container/corpse close (excluding house storage), items with a MaterialType (or raw salvage bags) are auto-salvaged into the BSS material bank. Non-material items are left in the container.",
   "EnableDelayedSalvageSweep": true,
-  "// SalvageSweepDelaySeconds": "Seconds after close before deferred salvage sweep; cancelled if the container is opened again first.",
-  "SalvageSweepDelaySeconds": 20,
   "// EnableLevel8CompsConversion": "When true, level 8 spellcraft comps are auto-looted as pyreal value.",
   "EnableLevel8CompsConversion": true
 }

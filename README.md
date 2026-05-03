@@ -32,7 +32,7 @@ Server-side corpse autoloot using `.utl` profiles (compatible with Decal UT clas
 - Optional vendor-trash pass (sell greys automatically).
 - Optional unknown-scroll pass (keep or destroy untrained scrolls).
 - `/autoloot` toggles and profile selection.
-- **Deferred salvage sweep** — after closing a corpse or non-house chest, optional delayed pass runs BetterSupportSkills auto-salvage and/or clutter cleanup (timer cancelled if the container is opened again). Coalesced Mana in those containers can bank to LeyLineLedger on loot/close without a profile match.
+- **Close-time material salvage** — after closing a corpse or non-house chest (house storage excluded), optional pass sends **material-type items and raw salvage bags** (WCID 20981–21089) through BetterSupportSkills auto-salvage into the material bank; other loot stays in the container. Coalesced Mana can still bank to LeyLineLedger on loot/close without a profile match.
 - **Loot stack consolidation** — merges duplicate same-WCID stackable rows in freshly generated corpses (e.g. multiple drudge charm create-list entries).
 
 ### BetterLootControl
@@ -67,6 +67,7 @@ A mutator pipeline for loot, corpses, generators, and player-driven item awakeni
 - **Slayer / ShinyPet-style mutators** — chance-based cosmetic and functional overrides.
 - **Optional Harmony extras** — additional patches for edge-case loot behaviors.
 - **Item growth on level-up** — equippables can gain bonuses as the player levels.
+- **Awakened cloaks + item sets** — after point-based level gains on awakened cloaks, `OnItemLevelUp` runs when the item has an equipment set so cloak proc spell tiers stay aligned; cloak loot-upgrade / kill-point gating matches item XP curve Harmony when those features are on.
 - **DisableAttunedGlobally** — server-wide QOL toggle making ALL items tradeable/sellable (including quest rewards and Coalesced Mana).
 - **Awaken workmanship** — first awakening sets sensible `ItemWorkmanship` / `NumTimesTinkered` when missing. Optional **bonus spells** from SpellSiphon's pool when that mod is present (`EnableAwakenRandomSpells`).
 
@@ -132,6 +133,7 @@ Extended tinkering system.
 - **Item XP curves** — tinkering can contribute to item growth.
 - **Quest/loot init for equippables** — special handling for quest-reward and loot-drop items.
 - **Level-up growth hooks** — items can improve when the player levels.
+- **Custom imbue examine text** — Hemorrhage / Cleaving / Nether Rending use a full appraisal `LongDesc` replace (and strip `AppraisalLongDescDecoration`) so the client does not splice workmanship/material lines into custom imbue stats.
 
 ### QOL
 Toggleable convenience patches (no single defining feature — pick what you want).

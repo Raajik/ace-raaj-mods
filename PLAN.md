@@ -2,13 +2,19 @@
 
 Single index of **active** work and backlog. **Finished milestones belong in [COMPLETED.md](COMPLETED.md)** (append by date, then shorten this file). Mod notes below were merged from former per-mod `TODO.md`; greenfield from `MOD_IDEAS.md`. There is no separate `TODO.md` or `MOD_IDEAS.md`.
 
+## ACTIVE ISSUE: Defense Imbue Client Hourglass (2026-05-03)
+
+After defense imbue on **armor**, client shows **persistent hourglass** on appraise (E). Appraisal can still show data; **not** server hang. **Overtinked disabled still reproduces** — not mod-only.
+
+**Detail + matrix + open leads:** Obsidian **[[Defense Imbue Appraisal Hourglass]]**. Rollback SQL in repo: `WindblownContent/Content/zzz_Salvage_Defense_Bonus_Rollback.sql`. Description update SQL (reverted in DB): `WindblownContent/Content/zzz_Salvage_Defense_Bonus_Update.sql`.
+
 ## Progress (recent)
 
 Keep this section **short**. When something ships, **append [COMPLETED.md](COMPLETED.md)** (dated subsection) and **remove** the matching bullet here so PLAN stays scannable.
 
-- **Ongoing:** AureatePath / Overtinked JSON tuning; periodic 
-g / /mod-audit. **WorldEvents Hunt** — intervals, popularity multipliers, damage caps.
+- **Ongoing:** AureatePath / Overtinked JSON tuning; periodic `/mod-audit`. **WorldEvents Hunt** — intervals, popularity multipliers, damage caps.
 - **Backlog:** Idea routing lives under [Greenfield Backlog](#greenfield-backlog-prioritized).
+- **Done (2026-05-03):** AutoLoot — close-time material-only auto-salvage. Immediate sweep on container/corpse close (excluding house storage); only items with `MaterialType` (or raw salvage bag WCID 20981–21089) are removed and banked via BSS. Non-material items stay in the container — no clutter destruction. Removed deferred-timer infrastructure (`_salvageTimers`, `SalvageTimerState`, `Schedule/RunDeferredSalvageSweep`, `CancelSalvageTimer`) and `SalvageSweepDelaySeconds` setting. → **COMPLETED.md § 2026-05-03**.
 - **Done (2026-05-02):** WorldEvents persistence — Cull/Sale/Invasion JSON under Mods/WorldEvents/Data/... (legacy paths migrated once). BLC-only repo; removed BetterChestLoot / SharedLoot folders. → **COMPLETED.md § 2026-05-02**.
 - **Done (2026-05-02):** QOL VendorLootRotation — effective approach interval uses **`min(VendorLootRotationMinutes, VendorLootCooldownMinutes)`** (each floored at 1); per-vendor cooldown advances only after a **successful** rotation; `_originalValues` cleanup per removed guid (no global clear). Docs: `AGENTS.md`, `README.md`, `QOL/Readme.md`, wiki **[[ace-raaj-mods Conventions]]**, `COMPLETED.md`.
 - **Done (2026-05-01):** Radi TN vendor, Pathwarden vendor SQL, BLC Coalesced Mana, point-based mana leveling, DisableAttunedGlobally, trophy stacking + pet fixes, LLL denominated banking + fuzzy withdraw, QOL VendorLootRotation hard-disable, CreatureEx loot rewrite, AGENTS consolidation — → **COMPLETED.md § 2026-05-01**.

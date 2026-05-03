@@ -99,7 +99,7 @@ Each entry: **Wcids**, **Name**, **PrimaryStat** (`MaxHealth` / `MaxStamina` / `
 - **ComparisonHelpers.cs** — Requirement comparison helpers.
 - **Settings.cs** — Config model.
 
-Hemorrhage, Cleaving, and Nether Rending are applied on the weapon (Hemorrhage/Cleaving/Nether flags in **`PropertyInt` 40133** on the item biota via `OvertinkedImbueStore`; Nether also sets `ImbuedEffect`), and handled in combat by `HemorrhageImbueCombat` and `CleavingNetherImbueCombat` (same Harmony category as recipe/tinkering patches). **`CustomImbueAppraise`** prepends a short combined line to appraisal **`LongDesc`** after the full profile is built (so it appears in the examine description area). Salvage bags may still carry fuller **`LongDesc`** in SQL. Hemorrhage AoE radius: **`AoERadiusYards`** (default **10**, converted with 0.9144 m/yd); if `AoERadiusYards` is **0**, **`AoERadiusMeters`** is used instead.
+Hemorrhage, Cleaving, and Nether Rending are applied on the weapon (Hemorrhage/Cleaving/Nether flags in **`PropertyInt` 40133** on the item biota via `OvertinkedImbueStore`; Nether also sets `ImbuedEffect`), and handled in combat by `HemorrhageImbueCombat` and `CleavingNetherImbueCombat` (same Harmony category as recipe/tinkering patches). **`CustomImbueAppraise`** replaces appraisal **`LongDesc`** with **`Name` + newline + custom imbue stats** (drops weenie template text) and removes **`AppraisalLongDescDecoration`** so the client does not splice workmanship/material into the imbue line. Salvage bags may still carry fuller **`LongDesc`** in SQL. Hemorrhage AoE radius: **`AoERadiusYards`** (default **10**, converted with 0.9144 m/yd); if `AoERadiusYards` is **0**, **`AoERadiusMeters`** is used instead.
 
 ### World database (custom imbue salvage bags)
 

@@ -5,7 +5,8 @@ namespace Overtinked;
 
 // Hemorrhage / Cleaving / Nether Rending: OvertinkedImbueStore (40133) + vanilla Nether bit.
 // Retail client imbue names come only from PropertyInt.ImbuedEffect; custom imbues cannot appear in that bitmask without a client patch.
-// After full AppraiseInfo.BuildProfile, prepend a summary line to appraisal LongDesc (identify panel text) and refresh StringStatsTable.
+// After full AppraiseInfo.BuildProfile: replace appraisal LongDesc (no weenie template text) and strip AppraisalLongDescDecoration
+// so the client does not splice workmanship/material/gems into the middle of custom imbue lines.
 [HarmonyPatchCategory(Settings.RecipeManagerCategory)]
 internal static class CustomImbueAppraise
 {
@@ -37,16 +38,14 @@ internal static class CustomImbueAppraise
         if (__instance.PropertiesString == null)
             __instance.PropertiesString = new Dictionary<PropertyString, string>();
 
-        __instance.PropertiesString.TryGetValue(PropertyString.LongDesc, out string? longDescPacket);
-        string existingLd = string.IsNullOrEmpty(longDescPacket) ? string.Empty : longDescPacket.Trim();
-        if (existingLd.StartsWith(imbueLine, StringComparison.Ordinal))
-            return;
-
-        string combined = string.IsNullOrEmpty(existingLd)
+        // Full replace: current item name + imbue stats only (drops template LongDesc). Stops >> / workmanship merges on client.
+        string nameLine = string.IsNullOrWhiteSpace(wo.Name) ? string.Empty : wo.Name.Trim();
+        string replacement = string.IsNullOrEmpty(nameLine)
             ? imbueLine
-            : imbueLine + "\n\n" + existingLd;
+            : nameLine + "\n" + imbueLine;
 
-        __instance.PropertiesString[PropertyString.LongDesc] = combined;
+        __instance.PropertiesString[PropertyString.LongDesc] = replacement;
+        __instance.PropertiesInt.Remove(PropertyInt.AppraisalLongDescDecoration);
         __instance.Flags |= IdentifyResponseFlags.StringStatsTable;
     }
 

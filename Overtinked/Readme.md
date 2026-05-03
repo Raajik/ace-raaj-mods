@@ -90,6 +90,7 @@ Each entry: **Wcids**, **Name**, **PrimaryStat** (`MaxHealth` / `MaxStamina` / `
 - **RecipeManagerEx.cs** — Craft flow (`UseObjectOnTarget` when `EnableRecipeManagerPatch` is true).
 - **HemorrhageImbueCombat.cs** — Hemorrhage stacks + AoE stacks + staggered DoT on hit (uses `HemorrhageImbue` config).
 - **HemorrhageWeaponVisual.cs** — Crippling Blow underlay + red tint when Hemorrhage is on a weapon (over rend for display).
+- **CustomImbueAppraise.cs** — `AppraiseInfo.BuildProperties` postfix: append Hemorrhage/Cleaving explain text to `LongDesc` for at-a-glance examine.
 - **CleavingNetherImbueCombat.cs** — Cleaving splash + Nether Rending bonus on `Player.DamageTarget`.
 - **ImbueSalvageWcids.cs** — Standard imbue WCID list used for failure → Workmanship.
 - **SalvageRule.cs**, **SalvageEffectApplier.cs** — Salvage rule model and effect application.
@@ -97,7 +98,7 @@ Each entry: **Wcids**, **Name**, **PrimaryStat** (`MaxHealth` / `MaxStamina` / `
 - **ComparisonHelpers.cs** — Requirement comparison helpers.
 - **Settings.cs** — Config model.
 
-Hemorrhage, Cleaving, and Nether Rending are applied on the weapon (Hemorrhage/Cleaving only in `OvertinkedImbueStore`; Nether also sets `ImbuedEffect`), and handled in combat by `HemorrhageImbueCombat` and `CleavingNetherImbueCombat` (same Harmony category as recipe/tinkering patches).
+Hemorrhage, Cleaving, and Nether Rending are applied on the weapon (Hemorrhage/Cleaving only in `OvertinkedImbueStore`; Nether also sets `ImbuedEffect`), and handled in combat by `HemorrhageImbueCombat` and `CleavingNetherImbueCombat` (same Harmony category as recipe/tinkering patches). **`CustomImbueAppraise`** appends Hemorrhage/Cleaving lines to appraisal **`LongDesc`** so examine shows them (vanilla imbue list only reads `PropertyInt.ImbuedEffect`).
 
 ### World database (Salvaged Yellow Garnet 21087)
 

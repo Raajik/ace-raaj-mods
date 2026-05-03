@@ -58,6 +58,12 @@
 - **Fix:** New `ChaosAppearance.Apply` from `ApplyContextualChaos` `finally`: set `IconUnderlayId` via `RecipeManager.IconUnderlay` priority, OR `UiEffects` from rend / defense / armor-imbue / slayer / mana / `DamageType`, then `HemorrhageWeaponVisual.ApplyIfHemorrhageWeapon` + `CalculateObjDesc` (existing `SyncTinkerTargetAfterOvertinkedFailure` still sends `GameMessageUpdateObject`). `ChaosFailureEffects.AllRendingFlags` made `internal` for shared checks.
 - **Files:** `Overtinked/ChaosAppearance.cs`, `Overtinked/ChaosFailureEffects.cs`, `Overtinked/Readme.md`.
 
+### Overtinked — Hemorrhage / Cleaving missing on examine (`CustomImbueAppraise`)
+
+- **Cause:** Hemorrhage and Cleaving are tracked only in `OvertinkedImbueStore`, not `PropertyInt.ImbuedEffect`, so the client imbue block stayed empty while Slayer (real int) still showed.
+- **Fix:** `AppraiseInfo.BuildProperties` postfix (after defense salvage text) appends a short Hemorrhage/Cleaving blurb to appraisal `LongDesc` using configured `Name` and tuning numbers.
+- **Files:** `Overtinked/CustomImbueAppraise.cs`, `Overtinked/Readme.md`.
+
 ---
 
 ### AutoLoot — close-time, material-only auto-salvage (no clutter destruction)

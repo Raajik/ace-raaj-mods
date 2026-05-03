@@ -14,6 +14,13 @@
 - **Fix:** After awakened level-up in `ItemLevelingGrowthTrigger`, call `owner.OnItemLevelUp` when `HasItemSet`. Patch QuestItemGrowth category when `EnableCloakLootUpgrade` or item-leveling kill/quest points are on; align `IsItemXpCurveHarmonyEnabled` with the same. `TryAutoAwaken` now calls `AwakenedCloakWeaveXpSeed.EnsureMinimumXpForWeave` (parity with manual awaken).
 - **Files:** `EmpyreanAlteration/Features/ItemLevelingGrowthTrigger.cs`, `EmpyreanAlteration/QuestItemGrowthHarmony.cs`, `EmpyreanAlteration/PatchClass.cs`, `EmpyreanAlteration/Features/LivingItemAwakener.cs`.
 
+### Overtinked — Hemorrhage no longer strips existing weapon rend (`ImbuedEffect`)
+
+- **Symptom:** Applying Hemorrhage removed e.g. **Bludgeon Rending** from `ImbuedEffect`; player could re-tinker rend afterward.
+- **Cause:** `TryApplyNewImbue` cleared **`AllRendingFlags`** before setting Hemorrhage on **40133** — intended for UI notes but removed real rend mechanics. `HemorrhageWeaponVisual` already forces client glow/underlay without needing that wipe.
+- **Fix:** Removed `target.ImbuedEffect &= ~AllRendingFlags` from the Hemorrhage branch only (Nether path unchanged: replace rends + set Nether + `DamageType`).
+- **Files:** `Overtinked/PatchClass.cs`, `Overtinked/Readme.md`.
+
 ### Defense Imbue Bonus — Peridot/Yellow Topaz/Zircon from +1 to +5
 
 - **Goal:** Change the defense skill bonus from salvage/imbue materials from +1 to +5 for Melee Defense (Peridot), Missile Defense (Yellow Topaz), and Magic Defense (Zircon).

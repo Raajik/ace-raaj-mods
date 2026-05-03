@@ -14,7 +14,7 @@
 - **LeyLineLedger:** `SalvageBank.DepositRules` — **21064** Onyx → Nether Rending / weapon tinkering; **21063** Obsidian → `Useless`. New **`SkeletonKeyAppraisal`** (`AppraiseInfo.BuildProperties` postfix): suffixes **`(1kD)`** / **`(1kC)`** / **`(5kD)`** / **`(5kC)`** aligned with **BetterKeys** `EnsureKeyMap`; optional `SuffixByWcid` in `Settings.json`.
 - **SpellSiphon:** `PrefixOnCastSpell` handles **Mana Lattice WCID** whenever spellbook non-empty (not only Endless/name). Log string updated.
 - **BetterLootControl:** `ManaLatticeSpellBootstrap` broadcasts object update after spell adds (glow / examine refresh; `TryAddSpellId` already sets Magical).
-- **SQL:** `850201` weenie aligned to Gem pattern (`WindblownContent/08-custom-items/03_ManaLattice_850201.sql`, `SpellSiphon/Content/SQL/ManaLattice_Create.sql`); applied to **`ace_world`** with scoped mysqldump backup under `WindblownContent/sql-backups/2026-05-03/`.
+- **SQL:** `850201` weenie aligned to Gem pattern (`WindblownContent/08-custom-items/03_ManaLattice_850201.sql`, `SpellSiphon/Content/SQL/ManaLattice_Create.sql`); applied to **`ace_world`** and **`wb_ace_world`** (live) with scoped mysqldump backups under `WindblownContent/sql-backups/2026-05-03/` (`pre-850201-weenie.sql` test, `pre-wb_850201-manalattice.sql` live). Verified on live: `weenie.type=38`, `ItemType` 2048, `ItemUseable` 8, `TargetType` 16, `UiEffects` 1, `ActivationResponse` 4.
 - **Docs:** `LeyLineLedger/Readme.md`, `SpellSiphon/Readme.md`, new `BetterLootControl/Readme.md`.
 
 ### EmpyreanAlteration — Awakened cloak equipment-set spells + weave (ItemLevel / OnItemLevelUp)

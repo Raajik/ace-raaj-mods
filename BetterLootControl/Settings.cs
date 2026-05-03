@@ -37,6 +37,14 @@ public class Settings
     public uint GreaterCoalescedManaWcid { get; init; } = 42517;
     public uint AethericCoalescedManaWcid { get; init; } = 42518;
 
+    // -- Global Key Drops (skeleton keys, separate from DefaultLootConfig) --
+    public bool EnableGlobalKeyDrops { get; init; } = true;
+    public double KeyDropChance { get; init; } = 0.01; // 1%
+    public uint SturdyIronKeyWcid { get; init; } = 6876;
+    public uint SturdySteelKeyWcid { get; init; } = 24477;
+    public uint ManaForgeKeyWcid { get; init; } = 38456;
+    public uint LegendaryKeyWcid { get; init; } = 48746;
+
     // Optional override for LootConfig.json. Empty = Mods/Loremaster/LootConfig.json.
     public string LootConfigPath { get; init; } = "";
 

@@ -55,8 +55,6 @@ public partial class PatchClass
         var unlimitedUses = unlocker.Structure == null || (unlocker.GetProperty(PropertyBool.UnlimitedUse) ?? false);
         if (unlimitedUses) return true;
 
-        if (!AutoLoot.IsKeysUnlocked(player)) return true;
-
         var settings = PatchClass.Settings;
         if (settings?.KeyBankProperties == null) return true;
 
@@ -86,25 +84,36 @@ public partial class PatchClass
     [HarmonyPatch(typeof(Container), nameof(Container.Open))]
     public static void PostContainerOpen(Player player, Container __instance)
     {
-        // Anyone reopening the container cancels a pending deferred salvage sweep for that GUID.
-        AutoLoot.CancelSalvageTimer(__instance.Guid.Full);
-        AutoLoot.OnContainerOpened(player, __instance);
+        // Chests and corpses no longer auto-loot on open.
+        // Corpses are processed at creation (PostGenerateTreasure).
+        // Chests are processed on close (PreContainerClose).
     }
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Container), nameof(Container.Close))]
     public static void PreContainerClose(Player player, Container __instance)
     {
-        // For chests: run silent immediate phase FIRST (known scrolls, cash, keys, lockpicks),
-        // then batch loot + salvage. Moved from OPEN to CLOSE so the chest UI stays in sync.
-        if (__instance is Chest && player != null)
-        {
-            AutoLoot.EnsureLoaded(player);
-            AutoLoot.ProcessContainerLootImmediate(player, __instance);
-        }
+        if (player == null) return;
 
-        // For chests and corpses: run close-phase batch loot + salvage before reset clears inventory
-        if ((__instance is Chest || __instance is Corpse) && player != null)
-            AutoLoot.ProcessContainerLootClose(player, __instance);
+        if (__instance is Chest chest)
+        {
+            // Skip house storage chests — never auto-loot player housing.
+            if (chest.HouseOwner.HasValue)
+                return;
+
+            if (PatchClass.Settings is not { EnableChestAutoLoot: true })
+                return;
+
+            AutoLoot.EnsureLoaded(player);
+            // Full corpse parity: server-defined rules + profiles + scrolls + salvage sweep.
+            AutoLoot.ProcessContainerLootImmediate(player, chest);
+            AutoLoot.ProcessContainerLoot(player, chest);
+            AutoLoot.RunSalvageDestroyPass(chest, player, out _);
+        }
+        else if (__instance is Corpse corpse)
+        {
+            // Corpses were fully processed at creation; only sweep remaining salvage on close.
+            AutoLoot.RunSalvageDestroyPass(corpse, player, out _);
+        }
     }
 }

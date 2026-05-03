@@ -40,7 +40,7 @@ public class Settings
     public List<string> NoDuplicateNames { get; set; } = ["Pincer", "Tusk", "Matron"];
 
     [JsonPropertyName("// KeysUnlockThreshold")]
-    public string KeysUnlockThresholdDoc { get; init; } = "Number of objects unlocked with keys required to unlock BetterKeys.utl auto-loot and key banking.";
+    public string KeysUnlockThresholdDoc { get; init; } = "DEPRECATED — Key auto-banking is now unconditional for all players. This setting is kept for notification/achievement tracking only.";
     public int KeysUnlockThreshold { get; set; } = 10;
 
     [JsonPropertyName("// LockpickUnlockThreshold")]
@@ -78,12 +78,8 @@ public class Settings
     public bool EnableLootStackConsolidation { get; set; } = true;
 
     [JsonPropertyName("// EnableDelayedSalvageSweep")]
-    public string EnableDelayedSalvageSweepDoc { get; init; } = "When true, leftover items in chests/corpses are auto-salvaged when the container is closed (after player has manually inspected).";
+    public string EnableDelayedSalvageSweepDoc { get; init; } = "When true, on container/corpse close (excluding house storage), items with a MaterialType (or raw salvage bags) are auto-salvaged into the BSS material bank. Non-material items are left in the container.";
     public bool EnableDelayedSalvageSweep { get; set; } = true;
-
-    [JsonPropertyName("// SalvageSweepDelaySeconds")]
-    public string SalvageSweepDelaySecondsDoc { get; init; } = "Seconds after closing a corpse or non-house chest before salvage + clutter destroy runs. Cancelled if the same container is opened before the timer fires.";
-    public int SalvageSweepDelaySeconds { get; set; } = 20;
 
     [JsonPropertyName("// EnableLevel8CompsConversion")]
     public string EnableLevel8CompsConversionDoc { get; init; } = "When true, level 8 spellcrafting components (quills, inks, skill glyphs) are auto-looted and converted to pyreal value. When false, they are kept as physical items. Hidden from player toggle menu.";

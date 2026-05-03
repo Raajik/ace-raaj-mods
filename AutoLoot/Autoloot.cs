@@ -14,11 +14,6 @@ public class AutoLoot
     internal static readonly ConcurrentDictionary<uint, int> autosalvageMode = new(); // 0=off, 1=short, 2=full
     static readonly ConcurrentDictionary<uint, bool> loadedPlayers = new();
 
-    // Salvage sweep timer state (key = container ObjectGuid.Full)
-    static readonly ConcurrentDictionary<ulong, SalvageTimerState> _salvageTimers = new();
-
-    readonly record struct SalvageTimerState(ulong ContainerGuid, ulong PlayerGuid, uint LandblockRaw, uint Instance, CancellationTokenSource Cts);
-
     // Achievement tracking
     static readonly ConcurrentDictionary<uint, int> keyUnlocks = new();
     static readonly ConcurrentDictionary<uint, int> lockpickUnlocks = new();
@@ -217,8 +212,8 @@ public class AutoLoot
         return false;
     }
 
-    // House / player storage chests: never auto-salvage or destroy leftovers.
-    static bool ShouldScheduleDeferredSalvageSweep(Container container)
+    // House / player storage chests: never auto-salvage on close.
+    static bool ShouldRunCloseSalvageSweep(Container container)
     {
         if (container is Corpse)
             return true;
@@ -290,9 +285,6 @@ public class AutoLoot
             return false;
 
         if (!PatchClass.Settings.KeyBankProperties.TryGetValue(item.WeenieClassId, out var prop))
-            return false;
-
-        if (!IsKeysUnlocked(player))
             return false;
 
         var qty = item.StackSize ?? 1;
@@ -918,33 +910,10 @@ public class AutoLoot
 
     // ── Container auto-loot ──────────────────────────────────────────────────
 
-    internal static void OnContainerOpened(Player player, Container container)
-    {
-        if (player == null || container == null) return;
-        if (PatchClass.Settings?.EnableChestAutoLoot != true) return;
-
-        // Only process Chests and Corpses
-        if (container is not Chest && container is not Corpse) return;
-
-        // For corpses, run full autoloot logic at kill time (via PostGenerateTreasure).
-        // Salvage on leftovers happens when the corpse is closed.
-        if (container is Corpse corpse)
-        {
-            EnsureLoaded(player);
-            ProcessContainerLoot(player, corpse);
-            return;
-        }
-
-        // Chests: NO open-phase autoloot anymore. Player sees everything on open.
-        // All autoloot (silent banking + profiles + salvage) now runs on CLOSE
-        // so the chest UI stays in sync with server state.
-    }
-
     /// <summary>
-    /// IMMEDIATE phase — for chests, now runs on CLOSE (before profiles + salvage).
-    /// For corpses this is a no-op because the same actions ran at kill time.
-    /// Silently banks cash/peas, keys, lockpicks, and destroys known scrolls.
-    /// Leaves everything else for the player to inspect.
+    /// IMMEDIATE phase — silent unconditional banking (cash, keys, lockpicks, coalesced mana,
+    /// level-8 comps, known scroll destroy). Called before ProcessContainerLoot for both
+    /// corpses (at creation) and chests (on close) so server-defined rules always apply.
     /// </summary>
     internal static void ProcessContainerLootImmediate(Player player, Container container)
     {
@@ -1024,9 +993,12 @@ public class AutoLoot
 
         bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
         bool hasCoalesced = ContainerHasCoalescedMana(container);
-        bool deferSweep = ShouldScheduleDeferredSalvageSweep(container)
-                          && (hasSalvage || PatchClass.Settings?.EnableDelayedSalvageSweep == true);
-        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps && !hasCoalesced && !deferSweep)
+        // Material-only auto-salvage runs immediately on close for corpses and non-house chests.
+        // Items without MaterialType are left in the container — never destroyed.
+        bool runCloseSalvage = hasSalvage
+                               && PatchClass.Settings?.EnableDelayedSalvageSweep == true
+                               && ShouldRunCloseSalvageSweep(container);
+        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps && !hasCoalesced && !runCloseSalvage)
         {
             if (debug)
                 ModManager.Log($"AutoLoot: ProcessContainerLootClose early exit — no active loot for {player.Name}", ModManager.LogLevel.Info);
@@ -1116,11 +1088,10 @@ public class AutoLoot
                 }
             }
 
-            // ── Pass 5: Deferred salvage + clutter (corpses + non-house chests only) ──
+            // ── Pass 5: Material-only salvage (corpses + non-house chests) ─
             int salvaged = 0;
-            int destroyed = 0;
-            if (deferSweep)
-                ScheduleDeferredSalvageSweep(container, player);
+            if (runCloseSalvage)
+                RunSalvageDestroyPass(container, player, out salvaged);
 
             // ── Single consolidated message ────────────────────────────────
             var regularItems = lootedItems
@@ -1138,8 +1109,6 @@ public class AutoLoot
                 parts.Add($"converted {level8CompsConverted} spellcrafting component(s) to {level8CompValue:N0} pyreals");
             if (salvaged > 0)
                 parts.Add($"salvaged {salvaged} item(s)");
-            if (destroyed > 0)
-                parts.Add($"destroyed {destroyed} clutter item(s)");
 
             if (parts.Count > 0)
                 player.SendMessage($"[AutoLoot] {string.Join(", ", parts)}.");
@@ -1367,24 +1336,21 @@ public class AutoLoot
                 }
             }
 
-            // ── Pass 5: Unlocked key banking ─────────────────────────────────
-            // Keys auto-loot from corpses without requiring a .utl profile.
-            if (IsKeysUnlocked(player))
+            // ── Pass 5: Key banking ──────────────────────────────────────
+            // Special skeleton keys auto-bank unconditionally (no profile required).
+            foreach (var item in items)
             {
-                foreach (var item in items)
+                if (lootedSet.Contains(item) || item.IsDestroyed)
+                    continue;
+                if (!TryBankKey(player, item))
+                    continue;
+                if (container.TryRemoveFromInventory(item.Guid, out var removed))
                 {
-                    if (lootedSet.Contains(item) || item.IsDestroyed)
-                        continue;
-                    if (!TryBankKey(player, item))
-                        continue;
-                    if (container.TryRemoveFromInventory(item.Guid, out var removed))
-                    {
-                        var keyName = LootDisplayName(removed);
-                        lootedItems.TryGetValue(keyName, out var existing);
-                        lootedItems[keyName] = existing + (removed.StackSize ?? 1);
-                        lootedSet.Add(removed);
-                        removed.Destroy();
-                    }
+                    var keyName = LootDisplayName(removed);
+                    lootedItems.TryGetValue(keyName, out var existing);
+                    lootedItems[keyName] = existing + (removed.StackSize ?? 1);
+                    lootedSet.Add(removed);
+                    removed.Destroy();
                 }
             }
 
@@ -1433,117 +1399,24 @@ public class AutoLoot
         }
     }
 
-    // ── Salvage sweep (deferred; re-resolves container on landblock after delay) ─
+    // ── Salvage sweep (immediate, material-only) ────────────────────────────
 
-    static void ScheduleDeferredSalvageSweep(Container container, Player player)
-    {
-        if (!ShouldScheduleDeferredSalvageSweep(container))
-            return;
-
-        ulong cGuid = container.Guid.Full;
-        ulong pGuid = player.Guid.Full;
-        var loc = container.Location;
-        uint lbRaw = loc?.LandblockId.Raw ?? 0u;
-#if REALM
-        uint inst = loc?.Instance ?? 0u;
-#else
-        uint inst = 0u;
-#endif
-        var cts = new CancellationTokenSource();
-        int delaySeconds = Math.Max(1, PatchClass.Settings?.SalvageSweepDelaySeconds ?? 20);
-
-        _salvageTimers.AddOrUpdate(
-            cGuid,
-            new SalvageTimerState(cGuid, pGuid, lbRaw, inst, cts),
-            (_, prev) =>
-            {
-                prev.Cts.Cancel();
-                return new SalvageTimerState(cGuid, pGuid, lbRaw, inst, cts);
-            });
-
-        _ = Task.Delay(TimeSpan.FromSeconds(delaySeconds), cts.Token).ContinueWith(
-            t =>
-            {
-                if (t.IsCanceled)
-                    return;
-                RunDeferredSalvageSweep(cGuid, pGuid, lbRaw, inst);
-            },
-            CancellationToken.None,
-            TaskContinuationOptions.None,
-            TaskScheduler.Default);
-    }
-
-    static void RunDeferredSalvageSweep(ulong containerGuid, ulong playerGuid, uint landblockRaw, uint instance)
-    {
-        if (!_salvageTimers.TryRemove(containerGuid, out _))
-            return;
-
-        if (landblockRaw == 0)
-            return;
-
-#if REALM
-        Landblock? lb = LandblockManager.GetLandblock(new LandblockId(landblockRaw), instance, null, false);
-#else
-        Landblock? lb = LandblockManager.GetLandblock(new LandblockId(landblockRaw), false);
-#endif
-        if (lb == null)
-            return;
-
-        WorldObject? wo = lb.GetObject(new ObjectGuid((uint)containerGuid));
-        if (wo is not Container container || container.IsDestroyed)
-            return;
-
-        Player? player = PlayerManager.GetOnlinePlayer((uint)playerGuid);
-        if (player?.Session == null)
-            return;
-
-        bool salvage = BetterSupportSkillsBridge.IsSalvageEnabled(player)
-                         && BetterSupportSkillsBridge.GetSalvageRate(player) > 0.0;
-        bool destroyClutter = PatchClass.Settings?.EnableDelayedSalvageSweep == true;
-        if (!salvage && !destroyClutter)
-            return;
-
-        RunSalvageDestroyPass(container, player, salvage, destroyClutter, out int salvaged, out int destroyed);
-
-        if (salvaged > 0 || destroyed > 0)
-            player.SendMessage($"[AutoLoot] Salvage sweep: {salvaged} item(s) salvaged, {destroyed} clutter item(s) removed.");
-    }
-
-    static void RunSalvageDestroyPass(Container container, Player player, bool salvageEnabled, bool destroyClutter, out int salvaged, out int destroyed)
+    // Salvages every item BSS accepts (MaterialType-bearing or raw salvage bag).
+    // Non-material items (trophies, keys, quest items, etc.) are left untouched.
+    internal static void RunSalvageDestroyPass(Container container, Player player, out int salvaged)
     {
         salvaged = 0;
-        destroyed = 0;
-        var items = container.Inventory.Values.ToList();
-
-        foreach (var item in items)
+        foreach (var item in container.Inventory.Values.ToList())
         {
             if (item.IsDestroyed)
                 continue;
 
-            if (salvageEnabled && BetterSupportSkillsBridge.TryAutoSalvage(player, item))
+            if (BetterSupportSkillsBridge.TryAutoSalvage(player, item))
             {
                 container.TryRemoveFromInventory(item.Guid, out _);
                 salvaged++;
-                continue;
-            }
-
-            if (!destroyClutter)
-                continue;
-
-            if (!item.GetProperty(PropertyInt.MaterialType).HasValue
-                && item.WeenieClassId is not (>= 20981 and <= 21089))
-            {
-                container.TryRemoveFromInventory(item.Guid, out _);
-                item.Destroy();
-                destroyed++;
             }
         }
-    }
-
-    internal static void CancelSalvageTimer(ulong containerGuid)
-    {
-        if (_salvageTimers.TryRemove(containerGuid, out var state))
-            state.Cts.Cancel();
     }
 
     // ── Patches ──────────────────────────────────────────────────────────────
@@ -1581,6 +1454,7 @@ public class AutoLoot
         if (PatchClass.Settings?.EnableLootStackConsolidation != false)
             LootStackConsolidator.TryConsolidateContainer(corpse);
 
+        ProcessContainerLootImmediate(player, corpse);
         ProcessContainerLoot(player, corpse);
     }
 }

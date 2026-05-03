@@ -6,8 +6,8 @@ Generated from repo audit (Settings.json, `SalvageEffectApplier`, `PatchClass`, 
 
 | Surface | Mechanism |
 |---------|-----------|
-| Craft chat | `PatchClass.PreTryMutate` + `ShowPlayerSalvageMessage` → `GetEffectDescription` |
-| Examine | Item properties + weenie strings; defense salvage bags → `DefenseSalvageAppraise` + `SalvageEffectApplier.TryGetDefenseSalvageAppraiseLongDesc` |
+| Craft chat | Numeric salvage + buffed jewelry: when `MergeSalvageTinkerEffectIntoBroadcast` and `ShowPlayerSalvageMessage`, `TinkerBroadcastSuffix` + `RecipeManagerBroadcastTinkeringMerge` prefix on `BroadcastTinkering` appends effect (and `Bane xN`) to the vanilla local line; else `PatchClass.PreTryMutate` + `ShowPlayerSalvageMessage` → `GetEffectDescription` / bane helpers. |
+| Examine | Item properties + weenie strings; defense salvage bags → `DefenseSalvageAppraise` + `TryGetDefenseSalvageAppraiseLongDesc`; other `SalvageRules` tinkering bags → `NumericSalvageBagAppraise` + `TryGetNumericSalvageBagAppraiseLongDesc` when `OverrideNumericSalvageBagLongDescInAppraise` (defense path keeps priority). |
 | HUD / wield | Same float/int properties `ApplyEffect` writes (after client update) |
 | `/bank salvage` | LeyLineLedger reflects `SalvageEffectApplier.GetSalvageBankLinesForInterop` → `ResolveSalvageBankLines` (WCID rule beats `GetMaterialEffect` name fallback) |
 
@@ -37,6 +37,7 @@ Generated from repo audit (Settings.json, `SalvageEffectApplier`, `PatchClass`, 
 
 - `ArmorLevel` or `ArmorModVs*` → `ApplyFullBaneSpells` (all IDs at once).
 - Else → `ApplyBaneSpell` (incremental tier swap).
+- When `MergeSalvageTinkerEffectIntoBroadcast` and `ShowPlayerSalvageMessage`, both helpers get `quietPlayerBaneMessage: true` so the broadcast suffix carries `Bane xN` instead of separate `[Overtinked] Bane…` craft lines.
 
 ## Six priority materials (detail)
 

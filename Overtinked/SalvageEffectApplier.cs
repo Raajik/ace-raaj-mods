@@ -83,6 +83,47 @@ public static class SalvageEffectApplier
         return true;
     }
 
+    // Long examine text for numeric SalvageRules bags (same numbers/strings as bank when BankDescriptionFormat is set).
+    public static bool TryGetNumericSalvageBagAppraiseLongDesc(Settings s, uint weenieClassId, out string longDesc)
+    {
+        longDesc = "";
+        if (!s.OverrideNumericSalvageBagLongDescInAppraise)
+            return false;
+
+        SalvageTinkerRule? rule = GetRule(s, weenieClassId);
+        if (rule == null || !rule.Enabled)
+            return false;
+
+        int rep = RepresentativeValue(rule);
+
+        if (!string.IsNullOrWhiteSpace(rule.BankDescriptionFormat))
+        {
+            string? formatted = TryFormatRuleLine(rule, rule.BankDescriptionFormat.Trim(), rep, isFailure: false);
+            if (!string.IsNullOrWhiteSpace(formatted))
+            {
+                longDesc = formatted;
+                AppendBaneClauseForAppraiseLongDesc(rule, ref longDesc);
+                return true;
+            }
+        }
+
+        string name = string.IsNullOrWhiteSpace(rule.Name) ? (rule.EffectKind ?? "Salvage") : rule.Name.Trim();
+        string effect = GetEffectDescription(rule, rep, isFailure: false);
+        longDesc = string.IsNullOrWhiteSpace(effect) ? name : $"{name}: {effect}";
+        AppendBaneClauseForAppraiseLongDesc(rule, ref longDesc);
+        return true;
+    }
+
+    static void AppendBaneClauseForAppraiseLongDesc(SalvageTinkerRule rule, ref string longDesc)
+    {
+        if (rule.BaneSpellIds == null || rule.BaneSpellIds.Length == 0)
+            return;
+        int n = rule.BaneSpellIds.Length;
+        longDesc += n == 1
+            ? " Also applies or upgrades one bane enchantment on valid armor or weapon."
+            : $" Also applies or upgrades up to {n} bane enchantments on valid armor or weapon.";
+    }
+
     static string FormatDefenseLongDesc(Settings s, string kind, bool foolproof)
     {
         string fmt = foolproof
@@ -371,7 +412,7 @@ public static class SalvageEffectApplier
 
     // Apply or upgrade a bane spell on the target item based on BaneSpellIds progression.
     // Used for weapon tinkers where spells upgrade incrementally.
-    public static void ApplyBaneSpell(WorldObject target, SalvageTinkerRule rule, Player? player)
+    public static void ApplyBaneSpell(WorldObject target, SalvageTinkerRule rule, Player? player, bool quietPlayerBaneMessage = false)
     {
         if (rule.BaneSpellIds == null || rule.BaneSpellIds.Length == 0)
             return;
@@ -400,7 +441,7 @@ public static class SalvageEffectApplier
 
             target.UiEffects |= UiEffects.Magical;
 
-            if (player != null && PatchClass.CurrentSettings?.ShowPlayerSalvageMessage == true)
+            if (!quietPlayerBaneMessage && player != null && PatchClass.CurrentSettings?.ShowPlayerSalvageMessage == true)
             {
                 string tierName = nextTier == 0 ? "added" : "upgraded";
                 player.SendMessage($"[Overtinked] Bane spell {tierName}.", ChatMessageType.Craft);
@@ -414,7 +455,7 @@ public static class SalvageEffectApplier
 
     // Apply ALL bane spells from the rule at once (for armor salvages: one bag = max resistance + all bane spells).
     // Replaces any existing entries of the same spell IDs to avoid duplicates.
-    public static void ApplyFullBaneSpells(WorldObject target, SalvageTinkerRule rule, Player? player)
+    public static void ApplyFullBaneSpells(WorldObject target, SalvageTinkerRule rule, Player? player, bool quietPlayerBaneMessage = false)
     {
         if (rule.BaneSpellIds == null || rule.BaneSpellIds.Length == 0)
             return;
@@ -432,7 +473,7 @@ public static class SalvageEffectApplier
 
             target.UiEffects |= UiEffects.Magical;
 
-            if (player != null && PatchClass.CurrentSettings?.ShowPlayerSalvageMessage == true)
+            if (!quietPlayerBaneMessage && player != null && PatchClass.CurrentSettings?.ShowPlayerSalvageMessage == true)
             {
                 player.SendMessage($"[Overtinked] Bane spells applied: {rule.BaneSpellIds.Length} enchantments.", ChatMessageType.Craft);
             }

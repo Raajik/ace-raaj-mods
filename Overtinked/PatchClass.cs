@@ -300,16 +300,29 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             int value = SalvageEffectApplier.RollValue(rule);
             if (SalvageEffectApplier.ApplyEffect(target, rule, value, isFailure: false))
             {
+                bool mergeIntoBroadcast = s.MergeSalvageTinkerEffectIntoBroadcast && s.ShowPlayerSalvageMessage;
+
                 // Armor salvages (ArmorLevel + ArmorModVs*) apply all bane spells at once.
                 // Weapon salvages use incremental bane spell upgrading.
                 if (rule.EffectKind == "ArmorLevel" || rule.EffectKind.StartsWith("ArmorModVs"))
-                    SalvageEffectApplier.ApplyFullBaneSpells(target, rule, player);
+                    SalvageEffectApplier.ApplyFullBaneSpells(target, rule, player, quietPlayerBaneMessage: mergeIntoBroadcast);
                 else
-                    SalvageEffectApplier.ApplyBaneSpell(target, rule, player);
+                    SalvageEffectApplier.ApplyBaneSpell(target, rule, player, quietPlayerBaneMessage: mergeIntoBroadcast);
 
                 SalvageEffectApplier.EnsureManaPool(target);
                 RecipeManager.HandleTinkerLog(source, target);
-                if (s.ShowPlayerSalvageMessage)
+                if (mergeIntoBroadcast)
+                {
+                    string desc = SalvageEffectApplier.GetEffectDescription(rule, value, isFailure: false);
+                    var parts = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(desc))
+                        parts.Add(desc.TrimEnd('.'));
+                    if (rule.BaneSpellIds != null && rule.BaneSpellIds.Length > 0)
+                        parts.Add($"Bane x{rule.BaneSpellIds.Length}");
+                    if (parts.Count > 0)
+                        TinkerBroadcastSuffix.Set(string.Join(". ", parts));
+                }
+                else if (s.ShowPlayerSalvageMessage)
                 {
                     string desc = SalvageEffectApplier.GetEffectDescription(rule, value, isFailure: false);
                     if (!string.IsNullOrEmpty(desc))
@@ -453,6 +466,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     public static void PreHandleRecipeResetTinkerCraftSuccess(Player player, WorldObject source, WorldObject target, Recipe recipe, double successChance)
     {
         _tinkerCraftSuccessFromLastCreateDestroy = false;
+        TinkerBroadcastSuffix.ClearPending();
     }
 
     // Imbue/salvage failure redesign runs only in PreCreateDestroyItemsTinkerFailure (after vanilla's single roll in HandleRecipe).
@@ -650,6 +664,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         finally
         {
             _tryMutateShortCircuitSuccess = false;
+            TinkerBroadcastSuffix.ClearPending();
         }
     }
 
@@ -679,7 +694,11 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             target.ImbuedEffect |= effectType;
         if (!string.IsNullOrEmpty(buffed.SecondaryStat) && buffed.SecondaryValue > 0)
             BuffedJewelrySecondaryStore.Add(target.Guid.Full, buffed.SecondaryStat, buffed.SecondaryValue);
-        if (s.ShowPlayerSalvageMessage && player != null)
+
+        bool mergeJewelry = s.MergeSalvageTinkerEffectIntoBroadcast && s.ShowPlayerSalvageMessage;
+        if (mergeJewelry)
+            TinkerBroadcastSuffix.Set($"{buffed.PrimaryStat} +{rolled}");
+        else if (s.ShowPlayerSalvageMessage && player != null)
             player.SendMessage($"Your {target.NameWithMaterial}: {buffed.PrimaryStat} +{rolled}.");
         return true;
     }

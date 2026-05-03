@@ -55,6 +55,14 @@ public class Settings
     [JsonPropertyName("// OverrideDefenseSalvageLongDescInAppraise")]
     public string OverrideDefenseSalvageLongDescInAppraiseDoc { get; init; } = "When true and DefenseImbueBonus > 0, examine LongDesc for defense salvage WCIDs is taken from JSON format strings below (so operators can change bonus text without SQL).";
 
+    [JsonPropertyName("// OverrideNumericSalvageBagLongDescInAppraise")]
+    public string OverrideNumericSalvageBagLongDescInAppraiseDoc { get; init; } =
+        "When true, examine LongDesc for numeric SalvageRules bags (TinkeringMaterial) matches live JSON: BankDescriptionFormat when set, else rule name + effect text + optional bane clause. Defense salvage WCIDs keep priority when defense override applies.";
+
+    [JsonPropertyName("// MergeSalvageTinkerEffectIntoBroadcast")]
+    public string MergeSalvageTinkerEffectIntoBroadcastDoc { get; init; } =
+        "When true with ShowPlayerSalvageMessage, folds custom salvage effect (and bane summary) into the single local tinkering broadcast instead of separate craft lines. Buffed jewelry stat roll uses the same merge.";
+
     [JsonPropertyName("// DefenseSalvageLongDescSalvagedFormat")]
     public string DefenseSalvageLongDescSalvagedFormatDoc { get; init; } = "Optional format for salvaged Peridot/Topaz/Zircon long description. Placeholders: {0} = DefenseImbueBonus, {1} = Melee or Missile or Magic. Empty = built-in English.";
 
@@ -130,6 +138,12 @@ public class Settings
 
     // When true and DefenseImbueBonus > 0, rewrite examine LongDesc for defense salvage bags from optional format strings.
     public bool OverrideDefenseSalvageLongDescInAppraise { get; set; } = true;
+
+    // When true, numeric SalvageRules bags get LongDesc from live rules (see doc property).
+    public bool OverrideNumericSalvageBagLongDescInAppraise { get; set; } = true;
+
+    // When true with ShowPlayerSalvageMessage, append effect summary to tinkering broadcast (see doc property).
+    public bool MergeSalvageTinkerEffectIntoBroadcast { get; set; } = true;
 
     // Optional LongDesc formats; see doc properties. Null/whitespace uses hardcoded defaults.
     public string? DefenseSalvageLongDescSalvagedFormat { get; set; }

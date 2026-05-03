@@ -35,6 +35,11 @@
 - **Fix:** `HemorrhageImbue.BaseRecipeId` (default **4452**, validated on `ace_world`) plus Harmony postfix on `RecipeManager.GetRecipe` to assign `DatabaseManager.World.GetCachedRecipe(BaseRecipeId)` when Hemorrhage salvage WCID + melee/missile weapon with workmanship and result was null.
 - **Files:** `Overtinked/NewImbueConfig.cs`, `Overtinked/PatchClass.cs`, `Overtinked/Settings.json`, `Overtinked/Readme.md`.
 
+### Overtinked / BSS — failure redesign roll scale + chaos client sync
+
+- **Problem:** `PreHandleRecipe` compared `Random * 100` to `successChance`, but ACE passes **fraction 0..1** (`GetSkillChance`), so almost every attempt looked like a “failure” (wrong chaos / imbue hijack rate). Failure redesign skips `HandleRecipe`, so chaos property changes never ran `CalculateObjDesc` / `UpdateObj` / pack reorder — no Slayer glow, item stayed buried.
+- **Fix:** Compare `Random.Shared.NextDouble() < successChance` in `Overtinked/PatchClass.cs` and `BetterSupportSkills/Skills/ChaosTinker.cs` postfix. After imbue-failure chaos, workmanship fallback, and numeric-salvage chaos, call `CalculateObjDesc` + `CraftInventorySync.MirrorRecipeManagerUpdateObj`.
+
 ---
 
 ### AutoLoot — close-time, material-only auto-salvage (no clutter destruction)

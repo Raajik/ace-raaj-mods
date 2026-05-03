@@ -463,7 +463,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (s == null || (!s.EnableFailureRedesign && !s.EnableDefaultImbueFailureWorkmanship))
             return true;
 
-        bool rolledSuccess = Random.Shared.NextDouble() * 100.0 < successChance;
+        // successChance is 0..1 (same as RecipeManager.HandleRecipe / GetRecipeChance), not 0..100.
+        bool rolledSuccess = Random.Shared.NextDouble() < successChance;
         if (rolledSuccess)
             return true;
 
@@ -479,6 +480,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             {
                 ChaosFailureEffects.ApplyContextualChaos(player, target, null, s, wcid);
                 RecipeManager.HandleTinkerLog(source, target);
+                SyncTinkerTargetAfterOvertinkedFailure(player, target);
             }
             else if (s.EnableDefaultImbueFailureWorkmanship)
             {
@@ -495,6 +497,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                     player.Session?.Network?.EnqueueSend(new GameMessageSystemChat($"Your imbue attempt failed. The {target.NameWithMaterial} is already at maximum workmanship.", ChatMessageType.Craft));
                 }
                 RecipeManager.HandleTinkerLog(source, target);
+                SyncTinkerTargetAfterOvertinkedFailure(player, target);
             }
             _tryMutateShortCircuitSuccess = false;
             return false;
@@ -509,9 +512,20 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         // Phase 3: Context-aware chaotic positive failure effects
         ChaosFailureEffects.ApplyContextualChaos(player, target, rule, s, wcid);
         RecipeManager.HandleTinkerLog(source, target);
+        SyncTinkerTargetAfterOvertinkedFailure(player, target);
 
         _tryMutateShortCircuitSuccess = false;
         return false;
+    }
+
+    // Failure redesign skips HandleRecipe, so no vanilla UpdateObj — refresh objdesc, broadcast, pack order.
+    static void SyncTinkerTargetAfterOvertinkedFailure(Player player, WorldObject target)
+    {
+        if (player == null || target == null)
+            return;
+
+        target.CalculateObjDesc();
+        CraftInventorySync.MirrorRecipeManagerUpdateObj(player, target);
     }
 
     // Postfix: optional craft inventory diagnostics; safety net if successful tinkering returns modified without target (UpdateObj would skip).

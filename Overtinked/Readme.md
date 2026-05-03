@@ -47,6 +47,8 @@ Edit `Settings.json` in the mod folder (e.g. `C:\ACE\Mods\Overtinked\`).
 | `DebugCraftInventorySync` | false | Log `[CraftInventorySync]` after each tinkering `CreateDestroyItems` (modified set, target in set, wield, in MyInventory). Grep `ACE_Log.txt` for `MoveItemToFirstContainerSlot` / `[CraftInventorySync]`. |
 | `MirrorRecipeUpdateObjAfterOvertinkedShortCircuit` | false | Second `UpdateObj`-style broadcast + `MoveItemToFirstContainerSlot` after successful tinkering when Overtinked short-circuited `TryMutate`. Enable only if pack slot still wrong after vanilla `UpdateObj` (duplicate packets). |
 
+**Troubleshooting:** `RecipeManager.GetRecipeChance` returns **0..1**, not percent. If imbues “always fail” or chaos never matches real odds, ensure no old fork compared `* 100` to that value. **`BetterSupportSkills` `/chaostinker`** forces **0** success for the *vanilla* `HandleRecipe` roll when enabled; turn it off for normal imbue odds. Failure-redesign paths skip vanilla `UpdateObj`; Overtinked re-broadcasts after chaos so Slayer / imbue visuals and pack order refresh.
+
 ### Salvage rules (`SalvageRules`)
 
 Per-salvage numeric effects. Each entry:

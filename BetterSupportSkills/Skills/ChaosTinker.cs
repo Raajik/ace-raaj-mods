@@ -68,8 +68,8 @@ internal static class ChaosTinker
         if (player == null || PatchClass.Settings?.EnableChaosTinkerAchievement != true)
             return;
 
-        // Only process if this was a failed tinker attempt
-        bool rolledSuccess = Random.Shared.NextDouble() * 100.0 < successChance;
+        // successChance is 0..1 from RecipeManager.GetRecipeChance / HandleRecipe, not percent 0..100.
+        bool rolledSuccess = Random.Shared.NextDouble() < successChance;
         if (rolledSuccess)
             return;
 

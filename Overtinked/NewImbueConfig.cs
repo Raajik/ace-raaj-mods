@@ -21,6 +21,9 @@ public class NewImbueConfig
 // Hemorrhage: flat stacking DoT + AoE stack application on primary weapon hit.
 public class HemorrhageImbueConfig : NewImbueConfig
 {
+    [JsonPropertyName("// BaseRecipeId")]
+    public string BaseRecipeIdDoc { get; init; } = "ACE world recipe id used when GetRecipe has no cookbook/GetNewRecipe match for Hemorrhage salvage (vanilla never registers yellow garnet). TryMutate still applies Hemorrhage from salvage WCID; this only satisfies craft pipeline. Default 4452 (Red Garnet weapon imbue line). Change if VerifyRequirements/GetRecipeChance misbehave for your DB.";
+
     [JsonPropertyName("// StacksPerApplication")]
     public string StacksPerApplicationDoc { get; init; } = "Stacks added to primary target and each AoE victim per qualifying hit.";
 
@@ -38,6 +41,8 @@ public class HemorrhageImbueConfig : NewImbueConfig
 
     [JsonPropertyName("// StaggerBetweenHitsSeconds")]
     public string StaggerBetweenHitsSecondsDoc { get; init; } = "Delay between each 1-damage TakeDamage in a burst so combat text streams.";
+
+    public uint BaseRecipeId { get; set; } = 4452;
 
     public int StacksPerApplication { get; set; } = 3;
 

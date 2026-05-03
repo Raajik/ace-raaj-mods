@@ -1,3 +1,4 @@
+using ACE.Database;
 using ACE.Database.Models.World;
 
 namespace Overtinked;
@@ -116,6 +117,41 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
         RecipeManager.TinkeringDifficulty.AddRange(steps);
         ModManager.Log($"Overtinked diffs ({RecipeManager.TinkeringDifficulty.Count}): {string.Join(", ", RecipeManager.TinkeringDifficulty)}");
+    }
+
+    // Postfix: vanilla GetNewRecipe has no branch for Salvaged Yellow Garnet (21087); cookbook rarely lists custom weapon WCIDs. Supply a template tinkering recipe so GetRecipe succeeds; TryMutate still applies Hemorrhage from salvage WCID in PreTryMutate.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.GetRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject) })]
+    public static void PostGetRecipeHemorrhage(Player player, WorldObject source, WorldObject target, ref Recipe __result)
+    {
+        if (__result != null || player == null || source == null || target == null)
+            return;
+
+        HemorrhageImbueConfig? hem = CurrentSettings?.HemorrhageImbue;
+        if (hem?.Enabled != true || hem.SalvageWcids == null || hem.SalvageWcids.Length == 0)
+            return;
+
+        if (!hem.SalvageWcids.Contains(source.WeenieClassId))
+            return;
+
+        if (target.Workmanship == null)
+            return;
+
+        if (target.WeenieType != WeenieType.MeleeWeapon && target.WeenieType != WeenieType.MissileLauncher)
+            return;
+
+        uint rid = hem.BaseRecipeId;
+        if (rid == 0)
+            return;
+
+        Recipe? cooked = DatabaseManager.World.GetCachedRecipe(rid);
+        if (cooked == null)
+        {
+            ModManager.Log($"[Overtinked] Hemorrhage GetRecipe: BaseRecipeId {rid} not in world cache; cannot synthesize recipe.", ModManager.LogLevel.Warn);
+            return;
+        }
+
+        __result = cooked;
     }
 
     // Prefix: replaces RecipeManager.VerifyRequirements. Uses Settings.MaxTries for NumTimesTinkered and Settings.MaxImbueEffects for ImbuedEffect; delegates other requirement types to RecipeManager.

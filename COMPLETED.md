@@ -29,6 +29,12 @@
   - Foolproof Yellow Topaz (30105) — Missile Defense
   - Foolproof Zircon (30106) — Magic Defense
 
+### Overtinked — Hemorrhage (Yellow Garnet) “cannot be used” / `GetRecipe` null
+
+- **Cause:** Vanilla `RecipeManager_New.GetNewRecipe` has no case for WCID **21087**; cookbook rarely lists arbitrary weapon pairs. `RecipeManagerEx` showed “cannot be used” when `GetRecipe` returned null before `TryMutate` ran.
+- **Fix:** `HemorrhageImbue.BaseRecipeId` (default **4452**, validated on `ace_world`) plus Harmony postfix on `RecipeManager.GetRecipe` to assign `DatabaseManager.World.GetCachedRecipe(BaseRecipeId)` when Hemorrhage salvage WCID + melee/missile weapon with workmanship and result was null.
+- **Files:** `Overtinked/NewImbueConfig.cs`, `Overtinked/PatchClass.cs`, `Overtinked/Settings.json`, `Overtinked/Readme.md`.
+
 ---
 
 ### AutoLoot — close-time, material-only auto-salvage (no clutter destruction)

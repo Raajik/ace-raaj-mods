@@ -21,7 +21,7 @@ Extends tinkering limits and adds configurable salvage behavior: per-salvage rul
 | **Numeric salvage** | Per-salvage rules: random range (e.g. Iron +1–5 damage) or fixed value. Use both WCIDs in `Wcids` for quest-reward pairs. |
 | **Failed numeric tinker** | If `EnableFailureRedesign` is on: apply the *opposite* effect instead of destroying the item (only for salvages in `SalvageRules`). |
 | **Failed imbue tinker** | If `EnableDefaultImbueFailureWorkmanship` is on: add +1 Workmanship to the item (cap 10) instead of destroying it. At cap, failure does nothing. Applies to standard imbues and custom (Hemorrhage/Cleaving/Nether). |
-| **New imbues** | Salvaged Yellow Garnet (default WCID **21087**) → **Hemorrhage**, Tiger Eye → **Cleaving**, Onyx → **Nether Rending**. Hemorrhage adds stacking flat Health DoT (staggered 1-damage hits) to the primary target and to other creatures within **AoERadiusMeters** of the primary; uses Crippling Blow icon underlay and overrides rend for weapon tint. Cleaving splashes a fraction of the primary hit; Nether Rending adds extra Nether damage on the primary target. |
+| **New imbues** | Salvaged Yellow Garnet (default WCID **21087**) → **Hemorrhage**, Tiger Eye → **Cleaving**, Onyx → **Nether Rending**. Hemorrhage adds stacking flat Health DoT (staggered 1-damage hits) to the primary target and to other creatures within **AoERadiusMeters** of the primary; uses Crippling Blow icon underlay and overrides rend for weapon tint. Cleaving splashes a fraction of the primary hit; Nether Rending adds extra Nether damage on the primary target. Stock ACE never registers yellow garnet in `GetNewRecipe`; Overtinked resolves **`HemorrhageImbue.BaseRecipeId`** (default **4452**) when salvage WCID + valid melee/missile weapon would otherwise get “cannot be used”. |
 | **Buffed jewelry** | `BuffedImbueRules` replace default imbue strength (e.g. Hematite +25–50 HP, Malachite +25–50 Stam, Lavender Jade +25–50 Mana) and set the matching `ImbuedEffectTypeName`. |
 
 ---
@@ -69,7 +69,7 @@ Vanilla adds the **count** of equipped pieces with that defense imbue directly t
 
 ### New imbues
 
-- **HemorrhageImbue** — `SalvageWcids` (default `[21087]` Salvaged Yellow Garnet), `Enabled`, **`StacksPerApplication`**, **`MaxStacks`**, **`AoERadiusMeters`**, **`TickIntervalSeconds`**, **`DamagePerStackPerTick`**, **`StaggerBetweenHitsSeconds`**. Legacy JSON key **`BleedImbue`** still deserializes and merges if `HemorrhageImbue` has no salvage WCIDs.
+- **HemorrhageImbue** — `SalvageWcids` (default `[21087]` Salvaged Yellow Garnet), **`BaseRecipeId`** (default `4452`, template tinkering recipe for `GetRecipe` when vanilla returns null), `Enabled`, **`StacksPerApplication`**, **`MaxStacks`**, **`AoERadiusMeters`**, **`TickIntervalSeconds`**, **`DamagePerStackPerTick`**, **`StaggerBetweenHitsSeconds`**. Legacy JSON key **`BleedImbue`** still deserializes and merges if `HemorrhageImbue` has no salvage WCIDs.
 - **CleavingImbue** — `SalvageWcids`, `Enabled`, plus **`SplashRadiusMeters`**, **`SplashDamageFraction`** (of primary final damage per extra target), **`MaxSplashTargets`**.
 - **NetherRendingImbue** — `SalvageWcids`, `Enabled`, plus **`NetherDamageFraction`** (of primary final damage), **`MaxNetherBonusDamage`** (0 = no cap).
 
@@ -83,7 +83,7 @@ Each entry: **Wcids**, **Name**, **PrimaryStat** (`MaxHealth` / `MaxStamina` / `
 
 - **[docs/Salvage-Tinker-Display-Audit.md](docs/Salvage-Tinker-Display-Audit.md)** — SalvageRules WCID matrix, six-material notes, bank/craft surfaces, `modified`/UpdateObject behavior.
 - **Mod.cs** — Entry; registers patch class.
-- **PatchClass.cs** — Difficulty list, `VerifyRequirements`, `TryMutate` (salvage rules, imbues, buffed jewelry), `HandleRecipe` (failure redesign, imbue → Workmanship), craft inventory sync hooks (`CreateDestroyItems` / `HandleRecipe` postfixes).
+- **PatchClass.cs** — Difficulty list, `GetRecipe` (Hemorrhage salvage + weapon gate → `BaseRecipeId`), `VerifyRequirements`, `TryMutate` (salvage rules, imbues, buffed jewelry), `HandleRecipe` (failure redesign, imbue → Workmanship), craft inventory sync hooks (`CreateDestroyItems` / `HandleRecipe` postfixes).
 - **CraftInventorySync.cs** — Mirrors `RecipeManager.UpdateObj` inventory half (`GameMessageUpdateObject` + `MoveItemToFirstContainerSlot`) for diagnostics / optional second sync.
 - **RecipeManagerEx.cs** — Craft flow (`UseObjectOnTarget` when `EnableRecipeManagerPatch` is true).
 - **HemorrhageImbueCombat.cs** — Hemorrhage stacks + AoE stacks + staggered DoT on hit (uses `HemorrhageImbue` config).
@@ -99,4 +99,4 @@ Hemorrhage, Cleaving, and Nether Rending are applied on the weapon (Hemorrhage/C
 
 ### World database (Salvaged Yellow Garnet 21087)
 
-Hemorrhage defaults to WCID **21087**. `Content/SQL/SalvagedYellowGarnet-Hemorrhage-weapon-style.sql` aligns the weenie with other **weapon tinkering** salvages (`PaletteTemplate` 14, `ItemUseable` 524296, `TargetType` 33025) while leaving **Icon** and **IconOverlay** unchanged so the center gem stays the yellow garnet art. Rollback: `SalvagedYellowGarnet-Hemorrhage-weapon-style-rollback.sql`. Applied to `ace_world` in repo session; restart ACE after weenie template edits.
+Hemorrhage defaults to WCID **21087**. `Content/SQL/SalvagedYellowGarnet-Hemorrhage-weapon-style.sql` aligns the weenie with other **weapon tinkering** salvages (`PaletteTemplate` 14, `ItemUseable` 524296, `TargetType` 33025) while leaving **Icon** and **IconOverlay** unchanged so the center gem stays the yellow garnet art. Rollback: `SalvagedYellowGarnet-Hemorrhage-weapon-style-rollback.sql`. Applied to `ace_world` in repo session; restart ACE after weenie template edits. If craft still fails requirements or skill roll, point **`BaseRecipeId`** at another tinkering recipe present in your `recipe` table (or add a dedicated recipe and set the id here).

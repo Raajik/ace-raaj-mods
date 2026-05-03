@@ -1,7 +1,7 @@
 DELETE FROM `weenie` WHERE `class_Id` = 801836;
 
 INSERT INTO `weenie` (`class_Id`, `class_Name`, `type`, `last_Modified`)
-VALUES (801836, 'SandTuskerGen', 1, '2005-02-09 10:00:00') /* Generic */;
+VALUES (801836, 'SandTuskerGen801836', 1, '2005-02-09 10:00:00') /* Generic */;
 
 INSERT INTO `weenie_properties_int` (`object_Id`, `type`, `value`)
 VALUES (801836,  66,          1) /* CheckpointStatus */
@@ -19,7 +19,7 @@ VALUES (801836,  41,      60) /* RegenerationInterval */
      , (801836,  43,      10) /* GeneratorRadius */;
 
 INSERT INTO `weenie_properties_string` (`object_Id`, `type`, `value`)
-VALUES (801836,   1, 'SandTuskerGen') /* Name */;
+VALUES (801836,   1, 'Sand Tusker Sultan Gen') /* Name */;
 
 INSERT INTO `weenie_properties_d_i_d` (`object_Id`, `type`, `value`)
 VALUES (801836,   1,   33555051) /* Setup */

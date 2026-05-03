@@ -64,3 +64,6 @@ Work-In-Progress/
 .references/
 .worktrees/
 graphify-out/
+
+# Local mysqldump backups (Facility Hub and other SQL apply scripts)
+WindblownContent/sql-backups/

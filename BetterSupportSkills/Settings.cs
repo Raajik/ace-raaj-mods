@@ -1010,7 +1010,7 @@ public class DrudgeCharmTrophySettings
     public bool Enabled { get; set; } = true;
 
     [JsonPropertyName("// DropChanceRegular")]
-    public string DropChanceRegularDoc { get; init; } = "Chance (0-1) per Drudge-species kill to roll base charm (3669). Each tier rolls independently.";
+    public string DropChanceRegularDoc { get; init; } = "Chance (0-1) per Drudge-species kill to roll base charm (24835 Bloodletter). Each tier rolls independently.";
     public double DropChanceRegular { get; set; } = 0.025;
 
     [JsonPropertyName("// DropChanceRare1")]
@@ -1027,7 +1027,7 @@ public class DrudgeCharmTrophySettings
 
     [JsonPropertyName("// WcidRegular")]
     public string WcidRegularDoc { get; init; } = "Regular tier weenie class id.";
-    public uint WcidRegular { get; set; } = 3669;
+    public uint WcidRegular { get; set; } = 24835;
 
     [JsonPropertyName("// WcidRare1")]
     public string WcidRare1Doc { get; init; } = "Rare tier 1 weenie class id.";
@@ -1058,7 +1058,7 @@ public class DrudgeCharmTrophySettings
     public float XpFractionRare3 { get; set; } = 0.15f;
 
     [JsonPropertyName("// BankTradeNoteValuePerCharmRegular")]
-    public string BankTradeNoteValuePerCharmRegularDoc { get; init; } = "Bank units credited per Regular charm (3669) on bulk turn-in; default matches ACE Trade Note (25,000) WCID 7376 face value. Credited via LeyLineLedgerBankInterop -> BankCashProperty (LLL when present, else PropertyInt64).";
+    public string BankTradeNoteValuePerCharmRegularDoc { get; init; } = "Bank units credited per Regular charm (24835 Bloodletter) on bulk turn-in; default matches ACE Trade Note (25,000) WCID 7376 face value. Credited via LeyLineLedgerBankInterop -> BankCashProperty (LLL when present, else PropertyInt64).";
     public long BankTradeNoteValuePerCharmRegular { get; set; } = 25_000;
 
     [JsonPropertyName("// BankTradeNoteValuePerCharmRare1")]
@@ -1083,5 +1083,5 @@ public class DrudgeCharmTrophySettings
 
     [JsonPropertyName("// DailyCapTrackingWcid")]
     public string DailyCapTrackingWcidDoc { get; init; } = "Legacy JSON field; bulk drudge charm turn-in does not use QuestTurnInTracker daily cap. Safe to remove from Settings.json.";
-    public uint DailyCapTrackingWcid { get; set; } = 3669;
+    public uint DailyCapTrackingWcid { get; set; } = 24835;
 }

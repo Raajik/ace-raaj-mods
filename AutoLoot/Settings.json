@@ -24,7 +24,7 @@
     "Matron"
   ],
   "// UpgradedTrophyWeenieClassIds": "Pass 1: pocket these WCIDs into pack before .utl (physical trophies; default Drudge charm tiers). Empty = off. See WindblownContent/docs/Windblown-Custom-Trophy-Settings.md.",
-  "UpgradedTrophyWeenieClassIds": [3669, 850271, 850272, 850273],
+  "UpgradedTrophyWeenieClassIds": [24835, 850271, 850272, 850273],
   "// KeysUnlockThreshold": "Objects unlocked with keys to unlock BetterKeys.utl and key banking.",
   "KeysUnlockThreshold": 10,
   "// LockpickUnlockThreshold": "Objects unlocked with lockpicks to unlock lockpick corpse-loot banking.",

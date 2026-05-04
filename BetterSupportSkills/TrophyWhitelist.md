@@ -68,7 +68,7 @@
 | Tumerok Head | 28891 | ✅ |
 | Ursuin Head | 28892 | ✅ |
 | Virindi Mask (Broken) | 8154 | ✅ |
-| Wisp Heart | 3669 | ✅ |
+| Wisp Heart | 8667 | ✅ |
 
 ## Food & Consumables
 
@@ -113,7 +113,7 @@
 | Copper Heart | 3670 | ✅ |
 | Diamond Heart | 7338 | ✅ |
 | Golem Heart (various) | various | ✅ |
-| Wisp Heart | 3669 | ✅ |
+| Wisp Heart | 8667 | ✅ |
 
 ## Gems & Jewels
 

@@ -256,7 +256,7 @@ public static class LootRoller
     }
 
     static bool IsDrudgeCharmTierWcid(uint wcid) =>
-        wcid is 3669u or 850271u or 850272u or 850273u;
+        wcid is 24835u or 850271u or 850272u or 850273u;
 
     /// <summary>
     /// Cross-mod bridge: if EmpyreanAlteration is loaded, runs its loot mutator on the item

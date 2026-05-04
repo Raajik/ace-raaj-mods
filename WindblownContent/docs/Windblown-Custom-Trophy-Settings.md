@@ -17,12 +17,12 @@ Use this as the checklist when adding the next custom trophy family.
 
 | Tier (display) | WCID |
 |----------------|------|
-| Drudge Charm (base) | 3669 |
-| Drudge Charm (Quality) | 850271 |
-| Drudge Charm (Pristine) | 850272 |
-| Drudge Charm (Perfect) | 850273 |
+| Bloodletter Drudge Charm (base) | 24835 |
+| Bloodletter Drudge Charm (Quality) | 850271 |
+| Bloodletter Drudge Charm (Pristine) | 850272 |
+| Bloodletter Drudge Charm (Perfect) | 850273 |
 
-**Icon / glow (world weenie):** `weenie_properties_int` **179** (`ImbuedEffect`) = rend-style icon underlay; **18** (`UiEffects`) = client glow. Drudge line defaults: **3669** Bludgeon + Frost (white); **850271** Acid + Acid (green); **850272** Cold + Magical (blue); **850273** Electric + Lightning (purple). Shipped in `WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql` and forward patch `DrudgeCharm_UiRendIcons_2026-05-05.sql`.
+**Icon / glow (world weenie):** `weenie_properties_int` **179** (`ImbuedEffect`) + **18** (`UiEffects`) = per-tier client rim/glow (appraisal chrome; not weapon rend combat). **24835** Bludgeon + Frost (white); **850271** Acid + Acid (green); **850272** Cold + Magical (blue); **850273** Electric + Lightning (purple). Shipped in `WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql` and forward patches `DrudgeCharm_BloodletterBase_2026-05-05.sql`, `DrudgeCharm_UiRendIcons_2026-05-05.sql`.
 
 ---
 
@@ -48,7 +48,7 @@ Credits **`BankCashProperty`** (default **39999**) via **`LeyLineLedgerBankInter
 
 | Charm tier | WCID | Default bank per charm | Reference ACE trade note (operator / doc only) |
 |------------|------|------------------------|---------------------------------------------------|
-| Regular | 3669 | 25_000 | 7376 Trade Note (25,000) |
+| Regular | 24835 | 25_000 | 7376 Trade Note (25,000) |
 | Quality | 850271 | 50_000 | 2626 Trade Note (50,000) |
 | Pristine | 850272 | 100_000 | 2627 Trade Note (100,000) |
 | Perfect | 850273 | 250_000 | 20630 Trade Note (250,000) |

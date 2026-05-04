@@ -166,7 +166,7 @@ When Assess Creature is trained or specialized, grants **guaranteed extra loot r
 
 > **Note:** Creature-type validation is now enforced. `TrophyDrops.cs` checks the dying creature's `WeenieClassId` against a per-trophy whitelist before creating the item, preventing e.g. tusker tusks from dropping on drudges. Champion and special mobs drop stacks of 1–8.
 
-**Drudge charm tiers (`DrudgeCharmTrophies`, 2026-05):** When **`EnableTrophyDrops`** is on, **`DrudgeCharmTrophies.Enabled`** adds **species-only** rolls on **`CreatureType.Drudge`** kills (defaults **2.5%** base WCID **3669**, **1% / 0.4% / 0.15%** for **850271–850273** *Quality / Pristine / Perfect*) — four independent rolls, independent of Assess extra-roll count. Requires world weenies + scrubbed create lists (repo **`WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql`**, template **`README-TrophyCharmCloneTemplate.md`**). **`QuestTurnInCap`** treats all four WCIDs as bulk quest charms: tiered quest XP (**2.5% / 5% / 7.5% / 15%** of **`GetXPBetweenLevels(level, level+1)`** per charm turned in), **per-tier bank credit** (**25k / 50k / 100k / 250k** per charm by default, same face values as ACE trade-note weenies **7376 / 2626 / 2627 / 20630** — **no physical notes**) via **`LeyLineLedgerBankInterop.IncBanked`** (`BankCashProperty`, LLL when present else `PropertyInt64`); **no daily turn-in cap** on this path (other quest trophy WCIDs still use **`QuestTrophyDrops`** + **`QuestTurnInTracker`** when enabled). **QOL** / **AutoLoot** / **BetterLootControl** / **HybridClasses** ship matching allowlists or stack rules.
+**Drudge charm tiers (`DrudgeCharmTrophies`, 2026-05):** When **`EnableTrophyDrops`** is on, **`DrudgeCharmTrophies.Enabled`** adds **species-only** rolls on **`CreatureType.Drudge`** kills (defaults **2.5%** base WCID **24835** (Bloodletter Drudge Charm), **1% / 0.4% / 0.15%** for **850271–850273** *Quality / Pristine / Perfect*) — four independent rolls, independent of Assess extra-roll count. Requires world weenies + scrubbed create lists (repo **`WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql`**, template **`README-TrophyCharmCloneTemplate.md`**). **`QuestTurnInCap`** treats all four WCIDs as bulk quest charms: tiered quest XP (**2.5% / 5% / 7.5% / 15%** of **`GetXPBetweenLevels(level, level+1)`** per charm turned in), **per-tier bank credit** (**25k / 50k / 100k / 250k** per charm by default, same face values as ACE trade-note weenies **7376 / 2626 / 2627 / 20630** — **no physical notes**) via **`LeyLineLedgerBankInterop.IncBanked`** (`BankCashProperty`, LLL when present else `PropertyInt64`); **no daily turn-in cap** on this path (other quest trophy WCIDs still use **`QuestTrophyDrops`** + **`QuestTurnInTracker`** when enabled). **QOL** / **AutoLoot** / **BetterLootControl** / **HybridClasses** ship matching allowlists or stack rules.
 
 **Settings:**
 ```json
@@ -181,7 +181,7 @@ When Assess Creature is trained or specialized, grants **guaranteed extra loot r
   "DropChanceRare1": 0.01,
   "DropChanceRare2": 0.004,
   "DropChanceRare3": 0.0015,
-  "WcidRegular": 3669,
+  "WcidRegular": 24835,
   "WcidRare1": 850271,
   "WcidRare2": 850272,
   "WcidRare3": 850273,

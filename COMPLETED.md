@@ -87,6 +87,12 @@
 - **QOL:** **`NpcStackTurnIn.StackableQuestWcids`** + **`StackableWcids.json`** include **850271–850273**.
 - **AutoLoot:** **`UpgradedTrophyWeenieClassIds`** — Pass 1 pulls charm tiers before **`.utl`** profiles.
 
+### Drudge charm — Bloodletter base (24835), per-tier icons, mod wiring (supersedes sunstone uniform)
+
+- **World weenies:** Clone source **`24835`** (Bloodletter Drudge Charm); tiers **850271–850273**. **`weenie_properties_int`**: per-tier **179** + **18** — **24835** 32/128; **850271** 64/256; **850272** 128/1; **850273** 256/64. **11 = 999** `MaxStackSize`. **`weenie_properties_string` types 14/15/16** (same sentence on all four): *Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.* **`DELETE weenie_properties_create_list`** for **24835**. Scripts: **`DrudgeCharm_TierWeenies_World.sql`**, **`DrudgeCharm_BloodletterBase_2026-05-05.sql`**, **`DrudgeCharm_UiRendIcons_2026-05-05.sql`**. **`DrudgeCharm_SunstoneCopyPluralStack_2026-05-04.sql`** deprecated stub → use Bloodletter patch.
+- **Mods:** **`WcidRegular` / `BulkQuestWcids` / `DailyCapTrackingWcid`** → **24835** (BetterSupportSkills, QOL, AutoLoot, BetterLootControl `LootRoller`); docs updated. **`TrophyWhitelist.md`:** Wisp Heart WCID **8667** (was erroneous duplicate **3669**).
+- **DB:** Scoped **`mysqldump`** under `WindblownContent/sql-backups/2026-05-04/` then **`mysql ace_world < DrudgeCharm_BloodletterBase_2026-05-05.sql`**; verify ints/strings; restart ACE for weenie cache.
+
 ---
 
 ## 2026-05-04

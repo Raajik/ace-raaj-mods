@@ -70,3 +70,7 @@ WindblownContent/sql-backups/
 
 # Bootstrap run logs (machine-local)
 WindblownContent/scripts/*.log
+
+# Local operator deploy / server restart helpers (paths or credentials are machine-specific)
+scripts/Deploy-AllMods-To-Live.ps1
+scripts/Restart-AceWbServer.ps1

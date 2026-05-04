@@ -14,6 +14,12 @@
 - **`TryAutoClaimPendingRewards`** — `PeekCount` → `ClaimAllForPlayer` → if anything granted/failed, **System** summary (matches `/claim`); if `PeekCount` still **> 0**, System nudge to free space and `/claim`.
 - **`PatchClass.cs`** — `_pendingClaimsTimerCts`, `StartPendingClaimsBackgroundTimer` from `Start` / `OnWorldOpen`, cancel in `Stop`. `/claim` handler description updated.
 
+### WorldEvents — periodic auto-claim opt-in (`/claim auto`)
+
+- **Default off:** 120-minute tick calls `TryAutoClaimPendingRewards` only when `FakeBool 12002` (`PendingClaimsPeriodicAutoOptIn`) is **true** on the player.
+- **`/claim auto`** — status; **`/claim auto on`** / **`/claim auto off`** — set or clear the flag (persists on character like other `FakeBool`s).
+- **`AGENTS.md`** — documents `FakeBool 12001`–`12002` for WorldEvents.
+
 ---
 
 ## 2026-05-03

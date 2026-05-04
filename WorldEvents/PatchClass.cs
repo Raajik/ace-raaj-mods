@@ -365,13 +365,19 @@ public partial class PatchClass : BasicPatch<Settings>
         }
     }
 
-    // /claim — deliver world-event loot that was queued while offline (periodic online tick still auto-tries delivery; login is reminder-only).
-    [CommandHandler("claim", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0,
-        "Claim pending world event rewards (loot rolled when you were offline). Usage: /claim")]
+    // /claim — deliver queued world-event loot; /claim auto on|off enables periodic auto-claim (default off).
+    [CommandHandler("claim", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
+        "Claim pending world event rewards. Usage: /claim | /claim auto on|off")]
     public static void HandleClaim(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
             return;
+
+        if (parameters.Length > 0 && string.Equals(parameters[0].Trim(), "auto", StringComparison.OrdinalIgnoreCase))
+        {
+            HandleClaimAutoSubcommand(player, parameters);
+            return;
+        }
 
         var n = PendingEventClaimsStore.ClaimAllForPlayer(player, out var failed);
         if (n == 0 && failed == 0)

@@ -23,8 +23,10 @@ Always check in this order:
 - **Mod structure:** Each folder = deployable mod containing:
   - `Meta.json` — Enable/disable, hot-reload, version. **Do not change `Enabled` without user direction.**
   - `Settings.cs` — C# defaults. Use `JsonPropertyName("// ...")` doc band + values band pattern.
-  - `Settings.json` — Runtime overrides. Safe to edit freely.
+  - `Settings.json` (in repo) — **Template / shared defaults** for new installs, CI, and docs. Safe to edit for **new keys** and documented example values—not assumed to match what Windblown test is tuned to.
   - `*.csproj` — Builds to `C:\ACE\Mods\$(AssemblyName)` locally.
+
+**Test ACE `Settings.json` (operator source of truth — `C:\ACE\Mods\<AssemblyName>\Settings.json`):** The **installed** file on **`C:\ACE\`** is the **canonical balance and preference** snapshot for test. Agents and humans should treat it as **immutable** in the sense: **do not overwrite it** with the repo copy on deploy unless the operator explicitly wants a reset. When adding a feature with **new** JSON keys: update **`Settings.cs`** + repo **`Settings.json`** (defaults + doc band), **and** merge those keys into the test file (or edit test directly while iterating)—then backfill repo defaults from agreed-on values if you want shipped defaults to match post-balance. **`push test`** (§8.1): deploy DLL/Meta; **preserve** test `Settings.json` by default.
 - **Harmony patches:** Prefer `nameof` targeting. Prefix patch methods with `Pre`/`Post`/`Transpiler`. Use `PatchCategory` for grouped unpatch.
 - **Cross-mod properties:** Check shared IDs before inventing new ones:
 
@@ -48,7 +50,7 @@ Always check in this order:
 **Windblown custom trophies (physical stackables):** When adding tiered quest trophies that should **autoloot to the pack** as real items (not LLL ledger rows), follow **`WindblownContent/docs/Windblown-Custom-Trophy-Settings.md`** — WCID checklist, AutoLoot Pass 1 (`UpgradedTrophyWeenieClassIds`), QOL bulk turn-in, BSS drops/turn-in, SQL template. Extend that doc with each new line.
 
 ## 4. Agent Permissions
-- **DO:** Edit `Settings.json`, fix bugs, tune values, refactor for clarity.
+- **DO:** Edit repo `Settings.json` for templates/new keys; tune **test** `C:\ACE\Mods\<Mod>\Settings.json` for balance (that file is operator truth—see §3). Fix bugs, refactor for clarity.
 - **DO:** Apply SQL you add or change under mod `Content/SQL/` (or equivalent) to the target MySQL database yourself—**test `ace_world`** by default—using the repo’s MySQL credentials, then verify with `SELECT`. Do not leave “run this manually” as the only step unless the user forbids DB writes.
 - **DO:** **Back up before SQL that adds or mutates world/shard data** — `mysqldump` (scoped to the rows/tables you will touch) into `WindblownContent/sql-backups/YYYY-MM-DD/` before `mysql ... <` applies the change. Same for live `wb_*` when the user authorizes it. See §8.7.
 - **DO:** Commit and push after every bug fix or problem solved. Never accumulate uncommitted fixes.
@@ -163,8 +165,8 @@ Windblown server target is ACRealms (fork of ACE), not stock ACEmulator alone.
 - `"check logs dust"` — Same intent as ACRealms in `"check logs"`, but pinned to the **Dust** install: `Server.WorldName` **Dust** in `C:\ACE-REALMS\Server\Config.js`. Default log file **`C:\ACE-REALMS\Server\ACE_Log.txt`**; if you start `ACE.Server.exe` from another cwd (e.g. `Source\ACE.Server\bin\...`), read `ACE_Log.txt` there instead.
 - `"push test"` — Deploy to test server (`C:\ACE\`, port 9000):
   1. `dotnet build ModName/ModName.csproj`
-  2. Copy DLLs from `C:\ACE\Mods\ModName\` to test server.
-  3. Copy `Settings.json` from repo to `C:\ACE\Mods\ModName\`.
+  2. Copy DLLs (and `Meta.json` if changed) from build output to `C:\ACE\Mods\ModName\` (local build already targets this path on the dev machine).
+  3. **`Settings.json`:** **Do not** replace test `C:\ACE\Mods\ModName\Settings.json` with the repo file by default—that path is the **operator balance source of truth** (§3). Only merge **new keys** from repo, or full-copy when operator explicitly requests a reset.
   4. Start in visible window (see reliable method below).
 - `"push live"` — Deploy to live (`C:\ACE-WB\`, port 9002). Same steps as test but target live dir. Restart live ACE.Server. Apply SQL to `wb_ace_world`/`wb_ace_shard`.
 

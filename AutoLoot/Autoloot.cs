@@ -333,12 +333,11 @@ public class AutoLoot
         if (PatchClass.Settings is not { DepositLootedCurrencyToBank: true })
             return false;
 
-        // Coalesced Mana — bank to LeyLineLedger
+        // Coalesced Mana — bank to LeyLineLedger (IncBanked so AccountWideBank JSON stays in sync)
         if (CoalescedManaBankProps.TryGetValue(item.WeenieClassId, out var manaProp))
         {
             var qty = item.StackSize ?? 1;
-            var manaCurrent = player.GetProperty((PropertyInt64)manaProp) ?? 0;
-            player.SetProperty((PropertyInt64)manaProp, manaCurrent + qty);
+            LeyLineLedgerBankInterop.IncBanked(player, manaProp, qty);
             return true;
         }
 
@@ -361,8 +360,7 @@ public class AutoLoot
             return false;
 
         var bankProp = PatchClass.Settings.BankCashProperty;
-        var current = player.GetProperty((PropertyInt64)bankProp) ?? 0;
-        player.SetProperty((PropertyInt64)bankProp, current + totalValue);
+        LeyLineLedgerBankInterop.IncBanked(player, bankProp, totalValue);
         player.UpdateCoinValue();
 
         return true;
@@ -377,8 +375,7 @@ public class AutoLoot
             return false;
 
         var qty = item.StackSize ?? 1;
-        var current = player.GetProperty((PropertyInt64)prop) ?? 0;
-        player.SetProperty((PropertyInt64)prop, current + qty);
+        LeyLineLedgerBankInterop.IncBanked(player, prop, qty);
         return true;
     }
 
@@ -397,8 +394,7 @@ public class AutoLoot
             return false;
 
         var prop = PatchClass.Settings?.LockpickBankProperty ?? 40130;
-        var current = player.GetProperty((PropertyInt64)prop) ?? 0;
-        player.SetProperty((PropertyInt64)prop, current + bankAmount);
+        LeyLineLedgerBankInterop.IncBanked(player, prop, bankAmount);
         return true;
     }
 
@@ -419,8 +415,7 @@ public class AutoLoot
             return false;
 
         var bankProp = PatchClass.Settings?.BankCashProperty ?? 39999;
-        var current = player.GetProperty((PropertyInt64)bankProp) ?? 0;
-        player.SetProperty((PropertyInt64)bankProp, current + totalValue);
+        LeyLineLedgerBankInterop.IncBanked(player, bankProp, totalValue);
         player.UpdateCoinValue();
         return true;
     }

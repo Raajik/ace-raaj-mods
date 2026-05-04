@@ -47,3 +47,5 @@ global using ACE.Shared.Helpers;
 global using ACE.Shared.Mods;
 
 global using S = QOL.PatchClass;
+
+global using AceRaajMods.Shared;

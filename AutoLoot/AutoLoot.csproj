@@ -54,6 +54,7 @@
 
 
 	<ItemGroup>
+		<Compile Include="..\Shared\LeyLineLedgerBankInterop.cs" Link="Shared\LeyLineLedgerBankInterop.cs" />
 		<Compile Include="..\Shared\PeaPyrealWcids.cs" Link="Shared\PeaPyrealWcids.cs" />
 		<Compile Include="..\Shared\SsfAutolootPickupContext.cs" Link="Shared\SsfAutolootPickupContext.cs" />
 	</ItemGroup>

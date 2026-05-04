@@ -73,7 +73,7 @@ public partial class PatchClass
         if (pending <= 0)
             return;
 
-        player.SendMessage($"[WorldEvents] You have {pending} pending event reward(s). Type /claim to receive them. (/claim auto on — periodic auto-claim every 2h while online)", ChatMessageType.System);
+        player.SendMessage($"[WorldEvents] You have {pending} pending event reward(s). Type /claim to receive them. (/claim auto — toggle periodic auto-claim every 2h while online)", ChatMessageType.System);
     }
 
     internal static void TryAutoClaimPendingRewards(Player player)
@@ -126,33 +126,17 @@ public partial class PatchClass
         return false;
     }
 
-    internal static void HandleClaimAutoSubcommand(Player player, string[] parameters)
+    internal static void HandleClaimAutoSubcommand(Player player)
     {
-        if (parameters.Length < 2)
-        {
-            var on = IsPeriodicAutoClaimEnabled(player);
-            player.SendMessage(on
-                ? "[WorldEvents] Periodic auto-claim is ON (every 2h while online). /claim auto off to disable."
-                : "[WorldEvents] Periodic auto-claim is OFF (default). /claim auto on to enable.");
+        if (player?.Guid == null)
             return;
-        }
 
-        var sub = parameters[1].Trim().ToLowerInvariant();
-        switch (sub)
-        {
-            case "on":
-                PendingClaimsAutoPreferenceStore.SetPeriodicAuto(player.Guid.Full, true);
-                player.RemoveProperty(PendingClaimsPeriodicAutoOptInLegacy);
-                player.SendMessage("[WorldEvents] Periodic auto-claim is now ON (tries pending rewards every 2h while online).");
-                break;
-            case "off":
-                PendingClaimsAutoPreferenceStore.SetPeriodicAuto(player.Guid.Full, false);
-                player.RemoveProperty(PendingClaimsPeriodicAutoOptInLegacy);
-                player.SendMessage("[WorldEvents] Periodic auto-claim is now OFF.");
-                break;
-            default:
-                player.SendMessage("[WorldEvents] Usage: /claim auto on | /claim auto off");
-                break;
-        }
+        var next = !IsPeriodicAutoClaimEnabled(player);
+        PendingClaimsAutoPreferenceStore.SetPeriodicAuto(player.Guid.Full, next);
+        player.RemoveProperty(PendingClaimsPeriodicAutoOptInLegacy);
+
+        player.SendMessage(next
+            ? "[WorldEvents] Periodic auto-claim is now ON (every 2h while online). Type /claim auto again to turn off."
+            : "[WorldEvents] Periodic auto-claim is now OFF. Type /claim auto again to turn on.");
     }
 }

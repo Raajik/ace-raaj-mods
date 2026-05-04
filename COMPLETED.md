@@ -16,9 +16,10 @@
 
 ### WorldEvents — periodic auto-claim opt-in (`/claim auto`)
 
+- **`/claim auto`** is a **toggle** only (no `on` / `off` subcommands).
 - **Default off:** 120-minute tick calls `TryAutoClaimPendingRewards` only when `PendingClaimsAutoPreferenceStore` JSON is enabled for that character (`Mods/WorldEvents/PendingClaimsAuto/<guid>.json`).
 - **`PendingClaimsAutoPreferenceStore.cs`** — disk-backed `{ "PeriodicAutoClaim": true }` per character (same `ModManager.ModPath` layout as pending loot JSON).
-- **`/claim auto`** — status; **`/claim auto on`** / **`/claim auto off`** — write/delete preference file (survives logouts). **Legacy:** `FakeBool 12002` from older builds is read once, migrated to JSON, then removed from biota.
+- **`/claim auto`** — toggles periodic auto-claim (writes preference JSON; survives logouts). **Legacy:** `FakeBool 12002` from older builds is read once, migrated to JSON, then removed from biota.
 - **`AGENTS.md`** — `12002` marked legacy; `12001` unchanged.
 
 ### WorldEvents — `/claim` inventory gate (burden + pack slots)

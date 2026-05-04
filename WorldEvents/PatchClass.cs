@@ -365,9 +365,9 @@ public partial class PatchClass : BasicPatch<Settings>
         }
     }
 
-    // /claim — deliver queued world-event loot; /claim auto on|off enables periodic auto-claim (default off).
+    // /claim — deliver queued world-event loot; /claim auto toggles periodic auto-claim (default off).
     [CommandHandler("claim", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
-        "Claim pending world event rewards. Usage: /claim | /claim auto on|off")]
+        "Claim pending world event rewards. Usage: /claim | /claim auto (toggle 2h auto-claim)")]
     public static void HandleClaim(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
@@ -375,7 +375,7 @@ public partial class PatchClass : BasicPatch<Settings>
 
         if (parameters.Length > 0 && string.Equals(parameters[0].Trim(), "auto", StringComparison.OrdinalIgnoreCase))
         {
-            HandleClaimAutoSubcommand(player, parameters);
+            HandleClaimAutoSubcommand(player);
             return;
         }
 

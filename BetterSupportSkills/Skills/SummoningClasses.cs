@@ -1400,7 +1400,7 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
                 else if (entry.Unlocked)
                     status = entry.AccountWide ? "[UNLOCKED account-wide]" : "[UNLOCKED]";
                 else if (entry.MeetsReqs)
-                    status = "[READY — use /ach to claim!]";
+                    status = "[READY — specialize required skills]";
                 else
                     status = $"[{entry.Readiness}% ready]";
 
@@ -1441,7 +1441,7 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         if (!IsClassUnlocked(player, normalized))
         {
             player.SendMessage(
-                $"The path of the {normalized} is locked. Reach the required skills to unlock it (see /ach for details).",
+                $"The path of the {normalized} is locked. Reach the required skills (see /class for requirements).",
                 ChatMessageType.System);
             return;
         }
@@ -1463,10 +1463,6 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         }
     }
 
-    static bool CheckMeetsRequirements(Player player, string className)
-    {
-        return AchievementUnlockedApi.HasClassUnlocked(player, className);
-    }
 }
 
 // -- Settings Classes --------------------------------------------------

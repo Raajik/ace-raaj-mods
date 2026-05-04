@@ -10,9 +10,7 @@ internal static class AchievementUnlockedApi
 {
     static Type? _managerType;
     static System.Reflection.MethodInfo? _hasAchievementMethod;
-    static System.Reflection.MethodInfo? _unlockAchievementMethod;
     static System.Reflection.MethodInfo? _hasAccountAchievementMethod;
-    static System.Reflection.MethodInfo? _unlockAccountAchievementMethod;
     static bool _initialized;
 
     public static void Initialize()
@@ -26,7 +24,7 @@ internal static class AchievementUnlockedApi
 
             if (asm == null)
             {
-                ModManager.Log("[BSS] AchievementUnlocked assembly not found. Class unlocks will use fallback checks.", ModManager.LogLevel.Info);
+                ModManager.Log("[BSS] AchievementUnlocked assembly not loaded. Class gating uses skill checks only.", ModManager.LogLevel.Info);
                 _initialized = true;
                 return;
             }
@@ -40,11 +38,9 @@ internal static class AchievementUnlockedApi
             }
 
             _hasAchievementMethod = _managerType.GetMethod("HasAchievement", new[] { typeof(Player), typeof(string) });
-            _unlockAchievementMethod = _managerType.GetMethod("UnlockAchievement", new[] { typeof(Player), typeof(string), typeof(bool) });
             _hasAccountAchievementMethod = _managerType.GetMethod("HasAccountAchievement", new[] { typeof(uint), typeof(string) });
-            _unlockAccountAchievementMethod = _managerType.GetMethod("UnlockAccountAchievement", new[] { typeof(uint), typeof(string) });
 
-            ModManager.Log("[BSS] AchievementUnlocked API bridge initialized.", ModManager.LogLevel.Info);
+            ModManager.Log("[BSS] AchievementUnlocked API bridge initialized (read-only for account-wide display if used).", ModManager.LogLevel.Info);
         }
         catch (Exception ex)
         {
@@ -70,21 +66,6 @@ internal static class AchievementUnlockedApi
         }
     }
 
-    static void UnlockAchievement(Player player, string id)
-    {
-        if (!_initialized) Initialize();
-        if (_unlockAchievementMethod == null) return;
-
-        try
-        {
-            _unlockAchievementMethod.Invoke(null, new object[] { player, id, false });
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[BSS] Failed to unlock achievement {id}: {ex.Message}", ModManager.LogLevel.Warn);
-        }
-    }
-
     static bool HasAccountAchievement(uint accountId, string id)
     {
         if (!_initialized) Initialize();
@@ -101,30 +82,10 @@ internal static class AchievementUnlockedApi
         }
     }
 
-    /// <summary>
-    /// Checks if a player has unlocked a specific class.
-    /// Priority: account-wide → character-specific → auto-grant via skill check.
-    /// </summary>
+    // Class paths: skill requirements only. AchievementUnlocked mod optional for other server hooks.
     public static bool HasClassUnlocked(Player player, string className)
     {
-        string achId = $"Class{className}";
-
-        // 1. Check account-wide first (alt-friendly)
-        if (HasAccountAchievement(player.Account.AccountId, achId))
-            return true;
-
-        // 2. Check character-specific
-        if (HasAchievement(player, achId))
-            return true;
-
-        // 3. Auto-check requirements and grant (fallback for when AchievementUnlocked is not tracking this)
-        if (CheckMeetsRequirements(player, className))
-        {
-            UnlockAchievement(player, achId);
-            return true;
-        }
-
-        return false;
+        return CheckMeetsRequirements(player, className);
     }
 
     /// <summary>
@@ -151,8 +112,28 @@ internal static class AchievementUnlockedApi
             "Battlemage" => IsSpecialized(player, Skill.TwoHandedCombat) && IsSpecialized(player, Skill.WarMagic) && IsSpecialized(player, Skill.ManaConversion),
             "DeathKnight" => (IsSpecialized(player, Skill.HeavyWeapons) || IsSpecialized(player, Skill.TwoHandedCombat)) && IsSpecialized(player, Skill.VoidMagic) && IsSpecialized(player, Skill.ArcaneLore),
             "Bloodmage" => IsSpecialized(player, Skill.LifeMagic) && IsSpecialized(player, Skill.ManaConversion) && IsSpecialized(player, Skill.ArcaneLore),
+            "Healer" => IsSpecialized(player, Skill.Healing) && IsSpecialized(player, Skill.LifeMagic),
+            "Adventurer" => MeetsAdventurerSkillGate(player),
             _ => false
         };
+    }
+
+    static bool MeetsAdventurerSkillGate(Player player)
+    {
+        Skill[] magicSkills =
+        {
+            Skill.CreatureEnchantment, Skill.ItemEnchantment, Skill.LifeMagic,
+            Skill.WarMagic, Skill.VoidMagic
+        };
+
+        foreach (Skill skill in magicSkills)
+        {
+            var cs = player.GetCreatureSkill(skill);
+            if (cs != null && cs.AdvancementClass >= SkillAdvancementClass.Trained)
+                return false;
+        }
+
+        return true;
     }
 
     static bool IsSpecialized(Player player, Skill skill)

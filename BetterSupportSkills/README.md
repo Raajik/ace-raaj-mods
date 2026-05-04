@@ -324,6 +324,16 @@ Failing a tinker while having any tinkering trained unlocks `/chaostinker` — a
 
 ---
 
+### Summoning classes — pet War/Void ring and wall gate
+**Status:** Implemented (when `EnableSummoningClasses` is true)  
+**Defaults:** `SummoningClasses.BlockPetWarVoidRingWallSpells` and `BlockPetProjectileDamageToOwner` are **true**.
+
+Auto-summoned **CombatPets** (Druid / Elementalist / Necromancer / Enchanter / Artificer) still use ACE creature spell selection for most attacks. War and Void **ring** and **wall** spells (plus full 360° spread projectiles) are blocked at `TryCastSpell` for pets tracked by this mod, so pets do not cast Os’-style ground rings/walls from the weenie bar. Bolts, streaks, arcs, blasts, and volleys are unchanged.
+
+If a ring/wall projectile still appears from another source, `SpellProjectile.OnCollideObject` is patched so a tracked pet **cannot damage its `P_PetOwner`** (impact VFX only). Toggle either flag under `SummoningClasses` in `Settings.json` if you need legacy behavior.
+
+---
+
 ### Placeholder Skills (Not Yet Implemented)
 The following skills have placeholder entries but no bonus effects yet:
 
@@ -376,6 +386,9 @@ All features can be toggled in `Settings.json`:
 - `/bss commands` - Show available commands
 
 ## Changelog
+
+### 2026-05-03
+- **Summoning classes:** Block harmful War/Void **ring** and **wall** spells on BSS-tracked `CombatPet` casts (`BlockPetWarVoidRingWallSpells`). Skip **SpellProjectile** damage when the projectile source is such a pet and the target is the pet owner (`BlockPetProjectileDamageToOwner`). Intended pet magic remains **Loyalty** `CorruptionSpellIds` (when enabled) plus normal bolts/blasts.
 
 ### 2026-04-27 (v1.2.0)
 - **Healer class:** New combat class (Spec Healing + Spec Life Magic). AoE healing aura (15m, 3s tick) + Smite melee proc (50% chance, Harm/Drain Health Other)

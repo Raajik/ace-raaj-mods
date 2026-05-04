@@ -1107,6 +1107,74 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         return false;
     }
 
+    // -- Pet spell gate: no War/Void ring or wall from weenie AI (prevents Os'-style splash on owner) --
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(WorldObject), nameof(WorldObject.TryCastSpell), new[]
+    {
+        typeof(Spell), typeof(WorldObject), typeof(WorldObject), typeof(WorldObject), typeof(bool), typeof(bool), typeof(bool)
+    })]
+    public static bool PrefixTryCastSpell_BlockPetRingWall(
+        WorldObject __instance,
+        Spell spell,
+        WorldObject target,
+        WorldObject itemCaster,
+        WorldObject weapon,
+        bool isWeaponSpell,
+        bool fromProc,
+        bool tryResist)
+    {
+        if (__instance is not CombatPet pet)
+            return true;
+        if (!TrackedPetGuids.ContainsKey(pet.Guid.Full))
+            return true;
+        var sc = PatchClass.Settings?.SummoningClasses;
+        if (sc is not { BlockPetWarVoidRingWallSpells: true })
+            return true;
+        if (spell == null || spell.NotFound)
+            return true;
+        if (!spell.IsHarmful)
+            return true;
+        if (spell.School != MagicSchool.WarMagic && spell.School != MagicSchool.VoidMagic)
+            return true;
+
+        if (!IsWarVoidRingOrWallCategory(spell))
+            return true;
+
+        return false;
+    }
+
+    static bool IsWarVoidRingOrWallCategory(Spell spell)
+    {
+        var cat = spell.Category;
+        if (cat >= SpellCategory.AcidRing && cat <= SpellCategory.SlashingRing)
+            return true;
+        if (cat >= SpellCategory.AcidWall && cat <= SpellCategory.SlashingWall)
+            return true;
+        if (spell.SpreadAngle == 360)
+            return true;
+        return false;
+    }
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(SpellProjectile), nameof(SpellProjectile.OnCollideObject), new[] { typeof(WorldObject) })]
+    public static bool PrefixSpellProjectile_SkipPetOwnerDamage(SpellProjectile __instance, WorldObject target)
+    {
+        var sc = PatchClass.Settings?.SummoningClasses;
+        if (sc is not { BlockPetProjectileDamageToOwner: true })
+            return true;
+        if (__instance?.ProjectileSource is not CombatPet pet)
+            return true;
+        if (!TrackedPetGuids.ContainsKey(pet.Guid.Full))
+            return true;
+        var owner = pet.P_PetOwner;
+        if (owner == null || target != owner)
+            return true;
+
+        __instance.ProjectileImpact();
+        return false;
+    }
+
     // -- Cleanup on Logout/Teleport -------------------------------------
 
     [HarmonyPrefix]
@@ -1428,6 +1496,14 @@ public class SummoningClassesSettings
     [JsonPropertyName("// FollowMaxDistanceBeforeDestroy")]
     public string FollowMaxDistanceBeforeDestroyDoc { get; init; } = "Max distance before pet is destroyed.";
     public float FollowMaxDistanceBeforeDestroy { get; set; } = 250.0f;
+
+    [JsonPropertyName("// BlockPetWarVoidRingWallSpells")]
+    public string BlockPetWarVoidRingWallSpellsDoc { get; init; } = "When true, BSS-tracked CombatPets cannot cast harmful War/Void spells classified as Ring or Wall (blocks weenie AI ring/wall casts that splash the owner). Bolts, blasts, streaks unchanged.";
+    public bool BlockPetWarVoidRingWallSpells { get; set; } = true;
+
+    [JsonPropertyName("// BlockPetProjectileDamageToOwner")]
+    public string BlockPetProjectileDamageToOwnerDoc { get; init; } = "When true, SpellProjectile collisions from a BSS-tracked CombatPet against its P_PetOwner apply impact only (no damage). Belt-and-suspenders with ring/wall cast gate.";
+    public bool BlockPetProjectileDamageToOwner { get; set; } = true;
 
     public SummoningClassSettings Druid { get; set; } = new();
     public SummoningClassSettings Elementalist { get; set; } = new();

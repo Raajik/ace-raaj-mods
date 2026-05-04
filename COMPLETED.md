@@ -8,6 +8,13 @@
 
 ## 2026-05-03
 
+### BetterSupportSkills — CombatPet War/Void ring/wall gate + owner-safe spell projectiles (live deploy)
+
+- **Problem:** Elementalist (and similar) pets could cast weenie-driven **ring** / **wall** War or Void spells (e.g. Os’ Wall), splashing the summoner; vanilla `CanDamage` allows pet→owner for those projectiles.
+- **Fix:** `TryCastSpell` prefix on tracked `CombatPet`: skip harmful War/Void spells in **ring** / **wall** `SpellCategory` ranges (and 360° spread). `SpellProjectile.OnCollideObject` prefix: tracked pet vs `P_PetOwner` → `ProjectileImpact` only, no damage. Settings: `SummoningClasses.BlockPetWarVoidRingWallSpells`, `BlockPetProjectileDamageToOwner` (default true). Repo `Settings.json` updated.
+- **Docs:** `BetterSupportSkills/README.md` (new subsection + changelog).
+- **Live:** Built Release; copied `BetterSupportSkills.dll` + dependencies and repo `Settings.json` to `C:\ACE-WB\Mods\BetterSupportSkills\`; removed `BetterSupportSkills.deps.json` from live mod folder per mod hygiene. **Restart `ACE.Server.exe` for WB** to load the new DLL.
+
 ### Combined: AutoLoot scroll line, LLL salvage + key appraisal, Mana Lattice (850201)
 
 - **AutoLoot:** Pass 3 no longer appends learned scroll name to `lootedItems` after `LearnSpellWithNetworking` (avoids duplicate chat line vs vanilla).

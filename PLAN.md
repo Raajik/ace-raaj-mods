@@ -2,12 +2,6 @@
 
 Single index of **active** work and backlog. **Finished milestones belong in [COMPLETED.md](COMPLETED.md)** (append by date, then shorten this file). Mod notes below were merged from former per-mod `TODO.md`; greenfield from `MOD_IDEAS.md`. There is no separate `TODO.md` or `MOD_IDEAS.md`.
 
-## ACTIVE ISSUE: Defense Imbue Client Hourglass (2026-05-03)
-
-After defense imbue on **armor**, client shows **persistent hourglass** on appraise (E). Appraisal can still show data; **not** server hang. **Overtinked disabled still reproduces** — not mod-only.
-
-**Detail + matrix + open leads:** Obsidian **[[Defense Imbue Appraisal Hourglass]]**. Rollback SQL in repo: `WindblownContent/Content/zzz_Salvage_Defense_Bonus_Rollback.sql`. Description update SQL (reverted in DB): `WindblownContent/Content/zzz_Salvage_Defense_Bonus_Update.sql`.
-
 ## Progress (recent)
 
 Keep this section **short**. When something ships, **append [COMPLETED.md](COMPLETED.md)** (dated subsection) and **remove** the matching bullet here so PLAN stays scannable.

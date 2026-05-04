@@ -8,6 +8,11 @@
 
 ## 2026-05-04
 
+### Defense imbue appraisal hourglass — PLAN item closed (resolved in ops)
+
+- **Was:** `PLAN.md` tracked persistent client **E** hourglass on **armor** after Peridot / Yellow Topaz / Zircon defense imbue; appraisal text could still load (not a server hang). Investigation matrix lived in Obsidian **[[Defense Imbue Appraisal Hourglass]]** (`A:\obsidian\jeremy\wiki\Defense Imbue Appraisal Hourglass.md`).
+- **Now:** Operator confirms **fixed**; active issue removed from `PLAN.md`. Related mod paths for appraisal text include **Overtinked** `DefenseSalvageAppraise.cs` (`AppraiseInfo.BuildProperties` for defense salvage long desc) and the same mod’s **`CustomImbueAppraise`** pattern (`BuildProfile` / `LongDesc` / `AppraisalLongDescDecoration`) documented in **§ 2026-05-03** below. Rollback SQL remains: `WindblownContent/Content/zzz_Salvage_Defense_Bonus_Rollback.sql`.
+
 ### BetterLootControl — Vanilla Coalesced Mana on modern ACE (live)
 
 - **Cause:** Windblown `ACE.Server.dll` has **no** `CreateGenericObjects` (legacy loot helper removed); `StripGenericLootCoalescedMana` never applied. Startup logged a **WARN** every boot. Vanilla mundane coalesced still rolled via `TryRollMundaneAddon` → `TryRollCoalescedMana` → `CreateCoalescedMana`; only `CreateCoalescedMana` was patched, so behavior depended on that single hook.

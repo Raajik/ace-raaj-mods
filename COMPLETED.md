@@ -14,6 +14,12 @@
 - **Telemetry:** New `AchievementActivityTelemetry.cs` — `LOGIN`, `KILL` (per creditable kill), `QUEST_SOLVE` (when quests-with-solves count rises), `KILL_ACH` / `QUEST_ACH` (per matching achievement counter bump), `UNLOCK`, `EXT_PROGRESS` (`IncrementProgress` / `SetProgress`), and **`DAY_ROLLUP`** (UTC midnight rollover aggregates prior day). Wired from `PatchClass`, `AchievementManager`.
 - **Settings:** `EnableActivityTelemetry`, `LogKillHooks`, `LogKillAchievementProgress`, `LogQuestManagerUpdates` (default false), `LogQuestSolveMilestones`, `LogQuestAchievementProgress`, `LogUnlockEvents`, `LogExternalProgressCalls`, `LogLoginSnapshot` in `Settings.cs` + `Settings.json`.
 
+### Windblown world SQL — Olthoi brood hive bosses drop full 9-part set
+
+- **Script:** `WindblownContent/Content/SQL/BroodMatronQueen_AllNinePartsGuaranteed.sql` — `weenie_properties_create_list` rows with `destination_Type = 9`, `shade = 0` (guaranteed) for matron + queen at tiers **24638/24640** (young), **24637/24639** (adolescent), **24908/24910** (nymph), **24907/24909** (elder).
+- **Applied:** local **`ace_world`** (restart ACE to refresh weenie cache).
+- **Commit:** `2d4d553`.
+
 ---
 
 ## 2026-05-04

@@ -154,6 +154,41 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         __result = cooked;
     }
 
+    // Postfix: same cookbook gap as Hemorrhage — supply template recipe when Shatter salvage has no GetRecipe match.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.GetRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject) })]
+    public static void PostGetRecipeShatter(Player player, WorldObject source, WorldObject target, ref Recipe __result)
+    {
+        if (__result != null || player == null || source == null || target == null)
+            return;
+
+        ShatterImbueConfig? sh = CurrentSettings?.ShatterImbue;
+        if (sh?.Enabled != true || sh.SalvageWcids == null || sh.SalvageWcids.Length == 0)
+            return;
+
+        if (!sh.SalvageWcids.Contains(source.WeenieClassId))
+            return;
+
+        if (target.Workmanship == null)
+            return;
+
+        if (target.WeenieType != WeenieType.MeleeWeapon && target.WeenieType != WeenieType.MissileLauncher)
+            return;
+
+        uint rid = sh.BaseRecipeId;
+        if (rid == 0)
+            return;
+
+        Recipe? cooked = DatabaseManager.World.GetCachedRecipe(rid);
+        if (cooked == null)
+        {
+            ModManager.Log($"[Overtinked] Shatter GetRecipe: BaseRecipeId {rid} not in world cache; cannot synthesize recipe.", ModManager.LogLevel.Warn);
+            return;
+        }
+
+        __result = cooked;
+    }
+
     // Prefix: replaces RecipeManager.VerifyRequirements. Uses Settings.MaxTries for NumTimesTinkered and Settings.MaxImbueEffects for ImbuedEffect; delegates other requirement types to RecipeManager.
     [HarmonyPrefix]
     [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.VerifyRequirements), new Type[] { typeof(Recipe), typeof(Player), typeof(WorldObject), typeof(RequirementType) })]
@@ -441,6 +476,11 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             OvertinkedImbueStore.Add(target, OvertinkedImbueFlags.NetherRending);
             target.ImbuedEffect |= ImbuedEffectType.NetherRending;
             target.SetProperty(PropertyInt.DamageType, (int)DamageType.Nether);
+            return true;
+        }
+        if (s.ShatterImbue?.Enabled == true && s.ShatterImbue.SalvageWcids != null && s.ShatterImbue.SalvageWcids.Contains(wcid))
+        {
+            OvertinkedImbueStore.Add(target, OvertinkedImbueFlags.Shatter);
             return true;
         }
         if (s.JewelryCleaveImbue?.Enabled == true && s.JewelryCleaveImbue.SalvageWcids != null && s.JewelryCleaveImbue.SalvageWcids.Contains(wcid))

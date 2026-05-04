@@ -133,3 +133,32 @@ public class NetherRendingImbueCombatConfig : NewImbueConfig
 
     public float NetherBonusSoftCap { get; set; }
 }
+
+// Shatter: stacking debuff on creatures (40134 stacks, 40135 broken at max); weapon flag on 40133. Damage multiplier per stack on target; extra multiplier on Bludgeon when broken.
+public class ShatterImbueConfig : NewImbueConfig
+{
+    [JsonPropertyName("// BaseRecipeId")]
+    public string BaseRecipeIdDoc { get; init; } = "ACE world recipe id when GetRecipe has no cookbook match for Shatter salvage (same pattern as Hemorrhage). Default 4452.";
+
+    [JsonPropertyName("// StacksPerHit")]
+    public string StacksPerHitDoc { get; init; } = "Debuff stacks added to the creature per qualifying hit from a Shatter weapon.";
+
+    [JsonPropertyName("// MaxStacks")]
+    public string MaxStacksDoc { get; init; } = "Stack cap; at cap the target is treated as broken for Bludgeon bonus.";
+
+    [JsonPropertyName("// DamageBonusPerStack")]
+    public string DamageBonusPerStackDoc { get; init; } = "Additive damage multiplier per stack already on the target before this hit (0.2 = +20% per stack).";
+
+    [JsonPropertyName("// BludgeonBonusWhenBroken")]
+    public string BludgeonBonusWhenBrokenDoc { get; init; } = "Extra multiplier on Health damage when target is broken and this hit's DamageType is Bludgeon (0.25 = +25%).";
+
+    public uint BaseRecipeId { get; set; } = 4452;
+
+    public int StacksPerHit { get; set; } = 1;
+
+    public int MaxStacks { get; set; } = 5;
+
+    public float DamageBonusPerStack { get; set; } = 0.2f;
+
+    public float BludgeonBonusWhenBroken { get; set; } = 0.25f;
+}

@@ -1,6 +1,6 @@
 namespace Overtinked;
 
-// Custom imbue flags for weapons (Hemorrhage, Cleaving, Nether Rending). Persisted on item biota as PropertyInt 40133 (bitmask).
+// Custom imbue flags for weapons (Hemorrhage, Cleaving, Nether Rending, Shatter). Persisted on item biota as PropertyInt 40133 (bitmask).
 [Flags]
 public enum OvertinkedImbueFlags : byte
 {
@@ -8,6 +8,7 @@ public enum OvertinkedImbueFlags : byte
     Hemorrhage = 8,
     Cleaving = 2,
     NetherRending = 4,
+    Shatter = 16,
 }
 
 public static class OvertinkedImbueStore
@@ -17,7 +18,7 @@ public static class OvertinkedImbueStore
 
     private static readonly PropertyInt CustomProp = (PropertyInt)CustomImbuePropertyInt;
 
-    private const int AllowedBits = (int)(OvertinkedImbueFlags.Hemorrhage | OvertinkedImbueFlags.Cleaving | OvertinkedImbueFlags.NetherRending);
+    private const int AllowedBits = (int)(OvertinkedImbueFlags.Hemorrhage | OvertinkedImbueFlags.Cleaving | OvertinkedImbueFlags.NetherRending | OvertinkedImbueFlags.Shatter);
 
     public static OvertinkedImbueFlags Get(WorldObject? wo)
     {

@@ -361,6 +361,27 @@ public partial class PatchClass : BasicPatch<Settings>
         }
     }
 
+    // /claim — deliver world-event loot that was queued while offline.
+    [CommandHandler("claim", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0,
+        "Claim pending world event rewards (loot rolled when you were offline). Usage: /claim")]
+    public static void HandleClaim(Session session, params string[] parameters)
+    {
+        if (session?.Player is not Player player)
+            return;
+
+        var n = PendingEventClaimsStore.ClaimAllForPlayer(player, out var failed);
+        if (n == 0 && failed == 0)
+        {
+            player.SendMessage("[WorldEvents] You have no pending event rewards to claim.");
+            return;
+        }
+
+        if (failed > 0)
+            player.SendMessage($"[WorldEvents] Claimed {n} reward(s); {failed} could not be created (see server log).");
+        else
+            player.SendMessage($"[WorldEvents] Claimed {n} pending event reward(s).");
+    }
+
     // /top — leaderboard hub for world event participation.
     [CommandHandler("top", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
         "Show world event leaderboards. Usage: /top events | /top qb")]

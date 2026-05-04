@@ -42,7 +42,7 @@ internal static class TownNetworkToll
         // Short & Sweet
         "Received [Cost] [Item]. The path is clear. Good luck out there!",
         "Your continued support for the Arcanum is appreciated. [Cost] [Item] deducted.",
-        "Payment processed. Don't forget to bind at a Lifestone!",
+        "Payment processed: [Cost] [Item]. Don't forget to bind at a Lifestone!",
         // Maintenance & Bureaucracy
         "Processing... Payment of [Cost] [Item] accepted. Please wait for the portal to cycle before stepping through.",
         "Your [Cost] [Item] has been filed under Infrastructure Upkeep. The Arcanum values your cooperation.",

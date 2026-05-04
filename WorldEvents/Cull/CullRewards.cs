@@ -28,7 +28,6 @@ internal static class CullRewards
             top.Add((name, kills, i + 1));
 
             var player = PlayerManager.GetOnlinePlayer(guid);
-            if (player == null) continue;
 
             WorldObject? item;
             LootRarityFloor floor;
@@ -54,21 +53,17 @@ internal static class CullRewards
                 continue;
             }
 
-            TagSsfIfNeeded(player, item);
+            if (player == null)
+            {
+                EventLootDelivery.QueueLootFromWorldObject(guid, "Cull", $"#{i + 1} ({kills} kills)", item, ironman: false);
+                continue;
+            }
 
-            if (!player.TryCreateInInventoryWithNetworking(item, out _))
-            {
-                item.Location = player.Location.InFrontOf(0.5f);
-                item.EnterWorld();
-                player.SendMessage($"[EVENT - Cull] #{i + 1} ({kills} kills): {item.Name} — pack full, dropped at your feet.");
-            }
-            else
-            {
-                player.SendMessage($"[EVENT - Cull] #{i + 1} ({kills} kills): {item.Name}.");
-            }
+            TagSsfIfNeeded(player, item);
+            EventLootDelivery.TryDeliverLootNow(player, item, "[EVENT - Cull]", $"#{i + 1} ({kills} kills)", tryHuntBankFirst: false);
 
             // Solo competitor completion XP bonus
-            if (participantCount == 1 && s.SoloCompetitorBonus.Enable && i == 0)
+            if (player != null && participantCount == 1 && s.SoloCompetitorBonus.Enable && i == 0)
             {
                 var xpToNext = LevelXpMath.GetXpToNextLevel(player);
                 if (xpToNext > 0)

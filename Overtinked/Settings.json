@@ -16,6 +16,7 @@
   "// HemorrhageImbue": "Hemorrhage imbue (e.g. Salvaged Yellow Garnet 21087). Legacy key BleedImbue still loads. Inside: // lines first, then values.",
   "// CleavingImbue": "Cleaving imbue (e.g. Tiger Eye 21081).",
   "// NetherRendingImbue": "Nether Rending imbue (e.g. Onyx 21064).",
+  "// ShatterImbue": "Shatter imbue: set SalvageWcids to your custom salvage; creature stacks use FakeInt 40134/40135.",
   "// BuffedImbueRules": "Buffed jewelry imbues. Each array element: // keys first, then values.",
   "// ShowPlayerSalvageMessage": "When true, send the player a short message when a custom salvage/imbue is applied.",
   "// DefenseImbueBonus": "Multiplier on vanilla defense-imbue skill add (imbued-piece count). 0 = vanilla (+1 per piece). 5 = +5 per piece (two pieces => +10).",
@@ -264,6 +265,24 @@
     "NetherBonusVsCreaturesMultiplier": 1.0,
     "NetherBonusVsPlayersMultiplier": 1.0,
     "NetherBonusSoftCap": 0.0
+  },
+  "ShatterImbue": {
+    "// SalvageWcids": "Salvage WCIDs that apply Shatter to melee/missile weapons.",
+    "// Name": "Display name for logs.",
+    "// Enabled": "When false, Shatter imbue and combat are disabled.",
+    "// BaseRecipeId": "World recipe id when GetRecipe has no match (default 4452).",
+    "// StacksPerHit": "Stacks added to creature per hit.",
+    "// MaxStacks": "Stack cap; at cap target counts as broken for Bludgeon bonus.",
+    "// DamageBonusPerStack": "Additive multiplier per stack on target before hit (0.2 = +20% per stack).",
+    "// BludgeonBonusWhenBroken": "Extra multiplier when target broken and hit is Bludgeon (0.25 = +25%).",
+    "SalvageWcids": [],
+    "BaseRecipeId": 4452,
+    "Name": "Shatter",
+    "Enabled": false,
+    "StacksPerHit": 1,
+    "MaxStacks": 5,
+    "DamageBonusPerStack": 0.2,
+    "BludgeonBonusWhenBroken": 0.25
   },
   "JewelryCleaveImbue": {
     "// SalvageWcids": "Salvage WCIDs that apply this imbue (Obsidian = 21063).",

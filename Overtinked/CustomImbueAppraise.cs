@@ -3,7 +3,7 @@ using ACE.Server.Network.Structure;
 
 namespace Overtinked;
 
-// Hemorrhage / Cleaving / Nether Rending: OvertinkedImbueStore (40133) + vanilla Nether bit.
+// Hemorrhage / Cleaving / Nether Rending / Shatter: OvertinkedImbueStore (40133) + vanilla Nether bit.
 // Retail client imbue names come only from PropertyInt.ImbuedEffect; custom imbues cannot appear in that bitmask without a client patch.
 // After full AppraiseInfo.BuildProfile: replace appraisal LongDesc (no weenie template text) and strip AppraisalLongDescDecoration
 // so the client does not splice workmanship/material/gems into the middle of custom imbue lines.
@@ -94,6 +94,15 @@ internal static class CustomImbueAppraise
             string label = string.IsNullOrWhiteSpace(n.Name) ? "Nether Rending" : n.Name.Trim();
             int pct = (int)Math.Round(100f * n.NetherDamageFraction);
             parts.Add($"{label}: +{pct}% Nether from primary hit");
+        }
+
+        if ((flags & OvertinkedImbueFlags.Shatter) != 0 && s.ShatterImbue?.Enabled == true)
+        {
+            ShatterImbueConfig sh = s.ShatterImbue;
+            string label = string.IsNullOrWhiteSpace(sh.Name) ? "Shatter" : sh.Name.Trim();
+            int dPct = (int)Math.Round(100f * sh.DamageBonusPerStack);
+            int bPct = (int)Math.Round(100f * sh.BludgeonBonusWhenBroken);
+            parts.Add($"{label}: +{dPct}% dmg/stack on target (max {sh.MaxStacks}), +{bPct}% Bludgeon when broken");
         }
 
         if (parts.Count == 0)

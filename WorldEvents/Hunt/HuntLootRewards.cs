@@ -5,7 +5,7 @@ namespace WorldEvents;
 
 internal static class HuntLootRewards
 {
-    internal static List<string> GrantPlacementLoot(Settings settings, int zeroBasedRank, double huntPoints, Player player, int participantCount = 1)
+    internal static List<string> GrantPlacementLoot(Settings settings, int zeroBasedRank, double huntPoints, Player? player, uint playerGuidWhenOffline, int participantCount = 1)
     {
         if (!settings.HuntGrantLootTableRolls)
             return new List<string>();
@@ -17,7 +17,7 @@ internal static class HuntLootRewards
         var floor = RarityFloorForPlace(zeroBasedRank);
         if (participantCount == 1 && settings.SoloCompetitorBonus.Enable)
             floor = (LootRarityFloor)Math.Min((int)floor + settings.SoloCompetitorBonus.LootFloorBonus, (int)LootRarityFloor.ExtremelyRare);
-        return GrantLootRollSync(player, zeroBasedRank + 1, floor, settings, isSalvage: zeroBasedRank == 2);
+        return GrantLootRollSync(player, playerGuidWhenOffline, zeroBasedRank + 1, floor, settings, isSalvage: zeroBasedRank == 2);
     }
 
     // 1st: uncommon+; 2nd: common+; 3rd: salvage
@@ -28,7 +28,7 @@ internal static class HuntLootRewards
         _ => LootRarityFloor.Any,
     };
 
-    static List<string> GrantLootRollSync(Player player, int place, LootRarityFloor floor, Settings settings, bool isSalvage = false)
+    static List<string> GrantLootRollSync(Player? player, uint playerGuidWhenOffline, int place, LootRarityFloor floor, Settings settings, bool isSalvage = false)
     {
         var names = new List<string>();
         var cfg = LootConfigStore.GetLoadedOrDefault();
@@ -41,13 +41,20 @@ internal static class HuntLootRewards
 
         if (item is null)
         {
-            ModManager.Log($"[Hunt] Hunt loot roll produced no item for {player.Name} (place {place}, floor {floor}).", ModManager.LogLevel.Warn);
+            var who = player?.Name ?? $"0x{playerGuidWhenOffline:X8}";
+            ModManager.Log($"[Hunt] Hunt loot roll produced no item for {who} (place {place}, floor {floor}).", ModManager.LogLevel.Warn);
             names.Add("(empty roll)");
             return names;
         }
 
         names.Add(item.Name ?? "loot");
         ModManager.Log($"[Hunt] Hunt loot roll WCID {item.WeenieClassId} ({item.Name}) place {place}, floor {floor}.");
+
+        if (player == null)
+        {
+            EventLootDelivery.QueueLootFromWorldObject(playerGuidWhenOffline, "Hunt", $"place {place}", item, ironman: false);
+            return names;
+        }
 
         var placeTag = $"place {place}";
         if (HuntBankInterop.TryLeyLineLedgerAutoBank(player, item, placeTag))
@@ -58,17 +65,7 @@ internal static class HuntLootRewards
         // tagged like vendor purchases and AutoLoot (see SsfMode PreTryCreateInInventoryWithNetworking).
         TagHuntRewardForSsfIfNeeded(player, item);
 
-        if (!player.TryCreateInInventoryWithNetworking(item, out _))
-        {
-            item.Location = player.Location.InFrontOf(0.5f);
-            item.EnterWorld();
-            player.SendMessage(
-                $"[Hunt] Hunt reward (place {place}) — could not add {item.Name} to your pack. Dropped at your feet.");
-        }
-        else
-        {
-            player.SendMessage($"[Hunt] Hunt reward (place {place}): {item.Name}.");
-        }
+        EventLootDelivery.TryDeliverLootNow(player, item, "Hunt", $"reward (place {place})", tryHuntBankFirst: false);
 
         return names;
     }

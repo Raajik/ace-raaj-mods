@@ -252,17 +252,33 @@ internal static class HuntRuntime
 
         anchor ??= PlayerManager.GetAllOnline().FirstOrDefault();
 
-        if (anchor == null)
-        {
-            ModManager.Log($"[Hunt] Hunt finalize bracket {bracketIdx}: no players online; placement XP and loot skipped.", ModManager.LogLevel.Info);
-            AnnounceHuntEndFromSnapshot(settings, bracketIdx, ordered, xpGranted, xpFormula, lootLines, new Dictionary<uint, double>());
-            return;
-        }
-
         // Unfilled top-3 slots (e.g. bracket had only 1 player) cascade to 1st place.
         var unfilledTopSlots = new List<int>();
         for (var r = count; r <= 2; r++)
             unfilledTopSlots.Add(r);
+
+        // Offline players: queue loot for /claim (no placement XP here).
+        for (var i = 0; i < count; i++)
+        {
+            var guid = ordered[i].Key;
+            if (PlayerManager.GetOnlinePlayer(guid) != null)
+                continue;
+
+            lootLines[i] = new List<string>();
+            lootLines[i].AddRange(HuntLootRewards.GrantPlacementLoot(settings, i, ordered[i].Value, null, guid, participantCount));
+            if (i == 0)
+            {
+                foreach (var extraRank in unfilledTopSlots)
+                    lootLines[0].AddRange(HuntLootRewards.GrantPlacementLoot(settings, extraRank, ordered[i].Value, null, guid, participantCount));
+            }
+        }
+
+        if (anchor == null)
+        {
+            ModManager.Log($"[Hunt] Hunt finalize bracket {bracketIdx}: no players online; placement XP skipped; offline loot queued for /claim.", ModManager.LogLevel.Info);
+            AnnounceHuntEndFromSnapshot(settings, bracketIdx, ordered, xpGranted, xpFormula, lootLines, new Dictionary<uint, double>());
+            return;
+        }
 
         var chain = new ActionChain();
         for (var i = 0; i < count; i++)
@@ -285,7 +301,7 @@ internal static class HuntRuntime
                         xpFormula[idx] = xf;
                     }
 
-                    lootLines[idx] = HuntLootRewards.GrantPlacementLoot(settings, idx, pts, recipient, participantCount);
+                    lootLines[idx] = HuntLootRewards.GrantPlacementLoot(settings, idx, pts, recipient, guid, participantCount);
 
                     // Grant repeatQB quest points for placement
                     PlacementQuestPoints.GrantByRank(recipient, idx, participantCount, "Hunt");
@@ -298,7 +314,7 @@ internal static class HuntRuntime
                             if (HuntXpRewards.TryGrantPlacementXp(settings, extraRank, recipient, participantCount, out var xa2, out _))
                                 xpGranted[0] = (xpGranted[0] ?? 0) + xa2;
 
-                            lootLines[0].AddRange(HuntLootRewards.GrantPlacementLoot(settings, extraRank, pts, recipient, participantCount));
+                            lootLines[0].AddRange(HuntLootRewards.GrantPlacementLoot(settings, extraRank, pts, recipient, guid, participantCount));
                         }
                     }
                 }

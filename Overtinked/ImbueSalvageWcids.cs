@@ -58,6 +58,9 @@ public static class ImbueSalvageWcids
         if (s.NetherRendingImbue?.SalvageWcids != null)
             foreach (uint w in s.NetherRendingImbue.SalvageWcids)
                 set.Add(w);
+        if (s.ShatterImbue?.SalvageWcids != null)
+            foreach (uint w in s.ShatterImbue.SalvageWcids)
+                set.Add(w);
         return set;
     }
 

@@ -59,6 +59,9 @@ public class Settings
     [JsonPropertyName("// NetherRendingImbue")]
     public string NetherRendingImbueDoc { get; init; } = "Nether Rending imbue (e.g. Onyx 21064). Inside: // lines first, then values.";
 
+    [JsonPropertyName("// ShatterImbue")]
+    public string ShatterImbueDoc { get; init; } = "Shatter imbue: custom 40133 bit + creature debuff stacks (FakeInt 40134) and broken flag (40135). Configure salvage WCIDs and combat tuning. Inside: // lines first, then values.";
+
     [JsonPropertyName("// JewelryCleaveImbue")]
     public string JewelryCleaveImbueDoc { get; init; } = "Jewelry cleave imbue (e.g. Obsidian 21063). Adds PropertyInt.Cleaving to jewelry so equipped pieces grant bonus cleave targets via JewelryCleaveBonus.";
 
@@ -155,6 +158,9 @@ public class Settings
 
     // Nether Rending imbue (e.g. Onyx 21064).
     public NetherRendingImbueCombatConfig NetherRendingImbue { get; set; } = new();
+
+    // Shatter imbue (weapon): stacking creature debuff + damage scaling; see ShatterDebuff / ShatterImbueCombat.
+    public ShatterImbueConfig ShatterImbue { get; set; } = new();
 
     // Jewelry cleave imbue (e.g. Obsidian 21063).
     public JewelryCleaveImbueConfig JewelryCleaveImbue { get; set; } = new();

@@ -24,14 +24,16 @@ internal static class PoiHuntRewards
         {
             var (guid, count) = ranked[i];
             var player = PlayerManager.GetOnlinePlayer(guid);
-            if (player == null) continue;
 
             // Grant XP per find
-            var xpTotal = (long)settings.PoiHunt.XpPerFind * count;
-            if (xpTotal > 0)
+            if (player != null)
             {
-                HuntXpInterop.GrantQuestXpWithoutMultiplier(player, xpTotal);
-                player.SendMessage($"[PoiHunt] Event complete! +{xpTotal:N0} XP for {count} find{(count == 1 ? "" : "s")}.");
+                var xpTotal = (long)settings.PoiHunt.XpPerFind * count;
+                if (xpTotal > 0)
+                {
+                    HuntXpInterop.GrantQuestXpWithoutMultiplier(player, xpTotal);
+                    player.SendMessage($"[PoiHunt] Event complete! +{xpTotal:N0} XP for {count} find{(count == 1 ? "" : "s")}.");
+                }
             }
 
             // Grant loot to top N
@@ -54,21 +56,20 @@ internal static class PoiHuntRewards
 
                 if (item != null)
                 {
-                    TagSsfIfNeeded(player, item);
-                    if (!player.TryCreateInInventoryWithNetworking(item, out _))
+                    if (player == null)
                     {
-                        item.Location = player.Location.InFrontOf(0.5f);
-                        item.EnterWorld();
-                        player.SendMessage($"[PoiHunt] #{i + 1} place reward: {item.Name} — pack full, dropped at your feet.");
+                        EventLootDelivery.QueueLootFromWorldObject(guid, "PoiHunt", $"#{i + 1} place", item, ironman: false);
                     }
                     else
                     {
-                        player.SendMessage($"[PoiHunt] #{i + 1} place reward: {item.Name}.");
+                        TagSsfIfNeeded(player, item);
+                        EventLootDelivery.TryDeliverLootNow(player, item, "[PoiHunt]", $"#{i + 1} place reward", tryHuntBankFirst: false);
                     }
                 }
                 else
                 {
-                    ModManager.Log($"[PoiHunt] Loot roll empty for {player.Name} (#{i + 1}, floor {floor}).", ModManager.LogLevel.Warn);
+                    var who = player?.Name ?? $"0x{guid:X8}";
+                    ModManager.Log($"[PoiHunt] Loot roll empty for {who} (#{i + 1}, floor {floor}).", ModManager.LogLevel.Warn);
                 }
             }
         }

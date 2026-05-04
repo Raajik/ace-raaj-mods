@@ -191,6 +191,7 @@ public static class ChaosFailureEffects
             if (!isImbue && settings.HemorrhageImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
             if (!isImbue && settings.CleavingImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
             if (!isImbue && settings.NetherRendingImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
+            if (!isImbue && settings.ShatterImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
 
             string effectKind = rule?.EffectKind ?? "";
             bool isDamageTinker = effectKind is "Damage" or "DamageMod" or "ElementalDamageMod";
@@ -271,7 +272,7 @@ public static class ChaosFailureEffects
         var imbue = ImbueSalvageWcids.GetImbueForWcid(wcid);
         if (imbue == null)
         {
-            // Custom imbue (Hemorrhage, Cleaving, Nether) — fallback to bonus slayer
+            // Custom imbue (Hemorrhage, Cleaving, Nether, Shatter) — fallback to bonus slayer
             ApplySlayer(player, target, itemName);
             return;
         }

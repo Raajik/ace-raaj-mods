@@ -35,7 +35,9 @@ Always check in this order:
 | `FakeBool 40130` | IsAwakened | EmpyreanAlteration |
 | `FakeInt 40131` | AwakenedTier | EmpyreanAlteration |
 | `FakeInt 40132` | PreImbuedCount | EmpyreanAlteration |
-| `FakeInt 40133` | Overtinked custom imbue bitmask (Hemorrhage/Cleaving/Nether on item) | Overtinked |
+| `FakeInt 40133` | Overtinked custom imbue bitmask (Hemorrhage/Cleaving/Nether/Shatter on item) | Overtinked |
+| `FakeInt 40134` | Shatter debuff stack count on creature | Overtinked |
+| `FakeInt 40135` | Shatter broken (max stacks) on creature | Overtinked |
 | `FakeString 11033` | OriginalName | EmpyreanAlteration |
 | `FakeString 11034` | ProfileName | EmpyreanAlteration |
 

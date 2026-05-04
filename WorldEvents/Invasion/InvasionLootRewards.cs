@@ -30,7 +30,6 @@ internal static class InvasionLootRewards
             if (points <= 0) continue;
 
             var player = PlayerManager.GetOnlinePlayer(guid);
-            if (player == null) continue;
 
             var floor = PlacementFloor(slot);
             if (solo && s.SoloCompetitorBonus.Enable)
@@ -40,7 +39,7 @@ internal static class InvasionLootRewards
                 ? $"solo bonus (#{slot + 1})"
                 : PlacementLabel(slot);
 
-            GrantItem(player, cfg, floor, label, isSalvage: slot == 2);
+            GrantItem(player, guid, cfg, floor, label, isSalvage: slot == 2);
         }
 
         // Grant placement QP to all ranked participants
@@ -76,10 +75,9 @@ internal static class InvasionLootRewards
             var (guid, _, points) = ranked[0];
             if (points <= 0) return;
             var player = PlayerManager.GetOnlinePlayer(guid);
-            if (player == null) return;
 
             for (var i = 0; i < 3; i++)
-                GrantItem(player, cfg, LootRarityFloor.Uncommon, $"solo boss kill (roll {i + 1}/3)");
+                GrantItem(player, guid, cfg, LootRarityFloor.Uncommon, $"solo boss kill (roll {i + 1}/3)");
         }
         else
         {
@@ -89,8 +87,7 @@ internal static class InvasionLootRewards
                 var (guid, _, points) = ranked[i];
                 if (points <= 0) continue;
                 var player = PlayerManager.GetOnlinePlayer(guid);
-                if (player == null) continue;
-                GrantItem(player, cfg, LootRarityFloor.Uncommon, $"boss kill (#{i + 1})");
+                GrantItem(player, guid, cfg, LootRarityFloor.Uncommon, $"boss kill (#{i + 1})");
             }
         }
     }
@@ -112,7 +109,7 @@ internal static class InvasionLootRewards
         _ => "3rd place",
     };
 
-    static void GrantItem(Player player, LootConfig cfg, LootRarityFloor floor, string label, bool isSalvage = false)
+    static void GrantItem(Player? player, uint characterGuidFull, LootConfig cfg, LootRarityFloor floor, string label, bool isSalvage = false)
     {
         WorldObject? item;
         if (isSalvage)
@@ -122,22 +119,19 @@ internal static class InvasionLootRewards
 
         if (item == null)
         {
-            ModManager.Log($"[Invasion] Loot roll empty for {player.Name} ({label}, floor {floor}).", ModManager.LogLevel.Warn);
+            var who = player?.Name ?? $"0x{characterGuidFull:X8}";
+            ModManager.Log($"[Invasion] Loot roll empty for {who} ({label}, floor {floor}).", ModManager.LogLevel.Warn);
+            return;
+        }
+
+        if (player == null)
+        {
+            EventLootDelivery.QueueLootFromWorldObject(characterGuidFull, "Invasion", label, item, ironman: false);
             return;
         }
 
         TagForSsfIfNeeded(player, item);
-
-        if (!player.TryCreateInInventoryWithNetworking(item, out _))
-        {
-            item.Location = player.Location.InFrontOf(0.5f);
-            item.EnterWorld();
-            player.SendMessage($"[EVENT - Invasion] {label}: {item.Name} — pack full, dropped at your feet.");
-        }
-        else
-        {
-            player.SendMessage($"[EVENT - Invasion] {label}: {item.Name}.");
-        }
+        EventLootDelivery.TryDeliverLootNow(player, item, "[EVENT - Invasion]", label, tryHuntBankFirst: false);
     }
 
     static void TagForSsfIfNeeded(Player player, WorldObject item)

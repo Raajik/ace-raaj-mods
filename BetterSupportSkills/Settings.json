@@ -143,7 +143,7 @@
     "PetAwarenessRange": 5.0,
     "FollowDistanceThreshold": 15.0,
     "FollowMaxDistanceBeforeDestroy": 250.0,
-    "BlockPetWarVoidRingWallSpells": true,
+    "BlockPetWarVoidRingWallSpells": false,
     "BlockPetProjectileDamageToOwner": true,
     "Druid": {
       "Enabled": true,

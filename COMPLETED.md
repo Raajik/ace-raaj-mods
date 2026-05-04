@@ -24,10 +24,22 @@
 
 ## 2026-05-03
 
+### Coalesced Mana WCIDs 42516–42518 — canonical weenie + biota (test DB)
+
+- **Cause:** Duplicate SQL: legacy [`CoalescedMana_LesserGreaterAetheric.sql`](WindblownContent/08-custom-items/CoalescedMana_LesserGreaterAetheric.sql) had `ItemUseable=1` (No), no `TargetType`, wrong Icon/Setup DIDs → unusable use-on-target + wrong client icon. Canonical data lives in [`01_CoalescedMana_LesserGreaterAetheric.sql`](WindblownContent/08-custom-items/01_CoalescedMana_LesserGreaterAetheric.sql).
+- **Repo:** Legacy file replaced with comment-only pointer; [`BetterLootControl/Readme.md`](BetterLootControl/Readme.md) documents canonical path; new [`EmpyreanAlteration/Content/SQL/03-coalesced-mana-biota-template.sql`](EmpyreanAlteration/Content/SQL/03-coalesced-mana-biota-template.sql) patches existing shard stacks (`ItemUseable` 524296, `TargetType` 35215, `UiEffects`, Icon/Setup DIDs).
+- **Test:** `mysqldump` backups under `WindblownContent/sql-backups/2026-05-03/` (`pre-coalesced-weeine-row.sql`, `pre-coalesced-biota-slice.sql`); applied `01_` to **`ace_world`**; applied `03` to **`ace_shard`**; verified `weenie_properties_int` 16/94/18 and biota 16/94 for sample coalesced biota ids. **Restart test `ACE.Server`** so weenie cache reloads.
+
+### BetterSupportSkills — Death Knight nether tier + pet ring/wall gate default (test)
+
+- **DK:** `HybridClasses.GetDeathKnightVoidSpellTier` now uses **`VoidMagic.Base`** (not `Current`) so buffs do not inflate proc tier; [`ClassPerks.md`](BetterSupportSkills/ClassPerks.md) updated.
+- **Pets:** `SummoningClasses.BlockPetWarVoidRingWallSpells` default **`false`** in code and [`Settings.json`](BetterSupportSkills/Settings.json) (ring/wall block was skewing pet spell picks toward non-offense); operators set **`true`** if Os’-style splash returns. [`README.md`](BetterSupportSkills/README.md) defaults + changelog updated.
+- **Build:** `dotnet build` BetterSupportSkills Release → `C:\ACE\Mods\BetterSupportSkills\`.
+
 ### BetterSupportSkills — CombatPet War/Void ring/wall gate + owner-safe spell projectiles (live deploy)
 
 - **Problem:** Elementalist (and similar) pets could cast weenie-driven **ring** / **wall** War or Void spells (e.g. Os’ Wall), splashing the summoner; vanilla `CanDamage` allows pet→owner for those projectiles.
-- **Fix:** `TryCastSpell` prefix on tracked `CombatPet`: skip harmful War/Void spells in **ring** / **wall** `SpellCategory` ranges (and 360° spread). `SpellProjectile.OnCollideObject` prefix: tracked pet vs `P_PetOwner` → `ProjectileImpact` only, no damage. Settings: `SummoningClasses.BlockPetWarVoidRingWallSpells`, `BlockPetProjectileDamageToOwner` (default true). Repo `Settings.json` updated.
+- **Fix:** `TryCastSpell` prefix on tracked `CombatPet`: skip harmful War/Void spells in **ring** / **wall** `SpellCategory` ranges (and 360° spread). `SpellProjectile.OnCollideObject` prefix: tracked pet vs `P_PetOwner` → `ProjectileImpact` only, no damage. Settings: `SummoningClasses.BlockPetWarVoidRingWallSpells` (initial ship default **true**; revised same-day subsection above to **false** default), `BlockPetProjectileDamageToOwner` (default **true**). Repo `Settings.json` updated.
 - **Docs:** `BetterSupportSkills/README.md` (new subsection + changelog).
 - **Live:** Built Release; copied `BetterSupportSkills.dll` + dependencies and repo `Settings.json` to `C:\ACE-WB\Mods\BetterSupportSkills\`; removed `BetterSupportSkills.deps.json` from live mod folder per mod hygiene. **Restart `ACE.Server.exe` for WB** to load the new DLL.
 

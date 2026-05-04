@@ -1494,8 +1494,8 @@ public class SummoningClassesSettings
     public float FollowMaxDistanceBeforeDestroy { get; set; } = 250.0f;
 
     [JsonPropertyName("// BlockPetWarVoidRingWallSpells")]
-    public string BlockPetWarVoidRingWallSpellsDoc { get; init; } = "When true, BSS-tracked CombatPets cannot cast harmful War/Void spells classified as Ring or Wall (blocks weenie AI ring/wall casts that splash the owner). Bolts, blasts, streaks unchanged.";
-    public bool BlockPetWarVoidRingWallSpells { get; set; } = true;
+    public string BlockPetWarVoidRingWallSpellsDoc { get; init; } = "When true, BSS-tracked CombatPets cannot cast harmful War/Void spells classified as Ring or Wall (Os'-style splash on owner). Default false so pet AI keeps offensive ring/wall options; enable on noisy servers.";
+    public bool BlockPetWarVoidRingWallSpells { get; set; } = false;
 
     [JsonPropertyName("// BlockPetProjectileDamageToOwner")]
     public string BlockPetProjectileDamageToOwnerDoc { get; init; } = "When true, SpellProjectile collisions from a BSS-tracked CombatPet against its P_PetOwner apply impact only (no damage). Belt-and-suspenders with ring/wall cast gate.";

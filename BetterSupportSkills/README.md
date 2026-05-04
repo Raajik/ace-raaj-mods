@@ -326,9 +326,9 @@ Failing a tinker while having any tinkering trained unlocks `/chaostinker` — a
 
 ### Summoning classes — pet War/Void ring and wall gate
 **Status:** Implemented (when `EnableSummoningClasses` is true)  
-**Defaults:** `SummoningClasses.BlockPetWarVoidRingWallSpells` and `BlockPetProjectileDamageToOwner` are **true**.
+**Defaults:** `BlockPetProjectileDamageToOwner` **true**; `BlockPetWarVoidRingWallSpells` **false** (pets keep offensive ring/wall AI; set **true** if Os’-style pet splash on owner returns).
 
-Auto-summoned **CombatPets** (Druid / Elementalist / Necromancer / Enchanter / Artificer) still use ACE creature spell selection for most attacks. War and Void **ring** and **wall** spells (plus full 360° spread projectiles) are blocked at `TryCastSpell` for pets tracked by this mod, so pets do not cast Os’-style ground rings/walls from the weenie bar. Bolts, streaks, arcs, blasts, and volleys are unchanged.
+Auto-summoned **CombatPets** (Druid / Elementalist / Necromancer / Enchanter / Artificer) still use ACE creature spell selection for most attacks. When `BlockPetWarVoidRingWallSpells` is **true**, War and Void **ring** and **wall** spells (plus full 360° spread projectiles) are blocked at `TryCastSpell` for pets tracked by this mod. Bolts, streaks, arcs, blasts, and volleys are unchanged either way.
 
 If a ring/wall projectile still appears from another source, `SpellProjectile.OnCollideObject` is patched so a tracked pet **cannot damage its `P_PetOwner`** (impact VFX only). Toggle either flag under `SummoningClasses` in `Settings.json` if you need legacy behavior.
 
@@ -388,7 +388,9 @@ All features can be toggled in `Settings.json`:
 ## Changelog
 
 ### 2026-05-03
-- **Summoning classes:** Block harmful War/Void **ring** and **wall** spells on BSS-tracked `CombatPet` casts (`BlockPetWarVoidRingWallSpells`). Skip **SpellProjectile** damage when the projectile source is such a pet and the target is the pet owner (`BlockPetProjectileDamageToOwner`). Intended pet magic remains **Loyalty** `CorruptionSpellIds` (when enabled) plus normal bolts/blasts.
+- **Death Knight:** Nether proc spell tier now uses **VoidMagic.Base** (not `Current`) so buffs do not spike low-level toons to high tiers; matches `GetSpellTier` rationale (`HybridClasses.GetDeathKnightVoidSpellTier`).
+- **Summoning classes:** `BlockPetWarVoidRingWallSpells` default **false** in code + `Settings.json` (was blocking ring/wall and skewing pet AI toward non-offense picks); set **true** per-shard if pet ring/wall splash on owner is a problem. `BlockPetProjectileDamageToOwner` unchanged.
+- **Summoning classes (earlier same day):** When the ring/wall gate is enabled, harmful War/Void ring/wall on BSS-tracked `CombatPet` casts is blocked; `BlockPetProjectileDamageToOwner` still skips pet projectile damage to owner.
 
 ### 2026-04-27 (v1.2.0)
 - **Healer class:** New combat class (Spec Healing + Spec Life Magic). AoE healing aura (15m, 3s tick) + Smite melee proc (50% chance, Harm/Drain Health Other)

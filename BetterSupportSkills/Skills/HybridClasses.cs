@@ -228,7 +228,8 @@ internal static class HybridClasses
     {
         var skill = player.GetCreatureSkill(Skill.VoidMagic);
         if (skill == null) return 1;
-        int value = (int)skill.Current;
+        // Base skill (unbuffed) — same rationale as GetSpellTier; Current can spike tiers from short buffs
+        int value = (int)skill.Base;
         int divider = Math.Max(1, skillPerTier);
         int tier = value / divider;
         return Math.Min(8, Math.Max(1, tier));

@@ -38,7 +38,20 @@ Use this as the checklist when adding the next custom trophy family.
 ## BetterSupportSkills
 
 - **`DrudgeCharmTrophies`** — species-gated drops (`TrophyDrops.cs`), WCIDs and fractions in `Settings.json`.
-- **`QuestTurnInCap`** — bulk turn-in for the same four WCIDs; scaled quest XP + optional banked **trade notes** on turn-in (currency only; charms remain physical until consumed by the NPC flow).
+- **`QuestTurnInCap`** — bulk turn-in for the same four WCIDs; scaled quest XP + **bank credit** on turn-in (charms stay physical until NPC consumes them).
+
+### Drudge charm turn-in: per-tier bank amounts (LLL)
+
+Credits **`BankCashProperty`** (default **39999**) via **`LeyLineLedgerBankInterop.IncBanked`**: Ley Line Ledger when that mod is loaded; otherwise the same delta is applied to the player’s **`PropertyInt64`** for that property id. **No** physical trade-note items are created.
+
+| Charm tier | WCID | Default bank per charm | Reference ACE trade note (operator / doc only) |
+|------------|------|------------------------|---------------------------------------------------|
+| Regular | 3669 | 25_000 | 7376 Trade Note (25,000) |
+| Quality | 850271 | 50_000 | 2626 Trade Note (50,000) |
+| Pristine | 850272 | 100_000 | 2627 Trade Note (100,000) |
+| Perfect | 850273 | 250_000 | 20630 Trade Note (250,000) |
+
+Settings keys: **`BankTradeNoteValuePerCharmRegular`**, **`BankTradeNoteValuePerCharmRare1`**, **`BankTradeNoteValuePerCharmRare2`**, **`BankTradeNoteValuePerCharmRare3`**.
 
 ---
 

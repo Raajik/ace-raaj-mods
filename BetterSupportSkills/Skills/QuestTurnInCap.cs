@@ -6,7 +6,7 @@ using ACE.Server.WorldObjects;
 namespace BetterSupportSkills.Skills;
 
 // Caps quest turn-in XP for high-value quest items dropped by TrophyDrops.
-// Bulk turn-ins for stackable quest charms (3669 + tier WCIDs): tier XP bracket + banked trade notes (LLL BankCashProperty).
+// Bulk turn-ins for stackable quest charms (3669 + tier WCIDs): tier XP bracket + bank credit (LLL BankCashProperty; tiered amounts, no physical trade notes).
 [HarmonyPatchCategory(nameof(Features.TrophyDropsSkill))]
 internal static class QuestTurnInCap
 {
@@ -27,6 +27,15 @@ internal static class QuestTurnInCap
         if (wcid == charm.WcidRare2) return charm.XpFractionRare2;
         if (wcid == charm.WcidRare3) return charm.XpFractionRare3;
         return 1f;
+    }
+
+    static long CharmBankAmountPerCharm(uint wcid, DrudgeCharmTrophySettings charm)
+    {
+        if (wcid == charm.WcidRegular) return charm.BankTradeNoteValuePerCharmRegular;
+        if (wcid == charm.WcidRare1) return charm.BankTradeNoteValuePerCharmRare1;
+        if (wcid == charm.WcidRare2) return charm.BankTradeNoteValuePerCharmRare2;
+        if (wcid == charm.WcidRare3) return charm.BankTradeNoteValuePerCharmRare3;
+        return 0;
     }
 
     [HarmonyPrefix]
@@ -94,12 +103,13 @@ internal static class QuestTurnInCap
                     else
                         amount = (long)scaled;
 
-                    long bankDelta = (long)charm.BankPyrealsPerCharm * totalTurnedIn;
+                    long perCharm = CharmBankAmountPerCharm(bulk.Wcid, charm);
+                    long bankDelta = perCharm * totalTurnedIn;
                     if (bankDelta > 0)
                         LeyLineLedgerBankInterop.IncBanked(__instance, charm.BankCashProperty, bankDelta);
 
                     __instance.SendMessage(
-                        $"You turn in {totalTurnedIn:N0} {GetItemName(bulk.Wcid)} for {amount:N0} experience! ({bankDelta:N0} trade notes banked.)",
+                        $"You turn in {totalTurnedIn:N0} {GetItemName(bulk.Wcid)} for {amount:N0} experience! ({bankDelta:N0} banked to your trade-note balance.)",
                         ChatMessageType.System);
                 }
                 else

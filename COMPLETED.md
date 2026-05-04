@@ -8,6 +8,12 @@
 
 ## 2026-05-04
 
+### BetterSupportSkills — drudge charm turn-in: tiered LLL bank credit
+
+- **`DrudgeCharmTrophySettings`** — Replaced flat **`BankPyrealsPerCharm`** with **`BankTradeNoteValuePerCharmRegular` / `Rare1` / `Rare2` / `Rare3`** (defaults **25k / 50k / 100k / 250k** per charm; align with ACE trade-note face values **7376 / 2626 / 2627 / 20630** for operators only). Still **`BankCashProperty`** + **`LeyLineLedgerBankInterop.IncBanked`** (no physical items).
+- **`QuestTurnInCap`** — **`CharmBankAmountPerCharm`** maps tier WCID to amount × stack; player message mentions trade-note **balance**.
+- **Docs:** `BetterSupportSkills/README.md`, `WindblownContent/docs/Windblown-Custom-Trophy-Settings.md`, `WindblownContent/Content/SQL/README-TrophyCharmCloneTemplate.md`; **`Settings.json`** defaults updated.
+
 ### WorldEvents — auto pending claims + reminders
 
 - **`PatchClass.PendingClaims.cs`** — Harmony postfix on `Player.PlayerEnterWorld`: `ActionChain` **3s** delay then **`SendPendingClaimsLoginReminder`** — **System** line if `PeekCount` **> 0** (no auto-grant on login). Background timer **`PendingClaimsReminderIntervalMinutes` (120)** calls `TickPendingClaimsForAllOnline` on each interval (**`TryAutoClaimPendingRewards`** = same path as `/claim` when queue non-empty).

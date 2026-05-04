@@ -192,7 +192,7 @@ public class Settings
     public QuestTrophyDropsSettings QuestTrophyDrops { get; set; } = new();
 
     [JsonPropertyName("// DrudgeCharmTrophies")]
-    public string DrudgeCharmTrophiesSectionDoc { get; init; } = "Species-gated Drudge charm bonus drops on kill (independent of Assess extra rolls). Tier WCIDs (Quality/Pristine/Perfect), per-tier drop chance, turn-in XP fraction of next-level bracket, banked trade notes per charm via LeyLineLedger BankCashProperty.";
+    public string DrudgeCharmTrophiesSectionDoc { get; init; } = "Species-gated Drudge charm bonus drops on kill (independent of Assess extra rolls). Tier WCIDs (Quality/Pristine/Perfect), per-tier drop chance, turn-in XP fraction of next-level bracket, per-tier bank credit (LLL BankCashProperty; same face values as ACE Trade Note 25k/50k/100k/250k weenies, no physical notes spawned).";
     public DrudgeCharmTrophySettings DrudgeCharmTrophies { get; set; } = new();
 
     [JsonPropertyName("// EnableTinkeringLootGating")]
@@ -1057,9 +1057,21 @@ public class DrudgeCharmTrophySettings
     public string XpFractionRare3Doc { get; init; } = "Same bracket fraction for Perfect tier (WcidRare3).";
     public float XpFractionRare3 { get; set; } = 0.15f;
 
-    [JsonPropertyName("// BankPyrealsPerCharm")]
-    public string BankPyrealsPerCharmDoc { get; init; } = "Banked trade notes (or other LLL bank currency) credited per charm turned in (total * count). Uses BankCashProperty (LeyLineLedger). Property name kept for JSON compatibility.";
-    public int BankPyrealsPerCharm { get; set; } = 10_000;
+    [JsonPropertyName("// BankTradeNoteValuePerCharmRegular")]
+    public string BankTradeNoteValuePerCharmRegularDoc { get; init; } = "Bank units credited per Regular charm (3669) on bulk turn-in; default matches ACE Trade Note (25,000) WCID 7376 face value. Credited via LeyLineLedgerBankInterop -> BankCashProperty (LLL when present, else PropertyInt64).";
+    public long BankTradeNoteValuePerCharmRegular { get; set; } = 25_000;
+
+    [JsonPropertyName("// BankTradeNoteValuePerCharmRare1")]
+    public string BankTradeNoteValuePerCharmRare1Doc { get; init; } = "Per Quality charm (WcidRare1); default 50_000 (ACE WCID 2626).";
+    public long BankTradeNoteValuePerCharmRare1 { get; set; } = 50_000;
+
+    [JsonPropertyName("// BankTradeNoteValuePerCharmRare2")]
+    public string BankTradeNoteValuePerCharmRare2Doc { get; init; } = "Per Pristine charm (WcidRare2); default 100_000 (ACE WCID 2627).";
+    public long BankTradeNoteValuePerCharmRare2 { get; set; } = 100_000;
+
+    [JsonPropertyName("// BankTradeNoteValuePerCharmRare3")]
+    public string BankTradeNoteValuePerCharmRare3Doc { get; init; } = "Per Perfect charm (WcidRare3); default 250_000 (ACE WCID 20630).";
+    public long BankTradeNoteValuePerCharmRare3 { get; set; } = 250_000;
 
     [JsonPropertyName("// BankCashProperty")]
     public string BankCashPropertyDoc { get; init; } = "PropertyInt64 key for banked currency / trade notes (match LeyLineLedger Settings.CashProperty, default 39999).";

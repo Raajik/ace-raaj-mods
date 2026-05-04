@@ -114,7 +114,10 @@
     "XpFractionRare1": 0.05,
     "XpFractionRare2": 0.075,
     "XpFractionRare3": 0.15,
-    "BankPyrealsPerCharm": 10000,
+    "BankTradeNoteValuePerCharmRegular": 25000,
+    "BankTradeNoteValuePerCharmRare1": 50000,
+    "BankTradeNoteValuePerCharmRare2": 100000,
+    "BankTradeNoteValuePerCharmRare3": 250000,
     "BankCashProperty": 39999
   },
   "EnableTinkeringLootGating": false,

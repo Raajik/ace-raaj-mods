@@ -688,51 +688,58 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (previousSolves > 0 && solves > previousSolves && !_creatingRepeatQbEntry)
         {
             var questName = QuestManager.GetQuestName(questFormat) ?? questFormat;
-            var baseName = LoremasterExtensions.GetBaseQuestName(questName);
-            var qst = instance.GetQuest(questName);
-            var qpVal = qst?.Value() ?? 0f;
-
-            // Check if questgiver is blacklisted
-            var giverWcid = (uint)(player.GetProperty(LMInt.LastQuestgiverWcid) ?? 0);
-            if (RepeatQbQuestgiverBlacklist.IsBlacklisted(giverWcid))
+            var worldQuest = DatabaseManager.World.GetCachedQuest(questName);
+            // Kill-task ticks 1→2→…→MaxSolves-1: not a repeat completion; skip TryAwardRepeatQuestPoints
+            // (avoids account cooldown line on every kill).
+            var isMidProgressKillTask = worldQuest != null && worldQuest.MaxSolves > 1 && solves < worldQuest.MaxSolves;
+            if (!isMidProgressKillTask)
             {
-                if (player.Notify(LMBool.NotifyQuest))
-                    player.SendMessage(LoremasterExtensions.FormatQpNotification($"This questgiver does not award repeatQB credit."));
-                return;
-            }
+                var baseName = LoremasterExtensions.GetBaseQuestName(questName);
+                var qst = instance.GetQuest(questName);
+                var qpVal = qst?.Value() ?? 0f;
 
-            // Check account-wide cooldown
-            bool stampGranted = player.TryAwardRepeatQuestPoints(baseName, qpVal);
-
-            if (stampGranted)
-            {
-                // Create a unique quest entry so this repeat counts as +1 QP
-                _creatingRepeatQbEntry = true;
-                try
+                // Check if questgiver is blacklisted
+                var giverWcid = (uint)(player.GetProperty(LMInt.LastQuestgiverWcid) ?? 0);
+                if (RepeatQbQuestgiverBlacklist.IsBlacklisted(giverWcid))
                 {
-                    var uniqueName = $"{baseName}#repeatQB{solves}";
-                    instance.Update(uniqueName);
-
-                    // Record in tracker
-                    if (player.Account?.AccountId is uint acctId)
-                        RepeatQbTracker.RecordRepeatQb(acctId, baseName);
-
                     if (player.Notify(LMBool.NotifyQuest))
-                        player.SendMessage(LoremasterExtensions.FormatQpNotification($"+1 repeatQB from {baseName}"));
+                        player.SendMessage(LoremasterExtensions.FormatQpNotification($"This questgiver does not award repeatQB credit."));
+                    return;
                 }
-                finally
+
+                // Check account-wide cooldown
+                bool stampGranted = player.TryAwardRepeatQuestPoints(baseName, qpVal);
+
+                if (stampGranted)
                 {
-                    _creatingRepeatQbEntry = false;
+                    // Create a unique quest entry so this repeat counts as +1 QP
+                    _creatingRepeatQbEntry = true;
+                    try
+                    {
+                        var uniqueName = $"{baseName}#repeatQB{solves}";
+                        instance.Update(uniqueName);
+
+                        // Record in tracker
+                        if (player.Account?.AccountId is uint acctId)
+                            RepeatQbTracker.RecordRepeatQb(acctId, baseName);
+
+                        if (player.Notify(LMBool.NotifyQuest))
+                            player.SendMessage(LoremasterExtensions.FormatQpNotification($"+1 repeatQB from {baseName}"));
+                    }
+                    finally
+                    {
+                        _creatingRepeatQbEntry = false;
+                    }
                 }
-            }
 
-            if (ChallengeModesActiveBridge.PlayerHasActiveChallenge(player) && stampGranted)
-            {
-                var current = (float)(player.GetProperty(LMFloat.ChallengeRunQuestPoints) ?? 0f);
-                player.SetProperty(LMFloat.ChallengeRunQuestPoints, current + qpVal);
-            }
+                if (ChallengeModesActiveBridge.PlayerHasActiveChallenge(player) && stampGranted)
+                {
+                    var current = (float)(player.GetProperty(LMFloat.ChallengeRunQuestPoints) ?? 0f);
+                    player.SetProperty(LMFloat.ChallengeRunQuestPoints, current + qpVal);
+                }
 
-            player.UpdateQuestPoints();
+                player.UpdateQuestPoints();
+            }
         }
 
         // ── Quest removed (any → 0) ──────────────────────────────────────────
@@ -769,12 +776,20 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     public static bool PreHandleKillTask(string killQuestName, WorldObject killedCreature, ref QuestManager __instance)
     {
         if (__instance.Creature is not Player player) return true;
+        if (Settings is null) return true;
 
         var questName = QuestManager.GetQuestName(killQuestName);
         if (string.IsNullOrEmpty(questName)) return true;
 
         // If player doesn't have the quest yet, let vanilla handle acceptance
         if (!__instance.HasQuest(questName))
+            return true;
+
+        if (killedCreature == null)
+            return true;
+
+        var dbQuest = DatabaseManager.World.GetCachedQuest(questName);
+        if (dbQuest == null)
             return true;
 
         // If already max-solved, check cooldown for auto-reaccept
@@ -813,6 +828,22 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             }
 
             // Still on cooldown — skip vanilla
+            return false;
+        }
+
+        if (Settings.CompactKillTaskMessages && dbQuest.MaxSolves > 0)
+        {
+            __instance.Stamp(killQuestName);
+            var playerQuest = __instance.GetQuest(questName);
+            if (playerQuest == null)
+                return true;
+
+            var cur = playerQuest.NumTimesCompleted;
+            var max = dbQuest.MaxSolves;
+            var line = __instance.IsMaxSolves(questName)
+                ? $"({cur}/{max}) complete."
+                : $"({cur}/{max})";
+            player.Session.Network.EnqueueSend(new GameMessageSystemChat(line, ChatMessageType.Broadcast));
             return false;
         }
 

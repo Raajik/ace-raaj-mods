@@ -161,6 +161,10 @@ public class Settings
     public string EnableAccountWideRepeatCooldownDoc { get; init; } = "When true, repeat quest completions are tracked account-wide with a per-quest cooldown. Alts on the same account share cooldowns.";
     public bool EnableAccountWideRepeatCooldown { get; set; } = true;
 
+    [JsonPropertyName("// CompactKillTaskMessages")]
+    public string CompactKillTaskMessagesDoc { get; init; } = "When true, kill-task progress uses a short (current/max) line instead of vanilla multi-sentence chat.";
+    public bool CompactKillTaskMessages { get; set; } = true;
+
     [JsonPropertyName("// AccountRepeatCooldownSeconds")]
     public string AccountRepeatCooldownSecondsDoc { get; init; } = "Account-wide cooldown between repeat completions of the same quest (default 10h = 36000).";
     public int AccountRepeatCooldownSeconds { get; set; } = 36000;

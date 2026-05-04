@@ -47,5 +47,7 @@
   "// EnableDelayedSalvageSweep": "When true, on container/corpse close (excluding house storage), items with a MaterialType (or raw salvage bags) are auto-salvaged into the BSS material bank. Non-material items are left in the container.",
   "EnableDelayedSalvageSweep": true,
   "// EnableLevel8CompsConversion": "When true, level 8 spellcraft comps are auto-looted as pyreal value.",
-  "EnableLevel8CompsConversion": true
+  "EnableLevel8CompsConversion": true,
+  "// DefaultAutolootSalvageBundleApplied": "When true: new chars and old prefs without AutolootSalvageDefaultsApplied get full /autoloot on + AutoSalvage once.",
+  "DefaultAutolootSalvageBundleApplied": true
 }

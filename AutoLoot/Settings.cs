@@ -84,4 +84,8 @@ public class Settings
     [JsonPropertyName("// EnableLevel8CompsConversion")]
     public string EnableLevel8CompsConversionDoc { get; init; } = "When true, level 8 spellcrafting components (quills, inks, skill glyphs) are auto-looted and converted to pyreal value. When false, they are kept as physical items. Hidden from player toggle menu.";
     public bool EnableLevel8CompsConversion { get; set; } = true;
+
+    [JsonPropertyName("// DefaultAutolootSalvageBundleApplied")]
+    public string DefaultAutolootSalvageBundleAppliedDoc { get; init; } = "When true: first login (no prefs file) runs full /autoloot on + AutoSalvage; existing prefs with AutolootSalvageDefaultsApplied=false get the same once, then the flag is saved true.";
+    public bool DefaultAutolootSalvageBundleApplied { get; set; } = true;
 }

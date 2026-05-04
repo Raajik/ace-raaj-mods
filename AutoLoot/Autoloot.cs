@@ -22,6 +22,9 @@ public class AutoLoot
     static readonly ConcurrentDictionary<uint, bool> lockpickUnlockNotified = new();
     static readonly ConcurrentDictionary<uint, bool> salvageUnlockNotified = new();
 
+    // Mirrors PlayerPrefs.AutolootSalvageDefaultsApplied; updated on load/save for one-time full defaults.
+    static readonly ConcurrentDictionary<uint, bool> AutolootSalvageDefaultsAppliedByPlayer = new();
+
     static uint LootKey(Player player) => player.Guid.Full;
 
     static string LootDisplayName(WorldObject item) => string.IsNullOrEmpty(item.Name) ? $"unnamed item (wcid {item.WeenieClassId})" : item.Name;
@@ -100,6 +103,36 @@ public class AutoLoot
         }
 
         return list.ToArray();
+    }
+
+    // Same as /autoloot on: all unlocked profiles + unknown scrolls + AutoSalvage (BetterSupportSkills).
+    static void ApplyFullAutolootOn(Player player)
+    {
+        if (player is null || PatchClass.Settings is null)
+            return;
+
+        EnsureLootProfilePathForDiskOps();
+        if (string.IsNullOrWhiteSpace(PatchClass.Settings.LootProfilePath))
+            return;
+
+        string[] profiles = ResolveCommandProfilePaths(PatchClass.Settings);
+        ConcurrentDictionary<string, LootCore> playerProfiles = lootProfiles.GetOrAdd(LootKey(player), _ => new ConcurrentDictionary<string, LootCore>());
+
+        foreach (string path in profiles)
+        {
+            if (playerProfiles.ContainsKey(path))
+                continue;
+            if (IsProfileLockedByName(path, player))
+                continue;
+
+            LootCore core = new LootCore();
+            core.Startup();
+            core.LoadProfile(path, false);
+            playerProfiles[path] = core;
+        }
+
+        unknownScrolls[LootKey(player)] = true;
+        BetterSupportSkillsBridge.SetSalvageEnabled(player, true);
     }
 
     // PlayerEnterWorld can run before OnStartSuccess; Settings.json may leave LootProfilePath empty until Normalize runs.
@@ -204,7 +237,16 @@ public class AutoLoot
 
         TrySeedDefaultLootProfilesFromDisk(player);
 
-        unknownScrolls[LootKey(player)] = true;
+        if (PatchClass.Settings.DefaultAutolootSalvageBundleApplied)
+        {
+            ApplyFullAutolootOn(player);
+            AutolootSalvageDefaultsAppliedByPlayer[LootKey(player)] = true;
+        }
+        else
+        {
+            unknownScrolls[LootKey(player)] = true;
+            AutolootSalvageDefaultsAppliedByPlayer[LootKey(player)] = false;
+        }
 
         if (!lootProfiles.GetOrAdd(LootKey(player), _ => new ConcurrentDictionary<string, LootCore>()).IsEmpty
             || unknownScrolls.GetOrAdd(LootKey(player), false))
@@ -557,30 +599,45 @@ public class AutoLoot
                 return;
             }
 
+            AutolootSalvageDefaultsAppliedByPlayer[LootKey(player)] = prefs.AutolootSalvageDefaultsApplied;
+
+            bool ranFullDefaults = false;
+            if (PatchClass.Settings.DefaultAutolootSalvageBundleApplied && !prefs.AutolootSalvageDefaultsApplied)
+            {
+                ApplyFullAutolootOn(player);
+                AutolootSalvageDefaultsAppliedByPlayer[LootKey(player)] = true;
+                ranFullDefaults = true;
+                SavePrefs(player);
+            }
+
             var allProfiles = Directory.GetFiles(
                 PatchClass.Settings.LootProfilePath, "*.utl", SearchOption.TopDirectoryOnly);
 
             var playerProfileMap = lootProfiles.GetOrAdd(LootKey(player), _ => new ConcurrentDictionary<string, LootCore>());
 
-            foreach (var name in prefs.ActiveProfileNames)
+            if (!ranFullDefaults)
             {
-                var fullPath = allProfiles.FirstOrDefault(p =>
-                    Path.GetFileName(p).Equals(name, StringComparison.OrdinalIgnoreCase));
+                foreach (var name in prefs.ActiveProfileNames)
+                {
+                    var fullPath = allProfiles.FirstOrDefault(p =>
+                        Path.GetFileName(p).Equals(name, StringComparison.OrdinalIgnoreCase));
 
-                if (fullPath == null || playerProfileMap.ContainsKey(fullPath))
-                    continue;
+                    if (fullPath == null || playerProfileMap.ContainsKey(fullPath))
+                        continue;
 
-                var core = new LootCore();
-                core.Startup();
-                core.LoadProfile(fullPath, false);
-                playerProfileMap[fullPath] = core;
+                    var core = new LootCore();
+                    core.Startup();
+                    core.LoadProfile(fullPath, false);
+                    playerProfileMap[fullPath] = core;
+                }
             }
 
-            if (playerProfileMap.IsEmpty && TrySeedDefaultLootProfilesFromDisk(player))
+            if (!ranFullDefaults && playerProfileMap.IsEmpty && TrySeedDefaultLootProfilesFromDisk(player))
                 SavePrefs(player);
 
             lootNotifications[LootKey(player)] = prefs.LootNotifications;
-            unknownScrolls[LootKey(player)] = prefs.UnknownScrollsEnabled;
+            if (!ranFullDefaults)
+                unknownScrolls[LootKey(player)] = prefs.UnknownScrollsEnabled;
 
             keyUnlocks[LootKey(player)] = prefs.KeyUnlocks;
             lockpickUnlocks[LootKey(player)] = prefs.LockpickUnlocks;
@@ -619,6 +676,7 @@ public class AutoLoot
                 KeyUnlockNotified = keyUnlockNotified.GetOrAdd(LootKey(player), false),
                 LockpickUnlockNotified = lockpickUnlockNotified.GetOrAdd(LootKey(player), false),
                 SalvageUnlockNotified = salvageUnlockNotified.GetOrAdd(LootKey(player), false),
+                AutolootSalvageDefaultsApplied = AutolootSalvageDefaultsAppliedByPlayer.GetOrAdd(LootKey(player), false),
             };
 
             var path = GetPlayerDataPath(player);
@@ -741,10 +799,22 @@ public class AutoLoot
                     playerProfiles[path] = core;
                     enabled++;
                 }
-                if (!unknownScrolls.GetOrAdd(LootKey(player), false)) { unknownScrolls[LootKey(player)] = true; enabled++; }
+                if (!unknownScrolls.GetOrAdd(LootKey(player), false))
+                {
+                    unknownScrolls[LootKey(player)] = true;
+                    enabled++;
+                }
+
+                if (!BetterSupportSkillsBridge.IsSalvageEnabled(player))
+                {
+                    BetterSupportSkillsBridge.SetSalvageEnabled(player, true);
+                    enabled++;
+                }
+
+                AutolootSalvageDefaultsAppliedByPlayer[LootKey(player)] = true;
                 SavePrefs(player);
                 player.SendMessage(enabled > 0
-                    ? $"Enabled {enabled} profile(s). Type /autoloot to see the list."
+                    ? $"Enabled {enabled} option(s) (profiles, unknown scrolls, and/or AutoSalvage). Type /autoloot to see the list."
                     : "Everything is already enabled.");
                 return;
             }

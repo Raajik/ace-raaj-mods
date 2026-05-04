@@ -13,4 +13,7 @@ public class PlayerPrefs
     public bool KeyUnlockNotified { get; set; } = false;
     public bool LockpickUnlockNotified { get; set; } = false;
     public bool SalvageUnlockNotified { get; set; } = false;
+
+    // One-time: when false, server applies full /autoloot on + AutoSalvage once (see Settings.DefaultAutolootSalvageBundleApplied).
+    public bool AutolootSalvageDefaultsApplied { get; set; }
 }

@@ -628,6 +628,20 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                 return;
             }
 
+            if (parameters.Length >= 2 && parameters[1].Equals("all", StringComparison.OrdinalIgnoreCase))
+            {
+                if (parameters.Length >= 3 && parameters[2].Equals("off", StringComparison.OrdinalIgnoreCase))
+                {
+                    AutoBuff.SetAutoBuffEnabled(player, false);
+                    player.SendMessage("Auto-buff disabled.");
+                    return;
+                }
+
+                AutoBuff.SetAutoBuffEnabled(player, true);
+                player.SendMessage("Auto-buff: ON (timer recast for all eligible buffs).");
+                return;
+            }
+
             var current = AutoBuff.IsAutoBuffEnabled(player);
             AutoBuff.SetAutoBuffEnabled(player, !current);
             player.SendMessage($"Auto-buff: {(!current ? "ON" : "OFF")}.");
@@ -662,7 +676,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             return;
         }
 
-        player.SendMessage("Usage: /buffs | /buffs auto | /buffs auto off | /buffs status");
+        player.SendMessage("Usage: /buffs | /buffs auto | /buffs auto all | /buffs auto all off | /buffs auto off | /buffs status");
     }
 }
 

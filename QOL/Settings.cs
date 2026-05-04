@@ -667,6 +667,10 @@ public class AutoBuffSettings
     [JsonPropertyName("// RecastBufferSeconds")]
     public string RecastBufferSecondsDoc { get; init; } = "Recast buffs when they have less than this many seconds remaining.";
     public int RecastBufferSeconds { get; set; } = 60;
+
+    [JsonPropertyName("// DefaultAutoRecastEnabled")]
+    public string DefaultAutoRecastEnabledDoc { get; init; } = "When TogglePropertyId was never set on the character, timer auto-recast uses this (default true). /buffs auto off stores 0; /buffs auto on stores 1.";
+    public bool DefaultAutoRecastEnabled { get; set; } = true;
 }
 
 public class XpSpendSettings

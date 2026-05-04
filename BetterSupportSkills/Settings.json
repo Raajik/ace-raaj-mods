@@ -134,7 +134,8 @@
     "UnitsPerItem": 1,
     "AutoDepositPercent": 0.001,
     "AutoDepositPercentUnlocked": 0.0005,
-    "RequireQuestsForUnlock": 100
+    "RequireQuestsForUnlock": 100,
+    "DefaultAutoSalvageEnabled": true
   },
   "EnableSummoningClasses": true,
   "SummoningClasses": {

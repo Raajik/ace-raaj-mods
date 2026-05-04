@@ -65,7 +65,10 @@ internal static class AutoBuff
 
     public static bool IsAutoBuffEnabled(Player player)
     {
-        return (player.GetProperty((PropertyInt)Settings.AutoBuff.TogglePropertyId) ?? 0) != 0;
+        int? v = player.GetProperty((PropertyInt)Settings.AutoBuff.TogglePropertyId);
+        if (v is null)
+            return Settings.AutoBuff.DefaultAutoRecastEnabled;
+        return v != 0;
     }
 
     public static void SetAutoBuffEnabled(Player player, bool enabled)

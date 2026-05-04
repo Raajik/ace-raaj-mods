@@ -670,6 +670,10 @@ public class SalvageSettings
     [JsonPropertyName("// MaterialBankPropertyBase")]
     public string MaterialBankPropertyBaseDoc { get; init; } = "PropertyInt64 base ID for material bank deposits. Must match LeyLineLedger SalvageBank.FirstMaterialBankPropertyId (default 40201).";
     public int MaterialBankPropertyBase { get; set; } = 40201;
+
+    [JsonPropertyName("// DefaultAutoSalvageEnabled")]
+    public string DefaultAutoSalvageEnabledDoc { get; init; } = "When no explicit per-character toggle is stored yet, AutoSalvage is on if true (default). /autoloot salvage and /autosalvage still set explicit off/on.";
+    public bool DefaultAutoSalvageEnabled { get; set; } = true;
 }
 
 public class TinkeringLootGatingSettings

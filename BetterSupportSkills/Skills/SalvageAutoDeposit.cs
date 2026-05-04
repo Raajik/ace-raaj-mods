@@ -11,6 +11,7 @@ namespace BetterSupportSkills.Skills;
 [HarmonyPatchCategory(nameof(Features.SalvageSkill))]
 public static class SalvageAutoDeposit
 {
+    // Per-player explicit toggle. Missing key → use SalvageSettings.DefaultAutoSalvageEnabled.
     static readonly ConcurrentDictionary<uint, bool> AutoSalvageEnabled = new();
     static readonly ConcurrentDictionary<uint, Dictionary<int, double>> PlayerAccumulated = new();
     static readonly ConcurrentDictionary<uint, DateTime> LastMessageTime = new();
@@ -26,15 +27,33 @@ public static class SalvageAutoDeposit
         { 72, new[] { 73, 74, 75, 76, 77 } },     // Wood
     };
 
-    public static bool IsEnabled(Player player) => AutoSalvageEnabled.GetOrAdd(player.Guid.Full, _ => false);
+    static bool DefaultAutoSalvageFromSettings()
+    {
+        try
+        {
+            return PatchClass.Settings?.Salvage?.DefaultAutoSalvageEnabled != false;
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    public static bool IsEnabled(Player player)
+    {
+        if (player is null)
+            return false;
+        uint guid = player.Guid.Full;
+        if (AutoSalvageEnabled.TryGetValue(guid, out bool v))
+            return v;
+        return DefaultAutoSalvageFromSettings();
+    }
 
     public static void SetEnabled(Player player, bool enabled)
     {
-        var guid = player.Guid.Full;
-        if (enabled)
-            AutoSalvageEnabled[guid] = true;
-        else
-            AutoSalvageEnabled.TryRemove(guid, out _);
+        if (player is null)
+            return;
+        AutoSalvageEnabled[player.Guid.Full] = enabled;
     }
 
     // ── Skill gate: returns salvage rate (0.0–1.0) based on highest tinkering skill ──

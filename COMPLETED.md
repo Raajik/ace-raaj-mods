@@ -6,6 +6,17 @@
 
 ---
 
+## 2026-05-04
+
+### BetterLootControl — Vanilla Coalesced Mana on modern ACE (live)
+
+- **Cause:** Windblown `ACE.Server.dll` has **no** `CreateGenericObjects` (legacy loot helper removed); `StripGenericLootCoalescedMana` never applied. Startup logged a **WARN** every boot. Vanilla mundane coalesced still rolled via `TryRollMundaneAddon` → `TryRollCoalescedMana` → `CreateCoalescedMana`; only `CreateCoalescedMana` was patched, so behavior depended on that single hook.
+- **Fix:** New `SuppressVanillaTryRollCoalescedMana` Harmony prefix on `LootGenerationFactory.TryRollCoalescedMana` (DeclaredMethod): when BLC enabled, skip original and return null so **only** `GlobalRareDrops` supplies Coalesced at `CoalescedManaDropChance`. `DisableVanillaCoalescedMana` now targets `CreateCoalescedMana` via `DeclaredMethod`. `StripGenericLootCoalescedMana` uses `DeclaredMethod` and logs **Info** when `CreateGenericObjects` is absent (expected).
+- **Files:** `BetterLootControl/SuppressVanillaTryRollCoalescedMana.cs`, `DisableVanillaCoalescedMana.cs`, `StripGenericLootCoalescedMana.cs`, `BetterLootControl/Readme.md`.
+- **Live:** Built Release; copied `BetterLootControl.dll` + repo `Settings.json` to `C:\ACE-WB\Mods\BetterLootControl\`; WB `ACE.Server` restart / hot-reload — log shows **6** BLC methods patched and Info line for skipped strip.
+
+---
+
 ## 2026-05-03
 
 ### BetterSupportSkills — CombatPet War/Void ring/wall gate + owner-safe spell projectiles (live deploy)

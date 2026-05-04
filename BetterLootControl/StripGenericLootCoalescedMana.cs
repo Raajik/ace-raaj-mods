@@ -11,7 +11,8 @@ internal static class StripGenericLootCoalescedMana
 {
     static MethodBase? TargetMethod()
     {
-        return AccessTools.Method(typeof(LootGenerationFactory), "CreateGenericObjects", new[] { typeof(TreasureDeath) });
+        // Legacy loot path only; many forks omit this method entirely (see LootGenerationFactory_Generic).
+        return AccessTools.DeclaredMethod(typeof(LootGenerationFactory), "CreateGenericObjects", new[] { typeof(TreasureDeath) });
     }
 
     static bool Prepare()
@@ -19,8 +20,8 @@ internal static class StripGenericLootCoalescedMana
         if (TargetMethod() == null)
         {
             ModManager.Log(
-                "[BetterLootControl] CreateGenericObjects not found; GenericLootMatrix coalesced strip not applied.",
-                ModManager.LogLevel.Warn);
+                "[BetterLootControl] CreateGenericObjects not present on this ACE build; GenericLootMatrix coalesced strip skipped (expected on modern loot).",
+                ModManager.LogLevel.Info);
             return false;
         }
 

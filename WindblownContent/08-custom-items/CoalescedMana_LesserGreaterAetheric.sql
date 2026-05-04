@@ -6,8 +6,8 @@ DELETE FROM `weenie` WHERE `class_Id` IN (42516, 42517, 42518);
 INSERT INTO `weenie` (`class_Id`, `class_Name`, `type`, `last_Modified`)
 VALUES
  (42516, 'ace42516-lessercoalescedmana', 51, '2021-11-01 00:00:00')
-,(42517, 'ace42516-greatercoalescedmana', 51, '2021-11-01 00:00:00')
-,(42518, 'ace42516-aethericcoalescedmana', 51, '2021-11-01 00:00:00');
+,(42517, 'ace42517-greatercoalescedmana', 51, '2021-11-01 00:00:00')
+,(42518, 'ace42518-aethericcoalescedmana', 51, '2021-11-01 00:00:00');
 
 INSERT INTO `weenie_properties_int` (`object_Id`, `type`, `value`)
 VALUES

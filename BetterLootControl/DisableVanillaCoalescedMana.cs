@@ -16,7 +16,7 @@ internal static class DisableVanillaCoalescedMana
     static MethodBase? TargetMethod()
     {
         // LootGenerationFactory_Aetheria.cs: private static WorldObject CreateCoalescedMana(TreasureDeath profile)
-        return AccessTools.Method(typeof(LootGenerationFactory), "CreateCoalescedMana", new[] { typeof(TreasureDeath) });
+        return AccessTools.DeclaredMethod(typeof(LootGenerationFactory), "CreateCoalescedMana", new[] { typeof(TreasureDeath) });
     }
 
     static bool Prepare()

@@ -171,6 +171,10 @@
     "FollowMaxDistanceBeforeDestroy": 250.0,
     "BlockPetWarVoidRingWallSpells": false,
     "BlockPetProjectileDamageToOwner": true,
+    "ArtificerWispMeleeMinCycleSeconds": 0.5,
+    "ArtificerWispImperilDrainProcChance": 1.0,
+    "ArtificerWispProcMaxSpellTier": 8,
+    "ArtificerWispProcAoERadiusMeters": 10.0,
     "Druid": {
       "Enabled": true,
       "TotalCap": 4,
@@ -222,9 +226,9 @@
     },
     "Artificer": {
       "Enabled": true,
-      "TotalCap": 4,
+      "TotalCap": 1,
       "PetTypes": {
-        "Wisps": { "Enabled": true, "Count": 4 },
+        "Wisps": { "Enabled": true, "Count": 1 },
         "Custom1": { "Enabled": false, "Count": 4 },
         "Custom2": { "Enabled": false, "Count": 4 },
         "Custom3": { "Enabled": false, "Count": 4 }

@@ -48,6 +48,13 @@
 
 ## 2026-05-04
 
+### BetterSupportSkills — Artificer wisp tuning (count, procs, tier 8, melee cadence)
+
+- **Summon:** `TrySummonForClass` uses **min 1** (not 4) for **Artificer + Wisps** so `PetTypes.Wisps.Count` and `TotalCap` honor **1** wisp. `Settings.json`: Artificer `TotalCap` **1**, Wisps `Count` **1**.
+- **Procs:** `ArtificerWispImperilDrainProcChance` default **1.0** (replaces fixed **25%** roll). AoE radius from **`ArtificerWispProcAoERadiusMeters`** (default **10**). Spell tier capped by **`ArtificerWispProcMaxSpellTier`** (default **8**); `CacheArtificerSpells` adds **ImperilOther7/8** + **DrainHealth7/8** via `SpellId`, re-inits cache when tier **8** missing.
+- **Melee cadence:** `PostMeleeArtificerWispCycle` postfix on **`Creature.MeleeAttack`** — `NextAttackTime = PrevAttackTime + max(ArtificerWispMeleeMinCycleSeconds, animLength)` for BSS-tracked Artificer pets (**default 0.5s** floor when anim is short).
+- **Docs:** `ClassPerks.md`, `Settings.cs` `SummoningClassesSectionDoc`. `PetTypeSettings.CountDoc` notes Artificer Wisps min **1**.
+
 ### Overtinked — chaos failure redesign tunables
 
 - **Settings:** `ChaosDamageShuffleBonusPercent`, `ChaosLightEncumbranceVal`, `ChaosLightPyrealValue`, `ChaosBlessedBurdenEncumbranceVal`, `ChaosOverchargeMultiplierMin`, `ChaosOverchargeMultiplierMaxExclusive` (+ matching `//` doc keys in `Settings.cs` / `Settings.json`).

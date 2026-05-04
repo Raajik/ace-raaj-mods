@@ -23,7 +23,7 @@ This document covers all **Combat Classes**, **Hybrid Classes**, **Healer**, **A
 | **Elementalist** | Spec Summoning + Spec WarMagic | Auto-summon elemental pets |
 | **Necromancer** | Spec Summoning + Spec VoidMagic | Auto-summon undead pets |
 | **Enchanter** | Spec Summoning + Spec CreatureEnchantment | Auto-summon golem pets |
-| **Artificer** | Spec Summoning + Spec ItemEnchantment | Auto-summon wisps; wisp procs Imperil + Drain on hit |
+| **Artificer** | Spec Summoning + Spec ItemEnchantment | Auto-summon wisps (default 1); wisp melee procs Imperil + Drain on struck target + foes in AoE radius; tier scales with Item Enchantment up to 8; optional fast melee cycle via `ArtificerWispMeleeMinCycleSeconds` |
 
 ---
 

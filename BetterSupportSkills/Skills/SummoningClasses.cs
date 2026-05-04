@@ -154,6 +154,7 @@ public static class SummoningClasses
     static readonly Dictionary<int, uint> ImperilSpellIds = new();
     static readonly Dictionary<int, uint> DrainHealthSpellIds = new();
     static bool _spellsCached = false;
+    static readonly object ArtificerSpellCacheLock = new();
 
 
 
@@ -318,23 +319,53 @@ public static class SummoningClasses
 
     public static void CacheArtificerSpells()
     {
-        if (_spellsCached) return;
-        try
+        lock (ArtificerSpellCacheLock)
         {
-            var imperilIds = new[] { 25u, 1843u, 1844u, 1845u, 1846u, 1847u, 1848u };
-            for (int i = 0; i < imperilIds.Length; i++)
-                ImperilSpellIds[i] = imperilIds[i];
+            if (_spellsCached && ImperilSpellIds.ContainsKey(8))
+                return;
 
-            var drainIds = new[] { 1108u, 1109u, 1110u, 1111u, 1112u, 1113u, 1114u };
-            for (int i = 0; i < drainIds.Length; i++)
-                DrainHealthSpellIds[i] = drainIds[i];
+            try
+            {
+                ImperilSpellIds.Clear();
+                DrainHealthSpellIds.Clear();
 
-            _spellsCached = true;
-            ModManager.Log("[BSS Summoning] Artificer spell cache initialized", ModManager.LogLevel.Info);
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[BSS Summoning] Failed to cache Artificer spells: {ex.Message}", ModManager.LogLevel.Error);
+                var imperilIds = new[]
+                {
+                    25u,
+                    1843u,
+                    1844u,
+                    1845u,
+                    1846u,
+                    1847u,
+                    1848u,
+                    (uint)SpellId.ImperilOther7,
+                    (uint)SpellId.ImperilOther8
+                };
+                for (int i = 0; i < imperilIds.Length; i++)
+                    ImperilSpellIds[i] = imperilIds[i];
+
+                var drainIds = new[]
+                {
+                    1108u,
+                    1109u,
+                    1110u,
+                    1111u,
+                    1112u,
+                    1113u,
+                    1114u,
+                    (uint)SpellId.DrainHealth7,
+                    (uint)SpellId.DrainHealth8
+                };
+                for (int i = 0; i < drainIds.Length; i++)
+                    DrainHealthSpellIds[i] = drainIds[i];
+
+                _spellsCached = true;
+                ModManager.Log("[BSS Summoning] Artificer spell cache initialized (tiers 0-8)", ModManager.LogLevel.Info);
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[BSS Summoning] Failed to cache Artificer spells: {ex.Message}", ModManager.LogLevel.Error);
+            }
         }
     }
 
@@ -677,7 +708,11 @@ public static class SummoningClasses
         var randomType = enabledTypes[Random.Shared.Next(enabledTypes.Count)];
         string typeName = randomType.Key;
         var typeConfig = randomType.Value;
-        int count = Math.Max(typeConfig?.Count ?? 4, 4);
+        int requestedCount = typeConfig?.Count ?? 4;
+        int minSummonPerPulse = className == "Artificer" && string.Equals(typeName, "Wisps", StringComparison.OrdinalIgnoreCase)
+            ? 1
+            : 4;
+        int count = Math.Max(requestedCount, minSummonPerPulse);
 
         string poolKey = typeName;
         if (className == "Elementalist" && typeName is "Grievvers" or "Moars")
@@ -1008,13 +1043,23 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         if (className != "Artificer") return;
         if (!IsClassUnlocked(owner, "Artificer")) return;
 
-        if (Random.Shared.NextDouble() >= 0.25) return;
+        float procChance = PatchClass.Settings?.SummoningClasses?.ArtificerWispImperilDrainProcChance ?? 1.0f;
+        if (procChance < 1.0f && Random.Shared.NextDouble() >= procChance)
+            return;
         if (!__instance.IsAlive) return;
 
         CacheArtificerSpells();
 
+        int maxTier = PatchClass.Settings?.SummoningClasses?.ArtificerWispProcMaxSpellTier ?? 8;
+        if (maxTier < 0)
+            maxTier = 8;
+
         int itemEnchantmentSkill = (int)(owner.GetCreatureSkill(Skill.ItemEnchantment)?.Current ?? 0);
-        int tier = Math.Min(6, itemEnchantmentSkill / 50);
+        int tier = Math.Min(maxTier, itemEnchantmentSkill / 50);
+
+        float procRadius = PatchClass.Settings?.SummoningClasses?.ArtificerWispProcAoERadiusMeters ?? 10.0f;
+        if (procRadius <= 0f)
+            procRadius = 10.0f;
 
         var aoeTargets = new List<Creature> { __instance };
         foreach (var obj in __instance.CurrentLandblock?.GetWorldObjectsForPhysicsHandling() ?? Enumerable.Empty<WorldObject>())
@@ -1022,7 +1067,7 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
             if (obj == __instance) continue;
             if (obj is not Creature enemy) continue;
             if (enemy.IsDead) continue;
-            if (enemy.GetCylinderDistance(__instance) > 10.0)
+            if (enemy.GetCylinderDistance(__instance) > procRadius)
                 continue;
             if (enemy.IsMonster || enemy.WeenieType == WeenieType.Creature)
                 aoeTargets.Add(enemy);
@@ -1045,6 +1090,30 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
                 try { pet.TryCastSpell(drainSpell, target); } catch { }
             }
         }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Creature), nameof(Creature.MeleeAttack))]
+    public static void PostMeleeArtificerWispCycle(Creature __instance, float __result)
+    {
+        if (__result <= 0f)
+            return;
+        if (__instance is not CombatPet pet)
+            return;
+        if (!TrackedPetGuids.ContainsKey(pet.Guid.Full))
+            return;
+        if (pet.P_PetOwner is not Player owner)
+            return;
+        if (GetPlayerClass(owner) != "Artificer")
+            return;
+        if (!IsClassUnlocked(owner, "Artificer"))
+            return;
+
+        float minCycle = PatchClass.Settings?.SummoningClasses?.ArtificerWispMeleeMinCycleSeconds ?? 0.5f;
+        if (minCycle <= 0f)
+            return;
+
+        pet.NextAttackTime = pet.PrevAttackTime + Math.Max(minCycle, __result);
     }
 
     // -- Tracked pet move speed (offsets ObjScale linear slowdown) ---------
@@ -1297,7 +1366,7 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         ["Elementalist"] = ("Summon elemental allies. 2× pets, no device cooldown.", "Spec Summoning + War Magic, specialized"),
         ["Necromancer"] = ("Summon undead allies. 2× pets, no device cooldown.", "Spec Summoning + Void Magic, specialized"),
         ["Enchanter"] = ("Summon golem allies. 2× pets, no device cooldown.", "Spec Summoning + Creature Enchantment, specialized"),
-        ["Artificer"] = ("Summon wisp allies with Imperil/Drain procs. 2× pets, no cooldown.", "Spec Summoning + Item Enchantment, specialized"),
+        ["Artificer"] = ("Summon wisp allies with Imperil/Drain cleave on hit. Configurable count; fast melee cadence option.", "Spec Summoning + Item Enchantment, specialized"),
         ["Rogue"] = ("Dual-wield finesse bleeds. 2× Dirty Fighting debuffs.", "Spec Dirty Fighting + Dual Wield + Finesse Weapons, specialized"),
         ["Berserker"] = ("Heavy/two-handed reckless strikes. 8% life steal.", "Spec Heavy Weapons OR Two Handed + Recklessness, specialized. NO Melee Defense"),
         ["Crusader"] = ("Shield melee with passive heals, 50% crit, 2× thorns on all hits.", "Spec Light OR Heavy Weapons + Shield + Melee Defense, specialized"),
@@ -1598,6 +1667,22 @@ public class SummoningClassesSettings
     public string BlockPetProjectileDamageToOwnerDoc { get; init; } = "When true, SpellProjectile collisions from a BSS-tracked CombatPet against its P_PetOwner apply impact only (no damage). Belt-and-suspenders with ring/wall cast gate.";
     public bool BlockPetProjectileDamageToOwner { get; set; } = true;
 
+    [JsonPropertyName("// ArtificerWispMeleeMinCycleSeconds")]
+    public string ArtificerWispMeleeMinCycleSecondsDoc { get; init; } = "BSS-tracked Artificer wisps: minimum seconds from swing start to next melee (postfix on Creature.MeleeAttack). NextAttackTime = PrevAttackTime + max(this, animLength). Use 1.0 for ~1 attack/sec floor when anim is short; raise if animations desync.";
+    public float ArtificerWispMeleeMinCycleSeconds { get; set; } = 0.5f;
+
+    [JsonPropertyName("// ArtificerWispImperilDrainProcChance")]
+    public string ArtificerWispImperilDrainProcChanceDoc { get; init; } = "Chance 0-1 that an Artificer wisp melee hit procs Imperil+Drain cleave on primary + AoE targets. Default 1 = always.";
+    public float ArtificerWispImperilDrainProcChance { get; set; } = 1.0f;
+
+    [JsonPropertyName("// ArtificerWispProcMaxSpellTier")]
+    public string ArtificerWispProcMaxSpellTierDoc { get; init; } = "Max spell tier index for Imperil/Drain (ItemEnchantment skill / 50, capped). Must match cached spell table; default 8. Increase after adding tier 9+ spells to CacheArtificerSpells.";
+    public int ArtificerWispProcMaxSpellTier { get; set; } = 8;
+
+    [JsonPropertyName("// ArtificerWispProcAoERadiusMeters")]
+    public string ArtificerWispProcAoERadiusMetersDoc { get; init; } = "Radius in meters around struck creature for Imperil+Drain cleave (cylinder distance). ~10 yards often modeled as 10m.";
+    public float ArtificerWispProcAoERadiusMeters { get; set; } = 10.0f;
+
     public SummoningClassSettings Druid { get; set; } = new();
     public SummoningClassSettings Elementalist { get; set; } = new();
     public SummoningClassSettings Necromancer { get; set; } = new();
@@ -1627,7 +1712,7 @@ public class PetTypeSettings
     public bool Enabled { get; set; } = false;
 
     [JsonPropertyName("// Count")]
-    public string CountDoc { get; init; } = "Number of pets to summon per trigger (minimum 4 enforced).";
+    public string CountDoc { get; init; } = "Pets summoned per trigger. Other summoning classes: minimum 4. Artificer Wisps: minimum 1 (honors Count).";
     public int Count { get; set; } = 4;
 
     [JsonPropertyName("// CustomWcids")]

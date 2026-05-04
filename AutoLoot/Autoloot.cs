@@ -504,11 +504,13 @@ public class AutoLoot
         static MethodInfo? _isEnabled;
         static MethodInfo? _tryAutoSalvageItem;
         static MethodInfo? _getSalvageRate;
-        static bool _resolved;
 
+        // Never cache "resolve failed": BetterSupportSkills may load after AutoLoot's first call.
         static void Resolve()
         {
-            _resolved = true;
+            if (_tryAutoSalvageItem != null)
+                return;
+
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
             {
                 if (!string.Equals(asm.GetName().Name, "BetterSupportSkills", StringComparison.Ordinal))
@@ -528,21 +530,21 @@ public class AutoLoot
 
         internal static void SetSalvageEnabled(Player player, bool enabled)
         {
-            if (!_resolved) Resolve();
+            Resolve();
             if (_setEnabled is null) return;
             try { _setEnabled.Invoke(null, new object?[] { player, enabled }); } catch { }
         }
 
         internal static bool IsSalvageEnabled(Player player)
         {
-            if (!_resolved) Resolve();
+            Resolve();
             if (_isEnabled is null) return false;
             try { return _isEnabled.Invoke(null, new object?[] { player }) is true; } catch { return false; }
         }
 
         internal static double GetSalvageRate(Player player)
         {
-            if (!_resolved) Resolve();
+            Resolve();
             if (_getSalvageRate is null) return 0.0;
             try { return _getSalvageRate.Invoke(null, new object?[] { player }) is double rate ? rate : 0.0; } catch { return 0.0; }
         }
@@ -553,7 +555,7 @@ public class AutoLoot
         /// </summary>
         internal static bool TryAutoSalvage(Player player, WorldObject item)
         {
-            if (!_resolved) Resolve();
+            Resolve();
             if (_tryAutoSalvageItem is null) return false;
             try { return _tryAutoSalvageItem.Invoke(null, new object?[] { player, item }) is true; } catch { return false; }
         }
@@ -1210,6 +1212,7 @@ public class AutoLoot
                     else if (BetterSupportSkillsBridge.TryAutoSalvage(player, removed))
                     {
                         lootedSet.Add(removed);
+                        removed.Destroy();
                     }
                     else
                     {
@@ -1373,8 +1376,11 @@ public class AutoLoot
 
             if (BetterSupportSkillsBridge.TryAutoSalvage(player, item))
             {
-                container.TryRemoveFromInventory(item.Guid, out _);
-                salvaged++;
+                if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                {
+                    removed?.Destroy();
+                    salvaged++;
+                }
             }
         }
     }

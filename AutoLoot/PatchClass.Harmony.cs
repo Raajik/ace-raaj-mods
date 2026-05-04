@@ -101,13 +101,16 @@ public partial class PatchClass
             if (chest.HouseOwner.HasValue)
                 return;
 
-            if (PatchClass.Settings is not { EnableChestAutoLoot: true })
-                return;
-
             AutoLoot.EnsureLoaded(player);
-            // Full corpse parity: server-defined rules + profiles + scrolls + salvage sweep.
-            AutoLoot.ProcessContainerLootImmediate(player, chest);
-            AutoLoot.ProcessContainerLoot(player, chest);
+
+            // Profile / currency / scrolls / coalesced paths only when chest autoloot enabled.
+            if (PatchClass.Settings is { EnableChestAutoLoot: true })
+            {
+                AutoLoot.ProcessContainerLootImmediate(player, chest);
+                AutoLoot.ProcessContainerLoot(player, chest);
+            }
+
+            // Salvage sweep always runs on non-house chest close (independent of EnableChestAutoLoot).
             AutoLoot.RunSalvageDestroyPass(chest, player, out _);
         }
         else if (__instance is Corpse corpse)

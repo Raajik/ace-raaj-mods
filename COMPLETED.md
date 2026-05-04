@@ -20,6 +20,11 @@
 - **Applied:** local **`ace_world`** (restart ACE to refresh weenie cache).
 - **Commit:** `2d4d553`.
 
+### Windblown world SQL — statue replica small: bronze coil/gear/nuts/spring guaranteed on kill
+
+- **Script:** `WindblownContent/Content/SQL/StatueReplicaSmall_BronzeSalvageGuaranteed.sql` — sets `weenie_properties_create_list.shade = 0` for the **Treasure** row on each of **17** `statuereplica*small` mobs (**19267, 19270, 19273, 19276, 19279, 19282, 19285, 19288, 19291, 19294, 19297, 19300, 19303, 19306, 19309, 19312, 19315**) that grants salvage **19209–19218, 19249–19255** (was **0.05** per ACE `CreateListSelect` probability-as-shade).
+- **Applied:** local **`ace_world`** (restart ACE to refresh weenie cache). Scoped dump: `WindblownContent/sql-backups/2026-05-03/pre-statue-replica-bronze-salvage-create-list.sql` (gitignored).
+
 ---
 
 ## 2026-05-04

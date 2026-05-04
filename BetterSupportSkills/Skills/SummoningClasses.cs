@@ -1563,8 +1563,8 @@ public class SummoningClassesSettings
     public float AutoSummonObjScaleMultiplier { get; set; } = 0.25f;
 
     [JsonPropertyName("// AutoSummonMoveSpeedMultiplier")]
-    public string AutoSummonMoveSpeedMultiplierDoc { get; init; } = "After ACE computes MoveSpeed (includes ObjScale), BSS tracked CombatPets multiply by this. Default 3 offsets small AutoSummonObjScaleMultiplier; use 1 to disable.";
-    public float AutoSummonMoveSpeedMultiplier { get; set; } = 3f;
+    public string AutoSummonMoveSpeedMultiplierDoc { get; init; } = "After ACE computes MoveSpeed (includes ObjScale), BSS tracked CombatPets multiply by this. 4.5 with default AutoSummonObjScaleMultiplier 0.25 gives ~1.1x base run; use 1 to disable.";
+    public float AutoSummonMoveSpeedMultiplier { get; set; } = 4.5f;
 
     [JsonPropertyName("// MasteryDamageRatingBonus")]
     public string MasteryDamageRatingBonusDoc { get; init; } = "Extra DR when Summoning Mastery matches class.";

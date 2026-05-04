@@ -105,6 +105,12 @@
 - **Files:** `BetterLootControl/SuppressVanillaTryRollCoalescedMana.cs`, `DisableVanillaCoalescedMana.cs`, `StripGenericLootCoalescedMana.cs`, `BetterLootControl/Readme.md`.
 - **Live:** Built Release; copied `BetterLootControl.dll` + repo `Settings.json` to `C:\ACE-WB\Mods\BetterLootControl\`; WB `ACE.Server` restart / hot-reload — log shows **6** BLC methods patched and Info line for skipped strip.
 
+### WorldEvents — Shadow Spire invasion disabled (config + PLAN backlog)
+
+- **Cause:** Scripted town **Shadow Spire** used `GspireAttack` without `ace_world` `event` row; `TownCenterObjCellId` was **0**, so Portal Storm skipped spawns. Operator intent was **Greenspire**, not Greater Shadow Spire — defer until correct `/loc`.
+- **Change:** `InvasionTowns` **Shadow Spire** `Enabled` **false** in [`WorldEvents/Settings.json`](WorldEvents/Settings.json) + default in [`WorldEvents/Settings.cs`](WorldEvents/Settings.cs). [`PLAN.md`](PLAN.md) backlog bullet for re-enable steps (`/loc`, optional `GspireAttack` SQL + generators).
+- **Commit:** `3be87a9`.
+
 ---
 
 ## 2026-05-03

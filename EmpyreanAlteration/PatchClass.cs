@@ -111,7 +111,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         MutatorHooks.ShutdownMutators();
 
-        foreach (var feature in LastPatchedFeatures)
+        // Snapshot: UnpatchCategory can re-enter RefreshAll or touch patch lists; foreach must not see live mutations.
+        foreach (var feature in LastPatchedFeatures.ToList())
         {
             try
             {
@@ -213,7 +214,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             }
         }
 
-        foreach (var feature in Settings.Features)
+        foreach (var feature in Settings.Features.ToList())
         {
             try
             {

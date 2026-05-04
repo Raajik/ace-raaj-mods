@@ -22,6 +22,15 @@ public class CreatureEx : Creature
     {
         // Mark special creatures with a cyan/teal radar dot so they stand out in groups
         RadarColor = ACE.Entity.Enum.RadarColor.Cyan;
+
+        // FakeInt.CreatureExType (10029): required for SpecialCreatureLoot and call-for-help labeling.
+        // Weenie templates from factory rolls usually omit this; concrete class name matches CreatureExType enum.
+        if (GetType() != typeof(CreatureEx)
+            && Enum.TryParse<CreatureExType>(GetType().Name, out var exType)
+            && exType != CreatureExType.Unknown)
+        {
+            SetProperty((PropertyInt)FakeInt.CreatureExType, (int)exType);
+        }
     }
 
     #region Commands

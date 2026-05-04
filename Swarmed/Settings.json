@@ -202,7 +202,9 @@
     "// ImbuedCountMin": "Minimum random loot items (EmpyreanAlteration auto-imbued) dropped.",
     "ImbuedCountMin": 2,
     "// ImbuedCountMax": "Maximum random loot items (EmpyreanAlteration auto-imbued) dropped.",
-    "ImbuedCountMax": 5
+    "ImbuedCountMax": 5,
+    "// FallbackDeathTreasureDid": "treasure_death.id when mob weenie has no DeathTreasureType (0 = skip uncommon+/imbued rolls). Default 228 tier-7 stock profile.",
+    "FallbackDeathTreasureDid": 228
   },
   "// DungeonPopulation": "Maintains minimum living creatures in dungeon landblocks with players (template clones, not link respawn).",
   "DungeonPopulation": {

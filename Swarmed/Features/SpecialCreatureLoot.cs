@@ -1,3 +1,4 @@
+using ACE.Database;
 using ACE.Database.Models.World;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
@@ -27,8 +28,8 @@ internal static class SpecialCreatureLoot
         if (settings == null || !settings.Enabled)
             return;
 
-        // Only apply to CreatureEx special mobs (FakeInt 10029 = CreatureExType)
-        var exType = __instance.GetProperty((PropertyInt)10029);
+        // Only apply to CreatureEx special mobs (FakeInt.CreatureExType = CreatureExType)
+        var exType = __instance.GetProperty((PropertyInt)FakeInt.CreatureExType);
         if (!exType.HasValue || exType.Value == 0)
             return;
 
@@ -47,7 +48,7 @@ internal static class SpecialCreatureLoot
         int uncommonCount = ThreadSafeRandom.Next(settings.UncommonPlusCountMin, settings.UncommonPlusCountMax);
         for (int i = 0; i < uncommonCount; i++)
         {
-            var item = GenerateUncommonPlusItem(__instance);
+            var item = GenerateUncommonPlusItem(__instance, settings);
             if (item != null && corpse.TryAddToInventory(item))
                 added++;
         }
@@ -56,7 +57,7 @@ internal static class SpecialCreatureLoot
         int specialCount = ThreadSafeRandom.Next(settings.ImbuedCountMin, settings.ImbuedCountMax);
         for (int i = 0; i < specialCount; i++)
         {
-            var item = GenerateSpecialItem(__instance);
+            var item = GenerateSpecialItem(__instance, settings);
             if (item != null && corpse.TryAddToInventory(item))
                 added++;
         }
@@ -103,9 +104,19 @@ internal static class SpecialCreatureLoot
     // Uncommon+ (bumped tier)
     // =====================================================================
 
-    static WorldObject? GenerateUncommonPlusItem(Creature creature)
+    static TreasureDeath? ResolveDeathTreasure(Creature creature, SpecialCreatureLootSettings lootSettings)
     {
-        var deathTreasure = creature.DeathTreasure;
+        var td = creature.DeathTreasure;
+        if (td != null)
+            return td;
+        if (lootSettings.FallbackDeathTreasureDid == 0)
+            return null;
+        return DatabaseManager.World.GetCachedDeathTreasure(lootSettings.FallbackDeathTreasureDid);
+    }
+
+    static WorldObject? GenerateUncommonPlusItem(Creature creature, SpecialCreatureLootSettings lootSettings)
+    {
+        var deathTreasure = ResolveDeathTreasure(creature, lootSettings);
         if (deathTreasure == null)
             return null;
 
@@ -121,9 +132,9 @@ internal static class SpecialCreatureLoot
     // Special (guaranteed imbue + awakening)
     // =====================================================================
 
-    static WorldObject? GenerateSpecialItem(Creature creature)
+    static WorldObject? GenerateSpecialItem(Creature creature, SpecialCreatureLootSettings lootSettings)
     {
-        var deathTreasure = creature.DeathTreasure;
+        var deathTreasure = ResolveDeathTreasure(creature, lootSettings);
         if (deathTreasure == null)
             return null;
 

@@ -395,6 +395,10 @@ public class SpecialCreatureLootSettings
     [JsonPropertyName("// ImbuedCountMax")]
     public string ImbuedCountMaxDoc { get; init; } = "Maximum random loot items (auto-imbued by EmpyreanAlteration) dropped.";
     public int ImbuedCountMax { get; set; } = 5;
+
+    [JsonPropertyName("// FallbackDeathTreasureDid")]
+    public string FallbackDeathTreasureDidDoc { get; init; } = "When the creature has no DeathTreasureType on its weenie, use this treasure_death.id for uncommon+ and imbued bonus rolls (0 = skip those rolls). Default 228 is tier 7 stock ACE profile.";
+    public uint FallbackDeathTreasureDid { get; set; } = 228;
 }
 
 public class DungeonPopulationSettings

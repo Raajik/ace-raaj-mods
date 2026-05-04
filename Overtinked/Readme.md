@@ -50,6 +50,10 @@ Edit `Settings.json` in the mod folder (e.g. `C:\ACE\Mods\Overtinked\`).
 | `EnableRecipeManagerPatch` | true | Use Overtinked’s craft flow (required for full tinkering + Hemorrhage combat). |
 | `EnableFailureRedesign` | true | Failed *numeric* tinkers apply opposite effect instead of destroying the item. |
 | `EnableDefaultImbueFailureWorkmanship` | true | Failed *imbue* tinkers add +1 Workmanship (cap 10) instead of destroying the item. |
+| `ChaosDamageShuffleBonusPercent` | 5 | Failure-redesign “damage shuffle”: additive percent to one rolled stat (`DamageMod`, `ElementalDamageMod`, `WeaponOffense`, `WeaponDefense`). 5 = +0.05. |
+| `ChaosLightEncumbranceVal` / `ChaosLightPyrealValue` | 1 / 1 | “Light as a feather” chaos outcome: `EncumbranceVal` and `Value` (pyreal base). |
+| `ChaosBlessedBurdenEncumbranceVal` | 5000 | “Blessed Burden” chaos: `EncumbranceVal` after adding Prodigal Strength (joke crush). |
+| `ChaosOverchargeMultiplierMin` / `ChaosOverchargeMultiplierMaxExclusive` | 2 / 6 | Overcharge chaos: `Random.Next(min, maxExclusive)` on rolled salvage magnitude. If `maxExclusive <= min`, server uses `min + 1` for the upper bound. |
 | `ShowPlayerSalvageMessage` | true | Send a short chat message when a custom salvage/imbue is applied. |
 | `MergeSalvageTinkerEffectIntoBroadcast` | true | When true **and** `ShowPlayerSalvageMessage`, append the numeric salvage / buffed-jewelry effect (and bane count) to the **single** local tinkering broadcast from `RecipeManager.BroadcastTinkering` instead of extra `Your item:` / `[Overtinked] Bane` lines. |
 | `DefenseImbueBonus` | 0 | Multiplier on vanilla defense-imbue skill add (imbued-piece count). 0 = vanilla (+1 per piece). 5 = +5 per piece (Peridot / Yellow Topaz / Zircon → Melee / Missile / Magic Defense). |

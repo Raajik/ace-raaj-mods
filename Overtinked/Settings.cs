@@ -31,6 +31,25 @@ public class Settings
     [JsonPropertyName("// EnableDefaultImbueFailureWorkmanship")]
     public string EnableDefaultImbueFailureWorkmanshipDoc { get; init; } = "When true, failed imbue tinkers add +1 Workmanship instead of destroying the item, capped at 10.";
 
+    [JsonPropertyName("// ChaosDamageShuffleBonusPercent")]
+    public string ChaosDamageShuffleBonusPercentDoc { get; init; } =
+        "EnableFailureRedesign chaos path 'damage shuffle': additive percent to one rolled stat (DamageMod, ElementalDamageMod, WeaponOffense, WeaponDefense). 5 = +0.05 (former hardcoded bump).";
+
+    [JsonPropertyName("// ChaosLightEncumbranceVal")]
+    public string ChaosLightEncumbranceValDoc { get; init; } = "Light-as-a-feather chaos: EncumbranceVal (non-negative). Default 1.";
+
+    [JsonPropertyName("// ChaosLightPyrealValue")]
+    public string ChaosLightPyrealValueDoc { get; init; } = "Light-as-a-feather chaos: Value / pyreal base (non-negative). Default 1.";
+
+    [JsonPropertyName("// ChaosBlessedBurdenEncumbranceVal")]
+    public string ChaosBlessedBurdenEncumbranceValDoc { get; init; } = "Blessed Burden chaos: EncumbranceVal for the joke crush. Default 5000.";
+
+    [JsonPropertyName("// ChaosOverchargeMultiplierMin")]
+    public string ChaosOverchargeMultiplierMinDoc { get; init; } = "Overcharge chaos: Random.Next inclusive lower bound. Must be less than ChaosOverchargeMultiplierMaxExclusive.";
+
+    [JsonPropertyName("// ChaosOverchargeMultiplierMaxExclusive")]
+    public string ChaosOverchargeMultiplierMaxExclusiveDoc { get; init; } = "Overcharge chaos: Random.Next exclusive upper bound (default 6 → multipliers 2-5 when Min is 2).";
+
     [JsonPropertyName("// HemorrhageImbue")]
     public string HemorrhageImbueDoc { get; init; } = "Hemorrhage imbue (e.g. Salvaged Yellow Garnet 21087). Flat DoT stacks + AoE stack spread. Legacy JSON key BleedImbue still deserializes into BleedImbueLegacy. Inside: // lines first, then values.";
 
@@ -110,6 +129,19 @@ public class Settings
 
     // When true, failed imbue tinkers (standard + custom) add +1 Workmanship to the item instead of destroying it, capped at 10.
     public bool EnableDefaultImbueFailureWorkmanship { get; set; } = true;
+
+    // Chaos failure redesign tuning (see doc properties).
+    public float ChaosDamageShuffleBonusPercent { get; set; } = 5f;
+
+    public int ChaosLightEncumbranceVal { get; set; } = 1;
+
+    public int ChaosLightPyrealValue { get; set; } = 1;
+
+    public int ChaosBlessedBurdenEncumbranceVal { get; set; } = 5000;
+
+    public int ChaosOverchargeMultiplierMin { get; set; } = 2;
+
+    public int ChaosOverchargeMultiplierMaxExclusive { get; set; } = 6;
 
     // Hemorrhage imbue (replaces Bleed). Apply SalvageWcids with both IDs for dual-WCID items.
     public HemorrhageImbueConfig HemorrhageImbue { get; set; } = new();

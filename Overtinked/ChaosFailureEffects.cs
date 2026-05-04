@@ -409,13 +409,17 @@ public static class ChaosFailureEffects
 
     static void ApplyDamageModifierShuffle(Player player, WorldObject target, string itemName, Settings settings)
     {
+        float delta = Math.Max(0f, settings.ChaosDamageShuffleBonusPercent / 100f);
+        float dOff = delta;
+        string pctLabel = settings.ChaosDamageShuffleBonusPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+
         // Randomly boost one of the damage-related stats
         var options = new (string Name, Func<string> Apply)[]
         {
-            ("DamageMod", () => { target.DamageMod = (target.DamageMod ?? 1f) + 0.05f; return "Damage modifier +5%"; }),
-            ("WeaponOffense", () => { target.WeaponOffense = (target.WeaponOffense ?? 0f) + 0.05f; return "Weapon offense +5%"; }),
-            ("WeaponDefense", () => { target.WeaponDefense = (target.WeaponDefense ?? 0f) + 0.05f; return "Weapon defense +5%"; }),
-            ("ElementalDamageMod", () => { target.ElementalDamageMod = (target.ElementalDamageMod ?? 1f) + 0.05f; return "Elemental damage +5%"; }),
+            ("DamageMod", () => { target.DamageMod = (target.DamageMod ?? 1f) + delta; return $"Damage modifier +{pctLabel}"; }),
+            ("WeaponOffense", () => { target.WeaponOffense = (target.WeaponOffense ?? 0f) + dOff; return $"Weapon offense +{pctLabel}"; }),
+            ("WeaponDefense", () => { target.WeaponDefense = (target.WeaponDefense ?? 0f) + dOff; return $"Weapon defense +{pctLabel}"; }),
+            ("ElementalDamageMod", () => { target.ElementalDamageMod = (target.ElementalDamageMod ?? 1f) + delta; return $"Elemental damage +{pctLabel}"; }),
         };
 
         var choice = options[Random.Shared.Next(options.Length)];
@@ -558,7 +562,11 @@ public static class ChaosFailureEffects
         }
 
         int baseValue = SalvageEffectApplier.RollValue(rule);
-        int multiplier = Random.Shared.Next(2, 6);
+        int minMult = settings.ChaosOverchargeMultiplierMin;
+        int maxEx = settings.ChaosOverchargeMultiplierMaxExclusive;
+        if (maxEx <= minMult)
+            maxEx = minMult + 1;
+        int multiplier = Random.Shared.Next(minMult, maxEx);
         int overchargedValue = baseValue * multiplier;
 
         SalvageEffectApplier.ApplyEffect(target, rule, overchargedValue, isFailure: false);
@@ -651,29 +659,33 @@ public static class ChaosFailureEffects
 
     static void ApplyLightAsAFeather(Player player, WorldObject target, string itemName)
     {
-        target.Value = 1;
-        target.EncumbranceVal = 1;
+        var s = PatchClass.CurrentSettings ?? new Settings();
+        int val = Math.Max(0, s.ChaosLightPyrealValue);
+        int enc = Math.Max(0, s.ChaosLightEncumbranceVal);
+        target.Value = val;
+        target.EncumbranceVal = enc;
 
         string msg = string.Format(Random.Shared.GetItems(LightAsAFeatherMessages, 1)[0], itemName);
-        player.SendMessage($"[Overtinked] {msg} Value and burden both set to 1!", ChatMessageType.Craft);
-        ModManager.Log($"[Overtinked] Chaos LightAsAFeather: {player.Name} set value/burden to 1 on {target.Guid}", ModManager.LogLevel.Debug);
+        player.SendMessage($"[Overtinked] {msg} Value {val}, burden {enc}!", ChatMessageType.Craft);
+        ModManager.Log($"[Overtinked] Chaos LightAsAFeather: {player.Name} set value={val} burden={enc} on {target.Guid}", ModManager.LogLevel.Debug);
     }
 
     static void ApplyBlessedBurden(Player player, WorldObject target, string itemName)
     {
         try
         {
+            var s = PatchClass.CurrentSettings ?? new Settings();
+            int burden = Math.Max(0, s.ChaosBlessedBurdenEncumbranceVal);
+
             target.Biota!.PropertiesSpellBook ??= new Dictionary<int, float>();
             target.Biota.PropertiesSpellBook[ProdigalStrengthSpellId] = 1.0f;
             target.UiEffects |= UiEffects.Magical;
 
-            // Set burden to a crushing 5000 — the joke is you gain godlike strength
-            // but the item becomes virtually impossible to carry.
-            target.EncumbranceVal = 5000;
+            target.EncumbranceVal = burden;
 
             string msg = string.Format(Random.Shared.GetItems(BlessedBurdenMessages, 1)[0], itemName);
-            player.SendMessage($"[Overtinked] {msg} Prodigal Strength + CRUSHING burden (5000)!", ChatMessageType.Craft);
-            ModManager.Log($"[Overtinked] Chaos BlessedBurden: {player.Name} added Strength spell + 5000 burden on {target.Guid}", ModManager.LogLevel.Debug);
+            player.SendMessage($"[Overtinked] {msg} Prodigal Strength + CRUSHING burden ({burden})!", ChatMessageType.Craft);
+            ModManager.Log($"[Overtinked] Chaos BlessedBurden: {player.Name} added Strength spell + burden {burden} on {target.Guid}", ModManager.LogLevel.Debug);
         }
         catch (Exception ex)
         {

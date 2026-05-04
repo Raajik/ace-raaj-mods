@@ -208,7 +208,7 @@ public class Settings
     public ChaosTinkerSettings ChaosTinker { get; set; } = new();
 
     [JsonPropertyName("// EnableSummoningClasses")]
-    public string EnableSummoningClassesDoc { get; init; } = "Summoning classes — auto-summon when Spec Summoning + secondary magic spec; pulses on your damage, harmful spells vs creatures, or your CombatPet's damage (3s gate).";
+    public string EnableSummoningClassesDoc { get; init; } = "Summoning classes — auto-summon when Spec Summoning + secondary magic spec; pulses on your damage, harmful spells vs creatures, or your CombatPet's damage (1s gate).";
     public bool EnableSummoningClasses { get; set; } = true;
 
     [JsonPropertyName("// SummoningClasses")]

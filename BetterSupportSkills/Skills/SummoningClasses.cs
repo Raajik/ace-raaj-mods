@@ -27,7 +27,7 @@ public static class SummoningClasses
     static readonly ConcurrentDictionary<uint, DateTime> LastCombatHitUtc = new();
     static readonly ConcurrentDictionary<uint, DateTime> LastSummonPulseUtc = new();
     static readonly TimeSpan CombatTimeout = TimeSpan.FromSeconds(10);
-    static readonly TimeSpan SummonPulseInterval = TimeSpan.FromSeconds(3);
+    static readonly TimeSpan SummonPulseInterval = TimeSpan.FromSeconds(1);
 
     // -- Flavor Messages -------------------------------------------------
 

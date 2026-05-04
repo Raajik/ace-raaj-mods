@@ -8,6 +8,10 @@
 
 ## 2026-05-04
 
+### BetterSupportSkills — summoning auto-summon pulse 1s
+
+- **Change:** `SummonPulseInterval` in `SummoningClasses.cs` **3s → 1s** (TakeDamage-based pulse only; harmful-spell path unchanged). Docs: `README.md`, `ClassPerks.md`, `Settings.cs` (`EnableSummoningClasses` doc).
+
 ### BetterSupportSkills — auto-summon when summoner takes damage
 
 - **Change:** `PostCreatureTakeDamage_SummonTrigger` no longer returns immediately when `__instance` is a `Player`. Incoming damage updates `LastCombatHitUtc` and runs the same **~3s** `SummonPulseInterval` gate + `TrySummonPets` (no-op if not a summoning class).

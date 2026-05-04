@@ -195,7 +195,15 @@ internal static class InvasionRuntime
             return (typeId, name, false);
         }
 
-        return (0u, "", true);
+        // Unthemed dynamic invasions: not Portal Storm unless the storm roll above hit.
+        return (0u, "", false);
+    }
+
+    static string FormatInvasionThemeLogLabel(string themeName, bool chaosMode)
+    {
+        if (themeName.Length > 0)
+            return themeName;
+        return chaosMode ? "PortalStorm" : "Dynamic";
     }
 
     static int RollTownCount(Settings s)
@@ -325,7 +333,7 @@ internal static class InvasionRuntime
 
         ModManager.Log(
             $"[Invasion] Wave started — {string.Join(", ", wave.Towns.Select(t => $"{t.TownName}(T{t.Tier})[{t.KillThreshold}]"))} " +
-            $"theme:{(themeName.Length > 0 ? themeName : "PortalStorm")} ends:{ends:u}",
+            $"theme:{FormatInvasionThemeLogLabel(themeName, chaosMode)} ends:{ends:u}",
             ModManager.LogLevel.Info);
 
         if (wave.ChaosMode)
@@ -413,7 +421,7 @@ internal static class InvasionRuntime
 
             ModManager.Log(
                 $"[Invasion] Wave started (scheduler) — {string.Join(", ", wave.Towns.Select(t => $"{t.TownName}(T{t.Tier})[{t.KillThreshold}]"))} " +
-                $"theme:{(themeName.Length > 0 ? themeName : "PortalStorm")} ends:{ends:u}",
+                $"theme:{FormatInvasionThemeLogLabel(themeName, chaosMode)} ends:{ends:u}",
                 ModManager.LogLevel.Info);
 
             if (wave.ChaosMode)
@@ -654,7 +662,7 @@ internal static class InvasionRuntime
 
             ModManager.Log(
                 $"[Invasion] Force-started — {string.Join(", ", wave.Towns.Select(t => $"{t.TownName}(T{t.Tier})[{t.KillThreshold}]"))} " +
-                $"theme:{(themeName.Length > 0 ? themeName : "PortalStorm")} ends:{ends:u}",
+                $"theme:{FormatInvasionThemeLogLabel(themeName, chaosMode)} ends:{ends:u}",
                 ModManager.LogLevel.Info);
 
             if (wave.ChaosMode)
@@ -727,7 +735,13 @@ internal static class InvasionRuntime
             foreach (var group in byLb)
             {
                 var lb = LandblockManager.GetLandblock(group.Key, false);
-                if (lb == null) continue;
+                if (lb == null)
+                {
+                    ModManager.Log(
+                        $"[Invasion] Landblock not loaded; skipping {group.Count()} queued spawn(s) for {town.TownName} at 0x{group.Key.Raw:X8}.",
+                        ModManager.LogLevel.Warn);
+                    continue;
+                }
                 var batch = group.ToList();
                 var townCopy = town; // capture for closure
                 lb.EnqueueAction(new ActionEventDelegate(() =>
@@ -761,32 +775,46 @@ internal static class InvasionRuntime
         return result;
     }
 
+    // ObjCellId low 0xFFFF is not a placeable cell (see e.g. landblock 0x17B2FFFF spawn failures in ACE_Log).
+    static bool IsUnusableInvasionObjCell(uint raw)
+    {
+        var low = raw & 0xFFFFu;
+        return low == 0xFFFFu || low == 0u;
+    }
+
     static Position? GenerateSingleSpawnPosition(InvasionTownSettings town, Random rng, float? overrideAngle = null, float? overrideDist = null)
     {
-        var angle  = overrideAngle ?? rng.NextDouble() * 2 * Math.PI;
-        var dist   = overrideDist ?? rng.NextDouble() * town.TownSpawnRadius;
-        var ox     = town.TownCenterX + (float)(Math.Cos(angle) * dist);
-        var oy     = town.TownCenterY + (float)(Math.Sin(angle) * dist);
-        var facing = (float)(rng.NextDouble() * Math.PI * 2);
-
-        // Snap Z to terrain height
-        float z = town.TownCenterZ;
-        try
+        const int maxAttempts = 25;
+        for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
-            var lbId = new LandblockId(new Position(town.TownCenterObjCellId, ox, oy, z, 0f, 0f, 0f, 1f).GetCell());
-            var lb = LandblockManager.GetLandblock(lbId, false);
-            if (lb?.LandblockMesh != null)
-            {
-                var terrainZ = lb.LandblockMesh.GetZ(new System.Numerics.Vector2(ox, oy));
-                z = terrainZ + 0.05f; // slight offset above ground
-            }
-        }
-        catch { /* fallback to town center Z */ }
+            var angle  = overrideAngle ?? rng.NextDouble() * 2 * Math.PI;
+            var dist   = overrideDist ?? rng.NextDouble() * town.TownSpawnRadius;
+            var ox     = town.TownCenterX + (float)(Math.Cos(angle) * dist);
+            var oy     = town.TownCenterY + (float)(Math.Sin(angle) * dist);
+            var facing = (float)(rng.NextDouble() * Math.PI * 2);
 
-        var pos = new Position(town.TownCenterObjCellId, ox, oy, z,
-            0f, 0f, (float)Math.Sin(facing / 2), (float)Math.Cos(facing / 2));
-        pos.LandblockId = new LandblockId(pos.GetCell());
-        return pos;
+            // Snap Z to terrain height
+            float z = town.TownCenterZ;
+            try
+            {
+                var lbId = new LandblockId(new Position(town.TownCenterObjCellId, ox, oy, z, 0f, 0f, 0f, 1f).GetCell());
+                var lb = LandblockManager.GetLandblock(lbId, false);
+                if (lb?.LandblockMesh != null)
+                {
+                    var terrainZ = lb.LandblockMesh.GetZ(new System.Numerics.Vector2(ox, oy));
+                    z = terrainZ + 0.05f; // slight offset above ground
+                }
+            }
+            catch { /* fallback to town center Z */ }
+
+            var pos = new Position(town.TownCenterObjCellId, ox, oy, z,
+                0f, 0f, (float)Math.Sin(facing / 2), (float)Math.Cos(facing / 2));
+            pos.LandblockId = new LandblockId(pos.GetCell());
+            if (!IsUnusableInvasionObjCell(pos.LandblockId.Raw))
+                return pos;
+        }
+
+        return null;
     }
 
     // ── Portal Storm ─────────────────────────────────────────────────────
@@ -1159,7 +1187,13 @@ internal static class InvasionRuntime
             foreach (var group in byLb)
             {
                 var lb = LandblockManager.GetLandblock(group.Key, false);
-                if (lb == null) continue;
+                if (lb == null)
+                {
+                    ModManager.Log(
+                        $"[Invasion] Landblock not loaded; skipping {group.Count()} trickle spawn(s) for {town.TownName} at 0x{group.Key.Raw:X8}.",
+                        ModManager.LogLevel.Warn);
+                    continue;
+                }
                 var batch = group.ToList();
                 var townCopy = town;
                 lb.EnqueueAction(new ActionEventDelegate(() =>

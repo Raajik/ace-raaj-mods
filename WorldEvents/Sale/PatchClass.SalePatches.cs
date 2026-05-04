@@ -70,18 +70,10 @@ public partial class PatchClass
             }
         }
 
-        // Add bonus loot-table items (BetterLootControl / SharedLoot namespace)
-        if (s.SaleLootBonusItems <= 0) return;
-
-        if (!Enum.TryParse<LootRarityFloor>(s.SaleLootBonusRarity, true, out var floor))
-            floor = LootRarityFloor.Any;
-
+        // BonusEventLoot: ~one proc per corpse with weighted pools (common-heavy).
         var cfg = LootConfigStore.GetLoadedOrDefault();
-        for (var i = 0; i < s.SaleLootBonusItems; i++)
-        {
-            var bonus = LootRoller.TryCreateFromMinRarity(cfg, floor);
-            if (bonus == null) continue;
+        var bonus = LootRoller.TryCreateBonusEventLoot(cfg, s.BonusEventLoot);
+        if (bonus != null)
             corpse.TryAddToInventory(bonus);
-        }
     }
 }

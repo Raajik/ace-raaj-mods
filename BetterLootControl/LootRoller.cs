@@ -131,7 +131,67 @@ public static class LootRoller
         return CreateItemFromCategory(category);
     }
 
-    static WorldObject? CreateItemFromCategory(LootCategory category)
+    // One weighted bonus item for timed events (sale landblocks, etc.). Dominant common pool;
+    // other pools contribute by explicit weights only (no extra GearChance / ImbueSalvageChance rolls).
+    public static WorldObject? TryCreateBonusEventLoot(LootConfig config, BonusEventLootWeights options)
+    {
+        if (config is null || options is null || !options.Enable || options.ProcChance <= 0)
+            return null;
+
+        if (ThreadSafeRandom.Next(0.0f, 1.0f) >= options.ProcChance)
+            return null;
+
+        var candidates = new List<(double weight, Func<WorldObject?> create)>();
+
+        void ConsiderCategory(double w, LootCategory? cat)
+        {
+            if (w <= 0 || cat?.items == null || cat.items.Count == 0)
+                return;
+            candidates.Add((w, () => CreateItemFromCategory(cat)));
+        }
+
+        ConsiderCategory(options.CommonWeight, config.common);
+        ConsiderCategory(options.UncommonWeight, config.uncommon);
+        ConsiderCategory(options.RareWeight, config.rare);
+        ConsiderCategory(options.ExtremelyRareWeight, config.extremelyRare);
+        ConsiderCategory(options.SalvageWeight, config.salvage);
+
+        if (options.GearWeight > 0 && config.gear?.items != null && config.gear.items.Count > 0)
+        {
+            candidates.Add((options.GearWeight, () =>
+            {
+                var item = CreateItemFromCategory(config.gear);
+                if (item != null)
+                {
+                    TryApplyEmpyreanAlteration(item);
+                    ApplyGearEnhancements(item);
+                }
+                return item;
+            }));
+        }
+
+        ConsiderCategory(options.ImbueSalvageWeight, config.imbueSalvage);
+        ConsiderCategory(options.FoolproofImbueSalvageWeight, config.foolproofImbueSalvage);
+
+        double total = 0;
+        foreach (var c in candidates)
+            total += c.weight;
+
+        if (total <= 0 || candidates.Count == 0)
+            return null;
+
+        double r = ThreadSafeRandom.Next(0.0f, 1.0f) * total;
+        foreach (var (weight, create) in candidates)
+        {
+            r -= weight;
+            if (r <= 0)
+                return create();
+        }
+
+        return candidates[^1].create();
+    }
+
+    internal static WorldObject? CreateItemFromCategory(LootCategory category)
     {
         if (category.items is null || category.items.Count == 0)
             return null;

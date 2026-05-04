@@ -97,7 +97,8 @@ internal static class BuddySpawns
         lock (state)
         {
             double idleSeconds = (DateTime.UtcNow - state.LastKillUtc).TotalSeconds;
-            if (idleSeconds < state.CurrentThresholdSeconds)
+            int effectiveThreshold = GetEffectiveBuddyIdleThresholdSeconds(state.CurrentThresholdSeconds, lb);
+            if (idleSeconds < effectiveThreshold)
                 return;
 
             var creatures = GetLivingCreatures(lb);
@@ -134,6 +135,18 @@ internal static class BuddySpawns
                 state.LastKillUtc = DateTime.UtcNow;
             }
         }
+    }
+
+    static int GetEffectiveBuddyIdleThresholdSeconds(int storedSeconds, Landblock lb)
+    {
+        if (!WorldEvents.SaleLandblockApi.IsLandblockOnSale((int)lb.Id.Raw))
+            return storedSeconds;
+
+        var scale = WorldEvents.SaleLandblockApi.BuddyIdleThresholdScale;
+        if (scale >= 1.0 - 1e-9)
+            return storedSeconds;
+
+        return Math.Max(5, (int)(storedSeconds * scale));
     }
 
     static List<Creature> GetLivingCreatures(Landblock lb)

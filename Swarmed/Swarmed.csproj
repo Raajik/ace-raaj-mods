@@ -38,6 +38,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\WorldEvents\WorldEvents.csproj">
+			<Private>false</Private>
+			<CopyLocalSatelliteAssemblies>false</CopyLocalSatelliteAssemblies>
+		</ProjectReference>
+	</ItemGroup>
+
+	<ItemGroup>
 		<Publicize Include="ACE.Server" />
 	</ItemGroup>
 	<ItemGroup>

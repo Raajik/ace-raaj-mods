@@ -1,4 +1,5 @@
-﻿using WorldEvents.Invasion.Models;
+﻿using SharedLoot;
+using WorldEvents.Invasion.Models;
 using WorldEvents.Sale.Models;
 using WorldEvents.Cull.Models;
 using WorldEvents.PoiHunt.Models;
@@ -616,12 +617,34 @@ public sealed class Settings
     public double SaleLootValueMultiplier { get; set; } = 1.5;
 
     [JsonPropertyName("// SaleLootBonusItems")]
-    public string SaleLootBonusItemsDoc { get; init; } = "Extra loot-table items (BetterLootControl) added to each creature corpse in a sale landblock. 0 = disabled.";
+    public string SaleLootBonusItemsDoc { get; init; } = "DEPRECATED — ignored. Use BonusEventLoot instead.";
     public int SaleLootBonusItems { get; set; } = 1;
 
     [JsonPropertyName("// SaleLootBonusRarity")]
-    public string SaleLootBonusRarityDoc { get; init; } = "Minimum rarity floor for bonus loot items. Options: Any, Uncommon, Rare.";
+    public string SaleLootBonusRarityDoc { get; init; } = "DEPRECATED — ignored. Use BonusEventLoot instead.";
     public string SaleLootBonusRarity { get; set; } = "Any";
+
+    [JsonPropertyName("// BonusEventLoot")]
+    public string BonusEventLootDoc { get; init; } = "Weighted bonus loot for corpses in sale landblocks (~ProcChance for any extra; common pool dominates). Reusable pattern for future events.";
+
+    [JsonPropertyName("BonusEventLoot")]
+    public BonusEventLootWeights BonusEventLoot { get; set; } = new();
+
+    [JsonPropertyName("// SaleAccelerateGeneratorRespawn")]
+    public string SaleAccelerateGeneratorRespawnDoc { get; init; } = "When true, generator regen interval is scaled in sale landblocks (faster repop).";
+    public bool SaleAccelerateGeneratorRespawn { get; set; } = true;
+
+    [JsonPropertyName("// SaleGeneratorRegenerationIntervalScale")]
+    public string SaleGeneratorRegenerationIntervalScaleDoc { get; init; } = "Multiplier on time until next generator regen in sale LBs (0.1 = ~10% wait vs normal).";
+    public double SaleGeneratorRegenerationIntervalScale { get; set; } = 0.1;
+
+    [JsonPropertyName("// SaleGeneratorRegenerationMinSeconds")]
+    public string SaleGeneratorRegenerationMinSecondsDoc { get; init; } = "Floor (seconds) after scaling so regen does not thrash.";
+    public double SaleGeneratorRegenerationMinSeconds { get; set; } = 20.0;
+
+    [JsonPropertyName("// SaleBuddyIdleThresholdScale")]
+    public string SaleBuddyIdleThresholdScaleDoc { get; init; } = "Swarmed: multiply buddy idle threshold seconds in sale landblocks (0.1 = buddies eligible ~10x sooner).";
+    public double SaleBuddyIdleThresholdScale { get; set; } = 0.1;
 
     [JsonPropertyName("// SaleMasterMageChance")]
     public string SaleMasterMageChanceDoc { get; init; } = "Relative weight for a global Master Mage sale instead of a town. 0 = never, 1 = same weight as one town.";

@@ -55,3 +55,22 @@ public class LootItem
     public int stackSizeMin { get; set; } = 0;
     public int stackSizeMax { get; set; } = 0;
 }
+
+// Weighted pool selection for one-shot bonus rolls (e.g. sale landblock corpse extras).
+// Common dominates by default; rarer pools use small relative weights.
+public sealed class BonusEventLootWeights
+{
+    public bool Enable { get; set; } = true;
+
+    // Chance (0–1) to roll any bonus item at all before pool selection.
+    public double ProcChance { get; set; } = 0.10;
+
+    public double CommonWeight { get; set; } = 900;
+    public double UncommonWeight { get; set; } = 70;
+    public double RareWeight { get; set; } = 25;
+    public double ExtremelyRareWeight { get; set; } = 3;
+    public double SalvageWeight { get; set; } = 1;
+    public double GearWeight { get; set; } = 0.5;
+    public double ImbueSalvageWeight { get; set; } = 0.25;
+    public double FoolproofImbueSalvageWeight { get; set; } = 0.1;
+}

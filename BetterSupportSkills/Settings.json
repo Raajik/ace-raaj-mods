@@ -243,6 +243,7 @@
       "AuraRangeMeters": 15.0,
       "AuraDamagePerTick": 5,
       "AuraTickSeconds": 1.0,
+      "SkillPerTier": 150,
       "EchoEnabled": true,
       "ManaCostMultiplier": 0.5
     },

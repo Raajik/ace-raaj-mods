@@ -102,7 +102,7 @@ internal static class HybridClasses
         // Death Knight: Heavy/Two-Handed + Void Magic → nether spells
         else if (activeClass == "DeathKnight")
         {
-            int tier = GetSpellTier(player, Skill.VoidMagic);
+            int tier = GetDeathKnightVoidSpellTier(player, hybridSettings.DeathKnight.SkillPerTier);
             if (IsTwoHandedWeapon(damageSource))
                 CastStreakAtNearbyEnemies(player, target, DamageType.Nether, tier, hybridSettings.DeathKnight);
             else if (IsHeavyWeapon(damageSource))
@@ -222,6 +222,16 @@ internal static class HybridClasses
         int tier = value / divider;
         int clamped = Math.Min(8, Math.Max(1, tier));
         return clamped;
+    }
+
+    static int GetDeathKnightVoidSpellTier(Player player, int skillPerTier)
+    {
+        var skill = player.GetCreatureSkill(Skill.VoidMagic);
+        if (skill == null) return 1;
+        int value = (int)skill.Current;
+        int divider = Math.Max(1, skillPerTier);
+        int tier = value / divider;
+        return Math.Min(8, Math.Max(1, tier));
     }
 
     static readonly DamageType[] MeleeDamageTypePriority = new[]

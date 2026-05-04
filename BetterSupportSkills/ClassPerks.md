@@ -2,7 +2,7 @@
 
 This document covers all **Combat Classes**, **Hybrid Classes**, **Healer**, **Adventurer**, and **Summoning Classes** implemented in `BetterSupportSkills`.
 
-> **Note:** All classes require the **Achievement Unlock** system (`AchievementUnlockedApi`) and will send periodic flavor messages until unlocked.
+> **Note:** Class unlocks use **skill requirements** (`AchievementUnlockedApi.CheckMeetsRequirements`); optional flavor messaging may still reference unlock state.
 
 ---
 
@@ -15,7 +15,7 @@ This document covers all **Combat Classes**, **Hybrid Classes**, **Healer**, **A
 | **Crusader** | Spec Light/Heavy + Spec Shield + Spec MeleeDefense | Melee bonus damage + shield DR + passive heal + crit bonus |
 | **Windwalker** | Spec Light + Spec WarMagic + Spec ManaC | Melee casts elemental streaks at nearby enemies |
 | **Battlemage** | Spec 2H + Spec WarMagic + Spec ManaC | Melee casts elemental arc at hit target |
-| **DeathKnight** | Spec Heavy/2H + Spec VoidMagic + Spec ArcaneLore | Melee casts nether streak/arc; nether damage aura |
+| **DeathKnight** | Spec Heavy/2H + Spec VoidMagic + Spec ArcaneLore | Melee nether streak/arc tier = floor(VoidMagic **Current** / `SkillPerTier`, default 150), clamped 1–8; nether damage aura |
 | **Bloodmage** | Spec LifeMagic + Spec ManaC + Spec ArcaneLore | Melee casts HealthBolts; drain spells become AoE; life-drain aura |
 | **Healer** | Spec Healing + Spec LifeMagic | Melee Smite proc; AoE healing aura |
 | **Adventurer** | **No** magic trained (except ManaC) | +50 attributes/skills, +20% vitals, +10% resist, +2 burden aug ranks |
@@ -126,7 +126,6 @@ This document covers all **Combat Classes**, **Hybrid Classes**, **Healer**, **A
 
 #### Death Knight
 **Requirements:**
-- Achievement unlocked: `DeathKnight`
 - Skill: `HeavyWeapons` **Specialized** OR `TwoHandedCombat` **Specialized**
 - Skill: `VoidMagic` **Specialized**
 - Skill: `ArcaneLore` **Specialized**
@@ -135,7 +134,7 @@ This document covers all **Combat Classes**, **Hybrid Classes**, **Healer**, **A
 1. **Nether Spells on Melee** —
    - **Two-Handed weapon:** casts nether **streak** at nearby enemies
    - **Heavy weapon:** casts nether **arc** at primary target
-   - Tier: `VoidMagic.Base / 50`
+   - Tier: `floor(VoidMagic.Current / SkillPerTier)` (default **150** skill per tier), clamped **1–8**; tunable in `Settings.json` → `CombatClasses.DeathKnight.SkillPerTier`
 2. **Echo** — If `ArcaneLore` is **Specialized**, streak/arc echoes into **volley**.
 3. **Nether Damage Aura** — Periodic nether damage to nearby hostile enemies.
    - Damage per tick: `AuraDamagePerTick`

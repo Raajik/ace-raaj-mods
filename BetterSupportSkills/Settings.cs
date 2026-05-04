@@ -815,6 +815,10 @@ public class DeathKnightSettings
     public string AuraTickSecondsDoc { get; init; } = "Seconds between aura damage ticks.";
     public double AuraTickSeconds { get; set; } = 1.0;
 
+    [JsonPropertyName("// SkillPerTier")]
+    public string SkillPerTierDoc { get; init; } = "Void Magic skill (buffed Current) per melee proc spell tier; tier = floor(Current/this), clamped 1-8.";
+    public int SkillPerTier { get; set; } = 150;
+
     [JsonPropertyName("// EchoEnabled")]
     public string EchoEnabledDoc { get; init; } = "When true and Arcane Lore is specialized, nether spells echo once.";
     public bool EchoEnabled { get; set; } = true;

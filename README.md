@@ -152,7 +152,7 @@ Toggleable convenience patches (no single defining feature — pick what you wan
 - **Questgiver auras** — NPC glow when they have a quest for you.
 - **Town Network toll** — configurable cost or free TN access.
 - **Generous Benefactor** — track cumulative TN toll spend; unlock `/tn` instant teleport after donating 1 billion pyreals.
-- **Facility Hub** — successful Facility Hub Portal Gem (49563) summons count toward **AchievementUnlocked** `FacilityFrequenter`; `/fac` teleports to the hub after unlock (stock ACE uses configurable `FacilityHub` fallback position in `Settings.json`).
+- **Facility Hub** — successful Facility Hub Portal Gem (49563) summons count toward **AchievementUnlocked** `FacilityFrequenter`; `/fac` teleports to the hub after unlock (stock ACE: configurable `FacilityHub` fallback in `QOL/Settings.json`; repo default cell **0x8A020212** Windblown hub when portal destination is not used).
 - **Pet-related toggles** — pet XP, buff sharing, and command tweaks.
 
 > Many QOL features are individually toggled in `Settings.json`. Enable only what fits your server.

@@ -39,5 +39,5 @@ Landblock **130** is the primary indexed pair for the hub **layout**; many hub w
 ## Related mods (not SQL)
 
 - [QOL/FacilityHubPortal.cs](../../QOL/FacilityHubPortal.cs) — `/fac`, gem **49563**, portal behavior.
-- [QOL/Settings.json](../../QOL/Settings.json) — `FacilityHub` block.
+- [QOL/Settings.json](../../QOL/Settings.json) — `FacilityHub` block. **Fallback** (when portal `Destination` is not readable as `Position` on stock ACE) defaults to cell **0x8A020212** on landblock **0x8A02** (Windblown facility hub spawn), not legacy Val Heel **0x0130**.
 - [AchievementUnlocked/Settings.json](../../AchievementUnlocked/Settings.json) — Facility Hub achievements.

@@ -439,7 +439,7 @@ public class Settings
     public bool EnableFacilityHub { get; set; } = true;
 
     [JsonPropertyName("// FacilityHub")]
-    public string FacilityHubSectionDoc { get; init; } = "FallbackCell and origin/rotation: used by /fac on stock ACE when the linked portal Destination is not a Position (set to 0 to disable fallback). Realms builds resolve from portal weenie when possible.";
+    public string FacilityHubSectionDoc { get; init; } = "FallbackCell and origin/rotation: used by /fac on stock ACE when the linked portal Destination is not a Position (set to 0 to disable fallback). Defaults: Windblown facility hub cell 0x8A020212. Realms builds resolve from portal weenie when possible.";
     public FacilityHubSettings FacilityHub { get; set; } = new();
 
     [JsonPropertyName("// AutoBuff")]
@@ -623,24 +623,24 @@ public class BypassPortalRestrictionsSettings
 public class FacilityHubSettings
 {
     [JsonPropertyName("// FallbackCell")]
-    public string FallbackCellDoc { get; init; } = "obj_Cell_Id for /fac when gem-linked portal destination cannot be read as ACE.Entity.Position (0 = no fallback). Default matches Val Heel landblock 0x0130 Facility Hub 2.0 tile.";
-    public uint FallbackCell { get; set; } = 0x01300105;
+    public string FallbackCellDoc { get; init; } = "obj_Cell_Id for /fac when gem-linked portal destination cannot be read as ACE.Entity.Position (0 = no fallback). Default: Windblown facility hub landblock 0x8A02 cell 0x212.";
+    public uint FallbackCell { get; set; } = 0x8A020212u;
 
     [JsonPropertyName("// FallbackOriginX")]
     public string FallbackOriginXDoc { get; init; } = "Facility hub fallback spawn X.";
-    public float FallbackOriginX { get; set; } = 17.0096f;
+    public float FallbackOriginX { get; set; } = 58.639099f;
 
     [JsonPropertyName("// FallbackOriginY")]
     public string FallbackOriginYDoc { get; init; } = "Facility hub fallback spawn Y.";
-    public float FallbackOriginY { get; set; } = -13.6756f;
+    public float FallbackOriginY { get; set; } = -89.923103f;
 
     [JsonPropertyName("// FallbackOriginZ")]
     public string FallbackOriginZDoc { get; init; } = "Facility hub fallback spawn Z.";
-    public float FallbackOriginZ { get; set; } = 0.055f;
+    public float FallbackOriginZ { get; set; } = 6.005f;
 
     [JsonPropertyName("// FallbackRotationW")]
     public string FallbackRotationWDoc { get; init; } = "Quaternion W for fallback facing.";
-    public float FallbackRotationW { get; set; } = -0.923071f;
+    public float FallbackRotationW { get; set; } = 0.995004f;
 
     [JsonPropertyName("// FallbackRotationX")]
     public string FallbackRotationXDoc { get; init; } = "Quaternion X for fallback facing.";
@@ -652,7 +652,7 @@ public class FacilityHubSettings
 
     [JsonPropertyName("// FallbackRotationZ")]
     public string FallbackRotationZDoc { get; init; } = "Quaternion Z for fallback facing.";
-    public float FallbackRotationZ { get; set; } = -0.384629f;
+    public float FallbackRotationZ { get; set; } = -0.099833f;
 }
 
 public class AutoBuffSettings

@@ -71,16 +71,16 @@
   "EnableFacilityHub": true,
   "// EnableDpsDetailed": "When true: /dps detailed toggles extra System lines after your melee/missile hits (DamageEvent mods) and offensive spell hits (final damage + crit flags). Off in Settings = command explains disabled.",
   "EnableDpsDetailed": false,
-  "// FacilityHub": "Stock ACE: FallbackCell + origin/rotation used for /fac when linked portal Destination is not readable as Position (defaults: Val Heel Facility Hub 2.0 @ 0x01300105). Set FallbackCell to 0 to require successful portal resolution only.",
+  "// FacilityHub": "Stock ACE: FallbackCell + origin/rotation used for /fac when linked portal Destination is not readable as Position (defaults: Windblown facility hub @ 0x8A020212). Set FallbackCell to 0 to require successful portal resolution only.",
   "FacilityHub": {
-    "FallbackCell": 19923205,
-    "FallbackOriginX": 17.0096,
-    "FallbackOriginY": -13.6756,
-    "FallbackOriginZ": 0.055,
-    "FallbackRotationW": -0.923071,
+    "FallbackCell": 2315387410,
+    "FallbackOriginX": 58.639099,
+    "FallbackOriginY": -89.923103,
+    "FallbackOriginZ": 6.005,
+    "FallbackRotationW": 0.995004,
     "FallbackRotationX": 0,
     "FallbackRotationY": 0,
-    "FallbackRotationZ": -0.384629
+    "FallbackRotationZ": -0.099833
   },
   "EnableVendorPackBurdenRelief": false,
   "VendorPackBurdenMultiplier": 0.95,

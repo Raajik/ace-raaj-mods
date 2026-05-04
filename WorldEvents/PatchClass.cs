@@ -13,6 +13,7 @@ public partial class PatchClass : BasicPatch<Settings>
     CancellationTokenSource? _schedulerTimerCts;
     CancellationTokenSource? _poiHuntTimerCts;
     CancellationTokenSource? _scavengerTimerCts;
+    CancellationTokenSource? _pendingClaimsTimerCts;
     static bool _bonusQuestPatchesApplied;
 
     public PatchClass(BasicMod mod, string settingsName = "Settings.json") : base(mod, settingsName)
@@ -48,6 +49,7 @@ public partial class PatchClass : BasicPatch<Settings>
 
         EventScheduler.Initialize(CurrentSettings ?? new Settings());
         StartSchedulerBackgroundTimer();
+        StartPendingClaimsBackgroundTimer();
 
         // Initialize Pathwarden vendor tracking
         PathwardenVendorPatches.Initialize(CurrentSettings ?? new Settings());
@@ -72,6 +74,7 @@ public partial class PatchClass : BasicPatch<Settings>
         StartScavengerHuntBackgroundTimer();
         EventScheduler.Initialize(CurrentSettings ?? new Settings());
         StartSchedulerBackgroundTimer();
+        StartPendingClaimsBackgroundTimer();
 
         // Initialize Pathwarden vendor tracking
         PathwardenVendorPatches.Initialize(CurrentSettings ?? new Settings());
@@ -88,6 +91,7 @@ public partial class PatchClass : BasicPatch<Settings>
         try { _schedulerTimerCts?.Cancel(); } catch { }
         try { _poiHuntTimerCts?.Cancel(); } catch { }
         try { _scavengerTimerCts?.Cancel(); } catch { }
+        try { _pendingClaimsTimerCts?.Cancel(); } catch { }
         _bonusQuestPatchesApplied = false;
 
         try
@@ -361,9 +365,9 @@ public partial class PatchClass : BasicPatch<Settings>
         }
     }
 
-    // /claim — deliver world-event loot that was queued while offline.
+    // /claim — deliver world-event loot that was queued while offline (also auto-runs shortly after login and every 2h while online if pending).
     [CommandHandler("claim", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0,
-        "Claim pending world event rewards (loot rolled when you were offline). Usage: /claim")]
+        "Claim pending world event rewards (loot rolled when you were offline). Auto-delivers after login when pending; /claim if any remain. Usage: /claim")]
     public static void HandleClaim(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)

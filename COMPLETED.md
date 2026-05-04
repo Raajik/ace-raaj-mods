@@ -6,6 +6,16 @@
 
 ---
 
+## 2026-05-04
+
+### WorldEvents — auto pending claims + reminders
+
+- **`PatchClass.PendingClaims.cs`** — Harmony postfix on `Player.PlayerEnterWorld`: `ActionChain` **3s** delay then `TryAutoClaimPendingRewards` (same path as `/claim` when JSON queue non-empty). Background timer **`PendingClaimsReminderIntervalMinutes` (120)** calls `TickPendingClaimsForAllOnline` on each interval.
+- **`TryAutoClaimPendingRewards`** — `PeekCount` → `ClaimAllForPlayer` → if anything granted/failed, **System** summary (matches `/claim`); if `PeekCount` still **> 0**, System nudge to free space and `/claim`.
+- **`PatchClass.cs`** — `_pendingClaimsTimerCts`, `StartPendingClaimsBackgroundTimer` from `Start` / `OnWorldOpen`, cancel in `Stop`. `/claim` handler description updated.
+
+---
+
 ## 2026-05-03
 
 ### AchievementUnlocked — re-enabled + activity telemetry

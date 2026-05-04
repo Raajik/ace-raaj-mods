@@ -500,6 +500,7 @@ public sealed class Settings
     public string InvasionCreatureBlacklistDoc { get; init; } = "Creature WCIDs excluded from invasion spawn pools (e.g. custom Valheel creatures that shouldn't invade towns).";
     public List<uint> InvasionCreatureBlacklist { get; set; } = new()
     {
+        1,          // human (modified into placeholder NPC "Clay")
         46603, 46652, // claygolemsamurai (Valheel custom)
     };
 
@@ -874,7 +875,7 @@ public sealed class Settings
             TownCenterObjCellId = 0xF6820033, TownCenterX = 145.699997f, TownCenterY =  49.855000f, TownCenterZ =  58.005001f,
             DynamicLandblocks = new() { 0xF680, 0xF681, 0xF682, 0xF683, 0xF684 } },
         new() { TownName = "Crystal Cove",    EventName = "CCattack",     Mode = InvasionMode.Scripted },
-        new() { TownName = "Shadow Spire",    EventName = "GspireAttack", Mode = InvasionMode.Scripted },
+        new() { TownName = "Shadow Spire",    EventName = "GspireAttack", Mode = InvasionMode.Scripted, Enabled = false },
         new() { TownName = "Shadow Sanctum",  EventName = "Shadowattack", Mode = InvasionMode.Scripted },
         new() { TownName = "Withered",        EventName = "WitherAttack", Mode = InvasionMode.Scripted },
         new() { TownName = "Ayan Baqur",      EventName = "AyanAttack",

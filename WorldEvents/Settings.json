@@ -219,7 +219,7 @@
   "// PortalStormExcludedWcids": "Portal WCIDs to exclude from random storm selection (Town Network, marketplace, etc.).",
   "PortalStormExcludedWcids": [42841, 42842, 42843, 42844, 42845, 28728],
   "// InvasionCreatureBlacklist": "Creature WCIDs excluded from invasion spawn pools (Valheel custom creatures, etc.).",
-  "InvasionCreatureBlacklist": [46603, 46652, 26676, 49135, 49142, 49149, 49156],
+  "InvasionCreatureBlacklist": [1, 46603, 46652, 26676, 49135, 49142, 49149, 49156],
 
   "// InvasionTownCountWeights": "Relative weights for how many towns are attacked per wave. Index 0 = 1 town weight, index 1 = 2 towns weight, etc.",
   "InvasionTownCountWeights": [50, 30, 20],
@@ -284,7 +284,7 @@
     { "TownName": "Celdiseth",           "EventName": "CeldisethAttack", "Enabled": true, "TownCenterObjCellId": 2599092482, "TownCenterX":   84.029907, "TownCenterY": 131.132263, "TownCenterZ":  19.205000, "DynamicLandblocks": [39145, 39146, 39147, 39148, 39149, 39401, 39402, 39403, 39404, 39405, 39657, 39658, 39659, 39660, 39661, 39913, 39914, 39915, 39916, 39917, 40169, 40170, 40171, 40172, 40173] },
     { "TownName": "Olutanga's Refuge",   "EventName": "OlutangaAttack",  "Enabled": true, "TownCenterObjCellId": 4135714867, "TownCenterX":  145.699997, "TownCenterY":  49.855000, "TownCenterZ":  58.005001, "DynamicLandblocks": [63104, 63105, 63106, 63107, 63108] },
     { "TownName": "Crystal Cove",        "EventName": "CCattack",        "Enabled": true, "Mode": "Scripted" },
-    { "TownName": "Shadow Spire",        "EventName": "GspireAttack",    "Enabled": true, "Mode": "Scripted" },
+    { "TownName": "Shadow Spire",        "EventName": "GspireAttack",    "Enabled": false, "Mode": "Scripted" },
     { "TownName": "Shadow Sanctum",      "EventName": "Shadowattack",    "Enabled": true, "Mode": "Scripted" },
     { "TownName": "Withered",            "EventName": "WitherAttack",    "Enabled": true, "Mode": "Scripted" },
     { "TownName": "Ayan Baqur",          "EventName": "AyanAttack",      "Enabled": true, "TownCenterObjCellId": 288620573, "TownCenterX": 77.731384, "TownCenterY": 104.264702, "TownCenterZ": 42.005001, "DynamicLandblocks": [4402, 4403, 4404, 4405, 4406] }

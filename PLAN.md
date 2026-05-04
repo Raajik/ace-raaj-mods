@@ -8,6 +8,7 @@ Keep this section **short**. When something ships, **append [COMPLETED.md](COMPL
 
 - **Done (2026-05-04):** BetterLootControl — vanilla Coalesced Mana on modern ACE (`TryRollCoalescedMana` suppress + `DeclaredMethod` targets; live WB DLL + `wb_ace_world` weenie `class_Name` fix 42517/42518). → **COMPLETED.md § 2026-05-04**.
 - **Done (2026-05-03):** BetterSupportSkills — **`AutoSummonMoveSpeedMultiplier`** (default 3) on tracked auto-summon `CombatPet` via `GetMovementSpeed` postfix. → **COMPLETED.md § 2026-05-03**.
+- **Done (2026-05-03):** Drudge charm **tiers** — world SQL (`DrudgeCharm_TierWeenies_World.sql`), **`DrudgeCharmTrophies`** species drops, **`QuestTurnInCap`** tier XP + LLL bank + shared cap bucket, QOL/AutoLoot/BLC/Hybrid wiring. → **COMPLETED.md § 2026-05-03** “Drudge charm tiers”.
 - **Operator / live:** If **AutoSalvage** (BetterSupportSkills) or **AutoLoot** close-time salvage changes “did not make it” after a **git push**, live needs **rebuild → copy** `C:\ACE\Mods\BetterSupportSkills` + `AutoLoot` (and `Settings.json`) to `C:\ACE-WB\Mods\` + **ACE-WB restart** — not SQL. Verify DLL mtimes on `C:\ACE-WB\Mods\` match post-push local build.
 - **Ongoing:** AureatePath / Overtinked JSON tuning; periodic `/mod-audit`. **WorldEvents Hunt** — intervals, popularity multipliers, damage caps.
 - **Backlog:** Idea routing lives under [Greenfield Backlog](#greenfield-backlog-prioritized).

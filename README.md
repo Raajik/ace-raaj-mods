@@ -34,7 +34,7 @@ Server-side corpse autoloot using `.utl` profiles (compatible with Decal UT clas
 - **Learned scroll summary** — after a successful learn, the mod does not echo the scroll name again in the aggregated loot line (vanilla message only).
 - `/autoloot` toggles and profile selection.
 - **Close-time material salvage** — after closing a corpse or non-house chest (house storage excluded), optional pass sends **material-type items and raw salvage bags** (WCID 20981–21089) through BetterSupportSkills auto-salvage into the material bank; other loot stays in the container. Coalesced Mana can still bank to LeyLineLedger on loot/close without a profile match.
-- **Loot stack consolidation** — merges duplicate same-WCID stackable rows in freshly generated corpses (e.g. multiple drudge charm create-list entries).
+- **Loot stack consolidation** — merges duplicate same-WCID stackable rows in freshly generated corpses (e.g. multiple drudge charm create-list entries). Drudge charm **tier** WCIDs **850271–850273** (+ regular **3669**) documented in Obsidian **[[ace-raaj-mods Drudge Charm Tiers]]** with world SQL path.
 
 ### BetterLootControl
 Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot` chest mod; those folders removed from the repo).

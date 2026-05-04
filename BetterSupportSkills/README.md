@@ -166,12 +166,32 @@ When Assess Creature is trained or specialized, grants **guaranteed extra loot r
 
 > **Note:** Creature-type validation is now enforced. `TrophyDrops.cs` checks the dying creature's `WeenieClassId` against a per-trophy whitelist before creating the item, preventing e.g. tusker tusks from dropping on drudges. Champion and special mobs drop stacks of 1–8.
 
+**Drudge charm tiers (`DrudgeCharmTrophies`, 2026-05):** When **`EnableTrophyDrops`** is on, **`DrudgeCharmTrophies.Enabled`** adds **species-only** rolls on **`CreatureType.Drudge`** kills (defaults **3%** regular WCID **3669**, **1%** each of **850271–850273**) — independent of Assess extra-roll count. Requires world weenies + scrubbed create lists (repo **`WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql`**). **`QuestTurnInCap`** treats all four WCIDs as bulk quest charms: tiered quest XP vs **`GetXPBetweenLevels`**, banked pyreals via **`LeyLineLedgerBankInterop`**, shared daily cap bucket **`DailyCapTrackingWcid`** (default **3669**) when **`QuestTrophyDrops`** is enabled. **QOL** / **AutoLoot** / **BetterLootControl** / **HybridClasses** ship matching allowlists or stack rules.
+
 **Settings:**
 ```json
 "EnableTrophyDrops": true,
 "TrophyDrops": {
   "MaxExtraRolls": 3,
   "BonusTreasureChance": 0.0
+},
+"DrudgeCharmTrophies": {
+  "Enabled": true,
+  "DropChanceRegular": 0.03,
+  "DropChanceRare1": 0.01,
+  "DropChanceRare2": 0.01,
+  "DropChanceRare3": 0.01,
+  "WcidRegular": 3669,
+  "WcidRare1": 850271,
+  "WcidRare2": 850272,
+  "WcidRare3": 850273,
+  "XpFractionRegular": 0.25,
+  "XpFractionRare1": 0.5,
+  "XpFractionRare2": 0.75,
+  "XpFractionRare3": 1.0,
+  "BankPyrealsPerCharm": 10000,
+  "BankCashProperty": 39999,
+  "DailyCapTrackingWcid": 3669
 }
 ```
 

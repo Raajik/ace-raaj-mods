@@ -232,11 +232,10 @@ internal static class HybridClasses
         int value = (int)skill.Base;
         int divider = Math.Max(1, dk.SkillPerTier);
         int tier = value / divider;
-        int cap = dk.MaxVoidSpellTier;
-        if (cap < 1) cap = 8;
-        else if (cap > 8) cap = 8;
+        // Clamp cap to 1–8; invalid/zero JSON used to fall through to "8" and disabled the cap
+        int cap = Math.Clamp(dk.MaxVoidSpellTier, 1, 8);
         tier = Math.Min(tier, cap);
-        return Math.Min(8, Math.Max(1, tier));
+        return Math.Clamp(tier, 1, 8);
     }
 
     static readonly DamageType[] MeleeDamageTypePriority = new[]

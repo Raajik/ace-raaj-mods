@@ -48,17 +48,20 @@ internal static class BssAutoCaster
 
         // -- Mana Check --
         uint manaUsed = player.CalculateManaUsage(player, spell, target);
-        if (manaCostMultiplier != 1.0)
+        if (manaCostMultiplier <= 0)
+            manaUsed = 0;
+        else if (manaCostMultiplier != 1.0)
             manaUsed = (uint)Math.Max(1, Math.Round(manaUsed * manaCostMultiplier));
 
-        if (player.Mana.Current < manaUsed)
+        if (manaUsed > 0 && player.Mana.Current < manaUsed)
         {
             ThrottledMessage(player, $"[AutoCast] You lack the mana to cast {spell.Name} (need {manaUsed}).");
             return false;
         }
 
         // -- Deduct Mana --
-        player.UpdateVital(player.Mana, (uint)(player.Mana.Current - manaUsed));
+        if (manaUsed > 0)
+            player.UpdateVital(player.Mana, (uint)(player.Mana.Current - manaUsed));
 
         // -- Burn Components --
         player.TryBurnComponents(spell);

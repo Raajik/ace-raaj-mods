@@ -15,7 +15,7 @@ This document covers all **Combat Classes**, **Hybrid Classes**, **Healer**, **A
 | **Crusader** | Spec Light/Heavy + Spec Shield + Spec MeleeDefense | Melee bonus damage + shield DR + passive heal + crit bonus |
 | **Windwalker** | Spec Light + Spec WarMagic + Spec ManaC | Melee casts elemental streaks at nearby enemies |
 | **Battlemage** | Spec 2H + Spec WarMagic + Spec ManaC | Melee casts elemental arc at hit target |
-| **DeathKnight** | Spec Heavy/2H + Spec VoidMagic + Spec ArcaneLore | Melee nether streak/arc tier = min(floor(VoidMagic **Base** / `SkillPerTier`), `MaxVoidSpellTier`), clamped 1–8; nether damage aura |
+| **DeathKnight** | Spec Heavy/2H + Spec VoidMagic + Spec ArcaneLore | Melee nether streak/arc tier = min(floor(VoidMagic **Base** / `SkillPerTier`), `MaxVoidSpellTier`), clamped 1–8 (default cap **2** = low-tier proc IDs); nether damage aura |
 | **Bloodmage** | Spec LifeMagic + Spec ManaC + Spec ArcaneLore | Melee casts HealthBolts; drain spells become AoE; life-drain aura |
 | **Healer** | Spec Healing + Spec LifeMagic | Melee Smite proc; AoE healing aura |
 | **Adventurer** | **No** magic trained (except ManaC) | +50 attributes/skills, +20% vitals, +10% resist, +2 burden aug ranks |
@@ -134,7 +134,7 @@ This document covers all **Combat Classes**, **Hybrid Classes**, **Healer**, **A
 1. **Nether Spells on Melee** —
    - **Two-Handed weapon:** casts nether **streak** at nearby enemies
    - **Heavy weapon:** casts nether **arc** at primary target
-   - Tier: `min(floor(VoidMagic.Base / SkillPerTier), MaxVoidSpellTier)` (default **150** skill per tier, **8** max cap = uncapped), clamped **1–8**; tune `CombatClasses.DeathKnight` in `Settings.json` (`SkillPerTier`, `MaxVoidSpellTier`; repo test uses **5** so arc cannot exceed tier 5)
+   - Tier: `min(floor(VoidMagic.Base / SkillPerTier), MaxVoidSpellTier)` (default **150** skill per tier; **MaxVoidSpellTier** default **2** = first two nether proc spells only—tier index ≠ client spell level), clamped **1–8**; tune `CombatClasses.DeathKnight` in `Settings.json`. **`ManaCostMultiplier` 0** = free mana for DK auto-casts.
 2. **Echo** — If `ArcaneLore` is **Specialized**, streak/arc echoes into **volley**.
 3. **Nether Damage Aura** — Periodic nether damage to nearby hostile enemies.
    - Damage per tick: `AuraDamagePerTick`

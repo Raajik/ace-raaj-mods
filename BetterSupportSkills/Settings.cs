@@ -824,16 +824,16 @@ public class DeathKnightSettings
     public int SkillPerTier { get; set; } = 150;
 
     [JsonPropertyName("// MaxVoidSpellTier")]
-    public string MaxVoidSpellTierDoc { get; init; } = "Upper bound (1-8) for nether streak/arc proc tier after skill math. Default 8 = no extra cap; lower to limit high-Void toons (e.g. 5 caps at tier 5).";
-    public int MaxVoidSpellTier { get; set; } = 8;
+    public string MaxVoidSpellTierDoc { get; init; } = "Upper bound (1-8) for nether streak/arc proc tier after skill math. Tier maps to spell ID index (not client spell level); nether streak tiers 5+ use a different ID line. Default 2 keeps procs on the first two spells only.";
+    public int MaxVoidSpellTier { get; set; } = 2;
 
     [JsonPropertyName("// EchoEnabled")]
     public string EchoEnabledDoc { get; init; } = "When true and Arcane Lore is specialized, nether spells echo once.";
     public bool EchoEnabled { get; set; } = true;
 
     [JsonPropertyName("// ManaCostMultiplier")]
-    public string ManaCostMultiplierDoc { get; init; } = "Multiplier applied to auto-cast spell mana cost (0.5 = half cost).";
-    public double ManaCostMultiplier { get; set; } = 0.5;
+    public string ManaCostMultiplierDoc { get; init; } = "Multiplier applied to auto-cast spell mana cost (0.5 = half cost). 0 = no mana spent for these procs (components still required when reagent costs are on).";
+    public double ManaCostMultiplier { get; set; } = 0;
 }
 
 public class BloodmageSettings

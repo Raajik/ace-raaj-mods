@@ -31,6 +31,11 @@
 - **Change:** `Shared/LeyLineLedgerBankInterop.cs` (public); QOL links shared file + `global using AceRaajMods.Shared`; AutoLoot links shared file and calls `LeyLineLedgerBankInterop.IncBanked` for keys, coalesced mana, pyreals, lockpick bank amount, and level-8 comp cash conversion.
 - **Commit:** `1596201`.
 
+### BetterSupportSkills — auto-summon move speed multiplier
+
+- **Change:** `PostCreatureGetMovementSpeed` postfix on `Creature.GetMovementSpeed` — for **`CombatPet`** in **`TrackedPetGuids`**, multiplies **`MoveSpeed`** by **`SummoningClasses.AutoSummonMoveSpeedMultiplier`** (default **3**) after vanilla math, so small **`AutoSummonObjScaleMultiplier`** does not leave pets crawling. **`<= 0`** or **`1`** skips.
+- **Settings / docs:** `AutoSummonMoveSpeedMultiplier` in `Settings.json`, `SummoningClassesSettings` in `SummoningClasses.cs`, `ClassPerks.md` (Summoning Classes).
+
 ---
 
 ## 2026-05-04

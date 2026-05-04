@@ -335,7 +335,7 @@ Failing a tinker while having any tinkering trained unlocks `/chaostinker` — a
 
 **Auto-summon pulse** (all five summoning classes): fires on **your** direct damage, **when you take damage**, **harmful** spells you cast on creatures, **or damage from your `CombatPet`** (same **1s** gate per owner). If you have no personal offense yet, summon once from a device—pet hits keep the chain going.
 
-**Pet lifetime & size:** Under `SummoningClasses`, **`SummonDurationSeconds`** (default **30**) controls how long BSS auto-summons and the device duplicate pet live. **`AutoSummonObjScaleMultiplier`** (default **0.25**) shrinks their `DefaultScale` for a smaller client model; use **1** for full size.
+**Pet lifetime & size:** Under `SummoningClasses`, **`SummonDurationSeconds`** (default **30**) controls how long BSS auto-summons and the device duplicate pet live. **`AutoSummonObjScaleMultiplier`** (default **0.25**) shrinks their `DefaultScale` for a smaller client model; use **1** for full size. **`AutoSummonMoveSpeedMultiplier`** (default **3**) multiplies tracked auto-summon `CombatPet` move speed after vanilla `GetMovementSpeed`; use **1** for vanilla speed on those pets.
 
 **Follow while moving:** When you are not in combat targeting (pet idle follow path), if **`SummoningClasses.FollowWhileOwnerMoving`** is true and your physics reports movement (`IsMovingOrAnimating`), pets use **`MoveFollowDistanceThreshold`** (default **6m**, capped by **`FollowDistanceThreshold`**) instead of the idle **15m** leash—so they snap / `MoveTo` sooner and stay with you while you run. Set **`FollowWhileOwnerMoving`** false to revert to distance-only follow.
 

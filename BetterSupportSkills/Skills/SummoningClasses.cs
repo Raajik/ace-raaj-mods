@@ -1047,6 +1047,28 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         }
     }
 
+    // -- Tracked pet move speed (offsets ObjScale linear slowdown) ---------
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Creature), nameof(Creature.GetMovementSpeed))]
+    public static void PostCreatureGetMovementSpeed(Creature __instance)
+    {
+        if (__instance is not CombatPet pet)
+            return;
+        if (!TrackedPetGuids.ContainsKey(pet.Guid.Full))
+            return;
+
+        var summoning = PatchClass.Settings?.SummoningClasses;
+        if (summoning is null)
+            return;
+
+        float mult = summoning.AutoSummonMoveSpeedMultiplier;
+        if (mult <= 0f || mult == 1f)
+            return;
+
+        pet.MoveSpeed *= mult;
+    }
+
     // -- Suppress death broadcast for tracked pets -----------------------
 
     [HarmonyPrefix]
@@ -1539,6 +1561,10 @@ public class SummoningClassesSettings
     [JsonPropertyName("// AutoSummonObjScaleMultiplier")]
     public string AutoSummonObjScaleMultiplierDoc { get; init; } = "Visual scale multiplier on ObjScale (DefaultScale) for BSS auto-summons and device-spawned class pets. 1 = unchanged; 0.25 ≈ 75% smaller footprint.";
     public float AutoSummonObjScaleMultiplier { get; set; } = 0.25f;
+
+    [JsonPropertyName("// AutoSummonMoveSpeedMultiplier")]
+    public string AutoSummonMoveSpeedMultiplierDoc { get; init; } = "After ACE computes MoveSpeed (includes ObjScale), BSS tracked CombatPets multiply by this. Default 3 offsets small AutoSummonObjScaleMultiplier; use 1 to disable.";
+    public float AutoSummonMoveSpeedMultiplier { get; set; } = 3f;
 
     [JsonPropertyName("// MasteryDamageRatingBonus")]
     public string MasteryDamageRatingBonusDoc { get; init; } = "Extra DR when Summoning Mastery matches class.";

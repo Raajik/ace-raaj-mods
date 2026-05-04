@@ -212,7 +212,7 @@ public class Settings
     public bool EnableSummoningClasses { get; set; } = true;
 
     [JsonPropertyName("// SummoningClasses")]
-    public string SummoningClassesSectionDoc { get; init; } = "Druid (Life), Elementalist (War), Necromancer (Void), Enchanter (Creature Enchantment), Artificer (Item Enchantment): per-class caps, device rules, pet spell gates. Auto-summon also credits pet-dealt damage toward the owner pulse.";
+    public string SummoningClassesSectionDoc { get; init; } = "Druid (Life), Elementalist (War), Necromancer (Void), Enchanter (Creature Enchantment), Artificer (Item Enchantment): per-class caps, device rules, pet spell gates. Auto-summon also credits pet-dealt damage toward the owner pulse. FollowWhileOwnerMoving + MoveFollowDistanceThreshold tighten follow leash while owner is moving.";
     public SummoningClassesSettings SummoningClasses { get; set; } = new();
 
     [JsonPropertyName("// EnableDruidPetThorns")]

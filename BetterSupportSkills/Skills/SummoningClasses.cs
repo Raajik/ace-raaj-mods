@@ -1080,13 +1080,23 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         var dist = owner.GetCylinderDistance(combatPet);
         float maxDist = PatchClass.Settings?.SummoningClasses?.FollowMaxDistanceBeforeDestroy ?? 250f;
         float followThreshold = PatchClass.Settings?.SummoningClasses?.FollowDistanceThreshold ?? 15f;
+        var scFollow = PatchClass.Settings?.SummoningClasses;
+        bool ownerLocomoting = owner.PhysicsObj?.IsMovingOrAnimating == true;
+        bool useMoveFollow = (scFollow?.FollowWhileOwnerMoving ?? true) && ownerLocomoting;
+        float moveThreshold = scFollow?.MoveFollowDistanceThreshold ?? 6f;
+        if (moveThreshold < 1f)
+            moveThreshold = 1f;
+        // Tighter leash while owner is walking/running; never wider than idle followThreshold
+        float effectiveFollowThreshold = useMoveFollow
+            ? Math.Min(Math.Max(moveThreshold, 1.5f), followThreshold)
+            : followThreshold;
 
         if (dist > maxDist)
         {
             combatPet.Destroy();
             RemoveFromTracking(combatPet);
         }
-        else if (dist > followThreshold)
+        else if (dist > effectiveFollowThreshold)
         {
 #if REALM
             var sameLandblock = owner.Location.InstancedLandblock == combatPet.Location.InstancedLandblock;
@@ -1507,8 +1517,16 @@ public class SummoningClassesSettings
     public float PetAwarenessRange { get; set; } = 5.0f;
 
     [JsonPropertyName("// FollowDistanceThreshold")]
-    public string FollowDistanceThresholdDoc { get; init; } = "Distance before pet teleports/moves to follow player.";
+    public string FollowDistanceThresholdDoc { get; init; } = "Distance before pet teleports/moves to follow player when you are not locomoting (see FollowWhileOwnerMoving).";
     public float FollowDistanceThreshold { get; set; } = 15.0f;
+
+    [JsonPropertyName("// FollowWhileOwnerMoving")]
+    public string FollowWhileOwnerMovingDoc { get; init; } = "When true, uses MoveFollowDistanceThreshold while owner PhysicsObj.IsMovingOrAnimating so pets keep up during walk/run.";
+    public bool FollowWhileOwnerMoving { get; set; } = true;
+
+    [JsonPropertyName("// MoveFollowDistanceThreshold")]
+    public string MoveFollowDistanceThresholdDoc { get; init; } = "Meters: if FollowWhileOwnerMoving and owner is moving, follow/teleport when pet is farther than this (capped at FollowDistanceThreshold).";
+    public float MoveFollowDistanceThreshold { get; set; } = 6.0f;
 
     [JsonPropertyName("// FollowMaxDistanceBeforeDestroy")]
     public string FollowMaxDistanceBeforeDestroyDoc { get; init; } = "Max distance before pet is destroyed.";

@@ -8,6 +8,11 @@
 
 ## 2026-05-04
 
+### BetterSupportSkills — pets follow tighter while owner is moving
+
+- **Change:** `PostCombatPetHeartbeat` uses **`MoveFollowDistanceThreshold`** (default **6m**, capped by **`FollowDistanceThreshold`**) when **`FollowWhileOwnerMoving`** (default true) and owner **`PhysicsObj.IsMovingOrAnimating`**. Idle follow still uses full **FollowDistanceThreshold** when stationary.
+- **Settings:** `SummoningClasses.FollowWhileOwnerMoving`, `SummoningClasses.MoveFollowDistanceThreshold` in `Settings.json` + `SummoningClassesSettings` in `SummoningClasses.cs`. Docs: `README.md`, `ClassPerks.md`, `Settings.cs` section doc.
+
 ### BetterSupportSkills — summoning auto-summon pulse 1s
 
 - **Change:** `SummonPulseInterval` in `SummoningClasses.cs` **3s → 1s** (TakeDamage-based pulse only; harmful-spell path unchanged). Docs: `README.md`, `ClassPerks.md`, `Settings.cs` (`EnableSummoningClasses` doc).

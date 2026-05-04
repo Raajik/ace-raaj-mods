@@ -202,6 +202,7 @@ This document covers all **Combat Classes**, **Hybrid Classes**, **Healer**, **A
 
 All summoning classes share these base mechanics:
 - **Auto-summon:** Pets spawn automatically when **you** deal damage, **you take damage**, **or your `CombatPet` deals damage** (same **1 second** pulse cooldown per owner). Harmful hostile spells you cast on creatures also pulse. Lets zero-offense / buff-only builds ramp once a device pet is hitting.
+- **Follow while moving:** When the pet has no valid attack target and you are **locomoting** (`PhysicsObj.IsMovingOrAnimating`), follow uses **`MoveFollowDistanceThreshold`** (default **6m**, max **`FollowDistanceThreshold`**) instead of the full idle leash so pets keep up. Toggle **`SummoningClasses.FollowWhileOwnerMoving`** / tune thresholds in `Settings.json`.
 - **2× Device Summon:** Using a pet device summons **double** the normal amount.
 - **No Device Cooldown:** Pet device use cooldown is removed.
 - **Pet Cap:** Combined auto + device pets capped at `TotalCap` (default 10 per class).

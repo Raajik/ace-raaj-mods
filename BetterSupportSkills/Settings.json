@@ -143,6 +143,8 @@
     "MasteryDamageRatingBonus": 10,
     "PetAwarenessRange": 5.0,
     "FollowDistanceThreshold": 15.0,
+    "FollowWhileOwnerMoving": true,
+    "MoveFollowDistanceThreshold": 6.0,
     "FollowMaxDistanceBeforeDestroy": 250.0,
     "BlockPetWarVoidRingWallSpells": false,
     "BlockPetProjectileDamageToOwner": true,

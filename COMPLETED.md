@@ -12,7 +12,7 @@
 
 - **`weenie_properties_int`**: **179** `ImbuedEffect` (BludgeonRending / AcidRending / ColdRending / ElectricRending) + **18** `UiEffects` (Frost white, Acid green, Magical blue, Lightning purple) on **3669**, **850271–850273**.
 - **`DrudgeCharm_TierWeenies_World.sql`** — end block updated for fresh installs; **`DrudgeCharm_UiRendIcons_2026-05-05.sql`** — forward patch for existing DBs. **`README-TrophyCharmCloneTemplate.md`** — fixed type **18** doc (was wrongly labeled MaterialType). **`Windblown-Custom-Trophy-Settings.md`** — short pointer.
-- **Test DB:** `ace_world` apply + scoped **`mysqldump`** under `WindblownContent/sql-backups/2026-05-05/`.
+- **Test DB:** `ace_world` apply; scoped **`mysqldump`** pre-restore slice kept locally under `WindblownContent/sql-backups/` (gitignored).
 
 ## 2026-05-04
 

@@ -18,6 +18,13 @@
 
 ## 2026-05-04
 
+### Overtinked — chaos failure redesign tunables
+
+- **Settings:** `ChaosDamageShuffleBonusPercent`, `ChaosLightEncumbranceVal`, `ChaosLightPyrealValue`, `ChaosBlessedBurdenEncumbranceVal`, `ChaosOverchargeMultiplierMin`, `ChaosOverchargeMultiplierMaxExclusive` (+ matching `//` doc keys in `Settings.cs` / `Settings.json`).
+- **Runtime:** `ChaosFailureEffects` uses those values for damage shuffle, light-as-a-feather, blessed burden, and overcharge (`Random.Next` clamped if `maxExclusive <= min`).
+- **Docs:** `Overtinked/Readme.md` settings table.
+- **Commit:** `d6bd8c7`.
+
 ### QOL — `/dps detailed` + Overtinked chaos imbue pool (armor)
 
 - **QOL:** `EnableDpsDetailed` (default **false**), `Features.DpsDetailed`, `QOL/DpsDetailed.cs` — Harmony postfix on `Player.DamageTarget` emits one **System** line from `DamageEvent` (melee/missile); postfix on `SpellProjectile.DamageTarget` for caster-owned projectiles (final damage + crit flags). `/dps detailed` / `/dps off` / `/dps` status. `PatchClass.RegisterEnabledPatchCategories`, `Settings.cs` / `Settings.json`, `Readme.md`.

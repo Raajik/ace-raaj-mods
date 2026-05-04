@@ -18,12 +18,8 @@ public partial class PatchClass
         var townSettings = MatchTownByLandblock(creatureLb);
         if (townSettings == null) return;
 
-        // Attribute the kill to the top damager if available, else last damager
-        Player? killer = null;
-        if (topDamager?.IsPlayer == true)
-            killer = topDamager.TryGetPetOwnerOrAttacker() as Player;
-        if (killer == null && lastDamager?.IsPlayer == true)
-            killer = lastDamager.TryGetPetOwnerOrAttacker() as Player;
+        // Credit player via top damager, else last (pets/summons: IsPlayer is false; TryGetPetOwnerOrAttacker resolves owner)
+        Player? killer = TryResolveInvasionKiller(topDamager) ?? TryResolveInvasionKiller(lastDamager);
         if (killer == null) return;
 
         lock (InvasionRuntime.InvasionLock)
@@ -82,5 +78,11 @@ public partial class PatchClass
                 return ts;
         }
         return null;
+    }
+
+    static Player? TryResolveInvasionKiller(DamageHistoryInfo? info)
+    {
+        if (info == null) return null;
+        return info.TryGetPetOwnerOrAttacker() as Player;
     }
 }

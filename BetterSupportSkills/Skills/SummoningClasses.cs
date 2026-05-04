@@ -1559,12 +1559,12 @@ public class SummoningClassesSettings
     public int SummonDurationSeconds { get; set; } = 30;
 
     [JsonPropertyName("// AutoSummonObjScaleMultiplier")]
-    public string AutoSummonObjScaleMultiplierDoc { get; init; } = "Visual scale multiplier on ObjScale (DefaultScale) for BSS auto-summons and device-spawned class pets. 1 = unchanged; 0.25 ≈ 75% smaller footprint.";
-    public float AutoSummonObjScaleMultiplier { get; set; } = 0.25f;
+    public string AutoSummonObjScaleMultiplierDoc { get; init; } = "Visual scale multiplier on ObjScale (DefaultScale) for BSS auto-summons and device-spawned class pets. 1 = full size; 0.5 = half footprint.";
+    public float AutoSummonObjScaleMultiplier { get; set; } = 0.5f;
 
     [JsonPropertyName("// AutoSummonMoveSpeedMultiplier")]
-    public string AutoSummonMoveSpeedMultiplierDoc { get; init; } = "After ACE computes MoveSpeed (includes ObjScale), BSS tracked CombatPets multiply by this. 4.5 with default AutoSummonObjScaleMultiplier 0.25 gives ~1.1x base run; use 1 to disable.";
-    public float AutoSummonMoveSpeedMultiplier { get; set; } = 4.5f;
+    public string AutoSummonMoveSpeedMultiplierDoc { get; init; } = "After ACE computes MoveSpeed (includes ObjScale), BSS tracked CombatPets multiply by this. Default 10 with ObjScale 0.5; use 1 to disable.";
+    public float AutoSummonMoveSpeedMultiplier { get; set; } = 10f;
 
     [JsonPropertyName("// MasteryDamageRatingBonus")]
     public string MasteryDamageRatingBonusDoc { get; init; } = "Extra DR when Summoning Mastery matches class.";

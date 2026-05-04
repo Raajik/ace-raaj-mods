@@ -18,24 +18,36 @@ internal static class ManaLatticeSpellBootstrap
             Assembly? asm = AppDomain.CurrentDomain.GetAssemblies()
                 .FirstOrDefault(a => string.Equals(a.GetName().Name, "SpellSiphon", StringComparison.OrdinalIgnoreCase));
             if (asm == null)
+            {
+                ModManager.Log($"[BetterLootControl] Mana lattice spell bootstrap skipped: SpellSiphon assembly not loaded (lattice {lattice.Name} WCID {lattice.WeenieClassId}).", ModManager.LogLevel.Warn);
                 return;
+            }
 
             object? spellSettings = LoadSpellSiphonSettings(asm);
             if (spellSettings == null)
+            {
+                ModManager.Log($"[BetterLootControl] Mana lattice spell bootstrap skipped: could not load SpellSiphon settings (lattice {lattice.Name} WCID {lattice.WeenieClassId}).", ModManager.LogLevel.Warn);
                 return;
+            }
 
             Type? lootMutator = asm.GetType("SpellSiphon.Features.LootMutator");
             MethodInfo? pick = lootMutator?.GetMethod("PickRandomSpellIds", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             MethodInfo? addSpell = lootMutator?.GetMethod("TryAddSpellId", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             if (pick == null || addSpell == null)
+            {
+                ModManager.Log("[BetterLootControl] Mana lattice spell bootstrap skipped: SpellSiphon LootMutator PickRandomSpellIds/TryAddSpellId not found.", ModManager.LogLevel.Warn);
                 return;
+            }
 
             var s = PatchClass.Settings;
             int lo = Math.Clamp(s.ManaLatticeSpellCountMin, 1, 20);
             int hi = Math.Clamp(s.ManaLatticeSpellCountMax, lo, 30);
             object? idsObj = pick.Invoke(null, new[] { spellSettings, lattice, lo, hi });
             if (idsObj is not List<int> ids || ids.Count == 0)
+            {
+                ModManager.Log($"[BetterLootControl] Mana lattice spell pool empty after PickRandomSpellIds (lattice {lattice.Name} WCID {lattice.WeenieClassId}, count {lo}-{hi}). Check SpellSiphon Settings.json spell lists.", ModManager.LogLevel.Warn);
                 return;
+            }
 
             bool any = false;
             foreach (int id in ids)
@@ -45,6 +57,11 @@ internal static class ManaLatticeSpellBootstrap
                 object? ok = addSpell.Invoke(null, new object[] { lattice, id });
                 if (ok is bool b && b)
                     any = true;
+            }
+
+            if (!any)
+            {
+                ModManager.Log($"[BetterLootControl] Mana lattice bootstrap picked {ids.Count} spell id(s) but TryAddSpellId added none (lattice {lattice.Name} WCID {lattice.WeenieClassId}).", ModManager.LogLevel.Warn);
             }
 
             if (any)

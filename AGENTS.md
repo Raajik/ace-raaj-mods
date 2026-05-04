@@ -45,6 +45,8 @@ Always check in this order:
 | `FakeBool 12001` | Event announcement opt-out | WorldEvents |
 | `FakeBool 12002` | **Legacy** periodic auto-claim flag (pre-json); migrated to `Mods/WorldEvents/PendingClaimsAuto/<guid>.json` on login/tick — do not reuse for new features | WorldEvents |
 
+**Windblown custom trophies (physical stackables):** When adding tiered quest trophies that should **autoloot to the pack** as real items (not LLL ledger rows), follow **`WindblownContent/docs/Windblown-Custom-Trophy-Settings.md`** — WCID checklist, AutoLoot Pass 1 (`UpgradedTrophyWeenieClassIds`), QOL bulk turn-in, BSS drops/turn-in, SQL template. Extend that doc with each new line.
+
 ## 4. Agent Permissions
 - **DO:** Edit `Settings.json`, fix bugs, tune values, refactor for clarity.
 - **DO:** Apply SQL you add or change under mod `Content/SQL/` (or equivalent) to the target MySQL database yourself—**test `ace_world`** by default—using the repo’s MySQL credentials, then verify with `SELECT`. Do not leave “run this manually” as the only step unless the user forbids DB writes.

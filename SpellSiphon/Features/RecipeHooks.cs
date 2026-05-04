@@ -3,6 +3,7 @@ using ACE.Database;
 using ACE.Database.Models.World;
 using ACE.Entity.Enum;
 using ACE.Server.Managers;
+using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.WorldObjects;
 using HarmonyLib;
 
@@ -200,6 +201,15 @@ internal static class RecipeHooks
 			charged.EnterWorld();
 			player.SendMessage("[SpellSiphon] Your inventory is full. The charged Spellsiphon drops at your feet.");
 		}
+		else
+		{
+			try
+			{
+				player.EnqueueBroadcast(new GameMessageUpdateObject(charged));
+				player.MoveItemToFirstContainerSlot(charged);
+			}
+			catch { }
+		}
 
 		var spellNames = extracted.Select(id => LootMutator.TryGetSpellName(id)).Where(n => !string.IsNullOrEmpty(n)).ToList();
 		player.SendMessage($"[SpellSiphon] Extracted {extracted.Count} spell(s): {string.Join(", ", spellNames)}.");
@@ -362,9 +372,10 @@ internal static class RecipeHooks
 				}
 			}
 
-			// Make unstackable
+			// Make unstackable; Bonded differs from base tool so stacks never merge with uncharged 850200.
 			charged.SetProperty(PropertyInt.MaxStackSize, 1);
 			charged.SetProperty(PropertyInt.StackSize, 1);
+			charged.SetProperty(PropertyInt.Bonded, (int)BondedStatus.Bonded);
 
 			// Visuals: magical overlay
 			try
@@ -410,12 +421,10 @@ internal static class RecipeHooks
 		if (spellIds.Count == 0)
 		{
 			if (isEndless)
-			{
 				player.SendMessage("[SpellSiphon] The Endless Mana Lattice holds no spells.");
-				return false;
-			}
-
-			return true;
+			else
+				player.SendMessage("[SpellSiphon] This Mana Lattice has no spells. Infuse it with a charged Spellsiphon, or ensure BetterLootControl can pre-roll spells (SpellSiphon loaded with a non-empty spell pool in Settings.json).");
+			return false;
 		}
 
 		int castCount = 0;

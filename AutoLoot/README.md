@@ -8,11 +8,11 @@ An ACEmulator server mod that automatically loots items from creature corpses ba
 
 When a player kills a creature, AutoLoot checks the corpse and moves matching items directly into the player's inventory — no manual looting required. Each player controls their own settings independently; one player's filters have no effect on anyone else.
 
-Each kill is processed in three passes:
+Corpse/chest processing uses multiple passes (see `Autoloot.ProcessContainerLoot`). Highlights:
 
-1. **Profile pass** — checks every item against the server's available `.utl` loot profiles (VirindiTank-compatible rule files placed by server admins)
-2. **VendorTrash pass** — picks up any unclaimed item whose sell value is at least N× its burden (configurable ratio)
-3. **Unknown Scrolls pass** — picks up any unclaimed scroll the player hasn't learned yet (learn-and-destroy on the corpse). When a spell is learned, only the vanilla **You learn the … spell.** line is shown; the post-kill AutoLoot summary does **not** repeat the scroll name.
+1. **Physical trophy WCIDs (Pass 1, before profiles)** — WCIDs in **`Settings.UpgradedTrophyWeenieClassIds`** (default: Windblown Drudge charm tiers **3669**, **850271–850273**) are always moved into the player's pack when present, **without** requiring an active `.utl` profile and **without** using LLL item ledgers for those objects. Extend the list for new custom trophy lines; document in **`WindblownContent/docs/Windblown-Custom-Trophy-Settings.md`**.
+2. **Profile pass** — remaining items vs enabled `.utl` loot profiles (VirindiTank-compatible rule files).
+3. **Unknown Scrolls pass** — unclaimed scrolls the player can read (learn-and-destroy). When a spell is learned, only the vanilla **You learn the … spell.** line is shown; the post-kill AutoLoot summary does **not** repeat the scroll name.
 
 After looting, a chat summary tells you what was picked up and why.
 

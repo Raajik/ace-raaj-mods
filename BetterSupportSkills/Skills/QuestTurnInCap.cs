@@ -6,7 +6,7 @@ using ACE.Server.WorldObjects;
 namespace BetterSupportSkills.Skills;
 
 // Caps quest turn-in XP for high-value quest items dropped by TrophyDrops.
-// Bulk turn-ins for stackable quest charms (3669 + tier WCIDs): tier XP bracket + banked pyreals.
+// Bulk turn-ins for stackable quest charms (3669 + tier WCIDs): tier XP bracket + banked trade notes (LLL BankCashProperty).
 [HarmonyPatchCategory(nameof(Features.TrophyDropsSkill))]
 internal static class QuestTurnInCap
 {
@@ -75,53 +75,37 @@ internal static class QuestTurnInCap
             else if (IsBulkCharm(bulk.Wcid))
             {
                 var charm = PatchClass.Settings?.DrudgeCharmTrophies;
-                var qt = PatchClass.Settings?.QuestTrophyDrops;
 
-                bool capped = false;
-                if (charm?.Enabled == true && qt?.Enabled == true)
+                foreach (var stack in __instance.GetInventoryItemsOfWCID(bulk.Wcid).ToList())
                 {
-                    var cap = QuestTurnInTracker.RecordTurnIn(__instance.Guid.Full, charm.DailyCapTrackingWcid, qt);
-                    capped = cap.WasCapped;
+                    __instance.TryRemoveFromInventoryWithNetworking(stack.Guid, out _, Player.RemoveFromInventoryAction.ConsumeItem);
                 }
 
-                if (capped)
+                int totalTurnedIn = Math.Max(1, bulk.TotalCount);
+
+                if (charm?.Enabled == true)
                 {
-                    amount = 0;
-                    __instance.SendMessage(qt?.XpSuppressedMessage ?? "You've reached the daily turn-in limit for this item. You receive the turn-in reward but no additional experience.", ChatMessageType.System);
+                    int level = __instance.Level ?? 1;
+                    ulong bracket = __instance.GetXPBetweenLevels(level, level + 1);
+                    float frac = CharmXpFraction(bulk.Wcid, charm);
+                    double scaled = Math.Floor(bracket * (double)frac * totalTurnedIn);
+                    if (scaled > long.MaxValue)
+                        amount = long.MaxValue;
+                    else
+                        amount = (long)scaled;
+
+                    long bankDelta = (long)charm.BankPyrealsPerCharm * totalTurnedIn;
+                    if (bankDelta > 0)
+                        LeyLineLedgerBankInterop.IncBanked(__instance, charm.BankCashProperty, bankDelta);
+
+                    __instance.SendMessage(
+                        $"You turn in {totalTurnedIn:N0} {GetItemName(bulk.Wcid)} for {amount:N0} experience! ({bankDelta:N0} trade notes banked.)",
+                        ChatMessageType.System);
                 }
                 else
                 {
-                    foreach (var stack in __instance.GetInventoryItemsOfWCID(bulk.Wcid).ToList())
-                    {
-                        __instance.TryRemoveFromInventoryWithNetworking(stack.Guid, out _, Player.RemoveFromInventoryAction.ConsumeItem);
-                    }
-
-                    int totalTurnedIn = Math.Max(1, bulk.TotalCount);
-
-                    if (charm?.Enabled == true)
-                    {
-                        int level = __instance.Level ?? 1;
-                        ulong bracket = __instance.GetXPBetweenLevels(level, level + 1);
-                        float frac = CharmXpFraction(bulk.Wcid, charm);
-                        double scaled = Math.Floor(bracket * (double)frac * totalTurnedIn);
-                        if (scaled > long.MaxValue)
-                            amount = long.MaxValue;
-                        else
-                            amount = (long)scaled;
-
-                        long bankDelta = (long)charm.BankPyrealsPerCharm * totalTurnedIn;
-                        if (bankDelta > 0)
-                            LeyLineLedgerBankInterop.IncBanked(__instance, charm.BankCashProperty, bankDelta);
-
-                        __instance.SendMessage(
-                            $"You turn in {totalTurnedIn:N0} {GetItemName(bulk.Wcid)} for {amount:N0} experience! ({bankDelta:N0} pyreals banked.)",
-                            ChatMessageType.System);
-                    }
-                    else
-                    {
-                        amount *= totalTurnedIn;
-                        __instance.SendMessage($"You turn in {totalTurnedIn:N0} {GetItemName(bulk.Wcid)} for {amount:N0} experience!", ChatMessageType.System);
-                    }
+                    amount *= totalTurnedIn;
+                    __instance.SendMessage($"You turn in {totalTurnedIn:N0} {GetItemName(bulk.Wcid)} for {amount:N0} experience!", ChatMessageType.System);
                 }
 
                 _bulkPending.TryRemove(__instance.Guid.Full, out _);
@@ -154,9 +138,9 @@ internal static class QuestTurnInCap
         return wcid switch
         {
             3669 => "drudge charms",
-            850271 => "verdant drudge charms",
-            850272 => "storm-marked drudge charms",
-            850273 => "abyssal drudge charms",
+            850271 => "Drudge Charm (Quality) stacks",
+            850272 => "Drudge Charm (Pristine) stacks",
+            850273 => "Drudge Charm (Perfect) stacks",
             _ => "quest items"
         };
     }

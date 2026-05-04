@@ -40,7 +40,7 @@ public class Settings
     public List<string> NoDuplicateNames { get; set; } = ["Pincer", "Tusk", "Matron"];
 
     [JsonPropertyName("// UpgradedTrophyWeenieClassIds")]
-    public string UpgradedTrophyWeenieClassIdsDoc { get; init; } = "WCIDs pulled during Pass 1 before .utl profiles (Drudge charm tiers). Empty = skip. Matches BetterSupportSkills DrudgeCharmTrophies tier ids by default.";
+    public string UpgradedTrophyWeenieClassIdsDoc { get; init; } = "Physical custom-trophy WCIDs: Pass 1 pulls these from corpse/chest into the player's pack before any .utl profile (no LLL ledger — real items). Default: Drudge charm line (3669, 850271–850273). See WindblownContent/docs/Windblown-Custom-Trophy-Settings.md when adding new trophy lines.";
     public List<uint> UpgradedTrophyWeenieClassIds { get; set; } = [3669u, 850271u, 850272u, 850273u];
 
     [JsonPropertyName("// KeysUnlockThreshold")]

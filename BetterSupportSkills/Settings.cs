@@ -192,7 +192,7 @@ public class Settings
     public QuestTrophyDropsSettings QuestTrophyDrops { get; set; } = new();
 
     [JsonPropertyName("// DrudgeCharmTrophies")]
-    public string DrudgeCharmTrophiesSectionDoc { get; init; } = "Species-gated Drudge charm bonus drops on kill (independent of Assess extra rolls). Tier WCIDs, per-tier drop chance, turn-in XP fraction of next-level bracket, banked pyreals per charm via LeyLineLedger.";
+    public string DrudgeCharmTrophiesSectionDoc { get; init; } = "Species-gated Drudge charm bonus drops on kill (independent of Assess extra rolls). Tier WCIDs (Quality/Pristine/Perfect), per-tier drop chance, turn-in XP fraction of next-level bracket, banked trade notes per charm via LeyLineLedger BankCashProperty.";
     public DrudgeCharmTrophySettings DrudgeCharmTrophies { get; set; } = new();
 
     [JsonPropertyName("// EnableTinkeringLootGating")]
@@ -1010,20 +1010,20 @@ public class DrudgeCharmTrophySettings
     public bool Enabled { get; set; } = true;
 
     [JsonPropertyName("// DropChanceRegular")]
-    public string DropChanceRegularDoc { get; init; } = "Chance (0-1) per kill to roll regular-tier charm (3669).";
-    public double DropChanceRegular { get; set; } = 0.03;
+    public string DropChanceRegularDoc { get; init; } = "Chance (0-1) per Drudge-species kill to roll base charm (3669). Each tier rolls independently.";
+    public double DropChanceRegular { get; set; } = 0.025;
 
     [JsonPropertyName("// DropChanceRare1")]
-    public string DropChanceRare1Doc { get; init; } = "Chance per kill for first rare tier WCID.";
+    public string DropChanceRare1Doc { get; init; } = "Chance per Drudge kill for Quality tier (WcidRare1).";
     public double DropChanceRare1 { get; set; } = 0.01;
 
     [JsonPropertyName("// DropChanceRare2")]
-    public string DropChanceRare2Doc { get; init; } = "Chance per kill for second rare tier WCID.";
-    public double DropChanceRare2 { get; set; } = 0.01;
+    public string DropChanceRare2Doc { get; init; } = "Chance per Drudge kill for Pristine tier (WcidRare2).";
+    public double DropChanceRare2 { get; set; } = 0.004;
 
     [JsonPropertyName("// DropChanceRare3")]
-    public string DropChanceRare3Doc { get; init; } = "Chance per kill for third rare tier WCID.";
-    public double DropChanceRare3 { get; set; } = 0.01;
+    public string DropChanceRare3Doc { get; init; } = "Chance per Drudge kill for Perfect tier (WcidRare3).";
+    public double DropChanceRare3 { get; set; } = 0.0015;
 
     [JsonPropertyName("// WcidRegular")]
     public string WcidRegularDoc { get; init; } = "Regular tier weenie class id.";
@@ -1042,30 +1042,30 @@ public class DrudgeCharmTrophySettings
     public uint WcidRare3 { get; set; } = 850273;
 
     [JsonPropertyName("// XpFractionRegular")]
-    public string XpFractionRegularDoc { get; init; } = "Quest XP multiplier vs next-level bracket for regular tier bulk turn-in.";
-    public float XpFractionRegular { get; set; } = 0.25f;
+    public string XpFractionRegularDoc { get; init; } = "Bulk turn-in quest XP: fraction of GetXPBetweenLevels(level, level+1) per base charm (e.g. 0.025 = 2.5%).";
+    public float XpFractionRegular { get; set; } = 0.025f;
 
     [JsonPropertyName("// XpFractionRare1")]
-    public string XpFractionRare1Doc { get; init; } = "Quest XP multiplier for rare tier 1.";
-    public float XpFractionRare1 { get; set; } = 0.5f;
+    public string XpFractionRare1Doc { get; init; } = "Same bracket fraction for Quality tier (WcidRare1).";
+    public float XpFractionRare1 { get; set; } = 0.05f;
 
     [JsonPropertyName("// XpFractionRare2")]
-    public string XpFractionRare2Doc { get; init; } = "Quest XP multiplier for rare tier 2.";
-    public float XpFractionRare2 { get; set; } = 0.75f;
+    public string XpFractionRare2Doc { get; init; } = "Same bracket fraction for Pristine tier (WcidRare2).";
+    public float XpFractionRare2 { get; set; } = 0.075f;
 
     [JsonPropertyName("// XpFractionRare3")]
-    public string XpFractionRare3Doc { get; init; } = "Quest XP multiplier for rare tier 3.";
-    public float XpFractionRare3 { get; set; } = 1.0f;
+    public string XpFractionRare3Doc { get; init; } = "Same bracket fraction for Perfect tier (WcidRare3).";
+    public float XpFractionRare3 { get; set; } = 0.15f;
 
     [JsonPropertyName("// BankPyrealsPerCharm")]
-    public string BankPyrealsPerCharmDoc { get; init; } = "Banked pyreals credited per charm turned in (total * count). Uses BankCashProperty (LeyLineLedger).";
+    public string BankPyrealsPerCharmDoc { get; init; } = "Banked trade notes (or other LLL bank currency) credited per charm turned in (total * count). Uses BankCashProperty (LeyLineLedger). Property name kept for JSON compatibility.";
     public int BankPyrealsPerCharm { get; set; } = 10_000;
 
     [JsonPropertyName("// BankCashProperty")]
-    public string BankCashPropertyDoc { get; init; } = "PropertyInt64 key for banked pyreals (match LeyLineLedger Settings.CashProperty, default 39999).";
+    public string BankCashPropertyDoc { get; init; } = "PropertyInt64 key for banked currency / trade notes (match LeyLineLedger Settings.CashProperty, default 39999).";
     public int BankCashProperty { get; set; } = 39999;
 
     [JsonPropertyName("// DailyCapTrackingWcid")]
-    public string DailyCapTrackingWcidDoc { get; init; } = "QuestTurnInTracker bucket for all charm tiers (single shared daily cap).";
+    public string DailyCapTrackingWcidDoc { get; init; } = "Legacy JSON field; bulk drudge charm turn-in does not use QuestTurnInTracker daily cap. Safe to remove from Settings.json.";
     public uint DailyCapTrackingWcid { get; set; } = 3669;
 }

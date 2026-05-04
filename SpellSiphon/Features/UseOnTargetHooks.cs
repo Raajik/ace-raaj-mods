@@ -214,6 +214,8 @@ internal static class UseOnTargetHooks
 		try { targetItem.EnqueueBroadcastUpdateObject(); }
 		catch { }
 
+		TryMoveInventoryItemToFirstSlot(player, targetItem);
+
 		if (isManaLattice)
 		{
 			// Transform Mana Lattice into reusable buff gem
@@ -229,19 +231,51 @@ internal static class UseOnTargetHooks
 			player.SendMessage($"[SpellSiphon] {targetItem.Name} gains: {string.Join(", ", addedNames.Distinct())}");
 		}
 
-		// Destroy charged Spellsiphon properly
-		try
-		{
-			chargedSpellsiphon.Destroy();
-			player.Session?.Network?.EnqueueSend(new GameMessageDeleteObject(chargedSpellsiphon));
-		}
-		catch { }
+		TryConsumeChargedSpellsiphonFromPlayer(player, chargedSpellsiphon);
 
 		player.SendUseDoneEvent();
 		return false;
 	}
 
 	// ==================== HELPERS ====================
+
+	private static void TryMoveInventoryItemToFirstSlot(Player player, WorldObject item)
+	{
+		if (item.CurrentWieldedLocation != null)
+			return;
+
+		if (player.FindObject(item.Guid.Full, Player.SearchLocations.MyInventory, out _, out _, out _) == null)
+			return;
+
+		try
+		{
+			player.EnqueueBroadcast(new GameMessageUpdateObject(item));
+			player.MoveItemToFirstContainerSlot(item);
+		}
+		catch { }
+	}
+
+	private static void TryConsumeChargedSpellsiphonFromPlayer(Player player, WorldObject charged)
+	{
+		if (charged == null)
+			return;
+
+		try
+		{
+			if (player.FindObject(charged.Guid.Full, Player.SearchLocations.MyInventory | Player.SearchLocations.MyEquippedItems, out _, out _, out _) != null)
+			{
+				if (player.TryRemoveFromInventoryWithNetworking(charged.Guid, out _, Player.RemoveFromInventoryAction.ConsumeItem))
+					return;
+			}
+
+			charged.Destroy();
+		}
+		catch
+		{
+			try { charged.Destroy(); }
+			catch { }
+		}
+	}
 
 	private static bool IsChargedSpellsiphon(WorldObject item)
 	{

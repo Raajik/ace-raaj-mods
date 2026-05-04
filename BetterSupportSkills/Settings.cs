@@ -160,7 +160,7 @@ public class Settings
     public RecklessnessCleaveSettings Recklessness { get; set; } = new();
 
     [JsonPropertyName("// EnableSalvage")]
-    public string EnableSalvageDoc { get; init; } = "Salvage skill bonus — auto-deposit to LeyLineLedger bank on item pickup: 50% of intended units if any tinkering skill is trained, 100% if specialized. Requires LeyLineLedger SalvageBank.Enabled.";
+    public string EnableSalvageDoc { get; init; } = "Salvage skill bonus — auto-deposit to LeyLineLedger bank on item pickup: 50% of intended units if Salvaging is trained, 100% if specialized. Requires LeyLineLedger SalvageBank.Enabled.";
     public bool EnableSalvage { get; set; } = false;
 
     [JsonPropertyName("// Salvage")]

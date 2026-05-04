@@ -56,26 +56,20 @@ public static class SalvageAutoDeposit
         AutoSalvageEnabled[player.Guid.Full] = enabled;
     }
 
-    // ── Skill gate: returns salvage rate (0.0–1.0) based on highest tinkering skill ──
+    // ── Skill gate: deposit fraction (0.0–1.0) from Skill.Salvaging ──
 
-    // Fraction of full intended salvage units (workmanship/structure/bag units) banked: 50% trained, 100% specialized, 0% untrained.
+    // Intended units banked: 50% if Salvaging trained, 100% if specialized, 0% if untrained.
     // TrainedPercent/SpecializedPercent in SalvageSettings are deprecated for this path (kept for JSON compatibility only).
     public static double GetSalvageRate(Player player)
     {
         if (PatchClass.Settings?.Salvage == null)
             return 0.0;
 
-        var skills = new[] { Skill.ArmorTinkering, Skill.WeaponTinkering, Skill.ItemTinkering, Skill.MagicItemTinkering };
-        var best = SkillAdvancementClass.Untrained;
+        var cs = player.GetCreatureSkill(Skill.Salvaging);
+        if (cs == null)
+            return 0.0;
 
-        foreach (var skill in skills)
-        {
-            var cs = player.GetCreatureSkill(skill);
-            if (cs != null && cs.AdvancementClass > best)
-                best = cs.AdvancementClass;
-        }
-
-        return best switch
+        return cs.AdvancementClass switch
         {
             SkillAdvancementClass.Specialized => 1.0,
             SkillAdvancementClass.Trained => 0.5,

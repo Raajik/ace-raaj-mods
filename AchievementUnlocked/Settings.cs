@@ -62,6 +62,42 @@ public class Settings
     public string KillsPerQuestEquivalentDoc { get; init; } = "How many total creature kills equals one progress point for ReachProgressPoints calculations. Default 100.";
     public int KillsPerQuestEquivalent { get; set; } = 100;
 
+    [JsonPropertyName("// EnableActivityTelemetry")]
+    public string EnableActivityTelemetryDoc { get; init; } = "When true, emit AchievementUnlocked-prefixed Info logs for operator dashboards (kills, quests, unlocks, daily rollup).";
+    public bool EnableActivityTelemetry { get; set; } = true;
+
+    [JsonPropertyName("// LogKillHooks")]
+    public string LogKillHooksDoc { get; init; } = "Log each kill after LifetimeKills increments (one line per valid player kill).";
+    public bool LogKillHooks { get; set; } = true;
+
+    [JsonPropertyName("// LogKillAchievementProgress")]
+    public string LogKillAchievementProgressDoc { get; init; } = "Log each time a KillAny/KillCreature achievement counter increments.";
+    public bool LogKillAchievementProgress { get; set; } = true;
+
+    [JsonPropertyName("// LogQuestManagerUpdates")]
+    public string LogQuestManagerUpdatesDoc { get; init; } = "Log every QuestManager.Update hook with quest name. Chatty; off by default.";
+    public bool LogQuestManagerUpdates { get; set; } = false;
+
+    [JsonPropertyName("// LogQuestSolveMilestones")]
+    public string LogQuestSolveMilestonesDoc { get; init; } = "Log when CachedQuestCount (quests with solves) increases after a stamp.";
+    public bool LogQuestSolveMilestones { get; set; } = true;
+
+    [JsonPropertyName("// LogQuestAchievementProgress")]
+    public string LogQuestAchievementProgressDoc { get; init; } = "Log when a CompleteQuest achievement counter increments for a matching quest.";
+    public bool LogQuestAchievementProgress { get; set; } = true;
+
+    [JsonPropertyName("// LogUnlockEvents")]
+    public string LogUnlockEventsDoc { get; init; } = "Log each new character unlock (not duplicate re-set).";
+    public bool LogUnlockEvents { get; set; } = true;
+
+    [JsonPropertyName("// LogExternalProgressCalls")]
+    public string LogExternalProgressCallsDoc { get; init; } = "Log IncrementProgress / SetProgress API calls from other mods or admin.";
+    public bool LogExternalProgressCalls { get; set; } = true;
+
+    [JsonPropertyName("// LogLoginSnapshot")]
+    public string LogLoginSnapshotDoc { get; init; } = "Log one line on PlayerEnterWorld with quest/kill/progress snapshot.";
+    public bool LogLoginSnapshot { get; set; } = true;
+
     [JsonPropertyName("// Achievements")]
     public string AchievementsDoc { get; init; } = "Achievement definitions. Order determines index (and thus FakeProperty IDs). Do not reorder after players have progress.";
     public List<Achievement> Achievements { get; set; } = new()

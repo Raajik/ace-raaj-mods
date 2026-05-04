@@ -6,6 +6,16 @@
 
 ---
 
+## 2026-05-03
+
+### AchievementUnlocked — re-enabled + activity telemetry
+
+- **Meta:** `AchievementUnlocked/Meta.json` `Enabled` **true** (mod loads again).
+- **Telemetry:** New `AchievementActivityTelemetry.cs` — `LOGIN`, `KILL` (per creditable kill), `QUEST_SOLVE` (when quests-with-solves count rises), `KILL_ACH` / `QUEST_ACH` (per matching achievement counter bump), `UNLOCK`, `EXT_PROGRESS` (`IncrementProgress` / `SetProgress`), and **`DAY_ROLLUP`** (UTC midnight rollover aggregates prior day). Wired from `PatchClass`, `AchievementManager`.
+- **Settings:** `EnableActivityTelemetry`, `LogKillHooks`, `LogKillAchievementProgress`, `LogQuestManagerUpdates` (default false), `LogQuestSolveMilestones`, `LogQuestAchievementProgress`, `LogUnlockEvents`, `LogExternalProgressCalls`, `LogLoginSnapshot` in `Settings.cs` + `Settings.json`.
+
+---
+
 ## 2026-05-04
 
 ### BetterSupportSkills — pets follow tighter while owner is moving

@@ -32,6 +32,7 @@ public static class AchievementManager
         if (settings.Achievements is null)
         {
             _initialized = true;
+            AchievementActivityTelemetry.Bind(settings);
             return;
         }
 
@@ -70,6 +71,7 @@ public static class AchievementManager
         LoadAccountPoolBonus();
         LoadAccountMilestoneBonus();
         ModManager.Log($"[AchievementUnlocked] Initialized {_ordered.Count} achievements.", ModManager.LogLevel.Info);
+        AchievementActivityTelemetry.Bind(settings);
     }
 
     // ── Account-Wide Progress Evaluation ──────────────────────────────────
@@ -346,7 +348,10 @@ public static class AchievementManager
         if (!_indexById.TryGetValue(id, out var index))
             return;
 
-        player.SetProperty(ProgressProp(index), Math.Max(0, value));
+        var oldVal = player.GetProperty(ProgressProp(index)) ?? 0;
+        var clamped = Math.Max(0, value);
+        player.SetProperty(ProgressProp(index), clamped);
+        AchievementActivityTelemetry.LogExternalProgress(nameof(SetProgress), player, id, oldVal, clamped);
         TryUnlock(player, index);
     }
 
@@ -359,7 +364,9 @@ public static class AchievementManager
             return;
 
         var current = player.GetProperty(ProgressProp(index)) ?? 0;
-        player.SetProperty(ProgressProp(index), current + amount);
+        var next = current + amount;
+        player.SetProperty(ProgressProp(index), next);
+        AchievementActivityTelemetry.LogExternalProgress(nameof(IncrementProgress), player, id, current, next);
         TryUnlock(player, index);
     }
 
@@ -401,6 +408,7 @@ public static class AchievementManager
         if (ach.Id.StartsWith("LoreTier", StringComparison.OrdinalIgnoreCase))
             LogTierProgressionSpeed(player, ach);
 
+        AchievementActivityTelemetry.LogUnlock(player, ach.Id, ach.Name);
         OnAchievementUnlocked?.Invoke(player, ach);
     }
 
@@ -744,7 +752,9 @@ public static class AchievementManager
                 continue;
 
             var current = player.GetProperty(ProgressProp(i)) ?? 0;
-            player.SetProperty(ProgressProp(i), current + 1);
+            var next = current + 1;
+            player.SetProperty(ProgressProp(i), next);
+            AchievementActivityTelemetry.LogKillAchievementProgress(player, ach.Id, next, ach.RequiredCount, creature.WeenieClassId);
             TryUnlock(player, i);
         }
     }
@@ -775,7 +785,9 @@ public static class AchievementManager
                 continue;
 
             var current = player.GetProperty(ProgressProp(i)) ?? 0;
-            player.SetProperty(ProgressProp(i), current + 1);
+            var next = current + 1;
+            player.SetProperty(ProgressProp(i), next);
+            AchievementActivityTelemetry.LogQuestAchievementProgress(player, ach.Id, next, ach.RequiredCount, questName);
             TryUnlock(player, i);
         }
     }

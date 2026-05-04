@@ -29,6 +29,10 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         var questCount = __instance.QuestManager?.GetQuests().Count(q => q.HasSolves()) ?? 0;
         __instance.SetProperty(AchievementProperties.CachedQuestCount, questCount);
 
+        var lifetimeKillsLogin = __instance.GetProperty(AchievementProperties.LifetimeKills) ?? 0;
+        var progPtsLogin = AchievementManager.EvaluateProgressPoints(__instance);
+        AchievementActivityTelemetry.LogPlayerEnter(__instance, questCount, lifetimeKillsLogin, progPtsLogin);
+
         // Sync all account-wide achievements and pool bonus to this character
         AchievementManager.SyncAllAccountAchievementsToCharacter(__instance);
 
@@ -62,11 +66,16 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         // Track lifetime kills for ReachProgressPoints evaluation
         var lifetimeKills = killerPlayer.GetProperty(AchievementProperties.LifetimeKills) ?? 0;
         killerPlayer.SetProperty(AchievementProperties.LifetimeKills, lifetimeKills + 1);
+        var lifetimeKillsAfter = lifetimeKills + 1;
 
         AchievementManager.OnCreatureKilled(killerPlayer, __instance);
 
         // Re-evaluate account-wide Loremaster tiers after kill
         AchievementManager.EvaluateAccountLoremasterTiers(killerPlayer.Account.AccountId);
+
+        var questSnap = killerPlayer.GetProperty(AchievementProperties.CachedQuestCount) ?? 0;
+        var progPts = AchievementManager.EvaluateProgressPoints(killerPlayer);
+        AchievementActivityTelemetry.LogKillHook(killerPlayer, __instance, lifetimeKillsAfter, questSnap, progPts);
     }
 
     // ─── Quest Tracking ───
@@ -86,9 +95,15 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (string.IsNullOrWhiteSpace(questName))
             return;
 
+        AchievementActivityTelemetry.LogQuestManagerUpdate(player, questName);
+
+        var beforeQuestCount = player.GetProperty(AchievementProperties.CachedQuestCount) ?? 0;
         // Refresh cached quest count for ReachProgressPoints evaluation
         var questCount = player.QuestManager?.GetQuests().Count(q => q.HasSolves()) ?? 0;
         player.SetProperty(AchievementProperties.CachedQuestCount, questCount);
+
+        if (questCount > beforeQuestCount)
+            AchievementActivityTelemetry.LogQuestSolveMilestone(player, questName, beforeQuestCount, questCount);
 
         AchievementManager.OnQuestCompleted(player, questName);
 

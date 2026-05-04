@@ -2,10 +2,10 @@ namespace WorldEvents;
 
 // Shared broadcast helper for all WorldEvents announcements.
 // Players can opt out with /events off; first send after server start includes the hint.
-// ChatMessageType.Magic — client renders as purple/magenta so event lines stand out from default Broadcast (white).
+// ChatMessageType.Channel — ACE labels this light pink (admin/audit channel color); rare on normal gameplay lines.
 internal static class WorldEventsBroadcast
 {
-    internal const ChatMessageType EventAnnouncementType = ChatMessageType.Magic;
+    internal const ChatMessageType EventAnnouncementType = ChatMessageType.Channel;
     // PropertyBool slot for per-character opt-out (WorldEvents range: 12000+).
     internal const FakeBool EventAnnouncementsOptOut = (FakeBool)12001;
 

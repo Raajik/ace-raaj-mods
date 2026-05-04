@@ -8,6 +8,11 @@
 
 ## 2026-05-04
 
+### BetterSupportSkills — auto-summon when summoner takes damage
+
+- **Change:** `PostCreatureTakeDamage_SummonTrigger` no longer returns immediately when `__instance` is a `Player`. Incoming damage updates `LastCombatHitUtc` and runs the same **~3s** `SummonPulseInterval` gate + `TrySummonPets` (no-op if not a summoning class).
+- **Docs:** `README.md` (summoning section), `ClassPerks.md`.
+
 ### BetterSupportSkills — Death Knight nether proc tier + mana
 
 - **Cause:** Proc “tier” is **index into nether streak/arc spell ID lists**, not client spell level; tiers 5+ swap to a different ID line (reads like high spell level). `MaxVoidSpellTier` **0** or invalid used `cap < 1 → cap = 8`, which **removed** the cap. Mana multiplier **0** still cost **1** mana via `Math.Max(1, …)`.

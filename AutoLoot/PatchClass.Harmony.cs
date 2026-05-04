@@ -80,8 +80,8 @@ public partial class PatchClass
         return false; // skip vanilla consumption
     }
 
-    // Corpses: profile autoloot at treasure generation (PostGenerateTreasure). Salvage on close.
-    // World chests: profile autoloot here on open. Salvage on close. House chests (HouseOwner): no-op.
+    // Corpses: profile autoloot at treasure generation (PostGenerateTreasure). Optional salvage on close.
+    // World chests: autoloot on open; on close, bank leftovers + profile + quest bags, then optional salvage. House: no-op.
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Container), nameof(Container.Open))]
     public static void PostContainerOpen(Player player, Container __instance)
@@ -113,13 +113,18 @@ public partial class PatchClass
                 return;
 
             AutoLoot.EnsureLoaded(player);
-            // Loot ran on open; close only runs material salvage sweep.
-            AutoLoot.RunSalvageDestroyPass(chest, player, out _);
+
+            if (PatchClass.Settings is { EnableChestAutoLoot: true })
+                AutoLoot.ProcessChestCloseLoot(player, chest);
+
+            if (PatchClass.Settings is { EnableDelayedSalvageSweep: true })
+                AutoLoot.RunSalvageDestroyPass(chest, player, out _);
         }
         else if (__instance is Corpse corpse)
         {
-            // Corpses were fully processed at creation; only sweep remaining salvage on close.
-            AutoLoot.RunSalvageDestroyPass(corpse, player, out _);
+            AutoLoot.EnsureLoaded(player);
+            if (PatchClass.Settings is { EnableDelayedSalvageSweep: true })
+                AutoLoot.RunSalvageDestroyPass(corpse, player, out _);
         }
     }
 }

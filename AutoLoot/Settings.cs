@@ -74,7 +74,7 @@ public class Settings
     public float LockpickLootBankPercent { get; set; } = 0.10f;
 
     [JsonPropertyName("// EnableChestAutoLoot")]
-    public string EnableChestAutoLootDoc { get; init; } = "When true, opening a non-house chest runs profile autoloot immediately; closing runs salvage sweep only. House chests (HouseOwner) are never touched.";
+    public string EnableChestAutoLootDoc { get; init; } = "When true, opening a non-house chest runs profile autoloot immediately; closing runs the same banking/profile passes so leftovers credit LLL before ACE clears the chest (then EnableDelayedSalvageSweep controls material salvage). House chests (HouseOwner) are never touched.";
     public bool EnableChestAutoLoot { get; set; } = true;
 
     [JsonPropertyName("// EnableLootStackConsolidation")]
@@ -82,7 +82,7 @@ public class Settings
     public bool EnableLootStackConsolidation { get; set; } = true;
 
     [JsonPropertyName("// EnableDelayedSalvageSweep")]
-    public string EnableDelayedSalvageSweepDoc { get; init; } = "When true, on container/corpse close (excluding house storage), items with a MaterialType (or raw salvage bags) are auto-salvaged into the BSS material bank. Non-material items are left in the container.";
+    public string EnableDelayedSalvageSweepDoc { get; init; } = "When true, on corpse/chest close (non-house chest), runs BetterSupportSkills material salvage on leftovers. When false, skips that sweep (EnableChestAutoLoot still controls banking/profile on chest close).";
     public bool EnableDelayedSalvageSweep { get; set; } = true;
 
     [JsonPropertyName("// EnableLevel8CompsConversion")]

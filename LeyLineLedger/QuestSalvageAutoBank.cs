@@ -1,3 +1,5 @@
+using System.Linq;
+
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Server.Mods;
@@ -85,6 +87,32 @@ public static class QuestSalvageAutoBank
         return true;
     }
 
+    // Banks quest salvage bags left inside a container (e.g. dungeon chest) before ACE Reset clears unmanaged loot.
+    public static void TryProcessContainer(Player player, Container container)
+    {
+        if (player is null || container is null)
+            return;
+
+        if (!IsEnabled())
+            return;
+
+        foreach (var item in container.Inventory.Values.ToList())
+        {
+            if (item.IsDestroyed)
+                continue;
+
+            if (!QuestToRegularSalvage.TryGetValue(item.WeenieClassId, out uint regularWcid))
+                continue;
+
+            int amount = item.StackSize ?? 1;
+            if (!DepositToBank(player, regularWcid, amount))
+                continue;
+
+            if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                removed?.Destroy();
+        }
+    }
+
     static bool IsEnabled()
     {
         var settings = PatchClass.Settings;
@@ -164,12 +192,6 @@ public static class QuestSalvageAutoBank
         return $"Salvage (WCID {salvageWcid})";
     }
 
-    // ── Non-emote sources (loot, scripts) are intentionally not patched here.
-    // Container.TryAddToInventory with out/ref parameters fails to Harmony-patch
-    // in this ACE version. Quest salvage bags are acquired almost exclusively via
-    // NPC emotes (Clutch of Kings, Pathwarden), which are intercepted above in
-    // EmoteBankPatches.PrefixGiveFromEmote → TryAutoDepositEmote.
-    // If non-emote sources become important, add a Player.HandleActionPutItemInContainer
-    // postfix or a periodic inventory scan instead.
-    // ──────────────────────────────────────────────────────────────────────
+    // Non-emote pickup is still not Harmony-patched; chest/container close calls TryProcessContainer
+    // from AutoLoot so bags in chests are banked before ClearUnmanagedInventory.
 }

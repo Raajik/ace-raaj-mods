@@ -1041,11 +1041,10 @@ public class AutoLoot
 
     // ── Container auto-loot ──────────────────────────────────────────────────
 
-    /// <summary>
-    /// IMMEDIATE phase — silent unconditional banking (cash, keys, lockpicks, coalesced mana,
-    /// level-8 comps, known scroll destroy). Called before ProcessContainerLoot for both
-    /// corpses (at creation) and chests (on close) so server-defined rules always apply.
-    /// </summary>
+    // IMMEDIATE phase — silent unconditional banking (cash, keys, lockpicks, coalesced mana,
+    // level-8 comps, known scroll destroy). Called before ProcessContainerLoot for corpses at
+    // treasure creation and for chests on open; chest close also runs this via ProcessChestCloseLoot
+    // before ACE resets the chest inventory.
     internal static void ProcessContainerLootImmediate(Player player, Container container)
     {
         if (player == null || container == null) return;
@@ -1103,6 +1102,15 @@ public class AutoLoot
                 continue;
             }
         }
+    }
+
+    // World chest close: bank leftovers + profile loot + quest salvage bags before salvage sweep.
+    // Caller gates with EnableChestAutoLoot (see PatchClass.Harmony PreContainerClose).
+    internal static void ProcessChestCloseLoot(Player player, Chest chest)
+    {
+        ProcessContainerLootImmediate(player, chest);
+        LeyLineLedgerQuestSalvageInterop.TryProcessContainer(player, chest);
+        ProcessContainerLoot(player, chest);
     }
 
     private static string FormatItemList(List<string> items)

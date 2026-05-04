@@ -8,6 +8,12 @@
 
 ## 2026-05-04
 
+### BetterSupportSkills — auto-summon credits pet damage (all summoning classes)
+
+- **Cause:** Auto-summon only pulsed on **player** `TakeDamage` / harmful `HandleCastSpell`; zero-offense Item Enchantment (etc.) builds never hit those paths → no auto pets.
+- **Fix:** `PostCreatureTakeDamage_SummonTrigger` resolves owner as **player** or **`CombatPet.P_PetOwner`**; same `LastCombatHitUtc`, 3s `SummonPulseUtc` gate, and `TrySummonPets(owner)`. Harmful spell path unchanged.
+- **Docs:** `ClassPerks.md`, `README.md` (summoning section), `Settings.cs` doc strings for `EnableSummoningClasses` / `SummoningClasses`.
+
 ### Swarmed — CreatureEx bonus loot gate + death-treasure fallback
 
 - **Cause:** `SpecialCreatureLoot` required `FakeInt.CreatureExType` (10029) on the corpse creature; factory-spawned champions (`Horde`, `Tank`, etc.) never set it on the live instance, so the postfix exited immediately. When `DeathTreasure` was also null (weenie without `DeathTreasureType`), uncommon+/imbued rolls produced nothing beyond salvage.

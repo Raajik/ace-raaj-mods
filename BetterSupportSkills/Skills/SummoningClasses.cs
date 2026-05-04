@@ -455,23 +455,29 @@ public static class SummoningClasses
     [HarmonyPatch(typeof(Creature), nameof(Creature.TakeDamage), new Type[] { typeof(WorldObject), typeof(DamageType), typeof(float), typeof(bool) })]
     public static void PostCreatureTakeDamage_SummonTrigger(WorldObject source, DamageType damageType, float amount, bool crit, Creature __instance)
     {
-        if (source is not Player player) return;
         if (__instance is Player) return;
         if (__instance.IsDead) return;
         if (amount <= 0) return;
 
+        Player? owner = source as Player;
+        if (owner is null && source is CombatPet pet)
+            owner = pet.P_PetOwner as Player;
+
+        if (owner is null)
+            return;
+
         var now = DateTime.UtcNow;
-        LastCombatHitUtc[player.Guid.Full] = now;
+        LastCombatHitUtc[owner.Guid.Full] = now;
 
         // Check if enough time has passed since last summon pulse
-        if (LastSummonPulseUtc.TryGetValue(player.Guid.Full, out var lastPulse))
+        if (LastSummonPulseUtc.TryGetValue(owner.Guid.Full, out var lastPulse))
         {
             if (now - lastPulse < SummonPulseInterval)
                 return;
         }
 
-        LastSummonPulseUtc[player.Guid.Full] = now;
-        TrySummonPets(player);
+        LastSummonPulseUtc[owner.Guid.Full] = now;
+        TrySummonPets(owner);
     }
 
     // -- Main Summon Logic -----------------------------------------------

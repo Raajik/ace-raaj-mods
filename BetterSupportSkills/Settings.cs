@@ -208,11 +208,11 @@ public class Settings
     public ChaosTinkerSettings ChaosTinker { get; set; } = new();
 
     [JsonPropertyName("// EnableSummoningClasses")]
-    public string EnableSummoningClassesDoc { get; init; } = "Summoning classes — auto-summon pets when specialized Summoning + secondary magic spec.";
+    public string EnableSummoningClassesDoc { get; init; } = "Summoning classes — auto-summon when Spec Summoning + secondary magic spec; pulses on your damage, harmful spells vs creatures, or your CombatPet's damage (3s gate).";
     public bool EnableSummoningClasses { get; set; } = true;
 
     [JsonPropertyName("// SummoningClasses")]
-    public string SummoningClassesSectionDoc { get; init; } = "Druid (Life), Elementalist (War), Necromancer (Void), Enchanter (Creature Enchantment), Artificer (Item Enchantment) auto-summon settings.";
+    public string SummoningClassesSectionDoc { get; init; } = "Druid (Life), Elementalist (War), Necromancer (Void), Enchanter (Creature Enchantment), Artificer (Item Enchantment): per-class caps, device rules, pet spell gates. Auto-summon also credits pet-dealt damage toward the owner pulse.";
     public SummoningClassesSettings SummoningClasses { get; set; } = new();
 
     [JsonPropertyName("// EnableDruidPetThorns")]

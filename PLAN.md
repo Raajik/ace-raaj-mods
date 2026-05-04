@@ -12,6 +12,7 @@ After defense imbue on **armor**, client shows **persistent hourglass** on appra
 
 Keep this section **short**. When something ships, **append [COMPLETED.md](COMPLETED.md)** (dated subsection) and **remove** the matching bullet here so PLAN stays scannable.
 
+- **Done (2026-05-04):** BetterLootControl — vanilla Coalesced Mana on modern ACE (`TryRollCoalescedMana` suppress + `DeclaredMethod` targets; live WB DLL + `wb_ace_world` weenie `class_Name` fix 42517/42518). → **COMPLETED.md § 2026-05-04**.
 - **Operator / live:** If **AutoSalvage** (BetterSupportSkills) or **AutoLoot** close-time salvage changes “did not make it” after a **git push**, live needs **rebuild → copy** `C:\ACE\Mods\BetterSupportSkills` + `AutoLoot` (and `Settings.json`) to `C:\ACE-WB\Mods\` + **ACE-WB restart** — not SQL. Verify DLL mtimes on `C:\ACE-WB\Mods\` match post-push local build.
 - **Ongoing:** AureatePath / Overtinked JSON tuning; periodic `/mod-audit`. **WorldEvents Hunt** — intervals, popularity multipliers, damage caps.
 - **Backlog:** Idea routing lives under [Greenfield Backlog](#greenfield-backlog-prioritized).

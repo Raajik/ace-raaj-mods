@@ -22,6 +22,8 @@ Use this as the checklist when adding the next custom trophy family.
 | Drudge Charm (Pristine) | 850272 |
 | Drudge Charm (Perfect) | 850273 |
 
+**Icon / glow (world weenie):** `weenie_properties_int` **179** (`ImbuedEffect`) = rend-style icon underlay; **18** (`UiEffects`) = client glow. Drudge line defaults: **3669** Bludgeon + Frost (white); **850271** Acid + Acid (green); **850272** Cold + Magical (blue); **850273** Electric + Lightning (purple). Shipped in `WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql` and forward patch `DrudgeCharm_UiRendIcons_2026-05-05.sql`.
+
 ---
 
 ## AutoLoot — default pack pull (no profile required)

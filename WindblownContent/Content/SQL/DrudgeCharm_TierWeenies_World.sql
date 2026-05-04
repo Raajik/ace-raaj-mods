@@ -86,14 +86,15 @@ INSERT INTO weenie_properties_string (object_Id, type, value) VALUES
 (850273, 16, 'Same collector path; top quest XP bracket and banked trade notes per charm in this drudge line.')
 ON DUPLICATE KEY UPDATE value = VALUES(value);
 
-INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (3669, 18, 1)
-ON DUPLICATE KEY UPDATE value = 1;
-INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (850271, 18, 33)
-ON DUPLICATE KEY UPDATE value = 33;
-INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (850272, 18, 65)
-ON DUPLICATE KEY UPDATE value = 65;
-INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (850273, 18, 4097)
-ON DUPLICATE KEY UPDATE value = 4097;
+-- Per-tier icon: PropertyInt 179 ImbuedEffect (rend background), 18 UiEffects (glow/outline).
+-- ImbuedEffectType: BludgeonRending=32, AcidRending=64, ColdRending=128, ElectricRending=256.
+-- UiEffects: Frost=128 (white), Acid=256 (green), Magical=1 (blue), Lightning=64 (purple).
+INSERT INTO weenie_properties_int (object_Id, type, value) VALUES
+(3669, 179, 32), (3669, 18, 128),
+(850271, 179, 64), (850271, 18, 256),
+(850272, 179, 128), (850272, 18, 1),
+(850273, 179, 256), (850273, 18, 64)
+ON DUPLICATE KEY UPDATE value = VALUES(value);
 
 UPDATE weenie SET class_Name = 'drudgecharm_quality' WHERE class_Id = 850271;
 UPDATE weenie SET class_Name = 'drudgecharm_pristine' WHERE class_Id = 850272;

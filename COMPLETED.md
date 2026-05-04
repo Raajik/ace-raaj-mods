@@ -8,6 +8,12 @@
 
 ## 2026-05-04
 
+### Swarmed — CreatureEx bonus loot gate + death-treasure fallback
+
+- **Cause:** `SpecialCreatureLoot` required `FakeInt.CreatureExType` (10029) on the corpse creature; factory-spawned champions (`Horde`, `Tank`, etc.) never set it on the live instance, so the postfix exited immediately. When `DeathTreasure` was also null (weenie without `DeathTreasureType`), uncommon+/imbued rolls produced nothing beyond salvage.
+- **Fix:** `CreatureEx.Initialize` sets `FakeInt.CreatureExType` from the concrete subclass name (`Enum.TryParse<CreatureExType>`). `SpecialCreatureLoot` uses `ResolveDeathTreasure`: mob profile first, else `DatabaseManager.World.GetCachedDeathTreasure(FallbackDeathTreasureDid)`. New setting `SpecialCreatureLoot.FallbackDeathTreasureDid` default **228** (tier 7 stock `treasure_death` on typical ACE DB); set **0** to disable fallback rolls.
+- **Files:** `Swarmed/Creatures/CreatureEx.cs`, `Swarmed/Features/SpecialCreatureLoot.cs`, `Swarmed/Settings.cs`, `Swarmed/Settings.json`. Commit `9604f5a`.
+
 ### Defense imbue appraisal hourglass — PLAN item closed (resolved in ops)
 
 - **Was:** `PLAN.md` tracked persistent client **E** hourglass on **armor** after Peridot / Yellow Topaz / Zircon defense imbue; appraisal text could still load (not a server hang). Investigation matrix lived in Obsidian **[[Defense Imbue Appraisal Hourglass]]** (`A:\obsidian\jeremy\wiki\Defense Imbue Appraisal Hourglass.md`).

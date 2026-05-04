@@ -56,8 +56,20 @@ public partial class PatchClass
 
         var chain = new ActionChain();
         chain.AddDelaySeconds(3.0f);
-        chain.AddAction(player, () => TryAutoClaimPendingRewards(player));
+        chain.AddAction(player, () => SendPendingClaimsLoginReminder(player));
         chain.EnqueueChain();
+    }
+
+    static void SendPendingClaimsLoginReminder(Player player)
+    {
+        if (player?.Guid == null)
+            return;
+
+        var pending = PendingEventClaimsStore.PeekCount(player.Guid.Full);
+        if (pending <= 0)
+            return;
+
+        player.SendMessage($"[WorldEvents] You have {pending} pending event reward(s). Type /claim to receive them.", ChatMessageType.System);
     }
 
     internal static void TryAutoClaimPendingRewards(Player player)

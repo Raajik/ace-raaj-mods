@@ -365,9 +365,9 @@ public partial class PatchClass : BasicPatch<Settings>
         }
     }
 
-    // /claim — deliver world-event loot that was queued while offline (also auto-runs shortly after login and every 2h while online if pending).
+    // /claim — deliver world-event loot that was queued while offline (periodic online tick still auto-tries delivery; login is reminder-only).
     [CommandHandler("claim", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0,
-        "Claim pending world event rewards (loot rolled when you were offline). Auto-delivers after login when pending; /claim if any remain. Usage: /claim")]
+        "Claim pending world event rewards (loot rolled when you were offline). Usage: /claim")]
     public static void HandleClaim(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)

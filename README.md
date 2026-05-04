@@ -182,7 +182,7 @@ Rotating world events with automated scheduling, broadcast messaging, and partic
 | **Scavenger Hunt** — Turn in specific hot items (drawn from recent loot tables) to a collector NPC. Auto-advances after a timeout if no winner. |
 
 **Cross-event systems:**
-- **Pending event rewards** — Loot queued while offline lives under `Mods/WorldEvents/PendingClaims/`. **Auto-claim** runs ~3s after login when pending; a **120-minute** online tick retries delivery and nudges `/claim` if anything is still queued.
+- **Pending event rewards** — Loot queued while offline lives under `Mods/WorldEvents/PendingClaims/`. **Login:** System reminder if pending (no auto-grant). **120-minute** online tick still auto-tries delivery and nudges `/claim` if anything remains queued.
 - **Unified QB Ledger** — `ParticipationLedger` tracks account-wide event participation across all event types.
 - **Solo Competitor Bonus** — When exactly 1 player participates, they receive +1 loot tier and 1.5× XP.
 - **Unified Scheduler** — Optional centralized event timer (`UseUnifiedScheduler`). When enabled, legacy per-event reminders are silenced.

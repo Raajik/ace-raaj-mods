@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -14,19 +15,32 @@ internal static class EquipmentSetSpellRefresh
         if (owner == null || item == null || !item.HasItemSet)
             return;
 
-        if ((item.ItemXpStyle ?? 0) == 0)
-            item.SetProperty(PropertyInt.ItemXpStyle, (int)ItemXpStyle.ScalesWithLevel);
+        // CreateItemSpell / dispel UI paths assume an online session; never throw from set refresh.
+        if (owner.Session == null)
+            return;
 
-        List<WorldObject> setItems = owner.EquippedObjects.Values
-            .Where(i => i.HasItemSet && i.EquipmentSetId == item.EquipmentSetId)
-            .Where(i => i.Guid.Full != item.Guid.Full)
-            .ToList();
-        setItems.Insert(0, item);
+        try
+        {
+            if ((item.ItemXpStyle ?? 0) == 0)
+                item.SetProperty(PropertyInt.ItemXpStyle, (int)ItemXpStyle.ScalesWithLevel);
 
-        int levelDiff = prevItemLevel - (item.ItemLevel ?? 0);
-        List<Spell> prevSpells = WorldObject.GetSpellSet(setItems, levelDiff);
-        List<Spell> spells = WorldObject.GetSpellSet(setItems);
+            List<WorldObject> setItems = owner.EquippedObjects.Values
+                .Where(i => i.HasItemSet && i.EquipmentSetId == item.EquipmentSetId)
+                .Where(i => i.Guid.Full != item.Guid.Full)
+                .ToList();
+            setItems.Insert(0, item);
 
-        owner.EquipDequipItemFromSet(item, spells, prevSpells);
+            int levelDiff = prevItemLevel - (item.ItemLevel ?? 0);
+            List<Spell> prevSpells = WorldObject.GetSpellSet(setItems, levelDiff);
+            List<Spell> spells = WorldObject.GetSpellSet(setItems);
+
+            owner.EquipDequipItemFromSet(item, spells, prevSpells);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log(
+                $"[EmpyreanAlteration] EquipmentSetSpellRefresh failed for {item.Name} ({item.WeenieClassId}): {ex}",
+                ModManager.LogLevel.Error);
+        }
     }
 }

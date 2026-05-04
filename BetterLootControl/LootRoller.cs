@@ -174,10 +174,10 @@ public static class LootRoller
                     stackSize *= 2;
             }
 
-            // Drudge charm (3669) must stay low-stack for quest turn-ins; do not force 100 stacks.
+            // Drudge charm tiers must stay low-stack for quest turn-ins; do not force 100 stacks.
             // Enable stacking for non-salvage, non-foolproof items when stackSize > 1
             if (stackSize > 1 && !SalvageBagShaper.IsSalvageWcid((uint)selectedItem.wcid) && !isFoolproof
-                && (uint)selectedItem.wcid != 3669u)
+                && !IsDrudgeCharmTierWcid((uint)selectedItem.wcid))
             {
                 item.MaxStackSize = 100;
             }
@@ -194,6 +194,9 @@ public static class LootRoller
             return null;
         }
     }
+
+    static bool IsDrudgeCharmTierWcid(uint wcid) =>
+        wcid is 3669u or 850271u or 850272u or 850273u;
 
     /// <summary>
     /// Cross-mod bridge: if EmpyreanAlteration is loaded, runs its loot mutator on the item

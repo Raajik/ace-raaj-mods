@@ -36,6 +36,14 @@
 - **Change:** `PostCreatureGetMovementSpeed` postfix on `Creature.GetMovementSpeed` — for **`CombatPet`** in **`TrackedPetGuids`**, multiplies **`MoveSpeed`** by **`SummoningClasses.AutoSummonMoveSpeedMultiplier`** (default **3**) after vanilla math, so small **`AutoSummonObjScaleMultiplier`** does not leave pets crawling. **`<= 0`** or **`1`** skips.
 - **Settings / docs:** `AutoSummonMoveSpeedMultiplier` in `Settings.json`, `SummoningClassesSettings` in `SummoningClasses.cs`, `ClassPerks.md` (Summoning Classes).
 
+### Drudge charm tiers (world + mods)
+
+- **SQL:** `WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql` — deletes **`weenie_properties_create_list`** rows for **3669**; clones weenie **3669** to **850271–850273** with names / **`UiEffects`**; renames **3669** display to **Drudge Charm (Regular)**. Applied to local **`ace_world`** (restart ACE for weenie cache).
+- **BetterSupportSkills:** `DrudgeCharmTrophySettings` + **`TrophyDropsBonus.TryRollDrudgeCharmDrops`** (Drudge **`CreatureType`** only; chances **3% / 1% / 1% / 1%**); **`QuestTurnInCap`** — bulk WCIDs **3669 + 850271–850273**, tier **`GetXPBetweenLevels(level, level+1)`** × fraction × total count, **`LeyLineLedgerBankInterop.IncBanked`** pyreals per charm, shared daily cap bucket **`DailyCapTrackingWcid`** (default **3669**); **`HybridClasses`** bludgeon trophy list includes tier WCIDs. Project links **`Shared/LeyLineLedgerBankInterop.cs`**.
+- **BetterLootControl:** `LootRoller` skips forced **MaxStackSize 100** for all four charm WCIDs.
+- **QOL:** **`NpcStackTurnIn.StackableQuestWcids`** + **`StackableWcids.json`** include **850271–850273**.
+- **AutoLoot:** **`UpgradedTrophyWeenieClassIds`** — Pass 1 pulls charm tiers before **`.utl`** profiles.
+
 ---
 
 ## 2026-05-04

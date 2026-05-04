@@ -23,6 +23,8 @@
     "Tusk",
     "Matron"
   ],
+  "// UpgradedTrophyWeenieClassIds": "Pass 1: always pocket these WCIDs before .utl (Drudge charm tiers). Empty = off.",
+  "UpgradedTrophyWeenieClassIds": [3669, 850271, 850272, 850273],
   "// KeysUnlockThreshold": "Objects unlocked with keys to unlock BetterKeys.utl and key banking.",
   "KeysUnlockThreshold": 10,
   "// LockpickUnlockThreshold": "Objects unlocked with lockpicks to unlock lockpick corpse-loot banking.",

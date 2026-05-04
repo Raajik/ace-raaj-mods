@@ -39,6 +39,10 @@ public class Settings
     public string NoDuplicateNamesDoc { get; init; } = "Name substrings (case-insensitive): if an item matches and the player already has same WCID in inventory, skip loot — reduces quest-timer bypass via stockpiling. Add more fragments as needed.";
     public List<string> NoDuplicateNames { get; set; } = ["Pincer", "Tusk", "Matron"];
 
+    [JsonPropertyName("// UpgradedTrophyWeenieClassIds")]
+    public string UpgradedTrophyWeenieClassIdsDoc { get; init; } = "WCIDs pulled during Pass 1 before .utl profiles (Drudge charm tiers). Empty = skip. Matches BetterSupportSkills DrudgeCharmTrophies tier ids by default.";
+    public List<uint> UpgradedTrophyWeenieClassIds { get; set; } = [3669u, 850271u, 850272u, 850273u];
+
     [JsonPropertyName("// KeysUnlockThreshold")]
     public string KeysUnlockThresholdDoc { get; init; } = "DEPRECATED — Key auto-banking is now unconditional for all players. This setting is kept for notification/achievement tracking only.";
     public int KeysUnlockThreshold { get; set; } = 10;

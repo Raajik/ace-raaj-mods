@@ -191,6 +191,10 @@ public class Settings
     public string QuestTrophyDropsSectionDoc { get; init; } = "High-value quest item bonus drops with daily turn-in XP caps.";
     public QuestTrophyDropsSettings QuestTrophyDrops { get; set; } = new();
 
+    [JsonPropertyName("// DrudgeCharmTrophies")]
+    public string DrudgeCharmTrophiesSectionDoc { get; init; } = "Species-gated Drudge charm bonus drops on kill (independent of Assess extra rolls). Tier WCIDs, per-tier drop chance, turn-in XP fraction of next-level bracket, banked pyreals per charm via LeyLineLedger.";
+    public DrudgeCharmTrophySettings DrudgeCharmTrophies { get; set; } = new();
+
     [JsonPropertyName("// EnableTinkeringLootGating")]
     public string EnableTinkeringLootGatingDoc { get; init; } = "Tinkering loot gating — only characters with any tinkering skill trained/specialized can generate leveled items from loot. Matching skill boosts max level.";
     public bool EnableTinkeringLootGating { get; set; } = false;
@@ -997,4 +1001,71 @@ public class QuestTrophyDropsSettings
     [JsonPropertyName("// XpSuppressedMessage")]
     public string XpSuppressedMessageDoc { get; init; } = "Message sent when turn-in XP is suppressed due to daily cap.";
     public string XpSuppressedMessage { get; init; } = "You've reached the daily turn-in limit for this item. You receive the turn-in reward but no additional experience.";
+}
+
+public class DrudgeCharmTrophySettings
+{
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When true and EnableTrophyDrops, Drudge creatures can roll bonus charm tier drops on death (separate from Assess-based rolls).";
+    public bool Enabled { get; set; } = true;
+
+    [JsonPropertyName("// DropChanceRegular")]
+    public string DropChanceRegularDoc { get; init; } = "Chance (0-1) per kill to roll regular-tier charm (3669).";
+    public double DropChanceRegular { get; set; } = 0.03;
+
+    [JsonPropertyName("// DropChanceRare1")]
+    public string DropChanceRare1Doc { get; init; } = "Chance per kill for first rare tier WCID.";
+    public double DropChanceRare1 { get; set; } = 0.01;
+
+    [JsonPropertyName("// DropChanceRare2")]
+    public string DropChanceRare2Doc { get; init; } = "Chance per kill for second rare tier WCID.";
+    public double DropChanceRare2 { get; set; } = 0.01;
+
+    [JsonPropertyName("// DropChanceRare3")]
+    public string DropChanceRare3Doc { get; init; } = "Chance per kill for third rare tier WCID.";
+    public double DropChanceRare3 { get; set; } = 0.01;
+
+    [JsonPropertyName("// WcidRegular")]
+    public string WcidRegularDoc { get; init; } = "Regular tier weenie class id.";
+    public uint WcidRegular { get; set; } = 3669;
+
+    [JsonPropertyName("// WcidRare1")]
+    public string WcidRare1Doc { get; init; } = "Rare tier 1 weenie class id.";
+    public uint WcidRare1 { get; set; } = 850271;
+
+    [JsonPropertyName("// WcidRare2")]
+    public string WcidRare2Doc { get; init; } = "Rare tier 2 weenie class id.";
+    public uint WcidRare2 { get; set; } = 850272;
+
+    [JsonPropertyName("// WcidRare3")]
+    public string WcidRare3Doc { get; init; } = "Rare tier 3 weenie class id.";
+    public uint WcidRare3 { get; set; } = 850273;
+
+    [JsonPropertyName("// XpFractionRegular")]
+    public string XpFractionRegularDoc { get; init; } = "Quest XP multiplier vs next-level bracket for regular tier bulk turn-in.";
+    public float XpFractionRegular { get; set; } = 0.25f;
+
+    [JsonPropertyName("// XpFractionRare1")]
+    public string XpFractionRare1Doc { get; init; } = "Quest XP multiplier for rare tier 1.";
+    public float XpFractionRare1 { get; set; } = 0.5f;
+
+    [JsonPropertyName("// XpFractionRare2")]
+    public string XpFractionRare2Doc { get; init; } = "Quest XP multiplier for rare tier 2.";
+    public float XpFractionRare2 { get; set; } = 0.75f;
+
+    [JsonPropertyName("// XpFractionRare3")]
+    public string XpFractionRare3Doc { get; init; } = "Quest XP multiplier for rare tier 3.";
+    public float XpFractionRare3 { get; set; } = 1.0f;
+
+    [JsonPropertyName("// BankPyrealsPerCharm")]
+    public string BankPyrealsPerCharmDoc { get; init; } = "Banked pyreals credited per charm turned in (total * count). Uses BankCashProperty (LeyLineLedger).";
+    public int BankPyrealsPerCharm { get; set; } = 10_000;
+
+    [JsonPropertyName("// BankCashProperty")]
+    public string BankCashPropertyDoc { get; init; } = "PropertyInt64 key for banked pyreals (match LeyLineLedger Settings.CashProperty, default 39999).";
+    public int BankCashProperty { get; set; } = 39999;
+
+    [JsonPropertyName("// DailyCapTrackingWcid")]
+    public string DailyCapTrackingWcidDoc { get; init; } = "QuestTurnInTracker bucket for all charm tiers (single shared daily cap).";
+    public uint DailyCapTrackingWcid { get; set; } = 3669;
 }

@@ -100,6 +100,24 @@
     "MaxExtraRolls": 10,
     "BonusTreasureChance": 0.5
   },
+  "DrudgeCharmTrophies": {
+    "Enabled": true,
+    "DropChanceRegular": 0.03,
+    "DropChanceRare1": 0.01,
+    "DropChanceRare2": 0.01,
+    "DropChanceRare3": 0.01,
+    "WcidRegular": 3669,
+    "WcidRare1": 850271,
+    "WcidRare2": 850272,
+    "WcidRare3": 850273,
+    "XpFractionRegular": 0.25,
+    "XpFractionRare1": 0.5,
+    "XpFractionRare2": 0.75,
+    "XpFractionRare3": 1.0,
+    "BankPyrealsPerCharm": 10000,
+    "BankCashProperty": 39999,
+    "DailyCapTrackingWcid": 3669
+  },
   "EnableTinkeringLootGating": false,
   "TinkeringLootGating": {
     "MaxLevelBonusTrained": 10,

@@ -1176,6 +1176,21 @@ public class AutoLoot
                     continue;
                 }
 
+                var trophyWcids = PatchClass.Settings?.UpgradedTrophyWeenieClassIds;
+                if (trophyWcids is { Count: > 0 } && trophyWcids.Contains(item.WeenieClassId))
+                {
+                    if (!container.TryRemoveFromInventory(item.Guid, out var trophyRemoved))
+                        break;
+
+                    int tqty = trophyRemoved.StackSize ?? 1;
+                    string tname = LootDisplayName(trophyRemoved);
+                    lootedItems.TryGetValue(tname, out int tex);
+                    lootedItems[tname] = tex + tqty;
+                    lootedSet.Add(trophyRemoved);
+                    AutolootTryCreateInInventoryWithNetworking(player, trophyRemoved);
+                    continue;
+                }
+
                 foreach (var profile in activeProfiles)
                 {
                     var lootAction = profile.GetLootDecision(item, player);

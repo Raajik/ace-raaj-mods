@@ -35,4 +35,6 @@ global using ACE.Shared.Mods;
 
 global using BetterSupportSkills.Skills;
 
+global using AceRaajMods.Shared;
+
 global using S = BetterSupportSkills.PatchClass;

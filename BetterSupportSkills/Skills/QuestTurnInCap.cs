@@ -1,30 +1,34 @@
 using System.Collections.Concurrent;
+using AceRaajMods.Shared;
 using ACE.Entity.Enum;
 using ACE.Server.WorldObjects;
 
 namespace BetterSupportSkills.Skills;
 
-/// <summary>
-/// Caps quest turn-in XP for high-value quest items dropped by TrophyDrops.
-/// Also handles bulk turn-ins for configured stackable quest items (e.g. drudge charms).
-/// </summary>
+// Caps quest turn-in XP for high-value quest items dropped by TrophyDrops.
+// Bulk turn-ins for stackable quest charms (3669 + tier WCIDs): tier XP bracket + banked pyreals.
 [HarmonyPatchCategory(nameof(Features.TrophyDropsSkill))]
 internal static class QuestTurnInCap
 {
     static readonly ConcurrentDictionary<uint, PendingTurnIn> _pending = new();
-    // Separate tracker for bulk quest items (drudge charms, etc.)
     static readonly ConcurrentDictionary<uint, BulkTurnInState> _bulkPending = new();
 
     record PendingTurnIn(uint Wcid, DateTime Timestamp);
-    record BulkTurnInState(uint Wcid, int StackSize, DateTime Timestamp);
+    record BulkTurnInState(uint Wcid, int TotalCount, DateTime Timestamp);
 
-    // WCIDs that support bulk turn-in (entire stack consumed, XP multiplied)
-    static readonly HashSet<uint> BulkQuestWcids = new() { 3669 }; // Drudge Charm
+    static readonly HashSet<uint> BulkQuestWcids = [3669u, 850271u, 850272u, 850273u];
 
-    /// <summary>
-    /// Capture quest item WCID when a player gives an item to an NPC.
-    /// Also tracks bulk quest item turn-ins.
-    /// </summary>
+    static bool IsBulkCharm(uint wcid) => BulkQuestWcids.Contains(wcid);
+
+    static float CharmXpFraction(uint wcid, DrudgeCharmTrophySettings charm)
+    {
+        if (wcid == charm.WcidRegular) return charm.XpFractionRegular;
+        if (wcid == charm.WcidRare1) return charm.XpFractionRare1;
+        if (wcid == charm.WcidRare2) return charm.XpFractionRare2;
+        if (wcid == charm.WcidRare3) return charm.XpFractionRare3;
+        return 1f;
+    }
+
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), "GiveObjectToNPC", new Type[] {
         typeof(WorldObject), typeof(WorldObject), typeof(Container), typeof(Container), typeof(bool), typeof(int) })]
@@ -32,87 +36,116 @@ internal static class QuestTurnInCap
     {
         if (item == null || __instance == null) return;
 
-        // -- Bulk quest turn-in tracking (drudge charms, etc.) --
-        if (BulkQuestWcids.Contains(item.WeenieClassId))
+        if (IsBulkCharm(item.WeenieClassId))
         {
-            int stackSize = item.StackSize ?? 1;
-            if (stackSize > 1)
+            int given = item.StackSize ?? 1;
+            int others = 0;
+            foreach (var inv in __instance.GetInventoryItemsOfWCID(item.WeenieClassId))
             {
-                _bulkPending[__instance.Guid.Full] = new BulkTurnInState(item.WeenieClassId, stackSize, DateTime.UtcNow);
+                if (inv.Guid != item.Guid)
+                    others += inv.StackSize ?? 1;
             }
+
+            int total = given + others;
+            _bulkPending[__instance.Guid.Full] = new BulkTurnInState(item.WeenieClassId, total, DateTime.UtcNow);
         }
 
-        // -- Trophy drop cap tracking --
         var settings = PatchClass.Settings?.QuestTrophyDrops;
         if (settings?.Enabled != true) return;
         if (settings.QuestItemWcids == null || settings.QuestItemWcids.Count == 0) return;
         if (!settings.QuestItemWcids.Contains(item.WeenieClassId)) return;
+        if (IsBulkCharm(item.WeenieClassId))
+            return;
 
         _pending[__instance.Guid.Full] = new PendingTurnIn(item.WeenieClassId, DateTime.UtcNow);
     }
 
-    /// <summary>
-    /// Suppress XP if the player has hit their daily cap for this quest item.
-    /// Also multiplies XP and consumes remaining stack for bulk quest turn-ins.
-    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), nameof(Player.GrantXP), new Type[] { typeof(long), typeof(XpType), typeof(ShareType) })]
     public static void PreGrantXP(ref long amount, XpType xpType, Player __instance)
     {
         if (amount <= 0 || xpType != XpType.Quest || __instance == null) return;
 
-        // -- Bulk quest turn-in multiplier --
         if (_bulkPending.TryGetValue(__instance.Guid.Full, out var bulk))
         {
-            // Expire stale entries after 10 seconds
             if (DateTime.UtcNow - bulk.Timestamp > TimeSpan.FromSeconds(10))
             {
                 _bulkPending.TryRemove(__instance.Guid.Full, out _);
             }
-            else
+            else if (IsBulkCharm(bulk.Wcid))
             {
-                // Count remaining quest items in inventory
-                int remaining = __instance.GetInventoryItemsOfWCID(bulk.Wcid)
-                    .Sum(i => i.StackSize ?? 1);
+                var charm = PatchClass.Settings?.DrudgeCharmTrophies;
+                var qt = PatchClass.Settings?.QuestTrophyDrops;
 
-                if (remaining > 0)
+                bool capped = false;
+                if (charm?.Enabled == true && qt?.Enabled == true)
                 {
-                    // Remove all remaining stacks from inventory
+                    var cap = QuestTurnInTracker.RecordTurnIn(__instance.Guid.Full, charm.DailyCapTrackingWcid, qt);
+                    capped = cap.WasCapped;
+                }
+
+                if (capped)
+                {
+                    amount = 0;
+                    __instance.SendMessage(qt?.XpSuppressedMessage ?? "You've reached the daily turn-in limit for this item. You receive the turn-in reward but no additional experience.", ChatMessageType.System);
+                }
+                else
+                {
                     foreach (var stack in __instance.GetInventoryItemsOfWCID(bulk.Wcid).ToList())
                     {
                         __instance.TryRemoveFromInventoryWithNetworking(stack.Guid, out _, Player.RemoveFromInventoryAction.ConsumeItem);
                     }
 
-                    int totalTurnedIn = 1 + remaining; // 1 already given + remaining removed
-                    amount *= totalTurnedIn;
-                    __instance.SendMessage($"You turn in {totalTurnedIn:N0} {GetItemName(bulk.Wcid)} for {amount:N0} experience!", ChatMessageType.System);
+                    int totalTurnedIn = Math.Max(1, bulk.TotalCount);
+
+                    if (charm?.Enabled == true)
+                    {
+                        int level = __instance.Level ?? 1;
+                        ulong bracket = __instance.GetXPBetweenLevels(level, level + 1);
+                        float frac = CharmXpFraction(bulk.Wcid, charm);
+                        double scaled = Math.Floor(bracket * (double)frac * totalTurnedIn);
+                        if (scaled > long.MaxValue)
+                            amount = long.MaxValue;
+                        else
+                            amount = (long)scaled;
+
+                        long bankDelta = (long)charm.BankPyrealsPerCharm * totalTurnedIn;
+                        if (bankDelta > 0)
+                            LeyLineLedgerBankInterop.IncBanked(__instance, charm.BankCashProperty, bankDelta);
+
+                        __instance.SendMessage(
+                            $"You turn in {totalTurnedIn:N0} {GetItemName(bulk.Wcid)} for {amount:N0} experience! ({bankDelta:N0} pyreals banked.)",
+                            ChatMessageType.System);
+                    }
+                    else
+                    {
+                        amount *= totalTurnedIn;
+                        __instance.SendMessage($"You turn in {totalTurnedIn:N0} {GetItemName(bulk.Wcid)} for {amount:N0} experience!", ChatMessageType.System);
+                    }
                 }
 
                 _bulkPending.TryRemove(__instance.Guid.Full, out _);
-                // Fall through to trophy cap check below with the multiplied amount
             }
         }
 
-        // -- Trophy drop daily cap --
         if (!_pending.TryGetValue(__instance.Guid.Full, out var pending)) return;
 
-        // Expire stale entries after 10 seconds
         if (DateTime.UtcNow - pending.Timestamp > TimeSpan.FromSeconds(10))
         {
             _pending.TryRemove(__instance.Guid.Full, out _);
             return;
         }
 
-        var settings = PatchClass.Settings?.QuestTrophyDrops;
-        if (settings?.Enabled != true) return;
+        var trophySettings = PatchClass.Settings?.QuestTrophyDrops;
+        if (trophySettings?.Enabled != true) return;
 
-        var result = QuestTurnInTracker.RecordTurnIn(__instance.Guid.Full, pending.Wcid, settings);
+        var result = QuestTurnInTracker.RecordTurnIn(__instance.Guid.Full, pending.Wcid, trophySettings);
         _pending.TryRemove(__instance.Guid.Full, out _);
 
         if (result.WasCapped)
         {
             amount = 0;
-            __instance.SendMessage(settings.XpSuppressedMessage);
+            __instance.SendMessage(trophySettings.XpSuppressedMessage);
         }
     }
 
@@ -121,6 +154,9 @@ internal static class QuestTurnInCap
         return wcid switch
         {
             3669 => "drudge charms",
+            850271 => "verdant drudge charms",
+            850272 => "storm-marked drudge charms",
+            850273 => "abyssal drudge charms",
             _ => "quest items"
         };
     }

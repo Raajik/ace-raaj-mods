@@ -104,12 +104,15 @@ internal static class TrophyDropsBonus
         if (settings?.EnableTrophyDrops != true)
             return;
 
-        var trophySettings = settings.TrophyDrops;
-        if (trophySettings == null)
-            return;
-
         var player = killer?.TryGetPetOwnerOrAttacker() as Player;
         if (player == null)
+            return;
+
+        if (settings.DrudgeCharmTrophies?.Enabled == true)
+            TryRollDrudgeCharmDrops(__instance, player, corpse);
+
+        var trophySettings = settings.TrophyDrops;
+        if (trophySettings == null)
             return;
 
         var id = player.Guid.Full;
@@ -282,6 +285,40 @@ internal static class TrophyDropsBonus
                 player.SendMessage($"Your knowledge reveals extra loot! ({itemsAdded} bonus item(s) added)");
             }
         }
+    }
+
+    static void TryRollDrudgeCharmDrops(Creature __instance, Player player, Corpse corpse)
+    {
+        if (__instance?.CreatureType != CreatureType.Drudge)
+            return;
+
+        var charm = PatchClass.Settings?.DrudgeCharmTrophies;
+        if (charm == null)
+            return;
+
+        void TryOne(uint wcid, double chance)
+        {
+            if (chance <= 0.0 || wcid == 0)
+                return;
+            if (ThreadSafeRandom.Next(0.0f, 1.0f) >= chance)
+                return;
+
+            var item = WorldObjectFactory.CreateNewWorldObject(wcid);
+            if (item == null)
+                return;
+
+            item.SetStackSize(1);
+            ApplyTrophyBurdenValue(item, __instance);
+            if (corpse != null)
+                corpse.TryAddToInventory(item);
+            else
+                __instance.TryAddToInventory(item);
+        }
+
+        TryOne(charm.WcidRegular, charm.DropChanceRegular);
+        TryOne(charm.WcidRare1, charm.DropChanceRare1);
+        TryOne(charm.WcidRare2, charm.DropChanceRare2);
+        TryOne(charm.WcidRare3, charm.DropChanceRare3);
     }
 
     /// <summary>

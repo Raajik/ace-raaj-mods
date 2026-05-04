@@ -272,6 +272,10 @@ When **`EnableVendorLootRotation`** is **`true`**, a Harmony **prefix** on **`Ve
 
 ---
 
+### DPS detailed (`EnableDpsDetailed`)
+
+When `EnableDpsDetailed` is true in `Settings.json`, players can toggle extra **System** lines after successful **melee/missile** hits (full `DamageEvent` mod chain) and after their offensive **spell** hits on creatures (final damage, crit / crit-defended / overpower). Default per character is off until they run `/dps detailed`; `/dps off` clears. Server operator must enable the feature flag first.
+
 ### XP Tracker & Auto-Spend
 
 Tracks XP, luminance, and bank deposits per session. Lifetime totals are persisted to `<modDir>/xp-tracker/<guid>.json`.

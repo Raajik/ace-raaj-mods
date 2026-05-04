@@ -307,6 +307,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (Settings.EnableFacilityHub)
             enabledFeatures.Add(Features.FacilityHub);
 
+        if (Settings.EnableDpsDetailed)
+            enabledFeatures.Add(Features.DpsDetailed);
+
         ModC.RegisterPatchCategories(enabledFeatures.ToArray());
     }
 

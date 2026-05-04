@@ -69,6 +69,8 @@
   "EnableTownNetworkToll": true,
   "// EnableFacilityHub": "When true: successful Facility Hub Portal Gem (WCID 49563) portal summons increment AchievementUnlocked FacilityFrequenter; /fac teleports to the gem's linked hub after unlock.",
   "EnableFacilityHub": true,
+  "// EnableDpsDetailed": "When true: /dps detailed toggles extra System lines after your melee/missile hits (DamageEvent mods) and offensive spell hits (final damage + crit flags). Off in Settings = command explains disabled.",
+  "EnableDpsDetailed": false,
   "// FacilityHub": "Stock ACE: FallbackCell + origin/rotation used for /fac when linked portal Destination is not readable as Position (defaults: Val Heel Facility Hub 2.0 @ 0x01300105). Set FallbackCell to 0 to require successful portal resolution only.",
   "FacilityHub": {
     "FallbackCell": 19923205,

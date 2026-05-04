@@ -39,6 +39,7 @@ public enum Features
     XpTracker,
     AutoBuff,
     FacilityHub,
+    DpsDetailed,
 }
 
 public class Settings
@@ -403,6 +404,10 @@ public class Settings
     [JsonPropertyName("// EnableXpTracker")]
     public string EnableXpTrackerDoc { get; init; } = "Track XP, luminance, and bank deposits per session. Provides /xp tracker and /xp spend commands.";
     public bool EnableXpTracker { get; set; } = true;
+
+    [JsonPropertyName("// EnableDpsDetailed")]
+    public string EnableDpsDetailedDoc { get; init; } = "When true: /dps detailed toggles extra System lines after your melee/missile hits and offensive spell hits (DamageEvent / spell roll breakdown). Default per-player is off until they run /dps detailed.";
+    public bool EnableDpsDetailed { get; set; } = false;
 
     [JsonPropertyName("// XpTrackerWindowMinutes")]
     public string XpTrackerWindowMinutesDoc { get; init; } = "Session window in minutes for /xp tracker display.";

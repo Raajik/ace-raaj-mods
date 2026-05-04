@@ -327,13 +327,15 @@ public static class ChaosFailureEffects
     static ImbuedEffectType? GetRandomValidImbue(WorldObject target, ImbuedEffectType exclude)
     {
         bool isCaster = target.ItemType == ItemType.Caster || target.WeaponSkill == Skill.MagicDefense;
+        bool isWeaponLike = (target.ItemType & ItemType.Weapon) != 0;
         var candidates = AllImbueEffects.Where(i => i != exclude).ToList();
 
         // Remove invalid imbues for casters
         if (isCaster)
             candidates.RemoveAll(i => i == ImbuedEffectType.ArmorRending);
-        else
-            candidates.RemoveAll(i => i == ImbuedEffectType.MagicDefense); // MagicDefense on weapons is weird
+        else if (isWeaponLike)
+            // MagicDefense bonus on melee/missile weapons is odd; armor/clothing/jewelry still allow MagicDefense (e.g. zircon).
+            candidates.RemoveAll(i => i == ImbuedEffectType.MagicDefense);
 
         // Prevent double rending: if target already has any rending, or the wanted imbue is a rending,
         // exclude all rending types from the bonus pool.

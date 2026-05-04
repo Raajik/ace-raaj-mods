@@ -632,7 +632,10 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 var qpVal = quest.Value();
                 bool stampGranted = player.TryAwardRepeatQuestPoints(baseName, qpVal);
 
-                if (ChallengeModesActiveBridge.PlayerHasActiveChallenge(player) && stampGranted)
+                // Challenge-mode /qb uses ChallengeRunQuestPoints only (see LoremasterExtensions.UpdateQuestPoints).
+                // Account-repeat 0→1 can hit TryAwardRepeatQuestPoints false (account cooldown from another toon
+                // or stale RepeatQbTracker.json after a wipe). Still credit this stamp so displayed QB does not stay 0.
+                if (ChallengeModesActiveBridge.PlayerHasActiveChallenge(player) && qpVal > 0f)
                 {
                     var current = (float)(player.GetProperty(LMFloat.ChallengeRunQuestPoints) ?? 0f);
                     player.SetProperty(LMFloat.ChallengeRunQuestPoints, current + qpVal);

@@ -59,8 +59,9 @@ internal static class HuntKillPrep
 
     internal static Player? ResolveKillerPlayer(DamageHistoryInfo? lastDamager)
     {
-        if (lastDamager == null || !lastDamager.IsPlayer)
+        if (lastDamager == null)
             return null;
+        // Do not require lastDamager.IsPlayer: combat pets use non-player guids but PetOwner resolves to the summoner.
         return lastDamager.TryGetPetOwnerOrAttacker() as Player;
     }
 

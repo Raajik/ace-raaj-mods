@@ -89,7 +89,10 @@ public partial class PatchClass
         {
             var grantedXp = (long)(killer.GetProperty((PropertyInt64)HuntPropertyIds.PendingGrantedCharacterXp) ?? 0);
             killer.RemoveProperty((PropertyInt64)HuntPropertyIds.PendingGrantedCharacterXp);
-            var huntPts = Math.Ceiling(grantedXp * 0.01);
+            // Window points were only from character kill XP (40126). Grey mobs / zero-XP kills can grant 0 there while Hunt XP (xxp) still increases — align both.
+            double fromGrantedXp = grantedXp > 0 ? Math.Ceiling(grantedXp * 0.01) : 0.0;
+            double fromHuntXp = xxp > 0 ? Math.Ceiling(xxp * 0.01) : 0.0;
+            double huntPts = Math.Max(fromGrantedXp, fromHuntXp);
             lock (HuntRuntime.HuntLock)
             {
                 if (HuntRuntime.ActiveHunt != null

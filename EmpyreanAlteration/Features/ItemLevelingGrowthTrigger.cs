@@ -65,9 +65,10 @@ internal static class ItemLevelingGrowthTrigger
             owner, s);
 
         // Vanilla Player.GrantItemXP is skipped for awakened items; ACE never calls OnItemLevelUp, so equipment-set
-        // cloak spells (tiered by sum of ItemLevel) never refresh. Mirror retail here when the item has a set.
+        // spells never refresh. Player.OnItemLevelUp only scans EquippedObjects; leveled item in pack is omitted
+        // and GetSpellSet returns empty. EquipmentSetSpellRefresh includes the leveled piece and fixes ItemXpStyle.
         if (__instance.HasItemSet)
-            owner.OnItemLevelUp(__instance, prevLevel);
+            EquipmentSetSpellRefresh.OnAwakenedItemLevelUp(owner, __instance, prevLevel);
 
         __instance.CalculateObjDesc();
         try

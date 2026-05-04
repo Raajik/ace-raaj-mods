@@ -208,35 +208,45 @@ internal static class DenominatedBank
             return;
         }
 
-        // Create items
-        var createdNames = new Dictionary<string, int>();
+        // Create items (all-or-nothing: debit only if every stack lands in inventory)
+        var created = new List<WorldObject>();
         foreach (var (denom, count) in plan)
         {
             var wo = WorldObjectFactory.CreateNewWorldObject(denom.Wcid);
             if (wo == null)
             {
+                foreach (var prior in created)
+                    prior.Destroy();
                 if (!silent)
-                    player.SendMessage($"Failed to create {denom.Name}.");
-                continue;
+                    player.SendMessage($"Failed to create {denom.Name}. Nothing was taken from your bank.");
+                ModManager.Log($"[DenominatedBank] WithdrawFamily: CreateNewWorldObject failed for WCID {denom.Wcid} ({denom.Name}), player {player.Name}.");
+                return;
             }
+
             wo.SetStackSize(count);
             if (!player.TryCreateInInventoryWithNetworking(wo))
             {
-                if (!silent)
-                    player.SendMessage($"Not enough pack space for {denom.Name} ×{count}.");
                 wo.Destroy();
-                continue;
+                foreach (var prior in created)
+                    prior.Destroy();
+                if (!silent)
+                    player.SendMessage($"Not enough pack space for {denom.Name} ×{count}. Nothing was taken from your bank.");
+                return;
             }
-            createdNames[denom.Name] = createdNames.GetValueOrDefault(denom.Name) + (int)count;
+
+            created.Add(wo);
         }
 
-        long actualBase = requestedBase - remaining;
-        player.IncBanked(family.BaseProp, -actualBase);
+        player.IncBanked(family.BaseProp, -requestedBase);
 
         if (!silent)
         {
+            var createdNames = new Dictionary<string, int>();
+            foreach (var (denom, count) in plan)
+                createdNames[denom.Name] = createdNames.GetValueOrDefault(denom.Name) + count;
+
             var parts = createdNames.Select(kv => $"{kv.Key} ×{kv.Value}").ToList();
-            player.SendMessage($"Withdrew {actualBase} {family.Name} base units: {string.Join(", ", parts)}. {banked - actualBase} remaining.");
+            player.SendMessage($"Withdrew {requestedBase} {family.Name} base units: {string.Join(", ", parts)}. {banked - requestedBase} remaining.");
         }
     }
 

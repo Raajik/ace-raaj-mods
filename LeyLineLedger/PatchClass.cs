@@ -1862,7 +1862,7 @@ public static class BankExtensions
             .OrderByDescending(x => x.Value)
             .ToList();
 
-        var parts = new List<string>();
+        var denomPlan = new List<(CurrencyItem Curr, int Count)>();
         long remaining = totalPyreals;
 
         foreach (var curr in currencies)
@@ -1871,43 +1871,61 @@ public static class BankExtensions
             if (count <= 0)
                 continue;
 
-            parts.Add($"{curr.Id} {count}");
+            denomPlan.Add((curr, count));
             remaining -= (long)count * curr.Value;
         }
 
-        if (parts.Count == 0)
+        if (denomPlan.Count == 0)
         {
             player.SendMessage("Unable to form a withdrawal with the available currency denominations.");
             return;
         }
 
-        var command = string.Join(" ", parts);
-
-        if (!player.TryCreateItems(command))
+        int slotsNeeded = denomPlan.Count;
+        int freeSlots = player.GetFreeInventorySlots();
+        if (freeSlots < slotsNeeded)
         {
-            player.SendMessage("The bank tried to dispense currency, but one or more items no longer exist in the world. Contact an admin.");
-            ModManager.Log($"[LeyLineLedger] Failed to create currency command '{command}' for player {player.Name}. One or more items missing from world DB.");
+            player.SendMessage($"Not enough pack space for this withdrawal. Need {slotsNeeded} slot(s) for trade notes, have ~{freeSlots}.");
             return;
+        }
+
+        var created = new List<WorldObject>();
+        foreach (var (curr, count) in denomPlan)
+        {
+            var wo = WorldObjectFactory.CreateNewWorldObject(curr.Id);
+            if (wo == null)
+            {
+                foreach (var prior in created)
+                    prior.Destroy();
+                player.SendMessage("The bank tried to dispense currency, but one or more items no longer exist in the world. Contact an admin.");
+                ModManager.Log($"[LeyLineLedger] WithdrawPyreals: CreateNewWorldObject failed for WCID {curr.Id} ({curr.Name}), player {player.Name}.");
+                return;
+            }
+
+            wo.SetStackSize(count);
+            if (!player.TryCreateInInventoryWithNetworking(wo))
+            {
+                wo.Destroy();
+                foreach (var prior in created)
+                    prior.Destroy();
+                ModManager.Log($"[LeyLineLedger] WithdrawPyreals partial after {created.Count} stack(s); rolled back. Player {player.Name}, {totalPyreals:N0} pyreals.");
+                player.SendMessage("Not enough pack space to complete the withdrawal. Nothing was taken from your bank.");
+                return;
+            }
+
+            created.Add(wo);
         }
 
         player.IncCash(-totalPyreals);
 
-        var breakdown = string.Join(", ", parts.Select(p =>
+        var breakdown = string.Join(", ", denomPlan.Select(pair =>
         {
-            var tokens = p.Split(' ');
-            if (tokens.Length != 2)
-                return p;
-
-            if (!uint.TryParse(tokens[0], out var id) || !int.TryParse(tokens[1], out var count))
-                return p;
-
-            var curr = PatchClass.Settings.Currencies.FirstOrDefault(c => c.Id == id);
-            var name = curr is not null ? curr.Name : id.ToString();
-            long value = curr is not null ? (long)curr.Value * count : 0;
+            var name = pair.Curr.Name;
+            long value = (long)pair.Curr.Value * pair.Count;
 
             return value > 0
-                ? $"{count} {name} ({value:N0})"
-                : $"{count} {name}";
+                ? $"{pair.Count} {name} ({value:N0})"
+                : $"{pair.Count} {name}";
         }));
 
         player.SendMessage($"Withdrew {totalPyreals:N0} pyreals as: {breakdown}.  You have {player.GetBanked(PatchClass.Settings.CashProperty):N0} remaining.");

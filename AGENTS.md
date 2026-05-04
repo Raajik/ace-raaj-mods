@@ -8,6 +8,8 @@ Before any work, load applicable skills:
 - **Local skill override** — This repo contains a team-specific skill at `.cursor/skills/ace-mod-team/SKILL.md` that extends the global `ace-mod` skill with project-specific patterns. When the global `ace-mod` skill is invoked, also read the local override.
 
 ## 2. Starting Workflow
+**Git (each new chat, before substantive work):** From repo root `A:/ai/projects/ace-raaj-mods`, run `git status -sb`. If dirty, note `M` / `??` paths briefly so unstaged and untracked work is not forgotten. Repeat before handoff when edits were made.
+
 Always check in this order:
 1. **`PLAN.md`** — **Active** work only: bug tracker, immediate reworks, suggested implementation order, greenfield backlog, short `## Progress (recent)` pointers. **Do not** let PLAN grow into a duplicate shipped-history log.
 2. **`COMPLETED.md`** — **Shipped** milestones and retrospectives, **one dated section per ship day** (`## YYYY-MM-DD`). Canonical “what already landed.” For history or changelog detail, read here—not a bloated PLAN.

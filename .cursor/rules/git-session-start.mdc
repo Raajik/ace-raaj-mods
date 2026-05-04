@@ -1,0 +1,10 @@
+---
+description: git working tree awareness at session start
+alwaysApply: true
+---
+
+**Each new agent session** (before substantive work in this repo): from repo root `A:/ai/projects/ace-raaj-mods`, run `git status -sb` (readonly). If the tree is not clean, briefly call out **modified** and **untracked** paths so WIP is not lost across chats.
+
+**Before handoff** (end of session or after meaningful edits): run `git status -sb` again if the user cares about shipping state; remind them of leftover `M` / `??` if still present.
+
+Note: untracked files (`??`) do not appear in `git diff` without `-u` / `git add -N`.

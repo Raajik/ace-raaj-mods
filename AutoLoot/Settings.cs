@@ -70,7 +70,7 @@ public class Settings
     public float LockpickLootBankPercent { get; set; } = 0.10f;
 
     [JsonPropertyName("// EnableChestAutoLoot")]
-    public string EnableChestAutoLootDoc { get; init; } = "When true, opening a chest automatically loots matching items from your active profiles.";
+    public string EnableChestAutoLootDoc { get; init; } = "When true, opening a non-house chest runs profile autoloot immediately; closing runs salvage sweep only. House chests (HouseOwner) are never touched.";
     public bool EnableChestAutoLoot { get; set; } = true;
 
     [JsonPropertyName("// EnableLootStackConsolidation")]

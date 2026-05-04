@@ -104,19 +104,15 @@ Server admins can expand this list in `Settings.json`.
 
 ---
 
-## Chest & Corpse Close-Phase Looting
+## When loot vs salvage run
 
-AutoLoot processes containers in two phases:
+| Container | Autoloot (profiles, banking passes, scrolls, etc.) | Salvage sweep |
+|-----------|------------------------------------------------------|----------------|
+| **Creature corpse** | When the corpse is created (`GenerateTreasure` postfix), for the killing player | On corpse **close** |
+| **World chest** (`Chest` without `HouseOwner`) | On chest **open** (`EnableChestAutoLoot`) | On chest **close** |
+| **House chest** (housing `HouseOwner` set, often named Storage) | **Never** | **Never** |
 
-1. **Kill-time / Open phase** — For corpses, immediate autoloot applies profiles, VendorTrash, unknown scrolls, and level-8 component conversion on first open. For chests, the player sees all contents on open (no hidden removal).
-2. **Close phase** — When a chest or corpse is closed, AutoLoot runs:
-   - **Immediate pass** — silent banking of currency/peas/keys/lockpicks, destruction of known scrolls, level-8 component conversion
-   - **Profile batch loot** — remaining items matching active profiles
-   - **VendorTrash** — value-to-burden filter
-   - **Unknown scrolls** — unlearned spells
-   - **Salvage + clutter destroy** — remaining items sent to salvage or destroyed
-
-This prevents the "items vanished server-side but still visible in UI" bug by deferring silent removals until container close.
+Corpses never use the chest open hook (loot is already done at kill time). Opening a corpse without loot permission does not run `Container.Open` fully, so no duplicate pass.
 
 ---
 

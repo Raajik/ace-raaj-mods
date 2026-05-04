@@ -40,7 +40,7 @@
   "LockpickBankProperty": 40130,
   "// LockpickLootBankPercent": "Percent of lockpick structure banked from corpse loot (0.10 = 10%).",
   "LockpickLootBankPercent": 0.10,
-  "// EnableChestAutoLoot": "When true, opening a chest automatically loots matching items from your active profiles.",
+  "// EnableChestAutoLoot": "When true, non-house chests: autoloot on open, salvage sweep on close. House chests (HouseOwner) never touched.",
   "EnableChestAutoLoot": true,
   "// EnableLootStackConsolidation": "When true, duplicate same-WCID stackable items in a corpse merge into one stack (e.g. multiple drudge charm entries).",
   "EnableLootStackConsolidation": true,

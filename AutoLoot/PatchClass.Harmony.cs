@@ -80,13 +80,24 @@ public partial class PatchClass
         return false; // skip vanilla consumption
     }
 
+    // Corpses: profile autoloot at treasure generation (PostGenerateTreasure). Salvage on close.
+    // World chests: profile autoloot here on open. Salvage on close. House chests (HouseOwner): no-op.
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Container), nameof(Container.Open))]
     public static void PostContainerOpen(Player player, Container __instance)
     {
-        // Chests and corpses no longer auto-loot on open.
-        // Corpses are processed at creation (PostGenerateTreasure).
-        // Chests are processed on close (PreContainerClose).
+        if (player == null || __instance is not Chest chest)
+            return;
+
+        if (chest.HouseOwner.HasValue)
+            return;
+
+        if (PatchClass.Settings is not { EnableChestAutoLoot: true })
+            return;
+
+        AutoLoot.EnsureLoaded(player);
+        AutoLoot.ProcessContainerLootImmediate(player, chest);
+        AutoLoot.ProcessContainerLoot(player, chest);
     }
 
     [HarmonyPrefix]
@@ -97,20 +108,12 @@ public partial class PatchClass
 
         if (__instance is Chest chest)
         {
-            // Skip house storage chests — never auto-loot player housing.
+            // House storage (e.g. "Storage"): no autoloot, no salvage.
             if (chest.HouseOwner.HasValue)
                 return;
 
             AutoLoot.EnsureLoaded(player);
-
-            // Profile / currency / scrolls / coalesced paths only when chest autoloot enabled.
-            if (PatchClass.Settings is { EnableChestAutoLoot: true })
-            {
-                AutoLoot.ProcessContainerLootImmediate(player, chest);
-                AutoLoot.ProcessContainerLoot(player, chest);
-            }
-
-            // Salvage sweep always runs on non-house chest close (independent of EnableChestAutoLoot).
+            // Loot ran on open; close only runs material salvage sweep.
             AutoLoot.RunSalvageDestroyPass(chest, player, out _);
         }
         else if (__instance is Corpse corpse)

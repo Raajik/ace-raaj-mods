@@ -10,7 +10,7 @@
 
 ### BetterSupportSkills — drudge charm turn-in: tiered LLL bank credit
 
-- **`DrudgeCharmTrophySettings`** — Replaced flat **`BankPyrealsPerCharm`** with **`BankTradeNoteValuePerCharmRegular` / `Rare1` / `Rare2` / `Rare3`** (defaults **25k / 50k / 100k / 250k** per charm; align with ACE trade-note face values **7376 / 2626 / 2627 / 20630** for operators only). Still **`BankCashProperty`** + **`LeyLineLedgerBankInterop.IncBanked`** (no physical items).
+- **`DrudgeCharmTrophySettings`** — **`BankTradeNoteValuePerCharmRegular` / `Rare1` / `Rare2` / `Rare3`** (defaults **25k / 50k / 100k / 250k** per charm; ACE note WCIDs **7376 / 2626 / 2627 / 20630** doc-only). Still **`BankCashProperty`** + **`IncBanked`**. **`BankPyrealsPerCharm`** kept as **legacy flat fallback** when all four tier amounts are **0** in JSON (old configs missing new keys).
 - **`QuestTurnInCap`** — **`CharmBankAmountPerCharm`** maps tier WCID to amount × stack; player message mentions trade-note **balance**.
 - **Docs:** `BetterSupportSkills/README.md`, `WindblownContent/docs/Windblown-Custom-Trophy-Settings.md`, `WindblownContent/Content/SQL/README-TrophyCharmCloneTemplate.md`; **`Settings.json`** defaults updated.
 

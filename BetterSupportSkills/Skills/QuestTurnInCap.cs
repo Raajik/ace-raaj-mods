@@ -31,6 +31,14 @@ internal static class QuestTurnInCap
 
     static long CharmBankAmountPerCharm(uint wcid, DrudgeCharmTrophySettings charm)
     {
+        // Pre-tier Settings.json: new keys missing -> 0; old BankPyrealsPerCharm still applies flat rate for every tier.
+        if (charm.BankTradeNoteValuePerCharmRegular == 0
+            && charm.BankTradeNoteValuePerCharmRare1 == 0
+            && charm.BankTradeNoteValuePerCharmRare2 == 0
+            && charm.BankTradeNoteValuePerCharmRare3 == 0
+            && charm.BankPyrealsPerCharm > 0)
+            return charm.BankPyrealsPerCharm;
+
         if (wcid == charm.WcidRegular) return charm.BankTradeNoteValuePerCharmRegular;
         if (wcid == charm.WcidRare1) return charm.BankTradeNoteValuePerCharmRare1;
         if (wcid == charm.WcidRare2) return charm.BankTradeNoteValuePerCharmRare2;

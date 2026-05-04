@@ -51,7 +51,7 @@ Credits **`BankCashProperty`** (default **39999**) via **`LeyLineLedgerBankInter
 | Pristine | 850272 | 100_000 | 2627 Trade Note (100,000) |
 | Perfect | 850273 | 250_000 | 20630 Trade Note (250,000) |
 
-Settings keys: **`BankTradeNoteValuePerCharmRegular`**, **`BankTradeNoteValuePerCharmRare1`**, **`BankTradeNoteValuePerCharmRare2`**, **`BankTradeNoteValuePerCharmRare3`**.
+Settings keys: **`BankTradeNoteValuePerCharmRegular`**, **`BankTradeNoteValuePerCharmRare1`**, **`BankTradeNoteValuePerCharmRare2`**, **`BankTradeNoteValuePerCharmRare3`**. **`BankPyrealsPerCharm`** remains as **legacy flat fallback** when all four tier amounts are **0** in JSON (older `Settings.json` that never added the new keys).
 
 ---
 

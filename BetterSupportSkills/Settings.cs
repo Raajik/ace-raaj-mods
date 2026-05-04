@@ -1073,6 +1073,10 @@ public class DrudgeCharmTrophySettings
     public string BankTradeNoteValuePerCharmRare3Doc { get; init; } = "Per Perfect charm (WcidRare3); default 250_000 (ACE WCID 20630).";
     public long BankTradeNoteValuePerCharmRare3 { get; set; } = 250_000;
 
+    [JsonPropertyName("// BankPyrealsPerCharm")]
+    public string BankPyrealsPerCharmDoc { get; init; } = "Legacy: flat bank per charm for all tiers when all four BankTradeNoteValuePerCharm* deserialize as 0 (pre-tier JSON). Omit or set 0 when using tiered amounts.";
+    public int BankPyrealsPerCharm { get; set; } = 0;
+
     [JsonPropertyName("// BankCashProperty")]
     public string BankCashPropertyDoc { get; init; } = "PropertyInt64 key for banked currency / trade notes (match LeyLineLedger Settings.CashProperty, default 39999).";
     public int BankCashProperty { get; set; } = 39999;

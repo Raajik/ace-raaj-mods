@@ -328,7 +328,7 @@ Failing a tinker while having any tinkering trained unlocks `/chaostinker` — a
 **Status:** Implemented (when `EnableSummoningClasses` is true)  
 **Defaults:** `BlockPetProjectileDamageToOwner` **true**; `BlockPetWarVoidRingWallSpells` **false** (pets keep offensive ring/wall AI; set **true** if Os’-style pet splash on owner returns).
 
-**Auto-summon pulse** (all five summoning classes): fires on **your** direct damage, **harmful** spells you cast on creatures, **or damage from your `CombatPet`** (same ~3s gate per owner). If you have no personal offense yet, summon once from a device—pet hits keep the chain going.
+**Auto-summon pulse** (all five summoning classes): fires on **your** direct damage, **when you take damage**, **harmful** spells you cast on creatures, **or damage from your `CombatPet`** (same ~3s gate per owner). If you have no personal offense yet, summon once from a device—pet hits keep the chain going.
 
 Auto-summoned **CombatPets** (Druid / Elementalist / Necromancer / Enchanter / Artificer) still use ACE creature spell selection for most attacks. When `BlockPetWarVoidRingWallSpells` is **true**, War and Void **ring** and **wall** spells (plus full 360° spread projectiles) are blocked at `TryCastSpell` for pets tracked by this mod. Bolts, streaks, arcs, blasts, and volleys are unchanged either way.
 

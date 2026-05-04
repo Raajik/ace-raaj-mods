@@ -455,9 +455,25 @@ public static class SummoningClasses
     [HarmonyPatch(typeof(Creature), nameof(Creature.TakeDamage), new Type[] { typeof(WorldObject), typeof(DamageType), typeof(float), typeof(bool) })]
     public static void PostCreatureTakeDamage_SummonTrigger(WorldObject source, DamageType damageType, float amount, bool crit, Creature __instance)
     {
-        if (__instance is Player) return;
         if (__instance.IsDead) return;
         if (amount <= 0) return;
+
+        var now = DateTime.UtcNow;
+
+        // Summoner took damage: same pulse gate as offensive hits (TrySummonPets no-ops if not a summoning class)
+        if (__instance is Player injuredSummoner)
+        {
+            LastCombatHitUtc[injuredSummoner.Guid.Full] = now;
+            if (LastSummonPulseUtc.TryGetValue(injuredSummoner.Guid.Full, out var lastSelfPulse))
+            {
+                if (now - lastSelfPulse < SummonPulseInterval)
+                    return;
+            }
+
+            LastSummonPulseUtc[injuredSummoner.Guid.Full] = now;
+            TrySummonPets(injuredSummoner);
+            return;
+        }
 
         Player? owner = source as Player;
         if (owner is null && source is CombatPet pet)
@@ -466,7 +482,6 @@ public static class SummoningClasses
         if (owner is null)
             return;
 
-        var now = DateTime.UtcNow;
         LastCombatHitUtc[owner.Guid.Full] = now;
 
         // Check if enough time has passed since last summon pulse

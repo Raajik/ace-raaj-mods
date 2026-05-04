@@ -1,4 +1,4 @@
--- DEPRECATED 2026-05-06: superseded by DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql (Drudge Charm naming, 179=4 sunstone rim, split 14/15/16).
--- Do not apply this file on current Windblown; it would restore Bloodletter strings and BludgeonRend-style 179 values.
+-- DEPRECATED 2026-05-07: Bloodletter + per-tier 179/18 live in DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql and DrudgeCharm_TierWeenies_World.sql.
+-- Do not apply this stub; historical intermediate patches are obsolete.
 -- Canonical full reset: DrudgeCharm_TierWeenies_World.sql
--- Forward idempotent: DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql
+-- Forward idempotent: DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql

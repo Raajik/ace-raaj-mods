@@ -17,12 +17,12 @@ Use this as the checklist when adding the next custom trophy family.
 
 | Tier (display) | WCID |
 |----------------|------|
-| Drudge Charm (base) | 24835 |
-| Drudge Charm (Quality) | 850271 |
-| Drudge Charm (Pristine) | 850272 |
-| Drudge Charm (Perfect) | 850273 |
+| Bloodletter Drudge Charm (base) | 24835 |
+| Bloodletter Drudge Charm (Quality) | 850271 |
+| Bloodletter Drudge Charm (Pristine) | 850272 |
+| Bloodletter Drudge Charm (Perfect) | 850273 |
 
-**Icon / glow (world weenie):** `weenie_properties_int` **179** = **4** (`ArmorRending`, sunstone-style rim) and **18** = **0** on all four. Shipped in `WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql` and forward patch `DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`.
+**Icon / glow (world weenie):** per-tier **`ImbuedEffect` (179)** + **`UiEffects` (18)** — **24835** 32/128; **850271** 64/256; **850272** 128/1; **850273** 256/64. Shipped in `WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql` and forward patch `DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`.
 
 ---
 

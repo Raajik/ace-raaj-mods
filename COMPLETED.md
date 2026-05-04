@@ -6,6 +6,17 @@
 
 ---
 
+## 2026-05-07
+
+### Drudge charm — Bloodletter display, per-tier 179/18, unified examine 14/15/16 (revert sunstone uniform)
+
+- **World weenies (24835 + 850271–850273):** Restored per-tier **`ImbuedEffect` (179)** + **`UiEffects` (18)**; removed uniform **179=4 / 18=0**. Types **14, 15, 16** identical: *Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.* Names **Bloodletter Drudge Charm** (+ tier suffix); plural **20** `Bloodletter Drudge Charms` variants. **11 = 999**; tier **`weenie.type` = 51**.
+- **SQL:** Forward **`WindblownContent/Content/SQL/DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`**; canonical **`DrudgeCharm_TierWeenies_World.sql`**. **`DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`** stubbed deprecated (do not re-apply sunstone body).
+- **Mods/docs:** **`BetterSupportSkills`** `QuestTurnInCap` message + `GetItemName`; **`Settings.cs`** drudge charm doc bands; **`WindblownContent/docs/*`**, **`README-TrophyCharmCloneTemplate.md`**, SQL stub comment updates.
+- **DB:** Scoped **`mysqldump`** to `WindblownContent/sql-backups/2026-05-07/pre-drudgecharm-bloodletter-restore-weenie.sql` (gitignored path); **`mysql ace_world < DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`**; verified **1,11,14,15,16,18,179,20**.
+
+---
+
 ## 2026-05-06
 
 ### Drudge charm — display rename, sunstone rim (179=4), single examine body
@@ -14,12 +25,13 @@
 - **SQL:** Forward **`WindblownContent/Content/SQL/DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`**; canonical **`DrudgeCharm_TierWeenies_World.sql`** aligned. **`DrudgeCharm_BloodletterBase_2026-05-05.sql`**, **`DrudgeCharm_UiRendIcons_2026-05-05.sql`**, **`DrudgeCharm_SunstoneCopyPluralStack_2026-05-04.sql`** — comment-only deprecated stubs (do not re-apply old Bloodletter / per-tier 179 rows).
 - **Mods/docs:** `BetterSupportSkills` (`QuestTurnInCap`, `Settings` doc bands), `AutoLoot/Settings`, READMEs, `WindblownContent/docs/*`, `README-TrophyCharmCloneTemplate.md`.
 - **DB:** Scoped **`mysqldump`** to `WindblownContent/sql-backups/2026-05-06/pre-drudgecharm-sunstone-rim-weenie.sql` (path **gitignored** — operator machine only); **`mysql ace_world < DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`**; verified **1,11,14,15,16,18,179,20**.
+- **Superseded 2026-05-07:** Uniform sunstone rim reverted — per-tier Bloodletter chrome again; see **`## 2026-05-07`** and **`DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`**.
 
 ## 2026-05-05
 
 ### Drudge charm weenies — rend icon + UiEffects by tier (superseded)
 
-- **Superseded 2026-05-06** — final naming + copy + **179=4** / **18=0** on all four: see **2026-05-06** subsection and **`DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`**. Intermediate **`DrudgeCharm_UiRendIcons_2026-05-05.sql`** / **`DrudgeCharm_BloodletterBase_2026-05-05.sql`** are deprecated stubs only.
+- **Superseded 2026-05-06** then **2026-05-07** — uniform sunstone rim was reverted to per-tier Bloodletter chrome; see **`## 2026-05-07`**. Intermediate **`DrudgeCharm_UiRendIcons_2026-05-05.sql`** / **`DrudgeCharm_BloodletterBase_2026-05-05.sql`** / stubbed **`DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`** are deprecated only.
 
 ## 2026-05-04
 
@@ -98,7 +110,7 @@
 
 ### Drudge charm — Bloodletter base (24835), per-tier icons, mod wiring (supersedes sunstone uniform)
 
-- **World weenies:** Clone source **`24835`** (Bloodletter Drudge Charm); tiers **850271–850273**. **`weenie_properties_int`**: per-tier **179** + **18** — **24835** 32/128; **850271** 64/256; **850272** 128/1; **850273** 256/64. **11 = 999** `MaxStackSize`. **`weenie_properties_string` types 14/15/16** (same sentence on all four): *Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.* **`DELETE weenie_properties_create_list`** for **24835**. Scripts: **`DrudgeCharm_TierWeenies_World.sql`**, **`DrudgeCharm_BloodletterBase_2026-05-05.sql`**, **`DrudgeCharm_UiRendIcons_2026-05-05.sql`**. **`DrudgeCharm_SunstoneCopyPluralStack_2026-05-04.sql`** deprecated stub → use Bloodletter patch.
+- **World weenies:** Clone source **`24835`** (Bloodletter Drudge Charm); tiers **850271–850273**. **`weenie_properties_int`**: per-tier **179** + **18** — **24835** 32/128; **850271** 64/256; **850272** 128/1; **850273** 256/64. **11 = 999** `MaxStackSize`. **`weenie_properties_string` types 14/15/16** (same sentence on all four): *Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.* **`DELETE weenie_properties_create_list`** for **24835**. Scripts: **`DrudgeCharm_TierWeenies_World.sql`**; forward idempotent **`DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`** (replaces intermediate **`DrudgeCharm_BloodletterBase_2026-05-05.sql`** / **`DrudgeCharm_UiRendIcons_2026-05-05.sql`** stubs). **`DrudgeCharm_SunstoneCopyPluralStack_2026-05-04.sql`** deprecated stub.
 - **Mods:** **`WcidRegular` / `BulkQuestWcids` / `DailyCapTrackingWcid`** → **24835** (BetterSupportSkills, QOL, AutoLoot, BetterLootControl `LootRoller`); docs updated. **`TrophyWhitelist.md`:** Wisp Heart WCID **8667** (was erroneous duplicate **3669**).
 - **DB:** Scoped **`mysqldump`** under `WindblownContent/sql-backups/2026-05-04/` then **`mysql ace_world < DrudgeCharm_BloodletterBase_2026-05-05.sql`**; verify ints/strings; restart ACE for weenie cache.
 

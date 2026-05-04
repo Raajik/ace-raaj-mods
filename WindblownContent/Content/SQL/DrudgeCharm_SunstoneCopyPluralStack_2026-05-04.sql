@@ -1,1 +1,1 @@
--- DEPRECATED: use DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql or DrudgeCharm_TierWeenies_World.sql.
+-- DEPRECATED: use DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql or DrudgeCharm_TierWeenies_World.sql (SunstoneRimAndCopy_2026-05-06.sql is stub only).

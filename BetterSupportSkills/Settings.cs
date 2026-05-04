@@ -1010,7 +1010,7 @@ public class DrudgeCharmTrophySettings
     public bool Enabled { get; set; } = true;
 
     [JsonPropertyName("// DropChanceRegular")]
-    public string DropChanceRegularDoc { get; init; } = "Chance (0-1) per Drudge-species kill to roll base charm (24835 Drudge Charm). Each tier rolls independently.";
+    public string DropChanceRegularDoc { get; init; } = "Chance (0-1) per Drudge-species kill to roll base charm (24835 Bloodletter Drudge Charm). Each tier rolls independently.";
     public double DropChanceRegular { get; set; } = 0.025;
 
     [JsonPropertyName("// DropChanceRare1")]
@@ -1026,7 +1026,7 @@ public class DrudgeCharmTrophySettings
     public double DropChanceRare3 { get; set; } = 0.0015;
 
     [JsonPropertyName("// WcidRegular")]
-    public string WcidRegularDoc { get; init; } = "Regular tier weenie class id.";
+    public string WcidRegularDoc { get; init; } = "Regular tier weenie class id (24835 Bloodletter Drudge Charm).";
     public uint WcidRegular { get; set; } = 24835;
 
     [JsonPropertyName("// WcidRare1")]

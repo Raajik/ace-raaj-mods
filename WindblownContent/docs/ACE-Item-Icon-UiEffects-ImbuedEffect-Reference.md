@@ -61,7 +61,7 @@ Source: `ACE.Entity.Enum.ImbuedEffectType` (flags). **Short name** + **single-fl
 | Spellbook | `0x2000` | 8192 |
 | NetherRend | `0x4000` | 16384 |
 
-**Windblown drudge charms (24835 + 850271–850273):** sunstone-style rim uses **`ImbuedEffect` (179) = 4** (`ArmorRending`, same bit as sunstone weapon chrome) and **`UiEffects` (18) = 0** on all four WCIDs. Examine copy: **14** Use = short turn-in hint; **15** ShortDesc empty; **16** LongDesc = full reward text (avoids duplicate paragraph when 14/16 matched). Canonical SQL: `DrudgeCharm_TierWeenies_World.sql`; forward patch: `DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`. Deprecated stubs: `DrudgeCharm_BloodletterBase_2026-05-05.sql`, `DrudgeCharm_UiRendIcons_2026-05-05.sql`. **`179` on charms is client icon treatment** — stackables may still not match melee weapon overlay pixel-perfect.
+**Windblown drudge charms (24835 + 850271–850273):** per-tier client chrome uses **`ImbuedEffect` (179)** + **`UiEffects` (18)** — **24835** 32 / 128; **850271** 64 / 256; **850272** 128 / 1; **850273** 256 / 64 (same pattern as pre-uniform Windblown tuning; not uniform sunstone **179=4** on all tiers). Examine: types **14**, **15**, **16** share one sentence (*Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.*). Canonical SQL: `DrudgeCharm_TierWeenies_World.sql`; forward patch: `DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`. Deprecated stubs: `DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`, `DrudgeCharm_BloodletterBase_2026-05-05.sql`, `DrudgeCharm_UiRendIcons_2026-05-05.sql`. **`179` on charms is client icon treatment** — stackables may still not match melee weapon overlay pixel-perfect.
 
 ## `weenie.type` vs portal appraisal
 
@@ -74,5 +74,5 @@ If **`weenie.type`** is **`Portal` (7)** instead of **`Stackable` (51)** (or ano
 ## Related repo files
 
 - `WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql`
-- `WindblownContent/Content/SQL/DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`
+- `WindblownContent/Content/SQL/DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`
 - `WindblownContent/Content/SQL/README-TrophyCharmCloneTemplate.md`

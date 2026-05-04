@@ -6,7 +6,7 @@ using ACE.Server.WorldObjects;
 namespace BetterSupportSkills.Skills;
 
 // Caps quest turn-in XP for high-value quest items dropped by TrophyDrops.
-// Bulk turn-ins for stackable quest charms (24835 base + tier WCIDs): tier XP bracket + bank credit (LLL BankCashProperty; tiered amounts, no physical trade notes).
+// Bulk turn-ins for Bloodletter drudge charms (24835 base + tier WCIDs): tier XP bracket + bank credit (LLL BankCashProperty; tiered amounts, no physical trade notes).
 [HarmonyPatchCategory(nameof(Features.TrophyDropsSkill))]
 internal static class QuestTurnInCap
 {
@@ -117,7 +117,7 @@ internal static class QuestTurnInCap
                         LeyLineLedgerBankInterop.IncBanked(__instance, charm.BankCashProperty, bankDelta);
 
                     __instance.SendMessage(
-                        $"You turn in {totalTurnedIn:N0} {GetItemName(bulk.Wcid)} for {amount:N0} experience! ({bankDelta:N0} banked to your trade-note balance.)",
+                        $"You turn in {totalTurnedIn:N0} {GetItemName(bulk.Wcid)} for {amount:N0} experience and {bankDelta:N0} pyreals of bank credit (trade-note value per charm).",
                         ChatMessageType.System);
                 }
                 else
@@ -155,10 +155,10 @@ internal static class QuestTurnInCap
     {
         return wcid switch
         {
-            24835 => "drudge charms",
-            850271 => "Drudge Charm (Quality) stacks",
-            850272 => "Drudge Charm (Pristine) stacks",
-            850273 => "Drudge Charm (Perfect) stacks",
+            24835 => "Bloodletter Drudge Charms",
+            850271 => "Bloodletter Drudge Charms (Quality)",
+            850272 => "Bloodletter Drudge Charms (Pristine)",
+            850273 => "Bloodletter Drudge Charms (Perfect)",
             _ => "quest items"
         };
     }

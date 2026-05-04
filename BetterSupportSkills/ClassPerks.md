@@ -232,6 +232,18 @@ All summoning classes share these base mechanics:
 
 ---
 
+## Cooking (support skill, not a class)
+
+Requires `EnableCooking` in `Settings.json`. Not gated by class detection.
+
+**Natural regen (default):** When `CookingUseLegacySpellBuffs` is **false**, trained or specialized players get `GetRegenerationMod` multiplied by `1 + (int)buffedCooking * coeff` — `CookingRegenPerBuffedPointTrained` / `CookingRegenPerBuffedPointSpecialized` in Settings. Legacy spell auras on food and `/buff` are off.
+
+**Legacy spell buffs:** When `CookingUseLegacySpellBuffs` is **true**, eating qualifying food (and `/buff`) casts the configured Legendary/Prodigal (or CustomSpells) regen spells again; the natural multiplier is **disabled** so they do not stack.
+
+Implementation: `Skills/CookingNaturalRegen.cs` (Harmony postfix on `EnchantmentManagerWithCaching.GetRegenerationMod`), `Skills/CookingBuffs.cs` (food postfix).
+
+---
+
 ## How Classes Are Detected
 
 Classes are evaluated in a **priority order** when `GetPlayerClass(player)` is called:

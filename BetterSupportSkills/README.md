@@ -177,26 +177,31 @@ When Assess Creature is trained or specialized, grants **guaranteed extra loot r
 
 ---
 
-### Cooking (Regeneration Buffs)
-**Status:** ✅ Implemented  
-**Default:** Disabled (set `EnableCooking: true` in Settings.json)
+### Cooking (natural regen + optional legacy spell buffs)
+**Status:** Implemented  
+**Default:** `EnableCooking: true` in Settings.json (mod feature on)
 
-When Cooking skill is trained or specialized, grants permanent regeneration buffs:
+**Default behavior (`CookingUseLegacySpellBuffs: false`):** While Cooking is **trained** or **specialized**, vital regeneration uses an always-on multiplier from **buffed** Cooking rank: `1 + skill * CookingRegenPerBuffedPointTrained` (trained) or `1 + skill * CookingRegenPerBuffedPointSpecialized` (spec). Implemented as a Harmony postfix on `EnchantmentManagerWithCaching.GetRegenerationMod` (same tick as other regen mods; ACE heartbeat ~5s).
 
-**Trained:** Legendary buffs (+60% to each vital)
-- Legendary Health Gain (spell 6077)
-- Legendary Stamina Gain (spell 6076)
-- Legendary Mana Gain (spell 6078)
+**Legacy optional (`CookingUseLegacySpellBuffs: true`):** Restores the old **TryCastSpell** regeneration auras on food eat and `/buff` (spell IDs under `Cooking` in Settings.json). When legacy is on, the natural multiplier is **not** applied (no double-dip).
 
-**Specialized:** Prodigal buffs (+1000% to each vital)
-- Prodigal Regeneration (spell 3731)
-- Prodigal Rejuvenation (spell 3732)
-- Prodigal Mana Renewal (spell 3725)
-
-Buffs apply automatically on player login. To enable:
+**Settings example:**
 ```json
-"EnableCooking": true
+"EnableCooking": true,
+"Cooking": {
+  "CookingUseLegacySpellBuffs": false,
+  "CookingRegenPerBuffedPointTrained": 0.05,
+  "CookingRegenPerBuffedPointSpecialized": 0.1,
+  "LegendaryHealthSpell": 6077,
+  "LegendaryStaminaSpell": 6076,
+  "LegendaryManaSpell": 6078,
+  "ProdigalHealthSpell": 3731,
+  "ProdigalStaminaSpell": 3732,
+  "ProdigalManaSpell": 3725
+}
 ```
+
+Restart the server after changing Harmony-related settings.
 
 ---
 

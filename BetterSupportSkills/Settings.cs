@@ -60,11 +60,11 @@ public class Settings
     public bool EnableAssessCreature { get; set; } = false;
 
     [JsonPropertyName("// EnableCooking")]
-    public string EnableCookingDoc { get; init; } = "Cooking skill bonus — grants Legendary/Prodigal regeneration buffs.";
+    public string EnableCookingDoc { get; init; } = "Cooking skill bonus — always-on vital regen multiplier; optional legacy spell buffs on eat when CookingUseLegacySpellBuffs is true.";
     public bool EnableCooking { get; set; } = true;
 
     [JsonPropertyName("// Cooking")]
-    public string CookingSectionDoc { get; init; } = "Cooking skill bonus: spell IDs for regeneration buffs.";
+    public string CookingSectionDoc { get; init; } = "Cooking: legacy spell IDs, legacy toggle, natural regen per buffed skill point.";
     public CookingSettings Cooking { get; set; } = new();
 
     [JsonPropertyName("// EnableDeception")]
@@ -296,6 +296,18 @@ public class ManaConversionSettings
 
 public class CookingSettings
 {
+    [JsonPropertyName("// CookingUseLegacySpellBuffs")]
+    public string CookingUseLegacySpellBuffsDoc { get; init; } = "When true, restores TryCastSpell regeneration auras on food eat and /buff (vanilla-style). When false, only always-on natural regen multiplier applies (no double-dip with natural mult).";
+    public bool CookingUseLegacySpellBuffs { get; set; } = false;
+
+    [JsonPropertyName("// CookingRegenPerBuffedPointTrained")]
+    public string CookingRegenPerBuffedPointTrainedDoc { get; init; } = "Always-on regen: per buffed Cooking rank, add this decimal to multiplier (e.g. 0.05 = +5% per rank) when trained.";
+    public double CookingRegenPerBuffedPointTrained { get; set; } = 0.05;
+
+    [JsonPropertyName("// CookingRegenPerBuffedPointSpecialized")]
+    public string CookingRegenPerBuffedPointSpecializedDoc { get; init; } = "Same when Cooking is specialized (default 0.10 = +10% per rank).";
+    public double CookingRegenPerBuffedPointSpecialized { get; set; } = 0.10;
+
     [JsonPropertyName("// LegendaryHealthSpell")]
     public string LegendaryHealthSpellDoc { get; init; } = "Spell ID for +60% Health Regen (Legendary Health Gain).";
     public int LegendaryHealthSpell { get; set; } = 6077;

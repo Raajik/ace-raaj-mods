@@ -72,6 +72,7 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
         TryApplyQuestTurnInCapPatch();
         TryApplyFoodPatch();
         TryApplyDamageEventPatch();
+        TryApplyCookingPatches();
         TryApplyDirtyFightingPatch();
         TryApplyLockpickPatches();
         TryApplyChaosTinkerPatch();
@@ -205,26 +206,46 @@ void TryApplyDamageEventPatch()
             }
         }
 
-        // Cooking food consumption patch
-        if (Settings?.EnableCooking == true)
+    }
+
+    static bool CookingPatchesApplied;
+
+    void TryApplyCookingPatches()
+    {
+        if (CookingPatchesApplied || Settings?.EnableCooking != true)
+            return;
+
+        try
         {
-            try
+            var applyConsumable = AccessTools.Method(typeof(Food), nameof(Food.ApplyConsumable));
+            if (applyConsumable != null)
             {
-                var applyConsumable = AccessTools.Method(typeof(Food), nameof(Food.ApplyConsumable));
-                if (applyConsumable != null)
+                var cookingPostfix = AccessTools.Method(typeof(Skills.CookingBuffs), nameof(Skills.CookingBuffs.PostApplyConsumable));
+                if (cookingPostfix != null)
                 {
-                    var cookingPostfix = AccessTools.Method(typeof(Skills.CookingBuffs), "PostApplyConsumable");
-                    if (cookingPostfix != null)
-                    {
-                        ModC.Harmony?.Patch(applyConsumable, null, new HarmonyMethod(cookingPostfix));
-                        ModManager.Log("[BSS] Cooking Food.ApplyConsumable postfix applied", ModManager.LogLevel.Info);
-                    }
+                    ModC.Harmony?.Patch(applyConsumable, null, new HarmonyMethod(cookingPostfix));
+                    ModManager.Log("[BSS] Cooking Food.ApplyConsumable postfix applied", ModManager.LogLevel.Info);
                 }
             }
-            catch (Exception ex)
+
+            var getRegen = AccessTools.Method(typeof(EnchantmentManagerWithCaching), nameof(EnchantmentManagerWithCaching.GetRegenerationMod), new[] { typeof(CreatureVital) });
+            if (getRegen != null)
             {
-                ModManager.Log($"[BSS] Cooking patch failed: {ex}", ModManager.LogLevel.Error);
+                var regenPostfix = AccessTools.Method(typeof(Skills.CookingNaturalRegen), nameof(Skills.CookingNaturalRegen.PostGetRegenerationMod));
+                if (regenPostfix != null)
+                {
+                    ModC.Harmony?.Patch(getRegen, null, new HarmonyMethod(regenPostfix));
+                    ModManager.Log("[BSS] Cooking EnchantmentManagerWithCaching.GetRegenerationMod postfix applied", ModManager.LogLevel.Info);
+                }
             }
+            else
+                ModManager.Log("[BSS] Cooking: GetRegenerationMod not found on EnchantmentManagerWithCaching", ModManager.LogLevel.Error);
+
+            CookingPatchesApplied = true;
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] Cooking patches failed: {ex}", ModManager.LogLevel.Error);
         }
     }
 

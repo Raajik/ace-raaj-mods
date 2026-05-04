@@ -24,6 +24,8 @@ global using ACE.Server.Network.GameEvent.Events;
 global using ACE.Server.Network.GameMessages.Messages;
 global using ACE.Server.Network;
 global using ACE.Server.WorldObjects;
+global using ACE.Server.WorldObjects.Entity;
+global using ACE.Server.WorldObjects.Managers;
 
 global using HarmonyLib;
 

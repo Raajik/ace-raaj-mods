@@ -50,10 +50,8 @@ internal static class CookingBuffs
         return true;
     }
 
-    // -- Food Consumption Trigger ----------------------------------------
+    // -- Food Consumption Trigger (Harmony postfix applied manually from PatchClass.TryApplyCookingPatches; no attributes — avoids double patch with RegisterPatchCategories.)
 
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Food), nameof(Food.ApplyConsumable))]
     public static void PostApplyConsumable(Player player)
     {
         if (player == null)
@@ -71,19 +69,24 @@ internal static class CookingBuffs
 
         bool specialized = cooking.AdvancementClass == SkillAdvancementClass.Specialized;
 
-        List<int> spells = CustomSpellsLoaded
-            ? (specialized ? new List<int>(SatiatedSpells) : new List<int>(LegendarySpells))
-            : new List<int> { settings.Cooking.ProdigalHealthSpell, settings.Cooking.ProdigalStaminaSpell, settings.Cooking.ProdigalManaSpell };
-
-        foreach (var spellId in spells)
+        if (settings.Cooking.CookingUseLegacySpellBuffs)
         {
-            var spell = new Spell(spellId);
-            if (!spell.NotFound)
-                player.TryCastSpell(spell, player);
-        }
+            List<int> spells = CustomSpellsLoaded
+                ? (specialized ? new List<int>(SatiatedSpells) : new List<int>(LegendarySpells))
+                : new List<int> { settings.Cooking.ProdigalHealthSpell, settings.Cooking.ProdigalStaminaSpell, settings.Cooking.ProdigalManaSpell };
 
-        var buffType = CustomSpellsLoaded && specialized ? "Satiated" : (specialized ? "Prodigal" : "Legendary");
-        player.SendMessage($"The nourishing meal grants you {buffType} regeneration!");
+            foreach (var spellId in spells)
+            {
+                var spell = new Spell(spellId);
+                if (!spell.NotFound)
+                    player.TryCastSpell(spell, player);
+            }
+
+            var buffType = CustomSpellsLoaded && specialized ? "Satiated" : (specialized ? "Prodigal" : "Legendary");
+            player.SendMessage($"The nourishing meal grants you {buffType} regeneration!");
+        }
+        else
+            player.SendMessage("The nourishing meal reinforces your natural regeneration.");
     }
 
     // -- Manual /buff Command -------------------------------------------
@@ -103,7 +106,6 @@ internal static class CookingBuffs
         }
 
         ApplyBuffs(player);
-        player.SendMessage("Applied skill buffs!");
     }
 
     private static void ApplyBuffs(Player player)
@@ -113,6 +115,12 @@ internal static class CookingBuffs
         var settings = PatchClass.Settings;
         if (settings?.EnableCooking != true)
             return;
+
+        if (!settings.Cooking.CookingUseLegacySpellBuffs)
+        {
+            player.SendMessage("Cooking regeneration auras are disabled. Natural regen from Cooking is always active while trained. Set CookingUseLegacySpellBuffs true in Settings.json to restore spell buffs.");
+            return;
+        }
 
         var specialized = player.GetCreatureSkill(Skill.Cooking).AdvancementClass == SkillAdvancementClass.Specialized;
 

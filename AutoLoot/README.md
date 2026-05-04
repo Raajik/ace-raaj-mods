@@ -135,6 +135,8 @@ When looting corpses, AutoLoot merges duplicate same-WCID items into a single st
 | `DefaultProfile` | `""` | Legacy: single default file when `DefaultActiveProfiles` is empty |
 | `NoDuplicateNames` | `["Pincer", "Tusk", "Matron"]` | Name fragments that trigger the one-per-player quest item check |
 
+**Path + prefs:** Empty `LootProfilePath` in JSON is resolved to `<mod folder>/LootProfiles` before any disk read so `PlayerEnterWorld` can run before mod start completes. If a player JSON exists but **`ActiveProfileNames` is empty**, defaults are re-seeded from disk on load (fixes “autoloot does nothing” after a bad first login).
+
 ---
 
 ## Requirements

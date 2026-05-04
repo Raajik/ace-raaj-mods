@@ -33,8 +33,16 @@
 ### BetterSupportSkills — Death Knight nether tier + pet ring/wall gate default (test)
 
 - **DK:** `HybridClasses.GetDeathKnightVoidSpellTier` now uses **`VoidMagic.Base`** (not `Current`) so buffs do not inflate proc tier; [`ClassPerks.md`](BetterSupportSkills/ClassPerks.md) updated.
+- **DK cap:** `CombatClasses.DeathKnight.MaxVoidSpellTier` (1–8, default 8) applied after skill math; repo [`Settings.json`](BetterSupportSkills/Settings.json) sets **5** so nether arc proc cannot exceed tier 5 on shipped test config.
 - **Pets:** `SummoningClasses.BlockPetWarVoidRingWallSpells` default **`false`** in code and [`Settings.json`](BetterSupportSkills/Settings.json) (ring/wall block was skewing pet spell picks toward non-offense); operators set **`true`** if Os’-style splash returns. [`README.md`](BetterSupportSkills/README.md) defaults + changelog updated.
 - **Build:** `dotnet build` BetterSupportSkills Release → `C:\ACE\Mods\BetterSupportSkills\`.
+
+### AutoLoot — LootProfilePath timing + empty prefs profiles (test)
+
+- **Cause:** `PlayerEnterWorld` could run before `OnStartSuccess` normalized empty `LootProfilePath`; `EnsureLoaded` then bailed with no profiles and still marked player “loaded,” so autoloot stayed dead for the session. Existing `PlayerData/*.json` with **empty `ActiveProfileNames`** never re-seeded defaults.
+- **Fix:** `EnsureLootProfilePathForDiskOps()` mirrors mod-folder `LootProfiles` when path blank; `EnsureLoaded` skips `loadedPlayers` until path valid; clears `loadedPlayers` on prefs load failure; after prefs load, **`TrySeedDefaultLootProfilesFromDisk`** when profile map still empty. `/autoloot` path ensure before `CreateDirectory`.
+- **Docs:** [`AutoLoot/README.md`](AutoLoot/README.md) server table note.
+- **Build:** `dotnet build` AutoLoot Release → `C:\ACE\Mods\AutoLoot\`.
 
 ### BetterSupportSkills — CombatPet War/Void ring/wall gate + owner-safe spell projectiles (live deploy)
 

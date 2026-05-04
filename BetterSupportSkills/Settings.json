@@ -244,6 +244,7 @@
       "AuraDamagePerTick": 5,
       "AuraTickSeconds": 1.0,
       "SkillPerTier": 150,
+      "MaxVoidSpellTier": 5,
       "EchoEnabled": true,
       "ManaCostMultiplier": 0.5
     },

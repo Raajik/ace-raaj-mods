@@ -816,8 +816,12 @@ public class DeathKnightSettings
     public double AuraTickSeconds { get; set; } = 1.0;
 
     [JsonPropertyName("// SkillPerTier")]
-    public string SkillPerTierDoc { get; init; } = "Void Magic skill (buffed Current) per melee proc spell tier; tier = floor(Current/this), clamped 1-8.";
+    public string SkillPerTierDoc { get; init; } = "Void Magic Base skill per melee proc spell tier; tier = floor(Base/this), then capped by MaxVoidSpellTier, clamped 1-8.";
     public int SkillPerTier { get; set; } = 150;
+
+    [JsonPropertyName("// MaxVoidSpellTier")]
+    public string MaxVoidSpellTierDoc { get; init; } = "Upper bound (1-8) for nether streak/arc proc tier after skill math. Default 8 = no extra cap; lower to limit high-Void toons (e.g. 5 caps at tier 5).";
+    public int MaxVoidSpellTier { get; set; } = 8;
 
     [JsonPropertyName("// EchoEnabled")]
     public string EchoEnabledDoc { get; init; } = "When true and Arcane Lore is specialized, nether spells echo once.";

@@ -102,17 +102,48 @@ public class AutoLoot
         return list.ToArray();
     }
 
-    static void TryApplyDefaultProfilesForNewCharacter(Player player)
+    // PlayerEnterWorld can run before OnStartSuccess; Settings.json may leave LootProfilePath empty until Normalize runs.
+    static void EnsureLootProfilePathForDiskOps()
+    {
+        if (PatchClass.Settings is null)
+            return;
+        if (!string.IsNullOrWhiteSpace(PatchClass.Settings.LootProfilePath))
+            return;
+
+        try
+        {
+            var asm = typeof(PatchClass).Assembly;
+            string? location = asm.Location;
+            if (!string.IsNullOrWhiteSpace(location))
+            {
+                string? dir = Path.GetDirectoryName(location);
+                if (!string.IsNullOrEmpty(dir))
+                {
+                    PatchClass.Settings.LootProfilePath = Path.Combine(Path.GetFullPath(dir), "LootProfiles");
+                    return;
+                }
+            }
+
+            string name = asm.GetName().Name ?? "AutoLoot";
+            string fallback = Path.GetFullPath(Path.Combine(ModManager.ModPath, name));
+            if (Directory.Exists(fallback))
+                PatchClass.Settings.LootProfilePath = Path.Combine(fallback, "LootProfiles");
+        }
+        catch
+        {
+        }
+    }
+
+    // Loads bundled/default .utl profiles when the player has none active (new install or empty ActiveProfileNames in prefs).
+    static bool TrySeedDefaultLootProfilesFromDisk(Player player)
     {
         if (player is null || PatchClass.Settings is null)
-            return;
+            return false;
 
-        if (File.Exists(GetPlayerDataPath(player)))
-            return;
-
+        EnsureLootProfilePathForDiskOps();
         string lootRoot = PatchClass.Settings.LootProfilePath;
         if (string.IsNullOrWhiteSpace(lootRoot))
-            return;
+            return false;
 
         try
         {
@@ -120,16 +151,16 @@ public class AutoLoot
         }
         catch
         {
-            return;
+            return false;
         }
 
         string[] diskProfiles = Directory.GetFiles(lootRoot, "*.utl", SearchOption.TopDirectoryOnly);
         if (diskProfiles.Length == 0)
-            return;
+            return false;
 
         ConcurrentDictionary<string, LootCore> playerProfiles = lootProfiles.GetOrAdd(LootKey(player), _ => new ConcurrentDictionary<string, LootCore>());
         if (!playerProfiles.IsEmpty)
-            return;
+            return false;
 
         IReadOnlyList<string> names = GetEffectiveDefaultProfileNames(PatchClass.Settings);
         foreach (string raw in names)
@@ -147,7 +178,6 @@ public class AutoLoot
             if (fullPath is null || playerProfiles.ContainsKey(fullPath))
                 continue;
 
-            // Skip achievement-locked profiles for new characters
             if (IsProfileLockedByName(fullPath, player))
                 continue;
 
@@ -157,10 +187,27 @@ public class AutoLoot
             playerProfiles[fullPath] = core;
         }
 
-        // Enable scrolls by default for new characters
+        return !playerProfiles.IsEmpty;
+    }
+
+    static void TryApplyDefaultProfilesForNewCharacter(Player player)
+    {
+        if (player is null || PatchClass.Settings is null)
+            return;
+
+        EnsureLootProfilePathForDiskOps();
+        if (string.IsNullOrWhiteSpace(PatchClass.Settings.LootProfilePath))
+            return;
+
+        if (File.Exists(GetPlayerDataPath(player)))
+            return;
+
+        TrySeedDefaultLootProfilesFromDisk(player);
+
         unknownScrolls[LootKey(player)] = true;
 
-        if (!playerProfiles.IsEmpty || unknownScrolls.GetOrAdd(LootKey(player), false))
+        if (!lootProfiles.GetOrAdd(LootKey(player), _ => new ConcurrentDictionary<string, LootCore>()).IsEmpty
+            || unknownScrolls.GetOrAdd(LootKey(player), false))
             SavePrefs(player);
     }
 
@@ -474,13 +521,22 @@ public class AutoLoot
 
     static string GetPlayerDataPath(Player player)
     {
-        var dir = Path.Combine(PatchClass.Settings.LootProfilePath, "PlayerData");
+        EnsureLootProfilePathForDiskOps();
+        var dir = Path.Combine(PatchClass.Settings!.LootProfilePath, "PlayerData");
         Directory.CreateDirectory(dir);
         return Path.Combine(dir, $"{player.Guid.Full}.json");
     }
 
     internal static void EnsureLoaded(Player player)
     {
+        EnsureLootProfilePathForDiskOps();
+
+        if (PatchClass.Settings is null || string.IsNullOrWhiteSpace(PatchClass.Settings.LootProfilePath))
+        {
+            ModManager.Log("AutoLoot: LootProfilePath not ready yet; defer EnsureLoaded until settings init.", ModManager.LogLevel.Warn);
+            return;
+        }
+
         if (!loadedPlayers.TryAdd(player.Guid.Full, true))
             return;
 
@@ -496,7 +552,10 @@ public class AutoLoot
             var json = File.ReadAllText(path);
             var prefs = JsonSerializer.Deserialize<PlayerPrefs>(json);
             if (prefs == null)
+            {
+                loadedPlayers.TryRemove(player.Guid.Full, out _);
                 return;
+            }
 
             var allProfiles = Directory.GetFiles(
                 PatchClass.Settings.LootProfilePath, "*.utl", SearchOption.TopDirectoryOnly);
@@ -517,6 +576,9 @@ public class AutoLoot
                 playerProfileMap[fullPath] = core;
             }
 
+            if (playerProfileMap.IsEmpty && TrySeedDefaultLootProfilesFromDisk(player))
+                SavePrefs(player);
+
             lootNotifications[LootKey(player)] = prefs.LootNotifications;
             unknownScrolls[LootKey(player)] = prefs.UnknownScrollsEnabled;
 
@@ -530,6 +592,7 @@ public class AutoLoot
         catch (Exception ex)
         {
             ModManager.Log($"AutoLoot: failed to load prefs for {player.Name}: {ex.Message}", ModManager.LogLevel.Warn);
+            loadedPlayers.TryRemove(player.Guid.Full, out _);
         }
     }
 
@@ -588,6 +651,7 @@ public class AutoLoot
 
         try
         {
+            EnsureLootProfilePathForDiskOps();
             Directory.CreateDirectory(PatchClass.Settings.LootProfilePath);
             EnsureLoaded(player);
             var profiles = ResolveCommandProfilePaths(PatchClass.Settings);

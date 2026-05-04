@@ -388,6 +388,7 @@ All features can be toggled in `Settings.json`:
 ## Changelog
 
 ### 2026-05-03
+- **Death Knight:** Optional **`CombatClasses.DeathKnight.MaxVoidSpellTier`** (1–8, default 8) caps nether proc tier after `floor(VoidMagic.Base / SkillPerTier)`; repo `Settings.json` sets **5** so heavy-weapon nether arc cannot exceed tier 5 on shipped test config.
 - **Death Knight:** Nether proc spell tier now uses **VoidMagic.Base** (not `Current`) so buffs do not spike low-level toons to high tiers; matches `GetSpellTier` rationale (`HybridClasses.GetDeathKnightVoidSpellTier`).
 - **Summoning classes:** `BlockPetWarVoidRingWallSpells` default **false** in code + `Settings.json` (was blocking ring/wall and skewing pet AI toward non-offense picks); set **true** per-shard if pet ring/wall splash on owner is a problem. `BlockPetProjectileDamageToOwner` unchanged.
 - **Summoning classes (earlier same day):** When the ring/wall gate is enabled, harmful War/Void ring/wall on BSS-tracked `CombatPet` casts is blocked; `BlockPetProjectileDamageToOwner` still skips pet projectile damage to owner.

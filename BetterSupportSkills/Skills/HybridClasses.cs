@@ -102,7 +102,7 @@ internal static class HybridClasses
         // Death Knight: Heavy/Two-Handed + Void Magic → nether spells
         else if (activeClass == "DeathKnight")
         {
-            int tier = GetDeathKnightVoidSpellTier(player, hybridSettings.DeathKnight.SkillPerTier);
+            int tier = GetDeathKnightVoidSpellTier(player, hybridSettings.DeathKnight);
             if (IsTwoHandedWeapon(damageSource))
                 CastStreakAtNearbyEnemies(player, target, DamageType.Nether, tier, hybridSettings.DeathKnight);
             else if (IsHeavyWeapon(damageSource))
@@ -224,14 +224,18 @@ internal static class HybridClasses
         return clamped;
     }
 
-    static int GetDeathKnightVoidSpellTier(Player player, int skillPerTier)
+    static int GetDeathKnightVoidSpellTier(Player player, DeathKnightSettings dk)
     {
         var skill = player.GetCreatureSkill(Skill.VoidMagic);
         if (skill == null) return 1;
         // Base skill (unbuffed) — same rationale as GetSpellTier; Current can spike tiers from short buffs
         int value = (int)skill.Base;
-        int divider = Math.Max(1, skillPerTier);
+        int divider = Math.Max(1, dk.SkillPerTier);
         int tier = value / divider;
+        int cap = dk.MaxVoidSpellTier;
+        if (cap < 1) cap = 8;
+        else if (cap > 8) cap = 8;
+        tier = Math.Min(tier, cap);
         return Math.Min(8, Math.Max(1, tier));
     }
 

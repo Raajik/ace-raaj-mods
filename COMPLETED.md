@@ -8,6 +8,12 @@
 
 ## 2026-05-04
 
+### BetterSupportSkills — Death Knight nether proc tier + mana
+
+- **Cause:** Proc “tier” is **index into nether streak/arc spell ID lists**, not client spell level; tiers 5+ swap to a different ID line (reads like high spell level). `MaxVoidSpellTier` **0** or invalid used `cap < 1 → cap = 8`, which **removed** the cap. Mana multiplier **0** still cost **1** mana via `Math.Max(1, …)`.
+- **Fix:** `GetDeathKnightVoidSpellTier` uses `Math.Clamp(MaxVoidSpellTier, 1, 8)`. Shipped defaults: **`MaxVoidSpellTier` 2**, **`ManaCostMultiplier` 0** for DK. `BssAutoCaster`: `manaCostMultiplier <= 0` → **0** mana, skip deduction. Docs in `README.md`, `ClassPerks.md`, `Settings.cs`.
+- **Commit:** `f5a727c`.
+
 ### BetterSupportSkills — auto-summon credits pet damage (all summoning classes)
 
 - **Cause:** Auto-summon only pulsed on **player** `TakeDamage` / harmful `HandleCastSpell`; zero-offense Item Enchantment (etc.) builds never hit those paths → no auto pets.

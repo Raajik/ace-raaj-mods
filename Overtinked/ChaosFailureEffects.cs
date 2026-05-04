@@ -122,10 +122,19 @@ public static class ChaosFailureEffects
 
     // ── Spell / Slayer Data ─────────────────────────────────────────────
 
+    // Item-spellbook entries must be valid SpellId values (Spell.Init rejects bad ids).
     private static readonly int[] WhisperSpellIds = new[]
     {
-        2, 5, 7, 9, 11, 13, 15, 17, 23, 25, 27, 29,
-        49, 51, 53, 191, 193, 195, 1603, 1604, 1605, 1606,
+        (int)SpellId.ArmorSelf1,
+        (int)SpellId.Impenetrability1,
+        (int)SpellId.FireProtectionSelf1,
+        (int)SpellId.BloodDrinkerSelf1,
+        (int)SpellId.SwiftKillerSelf1,
+        (int)SpellId.StrengthSelf1,
+        (int)SpellId.ArmorSelf3,
+        (int)SpellId.Impenetrability3,
+        (int)SpellId.ArmorSelf5,
+        (int)SpellId.Impenetrability5,
     };
 
     private static readonly int ProdigalStrengthSpellId = 4324; // StrengthOther8
@@ -350,7 +359,7 @@ public static class ChaosFailureEffects
 
         string typeName = creatureType.ToString();
         string msg = string.Format(Random.Shared.GetItems(SlayerMessages, 1)[0], itemName, typeName);
-        player.SendMessage($"[Overtinked] {msg} (+100% damage vs {typeName})", ChatMessageType.Craft);
+        player.SendMessage($"[Overtinked] {msg} (×{target.SlayerDamageBonus:0.#} damage vs {typeName})", ChatMessageType.Craft);
         ModManager.Log($"[Overtinked] Chaos Slayer: {player.Name} added {creatureType} slayer on {target.Guid}", ModManager.LogLevel.Debug);
     }
 
@@ -673,7 +682,23 @@ public static class ChaosFailureEffects
 
     static void ApplySpellWhisper(Player player, WorldObject target, string itemName, Settings settings)
     {
-        int spellId = WhisperSpellIds[Random.Shared.Next(WhisperSpellIds.Length)];
+        int spellId = 0;
+        for (int attempt = 0; attempt < 12; attempt++)
+        {
+            int candidate = WhisperSpellIds[Random.Shared.Next(WhisperSpellIds.Length)];
+            var probe = new Spell((SpellId)candidate);
+            if (!probe.NotFound)
+            {
+                spellId = candidate;
+                break;
+            }
+        }
+
+        if (spellId == 0)
+        {
+            ApplyManaSurge(player, target, itemName, settings);
+            return;
+        }
 
         try
         {
@@ -682,7 +707,7 @@ public static class ChaosFailureEffects
             target.UiEffects |= UiEffects.Magical;
 
             var spell = new Spell((SpellId)spellId);
-            string spellName = spell.NotFound ? $"Spell {spellId}" : spell.Name;
+            string spellName = spell.Name;
 
             string msg = string.Format(Random.Shared.GetItems(SpellWhisperMessages, 1)[0], itemName);
             player.SendMessage($"[Overtinked] {msg} Gained: {spellName}!", ChatMessageType.Craft);

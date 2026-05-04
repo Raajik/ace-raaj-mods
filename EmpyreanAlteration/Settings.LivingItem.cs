@@ -19,6 +19,10 @@ public partial class Settings
     public string ManualAwakenPrefixDoc { get; init; } = "Prefix applied to manually awakened item names (Coalesced Mana use-on-target). Default 'Awakened' distinguishes player-driven awakening from loot 'Living' prefix.";
     public string ManualAwakenPrefix { get; set; } = "Awakened";
 
+    [JsonPropertyName("// UseItemTypeInAwakenedName")]
+    public string UseItemTypeInAwakenedNameDoc { get; init; } = "When true, manual awaken names use '{prefix} {ItemType}' (e.g. Awakened MeleeWeapon). When false, legacy behavior strips material prefix from the original name.";
+    public bool UseItemTypeInAwakenedName { get; set; } = true;
+
     [JsonPropertyName("// EnableAwakenRandomSpells")]
     public string EnableAwakenRandomSpellsDoc { get; init; } = "When true and SpellSiphon is loaded, newly awakened items roll bonus magic spells using SpellSiphon's gem spell pool.";
     public bool EnableAwakenRandomSpells { get; set; } = true;

@@ -37,6 +37,9 @@ public static class VendorSellRate
         if (raw is null)
             return;
 
+        if (_settings.VendorWcidsExcludedFromEconomyPricing?.Contains(__instance.WeenieClassId) == true)
+            return;
+
         var mult = _settings.VendorSellRateMultiplier;
         if (mult <= 0.0 || Math.Abs(mult - 1.0) < 0.0001)
             return;

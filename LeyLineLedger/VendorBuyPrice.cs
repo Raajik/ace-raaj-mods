@@ -37,16 +37,32 @@ public static class VendorBuyPrice
         if (raw is null)
             return;
 
-        var mult = GetMultiplier();
+        double sale = WorldEventsSalePricing.GetSaleMultiplier(__instance);
+
+        if (IsExcludedFromEconomy(__instance.WeenieClassId))
+        {
+            if (Math.Abs(sale - 1.0) < 0.0001)
+                return;
+            if (Math.Abs(__result.Value - raw.Value) < 0.01)
+                __result = raw.Value * sale;
+            return;
+        }
+
+        double mult = GetLeyLineBuyMultiplier() * sale;
         if (mult == 1.0)
             return;
 
-        // Idempotency: only multiply if current result is still close to raw value.
         if (Math.Abs(__result.Value - raw.Value) < 0.01)
             __result = raw.Value * mult;
     }
 
-    static double GetMultiplier()
+    static bool IsExcludedFromEconomy(uint wcid)
+    {
+        var list = _settings?.VendorWcidsExcludedFromEconomyPricing;
+        return list != null && list.Count > 0 && list.Contains(wcid);
+    }
+
+    static double GetLeyLineBuyMultiplier()
     {
         var s = _settings!;
         var mode = s.VendorPricingMode;

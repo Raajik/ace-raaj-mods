@@ -172,15 +172,24 @@ internal static class LivingItemAwakener
 
     internal static void ApplyAwakenedName(WorldObject item, Settings s)
     {
-        string originalName = item.GetProperty(LivingEquipmentProperties.OriginalName) ?? item.Name ?? "Item";
-        string materialName = GetMaterialName(item);
-        string prefix = s.ManualAwakenPrefix;
-
+        string prefix = s.ManualAwakenPrefix?.Trim() ?? "Awakened";
         string newName;
-        if (!string.IsNullOrEmpty(materialName) && originalName.StartsWith(materialName, StringComparison.OrdinalIgnoreCase))
-            newName = prefix + originalName.Substring(materialName.Length);
+
+        if (s.UseItemTypeInAwakenedName)
+        {
+            var it = item.ItemType;
+            string typeLabel = it == ItemType.None ? "Item" : it.ToString();
+            newName = prefix + " " + typeLabel;
+        }
         else
-            newName = prefix + " " + originalName;
+        {
+            string originalName = item.GetProperty(LivingEquipmentProperties.OriginalName) ?? item.Name ?? "Item";
+            string materialName = GetMaterialName(item);
+            if (!string.IsNullOrEmpty(materialName) && originalName.StartsWith(materialName, StringComparison.OrdinalIgnoreCase))
+                newName = prefix + originalName.Substring(materialName.Length);
+            else
+                newName = prefix + " " + originalName;
+        }
 
         item.SetProperty(PropertyString.Name, newName);
     }

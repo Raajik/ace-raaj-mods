@@ -1132,7 +1132,8 @@ public class AutoLoot
 
         bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
         bool hasCoalesced = ContainerHasCoalescedMana(container);
-        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps && !hasCoalesced)
+        bool mayKeyBank = PatchClass.Settings?.KeyBankProperties?.Count > 0;
+        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps && !hasCoalesced && !mayKeyBank)
         {
             if (debug)
                 ModManager.Log($"AutoLoot: ProcessContainerLoot early exit — no active loot for {player.Name}", ModManager.LogLevel.Info);

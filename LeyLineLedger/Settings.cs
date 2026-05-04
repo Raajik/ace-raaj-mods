@@ -53,12 +53,19 @@ public class Settings
     public VendorPricingMode VendorPricingMode { get; set; } = VendorPricingMode.EconomyBalancer;
 
     [JsonPropertyName("// VendorBuyPriceMultiplier")]
-    public string VendorBuyPriceMultiplierDoc { get; init; } = "Flat multiplier for what players PAY to BUY items from vendors when VendorPricingMode = SimpleMultiplier. 1.0 = retail, 5.0 = 5x. WorldEvents Sale multiplier has been moved here — set this to the same value you previously used in WorldEvents. Patches Vendor.SellPrice for client+server sync.";
+    public string VendorBuyPriceMultiplierDoc { get; init; } = "Flat multiplier for what players PAY to BUY items from vendors when VendorPricingMode = SimpleMultiplier. 1.0 = retail, 5.0 = 5x. When WorldEvents.dll is present, SaleVendorPriceMultiplier and active-sale discount stack on top (reflection). Patches Vendor.SellPrice for client+server sync.";
     public double VendorBuyPriceMultiplier { get; set; } = 5.0;
 
     [JsonPropertyName("// VendorPriceVariance")]
     public string VendorPriceVarianceDoc { get; init; } = "Adds a small random variance to vendor buy prices so they feel organic instead of perfectly round numbers. 0.1 = ±10% variance (e.g., 500 pyreals becomes 450–550). 0 = disabled.";
     public double VendorPriceVariance { get; set; } = 0.1;
+
+    [JsonPropertyName("// VendorWcidsExcludedFromEconomyPricing")]
+    public string VendorWcidsExcludedFromEconomyPricingDoc { get; init; } = "Vendor WCIDs that skip LeyLineLedger buy/sell rate patches (retail weenie SellPrice/BuyPrice only). WorldEvents sale multipliers still apply when that mod is loaded. Default: shadow armor smith NPCs.";
+    public List<uint> VendorWcidsExcludedFromEconomyPricing { get; set; } = new()
+    {
+        6592, 6625, 6626, 8124, 8125, 8126
+    };
 
     [JsonPropertyName("// EnableDynamicVendorPricing")]
     public string EnableDynamicVendorPricingDoc { get; init; } = "DEPRECATED — use VendorPricingMode = EconomyBalancer instead. Kept for backward compatibility.";

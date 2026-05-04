@@ -197,6 +197,8 @@ When Assess Creature is trained or specialized, grants **guaranteed extra loot r
 }
 ```
 
+Older `Settings.json` that still has **`BankPyrealsPerCharm`** but no tier keys: all four **`BankTradeNoteValuePerCharm*`** deserialize as **0**, so the mod keeps using that **flat per-charm** value for every tier until you add the new keys.
+
 ---
 
 ### Cooking (natural regen + optional legacy spell buffs)

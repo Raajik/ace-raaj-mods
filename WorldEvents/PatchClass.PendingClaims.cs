@@ -3,8 +3,8 @@ namespace WorldEvents;
 public partial class PatchClass
 {
     internal const int PendingClaimsReminderIntervalMinutes = 120;
-    // Per-character opt-in for 2h timer auto-claim (default off — property unset/false).
-    internal const FakeBool PendingClaimsPeriodicAutoOptIn = (FakeBool)12002;
+    // Legacy biota flag from builds before JSON preference; migrated on read then cleared.
+    internal const FakeBool PendingClaimsPeriodicAutoOptInLegacy = (FakeBool)12002;
 
     void StartPendingClaimsBackgroundTimer()
     {
@@ -39,7 +39,7 @@ public partial class PatchClass
         {
             try
             {
-                if (player.GetProperty(PendingClaimsPeriodicAutoOptIn) != true)
+                if (!IsPeriodicAutoClaimEnabled(player))
                     continue;
                 TryAutoClaimPendingRewards(player);
             }
@@ -99,11 +99,30 @@ public partial class PatchClass
             player.SendMessage($"[WorldEvents] You still have {remaining} pending event reward(s). Make pack space and type /claim (or check server log if items fail to create).", ChatMessageType.System);
     }
 
+    internal static bool IsPeriodicAutoClaimEnabled(Player player)
+    {
+        if (player?.Guid == null)
+            return false;
+
+        var g = player.Guid.Full;
+        if (PendingClaimsAutoPreferenceStore.IsPeriodicAutoEnabled(g))
+            return true;
+
+        if (player.GetProperty(PendingClaimsPeriodicAutoOptInLegacy) == true)
+        {
+            PendingClaimsAutoPreferenceStore.SetPeriodicAuto(g, true);
+            player.RemoveProperty(PendingClaimsPeriodicAutoOptInLegacy);
+            return true;
+        }
+
+        return false;
+    }
+
     internal static void HandleClaimAutoSubcommand(Player player, string[] parameters)
     {
         if (parameters.Length < 2)
         {
-            var on = player.GetProperty(PendingClaimsPeriodicAutoOptIn) == true;
+            var on = IsPeriodicAutoClaimEnabled(player);
             player.SendMessage(on
                 ? "[WorldEvents] Periodic auto-claim is ON (every 2h while online). /claim auto off to disable."
                 : "[WorldEvents] Periodic auto-claim is OFF (default). /claim auto on to enable.");
@@ -114,11 +133,13 @@ public partial class PatchClass
         switch (sub)
         {
             case "on":
-                player.SetProperty(PendingClaimsPeriodicAutoOptIn, true);
+                PendingClaimsAutoPreferenceStore.SetPeriodicAuto(player.Guid.Full, true);
+                player.RemoveProperty(PendingClaimsPeriodicAutoOptInLegacy);
                 player.SendMessage("[WorldEvents] Periodic auto-claim is now ON (tries pending rewards every 2h while online).");
                 break;
             case "off":
-                player.RemoveProperty(PendingClaimsPeriodicAutoOptIn);
+                PendingClaimsAutoPreferenceStore.SetPeriodicAuto(player.Guid.Full, false);
+                player.RemoveProperty(PendingClaimsPeriodicAutoOptInLegacy);
                 player.SendMessage("[WorldEvents] Periodic auto-claim is now OFF.");
                 break;
             default:

@@ -16,9 +16,10 @@
 
 ### WorldEvents — periodic auto-claim opt-in (`/claim auto`)
 
-- **Default off:** 120-minute tick calls `TryAutoClaimPendingRewards` only when `FakeBool 12002` (`PendingClaimsPeriodicAutoOptIn`) is **true** on the player.
-- **`/claim auto`** — status; **`/claim auto on`** / **`/claim auto off`** — set or clear the flag (persists on character like other `FakeBool`s).
-- **`AGENTS.md`** — documents `FakeBool 12001`–`12002` for WorldEvents.
+- **Default off:** 120-minute tick calls `TryAutoClaimPendingRewards` only when `PendingClaimsAutoPreferenceStore` JSON is enabled for that character (`Mods/WorldEvents/PendingClaimsAuto/<guid>.json`).
+- **`PendingClaimsAutoPreferenceStore.cs`** — disk-backed `{ "PeriodicAutoClaim": true }` per character (same `ModManager.ModPath` layout as pending loot JSON).
+- **`/claim auto`** — status; **`/claim auto on`** / **`/claim auto off`** — write/delete preference file (survives logouts). **Legacy:** `FakeBool 12002` from older builds is read once, migrated to JSON, then removed from biota.
+- **`AGENTS.md`** — `12002` marked legacy; `12001` unchanged.
 
 ---
 

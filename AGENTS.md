@@ -41,7 +41,7 @@ Always check in this order:
 | `FakeString 11033` | OriginalName | EmpyreanAlteration |
 | `FakeString 11034` | ProfileName | EmpyreanAlteration |
 | `FakeBool 12001` | Event announcement opt-out | WorldEvents |
-| `FakeBool 12002` | Periodic pending-event auto-claim (2h tick; `/claim auto on`) | WorldEvents |
+| `FakeBool 12002` | **Legacy** periodic auto-claim flag (pre-json); migrated to `Mods/WorldEvents/PendingClaimsAuto/<guid>.json` on login/tick — do not reuse for new features | WorldEvents |
 
 ## 4. Agent Permissions
 - **DO:** Edit `Settings.json`, fix bugs, tune values, refactor for clarity.

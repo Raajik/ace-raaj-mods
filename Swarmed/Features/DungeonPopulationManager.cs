@@ -82,7 +82,8 @@ internal static class DungeonPopulationManager
                 // Only use non-buddy, non-reinforcement originals as templates
                 bool isBuddy = c.GetProperty((PropertyInt)40113) != null; // BuddySpawnTagPropertyId
                 bool isReinforcement = c.GetProperty((PropertyInt)40112) != null; // SwarmedReinforcementDepthPropertyId
-                if (!isBuddy && !isReinforcement)
+                bool isBaseHuman = c.WeenieClassId == 1; // Skip modified human placeholder "Clay"
+                if (!isBuddy && !isReinforcement && !isBaseHuman)
                     templateCandidates.Add(c);
             }
         }
@@ -152,7 +153,7 @@ internal static class DungeonPopulationManager
             }
 
             // Pick a spawn position: near template but outside min distance from all players
-            var spawnPos = FindSpawnPosition(template, players, s);
+            var spawnPos = FindSpawnPosition(template, lb, players, s);
             if (spawnPos == null)
             {
                 GuidManager.RecycleDynamicGuid(guid);
@@ -188,7 +189,7 @@ internal static class DungeonPopulationManager
         }
     }
 
-    static Position? FindSpawnPosition(Creature template, List<Player> players, DungeonPopulationSettings s)
+    static Position? FindSpawnPosition(Creature template, Landblock lb, List<Player> players, DungeonPopulationSettings s)
     {
         // Try several random offsets around the template creature
         for (int attempt = 0; attempt < 8; attempt++)
@@ -200,6 +201,18 @@ internal static class DungeonPopulationManager
             var offset = new Vector3((float)(dist * Math.Cos(angle)), (float)(dist * Math.Sin(angle)), 0);
             var candidate = new Position(template.Location);
             candidate.Pos += offset;
+
+            // Snap Z to terrain height to avoid spawning inside floors/geometry
+            try
+            {
+                if (lb?.LandblockMesh != null)
+                {
+                    var terrainZ = lb.LandblockMesh.GetZ(new System.Numerics.Vector2(candidate.Pos.X, candidate.Pos.Y));
+                    if (!float.IsNaN(terrainZ) && terrainZ > -999)
+                        candidate.Pos = new Vector3(candidate.Pos.X, candidate.Pos.Y, terrainZ + 0.05f);
+                }
+            }
+            catch { /* keep candidate Z if mesh unavailable */ }
 
             // Ensure it's outside min distance from ALL players
             bool tooClose = players.Any(p => p.Location.DistanceTo(candidate) < s.MinSpawnDistanceFromPlayer);
@@ -216,6 +229,19 @@ internal static class DungeonPopulationManager
             float angle = (float)(ThreadSafeRandom.Next(0.0f, 1.0f) * 2 * Math.PI);
             float dist = s.MaxSpawnDistanceFromPlayer;
             fallback.Pos += new Vector3((float)(dist * Math.Cos(angle)), (float)(dist * Math.Sin(angle)), 0);
+
+            // Snap fallback Z too
+            try
+            {
+                if (lb?.LandblockMesh != null)
+                {
+                    var terrainZ = lb.LandblockMesh.GetZ(new System.Numerics.Vector2(fallback.Pos.X, fallback.Pos.Y));
+                    if (!float.IsNaN(terrainZ) && terrainZ > -999)
+                        fallback.Pos = new Vector3(fallback.Pos.X, fallback.Pos.Y, terrainZ + 0.05f);
+                }
+            }
+            catch { }
+
             return fallback;
         }
 

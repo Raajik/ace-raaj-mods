@@ -39,6 +39,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         ModC.Harmony.PatchCategory("SwarmedCreatureVariation");
         ModC.Harmony.PatchCategory("SwarmedDynamicMobScaling");
         ModC.Harmony.PatchCategory(nameof(CreatureEx));
+        ModC.Harmony.PatchCategory(nameof(Features.ClayBlocker));
         foreach (var creatureType in Settings.CreatureFeatures)
             ModC.Harmony.PatchCategory(creatureType.ToString());
 

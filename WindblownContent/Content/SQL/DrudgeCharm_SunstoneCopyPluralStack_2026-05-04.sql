@@ -1,2 +1,1 @@
--- DEPRECATED 2026-05-05: superseded by Bloodletter (24835) base + per-tier icon patch.
--- Use DrudgeCharm_BloodletterBase_2026-05-05.sql or re-run DrudgeCharm_TierWeenies_World.sql instead.
+-- DEPRECATED: use DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql or DrudgeCharm_TierWeenies_World.sql.

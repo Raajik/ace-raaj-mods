@@ -61,7 +61,7 @@ Source: `ACE.Entity.Enum.ImbuedEffectType` (flags). **Short name** + **single-fl
 | Spellbook | `0x2000` | 8192 |
 | NetherRend | `0x4000` | 16384 |
 
-**Windblown drudge charms (24835 Bloodletter base, 850271–850273 tiers):** per-tier **`ImbuedEffect` (179)** + **`UiEffects` (18)** for client rim/glow (not weapon combat rend): **24835** Bludgeon + Frost (white) — **179 = 32**, **18 = 128**; **850271** Acid + Acid (green) — **64 / 256**; **850272** Cold + Magical (blue) — **128 / 1**; **850273** Electric + Lightning (purple) — **256 / 64**. Canonical SQL: `DrudgeCharm_TierWeenies_World.sql`; idempotent forward patch: `DrudgeCharm_BloodletterBase_2026-05-05.sql` and `DrudgeCharm_UiRendIcons_2026-05-05.sql`. **`179` on stackable charms is appraisal/objdesc chrome only** — may not match melee sunstone overlay on all item types.
+**Windblown drudge charms (24835 + 850271–850273):** sunstone-style rim uses **`ImbuedEffect` (179) = 4** (`ArmorRending`, same bit as sunstone weapon chrome) and **`UiEffects` (18) = 0** on all four WCIDs. Examine copy: **14** Use = short turn-in hint; **15** ShortDesc empty; **16** LongDesc = full reward text (avoids duplicate paragraph when 14/16 matched). Canonical SQL: `DrudgeCharm_TierWeenies_World.sql`; forward patch: `DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`. Deprecated stubs: `DrudgeCharm_BloodletterBase_2026-05-05.sql`, `DrudgeCharm_UiRendIcons_2026-05-05.sql`. **`179` on charms is client icon treatment** — stackables may still not match melee weapon overlay pixel-perfect.
 
 ## `weenie.type` vs portal appraisal
 
@@ -74,6 +74,5 @@ If **`weenie.type`** is **`Portal` (7)** instead of **`Stackable` (51)** (or ano
 ## Related repo files
 
 - `WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql`
-- `WindblownContent/Content/SQL/DrudgeCharm_BloodletterBase_2026-05-05.sql`
-- `WindblownContent/Content/SQL/DrudgeCharm_UiRendIcons_2026-05-05.sql`
+- `WindblownContent/Content/SQL/DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`
 - `WindblownContent/Content/SQL/README-TrophyCharmCloneTemplate.md`

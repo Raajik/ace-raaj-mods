@@ -6,7 +6,7 @@ using ACE.Server.WorldObjects;
 namespace BetterSupportSkills.Skills;
 
 // Caps quest turn-in XP for high-value quest items dropped by TrophyDrops.
-// Bulk turn-ins for stackable quest charms (24835 Bloodletter + tier WCIDs): tier XP bracket + bank credit (LLL BankCashProperty; tiered amounts, no physical trade notes).
+// Bulk turn-ins for stackable quest charms (24835 base + tier WCIDs): tier XP bracket + bank credit (LLL BankCashProperty; tiered amounts, no physical trade notes).
 [HarmonyPatchCategory(nameof(Features.TrophyDropsSkill))]
 internal static class QuestTurnInCap
 {
@@ -155,10 +155,10 @@ internal static class QuestTurnInCap
     {
         return wcid switch
         {
-            24835 => "bloodletter drudge charms",
-            850271 => "Bloodletter Drudge Charm (Quality) stacks",
-            850272 => "Bloodletter Drudge Charm (Pristine) stacks",
-            850273 => "Bloodletter Drudge Charm (Perfect) stacks",
+            24835 => "drudge charms",
+            850271 => "Drudge Charm (Quality) stacks",
+            850272 => "Drudge Charm (Pristine) stacks",
+            850273 => "Drudge Charm (Perfect) stacks",
             _ => "quest items"
         };
     }

@@ -1010,7 +1010,7 @@ public class DrudgeCharmTrophySettings
     public bool Enabled { get; set; } = true;
 
     [JsonPropertyName("// DropChanceRegular")]
-    public string DropChanceRegularDoc { get; init; } = "Chance (0-1) per Drudge-species kill to roll base charm (24835 Bloodletter). Each tier rolls independently.";
+    public string DropChanceRegularDoc { get; init; } = "Chance (0-1) per Drudge-species kill to roll base charm (24835 Drudge Charm). Each tier rolls independently.";
     public double DropChanceRegular { get; set; } = 0.025;
 
     [JsonPropertyName("// DropChanceRare1")]
@@ -1058,7 +1058,7 @@ public class DrudgeCharmTrophySettings
     public float XpFractionRare3 { get; set; } = 0.15f;
 
     [JsonPropertyName("// BankTradeNoteValuePerCharmRegular")]
-    public string BankTradeNoteValuePerCharmRegularDoc { get; init; } = "Bank units credited per Regular charm (24835 Bloodletter) on bulk turn-in; default matches ACE Trade Note (25,000) WCID 7376 face value. Credited via LeyLineLedgerBankInterop -> BankCashProperty (LLL when present, else PropertyInt64).";
+    public string BankTradeNoteValuePerCharmRegularDoc { get; init; } = "Bank units credited per Regular charm (24835 Drudge Charm) on bulk turn-in; default matches ACE Trade Note (25,000) WCID 7376 face value. Credited via LeyLineLedgerBankInterop -> BankCashProperty (LLL when present, else PropertyInt64).";
     public long BankTradeNoteValuePerCharmRegular { get; set; } = 25_000;
 
     [JsonPropertyName("// BankTradeNoteValuePerCharmRare1")]

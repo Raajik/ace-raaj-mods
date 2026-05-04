@@ -6,11 +6,20 @@
 
 ---
 
+## 2026-05-06
+
+### Drudge charm — display rename, sunstone rim (179=4), single examine body
+
+- **World weenies (24835, 850271–850273):** **`ImbuedEffect` 179 = 4** (`ArmorRending` chrome), **`UiEffects` 18 = 0**, **`MaxStackSize` 11 = 999**. **`weenie_properties_string`:** type **1** names *Drudge Charm* / *(Quality|Pristine|Perfect)*; **20** plurals *Drudge Charms*; **14** short Use line; **15** empty; **16** full collector reward sentence (no duplicate 14/16 paragraph). Tier **`weenie.type` = 51** enforced for **850271–850273**.
+- **SQL:** Forward **`WindblownContent/Content/SQL/DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`**; canonical **`DrudgeCharm_TierWeenies_World.sql`** aligned. **`DrudgeCharm_BloodletterBase_2026-05-05.sql`**, **`DrudgeCharm_UiRendIcons_2026-05-05.sql`**, **`DrudgeCharm_SunstoneCopyPluralStack_2026-05-04.sql`** — comment-only deprecated stubs (do not re-apply old Bloodletter / per-tier 179 rows).
+- **Mods/docs:** `BetterSupportSkills` (`QuestTurnInCap`, `Settings` doc bands), `AutoLoot/Settings`, READMEs, `WindblownContent/docs/*`, `README-TrophyCharmCloneTemplate.md`.
+- **DB:** Scoped **`mysqldump`** `WindblownContent/sql-backups/2026-05-06/pre-drudgecharm-sunstone-rim-weenie.sql`; **`mysql ace_world < DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`**; verified **1,11,14,15,16,18,179,20**.
+
 ## 2026-05-05
 
 ### Drudge charm weenies — rend icon + UiEffects by tier (superseded)
 
-- **Superseded 2026-05-04** by uniform sunstone (`ImbuedEffect` **4** / ArmorRending) + `PluralName` + shorter strings + **`MaxStackSize` 999**; see **2026-05-04** subsection below. Old forward file **`DrudgeCharm_UiRendIcons_2026-05-05.sql`** now aliases the sunstone ints.
+- **Superseded 2026-05-06** — final naming + copy + **179=4** / **18=0** on all four: see **2026-05-06** subsection and **`DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`**. Intermediate **`DrudgeCharm_UiRendIcons_2026-05-05.sql`** / **`DrudgeCharm_BloodletterBase_2026-05-05.sql`** are deprecated stubs only.
 
 ## 2026-05-04
 

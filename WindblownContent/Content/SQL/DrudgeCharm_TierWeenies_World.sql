@@ -1,8 +1,8 @@
--- Drudge charm tiers: clone 24835 (Bloodletter Drudge Charm) to Quality / Pristine / Perfect (850271-850273).
+-- Drudge charm tiers: clone template WCID 24835 to Quality / Pristine / Perfect (850271-850273).
 -- Scrub create-list spawns on 24835 (mod drops replace vanilla chest spawns).
 -- See README-TrophyCharmCloneTemplate.md for the same pattern on other trophy lines.
 -- Apply to ace_world; restart ACE to reload weenie cache.
--- Forward-only idempotent patch: DrudgeCharm_BloodletterBase_2026-05-05.sql
+-- Forward-only idempotent patch: DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql
 
 START TRANSACTION;
 
@@ -62,41 +62,40 @@ SELECT 850272, type, value FROM weenie_properties_d_i_d WHERE object_Id = 24835;
 INSERT INTO weenie_properties_d_i_d (object_Id, type, value)
 SELECT 850273, type, value FROM weenie_properties_d_i_d WHERE object_Id = 24835;
 
--- Base name stays Bloodletter Drudge Charm on 24835; tier display names.
-UPDATE weenie_properties_string SET value = 'Bloodletter Drudge Charm (Quality)' WHERE object_Id = 850271 AND type = 1;
-UPDATE weenie_properties_string SET value = 'Bloodletter Drudge Charm (Pristine)' WHERE object_Id = 850272 AND type = 1;
-UPDATE weenie_properties_string SET value = 'Bloodletter Drudge Charm (Perfect)' WHERE object_Id = 850273 AND type = 1;
+UPDATE weenie_properties_string SET value = 'Drudge Charm' WHERE object_Id = 24835 AND type = 1;
+UPDATE weenie_properties_string SET value = 'Drudge Charm (Quality)' WHERE object_Id = 850271 AND type = 1;
+UPDATE weenie_properties_string SET value = 'Drudge Charm (Pristine)' WHERE object_Id = 850272 AND type = 1;
+UPDATE weenie_properties_string SET value = 'Drudge Charm (Perfect)' WHERE object_Id = 850273 AND type = 1;
 
--- Use (14), ShortDesc (15), LongDesc (16): same operator-facing line on all four (ASCII only).
+-- Use (14) short; ShortDesc (15) empty; LongDesc (16) full body (ASCII only).
 INSERT INTO weenie_properties_string (object_Id, type, value) VALUES
-(24835, 14, 'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),
-(24835, 15, 'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),
+(24835, 14, 'Give this stack to a Trophy Collector.'),
+(24835, 15, ''),
 (24835, 16, 'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),
-(850271, 14, 'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),
-(850271, 15, 'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),
+(850271, 14, 'Give this stack to a Trophy Collector.'),
+(850271, 15, ''),
 (850271, 16, 'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),
-(850272, 14, 'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),
-(850272, 15, 'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),
+(850272, 14, 'Give this stack to a Trophy Collector.'),
+(850272, 15, ''),
 (850272, 16, 'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),
-(850273, 14, 'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),
-(850273, 15, 'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),
+(850273, 14, 'Give this stack to a Trophy Collector.'),
+(850273, 15, ''),
 (850273, 16, 'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.')
 ON DUPLICATE KEY UPDATE value = VALUES(value);
 
 INSERT INTO weenie_properties_string (object_Id, type, value) VALUES
-(24835, 20, 'Bloodletter Drudge Charms'),
-(850271, 20, 'Bloodletter Drudge Charms (Quality)'),
-(850272, 20, 'Bloodletter Drudge Charms (Pristine)'),
-(850273, 20, 'Bloodletter Drudge Charms (Perfect)')
+(24835, 20, 'Drudge Charms'),
+(850271, 20, 'Drudge Charms (Quality)'),
+(850272, 20, 'Drudge Charms (Pristine)'),
+(850273, 20, 'Drudge Charms (Perfect)')
 ON DUPLICATE KEY UPDATE value = VALUES(value);
 
--- Per-tier icon: PropertyInt 179 ImbuedEffect + 18 UiEffects (client chrome; not combat rend on charms).
--- 24835: BludgeonRending + Frost; Quality: Acid; Pristine: Cold + Magical; Perfect: Electric + Lightning.
+-- Sunstone-style rim: ImbuedEffect 179 = 4 (ArmorRending); UiEffects 18 = 0 on all tiers.
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES
-(24835, 179, 32), (24835, 18, 128),
-(850271, 179, 64), (850271, 18, 256),
-(850272, 179, 128), (850272, 18, 1),
-(850273, 179, 256), (850273, 18, 64)
+(24835, 179, 4), (24835, 18, 0),
+(850271, 179, 4), (850271, 18, 0),
+(850272, 179, 4), (850272, 18, 0),
+(850273, 179, 4), (850273, 18, 0)
 ON DUPLICATE KEY UPDATE value = VALUES(value);
 
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES

@@ -10,7 +10,7 @@ When a player kills a creature, AutoLoot checks the corpse and moves matching it
 
 Corpse/chest processing uses multiple passes (see `Autoloot.ProcessContainerLoot`). Highlights:
 
-1. **Physical trophy WCIDs (Pass 1, before profiles)** — WCIDs in **`Settings.UpgradedTrophyWeenieClassIds`** (default: Windblown Drudge charm tiers **24835** (Bloodletter), **850271–850273**) are always moved into the player's pack when present, **without** requiring an active `.utl` profile and **without** using LLL item ledgers for those objects. Extend the list for new custom trophy lines; document in **`WindblownContent/docs/Windblown-Custom-Trophy-Settings.md`**.
+1. **Physical trophy WCIDs (Pass 1, before profiles)** — WCIDs in **`Settings.UpgradedTrophyWeenieClassIds`** (default: Windblown Drudge charm tiers **24835**, **850271–850273**) are always moved into the player's pack when present, **without** requiring an active `.utl` profile and **without** using LLL item ledgers for those objects. Extend the list for new custom trophy lines; document in **`WindblownContent/docs/Windblown-Custom-Trophy-Settings.md`**.
 2. **Profile pass** — remaining items vs enabled `.utl` loot profiles (VirindiTank-compatible rule files).
 3. **Unknown Scrolls pass** — unclaimed scrolls the player can read (learn-and-destroy). When a spell is learned, only the vanilla **You learn the … spell.** line is shown; the post-kill AutoLoot summary does **not** repeat the scroll name.
 

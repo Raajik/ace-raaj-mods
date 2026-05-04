@@ -715,7 +715,7 @@ public static class SummoningClasses
                 lock (activePets) { activePets.Add(pet); }
                 TrackedPetGuids.TryAdd(pet.Guid.Full, 0);
 
-                int duration = PatchClass.Settings?.SummoningClasses?.SummonDurationSeconds ?? 15;
+                int duration = PatchClass.Settings?.SummoningClasses?.SummonDurationSeconds ?? 30;
                 StartDestroyTimer(pet, duration);
 
                 summonedCount++;
@@ -737,6 +737,30 @@ public static class SummoningClasses
         if (skill >= 150) return 2;
         if (skill >= 100) return 1;
         return 0;
+    }
+
+    // Sets DefaultScale (ObjScale). Before EnterWorld: property only (InitPhysics reads it). After: refresh physics + broadcast.
+    static void ApplyAutoSummonVisualScale(CombatPet pet, bool afterEnterWorld)
+    {
+        var summoning = PatchClass.Settings?.SummoningClasses;
+        if (summoning == null)
+            return;
+
+        float mult = summoning.AutoSummonObjScaleMultiplier;
+        if (mult <= 0f || mult >= 0.999f)
+            return;
+
+        float baseScale = pet.ObjScale ?? 1f;
+        float newScale = Math.Clamp(baseScale * mult, 0.05f, 2f);
+        pet.ObjScale = newScale;
+
+        if (!afterEnterWorld)
+            return;
+
+        if (pet.PhysicsObj != null)
+            pet.PhysicsObj.SetScaleStatic(newScale);
+
+        pet.EnqueueBroadcast(false, new GameMessagePublicUpdatePropertyFloat(pet, PropertyFloat.DefaultScale, newScale));
     }
 
     static CombatPet? CreateCombatPet(Player player, uint wcid, string className)
@@ -766,6 +790,8 @@ public static class SummoningClasses
             pet.PetOwner = player.Guid.Full;
             pet.P_PetOwner = player;
             pet.NoCorpse = true;
+
+            ApplyAutoSummonVisualScale(pet, afterEnterWorld: false);
 
             var success = pet.EnterWorld();
             if (!success)
@@ -901,6 +927,8 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         if (className == null) return;
         if (!IsClassUnlocked(player, className)) return;
 
+        ApplyAutoSummonVisualScale(pet, afterEnterWorld: true);
+
         var activePets = ActiveSummons.GetOrAdd(player.Guid.Full, _ => new List<CombatPet>());
         int currentCount;
         lock (activePets) { currentCount = activePets.Count; }
@@ -931,7 +959,7 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
             lock (activePets) { activePets.Add(secondPet); }
             TrackedPetGuids.TryAdd(secondPet.Guid.Full, 0);
 
-            int duration = PatchClass.Settings?.SummoningClasses?.SummonDurationSeconds ?? 15;
+            int duration = PatchClass.Settings?.SummoningClasses?.SummonDurationSeconds ?? 30;
             StartDestroyTimer(secondPet, duration);
         }
     }
@@ -1505,8 +1533,12 @@ public class SummoningClassesSettings
     public bool EnableSummoningClasses { get; set; } = true;
 
     [JsonPropertyName("// SummonDurationSeconds")]
-    public string SummonDurationSecondsDoc { get; init; } = "How long summoned pets live before auto-destructing.";
-    public int SummonDurationSeconds { get; set; } = 15;
+    public string SummonDurationSecondsDoc { get; init; } = "How long BSS auto-summoned and device-duplicate CombatPets live before auto-destructing.";
+    public int SummonDurationSeconds { get; set; } = 30;
+
+    [JsonPropertyName("// AutoSummonObjScaleMultiplier")]
+    public string AutoSummonObjScaleMultiplierDoc { get; init; } = "Visual scale multiplier on ObjScale (DefaultScale) for BSS auto-summons and device-spawned class pets. 1 = unchanged; 0.25 ≈ 75% smaller footprint.";
+    public float AutoSummonObjScaleMultiplier { get; set; } = 0.25f;
 
     [JsonPropertyName("// MasteryDamageRatingBonus")]
     public string MasteryDamageRatingBonusDoc { get; init; } = "Extra DR when Summoning Mastery matches class.";

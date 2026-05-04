@@ -142,7 +142,8 @@
   },
   "EnableSummoningClasses": true,
   "SummoningClasses": {
-    "SummonDurationSeconds": 15,
+    "SummonDurationSeconds": 30,
+    "AutoSummonObjScaleMultiplier": 0.25,
     "MasteryDamageRatingBonus": 10,
     "PetAwarenessRange": 5.0,
     "FollowDistanceThreshold": 15.0,

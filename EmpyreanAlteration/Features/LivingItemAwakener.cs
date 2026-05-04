@@ -84,6 +84,7 @@ internal static class LivingItemAwakener
         AwakenedCloakWeaveXpSeed.EnsureMinimumXpForWeave(item, s);
 
         SendInventoryPropertyUpdates(player, item, originalName, uiFx, maxLevel);
+        SyncAwakenedItemClient(player, item);
 
         player.SendMessage($"Your {originalName} awakens with new potential! Maximum level increased to {maxLevel}.", ChatMessageType.Craft);
         return true;
@@ -137,6 +138,25 @@ internal static class LivingItemAwakener
         var tink = item.GetProperty(PropertyInt.NumTimesTinkered);
         if (tink.HasValue)
             player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.NumTimesTinkered, tink.Value));
+    }
+
+    // Same pattern as RecipeManager.UpdateObj: full object refresh + first-slot move for inventory items.
+    private static void SyncAwakenedItemClient(Player player, WorldObject item)
+    {
+        if (player?.Session == null || item == null)
+            return;
+
+        item.CalculateObjDesc();
+        player.EnqueueBroadcast(new GameMessageUpdateObject(item));
+
+        if (item.CurrentWieldedLocation != null)
+        {
+            player.EnqueueBroadcast(new GameMessageObjDescEvent(player));
+            return;
+        }
+
+        if (player.FindObject(item.Guid.Full, Player.SearchLocations.MyInventory, out _, out _, out _) != null)
+            player.MoveItemToFirstContainerSlot(item);
     }
 
     static void ApplyAwakenWorkmanship(WorldObject item)
@@ -243,6 +263,7 @@ internal static class LivingItemAwakener
         if (player != null)
         {
             SendInventoryPropertyUpdates(player, item, originalName, uiFx, maxLevel);
+            SyncAwakenedItemClient(player, item);
             player.SendMessage($"Your {originalName} resonates with living potential! Maximum level increased to {maxLevel}.", ChatMessageType.Craft);
         }
 

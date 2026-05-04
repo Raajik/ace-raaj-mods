@@ -18,6 +18,12 @@
 
 ## 2026-05-04
 
+### QOL — `/dps detailed` + Overtinked chaos imbue pool (armor)
+
+- **QOL:** `EnableDpsDetailed` (default **false**), `Features.DpsDetailed`, `QOL/DpsDetailed.cs` — Harmony postfix on `Player.DamageTarget` emits one **System** line from `DamageEvent` (melee/missile); postfix on `SpellProjectile.DamageTarget` for caster-owned projectiles (final damage + crit flags). `/dps detailed` / `/dps off` / `/dps` status. `PatchClass.RegisterEnabledPatchCategories`, `Settings.cs` / `Settings.json`, `Readme.md`.
+- **Overtinked:** `GetRandomValidImbue` no longer strips **`MagicDefense`** from the chaos **bonus** pool for all non-casters; only **`ItemType.Weapon`** (melee/missile) still strips it. Armor/jewelry/clothing can roll MagicDefense as extra imbue again.
+- **Commit:** `5dd577b`.
+
 ### BetterSupportSkills — pets follow tighter while owner is moving
 
 - **Change:** `PostCombatPetHeartbeat` uses **`MoveFollowDistanceThreshold`** (default **6m**, capped by **`FollowDistanceThreshold`**) when **`FollowWhileOwnerMoving`** (default true) and owner **`PhysicsObj.IsMovingOrAnimating`**. Idle follow still uses full **FollowDistanceThreshold** when stationary.

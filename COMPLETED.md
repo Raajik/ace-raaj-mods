@@ -8,13 +8,18 @@
 
 ## 2026-05-05
 
-### Drudge charm weenies — rend icon + UiEffects by tier
+### Drudge charm weenies — rend icon + UiEffects by tier (superseded)
 
-- **`weenie_properties_int`**: **179** `ImbuedEffect` (BludgeonRending / AcidRending / ColdRending / ElectricRending) + **18** `UiEffects` (Frost white, Acid green, Magical blue, Lightning purple) on **3669**, **850271–850273**.
-- **`DrudgeCharm_TierWeenies_World.sql`** — end block updated for fresh installs; **`DrudgeCharm_UiRendIcons_2026-05-05.sql`** — forward patch for existing DBs. **`README-TrophyCharmCloneTemplate.md`** — fixed type **18** doc (was wrongly labeled MaterialType). **`Windblown-Custom-Trophy-Settings.md`** — short pointer.
-- **Test DB:** `ace_world` apply; scoped **`mysqldump`** pre-restore slice kept locally under `WindblownContent/sql-backups/` (gitignored).
+- **Superseded 2026-05-04** by uniform sunstone (`ImbuedEffect` **4** / ArmorRending) + `PluralName` + shorter strings + **`MaxStackSize` 999**; see **2026-05-04** subsection below. Old forward file **`DrudgeCharm_UiRendIcons_2026-05-05.sql`** now aliases the sunstone ints.
 
 ## 2026-05-04
+
+### Drudge charm weenies — sunstone icon, plural names, copy, max stack
+
+- **`weenie_properties_int`**: **179 = 4** (`ArmorRending`, sunstone-style icon chrome) and **18 = 0** on **3669**, **850271–850273**. **11 = 999** (`MaxStackSize`) so admin stacks are not capped at template **12** (40). **`DrudgeCharm_SunstoneCopyPluralStack_2026-05-04.sql`** — idempotent forward patch; **`DrudgeCharm_TierWeenies_World.sql`** — canonical clone script (tier **`weenie.type` = 51** literal insert, same int/string blocks).
+- **`weenie_properties_string`**: shorter **14/15/16**; **20** `PluralName` (`Drudge Charms`, `Drudge Charms (Quality)`, etc.).
+- **Docs:** [`WindblownContent/docs/ACE-Item-Icon-UiEffects-ImbuedEffect-Reference.md`](WindblownContent/docs/ACE-Item-Icon-UiEffects-ImbuedEffect-Reference.md); Obsidian hub row in `ACE-Realms-Source-Map.md` + stub `ACE-Item-Icon-UiEffects-ImbuedEffect-Reference.md`. **`README-TrophyCharmCloneTemplate.md`** — plural, type-51, doc link, forward patch pointer.
+- **DB audit:** `ace_world` already had **`weenie.type` = 51** (Stackable) for all four; portal boilerplate was not reproduced on test DB. **`mysqldump`** pre-apply: `WindblownContent/sql-backups/2026-05-04/pre-drudgecharm-sunstone-weenie.sql`.
 
 ### BetterSupportSkills — drudge charm turn-in: tiered LLL bank credit
 

@@ -22,12 +22,10 @@ DELETE FROM weenie_properties_int64 WHERE object_Id IN (850271, 850272, 850273);
 DELETE FROM weenie_properties_string WHERE object_Id IN (850271, 850272, 850273);
 DELETE FROM weenie WHERE class_Id IN (850271, 850272, 850273);
 
-INSERT INTO weenie (class_Id, class_Name, type)
-SELECT 850271, 'drudgecharm_quality', type FROM weenie WHERE class_Id = 3669 LIMIT 1;
-INSERT INTO weenie (class_Id, class_Name, type)
-SELECT 850272, 'drudgecharm_pristine', type FROM weenie WHERE class_Id = 3669 LIMIT 1;
-INSERT INTO weenie (class_Id, class_Name, type)
-SELECT 850273, 'drudgecharm_perfect', type FROM weenie WHERE class_Id = 3669 LIMIT 1;
+-- WeenieType.Stackable = 51 (literal so a corrupted 3669.type cannot clone wrong).
+INSERT INTO weenie (class_Id, class_Name, type) VALUES (850271, 'drudgecharm_quality', 51);
+INSERT INTO weenie (class_Id, class_Name, type) VALUES (850272, 'drudgecharm_pristine', 51);
+INSERT INTO weenie (class_Id, class_Name, type) VALUES (850273, 'drudgecharm_perfect', 51);
 
 INSERT INTO weenie_properties_int (object_Id, type, value)
 SELECT 850271, type, value FROM weenie_properties_int WHERE object_Id = 3669;
@@ -69,41 +67,60 @@ UPDATE weenie_properties_string SET value = 'Drudge Charm (Quality)' WHERE objec
 UPDATE weenie_properties_string SET value = 'Drudge Charm (Pristine)' WHERE object_Id = 850272 AND type = 1;
 UPDATE weenie_properties_string SET value = 'Drudge Charm (Perfect)' WHERE object_Id = 850273 AND type = 1;
 
--- Use (14), ShortDesc (15), LongDesc (16): bulk Trophy Collector turn-in; mod pays scaled quest XP + banked trade notes (LLL), not vanilla pocket pyreals.
+-- Use (14), ShortDesc (15), LongDesc (16): Trophy Collector bulk turn-in; LLL banked trade notes + quest XP (ASCII only).
 -- INSERT ... ON DUPLICATE: base 3669 may lack 14-16 rows in some DBs; clones only copy existing rows.
 INSERT INTO weenie_properties_string (object_Id, type, value) VALUES
-(3669, 14, 'Present stacked drudge trophies and this charm to a Trophy Collector for a bulk reward.'),
-(3669, 15, 'Charm for common Dereth drudge trophy hauls.'),
-(3669, 16, 'Collectors will award experience and banked trade notes for these common drudge trophies. Full stacks beat the old token payouts, and the note payout goes to your bank instead of raw pyreals in your pack.'),
-(850271, 14, 'Present quality-grade drudge trophy stacks and this charm to a Trophy Collector for a bulk reward.'),
-(850271, 15, 'Charm for quality drudge trophy stacks.'),
-(850271, 16, 'Same collector path as the base charm, with a higher quest XP bracket per trophy and more trade notes banked per charm than Drudge Charm.'),
-(850272, 14, 'Present pristine drudge trophy stacks and this charm to a Trophy Collector for a bulk reward.'),
-(850272, 15, 'Charm for pristine drudge trophy stacks.'),
-(850272, 16, 'Same collector path; stronger quest XP scaling and banked trade notes per charm than Drudge Charm (Quality).'),
-(850273, 14, 'Present perfect-tier drudge trophy stacks and this charm to a Trophy Collector for a bulk reward.'),
-(850273, 15, 'Charm for perfect drudge trophy stacks.'),
-(850273, 16, 'Same collector path; top quest XP bracket and banked trade notes per charm in this drudge line.')
+(3669, 14, 'Turn in stacked drudge trophies plus this charm at a Trophy Collector for bulk rewards.'),
+(3669, 15, 'Trophy charm for common drudge lines.'),
+(3669, 16, 'Awards quest experience and banked trade notes through LeyLineLedger. Does not grant loose pyreals.'),
+(850271, 14, 'Turn in quality drudge trophy stacks plus this charm at a Trophy Collector for bulk rewards.'),
+(850271, 15, 'Trophy charm for quality drudge stacks.'),
+(850271, 16, 'Higher quest experience and banked trade notes than the base drudge charm.'),
+(850272, 14, 'Turn in pristine drudge trophy stacks plus this charm at a Trophy Collector for bulk rewards.'),
+(850272, 15, 'Trophy charm for pristine drudge stacks.'),
+(850272, 16, 'Higher quest experience and banked trade notes than the quality charm.'),
+(850273, 14, 'Turn in perfect drudge trophy stacks plus this charm at a Trophy Collector for bulk rewards.'),
+(850273, 15, 'Trophy charm for perfect drudge stacks.'),
+(850273, 16, 'Top quest experience and banked trade notes in this drudge line.')
 ON DUPLICATE KEY UPDATE value = VALUES(value);
 
--- Per-tier icon: PropertyInt 179 ImbuedEffect (rend background), 18 UiEffects (glow/outline).
--- ImbuedEffectType: BludgeonRending=32, AcidRending=64, ColdRending=128, ElectricRending=256.
--- UiEffects: Frost=128 (white), Acid=256 (green), Magical=1 (blue), Lightning=64 (purple).
+-- PluralName (20): fixes stack display e.g. "40 Drudge Charms (Perfect)" not "...Charm (Perfect)s".
+INSERT INTO weenie_properties_string (object_Id, type, value) VALUES
+(3669, 20, 'Drudge Charms'),
+(850271, 20, 'Drudge Charms (Quality)'),
+(850272, 20, 'Drudge Charms (Pristine)'),
+(850273, 20, 'Drudge Charms (Perfect)')
+ON DUPLICATE KEY UPDATE value = VALUES(value);
+
+-- Icon chrome: sunstone / armor rending look on all tiers (ImbuedEffectType.ArmorRending = 4). UiEffects 0 = no extra tint layer.
+-- If weenie.type were Portal (7), appraisal could append portal rules; tiers use Stackable (51) above.
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES
-(3669, 179, 32), (3669, 18, 128),
-(850271, 179, 64), (850271, 18, 256),
-(850272, 179, 128), (850272, 18, 1),
-(850273, 179, 256), (850273, 18, 64)
+(3669, 179, 4), (3669, 18, 0),
+(850271, 179, 4), (850271, 18, 0),
+(850272, 179, 4), (850272, 18, 0),
+(850273, 179, 4), (850273, 18, 0)
+ON DUPLICATE KEY UPDATE value = VALUES(value);
+
+-- MaxStackSize (11): template StackSize (12) is often 40; raising max lets admin spawn larger stacks than 40.
+INSERT INTO weenie_properties_int (object_Id, type, value) VALUES
+(3669, 11, 999),
+(850271, 11, 999),
+(850272, 11, 999),
+(850273, 11, 999)
 ON DUPLICATE KEY UPDATE value = VALUES(value);
 
 UPDATE weenie SET class_Name = 'drudgecharm_quality' WHERE class_Id = 850271;
 UPDATE weenie SET class_Name = 'drudgecharm_pristine' WHERE class_Id = 850272;
 UPDATE weenie SET class_Name = 'drudgecharm_perfect' WHERE class_Id = 850273;
 
+-- Belt-and-suspenders: keep tiers Stackable even if 3669.type were ever wrong in a DB.
+UPDATE weenie SET type = 51 WHERE class_Id IN (850271, 850272, 850273);
+
 COMMIT;
 
 -- Readonly audit (run separately; do not paste passwords into shared docs):
--- ace_world: SELECT type, value FROM weenie_properties_int WHERE object_Id IN (3669,850271,850272,850273) AND type IN (16,94,218);
+-- ace_world: SELECT type, value FROM weenie_properties_int WHERE object_Id IN (3669,850271,850272,850273) AND type IN (11,18,179);
+-- ace_world: SELECT type, value FROM weenie_properties_string WHERE object_Id IN (3669,850271,850272,850273) AND type IN (14,15,16,20);
 -- ace_world: SELECT object_Id, destination_Type, weenie_Class_Id FROM weenie_properties_create_list WHERE weenie_Class_Id IN (3669,850271,850272,850273);
 -- ace_world: SELECT treasure_Type, weenie_Class_Id, probability FROM treasure_wielded WHERE weenie_Class_Id IN (3669,850271,850272,850273);
 -- ace_shard: SELECT weenie_Class_Id, COUNT(*) FROM biota WHERE weenie_Class_Id IN (3669,850271,850272,850273) GROUP BY weenie_class_id;

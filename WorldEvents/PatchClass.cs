@@ -379,6 +379,14 @@ public partial class PatchClass : BasicPatch<Settings>
             return;
         }
 
+        var snapshot = PendingEventClaimsStore.GetPendingSnapshot(player.Guid.Full);
+        if (snapshot.Count > 0 &&
+            !PendingClaimInventoryGate.CanClaimPendingNow(player, snapshot, out var blockReason))
+        {
+            player.SendMessage(blockReason, ChatMessageType.System);
+            return;
+        }
+
         var n = PendingEventClaimsStore.ClaimAllForPlayer(player, out var failed);
         if (n == 0 && failed == 0)
         {

@@ -6,6 +6,7 @@ namespace WorldEvents;
 internal static class HuntBankInterop
 {
     static MethodInfo? _tryAutoBank;
+    static MethodInfo? _canAutoBank;
     static bool _resolved;
 
     internal static bool TryLeyLineLedgerAutoBank(Player player, WorldObject item, string placeTag)
@@ -19,6 +20,26 @@ internal static class HuntBankInterop
         try
         {
             var r = _tryAutoBank.Invoke(null, new object?[] { player, item, placeTag });
+            return r is true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    // Read-only: true if LeyLineLedger would bank this hunt loot without using pack slots or burden.
+    internal static bool CanAutoBankHuntLoot(Player player, WorldObject item)
+    {
+        if (!_resolved)
+            Resolve();
+
+        if (_canAutoBank is null)
+            return false;
+
+        try
+        {
+            var r = _canAutoBank.Invoke(null, new object?[] { player, item });
             return r is true;
         }
         catch
@@ -44,6 +65,13 @@ internal static class HuntBankInterop
                 BindingFlags.Public | BindingFlags.Static,
                 null,
                 new[] { typeof(Player), typeof(WorldObject), typeof(string) },
+                null);
+
+            _canAutoBank = t.GetMethod(
+                "CanAutoBankHuntLoot",
+                BindingFlags.Public | BindingFlags.Static,
+                null,
+                new[] { typeof(Player), typeof(WorldObject) },
                 null);
             return;
         }

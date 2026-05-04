@@ -111,6 +111,28 @@ internal static class PendingEventClaimsStore
         }
     }
 
+    // Snapshot for validation without dequeuing (same lock as enqueue/claim).
+    internal static List<PendingEventLootEntry> GetPendingSnapshot(uint characterGuidFull)
+    {
+        var key = characterGuidFull.ToString("X8");
+        var lockObj = FileLocks.GetOrAdd(key, _ => new object());
+        lock (lockObj)
+        {
+            var path = PathFor(key);
+            if (!File.Exists(path))
+                return new List<PendingEventLootEntry>();
+
+            try
+            {
+                return LoadFile(path).Pending.ToList();
+            }
+            catch
+            {
+                return new List<PendingEventLootEntry>();
+            }
+        }
+    }
+
     static string PathFor(string hexKey) => Path.Combine(BasePath, $"{hexKey}.json");
 
     static PendingEventClaimsFile LoadFile(string path)

@@ -21,6 +21,12 @@
 - **`/claim auto`** — status; **`/claim auto on`** / **`/claim auto off`** — write/delete preference file (survives logouts). **Legacy:** `FakeBool 12002` from older builds is read once, migrated to JSON, then removed from biota.
 - **`AGENTS.md`** — `12002` marked legacy; `12001` unchanged.
 
+### WorldEvents — `/claim` inventory gate (burden + pack slots)
+
+- **`PendingClaimInventoryGate.cs`** — Builds temp `WorldObject`s for pending entries; **Hunt** + `HuntBankInterop.CanAutoBankHuntLoot` skips items that would bank via LeyLineLedger (read-only peek). Otherwise `Player.CanAddToInventory` (ACE **3× capacity** + free slots). Blocks **`/claim`** and **`TryAutoClaimPendingRewards`** with a **System** message until the player frees space or weight.
+- **`PendingEventClaimsStore.GetPendingSnapshot`** — read-only copy under same file lock as enqueue/claim.
+- **`LeyLineLedger/HuntRewardBanking.cs`** — `CanAutoBankHuntLoot` + `commit` flag on internal bank helpers so WorldEvents can peek without crediting; `HuntBankInterop` resolves the new method via reflection.
+
 ---
 
 ## 2026-05-03

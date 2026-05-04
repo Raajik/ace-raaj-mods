@@ -84,6 +84,14 @@ public partial class PatchClass
         if (PendingEventClaimsStore.PeekCount(player.Guid.Full) == 0)
             return;
 
+        var snapshot = PendingEventClaimsStore.GetPendingSnapshot(player.Guid.Full);
+        if (snapshot.Count > 0 &&
+            !PendingClaimInventoryGate.CanClaimPendingNow(player, snapshot, out var blockReason))
+        {
+            player.SendMessage(blockReason, ChatMessageType.System);
+            return;
+        }
+
         var n = PendingEventClaimsStore.ClaimAllForPlayer(player, out var failed);
         var remaining = PendingEventClaimsStore.PeekCount(player.Guid.Full);
 

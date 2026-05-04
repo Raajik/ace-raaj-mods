@@ -5,6 +5,16 @@ namespace LeyLineLedger;
 // Called by Hunt (and optionally other mods) for hunt loot: bank currency and Items[]-listed stacks without using inventory.
 public static class HuntRewardBanking
 {
+    // True if TryAutoBankHuntLoot would bank this item (currency or ledger stack) without mutating player or item.
+    public static bool CanAutoBankHuntLoot(Player player, WorldObject item)
+    {
+        if (PatchClass.Settings is null || player is null || item is null)
+            return false;
+
+        return TryBankCurrency(player, item, out _, commit: false)
+            || TryBankLedgerStack(player, item, out _, out _, commit: false);
+    }
+
     public static bool TryAutoBankHuntLoot(Player player, WorldObject item, string placeTag)
     {
         if (PatchClass.Settings is null || player is null || item is null)
@@ -27,7 +37,7 @@ public static class HuntRewardBanking
         return false;
     }
 
-    static bool TryBankCurrency(Player player, WorldObject item, out string description)
+    static bool TryBankCurrency(Player player, WorldObject item, out string description, bool commit = true)
     {
         description = "";
         if (PatchClass.Settings is null)
@@ -41,7 +51,8 @@ public static class HuntRewardBanking
             if (total <= 0)
                 return false;
             description = $"{total:N0} pyreals";
-            CreditPyrealsToBank(player, s, total);
+            if (commit)
+                CreditPyrealsToBank(player, s, total);
             return true;
         }
 
@@ -54,7 +65,8 @@ public static class HuntRewardBanking
             if (total <= 0)
                 return false;
             description = $"{total:N0} pyreals";
-            CreditPyrealsToBank(player, s, total);
+            if (commit)
+                CreditPyrealsToBank(player, s, total);
             return true;
         }
 
@@ -65,7 +77,8 @@ public static class HuntRewardBanking
             if (total <= 0)
                 return false;
             description = $"{total:N0} pyreals";
-            CreditPyrealsToBank(player, s, total);
+            if (commit)
+                CreditPyrealsToBank(player, s, total);
             return true;
         }
 
@@ -98,7 +111,7 @@ public static class HuntRewardBanking
         player.UpdateCoinValue();
     }
 
-    static bool TryBankLedgerStack(Player player, WorldObject item, out string label, out int stackCount)
+    static bool TryBankLedgerStack(Player player, WorldObject item, out string label, out int stackCount, bool commit = true)
     {
         label = "";
         stackCount = 0;
@@ -115,7 +128,8 @@ public static class HuntRewardBanking
                 continue;
 
             stackCount = (int)(item.StackSize ?? 1);
-            player.IncBanked(bi.Prop, stackCount);
+            if (commit)
+                player.IncBanked(bi.Prop, stackCount);
             label = string.IsNullOrWhiteSpace(bi.Name) ? $"WCID {bi.Id}" : bi.Name;
             return true;
         }

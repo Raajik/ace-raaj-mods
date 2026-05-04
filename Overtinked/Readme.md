@@ -109,6 +109,7 @@ Each entry: **Wcids**, **Name**, **PrimaryStat** (`MaxHealth` / `MaxStamina` / `
 - **CustomImbueAppraise.cs** — `AppraiseInfo.BuildProfile` postfix (last): prepend Hemorrhage/Cleaving/Nether summary to appraisal **`LongDesc`** (identify text); retail imbue-name list is `ImbuedEffect`-only and cannot show custom names server-side.
 - **HemorrhageAoE.cs** — Resolves Hemorrhage splash radius from `AoERadiusYards` (or legacy `AoERadiusMeters` when yards is 0).
 - **CleavingNetherImbueCombat.cs** — Cleaving splash + Nether Rending bonus on `Player.DamageTarget`.
+- **ShatterImbueCombat.cs**, **ShatterDebuff.cs** — Shatter: stack-based damage multiplier on `Player.DamageTarget` + extra fraction when target is broken (all `DamageType`); creature props **40134** / **40135**.
 - **ImbueSalvageWcids.cs** — Standard imbue WCID list used for failure → Workmanship.
 - **SalvageRule.cs**, **SalvageEffectApplier.cs** — Salvage rule model and effect application.
 - **BuffedImbueRule.cs**, **BuffedJewelrySecondaryStore.cs**, **NewImbueConfig.cs**, **OvertinkedImbueFlags.cs** — Config and storage for buffed imbues, secondary (e.g. Damage Rating from stam/mana), and Hemorrhage/Cleaving/Nether.
@@ -120,6 +121,7 @@ Hemorrhage, Cleaving, and Nether Rending are applied on the weapon (Hemorrhage/C
 ### World database (custom imbue salvage bags)
 
 - **Hemorrhage** (Salvaged Yellow Garnet **21087**): `SalvagedYellowGarnet-Hemorrhage-weapon-style.sql` — **weapon tinkering** bag (`PaletteTemplate` **14**, `ItemUseable` **524296**, `TargetType` **33025**); icon overlay unchanged. Rollback: `SalvagedYellowGarnet-Hemorrhage-weapon-style-rollback.sql`.
+- **Shatter** (Salvaged White Jade **21084**): `SalvagedWhiteJade-Shatter-weapon-style.sql` — same **weapon tinkering** red bag as Hemorrhage/Nether (`PaletteTemplate` **14**, `ItemUseable` **524296**, `TargetType` **33025**); LongDesc explains stack multiplier `(1 + DamageBonusPerStack x stacks)`, max stacks / broken, **+50% when broken** for all damage types on that weapon hit (`BrokenDamageBonusFraction` in `Settings.json`). Rollback: `SalvagedWhiteJade-Shatter-weapon-style-rollback.sql`.
 - **Cleaving** (Tiger Eye **21081**) and **Nether Rending** (Onyx **21064**): `SalvageCleavingNether-longdesc.sql` (examine text) and `SalvageCleavingNether-tinker-bags.sql` — Cleaving uses **magic item tinkering** presentation (palette **2**, `ItemUseable` **524296**, `TargetType` **32768**, same pattern as Salvaged Green Garnet); Nether uses **weapon tinkering** (palette **14**, `ItemUseable` **524296**, `TargetType` **33025**). Rollbacks: `SalvageCleavingNether-longdesc-rollback.sql`, `SalvageCleavingNether-tinker-bags-rollback.sql`.
 
 Restart ACE after weenie template edits. If Hemorrhage craft still fails requirements or skill roll, point **`BaseRecipeId`** at another tinkering recipe present in your `recipe` table (or add a dedicated recipe and set the id here).

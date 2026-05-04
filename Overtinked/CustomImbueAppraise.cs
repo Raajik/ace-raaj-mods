@@ -101,8 +101,8 @@ internal static class CustomImbueAppraise
             ShatterImbueConfig sh = s.ShatterImbue;
             string label = string.IsNullOrWhiteSpace(sh.Name) ? "Shatter" : sh.Name.Trim();
             int dPct = (int)Math.Round(100f * sh.DamageBonusPerStack);
-            int bPct = (int)Math.Round(100f * sh.BludgeonBonusWhenBroken);
-            parts.Add($"{label}: +{dPct}% dmg/stack on target (max {sh.MaxStacks}), +{bPct}% Bludgeon when broken");
+            int bPct = (int)Math.Round(100f * sh.BrokenDamageBonusFraction);
+            parts.Add($"{label}: +{dPct}% dmg/stack on target (max {sh.MaxStacks}), +{bPct}% when broken (all types)");
         }
 
         if (parts.Count == 0)

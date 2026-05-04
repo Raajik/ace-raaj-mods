@@ -1,6 +1,6 @@
 namespace Overtinked;
 
-// Shatter: outgoing damage scaled by debuff stacks on creature targets; stacks increment after hit; Bludgeon bonus when target is "broken" (at max stacks).
+// Shatter: outgoing damage scaled by debuff stacks on creature targets; stacks increment after hit; bonus damage fraction when target is "broken" (at max stacks), all damage types.
 [HarmonyPatchCategory(Settings.RecipeManagerCategory)]
 public static class ShatterImbueCombat
 {
@@ -36,9 +36,9 @@ public static class ShatterImbueCombat
         float per = Math.Max(0f, cfg.DamageBonusPerStack);
         float mult = 1f + per * stacks;
 
-        if (ShatterDebuff.IsBroken(target) && __result.DamageType == DamageType.Bludgeon)
+        if (ShatterDebuff.IsBroken(target))
         {
-            float b = Math.Max(0f, cfg.BludgeonBonusWhenBroken);
+            float b = Math.Max(0f, cfg.BrokenDamageBonusFraction);
             if (b > 0f)
                 mult *= 1f + b;
         }

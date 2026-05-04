@@ -134,7 +134,7 @@ public class NetherRendingImbueCombatConfig : NewImbueConfig
     public float NetherBonusSoftCap { get; set; }
 }
 
-// Shatter: stacking debuff on creatures (40134 stacks, 40135 broken at max); weapon flag on 40133. Damage multiplier per stack on target; extra multiplier on Bludgeon when broken.
+// Shatter: stacking debuff on creatures (40134 stacks, 40135 broken at max); weapon flag on 40133. Damage multiplier per stack on target; extra fraction on all damage types when broken.
 public class ShatterImbueConfig : NewImbueConfig
 {
     [JsonPropertyName("// BaseRecipeId")]
@@ -144,13 +144,13 @@ public class ShatterImbueConfig : NewImbueConfig
     public string StacksPerHitDoc { get; init; } = "Debuff stacks added to the creature per qualifying hit from a Shatter weapon.";
 
     [JsonPropertyName("// MaxStacks")]
-    public string MaxStacksDoc { get; init; } = "Stack cap; at cap the target is treated as broken for Bludgeon bonus.";
+    public string MaxStacksDoc { get; init; } = "Stack cap; at cap the target is treated as broken for the extra damage fraction.";
 
     [JsonPropertyName("// DamageBonusPerStack")]
     public string DamageBonusPerStackDoc { get; init; } = "Additive damage multiplier per stack already on the target before this hit (0.2 = +20% per stack).";
 
-    [JsonPropertyName("// BludgeonBonusWhenBroken")]
-    public string BludgeonBonusWhenBrokenDoc { get; init; } = "Extra multiplier on Health damage when target is broken and this hit's DamageType is Bludgeon (0.25 = +25%).";
+    [JsonPropertyName("// BrokenDamageBonusFraction")]
+    public string BrokenDamageBonusFractionDoc { get; init; } = "Extra fraction when target is broken; 0.5 = +50% to this hit damage for any DamageType from this Shatter damageSource.";
 
     public uint BaseRecipeId { get; set; } = 4452;
 
@@ -160,5 +160,5 @@ public class ShatterImbueConfig : NewImbueConfig
 
     public float DamageBonusPerStack { get; set; } = 0.2f;
 
-    public float BludgeonBonusWhenBroken { get; set; } = 0.25f;
+    public float BrokenDamageBonusFraction { get; set; } = 0.5f;
 }

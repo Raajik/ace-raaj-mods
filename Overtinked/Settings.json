@@ -272,17 +272,17 @@
     "// Enabled": "When false, Shatter imbue and combat are disabled.",
     "// BaseRecipeId": "World recipe id when GetRecipe has no match (default 4452).",
     "// StacksPerHit": "Stacks added to creature per hit.",
-    "// MaxStacks": "Stack cap; at cap target counts as broken for Bludgeon bonus.",
+    "// MaxStacks": "Stack cap; at cap target counts as broken for extra damage fraction.",
     "// DamageBonusPerStack": "Additive multiplier per stack on target before hit (0.2 = +20% per stack).",
-    "// BludgeonBonusWhenBroken": "Extra multiplier when target broken and hit is Bludgeon (0.25 = +25%).",
-    "SalvageWcids": [],
+    "// BrokenDamageBonusFraction": "Extra fraction when target broken (0.5 = +50% to hit, all damage types from Shatter weapon).",
+    "SalvageWcids": [21084],
     "BaseRecipeId": 4452,
     "Name": "Shatter",
-    "Enabled": false,
+    "Enabled": true,
     "StacksPerHit": 1,
     "MaxStacks": 5,
     "DamageBonusPerStack": 0.2,
-    "BludgeonBonusWhenBroken": 0.25
+    "BrokenDamageBonusFraction": 0.5
   },
   "JewelryCleaveImbue": {
     "// SalvageWcids": "Salvage WCIDs that apply this imbue (Obsidian = 21063).",

@@ -6,6 +6,18 @@
 
 ---
 
+## 2026-05-08
+
+### Drudge charm — sunstone IconUnderlay, single examine, vanilla NPC reward suppressed
+
+- **World weenies (24835 + 850271–850273):** Removed `weenie_properties_int` **18** (`UiEffects`) and **179** (`ImbuedEffect`) — no rending/glow on stackable charms. Added `weenie_properties_d_i_d` **52** (`IconUnderlay`) = **`100676438`** (`0x06003356`), the same DID `RecipeManager.IconUnderlay[ImbuedEffectType.ArmorRending]` paints onto sunstone-imbued weapons (orange icon underlay). Examine: deleted **`weenie_properties_string` 14** (Use) and **15** (ShortDesc); kept only **16** (LongDesc) so the AC client renders the *Collectors and Trophy Collectors…* sentence once instead of twice. **`11=999`**, names + plurals (Bloodletter) preserved.
+- **SQL:** Forward **`WindblownContent/Content/SQL/DrudgeCharm_SunstoneUnderlay_2026-05-08.sql`**; canonical **`DrudgeCharm_TierWeenies_World.sql`** rewritten to match. **`DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`** stubbed deprecated.
+- **`BetterSupportSkills/Skills/QuestTurnInCap.cs`:** New **`PreExecuteEmoteSet`** Harmony prefix on `EmoteManager.ExecuteEmoteSet(PropertiesEmote, WorldObject, bool)`. When `Category == EmoteCategory.Give` and the player has a fresh `_bulkPending` charm turn-in matching `emoteSet.WeenieClassId`, the prefix drains remaining stacks, grants the tier XP bracket fraction (calls `GrantXP` directly), credits per-tier bank trade-note value via `LeyLineLedgerBankInterop.IncBanked`, sends one summary System message, and **returns false** — vanilla `Enqueue` never runs, so the Trophy Collector *never gives* `WCID 25539` (Bloodletter Charm Necklace) or its thank-you Tell. Bulk-charm logic removed from `PreGrantXP` (now only handles single-item `_pending` cap).
+- **DB:** Scoped `mysqldump` → `WindblownContent/sql-backups/2026-05-08/pre-drudgecharm-sunstone-underlay-weenie.sql` (gitignored). `mysql ace_world < DrudgeCharm_SunstoneUnderlay_2026-05-08.sql`; verified **11/18/179** absent or only **11**, **DID 52** = **100676438**, strings **1/16/20** present, **14/15** gone.
+- **Operator:** Restart ACE so the weenie cache reloads. Mod DLL deploys to `C:\ACE\Mods\BetterSupportSkills\` via Release build.
+
+---
+
 ## 2026-05-07
 
 ### Drudge charm — Bloodletter display, per-tier 179/18, unified examine 14/15/16 (revert sunstone uniform)
@@ -14,6 +26,7 @@
 - **SQL:** Forward **`WindblownContent/Content/SQL/DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`**; canonical **`DrudgeCharm_TierWeenies_World.sql`**. **`DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`** stubbed deprecated (do not re-apply sunstone body).
 - **Mods/docs:** **`BetterSupportSkills`** `QuestTurnInCap` message + `GetItemName`; **`Settings.cs`** drudge charm doc bands; **`WindblownContent/docs/*`**, **`README-TrophyCharmCloneTemplate.md`**, SQL stub comment updates.
 - **DB:** Scoped **`mysqldump`** to `WindblownContent/sql-backups/2026-05-07/pre-drudgecharm-bloodletter-restore-weenie.sql` (gitignored path); **`mysql ace_world < DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`**; verified **1,11,14,15,16,18,179,20**.
+- **Superseded 2026-05-08:** Bludgeon-rend bits and duplicated 14/15/16 strings replaced with sunstone IconUnderlay + LongDesc-only examine; vanilla NPC necklace reward also suppressed. See **`## 2026-05-08`** and **`DrudgeCharm_SunstoneUnderlay_2026-05-08.sql`**.
 
 ---
 

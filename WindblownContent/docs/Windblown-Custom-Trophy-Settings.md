@@ -22,7 +22,11 @@ Use this as the checklist when adding the next custom trophy family.
 | Bloodletter Drudge Charm (Pristine) | 850272 |
 | Bloodletter Drudge Charm (Perfect) | 850273 |
 
-**Icon / glow (world weenie):** per-tier **`ImbuedEffect` (179)** + **`UiEffects` (18)** — **24835** 32/128; **850271** 64/256; **850272** 128/1; **850273** 256/64. Shipped in `WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql` and forward patch `DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`.
+**Icon (world weenie):** **`PropertyDataId.IconUnderlay` (52) = `100676438` (`0x06003356`)** — sunstone orange underlay (the same DID `RecipeManager.IconUnderlay` maps to `ImbuedEffectType.ArmorRending`). No `ImbuedEffect (179)`, no `UiEffects (18)`. Shipped in `WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql` and forward patch `DrudgeCharm_SunstoneUnderlay_2026-05-08.sql`.
+
+**Examine copy:** Only `weenie_properties_string` **type 16 (LongDesc)** carries the line *"Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms."* Types **14** (Use) and **15** (ShortDesc) are deleted — populating both 14 and 16 makes the client render the sentence twice in the examine panel.
+
+**Vanilla NPC reward suppressed:** Trophy Collectors (Aluvian/Sho/Gharu’ndim/etc., e.g. WCID 3917) ship an `EmoteCategory.Give` chain on charm WCID 24835 that issues `Give 25539` ("Bloodletter Charm Necklace"). `BetterSupportSkills.QuestTurnInCap.PreExecuteEmoteSet` short-circuits that emote when our `_bulkPending` flag is fresh and grants the mod reward (tier XP + bank credit) instead — players no longer receive the necklace.
 
 ---
 

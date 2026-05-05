@@ -230,6 +230,8 @@ $ > "C:\ACE\Server\ACE_Log.txt"      # test (legacy ACE)
 
 **Reflection over `IEnumerable` / `IList` for unknown types:** Use non-generic interfaces: `itemsProp.GetValue(settings) as IEnumerable` and `variantProp?.GetValue(item) as IList`. Casting to `IEnumerable<T>` causes `CS0305`.
 
+**Auto-intercept Harmony prefixes can swallow other mods' inventory creates** — `BetterSupportSkills.SalvageAutoDeposit.PreTryCreateInInventory` (Harmony Prefix on `Player.TryCreateInInventoryWithNetworking`) destroys any salvage WCID 20981–21089 entering inventory and credits its own bank prop. This silently breaks `LeyLineLedger /bank salvage redeem|withdraw|create` and the vanilla admin `/cisalvage` command — bag is destroyed, credit goes to the wrong prop scheme (BSS uses `40201 + (wcid - 20981)`, LLL uses `40201 + ruleIndex`), so `/bank salvage status` shows nothing while the player's pack stays empty. **Pattern for fix:** add a `[ThreadStatic] int _suppressionDepth` + `EnterSuppression()` / `ExitSuppression()` on the intercepting class, honor it in the prefix (`if (_suppressionDepth > 0) return true;`), and have the bag-creating mod bracket `TryCreateInInventoryWithNetworking` calls via reflection (no assembly reference). Wrap admin commands with a Prefix+`[HarmonyFinalizer]` (Postfix doesn't run on exceptions; finalizer always does). See `LeyLineLedger/BankSalvage.cs:TryCreateBagBypassingAutoSalvage` and the `HandleCISalvage` patches in `BetterSupportSkills/Skills/SalvageAutoDeposit.cs`.
+
 ### 8.3 Harmony & ACE Patching
 
 **Patch target rules:**

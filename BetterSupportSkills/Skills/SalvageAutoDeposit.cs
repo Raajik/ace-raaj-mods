@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
+using ACE.Server.Command.Handlers;
 using ACE.Server.Mods;
 using ACE.Server.WorldObjects;
 using ACE.Server.Network;
@@ -16,6 +17,24 @@ public static class SalvageAutoDeposit
     static readonly ConcurrentDictionary<uint, Dictionary<int, double>> PlayerAccumulated = new();
     static readonly ConcurrentDictionary<uint, DateTime> LastMessageTime = new();
     const int MESSAGE_INTERVAL_SECONDS = 60;
+
+    // ── Cross-mod suppression API (LeyLineLedger redeem/withdraw, etc.) ──────
+    // Other mods that legitimately create salvage stacks for the player (e.g.
+    // /bank salvage redeem|withdraw|create) bracket their TryCreateInInventory
+    // calls with EnterSuppression()/ExitSuppression() via reflection so this
+    // prefix lets the bag through instead of destroying it and double-banking.
+    [ThreadStatic]
+    private static int _suppressionDepth;
+
+    public static int SuppressionDepth => _suppressionDepth;
+
+    public static void EnterSuppression() => _suppressionDepth++;
+
+    public static void ExitSuppression()
+    {
+        if (_suppressionDepth > 0)
+            _suppressionDepth--;
+    }
 
     // Category MaterialTypes (no direct salvage bag) and their member types.
     static readonly Dictionary<int, int[]> MaterialTypeCategories = new()
@@ -142,6 +161,11 @@ public static class SalvageAutoDeposit
         if (__instance is null || item is null)
             return true;
 
+        // Another mod (e.g. LeyLineLedger /bank salvage redeem|withdraw|create) is
+        // intentionally creating a salvage bag the player should keep — let vanilla run.
+        if (_suppressionDepth > 0)
+            return true;
+
         if (!IsEnabled(__instance))
             return true;
 
@@ -178,6 +202,25 @@ public static class SalvageAutoDeposit
         item.Destroy();
         __result = true;
         return false;
+    }
+
+    // ── Suppress auto-deposit during admin /cisalvage so the spawned bag survives ──
+    // /cisalvage is a developer tool for spawning test salvage bags. Without bracketing,
+    // PreTryCreateInInventory above destroys the bag before the admin can use it.
+    // Finalizer (not Postfix) so suppression releases even if HandleCISalvage throws.
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(AdminCommands), nameof(AdminCommands.HandleCISalvage))]
+    public static void PreHandleCISalvage()
+    {
+        EnterSuppression();
+    }
+
+    [HarmonyFinalizer]
+    [HarmonyPatch(typeof(AdminCommands), nameof(AdminCommands.HandleCISalvage))]
+    public static void FinHandleCISalvage()
+    {
+        ExitSuppression();
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────

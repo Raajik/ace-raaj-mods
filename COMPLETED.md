@@ -6,6 +6,19 @@
 
 ---
 
+## 2026-05-04
+
+### LeyLineLedger /bank salvage redeem|withdraw|create + admin /cisalvage — bag destroyed by BSS auto-deposit (cross-mod fix)
+
+- **Symptom:** `/bank salvage redeem lapis 1` (and oak, silk, etc.) printed `Redeemed 1 bag(s) for Salvaged Lapis Lazuli (100 units). Remaining for this material: 0` but **no bag appeared** in inventory; tested on multiple accounts incl. admin. `/cisalvage <material>` had the same silent-destroy behavior.
+- **Root cause:** `BetterSupportSkills/Skills/SalvageAutoDeposit.cs:PreTryCreateInInventory` is a `[HarmonyPrefix]` on `Player.TryCreateInInventoryWithNetworking(WorldObject)` that intercepts **any** WCID in 20981–21089 entering inventory: it credits its own bank prop (`baseProp + (wcid - 20981)`), calls `item.Destroy()`, sets `__result = true`, and skips vanilla. `LeyLineLedger.BankSalvage.RedeemBagLoop` / `SpawnCleanBags` / `CreateCleanBag` and ACE `AdminCommands.HandleCISalvage` all create salvage bags via that exact API — bag dies, LLL still debits its bank, BSS credit lands on a **different prop scheme** (LLL uses `40201 + ruleIndex` from JSON order, BSS uses `40201 + (wcid - 20981)`), so the player's pack stays empty and `/bank salvage status` shows nothing recovered.
+- **Fix — BSS owns the suppression API:** Added `[ThreadStatic] int _suppressionDepth` + `EnterSuppression()`/`ExitSuppression()` to `SalvageAutoDeposit`. Prefix early-returns `true` when depth > 0. Also added `Prefix` + `[HarmonyFinalizer]` on `AdminCommands.HandleCISalvage` (finalizer instead of postfix so suppression releases on exception too).
+- **Fix — LLL brackets via reflection:** New `BankSalvage.TryCreateBagBypassingAutoSalvage(player, bag)` reflects to BSS once, caches `Action` delegates for Enter/Exit, brackets every `TryCreateInInventoryWithNetworking(bag)` in salvage redeem/withdraw/create. No assembly reference; gracefully no-ops when BSS isn't loaded.
+- **Verification:** Tested live on 9000 — `/bank salvage redeem white_jade 1` delivered the bag; `/cisalvage iron` delivered the spawned bag.
+- **AGENTS.md §8.2:** Added cross-mod gotcha entry documenting the auto-intercept prefix trap and the suppression-flag pattern.
+
+---
+
 ## 2026-05-08
 
 ### Drudge charm — sunstone IconUnderlay, single examine, vanilla NPC reward suppressed

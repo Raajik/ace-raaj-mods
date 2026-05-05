@@ -148,6 +148,53 @@ public static class BankSalvage
         return TryGetCachedWeenieName(rule.WeenieClassId)?.Trim() ?? "";
     }
 
+    // BetterSupportSkills.Skills.SalvageAutoDeposit prefixes Player.TryCreateInInventoryWithNetworking
+    // and destroys any salvage WCID 20981–21089 to bank it. That kills bags we create here for
+    // /bank salvage redeem|withdraw|create. Bracket our calls with the suppression API so the
+    // player keeps the bag they explicitly asked for.
+    static Action? _bssEnterSuppression;
+    static Action? _bssExitSuppression;
+    static bool _bssSuppressionInteropTried;
+
+    static void EnsureBssSuppressionInterop()
+    {
+        if (_bssSuppressionInteropTried)
+            return;
+        _bssSuppressionInteropTried = true;
+        try
+        {
+            Assembly? asm = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => string.Equals(a.GetName().Name, "BetterSupportSkills", StringComparison.Ordinal));
+            Type? t = asm?.GetType("BetterSupportSkills.Skills.SalvageAutoDeposit");
+            MethodInfo? enterMi = t?.GetMethod("EnterSuppression", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
+            MethodInfo? exitMi = t?.GetMethod("ExitSuppression", BindingFlags.Public | BindingFlags.Static, null, Type.EmptyTypes, null);
+            if (enterMi != null && exitMi != null)
+            {
+                _bssEnterSuppression = (Action)Delegate.CreateDelegate(typeof(Action), enterMi);
+                _bssExitSuppression = (Action)Delegate.CreateDelegate(typeof(Action), exitMi);
+            }
+        }
+        catch
+        {
+            _bssEnterSuppression = null;
+            _bssExitSuppression = null;
+        }
+    }
+
+    static bool TryCreateBagBypassingAutoSalvage(Player player, WorldObject bag)
+    {
+        EnsureBssSuppressionInterop();
+        _bssEnterSuppression?.Invoke();
+        try
+        {
+            return player.TryCreateInInventoryWithNetworking(bag);
+        }
+        finally
+        {
+            _bssExitSuppression?.Invoke();
+        }
+    }
+
     static MethodInfo? _overtinkedSalvageBankInterop;
     static bool _overtinkedSalvageBankInteropTried;
 
@@ -426,7 +473,8 @@ public static class BankSalvage
             ApplyRedeemedSalvageShape(bag, r.UnitsPerBag, r, outputMatchesDepositMaterial);
 
             // Must use TryCreateInInventoryWithNetworking so the client receives GameMessageCreateObject; TryAddToInventory alone can leave the item server-only.
-            if (!player.TryCreateInInventoryWithNetworking(bag))
+            // Bracket via TryCreateBagBypassingAutoSalvage so BSS SalvageAutoDeposit doesn't intercept and destroy the bag.
+            if (!TryCreateBagBypassingAutoSalvage(player, bag))
             {
                 bag.Destroy();
                 if (done == 0)
@@ -858,7 +906,7 @@ public static class BankSalvage
         bag.ItemWorkmanship = 100;
         bag.NumItemsInMaterial = 10;
 
-        if (!player.TryCreateInInventoryWithNetworking(bag))
+        if (!TryCreateBagBypassingAutoSalvage(player, bag))
         {
             bag.Destroy();
             player.SendMessage("No inventory space.");
@@ -967,7 +1015,7 @@ public static class BankSalvage
             bag.ItemWorkmanship = 100;
             bag.NumItemsInMaterial = 10;
 
-            if (!player.TryCreateInInventoryWithNetworking(bag))
+            if (!TryCreateBagBypassingAutoSalvage(player, bag))
             {
                 bag.Destroy();
                 break;

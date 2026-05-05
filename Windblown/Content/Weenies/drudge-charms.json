@@ -1,5 +1,5 @@
 {
-  "Description": "Bloodletter Drudge Charm tier line. Replicates DrudgeCharm_TierWeenies_World.sql + DrudgeCharm_SunstoneUnderlay_2026-05-08.sql at runtime, plus per-tier UiEffects glows: white / green / blue / purple. No SQL deployment required.",
+  "Description": "Bloodletter Drudge Charm tier line. Replicates DrudgeCharm_TierWeenies_World.sql + DrudgeCharm_SunstoneUnderlay_2026-05-08.sql at runtime, plus per-tier UiEffects glows: white / green / blue / purple. LongDesc updated 2026-05-04 to drop the 'Trophy Collectors' clause -- only Collectors accept these charms; Trophy Collectors do not. No SQL deployment required.",
   "Weenies": [
     {
       "ClassId": 24835,
@@ -10,7 +10,7 @@
       "PropertiesString": {
         "Name": "Bloodletter Drudge Charm",
         "PluralName": "Bloodletter Drudge Charms",
-        "LongDesc": "Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -35,7 +35,7 @@
       "PropertiesString": {
         "Name": "Bloodletter Drudge Charm (Quality)",
         "PluralName": "Bloodletter Drudge Charms (Quality)",
-        "LongDesc": "Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -60,7 +60,7 @@
       "PropertiesString": {
         "Name": "Bloodletter Drudge Charm (Pristine)",
         "PluralName": "Bloodletter Drudge Charms (Pristine)",
-        "LongDesc": "Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -85,7 +85,7 @@
       "PropertiesString": {
         "Name": "Bloodletter Drudge Charm (Perfect)",
         "PluralName": "Bloodletter Drudge Charms (Perfect)",
-        "LongDesc": "Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,

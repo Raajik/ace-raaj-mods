@@ -1171,6 +1171,9 @@ public static class VendorLootRotation
                 return null;
             }
 
+            // Plain version should NOT have magic glow (no spells)
+            manaLattice.UiEffects = (UiEffects?)((int)(manaLattice.UiEffects ?? 0) & ~(int)UiEffects.Magical);
+
             // Set a premium price
             manaLattice.Value = 20000;
 
@@ -1241,19 +1244,20 @@ public static class VendorLootRotation
             if (item == null)
                 return null;
 
-            // Convert it to be a Spellsiphon by changing the WCID
-            // Actually, we need to keep the original item but add Spellsiphon properties
-            // Instead, let's create a Spellsiphon and copy the spells from the generated item
-
             var spellsiphon = WorldObjectFactory.CreateNewWorldObject(SpellsiphonToolWcid);
             if (spellsiphon == null)
                 return null;
 
             // Copy spells from the generated item
-            if (item.Biota?.PropertiesSpellBook != null)
+            if (item.Biota?.PropertiesSpellBook != null && item.Biota.PropertiesSpellBook.Count > 0)
             {
                 spellsiphon.Biota.PropertiesSpellBook = new Dictionary<int, float>(item.Biota.PropertiesSpellBook);
-                spellsiphon.UiEffects |= UiEffects.Magical;
+                spellsiphon.UiEffects |= UiEffects.Magical; // Blue glow for items with spells
+            }
+            else
+            {
+                // No spells were generated, skip this one
+                return null;
             }
 
             // Set premium price (higher for magical version)
@@ -1282,16 +1286,20 @@ public static class VendorLootRotation
             if (item == null)
                 return null;
 
-            // Create a Mana Lattice and copy the spells from the generated item
             var manaLattice = WorldObjectFactory.CreateNewWorldObject(ManaLatticeWcid);
             if (manaLattice == null)
                 return null;
 
             // Copy spells from the generated item
-            if (item.Biota?.PropertiesSpellBook != null)
+            if (item.Biota?.PropertiesSpellBook != null && item.Biota.PropertiesSpellBook.Count > 0)
             {
                 manaLattice.Biota.PropertiesSpellBook = new Dictionary<int, float>(item.Biota.PropertiesSpellBook);
-                manaLattice.UiEffects |= UiEffects.Magical;
+                manaLattice.UiEffects |= UiEffects.Magical; // Blue glow for items with spells
+            }
+            else
+            {
+                // No spells were generated, skip this one
+                return null;
             }
 
             // Set premium price (higher for magical version)

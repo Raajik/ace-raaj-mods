@@ -1274,7 +1274,8 @@ public static class VendorLootRotation
             if (item.Biota?.PropertiesSpellBook != null && item.Biota.PropertiesSpellBook.Count > 0)
             {
                 spellsiphon.Biota.PropertiesSpellBook = new Dictionary<int, float>(item.Biota.PropertiesSpellBook);
-                spellsiphon.UiEffects |= UiEffects.Magical; // Blue glow for items with spells
+                // Explicitly set UiEffects to Magical (blue glow)
+                spellsiphon.UiEffects = (UiEffects?)((int)(spellsiphon.UiEffects ?? 0) | (int)UiEffects.Magical);
             }
             else
             {
@@ -1316,7 +1317,8 @@ public static class VendorLootRotation
             if (item.Biota?.PropertiesSpellBook != null && item.Biota.PropertiesSpellBook.Count > 0)
             {
                 manaLattice.Biota.PropertiesSpellBook = new Dictionary<int, float>(item.Biota.PropertiesSpellBook);
-                manaLattice.UiEffects |= UiEffects.Magical; // Blue glow for items with spells
+                // Explicitly set UiEffects to Magical (blue glow)
+                manaLattice.UiEffects = (UiEffects?)((int)(manaLattice.UiEffects ?? 0) | (int)UiEffects.Magical);
             }
             else
             {

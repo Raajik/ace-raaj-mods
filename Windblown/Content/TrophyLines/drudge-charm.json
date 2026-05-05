@@ -1,0 +1,44 @@
+{
+  "Description": "Drudge Charm tier line -- migrated 2026-05-04 from BetterSupportSkills DrudgeCharmTrophySettings + QuestTurnInCap.BulkQuestWcids. Drops from any CreatureType.Drudge kill (independent rolls per tier), bulk turn-in to any NPC that accepts WCID 24835 (10 vanilla Collector NPCs). No sibling replacement (drudge charms have a long history of variant WCIDs but the user wants only the Bloodletter line live). XP fractions and bank credits match the prior DrudgeCharmTrophies defaults.",
+  "Lines": [
+    {
+      "Name": "DrudgeCharm",
+      "Enabled": true,
+      "CreatureTypeGate": "Drudge",
+      "TurnInDisplayName": "Bloodletter Drudge Charm",
+      "Tiers": [
+        {
+          "TierName": "Regular",
+          "Wcid": 24835,
+          "DropChance": 0.025,
+          "XpFraction": 0.025,
+          "BankCredit": 25000
+        },
+        {
+          "TierName": "Quality",
+          "Wcid": 850271,
+          "DropChance": 0.01,
+          "XpFraction": 0.05,
+          "BankCredit": 50000
+        },
+        {
+          "TierName": "Pristine",
+          "Wcid": 850272,
+          "DropChance": 0.004,
+          "XpFraction": 0.075,
+          "BankCredit": 100000
+        },
+        {
+          "TierName": "Perfect",
+          "Wcid": 850273,
+          "DropChance": 0.0015,
+          "XpFraction": 0.15,
+          "BankCredit": 250000
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    }
+  ]
+}

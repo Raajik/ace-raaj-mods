@@ -108,8 +108,9 @@ internal static class TrophyDropsBonus
         if (player == null)
             return;
 
-        if (settings.DrudgeCharmTrophies?.Enabled == true)
-            TryRollDrudgeCharmDrops(__instance, player, corpse);
+        // NOTE 2026-05-04: Drudge charm tier rolls migrated to Windblown TrophyLines (Content/TrophyLines/drudge-charm.json).
+        // Rat Tail and Wasp Wing tier lines also live in Windblown. Anything CreatureType-gated + tiered is owned by
+        // Windblown's TrophyDropPatches.cs going forward; BSS keeps only the Assess-Creature skill-based bonus rolls below.
 
         var trophySettings = settings.TrophyDrops;
         if (trophySettings == null)
@@ -285,40 +286,6 @@ internal static class TrophyDropsBonus
                 player.SendMessage($"Your knowledge reveals extra loot! ({itemsAdded} bonus item(s) added)");
             }
         }
-    }
-
-    static void TryRollDrudgeCharmDrops(Creature __instance, Player player, Corpse corpse)
-    {
-        if (__instance?.CreatureType != CreatureType.Drudge)
-            return;
-
-        var charm = PatchClass.Settings?.DrudgeCharmTrophies;
-        if (charm == null)
-            return;
-
-        void TryOne(uint wcid, double chance)
-        {
-            if (chance <= 0.0 || wcid == 0)
-                return;
-            if (ThreadSafeRandom.Next(0.0f, 1.0f) >= chance)
-                return;
-
-            var item = WorldObjectFactory.CreateNewWorldObject(wcid);
-            if (item == null)
-                return;
-
-            item.SetStackSize(1);
-            ApplyTrophyBurdenValue(item, __instance);
-            if (corpse != null)
-                corpse.TryAddToInventory(item);
-            else
-                __instance.TryAddToInventory(item);
-        }
-
-        TryOne(charm.WcidRegular, charm.DropChanceRegular);
-        TryOne(charm.WcidRare1, charm.DropChanceRare1);
-        TryOne(charm.WcidRare2, charm.DropChanceRare2);
-        TryOne(charm.WcidRare3, charm.DropChanceRare3);
     }
 
     /// <summary>

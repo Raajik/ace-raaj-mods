@@ -191,9 +191,8 @@ public class Settings
     public string QuestTrophyDropsSectionDoc { get; init; } = "High-value quest item bonus drops with daily turn-in XP caps.";
     public QuestTrophyDropsSettings QuestTrophyDrops { get; set; } = new();
 
-    [JsonPropertyName("// DrudgeCharmTrophies")]
-    public string DrudgeCharmTrophiesSectionDoc { get; init; } = "Species-gated Drudge charm bonus drops on kill (independent of Assess extra rolls). Tier WCIDs (Quality/Pristine/Perfect), per-tier drop chance, turn-in XP fraction of next-level bracket, per-tier bank credit (LLL BankCashProperty; same face values as ACE Trade Note 25k/50k/100k/250k weenies, no physical notes spawned).";
-    public DrudgeCharmTrophySettings DrudgeCharmTrophies { get; set; } = new();
+    // Drudge charm tier drops + bulk turn-in extracted to Windblown 2026-05-04 (Content/TrophyLines/drudge-charm.json).
+    // Old DrudgeCharmTrophies JSON keys in Settings.json are ignored by the deserializer; safe to delete.
 
     [JsonPropertyName("// EnableTinkeringLootGating")]
     public string EnableTinkeringLootGatingDoc { get; init; } = "Tinkering loot gating — only characters with any tinkering skill trained/specialized can generate leveled items from loot. Matching skill boosts max level.";
@@ -1003,85 +1002,6 @@ public class QuestTrophyDropsSettings
     public string XpSuppressedMessage { get; init; } = "You've reached the daily turn-in limit for this item. You receive the turn-in reward but no additional experience.";
 }
 
-public class DrudgeCharmTrophySettings
-{
-    [JsonPropertyName("// Enabled")]
-    public string EnabledDoc { get; init; } = "When true and EnableTrophyDrops, Drudge creatures can roll bonus charm tier drops on death (separate from Assess-based rolls).";
-    public bool Enabled { get; set; } = true;
-
-    [JsonPropertyName("// DropChanceRegular")]
-    public string DropChanceRegularDoc { get; init; } = "Chance (0-1) per Drudge-species kill to roll base charm (24835 Bloodletter Drudge Charm). Each tier rolls independently.";
-    public double DropChanceRegular { get; set; } = 0.025;
-
-    [JsonPropertyName("// DropChanceRare1")]
-    public string DropChanceRare1Doc { get; init; } = "Chance per Drudge kill for Quality tier (WcidRare1).";
-    public double DropChanceRare1 { get; set; } = 0.01;
-
-    [JsonPropertyName("// DropChanceRare2")]
-    public string DropChanceRare2Doc { get; init; } = "Chance per Drudge kill for Pristine tier (WcidRare2).";
-    public double DropChanceRare2 { get; set; } = 0.004;
-
-    [JsonPropertyName("// DropChanceRare3")]
-    public string DropChanceRare3Doc { get; init; } = "Chance per Drudge kill for Perfect tier (WcidRare3).";
-    public double DropChanceRare3 { get; set; } = 0.0015;
-
-    [JsonPropertyName("// WcidRegular")]
-    public string WcidRegularDoc { get; init; } = "Regular tier weenie class id (24835 Bloodletter Drudge Charm).";
-    public uint WcidRegular { get; set; } = 24835;
-
-    [JsonPropertyName("// WcidRare1")]
-    public string WcidRare1Doc { get; init; } = "Rare tier 1 weenie class id.";
-    public uint WcidRare1 { get; set; } = 850271;
-
-    [JsonPropertyName("// WcidRare2")]
-    public string WcidRare2Doc { get; init; } = "Rare tier 2 weenie class id.";
-    public uint WcidRare2 { get; set; } = 850272;
-
-    [JsonPropertyName("// WcidRare3")]
-    public string WcidRare3Doc { get; init; } = "Rare tier 3 weenie class id.";
-    public uint WcidRare3 { get; set; } = 850273;
-
-    [JsonPropertyName("// XpFractionRegular")]
-    public string XpFractionRegularDoc { get; init; } = "Bulk turn-in quest XP: fraction of GetXPBetweenLevels(level, level+1) per base charm (e.g. 0.025 = 2.5%).";
-    public float XpFractionRegular { get; set; } = 0.025f;
-
-    [JsonPropertyName("// XpFractionRare1")]
-    public string XpFractionRare1Doc { get; init; } = "Same bracket fraction for Quality tier (WcidRare1).";
-    public float XpFractionRare1 { get; set; } = 0.05f;
-
-    [JsonPropertyName("// XpFractionRare2")]
-    public string XpFractionRare2Doc { get; init; } = "Same bracket fraction for Pristine tier (WcidRare2).";
-    public float XpFractionRare2 { get; set; } = 0.075f;
-
-    [JsonPropertyName("// XpFractionRare3")]
-    public string XpFractionRare3Doc { get; init; } = "Same bracket fraction for Perfect tier (WcidRare3).";
-    public float XpFractionRare3 { get; set; } = 0.15f;
-
-    [JsonPropertyName("// BankTradeNoteValuePerCharmRegular")]
-    public string BankTradeNoteValuePerCharmRegularDoc { get; init; } = "Bank units credited per Regular charm (24835 Drudge Charm) on bulk turn-in; default matches ACE Trade Note (25,000) WCID 7376 face value. Credited via LeyLineLedgerBankInterop -> BankCashProperty (LLL when present, else PropertyInt64).";
-    public long BankTradeNoteValuePerCharmRegular { get; set; } = 25_000;
-
-    [JsonPropertyName("// BankTradeNoteValuePerCharmRare1")]
-    public string BankTradeNoteValuePerCharmRare1Doc { get; init; } = "Per Quality charm (WcidRare1); default 50_000 (ACE WCID 2626).";
-    public long BankTradeNoteValuePerCharmRare1 { get; set; } = 50_000;
-
-    [JsonPropertyName("// BankTradeNoteValuePerCharmRare2")]
-    public string BankTradeNoteValuePerCharmRare2Doc { get; init; } = "Per Pristine charm (WcidRare2); default 100_000 (ACE WCID 2627).";
-    public long BankTradeNoteValuePerCharmRare2 { get; set; } = 100_000;
-
-    [JsonPropertyName("// BankTradeNoteValuePerCharmRare3")]
-    public string BankTradeNoteValuePerCharmRare3Doc { get; init; } = "Per Perfect charm (WcidRare3); default 250_000 (ACE WCID 20630).";
-    public long BankTradeNoteValuePerCharmRare3 { get; set; } = 250_000;
-
-    [JsonPropertyName("// BankPyrealsPerCharm")]
-    public string BankPyrealsPerCharmDoc { get; init; } = "Legacy: flat bank per charm for all tiers when all four BankTradeNoteValuePerCharm* deserialize as 0 (pre-tier JSON). Omit or set 0 when using tiered amounts.";
-    public int BankPyrealsPerCharm { get; set; } = 0;
-
-    [JsonPropertyName("// BankCashProperty")]
-    public string BankCashPropertyDoc { get; init; } = "PropertyInt64 key for banked currency / trade notes (match LeyLineLedger Settings.CashProperty, default 39999).";
-    public int BankCashProperty { get; set; } = 39999;
-
-    [JsonPropertyName("// DailyCapTrackingWcid")]
-    public string DailyCapTrackingWcidDoc { get; init; } = "Legacy JSON field; bulk drudge charm turn-in does not use QuestTurnInTracker daily cap. Safe to remove from Settings.json.";
-    public uint DailyCapTrackingWcid { get; set; } = 24835;
-}
+// DrudgeCharmTrophySettings class removed 2026-05-04 -- Drudge Charm tier drops and bulk turn-in
+// migrated to Windblown/Content/TrophyLines/drudge-charm.json. Old "DrudgeCharmTrophies" block in
+// BSS Settings.json is ignored by the deserializer (safe to delete from operator JSON).

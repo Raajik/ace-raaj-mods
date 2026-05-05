@@ -15,6 +15,7 @@ global using ACE.Server.Managers;
 global using ACE.Server.Mods;
 global using ACE.Server.Network.GameMessages.Messages;
 global using ACE.Server.WorldObjects;
+global using ACE.Server.WorldObjects.Managers;
 global using ACE.Shared;
 global using ACE.Shared.Helpers;
 global using ACE.Shared.Mods;

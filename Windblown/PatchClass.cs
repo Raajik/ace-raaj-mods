@@ -1,3 +1,4 @@
+using Windblown.TrophyLines;
 using Windblown.Weenies;
 
 namespace Windblown;
@@ -34,12 +35,34 @@ public partial class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsNam
         {
             ModManager.Log($"[Windblown] WeenieRegistry.Initialize FAILED: {ex}", ModManager.LogLevel.Error);
         }
+
+        try
+        {
+            if (Cfg?.EnableTrophyLines == true)
+            {
+                TrophyLineRegistry.Initialize(ModDirectory, Cfg);
+                if (Cfg.LogTrophyLinesSummary)
+                {
+                    var names = string.Join(", ", TrophyLineRegistry.Lines.Select(l => $"{l.Name}/{l.CreatureTypeGate}"));
+                    ModManager.Log($"[Windblown] Registered {TrophyLineRegistry.Count} trophy line(s): {names}", ModManager.LogLevel.Info);
+                }
+            }
+            else
+            {
+                ModManager.Log("[Windblown] EnableTrophyLines = false, skipping trophy line registry.", ModManager.LogLevel.Info);
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Windblown] TrophyLineRegistry.Initialize FAILED: {ex}", ModManager.LogLevel.Error);
+        }
     }
 
     public override void Stop()
     {
         try
         {
+            TrophyLineRegistry.Clear();
             WeenieRegistry.Clear();
         }
         catch (Exception ex)

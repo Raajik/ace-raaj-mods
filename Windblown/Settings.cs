@@ -20,4 +20,24 @@ public class Settings
     public string LogWeenieRegistryVerboseDoc { get; init; } =
         "Log every property override applied to each custom WCID. Noisy; debugging only.";
     public bool LogWeenieRegistryVerbose { get; set; } = false;
+
+    [JsonPropertyName("// EnableTrophyLines")]
+    public string EnableTrophyLinesDoc { get; init; } =
+        "Master toggle for Windblown trophy-line system: per-CreatureType tier drops on kills + bulk turn-in to NPCs that accept the base WCID. Configs live under Content/TrophyLines/*.json. When false, no drops or turn-ins are rolled by Windblown (other mods continue normally).";
+    public bool EnableTrophyLines { get; set; } = true;
+
+    [JsonPropertyName("// EnableSiblingReplacement")]
+    public string EnableSiblingReplacementDoc { get; init; } =
+        "When true (default), trophy lines whose ReplaceSiblingWcids list is non-empty will swap sibling WCIDs (e.g. colored Rat Tail variants) to the base WCID at corpse-drop time, so players see one consistent name. Set false to keep vanilla sibling drops alongside our additions.";
+    public bool EnableSiblingReplacement { get; set; } = true;
+
+    [JsonPropertyName("// LogTrophyLinesSummary")]
+    public string LogTrophyLinesSummaryDoc { get; init; } =
+        "Log a one-line summary at Start() listing which trophy lines were registered.";
+    public bool LogTrophyLinesSummary { get; set; } = true;
+
+    [JsonPropertyName("// LogTrophyLinesVerbose")]
+    public string LogTrophyLinesVerboseDoc { get; init; } =
+        "Log every drop roll, replacement, and turn-in event. Noisy; debugging only.";
+    public bool LogTrophyLinesVerbose { get; set; } = false;
 }

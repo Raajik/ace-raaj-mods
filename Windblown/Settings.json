@@ -2,8 +2,16 @@
   "// EnableCustomWeenies": "Master toggle for runtime weenie injection. When true, JSON files under Content/Weenies/*.json are loaded at Start() and Harmony-served via WorldDatabaseWithEntityCache.GetCachedWeenie. When false, all custom WCIDs fall through to the vanilla DB lookup (so old SQL-applied rows still work, but JSON edits are ignored).",
   "// LogWeenieRegistrySummary": "Log a one-line summary at Start() listing which custom WCIDs were registered (and any JSON load errors). Recommended: keep on while iterating, off once stable.",
   "// LogWeenieRegistryVerbose": "Log every property override applied to each custom WCID. Noisy; debugging only.",
+  "// EnableTrophyLines": "Master toggle for Windblown trophy-line system: per-CreatureType tier drops on kills + bulk turn-in to NPCs that accept the base WCID. Configs live under Content/TrophyLines/*.json.",
+  "// EnableSiblingReplacement": "When true (default), trophy lines whose ReplaceSiblingWcids list is non-empty will swap sibling WCIDs (e.g. colored Rat Tail variants) to the base WCID at corpse-drop time so players see one consistent name.",
+  "// LogTrophyLinesSummary": "Log a one-line summary at Start() listing which trophy lines were registered.",
+  "// LogTrophyLinesVerbose": "Log every drop roll, replacement, and turn-in event. Noisy; debugging only.",
 
   "EnableCustomWeenies": true,
   "LogWeenieRegistrySummary": true,
-  "LogWeenieRegistryVerbose": false
+  "LogWeenieRegistryVerbose": false,
+  "EnableTrophyLines": true,
+  "EnableSiblingReplacement": true,
+  "LogTrophyLinesSummary": true,
+  "LogTrophyLinesVerbose": false
 }

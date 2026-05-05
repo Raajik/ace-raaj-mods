@@ -1,0 +1,92 @@
+{
+  "Description": "Wasp Wing tier line. Base WCID 7603 (vanilla 'White Phyntos Wasp Wing') renamed to plain 'Wasp Wing'; color variants (3699-3703, 8426, 13089) merged via sibling replacement. Three new tier WCIDs (850283-850285) clone from 7603. Per-tier UiEffects glow (white/green/blue/purple). Higher tiers route through any NPC's WCID 7603 Give emote.",
+  "Weenies": [
+    {
+      "ClassId": 7603,
+      "ClassName": "waspwing",
+      "WeenieType": "Stackable",
+      "BaseWcid": 7603,
+      "Notes": "Regular tier (vanilla 'White Phyntos Wasp Wing' renamed). Sibling colored variants get replaced with this WCID at corpse-drop time.",
+      "PropertiesString": {
+        "Name": "Wasp Wing",
+        "PluralName": "Wasp Wings",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these wings."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "UiEffects": 128
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850283,
+      "ClassName": "waspwing_quality",
+      "WeenieType": "Stackable",
+      "BaseWcid": 7603,
+      "MirrorEmoteFromWcid": 7603,
+      "Notes": "Quality tier. Green (Acid=256) glow.",
+      "PropertiesString": {
+        "Name": "Wasp Wing (Quality)",
+        "PluralName": "Wasp Wings (Quality)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these wings."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "UiEffects": 256
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850284,
+      "ClassName": "waspwing_pristine",
+      "WeenieType": "Stackable",
+      "BaseWcid": 7603,
+      "MirrorEmoteFromWcid": 7603,
+      "Notes": "Pristine tier. Blue (Magical=1) glow.",
+      "PropertiesString": {
+        "Name": "Wasp Wing (Pristine)",
+        "PluralName": "Wasp Wings (Pristine)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these wings."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "UiEffects": 1
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850285,
+      "ClassName": "waspwing_perfect",
+      "WeenieType": "Stackable",
+      "BaseWcid": 7603,
+      "MirrorEmoteFromWcid": 7603,
+      "Notes": "Perfect tier. Purple (Lightning=64) glow.",
+      "PropertiesString": {
+        "Name": "Wasp Wing (Perfect)",
+        "PluralName": "Wasp Wings (Perfect)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these wings."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "UiEffects": 64
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    }
+  ]
+}

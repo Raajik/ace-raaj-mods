@@ -1,0 +1,44 @@
+{
+  "Description": "Wasp Wing tier line. Drops from any CreatureType.PhyntosWasp kill. ReplaceSiblingWcids covers all vanilla colored Wasp Wing variants (3699 blue, 3700 gold, 3701 green, 3702 mire, 3703 red, 8426 jungle, 13089 carpenter newbie academy) -- they get swapped to the base 7603 'Wasp Wing' at corpse-drop time. Same XP/bank rates as Drudge Charm tier line.",
+  "Lines": [
+    {
+      "Name": "WaspWing",
+      "Enabled": true,
+      "CreatureTypeGate": "PhyntosWasp",
+      "TurnInDisplayName": "Wasp Wing",
+      "Tiers": [
+        {
+          "TierName": "Regular",
+          "Wcid": 7603,
+          "DropChance": 0.025,
+          "XpFraction": 0.025,
+          "BankCredit": 25000
+        },
+        {
+          "TierName": "Quality",
+          "Wcid": 850283,
+          "DropChance": 0.01,
+          "XpFraction": 0.05,
+          "BankCredit": 50000
+        },
+        {
+          "TierName": "Pristine",
+          "Wcid": 850284,
+          "DropChance": 0.004,
+          "XpFraction": 0.075,
+          "BankCredit": 100000
+        },
+        {
+          "TierName": "Perfect",
+          "Wcid": 850285,
+          "DropChance": 0.0015,
+          "XpFraction": 0.15,
+          "BankCredit": 250000
+        }
+      ],
+      "ReplaceSiblingWcids": [3699, 3700, 3701, 3702, 3703, 8426, 13089],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    }
+  ]
+}

@@ -86,6 +86,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Compile Include="..\Shared\LeyLineLedgerBankInterop.cs" Link="Shared\LeyLineLedgerBankInterop.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<None Update="Meta.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>

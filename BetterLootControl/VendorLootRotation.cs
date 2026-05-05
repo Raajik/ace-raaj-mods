@@ -51,7 +51,29 @@ public static class VendorLootRotation
     }
 
     // WCIDs known to be jewelers (sell jewelry/gems)
-    static readonly HashSet<uint> _jewelerWcids = new() { 1042 }; // Tariqana bint Hin the Jeweler (Yaraq)
+    static readonly HashSet<uint> _jewelerWcids = new()
+    {
+        411,  // jeweler-gharundim
+        655,  // easthamjeweler
+        665,  // rithwicjeweler
+        674,  // cragstonejeweler
+        698,  // arwicjeweler
+        716,  // holtburgjeweler
+        736,  // glendenjeweler
+        801,  // mayoijeweler
+        817,  // yanshijeweler
+        818,  // yanshijeweler2
+        839,  // shoushijeweler (Ai Konaji)
+        868,  // hebianjeweler
+        980,  // samsurjeweler
+        991,  // zaikhaljeweler
+        1042, // yaraqjeweler (Tariqana)
+        1055, // qalabarjeweler
+        1081, // eastrithwicjeweler
+        1151, // shoushijeweler2
+        1152, // cragstonejeweler2
+        1820, // tufajeweler
+    };
 
     // WCIDs known to be armorers (sell armor/weapons)
     static readonly HashSet<uint> _armorerWcids = new();

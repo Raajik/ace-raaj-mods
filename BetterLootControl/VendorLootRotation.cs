@@ -687,17 +687,43 @@ public static class VendorLootRotation
         int perCatMax = Math.Max(perCatMin, _settings.VendorLootItemsPerCategoryMax);
         int itemCount = 0, magicCount = 0, mundaneCount = 0, salvageCount = 0;
 
-        foreach (ItemType bit in RotationMerchBits)
+        // Special handling for jewelers - generate jewelry/gems directly
+        var vendorClass = ClassifyVendor(vendor);
+        if (vendorClass == VendorTypeClassification.Jeweler)
         {
-            if ((equipmentAllowed & bit) == 0)
-                continue;
-
-            int target = _rng.Next(perCatMin, perCatMax + 1);
-            var batch = GenerateBatch(vendor, profiles, vendorTier, TreasureItemCategory.Item, target, bit);
-            foreach (var wo in batch)
+            // Generate jewelry
+            int jewelryTarget = _rng.Next(perCatMin, perCatMax + 1);
+            var jewelryBatch = GenerateJewelryBatch(vendor, vendorTier, jewelryTarget);
+            foreach (var wo in jewelryBatch)
             {
                 AddItemToVendor(vendor, wo, rotatedSet);
                 itemCount++;
+            }
+
+            // Generate gems
+            int gemTarget = _rng.Next(perCatMin, perCatMax + 1);
+            var gemBatch = GenerateGemBatch(vendor, vendorTier, gemTarget);
+            foreach (var wo in gemBatch)
+            {
+                AddItemToVendor(vendor, wo, rotatedSet);
+                itemCount++;
+            }
+        }
+        else
+        {
+            // Normal item generation for other vendors
+            foreach (ItemType bit in RotationMerchBits)
+            {
+                if ((equipmentAllowed & bit) == 0)
+                    continue;
+
+                int target = _rng.Next(perCatMin, perCatMax + 1);
+                var batch = GenerateBatch(vendor, profiles, vendorTier, TreasureItemCategory.Item, target, bit);
+                foreach (var wo in batch)
+                {
+                    AddItemToVendor(vendor, wo, rotatedSet);
+                    itemCount++;
+                }
             }
         }
 
@@ -736,8 +762,7 @@ public static class VendorLootRotation
             }
         }
 
-        // Add Spellsiphon and Mana Lattice to Jeweler vendors only
-        var vendorClass = ClassifyVendor(vendor);
+        // Add Spellsiphon and Mana Lattice to Jeweler vendors only (reuse vendorClass from earlier)
         if (vendorClass == VendorTypeClassification.Jeweler && _settings?.VendorLootSpellsiphonSpawnChance > 0)
         {
             // 1. Plain Spellsiphon (blank) - infinite supply, goes to DefaultItemsForSale
@@ -827,6 +852,94 @@ public static class VendorLootRotation
         double roll = _rng.NextDouble();
         double biased = 1.0 - (roll * roll);
         return (int)(biased * 100.0);
+    }
+
+    static List<WorldObject> GenerateJewelryBatch(Vendor vendor, int vendorTier, int targetCount)
+    {
+        var batch = new List<WorldObject>();
+        var profiles = GetTreasureProfiles();
+        int attempts = 0;
+        int maxAttempts = targetCount * 20; // Higher attempts for jewelry since it's rare
+
+        while (batch.Count < targetCount && attempts < maxAttempts)
+        {
+            int itemTier = RollVendorItemTier(vendorTier);
+            var profile = FindProfileForTier(profiles, itemTier);
+            if (profile == null)
+            {
+                attempts++;
+                continue;
+            }
+
+            try
+            {
+                // Try to generate a magic item (more likely to have jewelry)
+                var item = LootGenerationFactory.CreateRandomLootObjects(profile, TreasureItemCategory.MagicItem);
+                if (item != null && (item.ItemType & ItemType.Jewelry) != 0)
+                {
+                    int subScore = RollSubScore();
+                    ApplyQuality(item, itemTier, subScore);
+                    ApplyVendorUniqueTreatment(item, subScore);
+                    ApplyWieldRequirementCap(item, vendorTier);
+                    ClampItemValue(item, _settings?.VendorLootMinValue ?? 100, _settings?.VendorLootMaxValue ?? 10000);
+                    _originalValues[item.Guid] = item.Value ?? 0;
+                    batch.Add(item);
+                }
+                else
+                {
+                    item?.Destroy();
+                }
+            }
+            catch { /* Skip failed generations */ }
+
+            attempts++;
+        }
+
+        return batch;
+    }
+
+    static List<WorldObject> GenerateGemBatch(Vendor vendor, int vendorTier, int targetCount)
+    {
+        var batch = new List<WorldObject>();
+        var profiles = GetTreasureProfiles();
+        int attempts = 0;
+        int maxAttempts = targetCount * 20; // Higher attempts for gems since it's rare
+
+        while (batch.Count < targetCount && attempts < maxAttempts)
+        {
+            int itemTier = RollVendorItemTier(vendorTier);
+            var profile = FindProfileForTier(profiles, itemTier);
+            if (profile == null)
+            {
+                attempts++;
+                continue;
+            }
+
+            try
+            {
+                // Try to generate a magic item (more likely to have gems)
+                var item = LootGenerationFactory.CreateRandomLootObjects(profile, TreasureItemCategory.MagicItem);
+                if (item != null && (item.ItemType & ItemType.Gem) != 0)
+                {
+                    int subScore = RollSubScore();
+                    ApplyQuality(item, itemTier, subScore);
+                    ApplyVendorUniqueTreatment(item, subScore);
+                    ApplyWieldRequirementCap(item, vendorTier);
+                    ClampItemValue(item, _settings?.VendorLootMinValue ?? 100, _settings?.VendorLootMaxValue ?? 10000);
+                    _originalValues[item.Guid] = item.Value ?? 0;
+                    batch.Add(item);
+                }
+                else
+                {
+                    item?.Destroy();
+                }
+            }
+            catch { /* Skip failed generations */ }
+
+            attempts++;
+        }
+
+        return batch;
     }
 
     static WorldObject? GenerateItem(Vendor vendor, List<TreasureDeath> allProfiles, int vendorTier, TreasureItemCategory category, ItemType? merchFilterBit)
@@ -1094,9 +1207,8 @@ public static class VendorLootRotation
         // Note: Spells are already applied by LootGenerationFactory - no custom spell adding needed
         // The loot system handles appropriate spell loading based on treasure profiles
 
-        // Apply enhanced item treatment (imbue + awakening + tinkering)
-        var vendorClass = ClassifyVendor(vendor);
-        ApplyEnhancedItemTreatment(item, GetVendorTier(vendor), vendorClass);
+        // Apply enhanced item treatment (imbue + awakening + tinkering) - vendorClass passed from caller
+        ApplyEnhancedItemTreatment(item, GetVendorTier(vendor), ClassifyVendor(vendor));
 
         item.ContainerId = vendor.Guid.Full;
         item.CalculateObjDesc();

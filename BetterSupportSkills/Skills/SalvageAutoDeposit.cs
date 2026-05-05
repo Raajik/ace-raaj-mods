@@ -199,6 +199,9 @@ public static class SalvageAutoDeposit
 
         AccumulateForMessage(__instance, materialIndex, depositUnits);
 
+        // Grant imbue salvage when auto-salvaging an imbued item
+        TryGrantImbueSalvage(__instance, item);
+
         item.Destroy();
         __result = true;
         return false;
@@ -379,6 +382,83 @@ public static class SalvageAutoDeposit
             msg = $"Auto-salvage: {string.Join(", ", parts.Take(parts.Count - 1))}, and {parts.Last()} bag(s) deposited.";
 
         player.SendMessage(msg);
+    }
+
+    // ── Imbue Salvage on Auto-Salvage ───────────────────────────────────────
+    // When an item with ImbuedEffect is auto-salvaged, grant 50 units of the
+    // corresponding imbue salvage for EACH imbue type on the item.
+
+    static void TryGrantImbueSalvage(Player player, WorldObject item)
+    {
+        if (player == null || item == null)
+            return;
+
+        var imbue = item.ImbuedEffect;
+        if (imbue == null || imbue == 0)
+            return;
+
+        var settings = PatchClass.Settings;
+        if (settings?.EnableSalvage != true)
+            return;
+
+        int imbueSalvageCount = 0;
+
+        // Check each possible imbue effect and grant salvage for each one present
+        // Elemental Rends
+        if (imbue.HasFlag(ImbuedEffectType.FireRending))
+            imbueSalvageCount += GrantImbueSalvage(player, 21069, 50); // Red Garnet
+        if (imbue.HasFlag(ImbuedEffectType.ColdRending))
+            imbueSalvageCount += GrantImbueSalvage(player, 21088, 50); // Yellow Topaz
+        if (imbue.HasFlag(ImbuedEffectType.ElectricRending))
+            imbueSalvageCount += GrantImbueSalvage(player, 21079, 50); // Sunstone
+        if (imbue.HasFlag(ImbuedEffectType.AcidRending))
+            imbueSalvageCount += GrantImbueSalvage(player, 21064, 50); // Obsidian
+        if (imbue.HasFlag(ImbuedEffectType.NetherRending))
+            imbueSalvageCount += GrantImbueSalvage(player, 21040, 50); // Black Opal
+        if (imbue.HasFlag(ImbuedEffectType.PierceRending))
+            imbueSalvageCount += GrantImbueSalvage(player, 21057, 50); // Lapis Lazuli
+        if (imbue.HasFlag(ImbuedEffectType.SlashRending))
+            imbueSalvageCount += GrantImbueSalvage(player, 21046, 50); // Diamond
+        if (imbue.HasFlag(ImbuedEffectType.BludgeonRending))
+            imbueSalvageCount += GrantImbueSalvage(player, 21082, 50); // Tourmaline
+
+        // Secondary Imbues
+        if (imbue.HasFlag(ImbuedEffectType.CriticalStrike))
+            imbueSalvageCount += GrantImbueSalvage(player, 21040, 50); // Black Opal
+        if (imbue.HasFlag(ImbuedEffectType.CripplingBlow))
+            imbueSalvageCount += GrantImbueSalvage(player, 21040, 50); // Black Opal
+        if (imbue.HasFlag(ImbuedEffectType.ArmorRending))
+            imbueSalvageCount += GrantImbueSalvage(player, 21040, 50); // Black Opal
+
+        // Defense Imbues
+        if (imbue.HasFlag(ImbuedEffectType.MagicDefense))
+            imbueSalvageCount += GrantImbueSalvage(player, 21065, 50); // Opal
+        if (imbue.HasFlag(ImbuedEffectType.MeleeDefense))
+            imbueSalvageCount += GrantImbueSalvage(player, 21065, 50); // Opal
+        if (imbue.HasFlag(ImbuedEffectType.MissileDefense))
+            imbueSalvageCount += GrantImbueSalvage(player, 21065, 50); // Opal
+
+        if (imbueSalvageCount > 0)
+        {
+            player.SendMessage($"[Auto-Salvage] Granted {imbueSalvageCount} imbue salvage bag(s) from enchanted item.");
+        }
+    }
+
+    static int GrantImbueSalvage(Player player, uint salvageWcid, int units)
+    {
+        if (player == null || salvageWcid == 0)
+            return 0;
+
+        // Find the material index for this salvage WCID
+        int matIndex = GetMaterialIndex(salvageWcid);
+        if (matIndex < 0 || matIndex > 108)
+            return 0;
+
+        int bankProp = GetMaterialBankProperty(matIndex);
+        long current = player.GetProperty((PropertyInt64)bankProp) ?? 0;
+        player.SetProperty((PropertyInt64)bankProp, current + units);
+
+        return 1; // Return 1 bag granted
     }
 
     public static string GetMaterialName(int index)

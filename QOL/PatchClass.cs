@@ -58,146 +58,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         XpTracker.Initialize(modDir);
 
         RegisterEnabledPatchCategories();
-        VendorLootRotation.Initialize(Settings);
-        TryApplyVendorLootRotationPatch();
         ApplyWorldOpenSideEffects();
         AutoBuff.TryApply();
-    }
-
-    void TryApplyVendorLootRotationPatch()
-    {
-        if (!Settings.EnableVendorLootRotation)
-            return;
-
-        try
-        {
-            var approachVendor = AccessTools.Method(typeof(Vendor), nameof(Vendor.ApproachVendor),
-                new Type[] { typeof(Player), typeof(VendorType), typeof(uint) });
-            if (approachVendor == null)
-            {
-                ModManager.Log("[QOL] Vendor.ApproachVendor method not found; vendor loot rotation patch skipped.", ModManager.LogLevel.Error);
-                return;
-            }
-
-            var prefix = AccessTools.Method(typeof(VendorLootRotation), nameof(VendorLootRotation.OnVendorApproachPrefix));
-            if (prefix == null)
-            {
-                ModManager.Log("[QOL] VendorLootRotation.OnVendorApproachPrefix method not found.", ModManager.LogLevel.Error);
-                return;
-            }
-
-            var harmonyPrefix = new HarmonyMethod(prefix);
-            harmonyPrefix.priority = HarmonyLib.Priority.First;
-            ModC.Harmony?.Patch(approachVendor, harmonyPrefix);
-            ModManager.Log("[QOL] VendorLootRotation patched to Vendor.ApproachVendor (priority=First; LeyLineLedger Debit still invokes ApproachVendor; EmpyreanAlteration vendor stock uses Last per AGENTS.md).", ModManager.LogLevel.Info);
-
-            // Patch private ItemProfileToWorldObjects so purchased items clone original stats
-            var itemProfileMethod = AccessTools.Method(typeof(Vendor), "ItemProfileToWorldObjects", new Type[] { typeof(ItemProfile) });
-            if (itemProfileMethod != null)
-            {
-                var clonePostfix = AccessTools.Method(typeof(PatchClass), nameof(PostItemProfileToWorldObjects));
-                if (clonePostfix != null)
-                {
-                    ModC.Harmony?.Patch(itemProfileMethod, postfix: new HarmonyMethod(clonePostfix));
-                    ModManager.Log("[QOL] VendorItemCloneFix patched to Vendor.ItemProfileToWorldObjects.", ModManager.LogLevel.Info);
-                }
-            }
-            else
-            {
-                ModManager.Log("[QOL] Vendor.ItemProfileToWorldObjects not found; clone fix skipped.", ModManager.LogLevel.Warn);
-            }
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[QOL] VendorLootRotation patch failed: {ex}", ModManager.LogLevel.Error);
-        }
-    }
-
-    // Postfix for Vendor.ItemProfileToWorldObjects — copies generated loot stats from the vendor's
-    // displayed template to the purchased clone. Preserves damage, armor, awakening, price, name, etc.
-    public static void PostItemProfileToWorldObjects(ItemProfile itemProfile, List<WorldObject> __result, Vendor __instance)
-    {
-        if (__instance?.DefaultItemsForSale == null || __result == null || __result.Count == 0)
-            return;
-
-        var templateGuid = new ObjectGuid(itemProfile.ObjectGuid);
-        if (!__instance.DefaultItemsForSale.TryGetValue(templateGuid, out var template))
-        {
-            // Fall back to unique items in case a mod item is unexpectedly routed here
-            if (!__instance.UniqueItemsForSale.TryGetValue(templateGuid, out template))
-                return;
-        }
-
-        foreach (var created in __result)
-        {
-            if (created.WeenieClassId != template.WeenieClassId)
-                continue;
-
-            if (template.Value.HasValue)
-                created.Value = template.Value;
-
-            TryCopyBool(template, created, (PropertyBool)40130);   // IsAwakened
-            TryCopyInt(template, created, (PropertyInt)40131);      // AwakenedTier
-            TryCopyInt(template, created, PropertyInt.ItemMaxLevel);
-            TryCopyInt64(template, created, PropertyInt64.ItemTotalXp);
-            TryCopyString(template, created, PropertyString.Name);
-            TryCopyString(template, created, (PropertyString)11033);   // OriginalName
-            TryCopyString(template, created, (PropertyString)11034);   // ProfileName
-            TryCopyInt(template, created, PropertyInt.UiEffects);
-            TryCopyInt(template, created, PropertyInt.Damage);
-            TryCopyInt(template, created, PropertyInt.ArmorLevel);
-            TryCopyInt(template, created, PropertyInt.ImbuedEffect);        // Rend, CS, CB, AR, defense imbues
-            TryCopyInt(template, created, PropertyInt.DamageType);          // Changed by elemental rend
-            TryCopyInt(template, created, PropertyInt.SlayerCreatureType);  // Slayer imbue target
-            TryCopyInt(template, created, PropertyInt.Cleaving);              // Cleave imbue
-            TryCopyInt(template, created, PropertyInt.LumAugSurgeChanceRating); // Multistrike imbue
-            TryCopyFloat(template, created, PropertyFloat.DamageMod);
-            TryCopyFloat(template, created, PropertyFloat.WeaponOffense);
-            TryCopyFloat(template, created, PropertyFloat.WeaponDefense);
-            TryCopyFloat(template, created, PropertyFloat.SlayerDamageBonus); // Slayer bonus
-            TryCopyInt(template, created, PropertyInt.ItemWorkmanship);
-            TryCopyFloat(template, created, PropertyFloat.ManaConversionMod);
-            TryCopyFloat(template, created, PropertyFloat.ElementalDamageMod);
-
-            // Spells from loot generation — copy from template's Biota to the new item's Biota
-            if (template.Biota?.PropertiesSpellBook != null)
-            {
-                created.Biota.PropertiesSpellBook ??= new Dictionary<int, float>();
-                foreach (var spell in template.Biota.PropertiesSpellBook)
-                {
-                    if (!created.Biota.PropertiesSpellBook.ContainsKey(spell.Key))
-                        created.Biota.PropertiesSpellBook[spell.Key] = spell.Value;
-                }
-            }
-
-            created.CalculateObjDesc();
-        }
-    }
-
-    static void TryCopyBool(WorldObject src, WorldObject dst, PropertyBool prop)
-    {
-        var v = src.GetProperty(prop);
-        if (v.HasValue) dst.SetProperty(prop, v.Value);
-    }
-    static void TryCopyInt(WorldObject src, WorldObject dst, PropertyInt prop)
-    {
-        var v = src.GetProperty(prop);
-        if (v.HasValue) dst.SetProperty(prop, v.Value);
-    }
-    static void TryCopyInt64(WorldObject src, WorldObject dst, PropertyInt64 prop)
-    {
-        var v = src.GetProperty(prop);
-        if (v.HasValue) dst.SetProperty(prop, v.Value);
-    }
-    static void TryCopyFloat(WorldObject src, WorldObject dst, PropertyFloat prop)
-    {
-        var v = src.GetProperty(prop);
-        if (v.HasValue) dst.SetProperty(prop, v.Value);
-    }
-    static void TryCopyString(WorldObject src, WorldObject dst, PropertyString prop)
-    {
-        var v = src.GetProperty(prop);
-        if (v != null) dst.SetProperty(prop, v);
     }
 
     public override async Task OnWorldOpen()
@@ -288,9 +150,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         if (Settings.EnableBundleGive)
             enabledFeatures.Add(Features.BundleGive);
-
-        if (Settings.EnableVendorLootRotation)
-            enabledFeatures.Add(Features.VendorLootRotation);
 
         if (Settings.EnableNoDeathDrops)
             enabledFeatures.Add(Features.NoDeathDrops);
@@ -454,16 +313,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             return;
         }
 
-        if (head == "vendor" && parameters.Length > 1)
-        {
-            var sub = parameters[1].Trim().ToLowerInvariant();
-            if (sub == "rotate")
-            {
-                VendorLootRotation.ClearCooldowns();
-                player.SendMessage("Vendor loot cooldowns cleared. Approach a vendor to refresh their stock.", ChatMessageType.System);
-                return;
-            }
-        }
 
         player.SendMessage($"Unknown /qol subcommand '{head}'. Try: commands, killxp, toll, vendor rotate.", ChatMessageType.System);
     }

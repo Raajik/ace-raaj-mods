@@ -728,8 +728,18 @@ public static class SummoningClasses
             return;
         }
 
-        int summoningSkill = (int)(player.GetCreatureSkill(Skill.Summoning)?.Current ?? 0);
-        int tier = GetTierFromSkill(summoningSkill);
+        // Artificer wisp tier scales with ItemEnchantment (up to tier 8), not Summoning
+        int tier;
+        if (className == "Artificer" && typeName == "Wisps")
+        {
+            int itemEnchantmentSkill = (int)(player.GetCreatureSkill(Skill.ItemEnchantment)?.Current ?? 0);
+            tier = Math.Min(8, itemEnchantmentSkill / 50); // Each 50 skill = 1 tier, cap at 8
+        }
+        else
+        {
+            int summoningSkill = (int)(player.GetCreatureSkill(Skill.Summoning)?.Current ?? 0);
+            tier = GetTierFromSkill(summoningSkill);
+        }
         var tierWcids = pool[Math.Min(tier, pool.Length - 1)];
 
         int summonedCount = 0;
@@ -1073,21 +1083,13 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
                 aoeTargets.Add(enemy);
         }
 
+        // Artificer wisp procs Imperil Other on hit (AOE radius) - no longer casts Drain
         if (ImperilSpellIds.TryGetValue(tier, out var imperilId))
         {
             var imperilSpell = new ACE.Server.Entity.Spell(imperilId);
             foreach (var target in aoeTargets)
             {
                 try { pet.TryCastSpell(imperilSpell, target); } catch { }
-            }
-        }
-
-        if (DrainHealthSpellIds.TryGetValue(tier, out var drainId))
-        {
-            var drainSpell = new ACE.Server.Entity.Spell(drainId);
-            foreach (var target in aoeTargets)
-            {
-                try { pet.TryCastSpell(drainSpell, target); } catch { }
             }
         }
     }

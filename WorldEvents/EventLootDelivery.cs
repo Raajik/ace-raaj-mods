@@ -13,7 +13,8 @@ internal static class EventLootDelivery
         if (item == null)
             return false;
 
-        if (entry.StackSize > 1 && item.StackSize.HasValue)
+        // Always set stack size for salvage bags - the newly created item may not have StackSize property set by default
+        if (entry.StackSize > 1)
             item.SetStackSize(entry.StackSize);
 
         TagSsfIfNeeded(player, item);

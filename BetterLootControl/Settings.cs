@@ -3,12 +3,58 @@ using System.Collections.Generic;
 
 namespace BetterLootControl;
 
-// Settings for BetterLootControl (consolidated chest drops + global rare drops).
+// Settings for BetterLootControl (consolidated chest drops + global rare drops + vendor loot rotation).
 // Tier chances and WCID pools live in Loremaster/LootConfig.json by default.
 
 public class Settings
 {
     public bool Enabled { get; init; } = true;
+
+    // -- Vendor Loot Rotation --
+    // Rotates equipment stock on vendor approach from MerchandiseItemTypes.
+    // Protected TN Pathwarden vendors 850300-850303 and 800039 are skipped.
+    public bool EnableVendorLootRotation { get; init; } = true;
+    public int VendorLootRotationMinutes { get; init; } = 20;
+    public int VendorLootCooldownMinutes { get; init; } = 45;
+    public string VendorLootMode { get; init; } = "Blacklist"; // Whitelist or Blacklist
+    public List<int> VendorLootWcids { get; init; } = new(); // WCIDs for whitelist/blacklist mode
+
+    // Item generation
+    public int VendorLootItemsPerCategoryMin { get; init; } = 15;
+    public int VendorLootItemsPerCategoryMax { get; init; } = 30;
+    public int VendorLootMinValue { get; init; } = 100;
+    public int VendorLootMaxValue { get; init; } = 10000;
+    public double VendorLootLuxuryTaxPercent { get; init; } = 10.0;
+
+    // Strict vendor type enforcement (Jewelers = jewelry/gems, Armorers = armor/weapons, Mages = casters/jewelry)
+    public bool VendorLootStrictTypeEnforcement { get; init; } = true;
+
+    // Spell loading on equipment
+    public bool VendorLootAddSpellsToAllEquipment { get; init; } = true;
+    public int VendorLootMinSpellsPerItem { get; init; } = 1;
+    public int VendorLootMaxSpellsPerItem { get; init; } = 2;
+
+    // Imbue and awakening
+    public double VendorLootImbueChance { get; init; } = 0.40; // 40% chance for imbue
+    public double VendorLootImbueValueMultiplier { get; init; } = 5.0;
+    public double VendorLootHighWorkmanshipValueMultiplier { get; init; } = 2.0;
+    public double VendorLootAwakenChance { get; init; } = 0.15; // 15% chance for tier 6+
+    public double VendorLootAwakenValueMultiplier { get; init; } = 8.0;
+
+    // Spellsiphon spawning
+    public double VendorLootSpellsiphonSpawnChance { get; init; } = 0.25; // 25% on Jewelers/Mages
+    public bool VendorLootSpellsiphonPreloadSpells { get; init; } = true;
+    public int VendorLootSpellsiphonMinSpells { get; init; } = 1;
+    public int VendorLootSpellsiphonMaxSpells { get; init; } = 3;
+
+    // Legacy/low-stat mode
+    public bool VendorLootLowStatMode { get; init; } = false;
+    public bool VendorLootSalvageOnRotation { get; init; } = false;
+
+    // Vendor tier overrides
+    public Dictionary<int, int> VendorTierWcidMap { get; init; } = new();
+    public Dictionary<int, int> VendorTierLandblockMap { get; init; } = new();
+    public int DefaultVendorTier { get; init; } = 2;
 
     // Only these chest WCIDs receive guaranteed loot; empty = all chests that pass other checks.
     public List<int> AllowedChestWCIDs { get; init; } = new();

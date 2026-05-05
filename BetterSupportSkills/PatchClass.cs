@@ -79,6 +79,7 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
         TryApplySummoningClassesPatch();
         TryApplyCombatClassesPatch();
         TryApplyLoyaltyXpPatch();
+        // TryApplyUnenchantablePatch(); // TODO: re-add once we know what property to remove
         Skills.AchievementUnlockedApi.Initialize();
 
         if (Settings.EnableManaConversion)

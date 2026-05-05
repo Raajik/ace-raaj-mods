@@ -30,7 +30,7 @@ public enum Features
     // but the category string now resolves to NpcStackTurnIn patches.
     NpcStackTurnIn,
     LootEconomyControl,
-    VendorLootRotation,
+
     KillXpMessage,
     BundleGive,
     VendorPriceInflation, // DEPRECATED — vendor pricing moved to LeyLineLedger. Kept for JSON backward compatibility.
@@ -218,7 +218,7 @@ public class Settings
 
     [JsonPropertyName("// EnableVendorLootRotation")]
     public string EnableVendorLootRotationDoc { get; init; } = "When true, QOL patches Vendor.ApproachVendor (Harmony First) to rotate equipment stock from MerchandiseItemTypes only; protected TN Pathwarden vendors 850300-850303 and 800039 are skipped. LeyLineLedger Debit still calls ApproachVendor after; EmpyreanAlteration vendor injection uses Last.";
-    public bool EnableVendorLootRotation { get; set; } = true;
+    public bool EnableVendorLootRotation { get; set; } = false;
 
     [JsonPropertyName("// VendorLootRotationMinutes")]
     public string VendorLootRotationMinutesDoc { get; init; } = "Target minutes between vendor stock refreshes on approach (same vendor instance). Combined with VendorLootCooldownMinutes: the effective wait is the lesser of the two (both floored at 1).";
@@ -316,6 +316,50 @@ public class Settings
     [JsonPropertyName("// VendorLootSalvageOnRotation")]
     public string VendorLootSalvageOnRotationDoc { get; init; } = "When true, rotation may add random salvage bags if the vendor sells Misc or Containers. Default off.";
     public bool VendorLootSalvageOnRotation { get; set; } = false;
+
+    [JsonPropertyName("// VendorLootStrictTypeEnforcement")]
+    public string VendorLootStrictTypeEnforcementDoc { get; init; } = "When true, vendor rotation strictly enforces vendor type: Jewelers sell only Jewelry/Gems, Armorers only Armor/Weapons, Mages sell Casters/Jewelry. Ignores MerchandiseItemTypes for rotation selection.";
+    public bool VendorLootStrictTypeEnforcement { get; set; } = true;
+
+    [JsonPropertyName("// VendorLootAddSpellsToAllEquipment")]
+    public string VendorLootAddSpellsToAllEquipmentDoc { get; init; } = "When true, all generated equipment items (weapons, armor, jewelry, casters) receive randomly rolled spells. Uses SpellSiphon spell-rolling logic.";
+    public bool VendorLootAddSpellsToAllEquipment { get; set; } = true;
+
+    [JsonPropertyName("// VendorLootMinSpellsPerItem")]
+    public string VendorLootMinSpellsPerItemDoc { get; init; } = "Minimum spells to add to each equipment item when spell loading is enabled.";
+    public int VendorLootMinSpellsPerItem { get; set; } = 1;
+
+    [JsonPropertyName("// VendorLootMaxSpellsPerItem")]
+    public string VendorLootMaxSpellsPerItemDoc { get; init; } = "Maximum spells to add to each equipment item when spell loading is enabled. Higher vendor tiers can exceed this.";
+    public int VendorLootMaxSpellsPerItem { get; set; } = 2;
+
+    [JsonPropertyName("// VendorLootImbueChance")]
+    public string VendorLootImbueChanceDoc { get; init; } = "Chance (0-1) for a generated vendor item to receive a random imbue. 0.40 = 40%. Higher than the old UniqueItemChance.";
+    public double VendorLootImbueChance { get; set; } = 0.40;
+
+    [JsonPropertyName("// VendorLootAwakenChance")]
+    public string VendorLootAwakenChanceDoc { get; init; } = "Chance (0-1) for a high-tier (6+) generated item to become Awakened. 0.15 = 15%.";
+    public double VendorLootAwakenChance { get; set; } = 0.15;
+
+    [JsonPropertyName("// VendorLootAwakenValueMultiplier")]
+    public string VendorLootAwakenValueMultiplierDoc { get; init; } = "Value multiplier applied to Awakened items. 8.0 = 8x base value. Stacks with Imbue multiplier.";
+    public double VendorLootAwakenValueMultiplier { get; set; } = 8.0;
+
+    [JsonPropertyName("// VendorLootSpellsiphonSpawnChance")]
+    public string VendorLootSpellsiphonSpawnChanceDoc { get; init; } = "Chance (0-1) to add a Spellsiphon tool (WCID 850200) to vendor stock on rotation. Only applies to Jewelers/Mages. 0.25 = 25%.";
+    public double VendorLootSpellsiphonSpawnChance { get; set; } = 0.25;
+
+    [JsonPropertyName("// VendorLootSpellsiphonPreloadSpells")]
+    public string VendorLootSpellsiphonPreloadSpellsDoc { get; init; } = "When true, spawned Spellsiphons come pre-loaded with 1-3 spells that can be applied to player loot.";
+    public bool VendorLootSpellsiphonPreloadSpells { get; set; } = true;
+
+    [JsonPropertyName("// VendorLootSpellsiphonMinSpells")]
+    public string VendorLootSpellsiphonMinSpellsDoc { get; init; } = "Minimum spells to preload on spawned Spellsiphons.";
+    public int VendorLootSpellsiphonMinSpells { get; set; } = 1;
+
+    [JsonPropertyName("// VendorLootSpellsiphonMaxSpells")]
+    public string VendorLootSpellsiphonMaxSpellsDoc { get; init; } = "Maximum spells to preload on spawned Spellsiphons.";
+    public int VendorLootSpellsiphonMaxSpells { get; set; } = 3;
 
     [JsonPropertyName("// GiveNpcSingleStackWeenieTypes")]
     public string GiveNpcSingleStackWeenieTypesDoc { get; init; } = "WeenieTypes that receive the give clamp (typically Generic for trophies). Only applies when MaxStackSize > 1.";

@@ -689,6 +689,10 @@ public class SalvageSettings
     [JsonPropertyName("// DefaultAutoSalvageEnabled")]
     public string DefaultAutoSalvageEnabledDoc { get; init; } = "When no explicit per-character toggle is stored yet, AutoSalvage is on if true (default). /autoloot salvage and /autosalvage still set explicit off/on.";
     public bool DefaultAutoSalvageEnabled { get; set; } = true;
+
+    [JsonPropertyName("// RemoveUnenchantableGlobally")]
+    public string RemoveUnenchantableGloballyDoc { get; init; } = "When true, removes Unenchantable property from all items at runtime. Adds a way to globally add/remove this property.";
+    public bool RemoveUnenchantableGlobally { get; set; } = false;
 }
 
 public class TinkeringLootGatingSettings

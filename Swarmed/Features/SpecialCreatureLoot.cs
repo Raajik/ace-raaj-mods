@@ -89,6 +89,10 @@ internal static class SpecialCreatureLoot
             if (bag == null)
                 return null;
 
+            // Override MaxStackSize to ensure full bag (100 units) - weenie has MaxStackSize=1 by default
+            bag.SetProperty(PropertyInt.MaxStackSize, 100);
+            bag.SetProperty(PropertyInt.StackSize, 100);
+
             int baseValue = bag.Value ?? 100;
             int multiplierPercent = ThreadSafeRandom.Next(113, 918);
             bag.Value = Math.Max(1, (int)(baseValue * multiplierPercent / 100.0));
@@ -224,6 +228,19 @@ internal static class SpecialCreatureLoot
         var (rend, damageType) = RendPool[ThreadSafeRandom.Next(0, RendPool.Length - 1)];
         item.ImbuedEffect |= rend;
         item.SetProperty(PropertyInt.DamageType, (int)damageType);
+        
+        // Set UiEffects for visual overlay based on damage type
+        var uiEffects = damageType switch
+        {
+            DamageType.Acid => (int)UiEffects.Acid,
+            DamageType.Cold => (int)UiEffects.Frost,
+            DamageType.Fire => (int)UiEffects.Fire,
+            DamageType.Electric => (int)UiEffects.Lightning,
+            DamageType.Nether => (int)UiEffects.Nether,
+            _ => (int)UiEffects.Magical
+        };
+        item.SetProperty(PropertyInt.UiEffects, uiEffects);
+        
         UpdateWeaponNameForDamageType(item);
     }
 
@@ -236,6 +253,8 @@ internal static class SpecialCreatureLoot
             ImbuedEffectType.ArmorRending,
         };
         item.ImbuedEffect |= pool[ThreadSafeRandom.Next(0, pool.Length - 1)];
+        // Secondary imbues are magical - set magical visual overlay
+        item.SetProperty(PropertyInt.UiEffects, (int)UiEffects.Magical);
     }
 
     static void ApplyArmorImbue(WorldObject item)
@@ -247,6 +266,8 @@ internal static class SpecialCreatureLoot
             ImbuedEffectType.MissileDefense,
         };
         item.ImbuedEffect |= pool[ThreadSafeRandom.Next(0, pool.Length - 1)];
+        // Defense imbues are magical - set magical visual overlay
+        item.SetProperty(PropertyInt.UiEffects, (int)UiEffects.Magical);
     }
 
     static bool IsShieldItem(WorldObject item)

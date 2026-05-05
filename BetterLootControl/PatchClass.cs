@@ -54,13 +54,30 @@ public partial class PatchClass : BasicPatch<Settings>
 
     public override void Start()
     {
+        ModManager.Log("[BetterLoot] Start() called", ModManager.LogLevel.Info);
         base.Start();
     }
 
     public override async Task OnStartSuccess()
     {
+        ModManager.Log("[BetterLoot] OnStartSuccess ENTERED", ModManager.LogLevel.Info);
         await base.OnStartSuccess();
         LoadLootConfig();
+
+        // Debug: check settings
+        var vlrEnabled = Settings?.EnableVendorLootRotation ?? false;
+        ModManager.Log($"[BetterLoot] OnStartSuccess: EnableVendorLootRotation = {vlrEnabled}", ModManager.LogLevel.Info);
+
+        // Initialize VendorLootRotation
+        if (vlrEnabled)
+        {
+            VendorLootRotation.Initialize(Settings);
+            ModManager.Log("BetterLootControl: VendorLootRotation initialized", ModManager.LogLevel.Info);
+        }
+        else
+        {
+            ModManager.Log("[BetterLoot] VendorLootRotation is disabled in settings", ModManager.LogLevel.Info);
+        }
     }
 
     private void LoadLootConfig()
@@ -356,5 +373,23 @@ public partial class PatchClass : BasicPatch<Settings>
     private static WorldObject? SelectRandomGuaranteedItem(Chest _)
     {
         return LootRoller.TryCreateRandomItem(LootConfigStore.GetLoadedOrDefault());
+    }
+
+    // =====================================================================
+    // Vendor Loot Rotation Hook
+    // =====================================================================
+
+    /// <summary>
+    /// Hook into vendor approach to rotate stock.
+    /// Priority: First to ensure our rotation runs before other mods.
+    /// </summary>
+    [HarmonyPatch(typeof(Vendor), nameof(Vendor.ApproachVendor), new Type[] { typeof(Player), typeof(VendorType), typeof(uint) })]
+    [HarmonyPrefix]
+    public static void PreApproachVendor(Player player, VendorType action, uint altCurrencySpent, Vendor __instance)
+    {
+        if (Settings?.EnableVendorLootRotation != true)
+            return;
+
+        VendorLootRotation.OnVendorApproachPrefix(player, action, altCurrencySpent, __instance);
     }
 }

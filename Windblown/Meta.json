@@ -1,0 +1,9 @@
+{
+  "Name": "Windblown",
+  "Author": "raaj",
+  "Description": "Windblown server custom content. Runtime weenie injection (no SQL required for custom items). Phase 1: Drudge charm tier line (Bloodletter Quality/Pristine/Perfect).",
+  "Version": "0.1.0",
+  "Enabled": true,
+  "HotReload": true,
+  "Homepage": ""
+}

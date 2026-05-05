@@ -1,0 +1,104 @@
+{
+  "Description": "Bloodletter Drudge Charm tier line. Replicates DrudgeCharm_TierWeenies_World.sql + DrudgeCharm_SunstoneUnderlay_2026-05-08.sql at runtime, plus per-tier UiEffects glows: white / green / blue / purple. No SQL deployment required.",
+  "Weenies": [
+    {
+      "ClassId": 24835,
+      "ClassName": "drudgecharmbloodletter",
+      "WeenieType": "Stackable",
+      "BaseWcid": 24835,
+      "Notes": "Regular tier. Sunstone IconUnderlay + white (Frost=128) UiEffects glow.",
+      "PropertiesString": {
+        "Name": "Bloodletter Drudge Charm",
+        "PluralName": "Bloodletter Drudge Charms",
+        "LongDesc": "Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676438
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850271,
+      "ClassName": "drudgecharm_quality",
+      "WeenieType": "Stackable",
+      "BaseWcid": 24835,
+      "MirrorEmoteFromWcid": 24835,
+      "Notes": "Quality tier. Sunstone underlay + green (Acid=256) glow. NPCs that accept 24835 also accept this WCID via the Give-emote mirror.",
+      "PropertiesString": {
+        "Name": "Bloodletter Drudge Charm (Quality)",
+        "PluralName": "Bloodletter Drudge Charms (Quality)",
+        "LongDesc": "Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676438
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850272,
+      "ClassName": "drudgecharm_pristine",
+      "WeenieType": "Stackable",
+      "BaseWcid": 24835,
+      "MirrorEmoteFromWcid": 24835,
+      "Notes": "Pristine tier. Sunstone underlay + blue (Magical=1) glow. Inherits Collector NPC acceptance from 24835 via emote mirror.",
+      "PropertiesString": {
+        "Name": "Bloodletter Drudge Charm (Pristine)",
+        "PluralName": "Bloodletter Drudge Charms (Pristine)",
+        "LongDesc": "Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676438
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850273,
+      "ClassName": "drudgecharm_perfect",
+      "WeenieType": "Stackable",
+      "BaseWcid": 24835,
+      "MirrorEmoteFromWcid": 24835,
+      "Notes": "Perfect tier. Sunstone underlay + purple (Lightning=64) glow. Inherits Collector NPC acceptance from 24835 via emote mirror.",
+      "PropertiesString": {
+        "Name": "Bloodletter Drudge Charm (Perfect)",
+        "PluralName": "Bloodletter Drudge Charms (Perfect)",
+        "LongDesc": "Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "UiEffects": 64
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676438
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    }
+  ]
+}

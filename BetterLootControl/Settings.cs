@@ -47,6 +47,14 @@ public class Settings
     public int VendorLootSpellsiphonMinSpells { get; init; } = 1;
     public int VendorLootSpellsiphonMaxSpells { get; init; } = 3;
 
+    // Jeweler-specific enhancements
+    public double VendorLootJewelerImbueChance { get; init; } = 0.70; // 70% imbue chance for jeweler items
+    public double VendorLootJewelerAwakenChance { get; init; } = 0.35; // 35% awaken chance for tier 6+ jeweler items
+    public double VendorLootJewelerTinkerChance { get; init; } = 0.60; // 60% chance to add tinkers
+    public int VendorLootJewelerMinTinkers { get; init; } = 1;
+    public int VendorLootJewelerMaxTinkers { get; init; } = 3;
+    public double VendorLootTinkerValueMultiplier { get; init; } = 2.0; // 2x value per tinker
+
     // Legacy/low-stat mode
     public bool VendorLootLowStatMode { get; init; } = false;
     public bool VendorLootSalvageOnRotation { get; init; } = false;

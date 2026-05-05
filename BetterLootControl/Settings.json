@@ -66,6 +66,12 @@
   "VendorLootSpellsiphonPreloadSpells": true,
   "VendorLootSpellsiphonMinSpells": 1,
   "VendorLootSpellsiphonMaxSpells": 3,
+  "VendorLootJewelerImbueChance": 0.70,
+  "VendorLootJewelerAwakenChance": 0.35,
+  "VendorLootJewelerTinkerChance": 0.60,
+  "VendorLootJewelerMinTinkers": 1,
+  "VendorLootJewelerMaxTinkers": 3,
+  "VendorLootTinkerValueMultiplier": 2.0,
   "VendorLootLowStatMode": false,
   "VendorLootSalvageOnRotation": false,
   "VendorTierWcidMap": {

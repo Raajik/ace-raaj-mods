@@ -1033,6 +1033,58 @@ public static class VendorLootRotation
         }
     }
 
+    static int ApplyRandomTinkers(WorldObject item, int vendorTier, bool isJeweler)
+    {
+        if (item == null || _settings == null)
+            return 0;
+
+        try
+        {
+            int minTinkers = _settings.VendorLootJewelerMinTinkers;
+            int maxTinkers = _settings.VendorLootJewelerMaxTinkers;
+            int tinkerCount = _rng.Next(minTinkers, maxTinkers + 1);
+            
+            // Get existing tinker count
+            int? nullableTinkers = item.NumTimesTinkered;
+            int existingTinkers = nullableTinkers ?? 0;
+            int maxAllowed = Math.Min(10, existingTinkers + tinkerCount); // Cap at 10 total
+            int tinkersToAdd = maxAllowed - existingTinkers;
+            
+            if (tinkersToAdd <= 0)
+                return 0;
+
+            // Set tinker count
+            item.NumTimesTinkered = existingTinkers + tinkersToAdd;
+            
+            // Increase ItemMaxLevel based on tinker count (each tinker adds ~5-10 levels)
+            int levelIncrease = tinkersToAdd * _rng.Next(5, 11);
+            int currentMaxLevel = item.ItemMaxLevel ?? 1;
+            item.ItemMaxLevel = currentMaxLevel + levelIncrease;
+
+            // Update name to reflect tinkering
+            string baseName = item.GetProperty((PropertyString)11033) ?? item.Name ?? "Item";
+            if (item.NumTimesTinkered >= 8)
+            {
+                item.Name = "Masterwork " + baseName;
+            }
+            else if (item.NumTimesTinkered >= 5)
+            {
+                item.Name = "Superior " + baseName;
+            }
+            else if (item.NumTimesTinkered >= 3)
+            {
+                item.Name = "Fine " + baseName;
+            }
+
+            return tinkersToAdd;
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BetterLoot] VendorLoot: ApplyRandomTinkers failed: {ex.Message}", ModManager.LogLevel.Warn);
+            return 0;
+        }
+    }
+
     // =====================================================================
     // Add Item to Vendor with Spell Loading and Enhanced Treatment
     // =====================================================================
@@ -1042,8 +1094,9 @@ public static class VendorLootRotation
         // Note: Spells are already applied by LootGenerationFactory - no custom spell adding needed
         // The loot system handles appropriate spell loading based on treasure profiles
 
-        // Apply enhanced item treatment (imbue + awakening)
-        ApplyEnhancedItemTreatment(item, GetVendorTier(vendor));
+        // Apply enhanced item treatment (imbue + awakening + tinkering)
+        var vendorClass = ClassifyVendor(vendor);
+        ApplyEnhancedItemTreatment(item, GetVendorTier(vendor), vendorClass);
 
         item.ContainerId = vendor.Guid.Full;
         item.CalculateObjDesc();
@@ -1051,7 +1104,7 @@ public static class VendorLootRotation
         rotatedSet.Add(item.Guid);
     }
 
-    static void ApplyEnhancedItemTreatment(WorldObject item, int vendorTier)
+    static void ApplyEnhancedItemTreatment(WorldObject item, int vendorTier, VendorTypeClassification vendorClass)
     {
         if (item == null || _settings == null)
             return;
@@ -1061,9 +1114,13 @@ public static class VendorLootRotation
         bool hasAwakened = item.GetProperty((PropertyBool)40130) == true;
         int workmanship = item.ItemWorkmanship ?? 0;
         bool hasHighWorkmanship = workmanship >= 8;
+        bool isJeweler = vendorClass == VendorTypeClassification.Jeweler;
 
-        // Roll for imbue (significantly higher chance than before)
-        if (!hasImbue && _rng.NextDouble() < _settings.VendorLootImbueChance)
+        // Determine imbue chance (higher for jewelers)
+        double imbueChance = isJeweler ? _settings.VendorLootJewelerImbueChance : _settings.VendorLootImbueChance;
+        
+        // Roll for imbue
+        if (!hasImbue && _rng.NextDouble() < imbueChance)
         {
             ApplyRandomVendorImbue(item);
             hasImbue = true;
@@ -1074,8 +1131,11 @@ public static class VendorLootRotation
             item.SetProperty(PropertyInt.UiEffects, currentEffects | 256); // Acid = green glow for imbued items
         }
 
+        // Determine awaken chance (higher for jewelers)
+        double awakenChance = isJeweler ? _settings.VendorLootJewelerAwakenChance : _settings.VendorLootAwakenChance;
+        
         // Roll for awakening on high-tier items (tier 6+)
-        if (vendorTier >= 6 && !hasAwakened && _rng.NextDouble() < _settings.VendorLootAwakenChance)
+        if (vendorTier >= 6 && !hasAwakened && _rng.NextDouble() < awakenChance)
         {
             // Apply awakening
             string originalName = item.Name ?? "Item";
@@ -1101,6 +1161,17 @@ public static class VendorLootRotation
         if (hasHighWorkmanship)
         {
             valueMult *= _settings.VendorLootHighWorkmanshipValueMultiplier;
+        }
+
+        // Roll for tinkering (jewelers get higher chance)
+        if (isJeweler && _rng.NextDouble() < _settings.VendorLootJewelerTinkerChance)
+        {
+            int tinkerCount = ApplyRandomTinkers(item, vendorTier, isJeweler);
+            if (tinkerCount > 0)
+            {
+                // Each tinker increases value
+                valueMult *= Math.Pow(_settings.VendorLootTinkerValueMultiplier, tinkerCount);
+            }
         }
 
         // Apply final value multiplier

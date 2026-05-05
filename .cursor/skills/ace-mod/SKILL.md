@@ -30,6 +30,7 @@ public class Mod : BasicMod
 ## PatchClass (critical)
 
 - Put `[HarmonyPrefix]` / `[HarmonyPostfix]` on **`PatchClass`** (often `partial` across files). Patches on a **different** type than `Setup(..., new PatchClass(this))` may **never apply** (silent). `[HarmonyPatchCategory]` types apply when `Harmony.PatchCategory(...)` runs.
+- **Partial PatchClass MUST share a namespace.** `Windblown.PatchClass` and `Windblown.Weenies.PatchClass` are **two distinct types** to the C# compiler — `partial` only joins same-namespace declarations. Build is clean, mod loads, registry / state initializes, **but the [HarmonyPatch] attributes on the orphan never auto-attach**, so prefixes silently never fire. Symptom: your mod looks alive but vanilla behavior persists. Fix: every cross-file partial must use the **same root namespace** as the type instantiated by `Mod.cs`. (Found via Windblown drudge charm runtime injection, 2026-05-04.)
 - **Avoid primary constructors** on PatchClass unless you also **`override Start()`** and assign `Settings = SettingsContainer.Settings ?? new Settings()`. **`OnWorldOpen()`** does not run after **hot-reload** when the world is already up — load settings in **ctor** and/or **`Start()`**, not only `OnWorldOpen()`.
 - Instance parameters must match ACE signatures (`ref` only where ACE uses it).
 
@@ -73,6 +74,8 @@ Copy an existing gameplay mod in this repo (e.g. **Swarmed**, **Loremaster**). I
 ## Repo patterns (short)
 
 - **`/ace-build`:** build each mod’s `.csproj` under the repo root.
+- **Windblown — runtime weenie injection (no SQL).** `Windblown/` Harmony-prefixes `WorldDatabaseWithEntityCache.GetCachedWeenie(uint|string)` to serve in-memory `ACE.Entity.Models.Weenie` POCOs built from `Content/Weenies/*.json` at `Start()`. Each JSON entry can `BaseWcid` clone a vanilla weenie + override property dictionaries by enum name (`Name`, `MaxStackSize`, `IconUnderlay`, ...). Registry-first base resolution lets dependent tiers inherit the already-injected base in this pass instead of vanilla. **Means hot-reload edits to JSON change in-game items without DB writes, server restart, or dump/restore.** Pattern proven on Bloodletter Drudge Charm tier line (24835 + 850271–850273). Use this for any new tiered/cloned trophy line; only fall back to SQL for things that genuinely need DB rows (landblock_instance, points_of_interest, vendor stock that vanilla servers populate). See `Windblown/Readme.md`.
+- **Windblown — emote mirror for cross-WCID NPC acceptance.** Vanilla NPCs key Give/Refuse emote chains by exact `item.WeenieClassId`. To make a cloned tier WCID accept on every NPC that already accepts the source, postfix `WorldObject.HasGiveOrRefuseEmoteForItem`: when `__result == false` and the item's WCID has a registered `MirrorEmoteFromWcid`, retry `EmoteManager.GetEmoteSet(category, null, null, sourceWcid)` on the same NPC, then `Clone()` the resulting `PropertiesEmote` with `WeenieClassId = item.WeenieClassId`. Downstream patches (e.g. BSS `PreExecuteEmoteSet` bulk turn-in) match correctly off the cloned WCID; no per-NPC weenie modification required. See `Windblown/Weenies/EmoteMirrorPatches.cs`.
 - **LeyLineLedger + AutoLoot peas:** `Shared/PeaPyrealWcids.cs`, `AceRaajMods.Shared`, `GetPyrealValue` — see mods’ Readmes; coins use stack `Value` as total (don’t double-multiply stack size).
 - **EmpyreanAlteration:** mutators in `EmpyreanAlteration.Mutators`; `Harmony.PatchCategory` for `Settings.Features`; **`LootGrowthItem`** sets item XP at loot-generation time (postfix `CreateAndMutateWcid`) — no quest pickup-time init (`QuestItemLevelingConfiguration` removed); geometric XP curve patches are in `QuestItemGrowthHarmony.Category` (applied when `EnableLootItemLeveling`); **critical**: `QuestItemGrowthHarmony` class must contain `TargetMethodContainerTryAddToInventory` — a stray `}` will split the class and silently break the entire Harmony category; `EnableQuestItemLeveling`/`QuestItemMaxLevelMin/Max` settings are **removed** — do not re-add references to them.
 - **Overtinked:** tinkering only (`RecipeManager` verify/mutate/handle recipe, custom imbues, salvage rules) — no inventory growth hooks.
@@ -150,6 +153,7 @@ Null-coalesce collections before LINQ; guard **`FirstOrDefault`** on empty seque
 6. Apply SQL to live `ace_world` database if the mod includes weenie changes.  
 7. Restart the server for weenie changes to take effect.  
 8. Hot-reload: `/mod f [name]` after rebuild (C# changes only; not weenie data).
+9. **Verify with `/ci <wcid>` (in-inventory spawn), not `/create <wcid>`** — operators use `/ci`, and `/ci` calls `WorldObjectFactory.CreateNewWorldObject` which respects `PropertyInt.StackSize` (default-spawn count) on the weenie. A weenie cloning from a base with `StackSize=40` will make `/ci` produce 40-stacks. Override `"StackSize": 1` in the override block when you want admin-spawned singletons.
 
 ## Links
 

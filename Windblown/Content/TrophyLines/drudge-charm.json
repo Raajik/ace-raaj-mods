@@ -5,7 +5,7 @@
       "Name": "DrudgeCharm",
       "Enabled": true,
       "CreatureTypeGate": "Drudge",
-      "TurnInDisplayName": "Bloodletter Drudge Charm",
+      "TurnInDisplayName": "Drudge Charm",
       "Tiers": [
         {
           "TierName": "Regular",

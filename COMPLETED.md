@@ -8,6 +8,19 @@
 
 ## 2026-05-04
 
+### Drudge / Rat Tail / Wasp Wing trophy lines — necklace suppression, sunstone underlay, name cleanup, bank interop fix
+
+- **Symptom 1 — Drudge Charm necklace still given on turn-in:** Bulk-suppression prefix on `EmoteManager.ExecuteEmoteSet(PropertiesEmote, WorldObject, bool)` never fired for the Give code path (only HeartBeat) because the CLR JIT inlines that trivial wrapper at its call site in `Player_Inventory.GiveObjectToNPC`. Harmony patches the `MethodInfo`, but inlined call sites bypass the patch entirely. Moved the suppression to `EmoteManager.Enqueue` (the non-trivial method that ExecuteEmoteSet's body calls) and gated on `emoteIdx == 0` so it fires once per chain. Manually mirror vanilla DoEnqueue end-of-chain bookkeeping (`Nested--`, `IsBusy = false` when nested == 0) via `Traverse` so the EmoteManager state stays consistent after we short-circuit. Confirmed in-game: T1/T2/T3/T4 all suppress the Bloodletter Charm Necklace (WCID 25539) and grant the configured XP+bank reward instead.
+- **Symptom 2 — Bank credit silently lost:** `LeyLineLedgerBankInterop` reflected for `GetBanked` / `IncBanked` on `LeyLineLedger.PatchClass`, but those methods live on `LeyLineLedger.BankExtensions` (extension methods on `Player`). Reflection silently failed and the interop fell back to writing the player's biota `PropertyInt64` 39999 — which `AccountBankStore.MirrorDataToPlayerAndAccountAlts` immediately overwrote on the next mirror, eating the credit. Updated the interop to look up `LeyLineLedger.BankExtensions` first and fall back to `PatchClass` for backward compat. Added a one-time `[LeyLineLedgerBankInterop] Resolved bank methods on <type>` startup log so future operators can confirm wiring at a glance. Affects every consumer of the interop: AutoLoot, QOL, BetterSupportSkills, Windblown — all rebuilt and redeployed.
+- **Symptom 3 — Sunstone orange icon underlay missing on Rat Tails / Wasp Wings:** Authoring miss in `Windblown/Content/Weenies/{rat-tails,wasp-wings}.json` — the `PropertiesDID` block was absent on all 8 tier entries (T1+T2+T3+T4 for both lines). Added `"PropertiesDID": { "IconUnderlay": 100676438 }` to every tier so they match Drudge Charms.
+- **Symptom 4 — "Old name 'bloodletter drudge charm'" on regular tier:** User asked to drop the `Bloodletter` prefix from all 4 Drudge Charm tiers. Renamed Name + PluralName in `Windblown/Content/Weenies/drudge-charms.json` to plain `Drudge Charm[(Quality|Pristine|Perfect)]` and updated `TurnInDisplayName` in `Windblown/Content/TrophyLines/drudge-charm.json` for the chat summary line.
+- **Verification (live, 9000):** `+Wb` created + turned in 100 × Drudge Charm (Pristine) (T3): chat said `+10,000,000 pyreals of bank credit`; `/bank status` showed `79,198,368 banked` matching `previous (69,198,368) + 10,000,000`. Server log line `[Windblown.Trophy.DEBUG] +Wb bank prop 39999: before=... delta=... expected=... after=... match=True` confirmed before/after parity (debug line stripped before commit).
+- **AGENTS.md §8.3 (Harmony):** Added "JIT inlining defeats Harmony prefixes on trivial wrappers" gotcha with the EmoteManager.ExecuteEmoteSet → Enqueue case study and the `[MethodImpl(NoInlining)]` workaround vs patching the inner method.
+
+---
+
+## 2026-05-04
+
 ### LeyLineLedger /bank salvage redeem|withdraw|create + admin /cisalvage — bag destroyed by BSS auto-deposit (cross-mod fix)
 
 - **Symptom:** `/bank salvage redeem lapis 1` (and oak, silk, etc.) printed `Redeemed 1 bag(s) for Salvaged Lapis Lazuli (100 units). Remaining for this material: 0` but **no bag appeared** in inventory; tested on multiple accounts incl. admin. `/cisalvage <material>` had the same silent-destroy behavior.

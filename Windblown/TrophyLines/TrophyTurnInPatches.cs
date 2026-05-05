@@ -7,15 +7,19 @@ namespace Windblown;
 /// Bulk turn-in for any tier WCID registered in <see cref="TrophyLineRegistry"/>.
 ///
 /// Flow (mirrors the BSS QuestTurnInCap bulk path that was extracted in Phase 2):
-/// 1. <c>PreGiveObjectToNPC</c> sees player give a tier-WCID item; counts player's total stack of that WCID
+/// 1. <c>PreGiveObjectToNPC_Trophy</c> sees player give a tier-WCID item; counts player's total stack of that WCID
 ///    in inventory and stashes a <see cref="BulkTurnInState"/> keyed by player guid.
 /// 2. Vanilla <c>GiveObjectToNPC</c> consumes one item, broadcasts the give message, looks up the NPC's
 ///    <c>EmoteCategory.Give</c> chain (the emote-mirror layer in <c>Weenies/EmoteMirrorPatches.cs</c> ensures
-///    higher-tier WCIDs route through the source's emote chain on every NPC that already accepts the source).
-/// 3. <c>PreExecuteEmoteSet</c> intercepts the matching emote, drains the player's remaining stacks of that
+///    higher-tier WCIDs route through the source's emote chain on every NPC that already accepts the source),
+///    then calls <c>EmoteManager.ExecuteEmoteSet</c> which the JIT inlines into a direct <c>Enqueue</c> call.
+/// 3. <c>PreEnqueue_Trophy</c> (Harmony prefix on <c>EmoteManager.Enqueue</c>; we patch Enqueue rather than
+///    ExecuteEmoteSet because the latter is a trivial wrapper that gets JIT-inlined and bypasses Harmony at
+///    its inlined call sites) intercepts the matching emote, drains the player's remaining stacks of that
 ///    WCID, grants tier-scaled quest XP + bank credit (via <see cref="LeyLineLedgerBankInterop"/>), sends a
-///    single consolidated chat message, and short-circuits the vanilla emote chain so the NPC never spawns the
-///    legacy reward (e.g. Bloodletter Charm Necklace 25539).
+///    single consolidated chat message, restores the EmoteManager Nested/IsBusy bookkeeping that
+///    ExecuteEmoteSet touched before calling us, and short-circuits the vanilla emote chain so the NPC
+///    never spawns the legacy reward (e.g. Bloodletter Charm Necklace 25539).
 /// </summary>
 public partial class PatchClass
 {
@@ -45,12 +49,17 @@ public partial class PatchClass
         _bulkPending[__instance.Guid.Full] = new BulkTurnInState(item.WeenieClassId, total, DateTime.UtcNow);
     }
 
+    // EmoteManager.ExecuteEmoteSet(PropertiesEmote, WorldObject, bool=false) is a trivial wrapper that
+    // the JIT inlines, so a Harmony prefix on it never fires when called directly from
+    // Player_Inventory.GiveObjectToNPC. Patch Enqueue (the non-trivial work) instead — and only
+    // intercept the FIRST action (emoteIdx == 0) of a Give chain so we replace the whole reward sequence.
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(EmoteManager), nameof(EmoteManager.ExecuteEmoteSet), new Type[] {
-        typeof(PropertiesEmote), typeof(WorldObject), typeof(bool) })]
-    public static bool PreExecuteEmoteSet_Trophy(PropertiesEmote emoteSet, WorldObject targetObject, ref bool __result)
+    [HarmonyPatch(typeof(EmoteManager), nameof(EmoteManager.Enqueue))]
+    public static bool PreEnqueue_Trophy(EmoteManager __instance, PropertiesEmote emoteSet, WorldObject targetObject, int emoteIdx, float delay)
     {
-        if (emoteSet == null || emoteSet.Category != EmoteCategory.Give) return true;
+        if (emoteSet == null) return true;
+        if (emoteSet.Category != EmoteCategory.Give) return true;
+        if (emoteIdx != 0) return true;
         if (targetObject is not Player p) return true;
         if (Cfg?.EnableTrophyLines != true) return true;
         if (!TrophyLineRegistry.IsReady) return true;
@@ -107,7 +116,21 @@ public partial class PatchClass
         if (Cfg!.LogTrophyLinesVerbose)
             ModManager.Log($"[Windblown.TrophyLines] {p.Name} turned in {totalTurnedIn} x {displayName} (wcid {bulk.Wcid}) -> {xpAmount} XP, {bankDelta} bank.", ModManager.LogLevel.Info);
 
-        __result = true;
+        // Restore EmoteManager bookkeeping that ExecuteEmoteSet incremented before calling us.
+        // Vanilla DoEnqueue does Nested-- + IsBusy=false at end-of-chain; mirror it here.
+        try
+        {
+            var trav = Traverse.Create(__instance);
+            int nested = (trav.Field<int>("Nested").Value) - 1;
+            trav.Field<int>("Nested").Value = nested;
+            if (nested <= 0)
+                trav.Property<bool>("IsBusy").Value = false;
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Windblown.TrophyLines] Enqueue state cleanup failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
         return false;
     }
 

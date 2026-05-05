@@ -86,7 +86,10 @@ public static class LeyLineLedgerBankInterop
             if (!string.Equals(asm.GetName().Name, "LeyLineLedger", StringComparison.Ordinal))
                 continue;
 
-            Type? t = asm.GetType("LeyLineLedger.PatchClass");
+            // GetBanked/IncBanked are extension methods on LeyLineLedger.BankExtensions
+            // (they used to live on PatchClass; check both for backward compat).
+            // Extension methods are static; the (this Player, int) signature decays to (Player, int) at the IL level.
+            Type? t = asm.GetType("LeyLineLedger.BankExtensions") ?? asm.GetType("LeyLineLedger.PatchClass");
             if (t is null)
                 break;
 
@@ -97,6 +100,11 @@ public static class LeyLineLedgerBankInterop
             _incBanked = t.GetMethod("IncBanked",
                 BindingFlags.Public | BindingFlags.Static, null,
                 new[] { typeof(Player), typeof(int), typeof(long) }, null);
+
+            ModManager.Log(_getBanked != null && _incBanked != null
+                ? $"[LeyLineLedgerBankInterop] Resolved bank methods on {t.FullName}."
+                : $"[LeyLineLedgerBankInterop] WARNING: Could not resolve GetBanked/IncBanked on {t.FullName}; bank writes will fall back to biota PropertyInt64 (will be overwritten by AccountBankStore mirror).",
+                ModManager.LogLevel.Info);
             break;
         }
     }

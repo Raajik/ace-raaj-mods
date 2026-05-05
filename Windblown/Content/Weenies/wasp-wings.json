@@ -1,5 +1,5 @@
 {
-  "Description": "Wasp Wing tier line. Base WCID 7603 (vanilla 'White Phyntos Wasp Wing') renamed to plain 'Wasp Wing'; color variants (3699-3703, 8426, 13089) merged via sibling replacement. Three new tier WCIDs (850283-850285) clone from 7603. Per-tier UiEffects glow (white/green/blue/purple). Higher tiers route through any NPC's WCID 7603 Give emote.",
+  "Description": "Wasp Wing tier line. Base WCID 7603 (vanilla 'White Phyntos Wasp Wing') renamed to plain 'Wasp Wing'; color variants (3699-3703, 8426, 13089) merged via sibling replacement. Three new tier WCIDs (850283-850285) clone from 7603. Per-tier UiEffects glow (white/green/blue/purple) AND sunstone orange IconUnderlay (DID 52 = 100676438) on all tiers, matching Drudge Charms. Higher tiers route through any NPC's WCID 7603 Give emote.",
   "Weenies": [
     {
       "ClassId": 7603,
@@ -16,6 +16,9 @@
         "MaxStackSize": 999,
         "StackSize": 1,
         "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676438
       },
       "Delete": {
         "PropertiesString": ["Use", "ShortDesc"],
@@ -39,6 +42,9 @@
         "StackSize": 1,
         "UiEffects": 256
       },
+      "PropertiesDID": {
+        "IconUnderlay": 100676438
+      },
       "Delete": {
         "PropertiesString": ["Use", "ShortDesc"],
         "PropertiesInt": ["ImbuedEffect"]
@@ -61,6 +67,9 @@
         "StackSize": 1,
         "UiEffects": 1
       },
+      "PropertiesDID": {
+        "IconUnderlay": 100676438
+      },
       "Delete": {
         "PropertiesString": ["Use", "ShortDesc"],
         "PropertiesInt": ["ImbuedEffect"]
@@ -82,6 +91,9 @@
         "MaxStackSize": 999,
         "StackSize": 1,
         "UiEffects": 64
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676438
       },
       "Delete": {
         "PropertiesString": ["Use", "ShortDesc"],

@@ -24,24 +24,7 @@ namespace BetterLootControl;
 [HarmonyPatch]
 public partial class PatchClass : BasicPatch<Settings>
 {
-    internal new static Settings Settings
-    {
-        get
-        {
-            try
-            {
-                var settingsPath = Path.Combine(Mod.ModPath, "Settings.json");
-                if (File.Exists(settingsPath))
-                {
-                    var json = File.ReadAllText(settingsPath);
-                    return System.Text.Json.JsonSerializer.Deserialize<Settings>(json) ?? s_settings;
-                }
-            }
-            catch { }
-            return s_settings;
-        }
-    }
-    private static Settings s_settings = new Settings();
+
 
     // SelectAProfile runs once per generator profile; runed / multi-profile chests call it many times per fill. We add at most one batch (1..MaxGuaranteedItems) and clear on Chest.Reset so the next restock can add again.
     static readonly ConcurrentDictionary<uint, byte> s_bclAppliedThisFill = new();
@@ -167,7 +150,7 @@ public partial class PatchClass : BasicPatch<Settings>
     [HarmonyPostfix]
     public static void PostSelectAProfile(WorldObject __instance)
     {
-        if (!s_settings.Enabled)
+        if (!Settings.Enabled)
             return;
 
         try
@@ -230,7 +213,7 @@ public partial class PatchClass : BasicPatch<Settings>
     [HarmonyPostfix]
     public static void PostChestReset(double? resetTimestamp, Chest __instance)
     {
-        if (!s_settings.Enabled)
+        if (!Settings.Enabled)
             return;
 
         try
@@ -269,7 +252,7 @@ public partial class PatchClass : BasicPatch<Settings>
     [HarmonyPostfix]
     public static void PostChestClose(Player player, Chest __instance)
     {
-        if (!s_settings.Enabled)
+        if (!Settings.Enabled)
             return;
 
         try
@@ -314,7 +297,7 @@ public partial class PatchClass : BasicPatch<Settings>
         if (salvageItem != null)
         {
             bool added = chest.TryAddToInventory(salvageItem);
-            if (added && s_settings.EnableDebugLogging)
+            if (added && Settings.EnableDebugLogging)
                 ModManager.Log($"BetterLootControl: Added salvage {salvageItem.Name} to chest {chest.Name}", ModManager.LogLevel.Info);
         }
 
@@ -326,7 +309,7 @@ public partial class PatchClass : BasicPatch<Settings>
             if (itemToAdd != null)
             {
                 bool added = chest.TryAddToInventory(itemToAdd);
-                if (added && s_settings.EnableDebugLogging)
+                if (added && Settings.EnableDebugLogging)
                     ModManager.Log($"BetterLootControl: Added {itemToAdd.Name} to chest {chest.Name}", ModManager.LogLevel.Info);
             }
         }
@@ -336,7 +319,7 @@ public partial class PatchClass : BasicPatch<Settings>
         if (imbueItem != null)
         {
             bool added = chest.TryAddToInventory(imbueItem);
-            if (added && s_settings.EnableDebugLogging)
+            if (added && Settings.EnableDebugLogging)
                 ModManager.Log($"BetterLootControl: Added imbue salvage {imbueItem.Name} to chest {chest.Name}", ModManager.LogLevel.Info);
         }
 
@@ -345,7 +328,7 @@ public partial class PatchClass : BasicPatch<Settings>
         if (foolproofItem != null)
         {
             bool added = chest.TryAddToInventory(foolproofItem);
-            if (added && s_settings.EnableDebugLogging)
+            if (added && Settings.EnableDebugLogging)
                 ModManager.Log($"BetterLootControl: Added foolproof {foolproofItem.Name} to chest {chest.Name}", ModManager.LogLevel.Info);
         }
 
@@ -354,7 +337,7 @@ public partial class PatchClass : BasicPatch<Settings>
         if (gearItem != null)
         {
             bool added = chest.TryAddToInventory(gearItem);
-            if (added && s_settings.EnableDebugLogging)
+            if (added && Settings.EnableDebugLogging)
                 ModManager.Log($"BetterLootControl: Added bonus gear {gearItem.Name} to chest {chest.Name}", ModManager.LogLevel.Info);
         }
     }

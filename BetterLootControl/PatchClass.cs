@@ -24,7 +24,7 @@ namespace BetterLootControl;
 [HarmonyPatch]
 public partial class PatchClass : BasicPatch<Settings>
 {
-
+    internal static Settings? CurrentSettings;
 
     // SelectAProfile runs once per generator profile; runed / multi-profile chests call it many times per fill. We add at most one batch (1..MaxGuaranteedItems) and clear on Chest.Reset so the next restock can add again.
     static readonly ConcurrentDictionary<uint, byte> s_bclAppliedThisFill = new();
@@ -39,12 +39,18 @@ public partial class PatchClass : BasicPatch<Settings>
     {
         ModManager.Log("[BetterLoot] Start() called", ModManager.LogLevel.Info);
         base.Start();
+        Settings = SettingsContainer.Settings ?? new Settings();
+        CurrentSettings = Settings;
     }
 
     public override async Task OnStartSuccess()
     {
         ModManager.Log("[BetterLoot] OnStartSuccess ENTERED", ModManager.LogLevel.Info);
         await base.OnStartSuccess();
+        
+        Settings = SettingsContainer.Settings ?? new Settings();
+        CurrentSettings = Settings;
+        
         LoadLootConfig();
 
         // Debug: check settings
@@ -150,7 +156,7 @@ public partial class PatchClass : BasicPatch<Settings>
     [HarmonyPostfix]
     public static void PostSelectAProfile(WorldObject __instance)
     {
-        if (!Settings.Enabled)
+        if (CurrentSettings?.Enabled != true)
             return;
 
         try
@@ -213,7 +219,7 @@ public partial class PatchClass : BasicPatch<Settings>
     [HarmonyPostfix]
     public static void PostChestReset(double? resetTimestamp, Chest __instance)
     {
-        if (!Settings.Enabled)
+        if (CurrentSettings?.Enabled != true)
             return;
 
         try
@@ -252,7 +258,7 @@ public partial class PatchClass : BasicPatch<Settings>
     [HarmonyPostfix]
     public static void PostChestClose(Player player, Chest __instance)
     {
-        if (!Settings.Enabled)
+        if (CurrentSettings?.Enabled != true)
             return;
 
         try
@@ -370,7 +376,7 @@ public partial class PatchClass : BasicPatch<Settings>
     [HarmonyPrefix]
     public static void PreApproachVendor(Player player, VendorType action, uint altCurrencySpent, Vendor __instance)
     {
-        if (Settings?.EnableVendorLootRotation != true)
+        if (CurrentSettings?.EnableVendorLootRotation != true)
             return;
 
         VendorLootRotation.OnVendorApproachPrefix(player, action, altCurrencySpent, __instance);

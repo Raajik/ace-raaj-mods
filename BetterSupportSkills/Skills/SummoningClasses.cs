@@ -1060,10 +1060,9 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
     [ThreadStatic]
     static bool _artificerWispCleaving;
 
-    // TEMPORARILY DISABLED - investigating "Patching exception in method null" error
-    // [HarmonyPostfix]
-    // [HarmonyPatch(typeof(Creature), nameof(Creature.TakeDamage), new Type[] { typeof(WorldObject), typeof(DamageType), typeof(float), typeof(bool) })]
-    public static void PostCreatureTakeDamage_DISABLED(WorldObject source, DamageType damageType, float amount, bool crit, Creature __instance, ref uint __result)
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Creature), "TakeDamage", new Type[] { typeof(WorldObject), typeof(DamageType), typeof(float), typeof(bool) })]
+    public static void PostCreatureTakeDamage(WorldObject source, DamageType damageType, float amount, bool crit, Creature __instance)
     {
         // Prevent infinite recursion when cleave damage triggers TakeDamage again
         if (_artificerWispCleaving)

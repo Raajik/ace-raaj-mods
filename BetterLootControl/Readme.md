@@ -17,7 +17,9 @@ This allows jewelers to sell powerful jewelry with weapon imbues that actually p
 
 Vendors automatically rotate their equipment inventory on a schedule.
 
-#### Jeweler Specialization
+#### Vendor Specializations
+
+##### Jeweler Specialization
 Jewelers receive premium treatment with high-quality magical items:
 
 **Item Generation:**
@@ -53,6 +55,27 @@ Price multipliers stack exponentially:
 
 Formula: `Base × Imbue × Awaken × (Tinker^count)`
 
+##### Archmage Specialization
+Archmages specialize in magical equipment for casters:
+
+**Item Generation:**
+- 15-30 caster weapons (wands, orbs, magical staves) with spells
+- 8-20 magical robes (vestments, kaftans) with spells
+- High-quality magical items via TreasureItemCategory.MagicItem
+
+**Enhancement Rates (Caster Weapons/Robes):**
+- 65% imbue chance (vs 40% for other vendors)
+- 30% awaken chance at tier 6+ (vs 15% for other vendors)
+- 55% chance for 1-3 tinkers
+
+**Visual Indicators:**
+- Same as jeweler items (blue glow for spells, imbue overlays, etc.)
+- Robes filtered by name ("robe", "vestment", "kaftan")
+
+**Premium Pricing:**
+- Same multiplier formula as jewelers
+- Masterwork awakened imbued robes = 6-7 figures!
+
 ### Configurable Settings
 
 All values in `Settings.json`:
@@ -62,8 +85,13 @@ All values in `Settings.json`:
   "VendorLootJewelerImbueChance": 0.70,      // 70% imbue rate
   "VendorLootJewelerAwakenChance": 0.35,     // 35% awaken rate  
   "VendorLootJewelerTinkerChance": 0.60,     // 60% tinker rate
-  "VendorLootJewelerMinTinkers": 1,          // Min tinkers
-  "VendorLootJewelerMaxTinkers": 3,          // Max tinkers
+  "VendorLootJewelerMinTinkers": 1,
+  "VendorLootJewelerMaxTinkers": 3,
+  "VendorLootMageImbueChance": 0.65,         // 65% imbue rate
+  "VendorLootMageAwakenChance": 0.30,        // 30% awaken rate
+  "VendorLootMageTinkerChance": 0.55,        // 55% tinker rate
+  "VendorLootMageMinTinkers": 1,
+  "VendorLootMageMaxTinkers": 3,
   "VendorLootTinkerValueMultiplier": 2.0,    // 2x per tinker
   "VendorLootImbueChance": 0.40,             // Other vendors
   "VendorLootAwakenChance": 0.15,            // Other vendors
@@ -86,10 +114,17 @@ All values in `Settings.json`:
 - `OnVendorApproachPrefix` - Triggers rotation on vendor approach
 - `GenerateJewelryBatch` / `GenerateGemBatch` - Direct jewelry/gem creation for jewelers
 
-### Known Jeweler WCIDs
+### Known Vendor WCIDs
 
-All town jewelers are classified for premium treatment:
+**Jewelers (20 total):**
 ```
 411, 655, 665, 674, 698, 716, 736, 801, 817, 818, 839, 868, 
 980, 991, 1042, 1055, 1081, 1151, 1152, 1820
+```
+
+**Archmages (31 total):**
+```
+692, 795, 809, 831, 856, 857, 984, 1048, 1369, 1370, 1371, 1812, 
+1824, 2220, 2246, 2247, 2248, 2249, 2250, 2290, 2302, 2303, 2304, 
+2305, 2306, 2307, 2314, 2498, 2537, 2540
 ```

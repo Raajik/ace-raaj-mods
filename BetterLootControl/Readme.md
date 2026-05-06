@@ -76,6 +76,28 @@ Archmages specialize in magical equipment for casters:
 - Same multiplier formula as jewelers
 - Masterwork awakened imbued robes = 6-7 figures!
 
+##### Bowyer/Fletcher Specialization
+Bowyers specialize in ranged combat equipment:
+
+**Item Generation:**
+- 15-30 missile weapons (bows, crossbows, thrown weapons) with spells
+- 8-20 ammunition stacks (arrows, bolts, atlatl darts)
+- High-quality magical items via TreasureItemCategory.MagicItem for weapons
+- Mundane ammunition with 100-250 per stack
+
+**Enhancement Rates (Missile Weapons):**
+- 65% imbue chance (vs 40% for other vendors)
+- 30% awaken chance at tier 6+ (vs 15% for other vendors)
+- 55% chance for 1-3 tinkers
+
+**Visual Indicators:**
+- Same as other specialized vendors (blue glow for spells, imbue overlays, etc.)
+- Ammunition filtered for stackable missile weapons
+
+**Premium Pricing:**
+- Same multiplier formula as jewelers and archmages
+- Masterwork awakened imbued bows = 6-7 figures!
+
 ### Configurable Settings
 
 All values in `Settings.json`:
@@ -92,6 +114,11 @@ All values in `Settings.json`:
   "VendorLootMageTinkerChance": 0.55,        // 55% tinker rate
   "VendorLootMageMinTinkers": 1,
   "VendorLootMageMaxTinkers": 3,
+  "VendorLootBowyerImbueChance": 0.65,       // 65% imbue rate
+  "VendorLootBowyerAwakenChance": 0.30,      // 30% awaken rate
+  "VendorLootBowyerTinkerChance": 0.55,      // 55% tinker rate
+  "VendorLootBowyerMinTinkers": 1,
+  "VendorLootBowyerMaxTinkers": 3,
   "VendorLootTinkerValueMultiplier": 2.0,    // 2x per tinker
   "VendorLootImbueChance": 0.40,             // Other vendors
   "VendorLootAwakenChance": 0.15,            // Other vendors
@@ -127,4 +154,13 @@ All values in `Settings.json`:
 692, 795, 809, 831, 856, 857, 984, 1048, 1369, 1370, 1371, 1812, 
 1824, 2220, 2246, 2247, 2248, 2249, 2250, 2290, 2302, 2303, 2304, 
 2305, 2306, 2307, 2314, 2498, 2537, 2540
+```
+
+**Bowyers/Fletchers (53 total):**
+```
+403, 651, 662, 671, 713, 733, 798, 814, 836, 864, 977, 988, 1039,
+1052, 1378, 1379, 1380, 1817, 1828, 2227, 2254, 2295, 2316, 2533,
+4439, 4542, 4550, 4563, 4680, 4691, 4697, 5423, 5649, 6857, 8227,
+8435, 8494, 9023, 9207, 9416, 9677, 11378, 11403, 20924, 22723,
+24218, 24591, 27247, 30031, 30066, 40949, 40961, 40973, 40984
 ```

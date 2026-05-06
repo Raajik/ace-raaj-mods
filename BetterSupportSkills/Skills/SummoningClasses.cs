@@ -1057,10 +1057,17 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
 
     // -- Artificer Proc: Imperil + Drain on Wisp Melee -------------------
 
+    [ThreadStatic]
+    static bool _artificerWispCleaving;
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Creature), nameof(Creature.TakeDamage), new Type[] { typeof(WorldObject), typeof(DamageType), typeof(float), typeof(bool) })]
     public static void PostCreatureTakeDamage(WorldObject source, DamageType damageType, float amount, bool crit, Creature __instance, ref uint __result)
     {
+        // Prevent infinite recursion when cleave damage triggers TakeDamage again
+        if (_artificerWispCleaving)
+            return;
+
         if (source is not CombatPet pet) return;
         if (!TrackedPetGuids.ContainsKey(pet.Guid.Full)) return;
         if (pet.P_PetOwner is not Player owner) return;
@@ -1106,44 +1113,44 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
                 aoeTargets.Add(enemy);
         }
 
-        // Artificer wisp procs: Imperil debuff + cleave damage to AoE targets
-        // CRITICAL: Defer damage to ActionChain to avoid infinite recursion (we're inside DamageTarget postfix)
-        float splashDamageFraction = PatchClass.Settings?.SummoningClasses?.ArtificerWispCleaveDamageFraction ?? 0.5f;
-        float splashDamage = amount * splashDamageFraction;
+        // Artificer wisp cleave: hit all enemies in 10m range with Imperil + damage
+        float cleaveDamageFraction = PatchClass.Settings?.SummoningClasses?.ArtificerWispCleaveDamageFraction ?? 0.5f;
+        float cleaveDamage = amount * cleaveDamageFraction;
 
-        if (ImperilSpellIds.TryGetValue(tier, out var imperilId))
+        if (!ImperilSpellIds.TryGetValue(tier, out var imperilId))
+            return;
+
+        var imperilSpell = new ACE.Server.Entity.Spell(imperilId);
+        if (imperilSpell.NotFound)
+            return;
+
+        // Set recursion guard before dealing damage
+        _artificerWispCleaving = true;
+        try
         {
-            var imperilSpell = new ACE.Server.Entity.Spell(imperilId);
-            if (!imperilSpell.NotFound)
+            foreach (var target in aoeTargets)
             {
-                // Apply imperils and damage on next tick to avoid recursion
-                var chain = new ActionChain();
-                chain.AddAction(pet, () =>
+                if (target == null || target.IsDestroyed || target.IsDead)
+                    continue;
+
+                try
                 {
-                    foreach (var target in aoeTargets)
-                    {
-                        try
-                        {
-                            if (target == null || target.IsDestroyed || target.IsDead)
-                                continue;
+                    // Apply Imperil to all targets (including primary)
+                    target.EnchantmentManager.Add(imperilSpell, pet, null);
 
-                            // Apply Imperil enchantment
-                            target.EnchantmentManager.Add(imperilSpell, pet, null);
-
-                            // Deal cleave damage to AoE targets (not the primary target)
-                            if (target != __instance && splashDamage > 0)
-                            {
-                                target.TakeDamage(pet, DamageType.Health, splashDamage, false);
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            ModManager.Log($"[BSS Artificer] Wisp AoE proc failed on {target.Name}: {ex.Message}", ModManager.LogLevel.Warn);
-                        }
-                    }
-                });
-                chain.EnqueueChain();
+                    // Deal cleave damage to secondary targets (primary already took damage)
+                    if (target != __instance && cleaveDamage > 0)
+                        target.TakeDamage(pet, DamageType.Health, cleaveDamage, false);
+                }
+                catch (Exception ex)
+                {
+                    ModManager.Log($"[BSS Artificer] Wisp cleave failed on {target.Name}: {ex.Message}", ModManager.LogLevel.Warn);
+                }
             }
+        }
+        finally
+        {
+            _artificerWispCleaving = false;
         }
     }
 

@@ -391,6 +391,8 @@ public partial class PatchClass
             }
 
             creature.Location = new Position(deathLocation);
+            // Add spawn safety margin to prevent spawning below floor
+            creature.Location.PositionZ += 1.0f;
 
             // Apply depth-based compound growth (stacked with chaos if both active)
             float effectiveMult = growthEnabled ? growthMult : 1.0f;

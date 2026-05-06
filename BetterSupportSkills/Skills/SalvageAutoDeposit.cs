@@ -409,7 +409,7 @@ public static class SalvageAutoDeposit
             return;
 
         var imbue = item.ImbuedEffect;
-        if (!imbue.HasValue || imbue.Value == ImbuedEffectType.Undef)
+        if (imbue == ImbuedEffectType.Undef)
             return;
 
         var settings = PatchClass.Settings;

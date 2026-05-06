@@ -145,14 +145,22 @@ internal static class BuddySpawns
 
     static int GetEffectiveBuddyIdleThresholdSeconds(int storedSeconds, Landblock lb)
     {
-        if (!WorldEvents.SaleLandblockApi.IsLandblockOnSale((int)lb.Id.Raw))
-            return storedSeconds;
+        try
+        {
+            if (!WorldEvents.SaleLandblockApi.IsLandblockOnSale((int)lb.Id.Raw))
+                return storedSeconds;
 
-        var scale = WorldEvents.SaleLandblockApi.BuddyIdleThresholdScale;
-        if (scale >= 1.0 - 1e-9)
-            return storedSeconds;
+            var scale = WorldEvents.SaleLandblockApi.BuddyIdleThresholdScale;
+            if (scale >= 1.0 - 1e-9)
+                return storedSeconds;
 
-        return Math.Max(5, (int)(storedSeconds * scale));
+            return Math.Max(5, (int)(storedSeconds * scale));
+        }
+        catch (Exception)
+        {
+            // WorldEvents not loaded or API unavailable
+            return storedSeconds;
+        }
     }
 
     static List<Creature> GetLivingCreatures(Landblock lb)

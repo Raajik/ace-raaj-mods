@@ -665,15 +665,22 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
 
                 player.UpdateQuestPoints();
                 var afterQp = (float)(player.GetProperty(FakeFloat.QuestBonus) ?? 0f);
+                
+                // One-time XP + loot bonuses (QP already reflected in UpdateQuestPoints)
+                var bonusXp = player.GrantCompletionBonuses(baseName);
+                
+                // Combined QP + XP message
                 if (player.Notify(LMBool.NotifyQuest))
                 {
                     var delta = afterQp - beforeQp;
                     if (delta > 0.0001f)
-                        player.SendMessage(LoremasterExtensions.FormatQpNotification($"+{delta:0.##} QP from {questFormat}"));
+                    {
+                        var msg = bonusXp > 0
+                            ? $"+{delta:0.##} QP from {questFormat} (bonus: +{bonusXp:N0} XP)"
+                            : $"+{delta:0.##} QP from {questFormat}";
+                        player.SendMessage(LoremasterExtensions.FormatQpNotification(msg));
+                    }
                 }
-
-                // One-time XP + loot bonuses (QP already reflected in UpdateQuestPoints)
-                player.GrantCompletionBonuses(baseName);
 
                 // Achievement check: newCount includes the just-added quest; prevCount = newCount - 1.
                 var newAccountCount = Settings.UseAccountWideQuests

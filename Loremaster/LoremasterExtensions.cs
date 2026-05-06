@@ -413,42 +413,45 @@ public static class LoremasterExtensions
     // Quest rewards — completion bonus XP, repeat stamp, loot
     // ─────────────────────────────────────────────────────────────────────────
 
-    public static void GrantCompletionBonuses(this Player player, string questName)
+    /// <summary>
+    /// Grants quest completion bonus XP and returns the amount for display.
+    /// Returns 0 if no bonus granted or notifications disabled.
+    /// </summary>
+    public static long GrantCompletionBonuses(this Player player, string questName)
     {
         var s = PatchClass.Settings;
-        if (s is null || !s.EnableCompletionBonusXp) return;
+        if (s is null || !s.EnableCompletionBonusXp) return 0;
 
         float fraction;
         if (s.CompletionBonusXpOverrides.TryGetValue(questName, out var ovr))
         {
-            if (ovr <= 0) return;
+            if (ovr <= 0) return 0;
             fraction = ovr;
         }
         else
         {
             var qp = (float)(player.GetProperty(FakeFloat.QuestBonus) ?? 0);
             fraction = s.DefaultCompletionBonusXpMultiplier + qp * s.CompletionBonusPerQuestPoint / 100f;
-            if (fraction <= 0) return;
+            if (fraction <= 0) return 0;
         }
 
         var xpToNext = player.GetXpToNextLevel();
-        if (xpToNext <= 0) return;
+        if (xpToNext <= 0) return 0;
 
         var amount = (long)(xpToNext * fraction);
-        if (amount <= 0) return;
+        if (amount <= 0) return 0;
 
         // Apply base retention before granting and displaying
         var baseRetention = Math.Clamp(s.BonusXpBaseRetentionPercent / 100.0, 0.0, 100.0);
         var retained = (long)(amount * baseRetention);
-        if (retained <= 0) return;
+        if (retained <= 0) return 0;
 
         ExternalXpGrants.GrantQuestXpWithBaseRetention(player, amount);
 
-        if (player.Notify(LMBool.NotifyQuestXp))
-        {
-            var show = QuestXpAwardDisplay.EstimateCharacterXpAfterAchievementChain(player, retained);
-            player.SendMessage($"[Loremaster] Completion bonus: +{show:N0} XP.");
-        }
+        if (!player.Notify(LMBool.NotifyQuestXp))
+            return 0;
+
+        return QuestXpAwardDisplay.EstimateCharacterXpAfterAchievementChain(player, retained);
     }
 
     /// <summary>

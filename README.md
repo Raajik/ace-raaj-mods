@@ -49,7 +49,8 @@ Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot`
 - **Weapon imbues work on jewelry** — Harmony patches make CriticalStrike/CripplingBlow/ArmorRending apply from any equipped item
 - **Overtinked custom imbues** — Hemorrhage/Cleaving/NetherRending/Shatter can roll on vendor items (25% chance)
 - **Visual system** — Color-coded UiEffects glows + IconUnderlayId background textures (frost/fire/acid/lightning)
-- **Premium pricing** — Multipliers stack: `Base × Imbue(5x) × Awaken(8x) × Tinker(2^count)`
+- **Premium pricing** — Multipliers stack: `Base × Imbue(5x) × Awaken(8x) × Tinker(2^count) × LuxuryTax(1.25x) × EconomyMultiplier`
+- **Economy integration** — Prices scale dynamically with server wealth via LeyLineLedger EconomyBalancer
 
 **Chest & Loot:**
 - **Chest guaranteed drops** — adds salvage, trade notes, healing kits, keys, crystals, and gear to treasure chests.

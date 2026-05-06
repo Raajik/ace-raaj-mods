@@ -830,11 +830,11 @@ try
             enabledFeatures.Add(Features.SneakAttackSkill);
         if (Settings.EnableTrophyDrops)
             enabledFeatures.Add(Features.TrophyDropsSkill);
+        if (Settings.EnableTinkeringLootGating)
+            enabledFeatures.Add(Features.TinkeringLootGating);
         
         // Rest disabled
         /*
-        if (Settings.EnableTinkeringLootGating)
-            enabledFeatures.Add(Features.TinkeringLootGating);
         if (Settings.EnableDruidPetThorns)
             enabledFeatures.Add(Features.DruidPetThorns);
         if (Settings.EnableSalvage)

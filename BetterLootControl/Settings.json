@@ -72,6 +72,11 @@
   "VendorLootJewelerMinTinkers": 1,
   "VendorLootJewelerMaxTinkers": 3,
   "VendorLootTinkerValueMultiplier": 2.0,
+  "VendorLootMageImbueChance": 0.65,
+  "VendorLootMageAwakenChance": 0.30,
+  "VendorLootMageTinkerChance": 0.55,
+  "VendorLootMageMinTinkers": 1,
+  "VendorLootMageMaxTinkers": 3,
   "VendorLootLowStatMode": false,
   "VendorLootSalvageOnRotation": false,
   "VendorTierWcidMap": {

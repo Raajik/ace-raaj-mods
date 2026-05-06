@@ -55,6 +55,13 @@ public class Settings
     public int VendorLootJewelerMaxTinkers { get; init; } = 3;
     public double VendorLootTinkerValueMultiplier { get; init; } = 2.0; // 2x value per tinker
 
+    // Mage-specific enhancements
+    public double VendorLootMageImbueChance { get; init; } = 0.65; // 65% imbue chance for mage items
+    public double VendorLootMageAwakenChance { get; init; } = 0.30; // 30% awaken chance for tier 6+ mage items
+    public double VendorLootMageTinkerChance { get; init; } = 0.55; // 55% chance to add tinkers
+    public int VendorLootMageMinTinkers { get; init; } = 1;
+    public int VendorLootMageMaxTinkers { get; init; } = 3;
+
     // Legacy/low-stat mode
     public bool VendorLootLowStatMode { get; init; } = false;
     public bool VendorLootSalvageOnRotation { get; init; } = false;

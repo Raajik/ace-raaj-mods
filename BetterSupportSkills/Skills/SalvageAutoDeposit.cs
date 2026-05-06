@@ -122,16 +122,12 @@ public static class SalvageAutoDeposit
         // Try material-type salvage first (armor/weapons with MaterialType)
         if (TryGetMaterialSalvage(player, item, salvageSettings, out var materialIndex, out var rawUnits))
         {
-            int bankProp = GetMaterialBankProperty(materialIndex);
-            long current = player.GetProperty((PropertyInt64)bankProp) ?? 0;
             double depositUnits = rawUnits * rate;
-            player.SetProperty((PropertyInt64)bankProp, (long)(current + depositUnits));
-
+            uint salvageWcid = (uint)(20981 + materialIndex);
+            LeyLineLedgerSalvageInterop.TryIncSalvage(player, salvageWcid, (int)depositUnits);
             AccumulateForMessage(player, materialIndex, depositUnits);
-            
             // Grant imbue salvage bonus BEFORE destroying the item
             TryGrantImbueSalvage(player, item);
-            
             return true;
         }
 
@@ -144,11 +140,8 @@ public static class SalvageAutoDeposit
             rawUnits = GetSalvageUnits(item, salvageSettings.UnitsPerItem);
             if (rawUnits <= 0) return false;
 
-            int bankProp = GetMaterialBankProperty(materialIndex);
-            long current = player.GetProperty((PropertyInt64)bankProp) ?? 0;
             double depositUnits = rawUnits * rate;
-            player.SetProperty((PropertyInt64)bankProp, (long)(current + depositUnits));
-
+            LeyLineLedgerSalvageInterop.TryIncSalvage(player, item.WeenieClassId, (int)depositUnits);
             AccumulateForMessage(player, materialIndex, depositUnits);
             return true;
         }
@@ -196,10 +189,8 @@ public static class SalvageAutoDeposit
         if (rawUnits <= 0)
             return true;
 
-        int bankProp = GetMaterialBankProperty(materialIndex);
-        long current = __instance.GetProperty((PropertyInt64)bankProp) ?? 0;
         double depositUnits = rawUnits * rate;
-        __instance.SetProperty((PropertyInt64)bankProp, (long)(current + depositUnits));
+        LeyLineLedgerSalvageInterop.TryIncSalvage(__instance, item.WeenieClassId, (int)depositUnits);
 
         AccumulateForMessage(__instance, materialIndex, depositUnits);
 
@@ -602,21 +593,12 @@ public static class SalvageAutoDeposit
             return (1, displayName, units, before, after);
         }
 
-        // BSS fallback
-        int matIndex = GetMaterialIndex(salvageWcid);
-        if (matIndex < 0 || matIndex > 108)
-        {
-            ModManager.Log($"[BSS Imbue Salvage] Invalid material index {matIndex} for WCID {salvageWcid}", ModManager.LogLevel.Debug);
-            return (0, displayName, 0, 0, 0);
-        }
+        // Fallback: write through LLL property resolution (catches gems/imbue-if LLL has the rule)
+        // This uses the same rule-index-based mapping as LLL's /bank salvage system.
+        LeyLineLedgerSalvageInterop.TryIncSalvage(player, salvageWcid, units);
 
-        int bankProp = GetMaterialBankProperty(matIndex);
-        long bssBefore = player.GetProperty((PropertyInt64)bankProp) ?? 0;
-        long bssAfter  = bssBefore + units;
-        player.SetProperty((PropertyInt64)bankProp, bssAfter);
-
-        ModManager.Log($"[BSS Imbue Salvage] {displayName} (WCID {salvageWcid}) via BSS prop {bankProp}: {bssBefore} → {bssAfter}", ModManager.LogLevel.Debug);
-        return (1, displayName, units, bssBefore, bssAfter);
+        ModManager.Log($"[BSS Imbue Salvage] {displayName} (WCID {salvageWcid}) via LLL interop fallback", ModManager.LogLevel.Debug);
+        return (1, displayName, units, 0, 0);
     }
 
     static string GetMaterialNameByWcid(uint wcid)

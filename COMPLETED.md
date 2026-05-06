@@ -2,6 +2,23 @@
 
 ## 2026-05-06
 
+### Hotfix: Salvage banking routes through LLL (BSS→LLL property mismatch)
+
+**Symptom:** Closing chests/corpses silently destroyed salvage bags instead of banking units to LLL. Auto-salvaged imbued items showed deposit messages but no credits appeared in `/bank salvage`.
+
+**Root cause:** BSS's `TryAutoSalvageItem` and `PreTryCreateInInventory` wrote to BSS's own `PropertyInt64` mapping (`40201 + (wcid - 20981)`). LLL uses a rule-index-based mapping (`40201 + ruleIndex`). These only align for the first 15 materials (20981-20995). For all gem/imbue WCIDs (21034+), BSS wrote to property IDs that LLL never reads — 57 materials affected, off by 38 properties.
+
+**Fix:** Replaced all direct `player.SetProperty(PropertyInt64)` calls with `LeyLineLedgerSalvageInterop.TryIncSalvage`, which resolves the correct LLL property ID and calls through `IncBanked → AccountBankStore`:
+- `TryAutoSalvageItem` material-type path
+- `TryAutoSalvageItem` raw salvage bag path  
+- `PreTryCreateInInventory` salvage bag intercept
+- `GrantImbueSalvage` BSS fallback → now routes through LLL interop
+
+### Session 5: AutoLoot per-player toggle for LLL auto-banking
+- Added `LllBankingEnabled` to PlayerPrefs (default true) + `lllBankingEnabled` ConcurrentDictionary
+- Added `/autoloot bank` command + numeric index toggle (between trophies and salvage)
+- Gates ProcessContainerLootImmediate LLL calls and ProcessContainerLoot Passes 4-7
+
 ### Session 4: Trophy Toggle + DB Cleanup (Head Drops)
 
 **AutoLoot: `/autoloot trophies` toggle**

@@ -38,27 +38,33 @@ internal static class DungeonPopulationManager
 
     static void Tick(Settings settings)
     {
-        try
+        // Queue the work to run on the WorldManager thread to avoid cross-thread landblock operations
+        var actionChain = new ActionChain();
+        actionChain.AddAction(WorldManager.ActionQueue, () =>
         {
-            var processed = new HashSet<uint>();
-            foreach (var player in PlayerManager.GetAllOnline())
+            try
             {
-                var lb = player.CurrentLandblock;
-                if (lb == null || !lb.IsDungeon)
-                    continue;
+                var processed = new HashSet<uint>();
+                foreach (var player in PlayerManager.GetAllOnline())
+                {
+                    var lb = player.CurrentLandblock;
+                    if (lb == null || !lb.IsDungeon)
+                        continue;
 
-                uint lbId = lb.Id.Raw;
-                if (processed.Contains(lbId))
-                    continue;
-                processed.Add(lbId);
+                    uint lbId = lb.Id.Raw;
+                    if (processed.Contains(lbId))
+                        continue;
+                    processed.Add(lbId);
 
-                ProcessLandblock(lb, settings);
+                    ProcessLandblock(lb, settings);
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[Swarmed] DungeonPopulationManager tick error: {ex.Message}", ModManager.LogLevel.Warn);
-        }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[Swarmed] DungeonPopulationManager tick error: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+        });
+        actionChain.EnqueueChain();
     }
 
     static void ProcessLandblock(Landblock lb, Settings settings)

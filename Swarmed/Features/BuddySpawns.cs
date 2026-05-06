@@ -57,32 +57,38 @@ internal static class BuddySpawns
 
     static void Tick(Settings settings)
     {
-        try
+        // Queue the work to run on the WorldManager thread to avoid cross-thread landblock operations
+        var actionChain = new ActionChain();
+        actionChain.AddAction(WorldManager.ActionQueue, () =>
         {
-            var processedLbs = new HashSet<uint>();
-            foreach (var player in PlayerManager.GetAllOnline())
+            try
             {
-                var lb = player.CurrentLandblock;
-                if (lb == null) continue;
-
-                uint lbId = lb.Id.Raw;
-                if (processedLbs.Contains(lbId))
-                    continue;
-                processedLbs.Add(lbId);
-
-                if (lb.players == null || lb.players.Count == 0)
+                var processedLbs = new HashSet<uint>();
+                foreach (var player in PlayerManager.GetAllOnline())
                 {
-                    _states.TryRemove(lbId, out _);
-                    continue;
-                }
+                    var lb = player.CurrentLandblock;
+                    if (lb == null) continue;
 
-                ProcessLandblock(lb, settings);
+                    uint lbId = lb.Id.Raw;
+                    if (processedLbs.Contains(lbId))
+                        continue;
+                    processedLbs.Add(lbId);
+
+                    if (lb.players == null || lb.players.Count == 0)
+                    {
+                        _states.TryRemove(lbId, out _);
+                        continue;
+                    }
+
+                    ProcessLandblock(lb, settings);
+                }
             }
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[Swarmed] BuddySpawns tick error: {ex.Message}", ModManager.LogLevel.Warn);
-        }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[Swarmed] BuddySpawns tick error: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+        });
+        actionChain.EnqueueChain();
     }
 
     static void ProcessLandblock(Landblock lb, Settings settings)

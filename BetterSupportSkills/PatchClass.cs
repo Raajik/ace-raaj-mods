@@ -848,9 +848,8 @@ try
             enabledFeatures.Add(Features.TrophyDropsSkill);
         if (Settings.EnableTinkeringLootGating)
             enabledFeatures.Add(Features.TinkeringLootGating);
-        // TODO: Re-enable SummoningClasses after fixing Creature.TakeDamage patch
-        // if (Settings.EnableSummoningClasses)
-        //     enabledFeatures.Add(Features.SummoningClasses);
+        if (Settings.EnableSummoningClasses)
+            enabledFeatures.Add(Features.SummoningClasses);
         if (Settings.EnableDruidPetThorns)
             enabledFeatures.Add(Features.DruidPetThorns);
         if (Settings.EnableSalvage)

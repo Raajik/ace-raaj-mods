@@ -8,23 +8,29 @@
 - Quest completion bonus messages showed 10x too much XP
 - Example: "Completion bonus: +445,531 XP" but player only received 44,553 XP
 - User expected "good 10% to next level xp bonus" but got 1%
+- Two separate messages spammed chat:
+  - `[Loremaster] +8 QP from fachubbellig`
+  - `[Loremaster] Completion bonus: +55,012 XP.`
 
 **Root Cause:**
 - `GrantCompletionBonuses` calculated full completion bonus (e.g., 10% of next level = 445k)
 - `GrantQuestXpWithBaseRetention` then applied `BonusXpBaseRetentionPercent` (default **10%**) → 44k actual grant
 - But message displayed the **pre-retention** amount (445k) instead of **post-retention** (44k)
+- QP and XP messages sent separately
 
 **Solution:**
 - Calculate `retained = amount * baseRetention` before displaying message
 - Pass `retained` to `EstimateCharacterXpAfterAchievementChain` instead of `amount`
-- Message now shows what player actually receives
+- Change `GrantCompletionBonuses` to return XP amount instead of sending message
+- Combine QP and XP into single message: `+8 QP from fachubbellig (bonus: +55,012 XP)`
 
 **Result:**
-- Quest completion messages now accurate: "Completion bonus: +44,553 XP" matches actual grant
+- Quest completion messages now accurate: shows actual granted XP
+- Single message instead of two (reduces spam)
 - `BonusXpBaseRetentionPercent` = 10 means 10% of calculated reward (not 100%)
 - Setting doc already correct: "100 = full reward amount"
 
-**Commit:** `e001efc`
+**Commits:** `e001efc`, `f3941c9`
 
 ---
 

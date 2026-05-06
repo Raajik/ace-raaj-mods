@@ -76,6 +76,13 @@ public class Settings
     public int VendorLootArmorerMinTinkers { get; init; } = 1;
     public int VendorLootArmorerMaxTinkers { get; init; } = 3;
 
+    // Tailor-specific enhancements
+    public double VendorLootTailorImbueChance { get; init; } = 0.55; // 55% imbue chance for tailor items
+    public double VendorLootTailorAwakenChance { get; init; } = 0.20; // 20% awaken chance for tier 6+ tailor items
+    public double VendorLootTailorTinkerChance { get; init; } = 0.45; // 45% chance to add tinkers
+    public int VendorLootTailorMinTinkers { get; init; } = 1;
+    public int VendorLootTailorMaxTinkers { get; init; } = 3;
+
     // Legacy/low-stat mode
     public bool VendorLootLowStatMode { get; init; } = false;
     public bool VendorLootSalvageOnRotation { get; init; } = false;

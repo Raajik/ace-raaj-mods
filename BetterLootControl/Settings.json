@@ -92,6 +92,11 @@
   "VendorLootTailorTinkerChance": 0.45,
   "VendorLootTailorMinTinkers": 1,
   "VendorLootTailorMaxTinkers": 3,
+  "VendorLootShopkeeperImbueChance": 0.50,
+  "VendorLootShopkeeperAwakenChance": 0.18,
+  "VendorLootShopkeeperTinkerChance": 0.40,
+  "VendorLootShopkeeperMinTinkers": 1,
+  "VendorLootShopkeeperMaxTinkers": 3,
   "VendorLootLowStatMode": false,
   "VendorLootSalvageOnRotation": false,
   "VendorTierWcidMap": {

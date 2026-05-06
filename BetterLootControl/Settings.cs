@@ -83,6 +83,13 @@ public class Settings
     public int VendorLootTailorMinTinkers { get; init; } = 1;
     public int VendorLootTailorMaxTinkers { get; init; } = 3;
 
+    // Shopkeeper-specific enhancements (general stores with mixed inventory)
+    public double VendorLootShopkeeperImbueChance { get; init; } = 0.50; // 50% imbue chance for shopkeeper items
+    public double VendorLootShopkeeperAwakenChance { get; init; } = 0.18; // 18% awaken chance for tier 6+ shopkeeper items
+    public double VendorLootShopkeeperTinkerChance { get; init; } = 0.40; // 40% chance to add tinkers
+    public int VendorLootShopkeeperMinTinkers { get; init; } = 1;
+    public int VendorLootShopkeeperMaxTinkers { get; init; } = 3;
+
     // Legacy/low-stat mode
     public bool VendorLootLowStatMode { get; init; } = false;
     public bool VendorLootSalvageOnRotation { get; init; } = false;

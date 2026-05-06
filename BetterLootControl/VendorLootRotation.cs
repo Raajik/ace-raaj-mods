@@ -103,8 +103,17 @@ public static class VendorLootRotation
 
     static readonly HashSet<uint> _shopkeeperWcids = new()
     {
-        // General shopkeepers, grocers, barkeeps, peddlers, provisioners
-        // Will populate after database query
+        // Shopkeepers, Grocers, Barkeeps, Peddlers (115+ vendors)
+        31224, 32054, 38688, 38692, 5835, 31295, 32299, 40521, 40946, 40952, 40958,
+        40964, 40970, 40974, 40981, 40987, 42799, 42800, 42801, 42802, 42803, 42804,
+        42805, 42806, 42807, 42808, 42809, 42810, 11377, 4678, 4681, 693, 694, 696,
+        1079, 6856, 6858, 9206, 9208, 2252, 2253, 2255, 5832, 11384, 11385, 24590,
+        24592, 669, 670, 672, 2221, 2222, 2228, 657, 648, 652, 1082, 8493, 731, 732,
+        734, 11390, 404, 859, 860, 861, 865, 866, 710, 714, 4696, 4698, 8434, 4541,
+        5877, 4436, 4440, 796, 797, 799, 4548, 4551, 5861, 22724, 405, 1390, 1391,
+        1392, 1050, 1051, 1053, 11395, 659, 663, 973, 978, 30035, 30446, 30036, 2291,
+        2292, 2296, 832, 834, 837, 11402, 5438, 1813, 1814, 1818, 968, 1826, 1827,
+        1829, 24217, 8225, 8230, 810, 815, 5640, 1034, 1040, 985, 986, 989,
     };
 
     static readonly HashSet<uint> _bowyerWcids = new()
@@ -906,6 +915,33 @@ public static class VendorLootRotation
             int robeTarget = _rng.Next(8, 21); // 8-20 robes
             var robeBatch = GenerateRobeBatch(vendor, vendorTier, robeTarget);
             foreach (var wo in robeBatch)
+            {
+                AddItemToVendor(vendor, wo, rotatedSet);
+                itemCount++;
+            }
+        }
+        else if (vendorClass == VendorTypeClassification.Shopkeeper)
+        {
+            // Generate a mix of weapons, armor, and clothing
+            int weaponTarget = _rng.Next(perCatMin, perCatMax + 1);
+            var weaponBatch = GenerateMeleeWeaponBatch(vendor, vendorTier, weaponTarget);
+            foreach (var wo in weaponBatch)
+            {
+                AddItemToVendor(vendor, wo, rotatedSet);
+                itemCount++;
+            }
+
+            int armorTarget = _rng.Next(perCatMin, perCatMax + 1);
+            var armorBatch = GenerateArmorBatch(vendor, vendorTier, armorTarget);
+            foreach (var wo in armorBatch)
+            {
+                AddItemToVendor(vendor, wo, rotatedSet);
+                itemCount++;
+            }
+
+            int clothingTarget = _rng.Next(8, 16); // 8-15 clothing items
+            var clothingBatch = GenerateClothingBatch(vendor, vendorTier, clothingTarget);
+            foreach (var wo in clothingBatch)
             {
                 AddItemToVendor(vendor, wo, rotatedSet);
                 itemCount++;
@@ -1899,6 +1935,7 @@ public static class VendorLootRotation
         bool isBowyer = vendorClass == VendorTypeClassification.Bowyer;
         bool isArmorer = vendorClass == VendorTypeClassification.Armorer;
         bool isTailor = vendorClass == VendorTypeClassification.Tailor;
+        bool isShopkeeper = vendorClass == VendorTypeClassification.Shopkeeper;
 
         // Determine imbue chance (higher for specialized vendors)
         double imbueChance = _settings.VendorLootImbueChance;
@@ -1912,6 +1949,8 @@ public static class VendorLootRotation
             imbueChance = _settings.VendorLootArmorerImbueChance;
         else if (isTailor)
             imbueChance = _settings.VendorLootTailorImbueChance;
+        else if (isShopkeeper)
+            imbueChance = _settings.VendorLootShopkeeperImbueChance;
         
         // Roll for imbue
         if (!hasImbue && _rng.NextDouble() < imbueChance)
@@ -1936,6 +1975,8 @@ public static class VendorLootRotation
             awakenChance = _settings.VendorLootArmorerAwakenChance;
         else if (isTailor)
             awakenChance = _settings.VendorLootTailorAwakenChance;
+        else if (isShopkeeper)
+            awakenChance = _settings.VendorLootShopkeeperAwakenChance;
         
         // Roll for awakening on high-tier items (tier 6+)
         if (vendorTier >= 6 && !hasAwakened && _rng.NextDouble() < awakenChance)
@@ -2000,6 +2041,12 @@ public static class VendorLootRotation
             tinkerChance = _settings.VendorLootTailorTinkerChance;
             minTinkers = _settings.VendorLootTailorMinTinkers;
             maxTinkers = _settings.VendorLootTailorMaxTinkers;
+        }
+        else if (isShopkeeper)
+        {
+            tinkerChance = _settings.VendorLootShopkeeperTinkerChance;
+            minTinkers = _settings.VendorLootShopkeeperMinTinkers;
+            maxTinkers = _settings.VendorLootShopkeeperMaxTinkers;
         }
 
         if (tinkerChance > 0 && _rng.NextDouble() < tinkerChance)

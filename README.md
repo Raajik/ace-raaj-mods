@@ -48,6 +48,7 @@ Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot`
 - **Shopkeeper specialization (115+ vendors)** — 15-30 weapons + 15-30 armor + 8-15 clothing with 50% imbue, 18% awaken, 40% tinker rates
 - **Weapon imbues work on jewelry** — Harmony patches make CriticalStrike/CripplingBlow/ArmorRending apply from any equipped item
 - **Overtinked custom imbues** — Hemorrhage/Cleaving/NetherRending/Shatter can roll on vendor items (25% chance)
+- **Multi-imbue items** — 8% chance for 2 compatible imbues, 2% for 3 (ultra-rare!) — 125x price multiplier on triple-imbued gear!
 - **Visual system** — Color-coded UiEffects glows + IconUnderlayId background textures (frost/fire/acid/lightning)
 - **Premium pricing** — Multipliers stack: `Base × Imbue(5x) × Awaken(8x) × Tinker(2^count) × LuxuryTax(1.25x) × EconomyMultiplier`
 - **Economy integration** — Prices scale dynamically with server wealth via LeyLineLedger EconomyBalancer

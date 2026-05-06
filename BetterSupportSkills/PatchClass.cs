@@ -65,14 +65,28 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
         Skills.QuestTurnInTracker.Load();
 
         ModManager.Log($"[BSS] Start() - EnableTrophyDrops={Settings.EnableTrophyDrops}, EnableAssessCreature={Settings.EnableAssessCreature}", ModManager.LogLevel.Info);
-        RegisterEnabledPatchCategories();
+        
+        try
+        {
+            ModManager.Log("[BSS] RegisterEnabledPatchCategories...", ModManager.LogLevel.Info);
+            RegisterEnabledPatchCategories();
+            ModManager.Log("[BSS] RegisterEnabledPatchCategories done", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] RegisterEnabledPatchCategories FAILED: {ex}", ModManager.LogLevel.Error);
+            throw;
+        }
+        
         RecuperationHoT.RefreshHealerHook(ModC.Harmony, Settings.EnableHealing);
         TryApplyPlayerEnterWorldPatch();
         TryApplyLootPatch();
         TryApplyQuestTurnInCapPatch();
         TryApplyFoodPatch();
         TryApplyDamageEventPatch();
+        ModManager.Log("[BSS] About to call TryApplyCookingPatches...", ModManager.LogLevel.Info);
         TryApplyCookingPatches();
+        ModManager.Log("[BSS] TryApplyCookingPatches returned", ModManager.LogLevel.Info);
         TryApplyDirtyFightingPatch();
         TryApplyLockpickPatches();
         TryApplyChaosTinkerPatch();

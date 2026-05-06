@@ -230,18 +230,31 @@ void TryApplyDamageEventPatch()
             }
 
             // Patch Creature.VitalHeartBeat(CreatureVital) to add percentage-based bonus after base regen
-            var vitalHeartBeat = AccessTools.Method(typeof(Creature), nameof(Creature.VitalHeartBeat), new[] { typeof(CreatureVital) });
-            if (vitalHeartBeat != null)
+            try
             {
-                var regenPostfix = AccessTools.Method(typeof(Skills.CookingNaturalRegen), nameof(Skills.CookingNaturalRegen.PostVitalHeartBeat));
-                if (regenPostfix != null)
+                var vitalHeartBeat = AccessTools.Method(typeof(Creature), nameof(Creature.VitalHeartBeat), new[] { typeof(CreatureVital) });
+                ModManager.Log($"[BSS] Cooking: VitalHeartBeat method lookup result: {(vitalHeartBeat != null ? "FOUND" : "NULL")}", ModManager.LogLevel.Info);
+                
+                if (vitalHeartBeat != null)
                 {
-                    ModC.Harmony?.Patch(vitalHeartBeat, null, new HarmonyMethod(regenPostfix));
-                    ModManager.Log("[BSS] Cooking Creature.VitalHeartBeat postfix applied (percentage-based regen)", ModManager.LogLevel.Info);
+                    var regenPostfix = AccessTools.Method(typeof(Skills.CookingNaturalRegen), nameof(Skills.CookingNaturalRegen.PostVitalHeartBeat));
+                    ModManager.Log($"[BSS] Cooking: PostVitalHeartBeat method lookup result: {(regenPostfix != null ? "FOUND" : "NULL")}", ModManager.LogLevel.Info);
+                    
+                    if (regenPostfix != null)
+                    {
+                        ModC.Harmony?.Patch(vitalHeartBeat, null, new HarmonyMethod(regenPostfix));
+                        ModManager.Log("[BSS] Cooking Creature.VitalHeartBeat postfix applied (percentage-based regen)", ModManager.LogLevel.Info);
+                    }
+                    else
+                        ModManager.Log("[BSS] Cooking: PostVitalHeartBeat method not found in CookingNaturalRegen", ModManager.LogLevel.Error);
                 }
+                else
+                    ModManager.Log("[BSS] Cooking: VitalHeartBeat not found on Creature", ModManager.LogLevel.Error);
             }
-            else
-                ModManager.Log("[BSS] Cooking: VitalHeartBeat not found on Creature", ModManager.LogLevel.Error);
+            catch (Exception ex)
+            {
+                ModManager.Log($"[BSS] Cooking VitalHeartBeat patch failed: {ex}", ModManager.LogLevel.Error);
+            }
 
             // Patch Player.Heartbeat to dynamically adjust heartbeat interval for cooking users
             var playerHeartbeat = AccessTools.Method(typeof(Player), nameof(Player.Heartbeat), new[] { typeof(double) });

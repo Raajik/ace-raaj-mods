@@ -832,11 +832,11 @@ try
             enabledFeatures.Add(Features.TrophyDropsSkill);
         if (Settings.EnableTinkeringLootGating)
             enabledFeatures.Add(Features.TinkeringLootGating);
+        if (Settings.EnableDruidPetThorns)
+            enabledFeatures.Add(Features.DruidPetThorns);
         
         // Rest disabled
         /*
-        if (Settings.EnableDruidPetThorns)
-            enabledFeatures.Add(Features.DruidPetThorns);
         if (Settings.EnableSalvage)
             enabledFeatures.Add(Features.SalvageSkill);
         */

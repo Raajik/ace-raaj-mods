@@ -438,6 +438,10 @@ public static class VendorLootRotation
             return VendorTypeClassification.Mage;
         if (_bowyerWcids.Contains(wcid))
             return VendorTypeClassification.Bowyer;
+        if (_tailorWcids.Contains(wcid))
+            return VendorTypeClassification.Tailor;
+        if (_shopkeeperWcids.Contains(wcid))
+            return VendorTypeClassification.Shopkeeper;
 
         // Fall back to MerchandiseItemTypes heuristic
         var merch = vendor.MerchandiseItemTypes;

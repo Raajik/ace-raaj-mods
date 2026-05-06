@@ -1341,6 +1341,24 @@ public class AutoLoot
                 }
             }
 
+            // ── Pass 6: Lockpick banking ─────────────────────────────────
+            // Lockpicks auto-bank unconditionally when achievement unlocked (no profile required).
+            foreach (var item in items)
+            {
+                if (lootedSet.Contains(item) || item.IsDestroyed)
+                    continue;
+                if (!TryBankLockpick(player, item))
+                    continue;
+                if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                {
+                    var lpName = LootDisplayName(removed);
+                    lootedItems.TryGetValue(lpName, out var existing);
+                    lootedItems[lpName] = existing + (removed.StackSize ?? 1);
+                    lootedSet.Add(removed);
+                    removed.Destroy();
+                }
+            }
+
             if (lootedItems.Count == 0)
                 return;
 

@@ -89,9 +89,12 @@ internal static class SpecialCreatureLoot
             if (bag == null)
                 return null;
 
-            // Override MaxStackSize to ensure full bag (100 units) - weenie has MaxStackSize=1 by default
-            bag.SetProperty(PropertyInt.MaxStackSize, 100);
-            bag.SetProperty(PropertyInt.StackSize, 100);
+            // Use LeyLineLedger withdrawal pattern for consistent bag creation
+            // Structure = unit count, ItemWorkmanship = unit count, NumItemsInMaterial = workmanship rating
+            bag.Structure = 100;
+            bag.ItemWorkmanship = 100;
+            bag.NumItemsInMaterial = 10;  // W10 salvage
+            bag.Name = "Salvage (100)";
 
             int baseValue = bag.Value ?? 100;
             int multiplierPercent = ThreadSafeRandom.Next(113, 918);
@@ -154,7 +157,7 @@ internal static class SpecialCreatureLoot
         // Force guaranteed special treatment
         ApplyGuaranteedImbue(item);
         ApplyGuaranteedAwakening(item);
-        ApplyVisualFlair(item);
+        ApplyImbueVisualEffects(item);
 
         return item;
     }
@@ -228,19 +231,6 @@ internal static class SpecialCreatureLoot
         var (rend, damageType) = RendPool[ThreadSafeRandom.Next(0, RendPool.Length - 1)];
         item.ImbuedEffect |= rend;
         item.SetProperty(PropertyInt.DamageType, (int)damageType);
-        
-        // Set UiEffects for visual overlay based on damage type
-        var uiEffects = damageType switch
-        {
-            DamageType.Acid => (int)UiEffects.Acid,
-            DamageType.Cold => (int)UiEffects.Frost,
-            DamageType.Fire => (int)UiEffects.Fire,
-            DamageType.Electric => (int)UiEffects.Lightning,
-            DamageType.Nether => (int)UiEffects.Nether,
-            _ => (int)UiEffects.Magical
-        };
-        item.SetProperty(PropertyInt.UiEffects, uiEffects);
-        
         UpdateWeaponNameForDamageType(item);
     }
 
@@ -253,8 +243,6 @@ internal static class SpecialCreatureLoot
             ImbuedEffectType.ArmorRending,
         };
         item.ImbuedEffect |= pool[ThreadSafeRandom.Next(0, pool.Length - 1)];
-        // Secondary imbues are magical - set magical visual overlay
-        item.SetProperty(PropertyInt.UiEffects, (int)UiEffects.Magical);
     }
 
     static void ApplyArmorImbue(WorldObject item)
@@ -266,8 +254,6 @@ internal static class SpecialCreatureLoot
             ImbuedEffectType.MissileDefense,
         };
         item.ImbuedEffect |= pool[ThreadSafeRandom.Next(0, pool.Length - 1)];
-        // Defense imbues are magical - set magical visual overlay
-        item.SetProperty(PropertyInt.UiEffects, (int)UiEffects.Magical);
     }
 
     static bool IsShieldItem(WorldObject item)
@@ -367,57 +353,81 @@ internal static class SpecialCreatureLoot
     }
 
     // =====================================================================
-    // Visual Flair
+    // Visual Effects (IconUnderlay + UiEffects glow)
     // =====================================================================
 
-    static void ApplyVisualFlair(WorldObject item)
+    // Icon underlay mapping from RecipeManager (ACE vanilla)
+    static readonly Dictionary<ImbuedEffectType, uint> IconUnderlayMap = new()
     {
-        if (item == null)
+        { ImbuedEffectType.ColdRending,     0x06003353 },
+        { ImbuedEffectType.ElectricRending, 0x06003354 },
+        { ImbuedEffectType.AcidRending,     0x06003355 },
+        { ImbuedEffectType.PierceRending,   0x06003356 },
+        { ImbuedEffectType.FireRending,     0x06003357 },
+        { ImbuedEffectType.SlashRending,    0x0600335c },
+        { ImbuedEffectType.BludgeonRending, 0x0600335b },
+        { ImbuedEffectType.NetherRending,   0x06003359 },
+    };
+
+    static void ApplyImbueVisualEffects(WorldObject item)
+    {
+        if (item?.ImbuedEffect == null || item.ImbuedEffect == 0)
             return;
 
-        int ui = item.GetProperty(PropertyInt.UiEffects) ?? 0;
-        var imbued = item.ImbuedEffect;
-
-        // Elemental rends → damage-type color
-        if (imbued.HasFlag(ImbuedEffectType.AcidRending))
-            ui |= (int)UiEffects.Acid;
-        if (imbued.HasFlag(ImbuedEffectType.BludgeonRending))
-            ui |= (int)UiEffects.Frost;
-        if (imbued.HasFlag(ImbuedEffectType.ColdRending))
-            ui |= (int)UiEffects.Frost;
-        if (imbued.HasFlag(ImbuedEffectType.ElectricRending))
-            ui |= (int)UiEffects.Lightning;
-        if (imbued.HasFlag(ImbuedEffectType.FireRending))
-            ui |= (int)UiEffects.Fire;
-        if (imbued.HasFlag(ImbuedEffectType.NetherRending))
-            ui |= (int)UiEffects.Nether;
-        if (imbued.HasFlag(ImbuedEffectType.PierceRending))
-            ui |= (int)(UiEffects.BoostHealth | UiEffects.BoostStamina);
-        if (imbued.HasFlag(ImbuedEffectType.SlashRending))
-            ui |= (int)UiEffects.Fire;
-
-        // Defense imbues
-        if (imbued.HasFlag(ImbuedEffectType.MagicDefense))
-            ui |= (int)UiEffects.Magical;
-        if (imbued.HasFlag(ImbuedEffectType.MeleeDefense))
-            ui |= (int)UiEffects.BoostStamina;
-        if (imbued.HasFlag(ImbuedEffectType.MissileDefense))
-            ui |= (int)UiEffects.Lightning;
-
-        // Secondary
-        if (imbued.HasFlag(ImbuedEffectType.CriticalStrike)
-            || imbued.HasFlag(ImbuedEffectType.CripplingBlow)
-            || imbued.HasFlag(ImbuedEffectType.ArmorRending))
+        try
         {
-            if ((ui & ~1) == 0)
-                ui |= (int)UiEffects.Magical;
+            int currentEffects = (int)(item.UiEffects ?? 0);
+            int visualEffect = 0;
+
+            // Determine visual effect based on imbue type
+            if (item.ImbuedEffect.HasFlag(ImbuedEffectType.AcidRending))
+                visualEffect = 256; // Acid = green
+            else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.FireRending))
+                visualEffect = 32;  // Fire = red
+            else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.ColdRending))
+                visualEffect = 128; // Frost = white
+            else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.ElectricRending))
+                visualEffect = 64;  // Lightning = purple
+            else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.NetherRending))
+                visualEffect = 4096; // Nether = dark purple
+            else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.PierceRending) ||
+                     item.ImbuedEffect.HasFlag(ImbuedEffectType.SlashRending) ||
+                     item.ImbuedEffect.HasFlag(ImbuedEffectType.BludgeonRending))
+                visualEffect = 128; // Physical rendings = white
+            else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.ArmorRending) ||
+                     item.ImbuedEffect.HasFlag(ImbuedEffectType.CriticalStrike) ||
+                     item.ImbuedEffect.HasFlag(ImbuedEffectType.CripplingBlow))
+                visualEffect = 256; // Generic weapon imbues = green
+            else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.MeleeDefense) ||
+                     item.ImbuedEffect.HasFlag(ImbuedEffectType.MissileDefense) ||
+                     item.ImbuedEffect.HasFlag(ImbuedEffectType.MagicDefense))
+                visualEffect = 64;  // Defense imbues = purple
+
+            if (visualEffect != 0)
+                item.SetProperty(PropertyInt.UiEffects, currentEffects | visualEffect);
+
+            // Apply icon underlay (background texture) based on imbue type
+            foreach (var kvp in IconUnderlayMap)
+            {
+                if (item.ImbuedEffect.HasFlag(kvp.Key))
+                {
+                    item.IconUnderlayId = kvp.Value;
+                    break;
+                }
+            }
+
+            // Awakened = red outline (BoostHealth | BoostStamina = 20)
+            if (item.GetProperty((PropertyBool)40130) == true)
+            {
+                int ui = item.GetProperty(PropertyInt.UiEffects) ?? 0;
+                item.SetProperty(PropertyInt.UiEffects, ui | (int)(UiEffects.BoostHealth | UiEffects.BoostStamina));
+            }
+
+            item.CalculateObjDesc();
         }
-
-        // Awakened = red outline (BoostHealth | BoostStamina = 20)
-        if (item.GetProperty((PropertyBool)40130) == true)
-            ui |= (int)(UiEffects.BoostHealth | UiEffects.BoostStamina);
-
-        item.SetProperty(PropertyInt.UiEffects, ui);
-        item.CalculateObjDesc();
+        catch (Exception ex)
+        {
+            // Silently fail - don't break loot generation over cosmetic effects
+        }
     }
 }

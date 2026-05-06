@@ -821,16 +821,16 @@ try
             enabledFeatures.Add(Features.MissileDefenseSkill);
         
         // Testing second half one by one
-        // Recklessness works - testing Shield now
+        // Recklessness, Shield work - testing SneakAttack now
         if (Settings.EnableRecklessness)
             enabledFeatures.Add(Features.RecklessnessSkill);
         if (Settings.EnableShield)
             enabledFeatures.Add(Features.ShieldSkill);
+        if (Settings.EnableSneakAttack)
+            enabledFeatures.Add(Features.SneakAttackSkill);
         
         // Rest disabled
         /*
-        if (Settings.EnableSneakAttack)
-            enabledFeatures.Add(Features.SneakAttackSkill);
         if (Settings.EnableTrophyDrops)
             enabledFeatures.Add(Features.TrophyDropsSkill);
         if (Settings.EnableTinkeringLootGating)

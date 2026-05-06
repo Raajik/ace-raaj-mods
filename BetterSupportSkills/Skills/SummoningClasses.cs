@@ -1078,17 +1078,19 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
 
     // -- Artificer Proc: Imperil + Drain on Wisp Melee -------------------
 
-    [ThreadStatic]
-    static bool _artificerWispCleaving;
+    // Arc spells by damage type (elemental War Magic) - verified from database
+    private static readonly Dictionary<DamageType, int[]> ArtificerArcSpells = new()
+    {
+        [DamageType.Acid] = new[] { 2711, 2712, 2713, 2714, 2715, 2716, 2717, 4421 },       // Acid Arc I-VII, Incantation
+        [DamageType.Fire] = new[] { 2739, 2740, 2741, 2742, 2743, 2744, 2745, 4423 },       // Flame Arc I-VII, Incantation
+        [DamageType.Cold] = new[] { 2725, 2726, 2727, 2728, 2729, 2730, 2731, 4425 },       // Frost Arc I-VII, Incantation
+        [DamageType.Electric] = new[] { 2732, 2733, 2734, 2735, 2736, 2737, 2738, 4426 },   // Lightning Arc I-VII, Incantation
+    };
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Creature), "TakeDamage", new Type[] { typeof(WorldObject), typeof(DamageType), typeof(float), typeof(bool) })]
     public static void PostCreatureTakeDamage(WorldObject source, DamageType damageType, float amount, bool crit, Creature __instance)
     {
-        // Prevent infinite recursion when cleave damage triggers TakeDamage again
-        if (_artificerWispCleaving)
-            return;
-
         if (source is not CombatPet pet) return;
         if (!TrackedPetGuids.ContainsKey(pet.Guid.Full)) return;
         if (pet.P_PetOwner is not Player owner) return;
@@ -1102,23 +1104,20 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
             return;
         if (!__instance.IsAlive) return;
 
-        CacheArtificerSpells();
-
         int maxTier = PatchClass.Settings?.SummoningClasses?.ArtificerWispProcMaxSpellTier ?? 8;
         if (maxTier < 0)
             maxTier = 8;
 
         int itemEnchantmentSkill = (int)(owner.GetCreatureSkill(Skill.ItemEnchantment)?.Current ?? 0);
-        int tier = Math.Min(maxTier, itemEnchantmentSkill / 50);
+        int tier = Math.Min(maxTier, Math.Min(7, itemEnchantmentSkill / 50)); // Clamp to 0-7 for array index
 
         float procRadius = PatchClass.Settings?.SummoningClasses?.ArtificerWispProcAoERadiusMeters ?? 10.0f;
         if (procRadius <= 0f)
             procRadius = 10.0f;
 
-        var aoeTargets = new List<Creature> { __instance };
+        var aoeTargets = new List<Creature>();
         foreach (var obj in __instance.CurrentLandblock?.GetWorldObjectsForPhysicsHandling() ?? Enumerable.Empty<WorldObject>())
         {
-            if (obj == __instance) continue;
             if (obj is not Creature enemy) continue;
             if (enemy.IsDead) continue;
             if (enemy.GetCylinderDistance(__instance) > procRadius)
@@ -1134,44 +1133,28 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
                 aoeTargets.Add(enemy);
         }
 
-        // Artificer wisp cleave: hit all enemies in 10m range with Imperil + damage
-        float cleaveDamageFraction = PatchClass.Settings?.SummoningClasses?.ArtificerWispCleaveDamageFraction ?? 0.5f;
-        float cleaveDamage = amount * cleaveDamageFraction;
+        if (aoeTargets.Count == 0) return;
 
-        if (!ImperilSpellIds.TryGetValue(tier, out var imperilId))
-            return;
+        // Pick a random elemental damage type for visual variety
+        var elementalTypes = ArtificerArcSpells.Keys.ToArray();
+        var randomElement = elementalTypes[Random.Shared.Next(elementalTypes.Length)];
+        var arcIds = ArtificerArcSpells[randomElement];
 
-        var imperilSpell = new ACE.Server.Entity.Spell(imperilId);
-        if (imperilSpell.NotFound)
-            return;
-
-        // Set recursion guard before dealing damage
-        _artificerWispCleaving = true;
-        try
+        // Cast arc spell at all enemies in range (wisps use owner's mana)
+        foreach (var target in aoeTargets)
         {
-            foreach (var target in aoeTargets)
+            if (target == null || target.IsDestroyed || target.IsDead)
+                continue;
+
+            try
             {
-                if (target == null || target.IsDestroyed || target.IsDead)
-                    continue;
-
-                try
-                {
-                    // Apply Imperil to all targets (including primary)
-                    target.EnchantmentManager.Add(imperilSpell, pet, null);
-
-                    // Deal cleave damage to secondary targets (primary already took damage)
-                    if (target != __instance && cleaveDamage > 0)
-                        target.TakeDamage(pet, DamageType.Health, cleaveDamage, false);
-                }
-                catch (Exception ex)
-                {
-                    ModManager.Log($"[BSS Artificer] Wisp cleave failed on {target.Name}: {ex.Message}", ModManager.LogLevel.Warn);
-                }
+                // Use BssAutoCaster to cast the arc spell (no mana cost multiplier for wisps)
+                Skills.BssAutoCaster.TryCastSpellWithFallback(owner, arcIds, tier, target, 0.0);
             }
-        }
-        finally
-        {
-            _artificerWispCleaving = false;
+            catch (Exception ex)
+            {
+                ModManager.Log($"[BSS Artificer] Wisp arc cast failed on {target.Name}: {ex.Message}", ModManager.LogLevel.Warn);
+            }
         }
     }
 

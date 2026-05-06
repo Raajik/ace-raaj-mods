@@ -32,18 +32,17 @@ internal static class HybridClasses
         [DamageType.Nether] = new[] { 5357, 5358, 5359, 5360, 5345, 5346, 5347, 5348 },
     };
 
-    // Arc spells by damage type
+    // Arc spells by damage type (CORRECTED from database verification)
     private static readonly Dictionary<DamageType, int[]> ArcSpells = new()
     {
-        [DamageType.Acid] = new[] { 2720, 2721, 2722, 2723, 2724, 2725, 2726, 4430 },
-        [DamageType.Fire] = new[] { 2748, 2749, 2750, 2751, 2752, 2753, 2754, 4432 },
-        [DamageType.Cold] = new[] { 2734, 2735, 2736, 2737, 2738, 2739, 2740, 4434 },
-        [DamageType.Electric] = new[] { 2741, 2742, 2743, 2744, 2745, 2746, 2747, 4435 },
-        [DamageType.Slash] = new[] { 2762, 2763, 2764, 2765, 2766, 2767, 2768, 4431 },
-        [DamageType.Bludgeon] = new[] { 2755, 2756, 2757, 2758, 2759, 2760, 2761, 4436 },
-        [DamageType.Pierce] = new[] { 2727, 2728, 2729, 2730, 2731, 2732, 2733, 4433 }, // Force Arc
-        // Nether Arc I-VIII (corrected spell IDs)
-        [DamageType.Nether] = new[] { 5369, 5362, 5363, 5364, 5365, 5366, 5367, 5368 },
+        [DamageType.Acid] = new[] { 2711, 2712, 2713, 2714, 2715, 2716, 2717, 4421 },       // Acid Arc I-VII, Incantation
+        [DamageType.Fire] = new[] { 2739, 2740, 2741, 2742, 2743, 2744, 2745, 4423 },       // Flame Arc I-VII, Incantation
+        [DamageType.Cold] = new[] { 2725, 2726, 2727, 2728, 2729, 2730, 2731, 4425 },       // Frost Arc I-VII, Incantation
+        [DamageType.Electric] = new[] { 2732, 2733, 2734, 2735, 2736, 2737, 2738, 4426 },   // Lightning Arc I-VII, Incantation
+        [DamageType.Slash] = new[] { 2753, 2754, 2755, 2756, 2757, 2758, 2759, 4422 },      // Blade Arc I-VII, Incantation
+        [DamageType.Bludgeon] = new[] { 2746, 2747, 2748, 2749, 2750, 2751, 2752, 4427 },   // Shock Arc I-VII, Incantation
+        [DamageType.Pierce] = new[] { 2718, 2719, 2720, 2721, 2722, 2723, 2724, 4424 },     // Force Arc I-VII, Incantation
+        [DamageType.Nether] = new[] { 5369, 5362, 5363, 5364, 5365, 5366, 5367, 5368 },     // Nether Arc I-VII, Incantation
     };
 
     // Volley spells by damage type

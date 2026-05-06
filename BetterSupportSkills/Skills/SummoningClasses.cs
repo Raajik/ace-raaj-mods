@@ -337,7 +337,7 @@ public static class SummoningClasses
     {
         lock (ArtificerSpellCacheLock)
         {
-            if (_spellsCached && ImperilSpellIds.ContainsKey(8))
+            if (_spellsCached && ImperilSpellIds.Count >= 8)
                 return;
 
             try

@@ -418,7 +418,49 @@ public static class VendorLootRotation
     static double GetLuxuryTaxMultiplier()
     {
         if (_settings is null) return 1.10;
-        return 1.0 + (_settings.VendorLootLuxuryTaxPercent / 100.0);
+        
+        // Base luxury tax
+        double baseTax = 1.0 + (_settings.VendorLootLuxuryTaxPercent / 100.0);
+        
+        // Economy balancer integration (optional)
+        if (_settings.UseLeyLineLedgerEconomyBalancer)
+        {
+            double economyMult = GetLeyLineLedgerEconomyMultiplier();
+            return baseTax * economyMult;
+        }
+        
+        return baseTax;
+    }
+    
+    static double GetLeyLineLedgerEconomyMultiplier()
+    {
+        try
+        {
+            // Use reflection to access LeyLineLedger.EconomyBalancer.GetVendorBuyPriceMultiplier()
+            var lllAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.GetName().Name == "LeyLineLedger");
+            
+            if (lllAssembly == null)
+                return 1.0;
+            
+            var balancerType = lllAssembly.GetType("LeyLineLedger.EconomyBalancer");
+            if (balancerType == null)
+                return 1.0;
+            
+            var method = balancerType.GetMethod("GetVendorBuyPriceMultiplier", BindingFlags.Public | BindingFlags.Static);
+            if (method == null)
+                return 1.0;
+            
+            var result = method.Invoke(null, null);
+            if (result is double mult)
+                return mult;
+            
+            return 1.0;
+        }
+        catch
+        {
+            return 1.0; // Graceful fallback
+        }
     }
 
     // =====================================================================

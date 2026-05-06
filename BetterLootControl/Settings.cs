@@ -22,9 +22,10 @@ public class Settings
     // Item generation
     public int VendorLootItemsPerCategoryMin { get; init; } = 15;
     public int VendorLootItemsPerCategoryMax { get; init; } = 30;
-    public int VendorLootMinValue { get; init; } = 100;
-    public int VendorLootMaxValue { get; init; } = 10000;
-    public double VendorLootLuxuryTaxPercent { get; init; } = 10.0;
+    public int VendorLootMinValue { get; init; } = 500;
+    public int VendorLootMaxValue { get; init; } = 25000;
+    public double VendorLootLuxuryTaxPercent { get; init; } = 25.0;
+    public bool UseLeyLineLedgerEconomyBalancer { get; init; } = true; // Apply LLL economy multiplier to vendor items
 
     // Strict vendor type enforcement (Jewelers = jewelry/gems, Armorers = armor/weapons, Mages = casters/jewelry)
     public bool VendorLootStrictTypeEnforcement { get; init; } = true;

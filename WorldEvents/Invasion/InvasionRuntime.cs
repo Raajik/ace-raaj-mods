@@ -779,12 +779,13 @@ internal static class InvasionRuntime
     static bool IsUnusableInvasionObjCell(uint raw)
     {
         var low = raw & 0xFFFFu;
-        return low == 0xFFFFu || low == 0u;
+        // 0xFFFF / 0 = unusable; cells 0x0001-0x00FF = indoor cells not suitable for mob spawns
+        return low == 0xFFFFu || low == 0u || (low >= 0x0001u && low < 0x0100u);
     }
 
     static Position? GenerateSingleSpawnPosition(InvasionTownSettings town, Random rng, float? overrideAngle = null, float? overrideDist = null)
     {
-        const int maxAttempts = 25;
+        const int maxAttempts = 50;
         for (var attempt = 0; attempt < maxAttempts; attempt++)
         {
             var angle  = overrideAngle ?? rng.NextDouble() * 2 * Math.PI;
@@ -802,12 +803,12 @@ internal static class InvasionRuntime
                 if (lb?.LandblockMesh != null)
                 {
                     var terrainZ = lb.LandblockMesh.GetZ(new System.Numerics.Vector2(ox, oy));
-                    z = terrainZ + 0.05f; // slight offset above ground
+                    z = terrainZ + 1.0f; // slight offset above ground
                 }
             }
             catch { /* fallback to town center Z */ }
 
-            var pos = new Position(town.TownCenterObjCellId, ox, oy, z,
+            var pos = new Position(0u, ox, oy, z,
                 0f, 0f, (float)Math.Sin(facing / 2), (float)Math.Cos(facing / 2));
             pos.LandblockId = new LandblockId(pos.GetCell());
             if (!IsUnusableInvasionObjCell(pos.LandblockId.Raw))

@@ -36,7 +36,16 @@ Kill tracking with popularity-based species rotation. Species that are globally 
 
 ### 2. Invasion
 
-Timed invasion events with wave-based creature spawns.
+Timed invasion events with wave-based creature spawns. Two modes:
+- **Scripted:** Fires a named ACE event; SQL-defined generators handle mobs.
+- **Dynamic** (default): Spawns level-appropriate creatures around town centers.
+
+**Dynamic mode spawn improvements (2026-05-06):**
+- `TownSpawnRadius` default increased to **120 units** for wider scatter.
+- **Indoor cell filter** blocks cells 0x0001–0x00FF so mobs don't spawn inside buildings.
+- Cell ID auto-computed from XY instead of hardcoding the town center indoor cell.
+- 50 retry attempts per position for better placement success rate.
+- 1.0f Z offset safety margin (matches Swarmed pattern).
 
 | File | Purpose |
 |------|---------|

@@ -14,6 +14,17 @@
 - `PreTryCreateInInventory` salvage bag intercept
 - `GrantImbueSalvage` BSS fallback → now routes through LLL interop
 
+### Hotfix: Spawn logging noise + invasion spawn failures
+
+**Cooking heartbeat spam:** Removed DEBUG log `"[BSS Cooking] {Name} PostVitalHeartBeat: Cooking not trained"` — was writing once per creature per heartbeat (~110k lines in one session).
+
+**Invasion "couldn't spawn" warnings:** Three fixes for mobs spawning inside buildings / invalid cells:
+- **Indoor cell filter:** `IsUnusableInvasionObjCell` now blocks indoor cells (low 16 bits 0x0001–0x00FF, not just 0xFFFF/0)
+- **Cell ID fix:** Spawn position no longer hardcodes the town center's indoor ObjCellId; uses `0u` so ACE auto-computes the correct cell from XY
+- **Spawn radius:** `TownSpawnRadius` default 30f → **120f** (much wider scatter)
+- **Max retries:** 25 → **50** attempts per position
+- **Z offset:** 0.05f → **1.0f** (matches Swarmed safety margin)
+
 ### Session 5: AutoLoot per-player toggle for LLL auto-banking
 - Added `LllBankingEnabled` to PlayerPrefs (default true) + `lllBankingEnabled` ConcurrentDictionary
 - Added `/autoloot bank` command + numeric index toggle (between trophies and salvage)

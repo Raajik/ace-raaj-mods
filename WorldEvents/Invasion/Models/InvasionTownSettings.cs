@@ -38,7 +38,7 @@ public sealed class InvasionTownSettings
     public float TownCenterZ { get; set; } = 0f;
 
     /// <summary>Radius (in local cell units, ~1 unit ≈ 1 meter) to scatter spawns around the town center.</summary>
-    public float TownSpawnRadius { get; set; } = 30f;
+    public float TownSpawnRadius { get; set; } = 120f;
 
     // ── Dynamic mode: level range used when tier system is off ─────────────────────
     public int DynamicLevelMin { get; set; } = 1;

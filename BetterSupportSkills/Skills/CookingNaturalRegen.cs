@@ -88,7 +88,6 @@ internal static class CookingNaturalRegen
         var cookingSkill = __instance.GetCreatureSkill(Skill.Cooking);
         if (cookingSkill.AdvancementClass < SkillAdvancementClass.Trained)
         {
-            ModManager.Log($"[BSS Cooking] {__instance.Name} PostVitalHeartBeat: Cooking not trained", ModManager.LogLevel.Debug);
             return;
         }
 

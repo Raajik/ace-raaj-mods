@@ -802,9 +802,9 @@ try
 
         var enabledFeatures = new List<Features>();
 
-        // TEMPORARILY DISABLE ALL PATCH CATEGORIES TO ISOLATE BROKEN PATCH
-        // Will re-enable one by one
-        /*
+        // Re-enabling features one by one to find broken patch
+        // SummoningClasses is DISABLED (has broken Creature.TakeDamage patch)
+        
         if (Settings.EnableAlchemy)
             enabledFeatures.Add(Features.AlchemySkill);
         
@@ -851,13 +851,13 @@ try
             enabledFeatures.Add(Features.TrophyDropsSkill);
         if (Settings.EnableTinkeringLootGating)
             enabledFeatures.Add(Features.TinkeringLootGating);
-        if (Settings.EnableSummoningClasses)
-            enabledFeatures.Add(Features.SummoningClasses);
+        // SKIP SummoningClasses - has broken Creature.TakeDamage patch
+        // if (Settings.EnableSummoningClasses)
+        //     enabledFeatures.Add(Features.SummoningClasses);
         if (Settings.EnableDruidPetThorns)
             enabledFeatures.Add(Features.DruidPetThorns);
         if (Settings.EnableSalvage)
             enabledFeatures.Add(Features.SalvageSkill);
-        */
         // CombatClasses patches are applied manually in TryApplyCombatClassesPatch()
         // to avoid double-patching with declarative attributes.
 

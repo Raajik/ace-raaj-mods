@@ -499,7 +499,7 @@ public static class SummoningClasses
     // -- Combat Hit Trigger ----------------------------------------------
 
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(Creature), nameof(Creature.TakeDamage), new Type[] { typeof(WorldObject), typeof(DamageType), typeof(float), typeof(bool) })]
+    [HarmonyPatch(typeof(Creature), "TakeDamage", new Type[] { typeof(WorldObject), typeof(DamageType), typeof(float), typeof(bool) })]
     public static void PostCreatureTakeDamage_SummonTrigger(WorldObject source, DamageType damageType, float amount, bool crit, Creature __instance)
     {
         if (__instance.IsDead) return;

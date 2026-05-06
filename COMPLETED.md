@@ -2,6 +2,37 @@
 
 ## 2026-05-05 (Evening Session)
 
+### Wisp Spell Components + Cooking Regen Fixes
+
+**Issue 1: Wisps Checking for Spell Components**
+- Wisps calling `TryCastSpellWithFallback` → checks `HasComponentsForSpell` on owner
+- Pets shouldn't need reagents in owner's inventory
+
+**Fix:**
+- Made `BssAutoCaster.CastSpellDirect()` public (was private)
+- Wisps now call `CastSpellDirect` directly → bypasses component/mana checks
+- Comment clarifies this is for pet auto-casts that don't need reagents
+
+**Issue 2: Cooking Regen Nerfed (1%/2% instead of 5%/10%)**
+- Default values were `0.01`/`0.02` but doc strings claimed `5%`/`10%`
+- User reported regen "seems to have gotten nerfed"
+- Logs showed: `+2 Health`, `+3 Stamina`, `+3 Mana` per tick (1% of max)
+
+**Fix:**
+- `CookingRegenPercentPerTickTrained`: `0.01` → `0.05` (5% per tick)
+- `CookingRegenPercentPerTickSpecialized`: `0.02` → `0.10` (10% per tick)
+- Updated doc strings to clarify tick scaling with heartbeat interval
+- Updated test `Settings.json` to match new defaults
+
+**Result:**
+- **Trained:** 5% per 5sec when healthy (1%/sec), 5% per 1sec when low (5%/sec)
+- **Specialized:** 10% per 5sec when healthy (2%/sec), 10% per 1sec when low (10%/sec)
+- At your max vitals (~250 Health): **+12 Health/tick** when healthy, **+12 Health/sec** when low
+
+**Commit:** `b3870ff`
+
+---
+
 ### Artificer Wisp Combat Overhaul
 
 **Problem:**

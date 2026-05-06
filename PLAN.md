@@ -3,6 +3,7 @@
 ## Progress (Recent)
 
 ### Shipped 2026-05-05
+- ✅ Wisp spell components fix + cooking regen restored to 5%/10%
 - ✅ Artificer wisp complete combat overhaul (cast elemental arcs, fixed all arc spell IDs)
 - ✅ Loremaster quest completion XP message fix (accurate amount, condensed to single line)
 - ✅ Death Knight Nether spell fixes (Streak/Arc spell IDs)

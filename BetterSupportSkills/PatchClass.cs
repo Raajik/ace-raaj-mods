@@ -209,12 +209,12 @@ void TryApplyDamageEventPatch()
 
     }
 
-    static bool CookingPatchesApplied;
-
     void TryApplyCookingPatches()
     {
-        if (CookingPatchesApplied || Settings?.EnableCooking != true)
+        if (Settings?.EnableCooking != true)
             return;
+        
+        ModManager.Log("[BSS] TryApplyCookingPatches: EnableCooking=true, applying patches...", ModManager.LogLevel.Info);
 
         try
         {
@@ -269,8 +269,6 @@ void TryApplyDamageEventPatch()
             }
             else
                 ModManager.Log("[BSS] Cooking: Player.Heartbeat not found", ModManager.LogLevel.Error);
-
-            CookingPatchesApplied = true;
         }
         catch (Exception ex)
         {

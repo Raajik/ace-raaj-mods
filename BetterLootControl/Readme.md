@@ -36,7 +36,11 @@ Jewelers receive premium treatment with high-quality magical items:
 **Visual Indicators:**
 - Plain items (no spells) = No glow
 - Magical items (with spells) = Blue glow ✨
-- Imbued items = Green glow (from acid imbue visual)
+- Imbued items = Color-coded overlays:
+  - 🟢 Green = Acid Rending, Armor Rending, Critical Strike, Crippling Blow
+  - 🔴 Red = Fire Rending
+  - ⚪ White = Cold Rending, Physical Rendings (Pierce/Slash/Bludgeon)
+  - 🟣 Purple = Electric Rending, Defense imbues (Melee/Missile/Magic Defense)
 - Awakened items = Red outline + "Awakened" prefix
 - Tinkered items = "Fine/Superior/Masterwork" prefix (3+/5+/8+ tinkers)
 

@@ -802,33 +802,9 @@ try
 
         var enabledFeatures = new List<Features>();
 
-        // Testing in batches to find broken patch
-        // BATCH 1: First 10 features
-        if (Settings.EnableAlchemy)
-            enabledFeatures.Add(Features.AlchemySkill);
+        // BATCH 1 WORKS - broken patch is in BATCH 2
+        // Testing first half of BATCH 2
         
-        if (Settings.EnableAlchemy && Settings.Alchemy.ShowEchoMessages)
-            enabledFeatures.Add(Features.AlchemyEchoMessages);
-        
-        if (Settings.EnableArcaneLore)
-            enabledFeatures.Add(Features.ArcaneLoreSkill);
-        if (Settings.EnableAssessCreature)
-            enabledFeatures.Add(Features.AssessCreatureSkill);
-        if (Settings.EnableCooking)
-            enabledFeatures.Add(Features.CookingSkill);
-        if (Settings.EnableDirtyFighting)
-            enabledFeatures.Add(Features.DirtyFightingSkill);
-        if (Settings.EnableDeception)
-            enabledFeatures.Add(Features.DeceptionSkill);
-        if (Settings.EnableDualWield)
-            enabledFeatures.Add(Features.DualWieldSkill);
-        if (Settings.EnableFletching)
-            enabledFeatures.Add(Features.FletchingSkill);
-        if (Settings.EnableHealing)
-            enabledFeatures.Add(Features.HealingSkill);
-        
-        // BATCH 2: Next 10 features - DISABLED TO TEST
-        /*
         if (Settings.EnableLeadership)
             enabledFeatures.Add(Features.LeadershipSkill);
         if (Settings.EnableLockpick)
@@ -843,6 +819,9 @@ try
             enabledFeatures.Add(Features.MeleeLifeSpellSkill);
         if (Settings.EnableMissileDefense)
             enabledFeatures.Add(Features.MissileDefenseSkill);
+        
+        // Second half of BATCH 2 - DISABLED
+        /*
         if (Settings.EnableRecklessness)
             enabledFeatures.Add(Features.RecklessnessSkill);
         if (Settings.EnableShield)

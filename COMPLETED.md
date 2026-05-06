@@ -2,6 +2,44 @@
 
 ## 2026-05-05 (Evening Session)
 
+### CreatureEx Imbue Overlays + Salvage Bag Generation
+
+**Issue 1: CreatureEx imbued items missing visual overlays**
+- Imbues were functional but no glow/icon underlay showing
+- All CreatureEx types affected (Boss, Berserker, Duelist, etc.)
+
+**Root Cause:**
+- `ApplyVisualFlair` only set `UiEffects` (glow color)
+- Never set `IconUnderlayId` (background texture behind item icon)
+- `CalculateObjDesc()` might not have been called properly
+
+**Solution:**
+- Replaced `ApplyVisualFlair` with `ApplyImbueVisualEffects`
+- Sets **both** `UiEffects` (glow) **and** `IconUnderlayId` (icon background)
+- Uses same `IconUnderlayMap` as BetterLootControl (vanilla ACE RecipeManager values)
+- Removed duplicate `UiEffects` setting from `Apply*Imbue` functions
+- Always calls `CalculateObjDesc()` at end
+
+**Issue 2: CreatureEx salvage bags "100 unit" generation incorrect**
+- User wanted bags generated same way as LLL `/bank salvage withdraw`
+- Old pattern: `MaxStackSize=100`, `StackSize=100` (wrong)
+
+**Solution: Use LLL withdrawal pattern:**
+```csharp
+bag.Structure = 100;         // unit count
+bag.ItemWorkmanship = 100;   // unit count for value calc
+bag.NumItemsInMaterial = 10; // W10 workmanship rating
+bag.Name = "Salvage (100)";
+```
+
+**Result:**
+- **Imbued items**: Now show proper elemental glow + icon underlay background
+- **Salvage bags**: Properly recognized by auto-salvage, match LLL bank withdrawals
+
+**Commit:** `ce43239`
+
+---
+
 ### Wisp Spell Components + Cooking Regen Fixes
 
 **Issue 1: Wisps Checking for Spell Components**

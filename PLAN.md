@@ -3,6 +3,8 @@
 ## Progress (Recent)
 
 ### Shipped 2026-05-05
+- ✅ CreatureEx imbue overlays + salvage bag generation (visual effects + LLL pattern)
+- ✅ Auto-salvage imbue message detail + Artificer wisp spell changes (Hecatomb/Harm/Drain)
 - ✅ Wisp spell components fix + cooking regen balanced to 2%/4% per sec
 - ✅ Artificer wisp complete combat overhaul (cast elemental arcs, fixed all arc spell IDs)
 - ✅ Loremaster quest completion XP message fix (accurate amount, condensed to single line)

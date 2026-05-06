@@ -242,6 +242,20 @@ void TryApplyDamageEventPatch()
             else
                 ModManager.Log("[BSS] Cooking: GetRegenerationMod not found on EnchantmentManagerWithCaching", ModManager.LogLevel.Error);
 
+            // Patch Player.Heartbeat to dynamically adjust heartbeat interval for cooking users
+            var playerHeartbeat = AccessTools.Method(typeof(Player), nameof(Player.Heartbeat), new[] { typeof(double) });
+            if (playerHeartbeat != null)
+            {
+                var heartbeatPrefix = AccessTools.Method(typeof(Skills.CookingNaturalRegen), nameof(Skills.CookingNaturalRegen.PreHeartbeat));
+                if (heartbeatPrefix != null)
+                {
+                    ModC.Harmony?.Patch(playerHeartbeat, new HarmonyMethod(heartbeatPrefix));
+                    ModManager.Log("[BSS] Cooking Player.Heartbeat prefix applied (dynamic interval)", ModManager.LogLevel.Info);
+                }
+            }
+            else
+                ModManager.Log("[BSS] Cooking: Player.Heartbeat not found", ModManager.LogLevel.Error);
+
             CookingPatchesApplied = true;
         }
         catch (Exception ex)

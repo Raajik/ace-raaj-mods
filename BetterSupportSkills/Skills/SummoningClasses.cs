@@ -1099,13 +1099,33 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
                 aoeTargets.Add(enemy);
         }
 
-        // Artificer wisp procs Imperil Other on hit (AOE radius) - no longer casts Drain
+        // Artificer wisp procs: Imperil debuff + cleave damage to AoE targets
+        float splashDamageFraction = PatchClass.Settings?.SummoningClasses?.ArtificerWispCleaveDamageFraction ?? 0.5f;
+        float splashDamage = amount * splashDamageFraction;
+
         if (ImperilSpellIds.TryGetValue(tier, out var imperilId))
         {
             var imperilSpell = new ACE.Server.Entity.Spell(imperilId);
-            foreach (var target in aoeTargets)
+            if (!imperilSpell.NotFound)
             {
-                try { pet.TryCastSpell(imperilSpell, target); } catch { }
+                foreach (var target in aoeTargets)
+                {
+                    try
+                    {
+                        // Apply Imperil enchantment directly (avoid TryCastSpell spell book requirement)
+                        target.EnchantmentManager.Add(imperilSpell, pet, null);
+
+                        // Deal cleave damage to AoE targets (not the primary target - they already took damage)
+                        if (target != __instance && splashDamage > 0)
+                        {
+                            target.TakeDamage(pet, DamageType.Health, splashDamage, false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        ModManager.Log($"[BSS Artificer] Wisp proc failed on {target.Name}: {ex.Message}", ModManager.LogLevel.Warn);
+                    }
+                }
             }
         }
     }
@@ -1700,6 +1720,10 @@ public class SummoningClassesSettings
     [JsonPropertyName("// ArtificerWispProcAoERadiusMeters")]
     public string ArtificerWispProcAoERadiusMetersDoc { get; init; } = "Radius in meters around struck creature for Imperil+Drain cleave (cylinder distance). ~10 yards often modeled as 10m.";
     public float ArtificerWispProcAoERadiusMeters { get; set; } = 10.0f;
+
+    [JsonPropertyName("// ArtificerWispCleaveDamageFraction")]
+    public string ArtificerWispCleaveDamageFractionDoc { get; init; } = "Fraction of wisp's melee damage applied to each AoE cleave target (0-1). Default 0.5 = 50% splash damage to nearby enemies.";
+    public float ArtificerWispCleaveDamageFraction { get; set; } = 0.5f;
 
     public SummoningClassSettings Druid { get; set; } = new();
     public SummoningClassSettings Elementalist { get; set; } = new();

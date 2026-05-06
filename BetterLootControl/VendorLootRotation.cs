@@ -14,6 +14,7 @@ using ACE.Server.Factories;
 using ACE.Server.Factories.Enum;
 using ACE.Server.Managers;
 using ACE.Server.WorldObjects;
+using System.Reflection;
 using HarmonyLib;
 
 namespace BetterLootControl;
@@ -1507,6 +1508,9 @@ public static class VendorLootRotation
                 };
                 if (damageType.HasValue)
                     item.SetProperty(PropertyInt.DamageType, (int)damageType.Value);
+                
+                // Small chance for custom Overtinked imbues on weapons
+                TryApplyCustomImbue(item);
             }
             else if (IsArmorOrClothing(item))
             {
@@ -1537,11 +1541,66 @@ public static class VendorLootRotation
                 };
                 var chosen = pool[_rng.Next(pool.Length)];
                 item.ImbuedEffect |= chosen;
+                
+                // Small chance for custom Overtinked imbues on jewelry
+                TryApplyCustomImbue(item);
             }
         }
         catch (Exception ex)
         {
             ModManager.Log($"[BetterLoot] VendorLoot: ApplyRandomVendorImbue failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    static void TryApplyCustomImbue(WorldObject item)
+    {
+        try
+        {
+            // 25% chance for custom Overtinked imbue on weapons/jewelry
+            if (_rng.NextDouble() > 0.25)
+                return;
+
+            // Use reflection to access Overtinked's OvertinkedImbueStore.Add method
+            var overtinkedAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.GetName().Name == "Overtinked");
+            
+            if (overtinkedAssembly == null)
+                return; // Overtinked not loaded
+
+            var storeType = overtinkedAssembly.GetType("Overtinked.OvertinkedImbueStore");
+            var flagsType = overtinkedAssembly.GetType("Overtinked.OvertinkedImbueFlags");
+            
+            if (storeType == null || flagsType == null)
+                return;
+
+            // Get the Add method: public static void Add(WorldObject target, OvertinkedImbueFlags flags)
+            var addMethod = storeType.GetMethod("Add", BindingFlags.Public | BindingFlags.Static);
+            if (addMethod == null)
+                return;
+
+            // Pick a random custom imbue
+            var customImbues = new[]
+            {
+                Enum.Parse(flagsType, "Hemorrhage"),  // 8
+                Enum.Parse(flagsType, "Cleaving"),     // 2
+                Enum.Parse(flagsType, "NetherRending"), // 4
+                Enum.Parse(flagsType, "Shatter"),       // 16
+            };
+
+            var chosenImbue = customImbues[_rng.Next(customImbues.Length)];
+            addMethod.Invoke(null, new object[] { item, chosenImbue });
+
+            // Nether Rending also needs ImbuedEffectType.NetherRending set
+            if (chosenImbue.ToString() == "NetherRending")
+            {
+                item.ImbuedEffect |= ImbuedEffectType.NetherRending;
+            }
+
+            ModManager.Log($"[BetterLoot] VendorLoot: Applied custom imbue {chosenImbue} to {item.Name}", ModManager.LogLevel.Debug);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BetterLoot] VendorLoot: TryApplyCustomImbue failed: {ex.Message}", ModManager.LogLevel.Warn);
         }
     }
 

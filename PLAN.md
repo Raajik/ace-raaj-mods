@@ -3,8 +3,8 @@
 ## Progress (Recent)
 
 ### Shipped 2026-05-05
+- ✅ Artificer wisp complete combat overhaul (cast elemental arcs, fixed all arc spell IDs)
 - ✅ Loremaster quest completion XP message fix (accurate amount, condensed to single line)
-- ✅ Artificer wisp scaling & spell fixes (consistent levels, correct Imperil spells)
 - ✅ Death Knight Nether spell fixes (Streak/Arc spell IDs)
 - ✅ NPC spawn safety margins (+1.0 unit vertical clearance)
 - ✅ Auto-salvage imbue bonus fix (all three paths)

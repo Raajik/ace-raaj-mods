@@ -2,6 +2,47 @@
 
 ## 2026-05-05 (Evening Session)
 
+### Artificer Wisp Combat Overhaul
+
+**Problem:**
+- Wisps doing **negative damage** (healing enemies instead of hurting them)
+- Combat log: "Your Muckphage's Wisp has hit Tumerok Gladiator for -22 Fire damage"
+- Weenie templates 49185-49211 incomplete (no spell books, missing combat floats)
+
+**Root Cause:**
+- Custom wisp weenies are empty shells — vanilla wisps have 30+ combat properties, customs have only 2
+- Old Imperil/drain melee proc tried to use broken combat math
+
+**Solution:**
+- **Replaced entire combat system:** Wisps now cast **elemental War Magic arcs** at all enemies within 10 yards
+- Tier = `ItemEnchantment / 50` (same formula as Battlemage)
+- Random elemental type per proc (Acid/Fire/Cold/Lightning arcs) for visual variety
+- Uses owner's mana with **0% cost** (free casting)
+- Removed recursion guard, cleave damage, Imperil spell cache (no longer needed)
+
+**Bonus Fix — HybridClasses Arc Spell IDs:**
+
+All arc spell IDs were **completely wrong** (verified against database). Fixed:
+
+| Damage Type | OLD (Wrong) | NEW (Correct) | Spells |
+|-------------|-------------|---------------|--------|
+| Acid | 2720-2726 | **2711-2717, 4421** | Acid Arc I-VII, Incantation |
+| Fire | 2748-2754 | **2739-2745, 4423** | Flame Arc I-VII, Incantation |
+| Cold | 2734-2740 | **2725-2731, 4425** | Frost Arc I-VII, Incantation |
+| Electric | 2741-2747 | **2732-2738, 4426** | Lightning Arc I-VII, Incantation |
+| Bludgeon | 2755-2761 | **2746-2752, 4427** | Shock Arc I-VII, Incantation |
+| Slash | 2762-2768 | **2753-2759, 4422** | Blade Arc I-VII, Incantation |
+| Pierce | 2727-2733 | **2718-2724, 4424** | Force Arc I-VII, Incantation |
+
+**Result:**
+- Artificer wisps now functional combat pets (cast real damage spells)
+- **Battlemage** and **Death Knight** arc casts also fixed (were using wrong spell IDs)
+- Simpler implementation (no weenie SQL needed, just spell casting)
+
+**Commit:** `7cc1dfc`
+
+---
+
 ### Loremaster Quest Completion XP Message Fix
 
 **Problem:**

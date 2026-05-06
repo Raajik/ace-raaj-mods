@@ -23,7 +23,18 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
 
     public override void Start()
     {
-        base.Start();
+        ModManager.Log("[BSS] Start() called, about to call base.Start()...", ModManager.LogLevel.Info);
+        
+        try
+        {
+            base.Start();
+            ModManager.Log("[BSS] base.Start() completed successfully", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS] base.Start() FAILED: {ex}", ModManager.LogLevel.Error);
+            throw;
+        }
         
         // Load settings directly from file to ensure we get latest values
         try

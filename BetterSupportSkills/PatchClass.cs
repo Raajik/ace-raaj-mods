@@ -802,9 +802,8 @@ try
 
         var enabledFeatures = new List<Features>();
 
-        // Re-enabling features one by one to find broken patch
-        // SummoningClasses is DISABLED (has broken Creature.TakeDamage patch)
-        
+        // Testing in batches to find broken patch
+        // BATCH 1: First 10 features
         if (Settings.EnableAlchemy)
             enabledFeatures.Add(Features.AlchemySkill);
         
@@ -827,6 +826,9 @@ try
             enabledFeatures.Add(Features.FletchingSkill);
         if (Settings.EnableHealing)
             enabledFeatures.Add(Features.HealingSkill);
+        
+        // BATCH 2: Next 10 features - DISABLED TO TEST
+        /*
         if (Settings.EnableLeadership)
             enabledFeatures.Add(Features.LeadershipSkill);
         if (Settings.EnableLockpick)
@@ -851,13 +853,11 @@ try
             enabledFeatures.Add(Features.TrophyDropsSkill);
         if (Settings.EnableTinkeringLootGating)
             enabledFeatures.Add(Features.TinkeringLootGating);
-        // SKIP SummoningClasses - has broken Creature.TakeDamage patch
-        // if (Settings.EnableSummoningClasses)
-        //     enabledFeatures.Add(Features.SummoningClasses);
         if (Settings.EnableDruidPetThorns)
             enabledFeatures.Add(Features.DruidPetThorns);
         if (Settings.EnableSalvage)
             enabledFeatures.Add(Features.SalvageSkill);
+        */
         // CombatClasses patches are applied manually in TryApplyCombatClassesPatch()
         // to avoid double-patching with declarative attributes.
 

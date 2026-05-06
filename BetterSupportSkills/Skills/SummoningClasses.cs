@@ -1095,6 +1095,13 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
             if (enemy.IsDead) continue;
             if (enemy.GetCylinderDistance(__instance) > procRadius)
                 continue;
+            
+            // Exclude the wisp's owner and other players/pets from AoE
+            if (enemy == owner) continue;
+            if (enemy is Player) continue;
+            if (enemy is CombatPet) continue;
+            
+            // Only hit monsters
             if (enemy.IsMonster || enemy.WeenieType == WeenieType.Creature)
                 aoeTargets.Add(enemy);
         }

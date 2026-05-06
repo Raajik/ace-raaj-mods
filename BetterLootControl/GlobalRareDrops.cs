@@ -16,7 +16,7 @@ internal static class GlobalRareDrops
     [HarmonyPatch(typeof(Creature), nameof(Creature.GenerateTreasure), new System.Type[] { typeof(ACE.Server.Entity.DamageHistoryInfo), typeof(Corpse) })]
     public static void PostGenerateTreasure(DamageHistoryInfo killer, Corpse corpse, Creature __instance)
     {
-        if (!PatchClass.Settings.EnableGlobalRareDrops)
+        if (PatchClass.Settings == null || !PatchClass.Settings.EnableGlobalRareDrops)
             return;
 
         // Only creatures with a treasure profile (i.e. anywhere an Encapsulated Spirit could drop)
@@ -25,8 +25,13 @@ internal static class GlobalRareDrops
 
         if (corpse == null || corpse.IsDestroyed)
             return;
+        
+        if (__instance == null)
+            return;
 
         var s = PatchClass.Settings;
+        if (s == null)
+            return;
 
         // Roll for SpellSiphon tool
         if (ThreadSafeRandom.Next(0.0f, 1.0f) < s.RareDropChance)
@@ -56,7 +61,8 @@ internal static class GlobalRareDrops
         // Roll for Coalesced Mana (tier-appropriate: T1-2 Aetheric, T3 Aetheric/Greater, T4 all three)
         if (ThreadSafeRandom.Next(0.0f, 1.0f) < s.CoalescedManaDropChance)
         {
-            var wcid = RollCoalescedManaWcid(__instance.DeathTreasure.Tier);
+            int tier = __instance.DeathTreasure?.Tier ?? 1;
+            var wcid = RollCoalescedManaWcid(tier);
             if (wcid > 0)
             {
                 var mana = WorldObjectFactory.CreateNewWorldObject(wcid);
@@ -64,7 +70,7 @@ internal static class GlobalRareDrops
                 {
                     corpse.TryAddToInventory(mana);
                     if (s.EnableDebugLogging)
-                        ModManager.Log($"[BetterLootControl] Coalesced Mana drop: {mana.Name} on {__instance.Name} (T{__instance.DeathTreasure.Tier})", ModManager.LogLevel.Info);
+                        ModManager.Log($"[BetterLootControl] Coalesced Mana drop: {mana.Name} on {__instance.Name} (T{tier})", ModManager.LogLevel.Info);
                 }
             }
         }

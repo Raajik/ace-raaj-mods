@@ -1078,14 +1078,10 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
 
     // -- Artificer Proc: Imperil + Drain on Wisp Melee -------------------
 
-    // Arc spells by damage type (elemental War Magic) - verified from database
-    private static readonly Dictionary<DamageType, int[]> ArtificerArcSpells = new()
-    {
-        [DamageType.Acid] = new[] { 2711, 2712, 2713, 2714, 2715, 2716, 2717, 4421 },       // Acid Arc I-VII, Incantation
-        [DamageType.Fire] = new[] { 2739, 2740, 2741, 2742, 2743, 2744, 2745, 4423 },       // Flame Arc I-VII, Incantation
-        [DamageType.Cold] = new[] { 2725, 2726, 2727, 2728, 2729, 2730, 2731, 4425 },       // Frost Arc I-VII, Incantation
-        [DamageType.Electric] = new[] { 2732, 2733, 2734, 2735, 2736, 2737, 2738, 4426 },   // Lightning Arc I-VII, Incantation
-    };
+    // Artificer Wisp Spells - Martyr's Hecatomb, Harm Other, and Drain Health Other
+    private static readonly int[] MartyrsHecatombSpells = new[] { 2760, 2761, 2762, 2763, 2764, 2765, 2766, 4428 }; // I-VII, Incantation
+    private static readonly int[] HarmOtherSpells = new[] { 7, 1172, 1173, 1174, 1175, 1176, 0, 0 };  // I-VI (no VII/VIII)
+    private static readonly int[] DrainHealthOtherSpells = new[] { 1237, 1238, 1239, 1240, 1241, 1242, 0, 0 }; // I-VI (no VII/VIII)
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Creature), "TakeDamage", new Type[] { typeof(WorldObject), typeof(DamageType), typeof(float), typeof(bool) })]
@@ -1135,28 +1131,43 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
 
         if (aoeTargets.Count == 0) return;
 
-        // Pick a random elemental damage type for visual variety
-        var elementalTypes = ArtificerArcSpells.Keys.ToArray();
-        var randomElement = elementalTypes[Random.Shared.Next(elementalTypes.Length)];
-        var arcIds = ArtificerArcSpells[randomElement];
-
-        // Cast arc spell at all enemies in range (wisps cast for free, no components needed)
-        foreach (var target in aoeTargets)
+        // Cast on the primary target that was struck
+        try
         {
-            if (target == null || target.IsDestroyed || target.IsDead)
-                continue;
+            // Always cast Martyr's Hecatomb (multi-projectile damage)
+            var hecatombId = MartyrsHecatombSpells[Math.Min(tier, MartyrsHecatombSpells.Length - 1)];
+            if (hecatombId > 0)
+            {
+                var hecatombSpell = new ACE.Server.Entity.Spell((SpellId)hecatombId);
+                if (!hecatombSpell.NotFound)
+                    Skills.BssAutoCaster.CastSpellDirect(owner, hecatombSpell, __instance);
+            }
 
-            try
+            // Always cast Harm Other (direct damage)
+            var harmId = HarmOtherSpells[Math.Min(tier, HarmOtherSpells.Length - 1)];
+            if (harmId > 0)
             {
-                // Direct cast bypasses component/mana checks (pets don't need reagents)
-                var spell = new ACE.Server.Entity.Spell((SpellId)arcIds[tier]);
-                if (!spell.NotFound)
-                    Skills.BssAutoCaster.CastSpellDirect(owner, spell, target);
+                var harmSpell = new ACE.Server.Entity.Spell((SpellId)harmId);
+                if (!harmSpell.NotFound)
+                    Skills.BssAutoCaster.CastSpellDirect(owner, harmSpell, __instance);
             }
-            catch (Exception ex)
+
+            // Cast Drain Health Other if wisp is below 75% health
+            var wispHealthPercent = (double)(pet.Health?.Current ?? 0) / Math.Max(1, pet.Health?.MaxValue ?? 1);
+            if (wispHealthPercent < 0.75)
             {
-                ModManager.Log($"[BSS Artificer] Wisp arc cast failed on {target.Name}: {ex.Message}", ModManager.LogLevel.Warn);
+                var drainId = DrainHealthOtherSpells[Math.Min(tier, DrainHealthOtherSpells.Length - 1)];
+                if (drainId > 0)
+                {
+                    var drainSpell = new ACE.Server.Entity.Spell((SpellId)drainId);
+                    if (!drainSpell.NotFound)
+                        Skills.BssAutoCaster.CastSpellDirect(owner, drainSpell, __instance);
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS Artificer] Wisp spell cast failed on {__instance.Name}: {ex.Message}", ModManager.LogLevel.Warn);
         }
     }
 

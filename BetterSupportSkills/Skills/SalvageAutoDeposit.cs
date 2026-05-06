@@ -432,89 +432,110 @@ public static class SalvageAutoDeposit
             return;
         }
 
+        var grantedSalvage = new List<(string Name, int Units, long Before, long After)>();
         int imbueSalvageCount = 0;
 
         // Check each possible imbue effect and grant salvage for each one present
         // Elemental Rends
         if (imbue.HasFlag(ImbuedEffectType.FireRending))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has FireRending, granting Red Garnet", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21069, 50); // Red Garnet
+            var result = GrantImbueSalvage(player, 21069, 50); // Red Garnet
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.ColdRending))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has ColdRending, granting Yellow Topaz", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21088, 50); // Yellow Topaz
+            var result = GrantImbueSalvage(player, 21088, 50); // Yellow Topaz
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.ElectricRending))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has ElectricRending, granting Sunstone", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21079, 50); // Sunstone
+            var result = GrantImbueSalvage(player, 21079, 50); // Sunstone
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.AcidRending))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has AcidRending, granting Obsidian", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21064, 50); // Obsidian
+            var result = GrantImbueSalvage(player, 21064, 50); // Obsidian
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.NetherRending))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has NetherRending, granting Black Opal", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21040, 50); // Black Opal
+            var result = GrantImbueSalvage(player, 21040, 50); // Black Opal
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.PierceRending))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has PierceRending, granting Lapis Lazuli", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21057, 50); // Lapis Lazuli
+            var result = GrantImbueSalvage(player, 21057, 50); // Lapis Lazuli
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.SlashRending))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has SlashRending, granting Diamond", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21046, 50); // Diamond
+            var result = GrantImbueSalvage(player, 21046, 50); // Diamond
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.BludgeonRending))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has BludgeonRending, granting Tourmaline", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21082, 50); // Tourmaline
+            var result = GrantImbueSalvage(player, 21082, 50); // Tourmaline
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
 
         // Secondary Imbues
         if (imbue.HasFlag(ImbuedEffectType.CriticalStrike))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has CriticalStrike, granting Black Opal", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21040, 50); // Black Opal
+            var result = GrantImbueSalvage(player, 21040, 50); // Black Opal
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.CripplingBlow))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has CripplingBlow, granting Black Opal", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21040, 50); // Black Opal
+            var result = GrantImbueSalvage(player, 21040, 50); // Black Opal
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.ArmorRending))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has ArmorRending, granting Black Opal", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21040, 50); // Black Opal
+            var result = GrantImbueSalvage(player, 21040, 50); // Black Opal
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
 
         // Defense Imbues
         if (imbue.HasFlag(ImbuedEffectType.MagicDefense))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has MagicDefense, granting Opal", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21065, 50); // Opal
+            var result = GrantImbueSalvage(player, 21065, 50); // Opal
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.MeleeDefense))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has MeleeDefense, granting Opal", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21065, 50); // Opal
+            var result = GrantImbueSalvage(player, 21065, 50); // Opal
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.MissileDefense))
         {
-            ModManager.Log($"[BSS Imbue Salvage] Item has MissileDefense, granting Opal", ModManager.LogLevel.Debug);
-            imbueSalvageCount += GrantImbueSalvage(player, 21065, 50); // Opal
+            var result = GrantImbueSalvage(player, 21065, 50); // Opal
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
 
-        if (imbueSalvageCount > 0)
+        if (imbueSalvageCount > 0 && grantedSalvage.Count > 0)
         {
-            ModManager.Log($"[BSS Imbue Salvage] Total imbue salvage granted: {imbueSalvageCount} bags from '{item.Name}'", ModManager.LogLevel.Debug);
-            player.SendMessage($"[Auto-Salvage] Granted {imbueSalvageCount} imbue salvage bag(s) from enchanted item.");
+            var summary = string.Join(", ", grantedSalvage.Select(s => $"{s.Name} +{s.Units}"));
+            player.SendMessage($"[Auto-Salvage] Granted imbue salvage: {summary}");
+            
+            // Debug bank diff for each type
+            foreach (var s in grantedSalvage)
+            {
+                ModManager.Log($"[BSS Imbue Salvage] {s.Name}: {s.Before} → {s.After} (+{s.Units})", ModManager.LogLevel.Debug);
+            }
         }
         else
         {
@@ -522,39 +543,46 @@ public static class SalvageAutoDeposit
         }
     }
 
-    static int GrantImbueSalvage(Player player, uint salvageWcid, int units)
+    static (int Count, string Name, int Units, long Before, long After) GrantImbueSalvage(Player player, uint salvageWcid, int units)
     {
         if (player == null || salvageWcid == 0)
         {
             ModManager.Log($"[BSS Imbue Salvage] GrantImbueSalvage called with null player or wcid=0", ModManager.LogLevel.Debug);
-            return 0;
+            return (0, "Unknown", 0, 0, 0);
         }
 
-        // Try LeyLineLedger integration first
-        if (LeyLineLedgerSalvageInterop.TryIncSalvage(player, salvageWcid, units))
-        {
-            string displayName = GetMaterialNameByWcid(salvageWcid);
-            ModManager.Log($"[BSS Imbue Salvage] Granted {units} units of {displayName} (WCID {salvageWcid}) to {player.Name} via LLL", ModManager.LogLevel.Debug);
-            return 1; // Return 1 bag granted
-        }
+        string displayName = GetMaterialNameByWcid(salvageWcid);
+        long before = 0;
+        long after = 0;
 
-        // Fallback to BSS's own property scheme if LLL not available
+        // Fallback to BSS's own property scheme - track before/after for message
         int matIndex = GetMaterialIndex(salvageWcid);
         if (matIndex < 0 || matIndex > 108)
         {
             ModManager.Log($"[BSS Imbue Salvage] Invalid material index {matIndex} for WCID {salvageWcid}", ModManager.LogLevel.Debug);
-            return 0;
+            return (0, displayName, 0, 0, 0);
         }
 
         int bankProp = GetMaterialBankProperty(matIndex);
-        long current = player.GetProperty((PropertyInt64)bankProp) ?? 0;
-        long newValue = current + units;
-        player.SetProperty((PropertyInt64)bankProp, newValue);
-        
-        string fallbackName = GetMaterialName(matIndex);
-        ModManager.Log($"[BSS Imbue Salvage] Granted {units} units of {fallbackName} (WCID {salvageWcid}) to {player.Name}. Bank prop {bankProp}: {current} → {newValue} (BSS fallback)", ModManager.LogLevel.Debug);
+        before = player.GetProperty((PropertyInt64)bankProp) ?? 0;
 
-        return 1; // Return 1 bag granted
+        // Try LeyLineLedger integration first
+        if (LeyLineLedgerSalvageInterop.TryIncSalvage(player, salvageWcid, units))
+        {
+            // LLL succeeded - re-read from BSS property to get after value
+            // (LLL mirrors to BSS properties, so we can read the result)
+            after = player.GetProperty((PropertyInt64)bankProp) ?? before;
+            ModManager.Log($"[BSS Imbue Salvage] Granted {units} units of {displayName} (WCID {salvageWcid}) to {player.Name} via LLL. Bank prop {bankProp}: {before} → {after}", ModManager.LogLevel.Debug);
+            return (1, displayName, units, before, after);
+        }
+
+        // BSS fallback if LLL not available
+        after = before + units;
+        player.SetProperty((PropertyInt64)bankProp, after);
+        
+        ModManager.Log($"[BSS Imbue Salvage] Granted {units} units of {displayName} (WCID {salvageWcid}) to {player.Name}. Bank prop {bankProp}: {before} → {after} (BSS fallback)", ModManager.LogLevel.Debug);
+
+        return (1, displayName, units, before, after);
     }
 
     static string GetMaterialNameByWcid(uint wcid)

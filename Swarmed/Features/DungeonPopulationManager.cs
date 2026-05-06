@@ -197,12 +197,12 @@ internal static class DungeonPopulationManager
 
     static Position? FindSpawnPosition(Creature template, Landblock lb, List<Player> players, DungeonPopulationSettings s)
     {
-        // Try several random offsets around the template creature
-        for (int attempt = 0; attempt < 8; attempt++)
+        // Try more attempts with smaller offsets around existing creatures (more likely to be valid)
+        for (int attempt = 0; attempt < 25; attempt++)
         {
             float angle = (float)(ThreadSafeRandom.Next(0.0f, 1.0f) * 2 * Math.PI);
-            float dist = s.MinSpawnDistanceFromPlayer + (float)ThreadSafeRandom.Next(0.0f, 1.0f) *
-                (s.MaxSpawnDistanceFromPlayer - s.MinSpawnDistanceFromPlayer);
+            // Use smaller distances (2-8 meters) for better success rate
+            float dist = 2.0f + (float)ThreadSafeRandom.Next(0.0f, 1.0f) * 6.0f;
 
             var offset = new Vector3((float)(dist * Math.Cos(angle)), (float)(dist * Math.Sin(angle)), 0);
             var candidate = new Position(template.Location);
@@ -215,11 +215,27 @@ internal static class DungeonPopulationManager
                 {
                     var terrainZ = lb.LandblockMesh.GetZ(new System.Numerics.Vector2(candidate.Pos.X, candidate.Pos.Y));
                     if (!float.IsNaN(terrainZ) && terrainZ > -999)
-                        // Increased from 0.05f to 1.0f for better spawn safety margin
-                        candidate.Pos = new Vector3(candidate.Pos.X, candidate.Pos.Y, terrainZ + 1.0f);
+                    {
+                        // Increased safety margin
+                        candidate.Pos = new Vector3(candidate.Pos.X, candidate.Pos.Y, terrainZ + 1.5f);
+                    }
+                    else
+                    {
+                        // Bad terrain Z means probably invalid position, skip this attempt
+                        continue;
+                    }
+                }
+                else
+                {
+                    // No mesh available, add larger safety margin to template Z
+                    candidate.Pos = new Vector3(candidate.Pos.X, candidate.Pos.Y, template.Location.PositionZ + 1.5f);
                 }
             }
-            catch { /* keep candidate Z if mesh unavailable */ }
+            catch
+            {
+                // Mesh lookup failed, skip this position
+                continue;
+            }
 
             // Ensure it's outside min distance from ALL players
             bool tooClose = players.Any(p => p.Location.DistanceTo(candidate) < s.MinSpawnDistanceFromPlayer);
@@ -229,30 +245,8 @@ internal static class DungeonPopulationManager
             return candidate;
         }
 
-        // Fallback: return a position at max distance from the furthest player
-        if (players.Count > 0)
-        {
-            var fallback = new Position(template.Location);
-            float angle = (float)(ThreadSafeRandom.Next(0.0f, 1.0f) * 2 * Math.PI);
-            float dist = s.MaxSpawnDistanceFromPlayer;
-            fallback.Pos += new Vector3((float)(dist * Math.Cos(angle)), (float)(dist * Math.Sin(angle)), 0);
-
-            // Snap fallback Z too
-            try
-            {
-                if (lb?.LandblockMesh != null)
-                {
-                    var terrainZ = lb.LandblockMesh.GetZ(new System.Numerics.Vector2(fallback.Pos.X, fallback.Pos.Y));
-                    if (!float.IsNaN(terrainZ) && terrainZ > -999)
-                        // Increased from 0.05f to 1.0f for better spawn safety margin
-                        fallback.Pos = new Vector3(fallback.Pos.X, fallback.Pos.Y, terrainZ + 1.0f);
-                }
-            }
-            catch { }
-
-            return fallback;
-        }
-
+        // All attempts failed - return null and let the spawner skip this one
+        // (Better to spawn fewer mobs reliably than spam failed spawn warnings)
         return null;
     }
 }

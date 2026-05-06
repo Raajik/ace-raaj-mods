@@ -198,15 +198,44 @@ internal static class BuddySpawns
                 return false;
             }
 
-            float radius = settings.BuddySpawns.SpawnRadiusMeters;
+            // Use smaller radius (2-5m) for better spawn success near existing creatures
             float angle = (float)ThreadSafeRandom.Next(0f, 1f) * (float)(2 * Math.PI);
-            float dist = (float)ThreadSafeRandom.Next(0f, 1f) * radius;
+            float dist = 2.0f + (float)ThreadSafeRandom.Next(0f, 1f) * 3.0f;
             var offset = new Vector3((float)(dist * Math.Cos(angle)), (float)(dist * Math.Sin(angle)), 0);
 
             var spawnPos = new Position(parent.Location);
             spawnPos.Pos += offset;
-            // Add spawn safety margin to prevent spawning below floor
-            spawnPos.PositionZ += 1.0f;
+            
+            // Snap to terrain Z if available, otherwise use parent Z with safety margin
+            try
+            {
+                if (lb?.LandblockMesh != null)
+                {
+                    var terrainZ = lb.LandblockMesh.GetZ(new System.Numerics.Vector2(spawnPos.Pos.X, spawnPos.Pos.Y));
+                    if (!float.IsNaN(terrainZ) && terrainZ > -999)
+                    {
+                        spawnPos.Pos = new Vector3(spawnPos.Pos.X, spawnPos.Pos.Y, terrainZ + 1.5f);
+                    }
+                    else
+                    {
+                        // Bad terrain, use parent position
+                        GuidManager.RecycleDynamicGuid(guid);
+                        return false;
+                    }
+                }
+                else
+                {
+                    // No mesh, add safety margin to parent Z
+                    spawnPos.PositionZ = parent.Location.PositionZ + 1.5f;
+                }
+            }
+            catch
+            {
+                // Mesh failed, abort this spawn
+                GuidManager.RecycleDynamicGuid(guid);
+                return false;
+            }
+            
             buddy.Location = spawnPos;
 
             buddy.SetProperty((PropertyInt)BuddySpawnTagPropertyId, 1);

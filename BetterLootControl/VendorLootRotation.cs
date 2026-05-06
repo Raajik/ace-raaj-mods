@@ -1129,13 +1129,13 @@ public static class VendorLootRotation
             if (visualEffect != 0)
                 item.SetProperty(PropertyInt.UiEffects, currentEffects | visualEffect);
 
-            // Apply icon overlay (background texture) based on imbue type
+            // Apply icon underlay (background texture) based on imbue type
             foreach (var kvp in IconUnderlayMap)
             {
                 if (item.ImbuedEffect.HasFlag(kvp.Key))
                 {
-                    item.IconOverlayId = kvp.Value;
-                    break; // Only apply first matching overlay
+                    item.IconUnderlayId = kvp.Value;
+                    break; // Only apply first matching underlay
                 }
             }
         }

@@ -334,6 +334,9 @@ public static class LootRoller
 
         int tier = RollGearTier();
 
+        // Try to apply Overtinked custom imbues (same 25% chance as vendor loot)
+        TryApplyOvertinkedImbue(item);
+
         // ── Ratings ──
         if (s.EnableLootRatings)
         {
@@ -437,6 +440,65 @@ public static class LootRoller
         catch
         {
             // Swallow — bad rating name or property access failure
+        }
+    }
+
+    /// <summary>
+    /// 25% chance to apply Overtinked custom imbues (Hemorrhage, Cleaving, NetherRending, Shatter)
+    /// to weapons and jewelry via reflection bridge.
+    /// </summary>
+    static void TryApplyOvertinkedImbue(WorldObject item)
+    {
+        if (item == null)
+            return;
+
+        // Only apply to weapons and jewelry
+        bool isWeapon = item.WeenieType is WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster;
+        bool isJewelry = item.ItemType.HasFlag(ItemType.Jewelry);
+
+        if (!isWeapon && !isJewelry)
+            return;
+
+        // 25% chance for custom Overtinked imbue
+        if (ThreadSafeRandom.Next(0.0f, 1.0f) >= 0.25f)
+            return;
+
+        try
+        {
+            var overtinkedAssembly = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => a.GetName().Name == "Overtinked");
+            if (overtinkedAssembly == null)
+                return; // Overtinked not loaded
+
+            var storeType = overtinkedAssembly.GetType("Overtinked.OvertinkedImbueStore");
+            var flagsType = overtinkedAssembly.GetType("Overtinked.OvertinkedImbueFlags");
+
+            if (storeType == null || flagsType == null)
+                return;
+
+            // Get the Add method: public static void Add(WorldObject target, OvertinkedImbueFlags flags)
+            var addMethod = storeType.GetMethod("Add",
+                BindingFlags.Public | BindingFlags.Static,
+                null,
+                new[] { typeof(WorldObject), flagsType },
+                null);
+
+            if (addMethod == null)
+                return;
+
+            // Roll which imbue(s) to apply
+            var availableFlags = new[] { 8, 2, 4, 16 }; // Hemorrhage, Cleaving, NetherRending, Shatter
+            int chosenFlag = availableFlags[ThreadSafeRandom.Next(0, availableFlags.Length - 1)];
+
+            // Convert int to OvertinkedImbueFlags enum value
+            var flagValue = Enum.ToObject(flagsType, chosenFlag);
+
+            // Call OvertinkedImbueStore.Add(item, flags)
+            addMethod.Invoke(null, new[] { item, flagValue });
+        }
+        catch
+        {
+            // Swallow — Overtinked not present or incompatible
         }
     }
 }

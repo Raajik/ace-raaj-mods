@@ -37,7 +37,16 @@ Server-side corpse autoloot using `.utl` profiles (compatible with Decal UT clas
 - **Loot stack consolidation** — merges duplicate same-WCID stackable rows in freshly generated corpses (e.g. multiple drudge charm create-list entries). Bloodletter Drudge charm **Quality / Pristine / Perfect** WCIDs **850271–850273** (+ base **24835**) — SQL `WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql`, forward `DrudgeCharm_SunstoneUnderlay_2026-05-08.sql`, clone template `WindblownContent/Content/SQL/README-TrophyCharmCloneTemplate.md`.
 
 ### BetterLootControl
-Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot` chest mod; those folders removed from the repo).
+Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot` chest mod; those folders removed from the repo). **Single source of truth for vendor loot rotation** (migrated from QOL 2026-05-05).
+
+**Vendor Loot Rotation:**
+- **Jeweler specialization (20 vendors)** — 15-30 jewelry + 15-30 gems + Spellsiphons/Mana Lattices with 70% imbue, 35% awaken, 60% tinker rates
+- **Archmage specialization (31 vendors)** — 15-30 caster weapons + 8-20 robes with 65% imbue, 30% awaken, 55% tinker rates
+- **Weapon imbues work on jewelry** — Harmony patches make CriticalStrike/CripplingBlow/ArmorRending apply from any equipped item
+- **Visual system** — Color-coded UiEffects glows + IconUnderlayId background textures (frost/fire/acid/lightning)
+- **Premium pricing** — Multipliers stack: `Base × Imbue(5x) × Awaken(8x) × Tinker(2^count)`
+
+**Chest & Loot:**
 - **Chest guaranteed drops** — adds salvage, trade notes, healing kits, keys, crystals, and gear to treasure chests.
 - **Global rare drops** — SpellSiphon tool and Mana Lattice have a small chance to drop from any creature with a treasure profile. Mana Lattice can pre-roll bonus spells from SpellSiphon's gem pool when that mod is loaded; lattice uses gem-style self-cast when the item spellbook is non-empty (SpellSiphon hook + client refresh after bootstrap).
 - **Salvage bag shaping** — auto-shapes dropped salvage bags to 100-unit stacks.
@@ -46,6 +55,8 @@ Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot`
 - **Gear equipment sets** — all gear tiers can roll as part of an equipment set (Carraidas, Noble Relic, Ancient Relic, etc.).
 - **Rating level-up scaling** — ratings on gear grow as the item levels up via EmpyreanAlteration's awakening system (every N levels, existing ratings increase).
 - **Runtime config** — `LootConfig.json` (shared with Loremaster) controls all pools without recompiling.
+
+See `BetterLootControl/Readme.md` for full vendor documentation.
 
 ### ChallengeModes
 A challenge-hub mod for alternate playstyles:

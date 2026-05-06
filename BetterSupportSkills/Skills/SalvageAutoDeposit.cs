@@ -530,7 +530,15 @@ public static class SalvageAutoDeposit
             return 0;
         }
 
-        // Find the material index for this salvage WCID
+        // Try LeyLineLedger integration first
+        if (LeyLineLedgerSalvageInterop.TryIncSalvage(player, salvageWcid, units))
+        {
+            string displayName = GetMaterialNameByWcid(salvageWcid);
+            ModManager.Log($"[BSS Imbue Salvage] Granted {units} units of {displayName} (WCID {salvageWcid}) to {player.Name} via LLL", ModManager.LogLevel.Debug);
+            return 1; // Return 1 bag granted
+        }
+
+        // Fallback to BSS's own property scheme if LLL not available
         int matIndex = GetMaterialIndex(salvageWcid);
         if (matIndex < 0 || matIndex > 108)
         {
@@ -543,10 +551,18 @@ public static class SalvageAutoDeposit
         long newValue = current + units;
         player.SetProperty((PropertyInt64)bankProp, newValue);
         
-        string matName = GetMaterialName(matIndex);
-        ModManager.Log($"[BSS Imbue Salvage] Granted {units} units of {matName} (WCID {salvageWcid}) to {player.Name}. Bank prop {bankProp}: {current} → {newValue}", ModManager.LogLevel.Debug);
+        string fallbackName = GetMaterialName(matIndex);
+        ModManager.Log($"[BSS Imbue Salvage] Granted {units} units of {fallbackName} (WCID {salvageWcid}) to {player.Name}. Bank prop {bankProp}: {current} → {newValue} (BSS fallback)", ModManager.LogLevel.Debug);
 
         return 1; // Return 1 bag granted
+    }
+
+    static string GetMaterialNameByWcid(uint wcid)
+    {
+        int matIndex = GetMaterialIndex(wcid);
+        if (matIndex >= 0 && matIndex <= 108)
+            return GetMaterialName(matIndex);
+        return $"WCID {wcid}";
     }
 
     public static string GetMaterialName(int index)

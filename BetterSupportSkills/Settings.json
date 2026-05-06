@@ -107,8 +107,8 @@
   },
   "Cooking": {
     "CookingUseLegacySpellBuffs": false,
-    "CookingRegenPerBuffedPointTrained": 1.0,
-    "CookingRegenPerBuffedPointSpecialized": 2.0,
+    "CookingRegenPerBuffedPointTrained": 0.15,
+    "CookingRegenPerBuffedPointSpecialized": 0.25,
     "LegendaryHealthSpell": 6077,
     "LegendaryStaminaSpell": 6076,
     "LegendaryManaSpell": 6078,

@@ -303,13 +303,17 @@ public class CookingSettings
     public string CookingUseLegacySpellBuffsDoc { get; init; } = "When true, restores TryCastSpell regeneration auras on food eat and /buff (vanilla-style). When false, only always-on natural regen multiplier applies (no double-dip with natural mult).";
     public bool CookingUseLegacySpellBuffs { get; set; } = false;
 
-    [JsonPropertyName("// CookingRegenPerBuffedPointTrained")]
-    public string CookingRegenPerBuffedPointTrainedDoc { get; init; } = "Always-on regen: per buffed Cooking rank, add this decimal to multiplier (e.g. 0.05 = +5% per rank) when trained.";
-    public double CookingRegenPerBuffedPointTrained { get; set; } = 0.05;
+    [JsonPropertyName("// CookingRegenPercentPerTickTrained")]
+    public string CookingRegenPercentPerTickTrainedDoc { get; init; } = "Percentage of max vital restored per heartbeat tick when trained (e.g. 0.05 = 5% per 5 seconds normally, 5% per 1 second when low).";
+    public double CookingRegenPercentPerTickTrained { get; set; } = 0.01;
 
-    [JsonPropertyName("// CookingRegenPerBuffedPointSpecialized")]
-    public string CookingRegenPerBuffedPointSpecializedDoc { get; init; } = "Same when Cooking is specialized (default 0.10 = +10% per rank).";
-    public double CookingRegenPerBuffedPointSpecialized { get; set; } = 0.10;
+    [JsonPropertyName("// CookingRegenPercentPerTickSpecialized")]
+    public string CookingRegenPercentPerTickSpecializedDoc { get; init; } = "Percentage of max vital restored per heartbeat tick when specialized (e.g. 0.10 = 10% per 5 seconds normally, 10% per 1 second when low).";
+    public double CookingRegenPercentPerTickSpecialized { get; set; } = 0.02;
+
+    [JsonPropertyName("// CookingFastRegenVitalThreshold")]
+    public string CookingFastRegenVitalThresholdDoc { get; init; } = "When any vital (health/stamina/mana) falls below this percentage, heartbeat switches to 1-second intervals for fast recovery. Above threshold = 5-second intervals.";
+    public double CookingFastRegenVitalThreshold { get; set; } = 0.30;
 
     [JsonPropertyName("// LegendaryHealthSpell")]
     public string LegendaryHealthSpellDoc { get; init; } = "Spell ID for +60% Health Regen (Legendary Health Gain).";

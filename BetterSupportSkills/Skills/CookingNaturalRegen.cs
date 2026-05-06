@@ -5,7 +5,7 @@ internal static class CookingNaturalRegen
 {
     /// <summary>
     /// Dynamically adjusts heartbeat interval for players with cooking trained/spec'd.
-    /// 1-second ticks during combat or low vitals, 5-second ticks when idle and healthy.
+    /// 1-second ticks when vitals below 30%, 5-second ticks when healthy.
     /// </summary>
     public static void PreHeartbeat(Player __instance, double currentUnixTime)
     {
@@ -25,84 +25,76 @@ internal static class CookingNaturalRegen
             return;
         }
 
-        // Check if player needs fast ticks (combat or low vitals)
-        bool needsFastTicks = IsInCombatOrLowVitals(__instance);
+        // Check if player needs fast ticks (low vitals below threshold)
+        bool needsFastTicks = IsLowOnVitals(__instance, settings);
 
         if (needsFastTicks)
         {
-            // Switch to 1-second ticks for smooth regeneration during action
+            // Switch to 1-second ticks for smooth regeneration when low
             if (__instance.HeartbeatInterval != 1.0f)
                 __instance.HeartbeatInterval = 1.0f;
         }
         else
         {
-            // Switch to 5-second ticks for efficiency when idle
+            // Switch to 5-second ticks for efficiency when healthy
             if (__instance.HeartbeatInterval != 5.0f)
                 __instance.HeartbeatInterval = 5.0f;
         }
     }
 
-    static bool IsInCombatOrLowVitals(Player player)
+    static bool IsLowOnVitals(Player player, Settings settings)
     {
-        // In combat mode or has an attack target
-        if (player.CombatMode != CombatMode.NonCombat || player.AttackTarget != null)
-            return true;
-
-        // Recently took damage (within last 10 seconds)
-        var lastDamageEntry = player.DamageHistory?.Log?.LastOrDefault();
-        if (lastDamageEntry != null)
-        {
-            var timeSinceLastDamage = (DateTime.UtcNow - lastDamageEntry.Time).TotalSeconds;
-            if (timeSinceLastDamage < 10.0)
-                return true;
-        }
-
-        // Any vital below 80%
-        if (player.Health.Percent < 0.8 || player.Stamina.Percent < 0.8 || player.Mana.Percent < 0.8)
+        var threshold = settings.Cooking.CookingFastRegenVitalThreshold;
+        
+        // Any vital below threshold triggers fast regen
+        if (player.Health.Percent < threshold || 
+            player.Stamina.Percent < threshold || 
+            player.Mana.Percent < threshold)
             return true;
 
         return false;
     }
-    public static void PostGetRegenerationMod(EnchantmentManagerWithCaching __instance, CreatureVital vital, ref float __result)
+    /// <summary>
+    /// Add percentage-based regeneration bonus after base vital tick calculation.
+    /// Runs AFTER base regen, adds flat bonus based on max vital percentage.
+    /// </summary>
+    public static void PostVitalHeartBeat(Player __instance, CreatureVital vital, bool __result)
     {
-        if (__instance?.Player == null)
+        if (__instance == null || vital == null)
             return;
 
         var settings = PatchClass.Settings;
-        if (settings?.EnableCooking != true)
+        if (settings?.EnableCooking != true || settings.Cooking.CookingUseLegacySpellBuffs)
             return;
 
-        if (settings.Cooking.CookingUseLegacySpellBuffs)
-            return;
-
-        var cookingSkill = __instance.Player.GetCreatureSkill(Skill.Cooking);
+        var cookingSkill = __instance.GetCreatureSkill(Skill.Cooking);
         if (cookingSkill.AdvancementClass < SkillAdvancementClass.Trained)
             return;
 
-        var mult = GetCookingRegenMultiplier(__instance.Player, settings);
-        if (mult <= 0f || !float.IsFinite(mult))
+        // Don't add bonus if already at max
+        if (vital.Current >= vital.MaxValue)
             return;
 
-        if (!float.IsFinite(__result) || __result <= 0f)
+        // Calculate percentage-based bonus
+        var percentPerTick = cookingSkill.AdvancementClass == SkillAdvancementClass.Specialized
+            ? settings.Cooking.CookingRegenPercentPerTickSpecialized
+            : settings.Cooking.CookingRegenPercentPerTickTrained;
+
+        if (percentPerTick <= 0)
             return;
 
-        __result *= mult;
+        // Bonus scales with heartbeat interval (5sec = 5x bonus, 1sec = 1x bonus)
+        var interval = __instance.HeartbeatInterval ?? 5.0f;
+        var bonusAmount = (int)(vital.MaxValue * percentPerTick * interval);
+
+        if (bonusAmount > 0)
+        {
+            __instance.UpdateVitalDelta(vital, bonusAmount);
+            
+            if (vital.Vital == PropertyAttribute2nd.MaxHealth && bonusAmount > 0)
+                __instance.DamageHistory.OnHeal((uint)bonusAmount);
+        }
     }
 
-    internal static float GetCookingRegenMultiplier(Player player, Settings settings)
-    {
-        var cooking = player.GetCreatureSkill(Skill.Cooking);
-        if (cooking.AdvancementClass < SkillAdvancementClass.Trained)
-            return 1f;
 
-        var pts = Math.Max(0, (int)cooking.Current);
-        
-        // Note: Multiplier is per-heartbeat, so it auto-scales with HeartbeatInterval.
-        // At 1-second intervals: smaller amounts more frequently (smooth bars)
-        // At 5-second intervals: larger amounts less frequently (same total regen)
-        if (cooking.AdvancementClass == SkillAdvancementClass.Specialized)
-            return (float)(1.0 + pts * settings.Cooking.CookingRegenPerBuffedPointSpecialized);
-
-        return (float)(1.0 + pts * settings.Cooking.CookingRegenPerBuffedPointTrained);
-    }
 }

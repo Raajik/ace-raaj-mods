@@ -229,18 +229,19 @@ void TryApplyDamageEventPatch()
                 }
             }
 
-            var getRegen = AccessTools.Method(typeof(EnchantmentManagerWithCaching), nameof(EnchantmentManagerWithCaching.GetRegenerationMod), new[] { typeof(CreatureVital) });
-            if (getRegen != null)
+            // Patch Creature.VitalHeartBeat(CreatureVital) to add percentage-based bonus after base regen
+            var vitalHeartBeat = AccessTools.Method(typeof(Creature), nameof(Creature.VitalHeartBeat), new[] { typeof(CreatureVital) });
+            if (vitalHeartBeat != null)
             {
-                var regenPostfix = AccessTools.Method(typeof(Skills.CookingNaturalRegen), nameof(Skills.CookingNaturalRegen.PostGetRegenerationMod));
+                var regenPostfix = AccessTools.Method(typeof(Skills.CookingNaturalRegen), nameof(Skills.CookingNaturalRegen.PostVitalHeartBeat));
                 if (regenPostfix != null)
                 {
-                    ModC.Harmony?.Patch(getRegen, null, new HarmonyMethod(regenPostfix));
-                    ModManager.Log("[BSS] Cooking EnchantmentManagerWithCaching.GetRegenerationMod postfix applied", ModManager.LogLevel.Info);
+                    ModC.Harmony?.Patch(vitalHeartBeat, null, new HarmonyMethod(regenPostfix));
+                    ModManager.Log("[BSS] Cooking Creature.VitalHeartBeat postfix applied (percentage-based regen)", ModManager.LogLevel.Info);
                 }
             }
             else
-                ModManager.Log("[BSS] Cooking: GetRegenerationMod not found on EnchantmentManagerWithCaching", ModManager.LogLevel.Error);
+                ModManager.Log("[BSS] Cooking: VitalHeartBeat not found on Creature", ModManager.LogLevel.Error);
 
             // Patch Player.Heartbeat to dynamically adjust heartbeat interval for cooking users
             var playerHeartbeat = AccessTools.Method(typeof(Player), nameof(Player.Heartbeat), new[] { typeof(double) });

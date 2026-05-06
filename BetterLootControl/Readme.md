@@ -1,19 +1,91 @@
 # BetterLootControl
 
-Server-side loot tuning for Windblown. See repo `README.md` for the full mod list.
+Improves chest and vendor loot quality and variety.
 
-## Coalesced Mana weenie (WCIDs 42516–42518)
+## Features
 
-**Canonical SQL only:** [`WindblownContent/08-custom-items/01_CoalescedMana_LesserGreaterAetheric.sql`](../WindblownContent/08-custom-items/01_CoalescedMana_LesserGreaterAetheric.sql) — correct `ItemUseable` (use-on-target), `TargetType`, Icon/Setup DIDs. Do **not** run the deprecated stub [`CoalescedMana_LesserGreaterAetheric.sql`](../WindblownContent/08-custom-items/CoalescedMana_LesserGreaterAetheric.sql) (comments only; old revision had `Usable.No` and wrong art).
+### Jewelry Imbue Mechanics
+**Weapon imbues now work on jewelry!** Equipping jewelry with offensive imbues grants their bonuses:
+- **CriticalStrike** - Increases critical hit chance (works on jewelry, armor, weapons)
+- **CripplingBlow** - Increases critical damage multiplier (works on jewelry, armor, weapons)
+- **ArmorRending** - Reduces target armor (works on jewelry, armor, weapons)
+- **Defense imbues** (Melee/Missile/MagicDefense) - Already worked on all equipment (unchanged)
 
-After weenie apply, existing inventory stacks: [`EmpyreanAlteration/Content/SQL/03-coalesced-mana-biota-template.sql`](../EmpyreanAlteration/Content/SQL/03-coalesced-mana-biota-template.sql) on **ace_shard**.
+This allows jewelers to sell powerful jewelry with weapon imbues that actually provide combat bonuses when worn.
 
-## Mana Lattice spell bootstrap
+### Vendor Loot Rotation
 
-When `ManaLatticeSpellBootstrap` runs (rare lattice drops with SpellSiphon integration), spells are written via **SpellSiphon** `LootMutator.TryAddSpellId` (sets **Magical** `UiEffects`). After any spell is added, the lattice calls **`CalculateObjDesc`** and **`EnqueueBroadcastUpdateObject`** so the blue outline and examine data refresh on the client.
+Vendors automatically rotate their equipment inventory on a schedule.
 
-## Changelog
+#### Jeweler Specialization
+Jewelers receive premium treatment with high-quality magical items:
 
-### 2026-05-04
+**Item Generation:**
+- 15-30 jewelry pieces (rings, bracelets, necklaces) with spells
+- 15-30 gems (all types) with spells
+- 1 plain Spellsiphon (extraction tool, no spells)
+- 1 plain Mana Lattice (reusable gem, no spells)
+- 8-20 magical Spellsiphons (pre-loaded with spells, blue glow ✨)
+- 8-20 magical Mana Lattices (pre-loaded with spells, blue glow ✨)
 
-- **Coalesced Mana (modern ACE):** Added `SuppressVanillaTryRollCoalescedMana` prefix on `LootGenerationFactory.TryRollCoalescedMana` so vanilla mundane coalesced rolls are skipped when the mod is enabled (WB builds often omit `CreateGenericObjects`, so the old matrix strip never applied). `CreateCoalescedMana` patch now resolves via `DeclaredMethod`. `CreateGenericObjects` strip logs **Info** when absent (expected).
+**Enhancement Rates (Jewelry/Gems):**
+- 70% imbue chance (vs 40% for other vendors)
+- 35% awaken chance at tier 6+ (vs 15% for other vendors)
+- 60% chance for 1-3 tinkers
+
+**Visual Indicators:**
+- Plain items (no spells) = No glow
+- Magical items (with spells) = Blue glow ✨
+- Imbued items = Green glow (from acid imbue visual)
+- Awakened items = Red outline + "Awakened" prefix
+- Tinkered items = "Fine/Superior/Masterwork" prefix (3+/5+/8+ tinkers)
+
+**Premium Pricing:**
+Price multipliers stack exponentially:
+- Base item: 1,000p
+- +Imbue (5x): 5,000p
+- +Awakened (8x): 40,000p
+- +3 Tinkers (2x per tinker = 8x total): 320,000p
+
+Formula: `Base × Imbue × Awaken × (Tinker^count)`
+
+### Configurable Settings
+
+All values in `Settings.json`:
+
+```json
+{
+  "VendorLootJewelerImbueChance": 0.70,      // 70% imbue rate
+  "VendorLootJewelerAwakenChance": 0.35,     // 35% awaken rate  
+  "VendorLootJewelerTinkerChance": 0.60,     // 60% tinker rate
+  "VendorLootJewelerMinTinkers": 1,          // Min tinkers
+  "VendorLootJewelerMaxTinkers": 3,          // Max tinkers
+  "VendorLootTinkerValueMultiplier": 2.0,    // 2x per tinker
+  "VendorLootImbueChance": 0.40,             // Other vendors
+  "VendorLootAwakenChance": 0.15,            // Other vendors
+  "VendorLootRotationMinutes": 20,
+  "VendorLootCooldownMinutes": 45
+}
+```
+
+## Technical Details
+
+### Harmony Patches
+
+**JewelryImbuePatches.cs:**
+- `GetWeaponCriticalChance` - Adds jewelry CriticalStrike bonus
+- `GetWeaponMagicCritFrequency` - Adds jewelry CriticalStrike for magic
+- `GetWeaponCritDamageMod` - Adds jewelry CripplingBlow bonus
+- `DamageEvent.DoCalculateDamage` - Temporarily applies ArmorRending from jewelry
+
+**VendorLootRotation.cs:**
+- `OnVendorApproachPrefix` - Triggers rotation on vendor approach
+- `GenerateJewelryBatch` / `GenerateGemBatch` - Direct jewelry/gem creation for jewelers
+
+### Known Jeweler WCIDs
+
+All town jewelers are classified for premium treatment:
+```
+411, 655, 665, 674, 698, 716, 736, 801, 817, 818, 839, 868, 
+980, 991, 1042, 1055, 1081, 1151, 1152, 1820
+```

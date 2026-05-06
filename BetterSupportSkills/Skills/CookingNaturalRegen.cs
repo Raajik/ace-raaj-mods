@@ -67,13 +67,10 @@ internal static class CookingNaturalRegen
     /// Add percentage-based regeneration bonus after base vital tick calculation.
     /// Runs AFTER base regen, adds flat bonus based on max vital percentage.
     /// </summary>
-    public static void PostVitalHeartBeat(Player __instance, CreatureVital vital, bool __result)
+    public static void PostVitalHeartBeat(Creature __instance, CreatureVital vital, bool __result)
     {
         if (__instance == null || vital == null)
-        {
-            ModManager.Log($"[BSS Cooking] PostVitalHeartBeat: player or vital is null", ModManager.LogLevel.Debug);
             return;
-        }
 
         var settings = PatchClass.Settings;
         if (settings?.EnableCooking != true)

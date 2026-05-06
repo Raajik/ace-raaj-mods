@@ -1079,6 +1079,47 @@ public static class VendorLootRotation
         }
     }
 
+    static void ApplyImbueVisualEffect(WorldObject item)
+    {
+        if (item?.ImbuedEffect == null || item.ImbuedEffect == 0)
+            return;
+
+        try
+        {
+            int currentEffects = (int)(item.UiEffects ?? 0);
+            int visualEffect = 0;
+
+            // Determine visual effect based on imbue type
+            if (item.ImbuedEffect.HasFlag(ImbuedEffectType.AcidRending))
+                visualEffect = 256; // Acid = green
+            else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.FireRending))
+                visualEffect = 32;  // Fire = red
+            else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.ColdRending))
+                visualEffect = 128; // Frost = white
+            else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.ElectricRending))
+                visualEffect = 64;  // Lightning = purple
+            else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.PierceRending) ||
+                     item.ImbuedEffect.HasFlag(ImbuedEffectType.SlashRending) ||
+                     item.ImbuedEffect.HasFlag(ImbuedEffectType.BludgeonRending))
+                visualEffect = 128; // Physical rendings = white
+            else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.ArmorRending) ||
+                     item.ImbuedEffect.HasFlag(ImbuedEffectType.CriticalStrike) ||
+                     item.ImbuedEffect.HasFlag(ImbuedEffectType.CripplingBlow))
+                visualEffect = 256; // Generic weapon imbues = green
+            else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.MeleeDefense) ||
+                     item.ImbuedEffect.HasFlag(ImbuedEffectType.MissileDefense) ||
+                     item.ImbuedEffect.HasFlag(ImbuedEffectType.MagicDefense))
+                visualEffect = 64;  // Defense imbues = purple
+
+            if (visualEffect != 0)
+                item.SetProperty(PropertyInt.UiEffects, currentEffects | visualEffect);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BetterLoot] VendorLoot: ApplyImbueVisualEffect failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
     static void ApplyRandomVendorImbue(WorldObject item)
     {
         try
@@ -1126,12 +1167,16 @@ public static class VendorLootRotation
             }
             else if (IsJewelry(item))
             {
-                // Jewelry: random secondary weapon imbue or defense
+                // Jewelry: random weapon imbue (including elemental rendings) or defense
                 var pool = new[]
                 {
                     ImbuedEffectType.CriticalStrike,
                     ImbuedEffectType.CripplingBlow,
                     ImbuedEffectType.ArmorRending,
+                    ImbuedEffectType.AcidRending,
+                    ImbuedEffectType.FireRending,
+                    ImbuedEffectType.ColdRending,
+                    ImbuedEffectType.ElectricRending,
                     ImbuedEffectType.MeleeDefense,
                     ImbuedEffectType.MissileDefense,
                     ImbuedEffectType.MagicDefense,
@@ -1238,9 +1283,8 @@ public static class VendorLootRotation
             hasImbue = true;
             valueMult *= _settings.VendorLootImbueValueMultiplier;
 
-            // Give it a flashy visual - use SetProperty for proper persistence
-            int currentEffects = (int)(item.UiEffects ?? 0);
-            item.SetProperty(PropertyInt.UiEffects, currentEffects | 256); // Acid = green glow for imbued items
+            // Apply visual effect based on imbue type
+            ApplyImbueVisualEffect(item);
         }
 
         // Determine awaken chance (higher for jewelers)

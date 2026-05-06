@@ -304,12 +304,12 @@ public class CookingSettings
     public bool CookingUseLegacySpellBuffs { get; set; } = false;
 
     [JsonPropertyName("// CookingRegenPercentPerTickTrained")]
-    public string CookingRegenPercentPerTickTrainedDoc { get; init; } = "Percentage of max vital restored per heartbeat tick when trained (0.05 = 5% per tick; at 5sec interval when healthy = 5% per 5sec = 1%/sec; at 1sec interval when low = 5% per 1sec = 5%/sec).";
-    public double CookingRegenPercentPerTickTrained { get; set; } = 0.05;
+    public string CookingRegenPercentPerTickTrainedDoc { get; init; } = "Percentage of max vital restored per heartbeat tick when trained. Formula: bonusAmount = maxVital * percentPerTick * tickInterval. For 2%/sec: use 0.02 (scales automatically with tick interval: 2% per 1sec when low = 2%/sec, 10% per 5sec when healthy = 2%/sec).";
+    public double CookingRegenPercentPerTickTrained { get; set; } = 0.02;
 
     [JsonPropertyName("// CookingRegenPercentPerTickSpecialized")]
-    public string CookingRegenPercentPerTickSpecializedDoc { get; init; } = "Percentage of max vital restored per heartbeat tick when specialized (0.10 = 10% per tick; at 5sec interval when healthy = 10% per 5sec = 2%/sec; at 1sec interval when low = 10% per 1sec = 10%/sec).";
-    public double CookingRegenPercentPerTickSpecialized { get; set; } = 0.10;
+    public string CookingRegenPercentPerTickSpecializedDoc { get; init; } = "Percentage of max vital restored per heartbeat tick when specialized. Formula: bonusAmount = maxVital * percentPerTick * tickInterval. For 4%/sec: use 0.04 (scales automatically with tick interval: 4% per 1sec when low = 4%/sec, 20% per 5sec when healthy = 4%/sec).";
+    public double CookingRegenPercentPerTickSpecialized { get; set; } = 0.04;
 
     [JsonPropertyName("// CookingFastRegenVitalThreshold")]
     public string CookingFastRegenVitalThresholdDoc { get; init; } = "When any vital (health/stamina/mana) falls below this percentage, heartbeat switches to 1-second intervals for fast recovery. Above threshold = 5-second intervals.";

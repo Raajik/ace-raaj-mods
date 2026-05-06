@@ -50,7 +50,8 @@ public static class VendorLootRotation
         Mage,         // Sells Casters, Jewelry, and spell components
         Bowyer,       // Sells Missile Weapons and Ammunition
         Tailor,       // Sells Clothing and Armor (robes, shirts, pants, etc.)
-        General       // Sells everything (default behavior)
+        Shopkeeper,   // General stores (weapons, armor, clothing, misc)
+        General       // Sells everything (default behavior, no special treatment)
     }
 
     // WCIDs known to be jewelers (sell jewelry/gems)
@@ -98,6 +99,12 @@ public static class VendorLootRotation
         4686, 703, 2260, 2233, 658, 1080, 738, 870, 719, 4703, 4445, 1145, 4556,
         2502, 1058, 11399, 667, 983, 30034, 2301, 843, 30069, 1823, 1834, 821,
         822, 1047, 994,
+    };
+
+    static readonly HashSet<uint> _shopkeeperWcids = new()
+    {
+        // General shopkeepers, grocers, barkeeps, peddlers, provisioners
+        // Will populate after database query
     };
 
     static readonly HashSet<uint> _bowyerWcids = new()

@@ -44,6 +44,7 @@ Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot`
 - **Archmage specialization (31 vendors)** — 15-30 caster weapons + 8-20 robes with 65% imbue, 30% awaken, 55% tinker rates
 - **Bowyer specialization (53 vendors)** — 15-30 missile weapons + 8-20 ammo stacks with 65% imbue, 30% awaken, 55% tinker rates
 - **Armorer specialization (100+ vendors)** — 15-30 melee weapons + 15-30 armor with 60% imbue, 25% awaken, 50% tinker rates
+- **Tailor specialization (28 vendors)** — 15-30 clothing + 8-20 robes with 55% imbue, 20% awaken, 45% tinker rates
 - **Weapon imbues work on jewelry** — Harmony patches make CriticalStrike/CripplingBlow/ArmorRending apply from any equipped item
 - **Overtinked custom imbues** — Hemorrhage/Cleaving/NetherRending/Shatter can roll on vendor items (25% chance)
 - **Visual system** — Color-coded UiEffects glows + IconUnderlayId background textures (frost/fire/acid/lightning)

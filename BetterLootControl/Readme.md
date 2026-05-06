@@ -119,6 +119,28 @@ Armorers specialize in melee combat equipment:
 - Same multiplier formula as other vendors
 - Masterwork awakened imbued plate = 6-7 figures!
 
+##### Tailor Specialization
+Tailors specialize in clothing and robes:
+
+**Item Generation:**
+- 15-30 clothing items (shirts, pants, boots, gloves, etc.) with spells
+- 8-20 robes/vestments/kaftans with spells
+- High-quality magical items via TreasureItemCategory.MagicItem
+- Robes properly detected (ItemType.Armor filter, not Clothing)
+
+**Enhancement Rates (Clothing/Robes):**
+- 55% imbue chance (vs 40% for other vendors)
+- 20% awaken chance at tier 6+ (vs 15% for other vendors)
+- 45% chance for 1-3 tinkers
+
+**Visual Indicators:**
+- Same as other specialized vendors (blue glow for spells, imbue overlays, etc.)
+- Defense imbues common on armor-slot robes
+
+**Premium Pricing:**
+- Same multiplier formula as other vendors
+- Masterwork awakened imbued robes = 6-7 figures!
+
 ### Configurable Settings
 
 All values in `Settings.json`:
@@ -145,6 +167,11 @@ All values in `Settings.json`:
   "VendorLootArmorerTinkerChance": 0.50,     // 50% tinker rate
   "VendorLootArmorerMinTinkers": 1,
   "VendorLootArmorerMaxTinkers": 3,
+  "VendorLootTailorImbueChance": 0.55,       // 55% imbue rate
+  "VendorLootTailorAwakenChance": 0.20,      // 20% awaken rate
+  "VendorLootTailorTinkerChance": 0.45,      // 45% tinker rate
+  "VendorLootTailorMinTinkers": 1,
+  "VendorLootTailorMaxTinkers": 3,
   "VendorLootTinkerValueMultiplier": 2.0,    // 2x per tinker
   "VendorLootImbueChance": 0.40,             // Other vendors
   "VendorLootAwakenChance": 0.15,            // Other vendors
@@ -201,4 +228,11 @@ All values in `Settings.json`:
 1059, 11394, 661, 668, 975, 976, 30040, 2293, 2294, 835, 30065, 1354, 11401,
 5436, 4562, 1815, 1816, 967, 972, 1825, 1835, 30052, 2541, 24220, 1393, 1394,
 1395, 8226, 812, 813, 5641, 1038, 987
+```
+
+**Tailors (28 total):**
+```
+4686, 703, 2260, 2233, 658, 1080, 738, 870, 719, 4703, 4445, 1145, 4556,
+2502, 1058, 11399, 667, 983, 30034, 2301, 843, 30069, 1823, 1834, 821,
+822, 1047, 994
 ```

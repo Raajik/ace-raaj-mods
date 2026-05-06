@@ -43,7 +43,9 @@ Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot`
 - **Jeweler specialization (20 vendors)** — 15-30 jewelry + 15-30 gems + Spellsiphons/Mana Lattices with 70% imbue, 35% awaken, 60% tinker rates
 - **Archmage specialization (31 vendors)** — 15-30 caster weapons + 8-20 robes with 65% imbue, 30% awaken, 55% tinker rates
 - **Bowyer specialization (53 vendors)** — 15-30 missile weapons + 8-20 ammo stacks with 65% imbue, 30% awaken, 55% tinker rates
+- **Armorer specialization (100+ vendors)** — 15-30 melee weapons + 15-30 armor with 60% imbue, 25% awaken, 50% tinker rates
 - **Weapon imbues work on jewelry** — Harmony patches make CriticalStrike/CripplingBlow/ArmorRending apply from any equipped item
+- **Overtinked custom imbues** — Hemorrhage/Cleaving/NetherRending/Shatter can roll on vendor items (25% chance)
 - **Visual system** — Color-coded UiEffects glows + IconUnderlayId background textures (frost/fire/acid/lightning)
 - **Premium pricing** — Multipliers stack: `Base × Imbue(5x) × Awaken(8x) × Tinker(2^count)`
 

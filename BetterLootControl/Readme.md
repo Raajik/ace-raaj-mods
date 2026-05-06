@@ -98,6 +98,27 @@ Bowyers specialize in ranged combat equipment:
 - Same multiplier formula as jewelers and archmages
 - Masterwork awakened imbued bows = 6-7 figures!
 
+##### Armorer/Blacksmith/Weaponsmith Specialization
+Armorers specialize in melee combat equipment:
+
+**Item Generation:**
+- 15-30 melee weapons (swords, axes, maces, daggers, etc.) with spells
+- 15-30 armor pieces (all slots) with spells
+- High-quality magical items via TreasureItemCategory.MagicItem
+
+**Enhancement Rates (Melee Weapons/Armor):**
+- 60% imbue chance (vs 40% for other vendors)
+- 25% awaken chance at tier 6+ (vs 15% for other vendors)
+- 50% chance for 1-3 tinkers
+
+**Visual Indicators:**
+- Same as other specialized vendors (blue glow for spells, imbue overlays, etc.)
+- Overtinked custom imbues can roll on weapons
+
+**Premium Pricing:**
+- Same multiplier formula as other vendors
+- Masterwork awakened imbued plate = 6-7 figures!
+
 ### Configurable Settings
 
 All values in `Settings.json`:
@@ -119,6 +140,11 @@ All values in `Settings.json`:
   "VendorLootBowyerTinkerChance": 0.55,      // 55% tinker rate
   "VendorLootBowyerMinTinkers": 1,
   "VendorLootBowyerMaxTinkers": 3,
+  "VendorLootArmorerImbueChance": 0.60,      // 60% imbue rate
+  "VendorLootArmorerAwakenChance": 0.25,     // 25% awaken rate
+  "VendorLootArmorerTinkerChance": 0.50,     // 50% tinker rate
+  "VendorLootArmorerMinTinkers": 1,
+  "VendorLootArmorerMaxTinkers": 3,
   "VendorLootTinkerValueMultiplier": 2.0,    // 2x per tinker
   "VendorLootImbueChance": 0.40,             // Other vendors
   "VendorLootAwakenChance": 0.15,            // Other vendors
@@ -163,4 +189,16 @@ All values in `Settings.json`:
 4439, 4542, 4550, 4563, 4680, 4691, 4697, 5423, 5649, 6857, 8227,
 8435, 8494, 9023, 9207, 9416, 9677, 11378, 11403, 20924, 22723,
 24218, 24591, 27247, 30031, 30066, 40949, 40961, 40973, 40984
+```
+
+**Armorers/Blacksmiths/Weaponsmiths (100+ total):**
+```
+12720, 1078, 31956, 32055, 11376, 4679, 4690, 28533, 1372, 1373, 1374, 695, 400,
+6855, 9205, 9212, 6862, 2251, 2261, 5833, 401, 402, 1375, 1376, 1377, 9020,
+11383, 11382, 24589, 24597, 678, 677, 2499, 9679, 2226, 649, 650, 30048, 2315,
+8496, 730, 739, 5426, 5428, 11389, 858, 862, 863, 871, 712, 27246, 4695, 4704,
+8433, 8440, 4540, 9415, 4546, 4437, 4438, 1146, 802, 4549, 5648, 22722, 1049,
+1059, 11394, 661, 668, 975, 976, 30040, 2293, 2294, 835, 30065, 1354, 11401,
+5436, 4562, 1815, 1816, 967, 972, 1825, 1835, 30052, 2541, 24220, 1393, 1394,
+1395, 8226, 812, 813, 5641, 1038, 987
 ```

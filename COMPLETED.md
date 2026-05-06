@@ -18,18 +18,25 @@
 - User reported regen "seems to have gotten nerfed"
 - Logs showed: `+2 Health`, `+3 Stamina`, `+3 Mana` per tick (1% of max)
 
-**Fix:**
+**Fix (Initial):**
 - `CookingRegenPercentPerTickTrained`: `0.01` → `0.05` (5% per tick)
 - `CookingRegenPercentPerTickSpecialized`: `0.02` → `0.10` (10% per tick)
-- Updated doc strings to clarify tick scaling with heartbeat interval
-- Updated test `Settings.json` to match new defaults
+- User feedback: **Too strong!**
 
-**Result:**
-- **Trained:** 5% per 5sec when healthy (1%/sec), 5% per 1sec when low (5%/sec)
-- **Specialized:** 10% per 5sec when healthy (2%/sec), 10% per 1sec when low (10%/sec)
-- At your max vitals (~250 Health): **+12 Health/tick** when healthy, **+12 Health/sec** when low
+**Fix (Balanced):**
+- `CookingRegenPercentPerTickTrained`: `0.05` → `0.02` (2% per tick)
+- `CookingRegenPercentPerTickSpecialized`: `0.10` → `0.04` (4% per tick)
+- Formula: `bonusAmount = maxVital * percentPerTick * tickInterval`
+- Updated doc strings to explain formula clearly
 
-**Commit:** `b3870ff`
+**Result (Final Balanced Values):**
+- **Trained:** 2%/sec constant rate (2% per 1sec when low, 10% per 5sec when healthy)
+- **Specialized:** 4%/sec constant rate (4% per 1sec when low, 20% per 5sec when healthy)
+- At your max vitals (242 Health):
+  - **Trained:** ~5 HP/sec when low, ~24 HP per 5sec when healthy
+  - **Specialized:** ~10 HP/sec when low, ~48 HP per 5sec when healthy
+
+**Commits:** `b3870ff`, `b0295c8`
 
 ---
 

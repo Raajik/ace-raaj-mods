@@ -38,6 +38,8 @@ public class Settings
     // Imbue and awakening
     public double VendorLootImbueChance { get; init; } = 0.40; // 40% chance for imbue
     public double VendorLootImbueValueMultiplier { get; init; } = 5.0;
+    public double VendorLootMultiImbue2Chance { get; init; } = 0.08; // 8% chance for 2nd compatible imbue
+    public double VendorLootMultiImbue3Chance { get; init; } = 0.02; // 2% chance for 3rd compatible imbue
     public double VendorLootHighWorkmanshipValueMultiplier { get; init; } = 2.0;
     public double VendorLootAwakenChance { get; init; } = 0.15; // 15% chance for tier 6+
     public double VendorLootAwakenValueMultiplier { get; init; } = 8.0;

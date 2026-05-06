@@ -1803,6 +1803,9 @@ public static class VendorLootRotation
                 if (damageType.HasValue)
                     item.SetProperty(PropertyInt.DamageType, (int)damageType.Value);
                 
+                // Rare multi-imbue chance (compatible secondary imbues)
+                TryApplyMultiImbue(item, chosen);
+                
                 // Small chance for custom Overtinked imbues on weapons
                 TryApplyCustomImbue(item);
             }
@@ -1836,6 +1839,9 @@ public static class VendorLootRotation
                 var chosen = pool[_rng.Next(pool.Length)];
                 item.ImbuedEffect |= chosen;
                 
+                // Rare multi-imbue chance (compatible secondary imbues)
+                TryApplyMultiImbue(item, chosen);
+                
                 // Small chance for custom Overtinked imbues on jewelry
                 TryApplyCustomImbue(item);
             }
@@ -1844,6 +1850,106 @@ public static class VendorLootRotation
         {
             ModManager.Log($"[BetterLoot] VendorLoot: ApplyRandomVendorImbue failed: {ex.Message}", ModManager.LogLevel.Warn);
         }
+    }
+
+    static void TryApplyMultiImbue(WorldObject item, ImbuedEffectType firstImbue)
+    {
+        try
+        {
+            if (_settings == null)
+                return;
+
+            // Roll for 2nd imbue
+            if (_rng.NextDouble() > _settings.VendorLootMultiImbue2Chance)
+                return;
+
+            // Get compatible secondary imbues (no conflicts)
+            var compatibleImbues = GetCompatibleSecondaryImbues(item, firstImbue);
+            if (compatibleImbues.Count == 0)
+                return;
+
+            var secondImbue = compatibleImbues[_rng.Next(compatibleImbues.Count)];
+            item.ImbuedEffect |= secondImbue;
+            ModManager.Log($"[BetterLoot] VendorLoot: Applied 2nd imbue {secondImbue} to {item.Name}", ModManager.LogLevel.Debug);
+
+            // Roll for 3rd imbue (even rarer!)
+            if (_rng.NextDouble() > _settings.VendorLootMultiImbue3Chance)
+                return;
+
+            // Get compatible tertiary imbues (no conflicts with first two)
+            var compatibleThirdImbues = GetCompatibleSecondaryImbues(item, firstImbue, secondImbue);
+            if (compatibleThirdImbues.Count == 0)
+                return;
+
+            var thirdImbue = compatibleThirdImbues[_rng.Next(compatibleThirdImbues.Count)];
+            item.ImbuedEffect |= thirdImbue;
+            ModManager.Log($"[BetterLoot] VendorLoot: Applied 3rd imbue {thirdImbue} to {item.Name} (RARE!)", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BetterLoot] VendorLoot: TryApplyMultiImbue failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    static List<ImbuedEffectType> GetCompatibleSecondaryImbues(WorldObject item, ImbuedEffectType first, ImbuedEffectType? second = null)
+    {
+        var compatible = new List<ImbuedEffectType>();
+
+        // Define imbue categories
+        var elementalRendings = new[] { ImbuedEffectType.AcidRending, ImbuedEffectType.FireRending, ImbuedEffectType.ColdRending, ImbuedEffectType.ElectricRending };
+        var physicalRendings = new[] { ImbuedEffectType.PierceRending, ImbuedEffectType.SlashRending, ImbuedEffectType.BludgeonRending };
+        var offensiveImbues = new[] { ImbuedEffectType.CriticalStrike, ImbuedEffectType.CripplingBlow, ImbuedEffectType.ArmorRending };
+        var defenseImbues = new[] { ImbuedEffectType.MeleeDefense, ImbuedEffectType.MissileDefense, ImbuedEffectType.MagicDefense };
+
+        // Already has flags
+        var existing = new HashSet<ImbuedEffectType>();
+        if (first != ImbuedEffectType.Undef) existing.Add(first);
+        if (second.HasValue && second.Value != ImbuedEffectType.Undef) existing.Add(second.Value);
+
+        // Rule: Only one elemental rending
+        bool hasElementalRending = elementalRendings.Any(e => existing.Contains(e));
+        
+        // Rule: Only one physical rending
+        bool hasPhysicalRending = physicalRendings.Any(e => existing.Contains(e));
+        
+        // Rule: Can have multiple offensive imbues (Crit + Crippling + ArmorRend)
+        // Rule: Can have multiple defense imbues
+
+        // Add offensive imbues (always compatible with each other and rendings)
+        foreach (var imbue in offensiveImbues)
+        {
+            if (!existing.Contains(imbue))
+                compatible.Add(imbue);
+        }
+
+        // Add ONE elemental rending if we don't have one yet
+        if (!hasElementalRending)
+        {
+            foreach (var imbue in elementalRendings)
+            {
+                if (!existing.Contains(imbue))
+                    compatible.Add(imbue);
+            }
+        }
+
+        // Add ONE physical rending if we don't have one yet (and item is a weapon)
+        if (!hasPhysicalRending && IsWeapon(item))
+        {
+            foreach (var imbue in physicalRendings)
+            {
+                if (!existing.Contains(imbue))
+                    compatible.Add(imbue);
+            }
+        }
+
+        // Defense imbues (can stack all 3)
+        foreach (var imbue in defenseImbues)
+        {
+            if (!existing.Contains(imbue))
+                compatible.Add(imbue);
+        }
+
+        return compatible;
     }
 
     static void TryApplyCustomImbue(WorldObject item)

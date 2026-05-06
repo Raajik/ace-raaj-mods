@@ -820,10 +820,13 @@ try
         if (Settings.EnableMissileDefense)
             enabledFeatures.Add(Features.MissileDefenseSkill);
         
-        // Second half of BATCH 2 - DISABLED
-        /*
+        // Testing second half one by one
+        // Test Recklessness ONLY
         if (Settings.EnableRecklessness)
             enabledFeatures.Add(Features.RecklessnessSkill);
+        
+        // Rest disabled
+        /*
         if (Settings.EnableShield)
             enabledFeatures.Add(Features.ShieldSkill);
         if (Settings.EnableSneakAttack)

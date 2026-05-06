@@ -191,6 +191,8 @@ internal static class BuddySpawns
 
             var spawnPos = new Position(parent.Location);
             spawnPos.Pos += offset;
+            // Add spawn safety margin to prevent spawning below floor
+            spawnPos.PositionZ += 1.0f;
             buddy.Location = spawnPos;
 
             buddy.SetProperty((PropertyInt)BuddySpawnTagPropertyId, 1);

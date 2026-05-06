@@ -6,6 +6,9 @@ public class PlayerPrefs
     public bool LootNotifications { get; set; } = true;
     public bool UnknownScrollsEnabled { get; set; } = false;
 
+    // Toggleable categories
+    public bool TrophyEnabled { get; set; } = true;
+
     // Achievement tracking
     public int KeyUnlocks { get; set; } = 0;
     public int LockpickUnlocks { get; set; } = 0;

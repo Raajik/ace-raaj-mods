@@ -11,6 +11,7 @@ public class AutoLoot
     static readonly ConcurrentDictionary<uint, ConcurrentDictionary<string, LootCore>> lootProfiles = new();
     static readonly ConcurrentDictionary<uint, bool> lootNotifications = new();
     static readonly ConcurrentDictionary<uint, bool> unknownScrolls = new();
+    static readonly ConcurrentDictionary<uint, bool> trophyEnabled = new();
     internal static readonly ConcurrentDictionary<uint, int> autosalvageMode = new(); // 0=off, 1=short, 2=full
     static readonly ConcurrentDictionary<uint, bool> loadedPlayers = new();
 
@@ -675,7 +676,10 @@ public class AutoLoot
 
             lootNotifications[LootKey(player)] = prefs.LootNotifications;
             if (!ranFullDefaults)
+            {
                 unknownScrolls[LootKey(player)] = prefs.UnknownScrollsEnabled;
+                trophyEnabled[LootKey(player)] = prefs.TrophyEnabled;
+            }
 
             keyUnlocks[LootKey(player)] = prefs.KeyUnlocks;
             lockpickUnlocks[LootKey(player)] = prefs.LockpickUnlocks;
@@ -707,6 +711,7 @@ public class AutoLoot
 
                 LootNotifications     = lootNotifications.GetOrAdd(LootKey(player), true),
                 UnknownScrollsEnabled = unknownScrolls.GetOrAdd(LootKey(player), false),
+                TrophyEnabled = trophyEnabled.GetOrAdd(LootKey(player), true),
 
                 KeyUnlocks = keyUnlocks.GetOrAdd(LootKey(player), 0),
                 LockpickUnlocks = lockpickUnlocks.GetOrAdd(LootKey(player), 0),
@@ -765,6 +770,8 @@ public class AutoLoot
                 sb.Append("\n  /autoloot on      — enable all unlocked");
                 sb.Append("\n  /autoloot off     — disable all");
                 sb.Append($"\n  /autoloot scrolls — toggle spells [{(scrollsOn ? "ON" : "OFF")}]");
+                bool trophyOn = trophyEnabled.GetOrAdd(LootKey(player), true);
+                sb.Append("\n  /autoloot trophies — toggle custom trophies [" + (trophyOn ? "ON" : "OFF") + "]");
                 sb.Append("\n  /autoloot salvage — toggle AutoSalvage");
 
                 if (session.AccessLevel >= AccessLevel.Developer)
@@ -809,10 +816,11 @@ public class AutoLoot
                 }
 
                 var scrollsIdx = profiles.Length;
+                var trophyIdx = scrollsIdx + 1;
+                var salvageIdx = trophyIdx + 1;
+                var salvageOn = BetterSupportSkillsBridge.IsSalvageEnabled(player);
                 sb.Append($"\n  {scrollsIdx}) {(scrollsOn ? "[ON] " : "[OFF]")} Unknown Scrolls");
-
-                var salvageIdx = scrollsIdx + 1;
-                bool salvageOn = BetterSupportSkillsBridge.IsSalvageEnabled(player);
+                sb.Append($"\n  {trophyIdx}) {(trophyOn ? "[ON] " : "[OFF]")} Custom Trophies");
                 sb.Append($"\n  {salvageIdx}) {(salvageOn ? "[ON] " : "[OFF]")} AutoSalvage  (/autoloot salvage)");
 
                 player.SendMessage(sb.ToString());
@@ -904,6 +912,15 @@ public class AutoLoot
                 return;
             }
 
+            if (arg.Equals("trophies", StringComparison.OrdinalIgnoreCase))
+            {
+                bool current = trophyEnabled.GetOrAdd(LootKey(player), true);
+                trophyEnabled[LootKey(player)] = !current;
+                SavePrefs(player);
+                player.SendMessage($"Custom trophies: {(!current ? "ON" : "OFF")}");
+                return;
+            }
+
             // Toggle by index or partial name
             string? selected = null;
 
@@ -923,6 +940,15 @@ public class AutoLoot
                     return;
                 }
                 else if (index == profiles.Length + 1)
+                {
+                    // Trophies
+                    bool current = trophyEnabled.GetOrAdd(LootKey(player), true);
+                    trophyEnabled[LootKey(player)] = !current;
+                    SavePrefs(player);
+                    player.SendMessage($"Custom trophies: {(!current ? "ON" : "OFF")}");
+                    return;
+                }
+                else if (index == profiles.Length + 2)
                 {
                     // AutoSalvage
                     bool currentlyOn = BetterSupportSkillsBridge.IsSalvageEnabled(player);
@@ -1185,7 +1211,8 @@ public class AutoLoot
         bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
         bool hasCoalesced = ContainerHasCoalescedMana(container);
         bool mayKeyBank = PatchClass.Settings?.KeyBankProperties?.Count > 0;
-        bool hasPhysicalTrophyPass1 = PatchClass.Settings?.UpgradedTrophyWeenieClassIds is { Count: > 0 };
+        bool trophiesOn = trophyEnabled.GetOrAdd(LootKey(player), true);
+        bool hasPhysicalTrophyPass1 = trophiesOn && PatchClass.Settings?.UpgradedTrophyWeenieClassIds is { Count: > 0 };
         bool mayLllItemBank = container.Inventory.Values.Any(i => LeyLineLedgerBankInterop.IsBankableWcid(i.WeenieClassId, out _));
         if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps && !hasCoalesced && !mayKeyBank && !hasPhysicalTrophyPass1 && !mayLllItemBank)
         {

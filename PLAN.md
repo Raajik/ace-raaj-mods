@@ -23,5 +23,4 @@
 - `BetterLootControl/Readme.md` + `COMPLETED.md`: contain outdated imbue compatibility statement
 
 ## Progress (recent)
-- 2026-05-06 — Immutable Source of Truth: Phase 2-4 complete. FEATURE_MATRIX, 7 new READMEs, Docs template, PR template, audit script. See `COMPLETED.md`.
-- 2026-05-06 — Multi-mod fixes: imbue spells, Living→Awakened, cantrip bonus pets, key unlock-only, LLL auto-banking. See `COMPLETED.md`.
+- 2026-05-06 — Trophy toggle + DB cleanup: AutoLoot /autoloot trophies toggle (command, index, help menu, early-exit gating), removed 164 old head create_list entries from ace_world, documented head WCIDs for future MMD vendor NPC. See `COMPLETED.md`.

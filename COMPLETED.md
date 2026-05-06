@@ -2,6 +2,27 @@
 
 ## 2026-05-06
 
+### Session 4: Trophy Toggle + DB Cleanup (Head Drops)
+
+**AutoLoot: `/autoloot trophies` toggle**
+- Added `trophyEnabled` ConcurrentDictionary + `TrophyEnabled` PlayerPrefs property
+- Extended `EnsureLoaded()` to load trophy state from prefs, `SavePrefs()` to persist
+- Added help menu display: command list (`/autoloot trophies` + ON/OFF indicator) and numbered index (`X`) toggle
+- Added `/autoloot trophies` command handler
+- Added numbered index toggle at `profiles.Length + 1` (between scrolls and salvage)
+- Gated the `UpgradedTrophyWeenieClassIds` pass-1 loop and early-exit check behind `trophyEnabled`
+
+**DB Cleanup: Removed old head drops**
+- Queried `ace_world.weenie_properties_create_list` — found 164 entries across 21 head WCIDs
+- Backed up to `WindblownContent/sql-backups/2026-05-06/head-create-list-backup.sql`
+- Applied `DELETE` SQL to remove all entries
+- Verified: 0 entries remaining
+
+**Documentation**
+- Created `Windblown/docs/HeadWcids-MmdVendor.md` — full WCID table, sibling info, NPC design notes
+
+---
+
 ### Session 3: Immutable Source of Truth Initiative — Phases 2-4
 
 Standardized mod documentation, feature ownership mapping, and immutable source-of-truth governance for the entire ace-raaj-mods repo.

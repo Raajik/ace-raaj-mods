@@ -17,7 +17,7 @@ internal static class GlobalKeyDrops
     [HarmonyPatch(typeof(Creature), nameof(Creature.GenerateTreasure), new System.Type[] { typeof(ACE.Server.Entity.DamageHistoryInfo), typeof(Corpse) })]
     public static void PostGenerateTreasure(DamageHistoryInfo killer, Corpse corpse, Creature __instance)
     {
-        if (!PatchClass.Settings.EnableGlobalKeyDrops)
+        if (PatchClass.Settings == null || !PatchClass.Settings.EnableGlobalKeyDrops)
             return;
 
         if (__instance.DeathTreasure == null)

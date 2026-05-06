@@ -17,6 +17,36 @@ This allows jewelers to sell powerful jewelry with weapon imbues that actually p
 
 Vendors automatically rotate their equipment inventory on a schedule.
 
+#### Dynamic Economy-Linked Pricing
+
+**Base Pricing (Increased from Vanilla):**
+- MinValue: **500 pyreals** (was 100)
+- MaxValue: **25,000 pyreals** (was 10,000)
+- Luxury Tax: **25% base markup** (was 10%)
+
+**Economy Integration:**
+When `UseLeyLineLedgerEconomyBalancer: true` (default), vendor prices scale dynamically:
+- Integrates with **LeyLineLedger's EconomyBalancer** system
+- Prices increase as server wealth grows (automatic inflation protection)
+- Based on total banked currency across all players
+- Uses reflection to call `EconomyBalancer.GetVendorBuyPriceMultiplier()`
+- Gracefully falls back to 1.0x if LeyLineLedger not loaded
+
+**Final Price Formula:**
+```
+Base × Imbue(5x) × Awaken(8x) × Tinker(2^count) × LuxuryTax(1.25x) × EconomyMult
+```
+
+**Example (Awakened Imbued Sword, 3 Tinkers, 1.5x Economy):**
+1. Base value: 10,000p
+2. × Imbue: 50,000p
+3. × Awaken: 400,000p
+4. × 3 Tinkers (8x): 3,200,000p
+5. × Luxury Tax: 4,000,000p
+6. × Economy: **6,000,000 pyreals!**
+
+Prices now properly reflect item power AND server economic health!
+
 #### Vendor Specializations
 
 ##### Jeweler Specialization

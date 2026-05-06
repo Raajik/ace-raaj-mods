@@ -211,8 +211,13 @@ void TryApplyDamageEventPatch()
 
     void TryApplyCookingPatches()
     {
+        ModManager.Log($"[BSS] TryApplyCookingPatches called - EnableCooking={Settings?.EnableCooking}", ModManager.LogLevel.Info);
+        
         if (Settings?.EnableCooking != true)
+        {
+            ModManager.Log("[BSS] TryApplyCookingPatches: EnableCooking is false, skipping", ModManager.LogLevel.Info);
             return;
+        }
         
         ModManager.Log("[BSS] TryApplyCookingPatches: EnableCooking=true, applying patches...", ModManager.LogLevel.Info);
 

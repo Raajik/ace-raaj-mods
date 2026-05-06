@@ -1107,6 +1107,7 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         }
 
         // Artificer wisp procs: Imperil debuff + cleave damage to AoE targets
+        // CRITICAL: Defer damage to ActionChain to avoid infinite recursion (we're inside DamageTarget postfix)
         float splashDamageFraction = PatchClass.Settings?.SummoningClasses?.ArtificerWispCleaveDamageFraction ?? 0.5f;
         float splashDamage = amount * splashDamageFraction;
 
@@ -1115,24 +1116,33 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
             var imperilSpell = new ACE.Server.Entity.Spell(imperilId);
             if (!imperilSpell.NotFound)
             {
-                foreach (var target in aoeTargets)
+                // Apply imperils and damage on next tick to avoid recursion
+                var chain = new ActionChain();
+                chain.AddAction(pet, () =>
                 {
-                    try
+                    foreach (var target in aoeTargets)
                     {
-                        // Apply Imperil enchantment directly (avoid TryCastSpell spell book requirement)
-                        target.EnchantmentManager.Add(imperilSpell, pet, null);
-
-                        // Deal cleave damage to AoE targets (not the primary target - they already took damage)
-                        if (target != __instance && splashDamage > 0)
+                        try
                         {
-                            target.TakeDamage(pet, DamageType.Health, splashDamage, false);
+                            if (target == null || target.IsDestroyed || target.IsDead)
+                                continue;
+
+                            // Apply Imperil enchantment
+                            target.EnchantmentManager.Add(imperilSpell, pet, null);
+
+                            // Deal cleave damage to AoE targets (not the primary target)
+                            if (target != __instance && splashDamage > 0)
+                            {
+                                target.TakeDamage(pet, DamageType.Health, splashDamage, false);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            ModManager.Log($"[BSS Artificer] Wisp AoE proc failed on {target.Name}: {ex.Message}", ModManager.LogLevel.Warn);
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        ModManager.Log($"[BSS Artificer] Wisp proc failed on {target.Name}: {ex.Message}", ModManager.LogLevel.Warn);
-                    }
-                }
+                });
+                chain.EnqueueChain();
             }
         }
     }

@@ -12,6 +12,7 @@ public class AutoLoot
     static readonly ConcurrentDictionary<uint, bool> lootNotifications = new();
     static readonly ConcurrentDictionary<uint, bool> unknownScrolls = new();
     static readonly ConcurrentDictionary<uint, bool> trophyEnabled = new();
+    internal static readonly ConcurrentDictionary<uint, bool> lllBankingEnabled = new();
     internal static readonly ConcurrentDictionary<uint, int> autosalvageMode = new(); // 0=off, 1=short, 2=full
     static readonly ConcurrentDictionary<uint, bool> loadedPlayers = new();
 
@@ -25,7 +26,6 @@ public class AutoLoot
 
     // Mirrors PlayerPrefs.AutolootSalvageDefaultsApplied; updated on load/save for one-time full defaults.
     static readonly ConcurrentDictionary<uint, bool> AutolootSalvageDefaultsAppliedByPlayer = new();
-
     static uint LootKey(Player player) => player.Guid.Full;
 
     static string LootDisplayName(WorldObject item) => string.IsNullOrEmpty(item.Name) ? $"unnamed item (wcid {item.WeenieClassId})" : item.Name;
@@ -679,6 +679,7 @@ public class AutoLoot
             {
                 unknownScrolls[LootKey(player)] = prefs.UnknownScrollsEnabled;
                 trophyEnabled[LootKey(player)] = prefs.TrophyEnabled;
+                lllBankingEnabled[LootKey(player)] = prefs.LllBankingEnabled;
             }
 
             keyUnlocks[LootKey(player)] = prefs.KeyUnlocks;
@@ -712,6 +713,7 @@ public class AutoLoot
                 LootNotifications     = lootNotifications.GetOrAdd(LootKey(player), true),
                 UnknownScrollsEnabled = unknownScrolls.GetOrAdd(LootKey(player), false),
                 TrophyEnabled = trophyEnabled.GetOrAdd(LootKey(player), true),
+                LllBankingEnabled = lllBankingEnabled.GetOrAdd(LootKey(player), true),
 
                 KeyUnlocks = keyUnlocks.GetOrAdd(LootKey(player), 0),
                 LockpickUnlocks = lockpickUnlocks.GetOrAdd(LootKey(player), 0),
@@ -772,6 +774,8 @@ public class AutoLoot
                 sb.Append($"\n  /autoloot scrolls — toggle spells [{(scrollsOn ? "ON" : "OFF")}]");
                 bool trophyOn = trophyEnabled.GetOrAdd(LootKey(player), true);
                 sb.Append("\n  /autoloot trophies — toggle custom trophies [" + (trophyOn ? "ON" : "OFF") + "]");
+                bool lllOn = lllBankingEnabled.GetOrAdd(LootKey(player), true);
+                sb.Append("\n  /autoloot bank — toggle LLL auto-banking [" + (lllOn ? "ON" : "OFF") + "]");
                 sb.Append("\n  /autoloot salvage — toggle AutoSalvage");
 
                 if (session.AccessLevel >= AccessLevel.Developer)
@@ -817,10 +821,12 @@ public class AutoLoot
 
                 var scrollsIdx = profiles.Length;
                 var trophyIdx = scrollsIdx + 1;
-                var salvageIdx = trophyIdx + 1;
+                var bankIdx = trophyIdx + 1;
+                var salvageIdx = bankIdx + 1;
                 var salvageOn = BetterSupportSkillsBridge.IsSalvageEnabled(player);
                 sb.Append($"\n  {scrollsIdx}) {(scrollsOn ? "[ON] " : "[OFF]")} Unknown Scrolls");
                 sb.Append($"\n  {trophyIdx}) {(trophyOn ? "[ON] " : "[OFF]")} Custom Trophies");
+                sb.Append($"\n  {bankIdx}) {(lllOn ? "[ON] " : "[OFF]")} LLL Auto-Banking");
                 sb.Append($"\n  {salvageIdx}) {(salvageOn ? "[ON] " : "[OFF]")} AutoSalvage  (/autoloot salvage)");
 
                 player.SendMessage(sb.ToString());
@@ -921,6 +927,15 @@ public class AutoLoot
                 return;
             }
 
+            if (arg.Equals("bank", StringComparison.OrdinalIgnoreCase))
+            {
+                bool current = lllBankingEnabled.GetOrAdd(LootKey(player), true);
+                lllBankingEnabled[LootKey(player)] = !current;
+                SavePrefs(player);
+                player.SendMessage($"LLL auto-banking: {(!current ? "ON" : "OFF")}");
+                return;
+            }
+
             // Toggle by index or partial name
             string? selected = null;
 
@@ -949,6 +964,15 @@ public class AutoLoot
                     return;
                 }
                 else if (index == profiles.Length + 2)
+                {
+                    // LLL Auto-Banking
+                    bool current = lllBankingEnabled.GetOrAdd(LootKey(player), true);
+                    lllBankingEnabled[LootKey(player)] = !current;
+                    SavePrefs(player);
+                    player.SendMessage($"LLL auto-banking: {(!current ? "ON" : "OFF")}");
+                    return;
+                }
+                else if (index == profiles.Length + 3)
                 {
                     // AutoSalvage
                     bool currentlyOn = BetterSupportSkillsBridge.IsSalvageEnabled(player);
@@ -1118,7 +1142,8 @@ public class AutoLoot
 
         BankCoalescedManaFromContainer(player, container);
 
-        bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
+        bool lllOn = lllBankingEnabled.GetOrAdd(LootKey(player), true);
+        bool hasLevel8Comps = lllOn && PatchClass.Settings?.EnableLevel8CompsConversion == true;
 
         var items = container.Inventory.Values.ToList();
         foreach (var item in items)
@@ -1145,6 +1170,9 @@ public class AutoLoot
                 continue;
             }
 
+            if (!lllOn)
+                continue;
+
             // Keys: silently bank (if unlocked)
             if (TryBankKey(player, item))
             {
@@ -1170,7 +1198,7 @@ public class AutoLoot
             }
 
             // Level 8 spellcrafting components: convert to pyreal value
-            if (TryConvertLevel8Comp(player, item))
+            if (hasLevel8Comps && TryConvertLevel8Comp(player, item))
             {
                 if (container.TryRemoveFromInventory(item.Guid, out var removed))
                     removed?.Destroy();
@@ -1208,12 +1236,13 @@ public class AutoLoot
         bool hasSalvage     = BetterSupportSkillsBridge.IsSalvageEnabled(player)
                            && BetterSupportSkillsBridge.GetSalvageRate(player) > 0.0;
 
-        bool hasLevel8Comps = PatchClass.Settings?.EnableLevel8CompsConversion == true;
+        bool lllOn = lllBankingEnabled.GetOrAdd(LootKey(player), true);
+        bool hasLevel8Comps = lllOn && PatchClass.Settings?.EnableLevel8CompsConversion == true;
         bool hasCoalesced = ContainerHasCoalescedMana(container);
-        bool mayKeyBank = PatchClass.Settings?.KeyBankProperties?.Count > 0;
+        bool mayKeyBank = lllOn && PatchClass.Settings?.KeyBankProperties?.Count > 0;
         bool trophiesOn = trophyEnabled.GetOrAdd(LootKey(player), true);
         bool hasPhysicalTrophyPass1 = trophiesOn && PatchClass.Settings?.UpgradedTrophyWeenieClassIds is { Count: > 0 };
-        bool mayLllItemBank = container.Inventory.Values.Any(i => LeyLineLedgerBankInterop.IsBankableWcid(i.WeenieClassId, out _));
+        bool mayLllItemBank = lllOn && container.Inventory.Values.Any(i => LeyLineLedgerBankInterop.IsBankableWcid(i.WeenieClassId, out _));
         if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps && !hasCoalesced && !mayKeyBank && !hasPhysicalTrophyPass1 && !mayLllItemBank)
         {
             if (debug)
@@ -1385,73 +1414,81 @@ public class AutoLoot
             // ── Pass 4: Level 8 spellcrafting components ───────────────────
             int level8CompsConvertedCorpse = 0;
             long level8CompValueCorpse = 0;
-            foreach (var item in items)
+            if (lllOn)
             {
-                if (lootedSet.Contains(item) || item.IsDestroyed)
-                    continue;
-                if (TryConvertLevel8Comp(player, item))
+                foreach (var item in items)
                 {
-                    if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                    if (lootedSet.Contains(item) || item.IsDestroyed)
+                        continue;
+                    if (TryConvertLevel8Comp(player, item))
                     {
-                        removed?.Destroy();
-                        level8CompsConvertedCorpse++;
-                        level8CompValueCorpse += (long)(item.Value ?? 0) * (item.StackSize ?? 1);
+                        if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                        {
+                            removed?.Destroy();
+                            level8CompsConvertedCorpse++;
+                            level8CompValueCorpse += (long)(item.Value ?? 0) * (item.StackSize ?? 1);
+                        }
                     }
                 }
             }
 
             // ── Pass 5: Key banking ──────────────────────────────────────
-            // Special skeleton keys auto-bank unconditionally (no profile required).
-            foreach (var item in items)
+            if (lllOn)
             {
-                if (lootedSet.Contains(item) || item.IsDestroyed)
-                    continue;
-                if (!TryBankKey(player, item))
-                    continue;
-                if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                foreach (var item in items)
                 {
-                    var keyName = LootDisplayName(removed);
-                    lootedItems.TryGetValue(keyName, out var existing);
-                    lootedItems[keyName] = existing + (removed.StackSize ?? 1);
-                    lootedSet.Add(removed);
-                    removed.Destroy();
+                    if (lootedSet.Contains(item) || item.IsDestroyed)
+                        continue;
+                    if (!TryBankKey(player, item))
+                        continue;
+                    if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                    {
+                        var keyName = LootDisplayName(removed);
+                        lootedItems.TryGetValue(keyName, out var existing);
+                        lootedItems[keyName] = existing + (removed.StackSize ?? 1);
+                        lootedSet.Add(removed);
+                        removed.Destroy();
+                    }
                 }
             }
 
             // ── Pass 6: Lockpick banking ─────────────────────────────────
-            // Lockpicks auto-bank unconditionally when achievement unlocked (no profile required).
-            foreach (var item in items)
+            if (lllOn)
             {
-                if (lootedSet.Contains(item) || item.IsDestroyed)
-                    continue;
-                if (!TryBankLockpick(player, item))
-                    continue;
-                if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                foreach (var item in items)
                 {
-                    var lpName = LootDisplayName(removed);
-                    lootedItems.TryGetValue(lpName, out var existing);
-                    lootedItems[lpName] = existing + (removed.StackSize ?? 1);
-                    lootedSet.Add(removed);
-                    removed.Destroy();
+                    if (lootedSet.Contains(item) || item.IsDestroyed)
+                        continue;
+                    if (!TryBankLockpick(player, item))
+                        continue;
+                    if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                    {
+                        var lpName = LootDisplayName(removed);
+                        lootedItems.TryGetValue(lpName, out var existing);
+                        lootedItems[lpName] = existing + (removed.StackSize ?? 1);
+                        lootedSet.Add(removed);
+                        removed.Destroy();
+                    }
                 }
             }
 
             // ── Pass 7: General LLL item banking ─────────────────────────
-            // Any item not already caught that matches LeyLineLedger's BankItem list
-            // (e.g. A'nekshay Tokens, Colosseum Coins, MMD trade notes, etc.)
-            foreach (var item in items)
+            if (lllOn)
             {
-                if (lootedSet.Contains(item) || item.IsDestroyed)
-                    continue;
-                if (!TryBankAnyLllItem(player, item))
-                    continue;
-                if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                foreach (var item in items)
                 {
-                    var lllName = LootDisplayName(removed);
-                    lootedItems.TryGetValue(lllName, out var existing);
-                    lootedItems[lllName] = existing + (removed.StackSize ?? 1);
-                    lootedSet.Add(removed);
-                    removed.Destroy();
+                    if (lootedSet.Contains(item) || item.IsDestroyed)
+                        continue;
+                    if (!TryBankAnyLllItem(player, item))
+                        continue;
+                    if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                    {
+                        var lllName = LootDisplayName(removed);
+                        lootedItems.TryGetValue(lllName, out var existing);
+                        lootedItems[lllName] = existing + (removed.StackSize ?? 1);
+                        lootedSet.Add(removed);
+                        removed.Destroy();
+                    }
                 }
             }
 

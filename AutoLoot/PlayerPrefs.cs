@@ -8,6 +8,7 @@ public class PlayerPrefs
 
     // Toggleable categories
     public bool TrophyEnabled { get; set; } = true;
+    public bool LllBankingEnabled { get; set; } = true;
 
     // Achievement tracking
     public int KeyUnlocks { get; set; } = 0;

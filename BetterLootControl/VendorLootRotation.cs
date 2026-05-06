@@ -1079,6 +1079,21 @@ public static class VendorLootRotation
         }
     }
 
+    // Icon underlay mapping from RecipeManager (ACE vanilla)
+    static readonly Dictionary<ImbuedEffectType, uint> IconUnderlayMap = new()
+    {
+        { ImbuedEffectType.ColdRending,     0x06003353 },
+        { ImbuedEffectType.ElectricRending, 0x06003354 },
+        { ImbuedEffectType.AcidRending,     0x06003355 },
+        { ImbuedEffectType.ArmorRending,    0x06003356 },
+        { ImbuedEffectType.CripplingBlow,   0x06003357 },
+        { ImbuedEffectType.CriticalStrike,  0x06003358 },
+        { ImbuedEffectType.FireRending,     0x06003359 },
+        { ImbuedEffectType.BludgeonRending, 0x0600335a },
+        { ImbuedEffectType.PierceRending,   0x0600335b },
+        { ImbuedEffectType.SlashRending,    0x0600335c },
+    };
+
     static void ApplyImbueVisualEffect(WorldObject item)
     {
         if (item?.ImbuedEffect == null || item.ImbuedEffect == 0)
@@ -1113,6 +1128,16 @@ public static class VendorLootRotation
 
             if (visualEffect != 0)
                 item.SetProperty(PropertyInt.UiEffects, currentEffects | visualEffect);
+
+            // Apply icon overlay (background texture) based on imbue type
+            foreach (var kvp in IconUnderlayMap)
+            {
+                if (item.ImbuedEffect.HasFlag(kvp.Key))
+                {
+                    item.IconOverlayId = kvp.Value;
+                    break; // Only apply first matching overlay
+                }
+            }
         }
         catch (Exception ex)
         {

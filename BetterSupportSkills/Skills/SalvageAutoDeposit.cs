@@ -234,9 +234,10 @@ public static class SalvageAutoDeposit
     // When player manually salvages an imbued item with a salvage kit, grant
     // 50 units of the corresponding imbue salvage for EACH imbue type.
     
-    [HarmonyPatch(typeof(Player), "DoSalvaging")]
-    [HarmonyPostfix]
-    public static void PostDoSalvaging(Player __instance, WorldObject salvageTool, WorldObject target)
+    // BROKEN PATCH - DoSalvaging doesn't exist! (should be HandleSalvaging)
+    // [HarmonyPatch(typeof(Player), "DoSalvaging")]
+    // [HarmonyPostfix]
+    public static void PostDoSalvaging_DISABLED(Player __instance, WorldObject salvageTool, WorldObject target)
     {
         if (__instance == null || target == null)
             return;

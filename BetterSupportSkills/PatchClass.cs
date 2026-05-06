@@ -802,9 +802,28 @@ try
 
         var enabledFeatures = new List<Features>();
 
-        // BATCH 1 WORKS - broken patch is in BATCH 2
-        // Testing first half of BATCH 2
+        // Re-enable ALL features (broken Salvage patch fixed)
         
+        if (Settings.EnableAlchemy)
+            enabledFeatures.Add(Features.AlchemySkill);
+        if (Settings.EnableAlchemy && Settings.Alchemy.ShowEchoMessages)
+            enabledFeatures.Add(Features.AlchemyEchoMessages);
+        if (Settings.EnableArcaneLore)
+            enabledFeatures.Add(Features.ArcaneLoreSkill);
+        if (Settings.EnableAssessCreature)
+            enabledFeatures.Add(Features.AssessCreatureSkill);
+        if (Settings.EnableCooking)
+            enabledFeatures.Add(Features.CookingSkill);
+        if (Settings.EnableDirtyFighting)
+            enabledFeatures.Add(Features.DirtyFightingSkill);
+        if (Settings.EnableDeception)
+            enabledFeatures.Add(Features.DeceptionSkill);
+        if (Settings.EnableDualWield)
+            enabledFeatures.Add(Features.DualWieldSkill);
+        if (Settings.EnableFletching)
+            enabledFeatures.Add(Features.FletchingSkill);
+        if (Settings.EnableHealing)
+            enabledFeatures.Add(Features.HealingSkill);
         if (Settings.EnableLeadership)
             enabledFeatures.Add(Features.LeadershipSkill);
         if (Settings.EnableLockpick)
@@ -819,9 +838,6 @@ try
             enabledFeatures.Add(Features.MeleeLifeSpellSkill);
         if (Settings.EnableMissileDefense)
             enabledFeatures.Add(Features.MissileDefenseSkill);
-        
-        // Testing second half one by one
-        // Recklessness, Shield, SneakAttack work - testing TrophyDrops now
         if (Settings.EnableRecklessness)
             enabledFeatures.Add(Features.RecklessnessSkill);
         if (Settings.EnableShield)
@@ -832,10 +848,11 @@ try
             enabledFeatures.Add(Features.TrophyDropsSkill);
         if (Settings.EnableTinkeringLootGating)
             enabledFeatures.Add(Features.TinkeringLootGating);
+        // TODO: Re-enable SummoningClasses after fixing Creature.TakeDamage patch
+        // if (Settings.EnableSummoningClasses)
+        //     enabledFeatures.Add(Features.SummoningClasses);
         if (Settings.EnableDruidPetThorns)
             enabledFeatures.Add(Features.DruidPetThorns);
-        
-        // Testing Salvage - SUSPECTED BROKEN PATCH
         if (Settings.EnableSalvage)
             enabledFeatures.Add(Features.SalvageSkill);
         // CombatClasses patches are applied manually in TryApplyCombatClassesPatch()

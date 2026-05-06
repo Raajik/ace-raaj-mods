@@ -15,17 +15,20 @@ internal static class UnusableScrollLootFilter
     [HarmonyPatch(typeof(Creature), nameof(Creature.GenerateTreasure), new[] { typeof(DamageHistoryInfo), typeof(Corpse) })]
     public static void PostGenerateTreasureFilterScrolls(DamageHistoryInfo killer, Corpse corpse, Creature __instance)
     {
-        if (!PatchClass.Settings.Enabled || !PatchClass.Settings.FilterUnusableScrollDropsForKiller)
+        if (PatchClass.Settings == null || !PatchClass.Settings.Enabled || !PatchClass.Settings.FilterUnusableScrollDropsForKiller)
             return;
 
         if (corpse == null || corpse.IsDestroyed)
+            return;
+
+        if (__instance == null)
             return;
 
         if (killer == null)
             return;
 
         WorldObject attacker = killer.TryGetAttacker();
-        if (attacker is not Player player)
+        if (attacker == null || attacker is not Player player)
             return;
 
         foreach (WorldObject wo in corpse.Inventory.Values.ToList())

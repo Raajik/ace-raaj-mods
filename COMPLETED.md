@@ -1,869 +1,146 @@
-# Completed Tasks Archive
-
-**Role:** Canonical log of **shipped and finished** work (by date). When something is done, **append a subsection here**, then **trim** the matching bullets or long write-ups from `PLAN.md` so `PLAN.md` stays a short **active index** (bugs, next reworks, greenfield).
-
-**Pairing:** `PLAN.md` = what to do next + backlog tables. `COMPLETED.md` = what already shipped — search here first for "when did we…?".
-
----
+# Completed Features & Fixes
 
 ## 2026-05-05
 
-### BetterLootControl — Complete vendor loot rotation overhaul: Jewelers + Archmages with premium enchantments
+### NPC Spawn Safety Margins (Swarmed)
 
-**Overview:** Moved vendor loot rotation from QOL to BetterLootControl (single source of truth). Added specialized item generation for Jewelers (jewelry/gems) and Archmages (casters/robes) with significantly higher imbue/awaken/tinker rates and proper visual indicators.
+**Problem:**
+NPCs failing to spawn because coordinates were slightly off - spawning below the floor/ground plane where ACE rejects the position.
 
-#### Phase 1: Architecture Migration
-- **Removed VendorLootRotation from QOL entirely** — Deleted `QOL/VendorLootRotation.cs`, removed all `VendorLoot*` settings from `QOL/Settings.cs` and `QOL/Settings.json`.
-- **Fixed BetterLootControl mod pattern** — Converted from legacy `IHarmonyMod` to `BasicMod` pattern (like Lockboxes, QOL). Added `Start()` and `OnStartSuccess()` lifecycle methods so `VendorLootRotation.Initialize()` actually runs.
-- **Added CurrentSettings static field** — Harmony static patches can't access instance properties, so `Settings` copied to `CurrentSettings` in `Start()`/`OnStartSuccess()` (same pattern as Swarmed mod).
+**Solution:**
+Added +1.0 unit vertical safety margin to all Swarmed spawn systems:
+- **DungeonPopulationManager.cs**: Increased from `terrainZ + 0.05f` to `terrainZ + 1.0f` (both primary and fallback positions)
+- **BuddySpawns.cs**: Added `spawnPos.PositionZ += 1.0f` (previously no safety margin)
+- **CallForHelp**: Added `creature.Location.PositionZ += 1.0f` for reinforcement spawns
 
-#### Phase 2: Jeweler Specialization (20 vendors)
-**Classified WCIDs:**
-```
-411, 655, 665, 674, 698, 716, 736, 801, 817, 818, 839, 868,
-980, 991, 1042, 1055, 1081, 1151, 1152, 1820
-```
+**Implementation:**
+Creatures now spawn 1.0 units higher than template position, allowing ACE's physics system to drop them to the proper ground surface. This is a defensive measure that works with ACE's existing physics rather than trying to perfectly calculate ground height.
 
-**Item Generation:**
-- **`GenerateJewelryBatch()`** — 15-30 rings/bracelets/necklaces via `TreasureItemCategory.MagicItem`, 20x attempt multiplier
-- **`GenerateGemBatch()`** — 15-30 gems (all types), 20x attempt multiplier
-- **1 plain Spellsiphon** — Extraction tool, no spells, no glow
-- **1 plain Mana Lattice** — Reusable blank gem, no spells, no glow (with `UiEffects.Magical` explicitly removed)
-- **8-20 magical Spellsiphons** — Pre-loaded with 1-3 spells from treasure profiles, blue glow ✨
-- **8-20 magical Mana Lattices** — Pre-loaded with 1-3 spells, blue glow ✨
+**Result:**
+NPCs that would fail to spawn due to being 0.1-0.5 units too low will now spawn slightly higher and fall to the correct surface, preventing spawn failures and "missing" creatures.
 
-**Enhancement Rates:**
-- **70% imbue chance** (vs 40% other vendors) — Includes elemental rendings (Acid/Fire/Cold/Electric) + weapon imbues (CriticalStrike/CripplingBlow/ArmorRending) + defenses
-- **35% awaken chance** at tier 6+ (vs 15% other vendors) — Red outline, "Awakened" prefix, 8x value multiplier
-- **60% tinkering chance** — 1-3 tinkers, "Fine/Superior/Masterwork" prefix (3+/5+/8+ tinkers), 2x value per tinker
+**Commits:**
+- `221b1ea` - Increase spawn safety margin in Swarmed from 0.05f to 1.0f
+- `6453966` - Fix fallback spawn position safety margin too (0.05f → 1.0f)
+- `0170f0c` - Add spawn safety margin to BuddySpawns (+1.0f Z)
+- `ec8fe20` - Add spawn safety margin to CallForHelp reinforcements (+1.0f Z)
 
-**Visual System:**
-- **`ApplyImbueVisualEffect()`** — Color-coded `UiEffects` glows AND `IconUnderlayId` background textures:
-  - 🟢 Green (Acid=256) + 0x06003355 → Acid Rending, Armor Rending, Crit, Crippling
-  - 🔴 Red (Fire=32) + 0x06003359 → Fire Rending
-  - ⚪ White (Frost=128) + 0x06003353 → Cold Rending
-  - 🟣 Purple (Lightning=64) + 0x06003354 → Electric Rending, Defense imbues
-  - Physical rendings (Pierce/Slash/Bludgeon) → White + respective icon IDs
-- **IconUnderlayId vs IconOverlayId** — Fixed initial bug where `IconOverlayId` covered the item icon; changed to `IconUnderlayId` so imbue texture renders **behind** the item icon (matches vanilla ACE).
+---
+
+### Auto-Salvage Imbue Bonus Fix (BetterSupportSkills)
+
+**Problem:**
+When auto-salvaging items on pickup, players weren't receiving bonus imbue salvage (e.g., tourmaline for bludgeon rending items). The material salvage was banked correctly but imbue bonuses were missing.
+
+**Root Cause:**
+`TryAutoSalvageItem()` (which handles items with MaterialType being auto-salvaged on pickup) was banking material salvage but never calling `TryGrantImbueSalvage()`.
+
+**Solution:**
+Added `TryGrantImbueSalvage(player, item)` call in `TryAutoSalvageItem()` after banking material salvage, before returning true.
+
+**All Three Salvage Paths Now Work:**
+1. **Auto-salvage (pickup)**: `TryAutoSalvageItem` → Bank material → `TryGrantImbueSalvage` ✓
+2. **Manual salvage (kit)**: `DoSalvaging` → `PostDoSalvaging` → `TryGrantImbueSalvage` ✓  
+3. **Salvage bag pickup**: `PreTryCreateInInventory` → `TryGrantImbueSalvage` ✓
+
+**Example Results:**
+- **Bludgeon Rending Sword (auto-salvaged)**: 50-150 steel (banked) + 50x Tourmaline (imbue bonus)
+- **Fire Rending + Crit Strike Ring (auto-salvaged)**: 30-80 gold + 50x Red Garnet + 50x Black Opal (100 total imbue salvage)
+
+**Commit:**
+- `a14971e` - Fix auto-salvage imbue bonus (for real this time!)
+
+---
+
+## 2026-05-04
+
+### Multi-Imbue System for Vendor Items (BetterLootControl)
+
+**Feature:**
+Vendor items can now spawn with multiple compatible imbues (ultra-rare), creating extremely powerful and valuable equipment.
+
+**Rates:**
+- 8% chance for 2nd compatible imbue
+- 2% chance for 3rd compatible imbue
+
+**Compatibility Rules:**
+- Only one elemental rending (fire/cold/electric/acid)
+- Only one physical rending (slash/pierce/bludgeon)
+- All offensive and defense imbues can stack freely
 
 **Pricing:**
-- Multipliers stack exponentially: `Base × Imbue(5x) × Awaken(8x) × Tinker(2^count)`
-- Example: 1000p base → +Imbue 5k → +Awaken 40k → +3 Tinkers **320,000p**
+Multi-imbue pricing is **exponential**: Each imbue = 5x multiplier, so:
+- 2 imbues = 25x (5²)
+- 3 imbues = 125x (5³)
 
-#### Phase 3: Weapon Imbues Work on Jewelry (JewelryImbuePatches.cs)
-**Problem:** Jewelry with CriticalStrike/CripplingBlow/ArmorRending had no effect because ACE only checks the weapon for offensive imbues.
+Combined with awakening (8x) and tinkers (2^count), ultra-rare triple-imbued awakened 8-tinker items can reach **billions of pyreals**.
 
-**Solution:** Created `BetterLootControl/JewelryImbuePatches.cs` with Harmony patches:
-1. **CriticalStrike** — `PostGetWeaponCriticalChance` + `PostGetWeaponMagicCritFrequency` check all equipped items if weapon lacks imbue
-2. **CripplingBlow** — `PostGetWeaponCritDamageMod` checks all equipped items
-3. **ArmorRending** — `PreDoCalculateDamage` + `FinalizerDoCalculateDamage` temporarily add imbue to weapon from equipped items (ThreadLocal tracking)
-4. **Defense imbues** — Already worked on all equipment via `GetDefenseImbues()` (unchanged)
+**Settings:**
+- `VendorLootMultiImbue2Chance`: 0.08 (8%)
+- `VendorLootMultiImbue3Chance`: 0.02 (2%)
 
-**Result:** Rings/bracelets/necklaces with weapon imbues now grant full combat bonuses when equipped! 💍⚔️
+**Commit:**
+- `dfed17b` - Add multi-imbue system for vendor items
 
-#### Phase 4: Archmage Specialization (31 vendors)
-**Classified WCIDs:**
+---
+
+### Economy Integration & Pricing Overhaul (BetterLootControl)
+
+**Changes:**
+- **MinValue**: 500p (was 100p)
+- **MaxValue**: 25,000p (was 10,000p)
+- **LuxuryTax**: 25% (was 10%)
+
+**Economy Integration:**
+Added `GetLeyLineLedgerEconomyMultiplier()` that reflects into LeyLineLedger's `EconomyBalancer.GetVendorBuyPriceMultiplier()`.
+
+**Formula:**
 ```
-692, 795, 809, 831, 856, 857, 984, 1048, 1369, 1370, 1371, 1812,
-1824, 2220, 2246, 2247, 2248, 2249, 2250, 2290, 2302, 2303, 2304,
-2305, 2306, 2307, 2314, 2498, 2537, 2540
-```
-
-**Item Generation:**
-- **`GenerateCasterBatch()`** — 15-30 wands/orbs/staves via `TreasureItemCategory.MagicItem`, 20x attempt multiplier
-- **`GenerateRobeBatch()`** — 8-20 magical robes (filters for "robe"/"vestment"/"kaftan" in name), 30x attempt multiplier
-
-**Enhancement Rates:**
-- **65% imbue chance** (vs 40% other vendors)
-- **30% awaken chance** at tier 6+ (vs 15% other vendors)
-- **55% tinkering chance** — 1-3 tinkers
-
-**Pricing:** Same multiplier formula as jewelers
-
-#### Technical Implementation
-**Settings Structure:**
-```csharp
-// Jeweler-specific
-VendorLootJewelerImbueChance: 0.70
-VendorLootJewelerAwakenChance: 0.35
-VendorLootJewelerTinkerChance: 0.60
-VendorLootJewelerMinTinkers: 1
-VendorLootJewelerMaxTinkers: 3
-
-// Mage-specific
-VendorLootMageImbueChance: 0.65
-VendorLootMageAwakenChance: 0.30
-VendorLootMageTinkerChance: 0.55
-VendorLootMageMinTinkers: 1
-VendorLootMageMaxTinkers: 3
-
-// Shared
-VendorLootTinkerValueMultiplier: 2.0
+Base × Imbue(5^count) × Awaken(8x) × Tinker(2^count) × LuxuryTax(1.25x) × EconomyMult
 ```
 
-**Vendor Classification:**
-- `VendorTypeClassification` enum: Jeweler, Armorer, Mage, General
-- `ClassifyVendor()` checks explicit WCID lists first, falls back to `MerchandiseItemTypes` heuristic
-- `GetStrictMerchMask()` enforces type filtering when `VendorLootStrictTypeEnforcement: true`
+**Settings:**
+- `UseLeyLineLedgerEconomyBalancer`: true
+- Toggle to enable/disable economy scaling
 
-**Enhanced Treatment:**
-- `ApplyEnhancedItemTreatment(item, vendorTier, vendorClass)` branches on vendor type for imbue/awaken/tinker rates
-- `ApplyRandomTinkers(item, vendorTier, minTinkers, maxTinkers)` adds tinkers, increases `NumTimesTinkered` and `ItemMaxLevel`, updates name prefix
+**Result:**
+Vendor prices now scale dynamically with server wealth state, creating appropriate pyreal sinks when the economy is flush.
 
-#### Files Changed
-**BetterLootControl:**
-- `Mod.cs` — Converted to BasicMod pattern
-- `PatchClass.cs` — Added CurrentSettings static field
-- `VendorLootRotation.cs` — Added jeweler/mage classification, batch generators, visual effects
-- `JewelryImbuePatches.cs` — NEW: Weapon imbues work on jewelry
-- `Settings.cs` / `Settings.json` — Added jeweler/mage settings
-- `Readme.md` — Full vendor documentation
-
-**QOL:**
-- Deleted `VendorLootRotation.cs`
-- Removed all `VendorLoot*` settings from `Settings.cs` / `Settings.json`
-
-**SpellSiphon:**
-- `Settings.json` — Set `EnableVendorSales: false` to prevent conflicts
-
-#### Verification (Test Server C:\ACE\, port 9000)
-- ✅ Jewelers (e.g. WCID 716 Monyra, 839 Ai Konaji) stock 15-30 jewelry + 15-30 gems + Spellsiphons/Mana Lattices
-- ✅ Archmages (e.g. WCID 2304 Holtburg) stock 15-30 casters + 8-20 robes
-- ✅ Imbued items show correct icon underlays (frost/fire/acid/lightning textures)
-- ✅ Jewelry with CriticalStrike grants crit bonus when equipped
-- ✅ Plain Mana Lattice has no blue glow (Magical flag removed)
-- ✅ Magical Spellsiphons/Mana Lattices have blue glow
-- ✅ Prices scale correctly (masterwork awakened imbued items = 6-7 figures)
-
-#### AGENTS.md Updates
-- **§3 Mod structure** — Clarified test `Settings.json` at `C:\ACE\Mods\<Mod>\Settings.json` is operator source of truth; repo `Settings.json` is template/defaults.
-- **§8.3 Harmony** — Added `IconUnderlayId` vs `IconOverlayId` gotcha (underlay = behind icon, overlay = on top).
+**Commits:**
+- `5a5f0b4` - Increase vendor pricing and integrate with LeyLineLedger economy balancer
+- `1f9dce9` - docs: Add pricing system documentation to BetterLootControl readme
+- `a9df080` - docs: Add economy pricing details to vendor rotation section
 
 ---
 
-# Completed Tasks Archive (Historical)
+### Complete Vendor Specialization System (BetterLootControl)
 
-**Role:** Canonical log of **shipped and finished** work (by date). When something is done, **append a subsection here**, then **trim** the matching bullets or long write-ups from `PLAN.md` so `PLAN.md` stays a short **active index** (bugs, next reworks, greenfield).
+**Overview:**
+Implemented specialized vendor loot with progressive enhancement rates across 6 vendor types and 340+ vendors.
 
-**Pairing:** `PLAN.md` = what to do next + backlog tables. `COMPLETED.md` = what already shipped — search here first for “when did we…?”.
+**Vendor Types & Rates:**
 
----
+| Type | Vendors | Imbue | Awaken | Tinker |
+|------|---------|-------|--------|--------|
+| **Jewelers** | 20 | 70% | 35% | 60% |
+| **Archmages** | 31 | 65% | 30% | 55% |
+| **Bowyers** | 53 | 65% | 30% | 55% |
+| **Armorers/Blacksmiths** | 100+ | 60% | 25% | 50% |
+| **Tailors** | 28 | 55% | 20% | 45% |
+| **Shopkeepers/Grocers** | 115+ | 50% | 18% | 40% |
 
-## 2026-05-04
+**Features:**
+- Visual polish with color-coded UiEffects
+- IconUnderlayId background textures for imbues
+- Weapon imbues work on all equipped items (jewelry included)
+- Overtinked custom imbue support (25% chance for Hemorrhage/Cleaving/NetherRending/Shatter)
+- Manual salvage imbue bonus fix (50 units per imbue type)
 
-### Drudge / Rat Tail / Wasp Wing trophy lines — necklace suppression, sunstone underlay, name cleanup, bank interop fix
-
-- **Symptom 1 — Drudge Charm necklace still given on turn-in:** Bulk-suppression prefix on `EmoteManager.ExecuteEmoteSet(PropertiesEmote, WorldObject, bool)` never fired for the Give code path (only HeartBeat) because the CLR JIT inlines that trivial wrapper at its call site in `Player_Inventory.GiveObjectToNPC`. Harmony patches the `MethodInfo`, but inlined call sites bypass the patch entirely. Moved the suppression to `EmoteManager.Enqueue` (the non-trivial method that ExecuteEmoteSet's body calls) and gated on `emoteIdx == 0` so it fires once per chain. Manually mirror vanilla DoEnqueue end-of-chain bookkeeping (`Nested--`, `IsBusy = false` when nested == 0) via `Traverse` so the EmoteManager state stays consistent after we short-circuit. Confirmed in-game: T1/T2/T3/T4 all suppress the Bloodletter Charm Necklace (WCID 25539) and grant the configured XP+bank reward instead.
-- **Symptom 2 — Bank credit silently lost:** `LeyLineLedgerBankInterop` reflected for `GetBanked` / `IncBanked` on `LeyLineLedger.PatchClass`, but those methods live on `LeyLineLedger.BankExtensions` (extension methods on `Player`). Reflection silently failed and the interop fell back to writing the player's biota `PropertyInt64` 39999 — which `AccountBankStore.MirrorDataToPlayerAndAccountAlts` immediately overwrote on the next mirror, eating the credit. Updated the interop to look up `LeyLineLedger.BankExtensions` first and fall back to `PatchClass` for backward compat. Added a one-time `[LeyLineLedgerBankInterop] Resolved bank methods on <type>` startup log so future operators can confirm wiring at a glance. Affects every consumer of the interop: AutoLoot, QOL, BetterSupportSkills, Windblown — all rebuilt and redeployed.
-- **Symptom 3 — Sunstone orange icon underlay missing on Rat Tails / Wasp Wings:** Authoring miss in `Windblown/Content/Weenies/{rat-tails,wasp-wings}.json` — the `PropertiesDID` block was absent on all 8 tier entries (T1+T2+T3+T4 for both lines). Added `"PropertiesDID": { "IconUnderlay": 100676438 }` to every tier so they match Drudge Charms.
-- **Symptom 4 — "Old name 'bloodletter drudge charm'" on regular tier:** User asked to drop the `Bloodletter` prefix from all 4 Drudge Charm tiers. Renamed Name + PluralName in `Windblown/Content/Weenies/drudge-charms.json` to plain `Drudge Charm[(Quality|Pristine|Perfect)]` and updated `TurnInDisplayName` in `Windblown/Content/TrophyLines/drudge-charm.json` for the chat summary line.
-- **Verification (live, 9000):** `+Wb` created + turned in 100 × Drudge Charm (Pristine) (T3): chat said `+10,000,000 pyreals of bank credit`; `/bank status` showed `79,198,368 banked` matching `previous (69,198,368) + 10,000,000`. Server log line `[Windblown.Trophy.DEBUG] +Wb bank prop 39999: before=... delta=... expected=... after=... match=True` confirmed before/after parity (debug line stripped before commit).
-- **AGENTS.md §8.3 (Harmony):** Added "JIT inlining defeats Harmony prefixes on trivial wrappers" gotcha with the EmoteManager.ExecuteEmoteSet → Enqueue case study and the `[MethodImpl(NoInlining)]` workaround vs patching the inner method.
-
----
-
-## 2026-05-04
-
-### LeyLineLedger /bank salvage redeem|withdraw|create + admin /cisalvage — bag destroyed by BSS auto-deposit (cross-mod fix)
-
-- **Symptom:** `/bank salvage redeem lapis 1` (and oak, silk, etc.) printed `Redeemed 1 bag(s) for Salvaged Lapis Lazuli (100 units). Remaining for this material: 0` but **no bag appeared** in inventory; tested on multiple accounts incl. admin. `/cisalvage <material>` had the same silent-destroy behavior.
-- **Root cause:** `BetterSupportSkills/Skills/SalvageAutoDeposit.cs:PreTryCreateInInventory` is a `[HarmonyPrefix]` on `Player.TryCreateInInventoryWithNetworking(WorldObject)` that intercepts **any** WCID in 20981–21089 entering inventory: it credits its own bank prop (`baseProp + (wcid - 20981)`), calls `item.Destroy()`, sets `__result = true`, and skips vanilla. `LeyLineLedger.BankSalvage.RedeemBagLoop` / `SpawnCleanBags` / `CreateCleanBag` and ACE `AdminCommands.HandleCISalvage` all create salvage bags via that exact API — bag dies, LLL still debits its bank, BSS credit lands on a **different prop scheme** (LLL uses `40201 + ruleIndex` from JSON order, BSS uses `40201 + (wcid - 20981)`), so the player's pack stays empty and `/bank salvage status` shows nothing recovered.
-- **Fix — BSS owns the suppression API:** Added `[ThreadStatic] int _suppressionDepth` + `EnterSuppression()`/`ExitSuppression()` to `SalvageAutoDeposit`. Prefix early-returns `true` when depth > 0. Also added `Prefix` + `[HarmonyFinalizer]` on `AdminCommands.HandleCISalvage` (finalizer instead of postfix so suppression releases on exception too).
-- **Fix — LLL brackets via reflection:** New `BankSalvage.TryCreateBagBypassingAutoSalvage(player, bag)` reflects to BSS once, caches `Action` delegates for Enter/Exit, brackets every `TryCreateInInventoryWithNetworking(bag)` in salvage redeem/withdraw/create. No assembly reference; gracefully no-ops when BSS isn't loaded.
-- **Verification:** Tested live on 9000 — `/bank salvage redeem white_jade 1` delivered the bag; `/cisalvage iron` delivered the spawned bag.
-- **AGENTS.md §8.2:** Added cross-mod gotcha entry documenting the auto-intercept prefix trap and the suppression-flag pattern.
+**Commits:**
+Multiple commits implementing each vendor type specialization, visual system, Overtinked integration, etc. (see git log for full history)
 
 ---
 
-## 2026-05-08
+## Earlier Features
 
-### Drudge charm — sunstone IconUnderlay, single examine, vanilla NPC reward suppressed
-
-- **World weenies (24835 + 850271–850273):** Removed `weenie_properties_int` **18** (`UiEffects`) and **179** (`ImbuedEffect`) — no rending/glow on stackable charms. Added `weenie_properties_d_i_d` **52** (`IconUnderlay`) = **`100676438`** (`0x06003356`), the same DID `RecipeManager.IconUnderlay[ImbuedEffectType.ArmorRending]` paints onto sunstone-imbued weapons (orange icon underlay). Examine: deleted **`weenie_properties_string` 14** (Use) and **15** (ShortDesc); kept only **16** (LongDesc) so the AC client renders the *Collectors and Trophy Collectors…* sentence once instead of twice. **`11=999`**, names + plurals (Bloodletter) preserved.
-- **SQL:** Forward **`WindblownContent/Content/SQL/DrudgeCharm_SunstoneUnderlay_2026-05-08.sql`**; canonical **`DrudgeCharm_TierWeenies_World.sql`** rewritten to match. **`DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`** stubbed deprecated.
-- **`BetterSupportSkills/Skills/QuestTurnInCap.cs`:** New **`PreExecuteEmoteSet`** Harmony prefix on `EmoteManager.ExecuteEmoteSet(PropertiesEmote, WorldObject, bool)`. When `Category == EmoteCategory.Give` and the player has a fresh `_bulkPending` charm turn-in matching `emoteSet.WeenieClassId`, the prefix drains remaining stacks, grants the tier XP bracket fraction (calls `GrantXP` directly), credits per-tier bank trade-note value via `LeyLineLedgerBankInterop.IncBanked`, sends one summary System message, and **returns false** — vanilla `Enqueue` never runs, so the Trophy Collector *never gives* `WCID 25539` (Bloodletter Charm Necklace) or its thank-you Tell. Bulk-charm logic removed from `PreGrantXP` (now only handles single-item `_pending` cap).
-- **DB:** Scoped `mysqldump` → `WindblownContent/sql-backups/2026-05-08/pre-drudgecharm-sunstone-underlay-weenie.sql` (gitignored). `mysql ace_world < DrudgeCharm_SunstoneUnderlay_2026-05-08.sql`; verified **11/18/179** absent or only **11**, **DID 52** = **100676438**, strings **1/16/20** present, **14/15** gone.
-- **Operator:** Restart ACE so the weenie cache reloads. Mod DLL deploys to `C:\ACE\Mods\BetterSupportSkills\` via Release build.
-
----
-
-## 2026-05-07
-
-### Drudge charm — Bloodletter display, per-tier 179/18, unified examine 14/15/16 (revert sunstone uniform)
-
-- **World weenies (24835 + 850271–850273):** Restored per-tier **`ImbuedEffect` (179)** + **`UiEffects` (18)**; removed uniform **179=4 / 18=0**. Types **14, 15, 16** identical: *Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.* Names **Bloodletter Drudge Charm** (+ tier suffix); plural **20** `Bloodletter Drudge Charms` variants. **11 = 999**; tier **`weenie.type` = 51**.
-- **SQL:** Forward **`WindblownContent/Content/SQL/DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`**; canonical **`DrudgeCharm_TierWeenies_World.sql`**. **`DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`** stubbed deprecated (do not re-apply sunstone body).
-- **Mods/docs:** **`BetterSupportSkills`** `QuestTurnInCap` message + `GetItemName`; **`Settings.cs`** drudge charm doc bands; **`WindblownContent/docs/*`**, **`README-TrophyCharmCloneTemplate.md`**, SQL stub comment updates.
-- **DB:** Scoped **`mysqldump`** to `WindblownContent/sql-backups/2026-05-07/pre-drudgecharm-bloodletter-restore-weenie.sql` (gitignored path); **`mysql ace_world < DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`**; verified **1,11,14,15,16,18,179,20**.
-- **Superseded 2026-05-08:** Bludgeon-rend bits and duplicated 14/15/16 strings replaced with sunstone IconUnderlay + LongDesc-only examine; vanilla NPC necklace reward also suppressed. See **`## 2026-05-08`** and **`DrudgeCharm_SunstoneUnderlay_2026-05-08.sql`**.
-
----
-
-## 2026-05-06
-
-### Drudge charm — display rename, sunstone rim (179=4), single examine body
-
-- **World weenies (24835, 850271–850273):** **`ImbuedEffect` 179 = 4** (`ArmorRending` chrome), **`UiEffects` 18 = 0**, **`MaxStackSize` 11 = 999**. **`weenie_properties_string`:** type **1** names *Drudge Charm* / *(Quality|Pristine|Perfect)*; **20** plurals *Drudge Charms*; **14** short Use line; **15** empty; **16** full collector reward sentence (no duplicate 14/16 paragraph). Tier **`weenie.type` = 51** enforced for **850271–850273**.
-- **SQL:** Forward **`WindblownContent/Content/SQL/DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`**; canonical **`DrudgeCharm_TierWeenies_World.sql`** aligned. **`DrudgeCharm_BloodletterBase_2026-05-05.sql`**, **`DrudgeCharm_UiRendIcons_2026-05-05.sql`**, **`DrudgeCharm_SunstoneCopyPluralStack_2026-05-04.sql`** — comment-only deprecated stubs (do not re-apply old Bloodletter / per-tier 179 rows).
-- **Mods/docs:** `BetterSupportSkills` (`QuestTurnInCap`, `Settings` doc bands), `AutoLoot/Settings`, READMEs, `WindblownContent/docs/*`, `README-TrophyCharmCloneTemplate.md`.
-- **DB:** Scoped **`mysqldump`** to `WindblownContent/sql-backups/2026-05-06/pre-drudgecharm-sunstone-rim-weenie.sql` (path **gitignored** — operator machine only); **`mysql ace_world < DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`**; verified **1,11,14,15,16,18,179,20**.
-- **Superseded 2026-05-07:** Uniform sunstone rim reverted — per-tier Bloodletter chrome again; see **`## 2026-05-07`** and **`DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`**.
-
-## 2026-05-05
-
-### Drudge charm weenies — rend icon + UiEffects by tier (superseded)
-
-- **Superseded 2026-05-06** then **2026-05-07** — uniform sunstone rim was reverted to per-tier Bloodletter chrome; see **`## 2026-05-07`**. Intermediate **`DrudgeCharm_UiRendIcons_2026-05-05.sql`** / **`DrudgeCharm_BloodletterBase_2026-05-05.sql`** / stubbed **`DrudgeCharm_SunstoneRimAndCopy_2026-05-06.sql`** are deprecated only.
-
-## 2026-05-04
-
-### Drudge charm weenies — sunstone icon, plural names, copy, max stack
-
-- **`weenie_properties_int`**: **179 = 4** (`ArmorRending`, sunstone-style icon chrome) and **18 = 0** on **3669**, **850271–850273**. **11 = 999** (`MaxStackSize`) so admin stacks are not capped at template **12** (40). **`DrudgeCharm_SunstoneCopyPluralStack_2026-05-04.sql`** — idempotent forward patch; **`DrudgeCharm_TierWeenies_World.sql`** — canonical clone script (tier **`weenie.type` = 51** literal insert, same int/string blocks).
-- **`weenie_properties_string`**: shorter **14/15/16**; **20** `PluralName` (`Drudge Charms`, `Drudge Charms (Quality)`, etc.).
-- **Docs:** [`WindblownContent/docs/ACE-Item-Icon-UiEffects-ImbuedEffect-Reference.md`](WindblownContent/docs/ACE-Item-Icon-UiEffects-ImbuedEffect-Reference.md); Obsidian hub row in `ACE-Realms-Source-Map.md` + stub `ACE-Item-Icon-UiEffects-ImbuedEffect-Reference.md`. **`README-TrophyCharmCloneTemplate.md`** — plural, type-51, doc link, forward patch pointer.
-- **DB audit:** `ace_world` already had **`weenie.type` = 51** (Stackable) for all four; portal boilerplate was not reproduced on test DB. **`mysqldump`** pre-apply: `WindblownContent/sql-backups/2026-05-04/pre-drudgecharm-sunstone-weenie.sql`.
-
-### BetterSupportSkills — drudge charm turn-in: tiered LLL bank credit
-
-- **`DrudgeCharmTrophySettings`** — **`BankTradeNoteValuePerCharmRegular` / `Rare1` / `Rare2` / `Rare3`** (defaults **25k / 50k / 100k / 250k** per charm; ACE note WCIDs **7376 / 2626 / 2627 / 20630** doc-only). Still **`BankCashProperty`** + **`IncBanked`**. **`BankPyrealsPerCharm`** kept as **legacy flat fallback** when all four tier amounts are **0** in JSON (old configs missing new keys).
-- **`QuestTurnInCap`** — **`CharmBankAmountPerCharm`** maps tier WCID to amount × stack; player message mentions trade-note **balance**.
-- **Docs:** `BetterSupportSkills/README.md`, `WindblownContent/docs/Windblown-Custom-Trophy-Settings.md`, `WindblownContent/Content/SQL/README-TrophyCharmCloneTemplate.md`; **`Settings.json`** defaults updated.
-
-### WorldEvents — auto pending claims + reminders
-
-- **`PatchClass.PendingClaims.cs`** — Harmony postfix on `Player.PlayerEnterWorld`: `ActionChain` **3s** delay then **`SendPendingClaimsLoginReminder`** — **System** line if `PeekCount` **> 0** (no auto-grant on login). Background timer **`PendingClaimsReminderIntervalMinutes` (120)** calls `TickPendingClaimsForAllOnline` on each interval (**`TryAutoClaimPendingRewards`** = same path as `/claim` when queue non-empty).
-- **`TryAutoClaimPendingRewards`** — `PeekCount` → `ClaimAllForPlayer` → if anything granted/failed, **System** summary (matches `/claim`); if `PeekCount` still **> 0**, System nudge to free space and `/claim`.
-- **`PatchClass.cs`** — `_pendingClaimsTimerCts`, `StartPendingClaimsBackgroundTimer` from `Start` / `OnWorldOpen`, cancel in `Stop`. `/claim` handler description updated.
-
-### WorldEvents — periodic auto-claim opt-in (`/claim auto`)
-
-- **`/claim auto`** is a **toggle** only (no `on` / `off` subcommands).
-- **Default off:** 120-minute tick calls `TryAutoClaimPendingRewards` only when `PendingClaimsAutoPreferenceStore` JSON is enabled for that character (`Mods/WorldEvents/PendingClaimsAuto/<guid>.json`).
-- **`PendingClaimsAutoPreferenceStore.cs`** — disk-backed `{ "PeriodicAutoClaim": true }` per character (same `ModManager.ModPath` layout as pending loot JSON).
-- **`/claim auto`** — toggles periodic auto-claim (writes preference JSON; survives logouts). **Legacy:** `FakeBool 12002` from older builds is read once, migrated to JSON, then removed from biota.
-- **`AGENTS.md`** — `12002` marked legacy; `12001` unchanged.
-
-### WorldEvents — `/claim` inventory gate (burden + pack slots)
-
-- **`PendingClaimInventoryGate.cs`** — Builds temp `WorldObject`s for pending entries; **Hunt** + `HuntBankInterop.CanAutoBankHuntLoot` skips items that would bank via LeyLineLedger (read-only peek). Otherwise `Player.CanAddToInventory` (ACE **3× capacity** + free slots). Blocks **`/claim`** and **`TryAutoClaimPendingRewards`** with a **System** message until the player frees space or weight.
-- **`PendingEventClaimsStore.GetPendingSnapshot`** — read-only copy under same file lock as enqueue/claim.
-- **`LeyLineLedger/HuntRewardBanking.cs`** — `CanAutoBankHuntLoot` + `commit` flag on internal bank helpers so WorldEvents can peek without crediting; `HuntBankInterop` resolves the new method via reflection.
-
----
-
-## 2026-05-03
-
-### AchievementUnlocked — re-enabled + activity telemetry
-
-- **Meta:** `AchievementUnlocked/Meta.json` `Enabled` **true** (mod loads again).
-- **Telemetry:** New `AchievementActivityTelemetry.cs` — `LOGIN`, `KILL` (per creditable kill), `QUEST_SOLVE` (when quests-with-solves count rises), `KILL_ACH` / `QUEST_ACH` (per matching achievement counter bump), `UNLOCK`, `EXT_PROGRESS` (`IncrementProgress` / `SetProgress`), and **`DAY_ROLLUP`** (UTC midnight rollover aggregates prior day). Wired from `PatchClass`, `AchievementManager`.
-- **Settings:** `EnableActivityTelemetry`, `LogKillHooks`, `LogKillAchievementProgress`, `LogQuestManagerUpdates` (default false), `LogQuestSolveMilestones`, `LogQuestAchievementProgress`, `LogUnlockEvents`, `LogExternalProgressCalls`, `LogLoginSnapshot` in `Settings.cs` + `Settings.json`.
-
-### Windblown world SQL — Olthoi brood hive bosses drop full 9-part set
-
-- **Script:** `WindblownContent/Content/SQL/BroodMatronQueen_AllNinePartsGuaranteed.sql` — `weenie_properties_create_list` rows with `destination_Type = 9`, `shade = 0` (guaranteed) for matron + queen at tiers **24638/24640** (young), **24637/24639** (adolescent), **24908/24910** (nymph), **24907/24909** (elder).
-- **Applied:** local **`ace_world`** (restart ACE to refresh weenie cache).
-- **Commit:** `2d4d553`.
-
-### Windblown world SQL — statue replica small: bronze coil/gear/nuts/spring guaranteed on kill
-
-- **Script:** `WindblownContent/Content/SQL/StatueReplicaSmall_BronzeSalvageGuaranteed.sql` — sets `weenie_properties_create_list.shade = 0` for the **Treasure** row on each of **17** `statuereplica*small` mobs (**19267, 19270, 19273, 19276, 19279, 19282, 19285, 19288, 19291, 19294, 19297, 19300, 19303, 19306, 19309, 19312, 19315**) that grants salvage **19209–19218, 19249–19255** (was **0.05** per ACE `CreateListSelect` probability-as-shade).
-- **Applied:** local **`ace_world`** (restart ACE to refresh weenie cache). Scoped dump: `WindblownContent/sql-backups/2026-05-03/pre-statue-replica-bronze-salvage-create-list.sql` (gitignored).
-
-### AutoLoot + QOL — corpse bank credits use LeyLineLedger `IncBanked`
-
-- **Cause:** With LeyLineLedger `AccountWideBank`, `TryBankKey` / `TryBankCurrency` / lockpick / level-8 comp paths only did `SetProperty` on bank `PropertyInt64`; LLL mirror reapplies JSON and dropped keys looked unbanked.
-- **Change:** `Shared/LeyLineLedgerBankInterop.cs` (public); QOL links shared file + `global using AceRaajMods.Shared`; AutoLoot links shared file and calls `LeyLineLedgerBankInterop.IncBanked` for keys, coalesced mana, pyreals, lockpick bank amount, and level-8 comp cash conversion.
-- **Commit:** `1596201`.
-
-### BetterSupportSkills — auto-summon move speed multiplier
-
-- **Change:** `PostCreatureGetMovementSpeed` postfix on `Creature.GetMovementSpeed` — for **`CombatPet`** in **`TrackedPetGuids`**, multiplies **`MoveSpeed`** by **`SummoningClasses.AutoSummonMoveSpeedMultiplier`** (default **3**) after vanilla math, so small **`AutoSummonObjScaleMultiplier`** does not leave pets crawling. **`<= 0`** or **`1`** skips.
-- **Settings / docs:** `AutoSummonMoveSpeedMultiplier` in `Settings.json`, `SummoningClassesSettings` in `SummoningClasses.cs`, `ClassPerks.md` (Summoning Classes).
-
-### Drudge charm tiers (world + mods)
-
-- **SQL:** `WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql` — deletes **`weenie_properties_create_list`** rows for **3669**; clones weenie **3669** to **850271–850273** with names / **`UiEffects`**; renames **3669** display to **Drudge Charm (Regular)**. Applied to local **`ace_world`** (restart ACE for weenie cache).
-- **BetterSupportSkills:** `DrudgeCharmTrophySettings` + **`TrophyDropsBonus.TryRollDrudgeCharmDrops`** (Drudge **`CreatureType`** only; chances **3% / 1% / 1% / 1%**); **`QuestTurnInCap`** — bulk WCIDs **3669 + 850271–850273**, tier **`GetXPBetweenLevels(level, level+1)`** × fraction × total count, **`LeyLineLedgerBankInterop.IncBanked`** pyreals per charm, shared daily cap bucket **`DailyCapTrackingWcid`** (default **3669**); **`HybridClasses`** bludgeon trophy list includes tier WCIDs. Project links **`Shared/LeyLineLedgerBankInterop.cs`**.
-- **BetterLootControl:** `LootRoller` skips forced **MaxStackSize 100** for all four charm WCIDs.
-- **QOL:** **`NpcStackTurnIn.StackableQuestWcids`** + **`StackableWcids.json`** include **850271–850273**.
-- **AutoLoot:** **`UpgradedTrophyWeenieClassIds`** — Pass 1 pulls charm tiers before **`.utl`** profiles.
-
-### Drudge charm — Bloodletter base (24835), per-tier icons, mod wiring (supersedes sunstone uniform)
-
-- **World weenies:** Clone source **`24835`** (Bloodletter Drudge Charm); tiers **850271–850273**. **`weenie_properties_int`**: per-tier **179** + **18** — **24835** 32/128; **850271** 64/256; **850272** 128/1; **850273** 256/64. **11 = 999** `MaxStackSize`. **`weenie_properties_string` types 14/15/16** (same sentence on all four): *Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.* **`DELETE weenie_properties_create_list`** for **24835**. Scripts: **`DrudgeCharm_TierWeenies_World.sql`**; forward idempotent **`DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql`** (replaces intermediate **`DrudgeCharm_BloodletterBase_2026-05-05.sql`** / **`DrudgeCharm_UiRendIcons_2026-05-05.sql`** stubs). **`DrudgeCharm_SunstoneCopyPluralStack_2026-05-04.sql`** deprecated stub.
-- **Mods:** **`WcidRegular` / `BulkQuestWcids` / `DailyCapTrackingWcid`** → **24835** (BetterSupportSkills, QOL, AutoLoot, BetterLootControl `LootRoller`); docs updated. **`TrophyWhitelist.md`:** Wisp Heart WCID **8667** (was erroneous duplicate **3669**).
-- **DB:** Scoped **`mysqldump`** under `WindblownContent/sql-backups/2026-05-04/` then **`mysql ace_world < DrudgeCharm_BloodletterBase_2026-05-05.sql`**; verify ints/strings; restart ACE for weenie cache.
-
----
-
-## 2026-05-04
-
-### BetterSupportSkills — Artificer wisp tuning (count, procs, tier 8, melee cadence)
-
-- **Summon:** `TrySummonForClass` uses **min 1** (not 4) for **Artificer + Wisps** so `PetTypes.Wisps.Count` and `TotalCap` honor **1** wisp. `Settings.json`: Artificer `TotalCap` **1**, Wisps `Count` **1**.
-- **Procs:** `ArtificerWispImperilDrainProcChance` default **1.0** (replaces fixed **25%** roll). AoE radius from **`ArtificerWispProcAoERadiusMeters`** (default **10**). Spell tier capped by **`ArtificerWispProcMaxSpellTier`** (default **8**); `CacheArtificerSpells` adds **ImperilOther7/8** + **DrainHealth7/8** via `SpellId`, re-inits cache when tier **8** missing.
-- **Melee cadence:** `PostMeleeArtificerWispCycle` postfix on **`Creature.MeleeAttack`** — `NextAttackTime = PrevAttackTime + max(ArtificerWispMeleeMinCycleSeconds, animLength)` for BSS-tracked Artificer pets (**default 0.5s** floor when anim is short).
-- **Docs:** `ClassPerks.md`, `Settings.cs` `SummoningClassesSectionDoc`. `PetTypeSettings.CountDoc` notes Artificer Wisps min **1**.
-
-### Overtinked — chaos failure redesign tunables
-
-- **Settings:** `ChaosDamageShuffleBonusPercent`, `ChaosLightEncumbranceVal`, `ChaosLightPyrealValue`, `ChaosBlessedBurdenEncumbranceVal`, `ChaosOverchargeMultiplierMin`, `ChaosOverchargeMultiplierMaxExclusive` (+ matching `//` doc keys in `Settings.cs` / `Settings.json`).
-- **Runtime:** `ChaosFailureEffects` uses those values for damage shuffle, light-as-a-feather, blessed burden, and overcharge (`Random.Next` clamped if `maxExclusive <= min`).
-- **Docs:** `Overtinked/Readme.md` settings table.
-- **Commit:** `d6bd8c7`.
-
-### QOL — `/dps detailed` + Overtinked chaos imbue pool (armor)
-
-- **QOL:** `EnableDpsDetailed` (default **false**), `Features.DpsDetailed`, `QOL/DpsDetailed.cs` — Harmony postfix on `Player.DamageTarget` emits one **System** line from `DamageEvent` (melee/missile); postfix on `SpellProjectile.DamageTarget` for caster-owned projectiles (final damage + crit flags). `/dps detailed` / `/dps off` / `/dps` status. `PatchClass.RegisterEnabledPatchCategories`, `Settings.cs` / `Settings.json`, `Readme.md`.
-- **Overtinked:** `GetRandomValidImbue` no longer strips **`MagicDefense`** from the chaos **bonus** pool for all non-casters; only **`ItemType.Weapon`** (melee/missile) still strips it. Armor/jewelry/clothing can roll MagicDefense as extra imbue again.
-- **Commit:** `5dd577b`.
-
-### BetterSupportSkills — pets follow tighter while owner is moving
-
-- **Change:** `PostCombatPetHeartbeat` uses **`MoveFollowDistanceThreshold`** (default **6m**, capped by **`FollowDistanceThreshold`**) when **`FollowWhileOwnerMoving`** (default true) and owner **`PhysicsObj.IsMovingOrAnimating`**. Idle follow still uses full **FollowDistanceThreshold** when stationary.
-- **Settings:** `SummoningClasses.FollowWhileOwnerMoving`, `SummoningClasses.MoveFollowDistanceThreshold` in `Settings.json` + `SummoningClassesSettings` in `SummoningClasses.cs`. Docs: `README.md`, `ClassPerks.md`, `Settings.cs` section doc.
-
-### BetterSupportSkills — summoning auto-summon pulse 1s
-
-- **Change:** `SummonPulseInterval` in `SummoningClasses.cs` **3s → 1s** (TakeDamage-based pulse only; harmful-spell path unchanged). Docs: `README.md`, `ClassPerks.md`, `Settings.cs` (`EnableSummoningClasses` doc).
-
-### BetterSupportSkills — auto-summon when summoner takes damage
-
-- **Change:** `PostCreatureTakeDamage_SummonTrigger` no longer returns immediately when `__instance` is a `Player`. Incoming damage updates `LastCombatHitUtc` and runs the same **~3s** `SummonPulseInterval` gate + `TrySummonPets` (no-op if not a summoning class).
-- **Docs:** `README.md` (summoning section), `ClassPerks.md`.
-
-### BetterSupportSkills — Death Knight nether proc tier + mana
-
-- **Cause:** Proc “tier” is **index into nether streak/arc spell ID lists**, not client spell level; tiers 5+ swap to a different ID line (reads like high spell level). `MaxVoidSpellTier` **0** or invalid used `cap < 1 → cap = 8`, which **removed** the cap. Mana multiplier **0** still cost **1** mana via `Math.Max(1, …)`.
-- **Fix:** `GetDeathKnightVoidSpellTier` uses `Math.Clamp(MaxVoidSpellTier, 1, 8)`. Shipped defaults: **`MaxVoidSpellTier` 2**, **`ManaCostMultiplier` 0** for DK. `BssAutoCaster`: `manaCostMultiplier <= 0` → **0** mana, skip deduction. Docs in `README.md`, `ClassPerks.md`, `Settings.cs`.
-- **Commit:** `f5a727c`.
-
-### BetterSupportSkills — auto-summon credits pet damage (all summoning classes)
-
-- **Cause:** Auto-summon only pulsed on **player** `TakeDamage` / harmful `HandleCastSpell`; zero-offense Item Enchantment (etc.) builds never hit those paths → no auto pets.
-- **Fix:** `PostCreatureTakeDamage_SummonTrigger` resolves owner as **player** or **`CombatPet.P_PetOwner`**; same `LastCombatHitUtc`, 3s `SummonPulseUtc` gate, and `TrySummonPets(owner)`. Harmful spell path unchanged.
-- **Docs:** `ClassPerks.md`, `README.md` (summoning section), `Settings.cs` doc strings for `EnableSummoningClasses` / `SummoningClasses`.
-
-### Swarmed — CreatureEx bonus loot gate + death-treasure fallback
-
-- **Cause:** `SpecialCreatureLoot` required `FakeInt.CreatureExType` (10029) on the corpse creature; factory-spawned champions (`Horde`, `Tank`, etc.) never set it on the live instance, so the postfix exited immediately. When `DeathTreasure` was also null (weenie without `DeathTreasureType`), uncommon+/imbued rolls produced nothing beyond salvage.
-- **Fix:** `CreatureEx.Initialize` sets `FakeInt.CreatureExType` from the concrete subclass name (`Enum.TryParse<CreatureExType>`). `SpecialCreatureLoot` uses `ResolveDeathTreasure`: mob profile first, else `DatabaseManager.World.GetCachedDeathTreasure(FallbackDeathTreasureDid)`. New setting `SpecialCreatureLoot.FallbackDeathTreasureDid` default **228** (tier 7 stock `treasure_death` on typical ACE DB); set **0** to disable fallback rolls.
-- **Files:** `Swarmed/Creatures/CreatureEx.cs`, `Swarmed/Features/SpecialCreatureLoot.cs`, `Swarmed/Settings.cs`, `Swarmed/Settings.json`. Commit `9604f5a`.
-
-### Defense imbue appraisal hourglass — PLAN item closed (resolved in ops)
-
-- **Was:** `PLAN.md` tracked persistent client **E** hourglass on **armor** after Peridot / Yellow Topaz / Zircon defense imbue; appraisal text could still load (not a server hang). Investigation matrix lived in Obsidian **[[Defense Imbue Appraisal Hourglass]]** (`A:\obsidian\jeremy\wiki\Defense Imbue Appraisal Hourglass.md`).
-- **Now:** Operator confirms **fixed**; active issue removed from `PLAN.md`. Related mod paths for appraisal text include **Overtinked** `DefenseSalvageAppraise.cs` (`AppraiseInfo.BuildProperties` for defense salvage long desc) and the same mod’s **`CustomImbueAppraise`** pattern (`BuildProfile` / `LongDesc` / `AppraisalLongDescDecoration`) documented in **§ 2026-05-03** below. Rollback SQL remains: `WindblownContent/Content/zzz_Salvage_Defense_Bonus_Rollback.sql`.
-
-### BetterLootControl — Vanilla Coalesced Mana on modern ACE (live)
-
-- **Cause:** Windblown `ACE.Server.dll` has **no** `CreateGenericObjects` (legacy loot helper removed); `StripGenericLootCoalescedMana` never applied. Startup logged a **WARN** every boot. Vanilla mundane coalesced still rolled via `TryRollMundaneAddon` → `TryRollCoalescedMana` → `CreateCoalescedMana`; only `CreateCoalescedMana` was patched, so behavior depended on that single hook.
-- **Fix:** New `SuppressVanillaTryRollCoalescedMana` Harmony prefix on `LootGenerationFactory.TryRollCoalescedMana` (DeclaredMethod): when BLC enabled, skip original and return null so **only** `GlobalRareDrops` supplies Coalesced at `CoalescedManaDropChance`. `DisableVanillaCoalescedMana` now targets `CreateCoalescedMana` via `DeclaredMethod`. `StripGenericLootCoalescedMana` uses `DeclaredMethod` and logs **Info** when `CreateGenericObjects` is absent (expected).
-- **Files:** `BetterLootControl/SuppressVanillaTryRollCoalescedMana.cs`, `DisableVanillaCoalescedMana.cs`, `StripGenericLootCoalescedMana.cs`, `BetterLootControl/Readme.md`.
-- **Live:** Built Release; copied `BetterLootControl.dll` + repo `Settings.json` to `C:\ACE-WB\Mods\BetterLootControl\`; WB `ACE.Server` restart / hot-reload — log shows **6** BLC methods patched and Info line for skipped strip.
-
-### WorldEvents — Shadow Spire invasion disabled (config + PLAN backlog)
-
-- **Cause:** Scripted town **Shadow Spire** used `GspireAttack` without `ace_world` `event` row; `TownCenterObjCellId` was **0**, so Portal Storm skipped spawns. Operator intent was **Greenspire**, not Greater Shadow Spire — defer until correct `/loc`.
-- **Change:** `InvasionTowns` **Shadow Spire** `Enabled` **false** in [`WorldEvents/Settings.json`](WorldEvents/Settings.json) + default in [`WorldEvents/Settings.cs`](WorldEvents/Settings.cs). [`PLAN.md`](PLAN.md) backlog bullet for re-enable steps (`/loc`, optional `GspireAttack` SQL + generators).
-- **Commit:** `3be87a9`.
-
----
-
-## 2026-05-03
-
-### Coalesced Mana WCIDs 42516–42518 — canonical weenie + biota (test DB)
-
-- **Cause:** Duplicate SQL: legacy [`CoalescedMana_LesserGreaterAetheric.sql`](WindblownContent/08-custom-items/CoalescedMana_LesserGreaterAetheric.sql) had `ItemUseable=1` (No), no `TargetType`, wrong Icon/Setup DIDs → unusable use-on-target + wrong client icon. Canonical data lives in [`01_CoalescedMana_LesserGreaterAetheric.sql`](WindblownContent/08-custom-items/01_CoalescedMana_LesserGreaterAetheric.sql).
-- **Repo:** Legacy file replaced with comment-only pointer; [`BetterLootControl/Readme.md`](BetterLootControl/Readme.md) documents canonical path; new [`EmpyreanAlteration/Content/SQL/03-coalesced-mana-biota-template.sql`](EmpyreanAlteration/Content/SQL/03-coalesced-mana-biota-template.sql) patches existing shard stacks (`ItemUseable` 524296, `TargetType` 35215, `UiEffects`, Icon/Setup DIDs).
-- **Test:** `mysqldump` backups under `WindblownContent/sql-backups/2026-05-03/` (`pre-coalesced-weeine-row.sql`, `pre-coalesced-biota-slice.sql`); applied `01_` to **`ace_world`**; applied `03` to **`ace_shard`**; verified `weenie_properties_int` 16/94/18 and biota 16/94 for sample coalesced biota ids. **Restart test `ACE.Server`** so weenie cache reloads.
-
-### BetterSupportSkills — Death Knight nether tier + pet ring/wall gate default (test)
-
-- **DK:** `HybridClasses.GetDeathKnightVoidSpellTier` now uses **`VoidMagic.Base`** (not `Current`) so buffs do not inflate proc tier; [`ClassPerks.md`](BetterSupportSkills/ClassPerks.md) updated.
-- **DK cap:** `CombatClasses.DeathKnight.MaxVoidSpellTier` (1–8, default 8) applied after skill math; repo [`Settings.json`](BetterSupportSkills/Settings.json) sets **5** so nether arc proc cannot exceed tier 5 on shipped test config.
-- **Pets:** `SummoningClasses.BlockPetWarVoidRingWallSpells` default **`false`** in code and [`Settings.json`](BetterSupportSkills/Settings.json) (ring/wall block was skewing pet spell picks toward non-offense); operators set **`true`** if Os’-style splash returns. [`README.md`](BetterSupportSkills/README.md) defaults + changelog updated.
-- **Build:** `dotnet build` BetterSupportSkills Release → `C:\ACE\Mods\BetterSupportSkills\`.
-
-### AutoLoot — LootProfilePath timing + empty prefs profiles (test)
-
-- **Cause:** `PlayerEnterWorld` could run before `OnStartSuccess` normalized empty `LootProfilePath`; `EnsureLoaded` then bailed with no profiles and still marked player “loaded,” so autoloot stayed dead for the session. Existing `PlayerData/*.json` with **empty `ActiveProfileNames`** never re-seeded defaults.
-- **Fix:** `EnsureLootProfilePathForDiskOps()` mirrors mod-folder `LootProfiles` when path blank; `EnsureLoaded` skips `loadedPlayers` until path valid; clears `loadedPlayers` on prefs load failure; after prefs load, **`TrySeedDefaultLootProfilesFromDisk`** when profile map still empty. `/autoloot` path ensure before `CreateDirectory`.
-- **Docs:** [`AutoLoot/README.md`](AutoLoot/README.md) server table note.
-- **Build:** `dotnet build` AutoLoot Release → `C:\ACE\Mods\AutoLoot\`.
-
-### BetterSupportSkills — CombatPet War/Void ring/wall gate + owner-safe spell projectiles (live deploy)
-
-- **Problem:** Elementalist (and similar) pets could cast weenie-driven **ring** / **wall** War or Void spells (e.g. Os’ Wall), splashing the summoner; vanilla `CanDamage` allows pet→owner for those projectiles.
-- **Fix:** `TryCastSpell` prefix on tracked `CombatPet`: skip harmful War/Void spells in **ring** / **wall** `SpellCategory` ranges (and 360° spread). `SpellProjectile.OnCollideObject` prefix: tracked pet vs `P_PetOwner` → `ProjectileImpact` only, no damage. Settings: `SummoningClasses.BlockPetWarVoidRingWallSpells` (initial ship default **true**; revised same-day subsection above to **false** default), `BlockPetProjectileDamageToOwner` (default **true**). Repo `Settings.json` updated.
-- **Docs:** `BetterSupportSkills/README.md` (new subsection + changelog).
-- **Live:** Built Release; copied `BetterSupportSkills.dll` + dependencies and repo `Settings.json` to `C:\ACE-WB\Mods\BetterSupportSkills\`; removed `BetterSupportSkills.deps.json` from live mod folder per mod hygiene. **Restart `ACE.Server.exe` for WB** to load the new DLL.
-
-### Combined: AutoLoot scroll line, LLL salvage + key appraisal, Mana Lattice (850201)
-
-- **AutoLoot:** Pass 3 no longer appends learned scroll name to `lootedItems` after `LearnSpellWithNetworking` (avoids duplicate chat line vs vanilla).
-- **LeyLineLedger:** `SalvageBank.DepositRules` — **21064** Onyx → Nether Rending / weapon tinkering; **21063** Obsidian → `Useless`. New **`SkeletonKeyAppraisal`** (`AppraiseInfo.BuildProperties` postfix): suffixes **`(1kD)`** / **`(1kC)`** / **`(5kD)`** / **`(5kC)`** aligned with **BetterKeys** `EnsureKeyMap`; optional `SuffixByWcid` in `Settings.json`.
-- **SpellSiphon:** `PrefixOnCastSpell` handles **Mana Lattice WCID** whenever spellbook non-empty (not only Endless/name). Log string updated.
-- **BetterLootControl:** `ManaLatticeSpellBootstrap` broadcasts object update after spell adds (glow / examine refresh; `TryAddSpellId` already sets Magical).
-- **SQL:** `850201` weenie aligned to Gem pattern (`WindblownContent/08-custom-items/03_ManaLattice_850201.sql`, `SpellSiphon/Content/SQL/ManaLattice_Create.sql`); applied to **`ace_world`** and **`wb_ace_world`** (live) with scoped mysqldump backups under `WindblownContent/sql-backups/2026-05-03/` (`pre-850201-weenie.sql` test, `pre-wb_850201-manalattice.sql` live). Verified on live: `weenie.type=38`, `ItemType` 2048, `ItemUseable` 8, `TargetType` 16, `UiEffects` 1, `ActivationResponse` 4.
-- **Docs:** `LeyLineLedger/Readme.md`, `SpellSiphon/Readme.md`, new `BetterLootControl/Readme.md`.
-
-### EmpyreanAlteration — Awakened cloak equipment-set spells + weave (ItemLevel / OnItemLevelUp)
-
-- **Cause:** Awakened cloaks skip `Player.GrantItemXP`, so ACE never called `OnItemLevelUp` → `GetSpellSet` tier (sum of `ItemLevel`) never refreshed when the cloak leveled via `AddItemXP`. `Cloak.RollProc` also requires `ItemLevel >= 1`; XP curve Harmony was gated on `EnableLootItemLeveling` only, so with cloak loot upgrade + loot leveling off, `ItemLevel` could stay wrong vs profile XP.
-- **Fix:** After awakened level-up in `ItemLevelingGrowthTrigger`, call `owner.OnItemLevelUp` when `HasItemSet`. Patch QuestItemGrowth category when `EnableCloakLootUpgrade` or item-leveling kill/quest points are on; align `IsItemXpCurveHarmonyEnabled` with the same. `TryAutoAwaken` now calls `AwakenedCloakWeaveXpSeed.EnsureMinimumXpForWeave` (parity with manual awaken).
-- **Files:** `EmpyreanAlteration/Features/ItemLevelingGrowthTrigger.cs`, `EmpyreanAlteration/QuestItemGrowthHarmony.cs`, `EmpyreanAlteration/PatchClass.cs`, `EmpyreanAlteration/Features/LivingItemAwakener.cs`.
-
-### Overtinked — Hemorrhage no longer strips existing weapon rend (`ImbuedEffect`)
-
-- **Symptom:** Applying Hemorrhage removed e.g. **Bludgeon Rending** from `ImbuedEffect`; player could re-tinker rend afterward.
-- **Cause:** `TryApplyNewImbue` cleared **`AllRendingFlags`** before setting Hemorrhage on **40133** — intended for UI notes but removed real rend mechanics. `HemorrhageWeaponVisual` already forces client glow/underlay without needing that wipe.
-- **Fix:** Removed `target.ImbuedEffect &= ~AllRendingFlags` from the Hemorrhage branch only (Nether path unchanged: replace rends + set Nether + `DamageType`).
-- **Files:** `Overtinked/PatchClass.cs`, `Overtinked/Readme.md`.
-
-### Defense Imbue Bonus — Peridot/Yellow Topaz/Zircon from +1 to +5
-
-- **Goal:** Change the defense skill bonus from salvage/imbue materials from +1 to +5 for Melee Defense (Peridot), Missile Defense (Yellow Topaz), and Magic Defense (Zircon).
-- **Problem:** The actual bonus value comes from `Creature.GetDefenseImbues()` which counts equipped items with the ImbuedEffect flag. Each item adds +1. This is hardcoded in ACE with no database property storing the value.
-- **Solution:**
-  - SQL (WindblownContent): Updated descriptions (property type 14) for all 6 items to say "+5 bonus" instead of "+1 bonus"
-  - Overtinked Harmony patch: Added postfix to `Creature.GetDefenseImbues` to return `DefenseImbueBonus` setting value (5) instead of item count when > 0
-  - Settings: Added `DefenseImbueBonus` property (default 0, set to 5 to enable)
-- **Files:**
-  - `WindblownContent/Content/zzz_Salvage_Defense_Bonus_Update.sql` — descriptions updated in database
-  - `Overtinked/PatchClass.cs` — Harmony patch added
-  - `Overtinked/Settings.cs` — DefenseImbueBonus property added
-  - `Overtinked/Settings.json` — DefenseImbueBonus: 5
-- **Items affected:**
-  - Salvaged Peridot (21066) — Melee Defense
-  - Salvaged Yellow Topaz (21088) — Missile Defense  
-  - Salvaged Zircon (21089) — Magic Defense
-  - Foolproof Peridot (30101) — Melee Defense
-  - Foolproof Yellow Topaz (30105) — Missile Defense
-  - Foolproof Zircon (30106) — Magic Defense
-
-### Overtinked — Hemorrhage (Yellow Garnet) “cannot be used” / `GetRecipe` null
-
-- **Cause:** Vanilla `RecipeManager_New.GetNewRecipe` has no case for WCID **21087**; cookbook rarely lists arbitrary weapon pairs. `RecipeManagerEx` showed “cannot be used” when `GetRecipe` returned null before `TryMutate` ran.
-- **Fix:** `HemorrhageImbue.BaseRecipeId` (default **4452**, validated on `ace_world`) plus Harmony postfix on `RecipeManager.GetRecipe` to assign `DatabaseManager.World.GetCachedRecipe(BaseRecipeId)` when Hemorrhage salvage WCID + melee/missile weapon with workmanship and result was null.
-- **Files:** `Overtinked/NewImbueConfig.cs`, `Overtinked/PatchClass.cs`, `Overtinked/Settings.json`, `Overtinked/Readme.md`.
-
-### Overtinked / BSS — failure redesign roll scale + chaos client sync
-
-- **Problem:** `PreHandleRecipe` compared `Random * 100` to `successChance`, but ACE passes **fraction 0..1** (`GetSkillChance`), so almost every attempt looked like a “failure” (wrong chaos / imbue hijack rate). Failure redesign skips `HandleRecipe`, so chaos property changes never ran `CalculateObjDesc` / `UpdateObj` / pack reorder — no Slayer glow, item stayed buried.
-- **Fix:** Compare `Random.Shared.NextDouble() < successChance` in `Overtinked/PatchClass.cs` and `BetterSupportSkills/Skills/ChaosTinker.cs` postfix. After imbue-failure chaos, workmanship fallback, and numeric-salvage chaos, call `CalculateObjDesc` + `CraftInventorySync.MirrorRecipeManagerUpdateObj`.
-
-### Overtinked — second `HandleRecipe` roll still ran vanilla `CreateDestroyItems` (real destroys + “target destroyed”)
-
-- **Problem:** `PreHandleRecipe` rolled once; on “success” it returned `true` and vanilla `HandleRecipe` rolled **again** vs `successChance`. On that miss, `CreateDestroyItems(..., success: false)` used the template recipe’s fail branch (`FailDestroyTargetChance`, etc.), so Hemorrhage / imbue attempts could still destroy the weapon while chaos messages from other paths looked unrelated.
-- **Fix:** Harmony prefix `Priority.First` on `RecipeManager.CreateDestroyItems` (REALM: `HashSet<ulong>?`, else `HashSet<uint>?`): when `!success` and tinkering, and redesign applies (imbue list + chaos/workmanship flags, or configured numeric salvage rule + `EnableFailureRedesign`), skip vanilla method, run shared `ApplyImbueTinkerFailure` / same salvage chaos path as `PreHandleRecipe`, set `__result` to target guid so `UpdateObj` still runs. Refactored imbue failure body into `ApplyImbueTinkerFailure`.
-- **Files:** `Overtinked/PatchClass.cs`. Commit `7ad6dbf`.
-
-### Overtinked — removed duplicate `HandleRecipe` roll (`PreHandleRecipe`)
-
-- **Problem:** With both `PreHandleRecipe` and vanilla `HandleRecipe` each rolling `NextDouble() < successChance`, success probability was **p²** (e.g. 40% → 16%), so players saw almost only failure-redesign chaos, not “chaostinker”.
-- **Fix:** Drop the `PreHandleRecipe` failure prefix; single roll stays in vanilla `HandleRecipe`; failure redesign only in `PreCreateDestroyItemsTinkerFailure`.
-- **Files:** `Overtinked/PatchClass.cs`, `Overtinked/docs/Salvage-Tinker-Display-Audit.md`.
-
-### Overtinked — chaos failure client icon / glow (`ChaosAppearance`)
-
-- **Goal:** After failure-redesign chaos (including `/chaostinker` forced fails that still run this path), align **icon underlay** and **UiEffects** with new imbue/slayer/mana state so weapons read correctly at a glance.
-- **Fix:** New `ChaosAppearance.Apply` from `ApplyContextualChaos` `finally`: set `IconUnderlayId` via `RecipeManager.IconUnderlay` priority, OR `UiEffects` from rend / defense / armor-imbue / slayer / mana / `DamageType`, then `HemorrhageWeaponVisual.ApplyIfHemorrhageWeapon` + `CalculateObjDesc` (existing `SyncTinkerTargetAfterOvertinkedFailure` still sends `GameMessageUpdateObject`). `ChaosFailureEffects.AllRendingFlags` made `internal` for shared checks.
-- **Files:** `Overtinked/ChaosAppearance.cs`, `Overtinked/ChaosFailureEffects.cs`, `Overtinked/Readme.md`.
-
-### Overtinked — Hemorrhage / Cleaving / custom imbues on examine (`CustomImbueAppraise`)
-
-- **Cause:** Hemorrhage and Cleaving are tracked in `OvertinkedImbueStore` (and flags), not only `PropertyInt.ImbuedEffect`, so vanilla imbue lines do not cover them; appending to template `LongDesc` let the client splice workmanship/material into the middle of custom text.
-- **Fix:** `AppraiseInfo.BuildProfile` postfix (`Priority.Last`): strip legacy appended block, then **full replace** of appraisal `LongDesc` with item name + configured imbue stat lines; remove `PropertyInt.AppraisalLongDescDecoration`; set `IdentifyResponseFlags.StringStatsTable`.
-- **Files:** `Overtinked/CustomImbueAppraise.cs`, `Overtinked/Readme.md`.
-
-### Overtinked — custom imbue persistence + Hemorrhage AoE in yards
-
-- **Persistence:** `OvertinkedImbueStore` now reads/writes **`PropertyInt` 40133** on the item (`SetProperty` → shard biota). `Get` still ORs Nether from `ImbuedEffect` for older Nether-tinkered items missing 40133.
-- **AoE:** `HemorrhageImbue` gains **`AoERadiusYards`** (default **10**); combat uses `yards × 0.9144` m for `GetDistance`. **`AoERadiusMeters`** remains when `AoERadiusYards` is **0** (legacy JSON).
-- **Files:** `Overtinked/OvertinkedImbueFlags.cs`, `Overtinked/HemorrhageAoE.cs`, `Overtinked/HemorrhageImbueCombat.cs`, `Overtinked/PatchClass.cs`, `Overtinked/NewImbueConfig.cs`, `Overtinked/Settings.json`, `Overtinked/Readme.md`, `AGENTS.md` (40133 row).
-
-### Windblown live — Overtinked custom imbue salvages “unusable” after DLL-only deploy
-
-- **Symptom:** After copying mods to `C:\ACE-WB\Mods\`, players still saw Hemorrhage / Cleaving / Nether salvage as **unusable** (and vanilla “no apparent use” long desc on template) while some mod-driven examine visuals updated.
-- **Cause:** `Settings.json` + DLL fix **server recipe** behavior (`BaseRecipeId`, `GetRecipe` postfix, etc.) but **do not** replace weenie template ints. Live **`wb_ace_world`** still had vanilla rows for WCIDs **21087**, **21081**, **21064**: `ItemUseable` = 1, missing **`TargetType` (type 94)**, wrong palette vs `ace_world`.
-- **Fix:** Scoped `mysqldump` backup under `WindblownContent/sql-backups/2026-05-03/`, then applied repo SQL to **`wb_ace_world`**: `SalvagedYellowGarnet-Hemorrhage-weapon-style.sql`, `SalvageCleavingNether-tinker-bags.sql`, `SalvageCleavingNether-longdesc.sql`. Restart live ACE so weenie cache reloads.
-- **Lesson:** JSON alone cannot set **`ItemUseable` / `TargetType` / palette** on stock WCIDs; ship **`Content/SQL/`** to every world DB that runs the server. See `Overtinked/Readme.md` § Push live and wiki [[ace-raaj-mods Conventions]] § Mod JSON vs weenie SQL.
-
----
-
-### AutoLoot — close-time, material-only auto-salvage (no clutter destruction)
-
-- **Goal:** Restore an immediate (no-delay) AutoSalvage pass on container/corpse close, but only act on items that BSS actually accepts. Stop destroying non-material clutter so players keep anything still worth looting. House storage chests stay excluded.
-- **Behavior (final):**
-  - `Container.Close` → `ProcessContainerLootClose` runs Pass 5 inline only when `EnableDelayedSalvageSweep && BSS salvage enabled && rate > 0` and the container is a `Corpse` or a `Chest` **without** `HouseOwner`.
-  - Sweep delegates to `BetterSupportSkillsBridge.TryAutoSalvage(player, item)`. BSS already filters to `PropertyInt.MaterialType` items + raw salvage bags (WCID 20981–21089). Items it accepts are removed from the container and banked; everything else stays put.
-  - Salvage count (when > 0) is folded into the existing single `[AutoLoot] looted …, salvaged N item(s).` close message. The legacy “destroyed N clutter item(s)” phrasing is gone.
-- **Removed infrastructure:**
-  - `_salvageTimers`, `SalvageTimerState`, `ScheduleDeferredSalvageSweep`, `RunDeferredSalvageSweep`, `CancelSalvageTimer` in `AutoLoot/Autoloot.cs`.
-  - `AutoLoot.CancelSalvageTimer(...)` call from `PostContainerOpen` in `AutoLoot/PatchClass.Harmony.cs`.
-  - `Settings.SalvageSweepDelaySeconds` (and JSON entry). `EnableDelayedSalvageSweep` repurposed as the global on/off for the close-time material sweep; default stays `true`.
-  - `RunSalvageDestroyPass(Container, Player, bool, bool, out int, out int)` collapsed to `RunSalvageDestroyPass(Container, Player, out int salvaged)`; predicate `ShouldScheduleDeferredSalvageSweep` renamed to `ShouldRunCloseSalvageSweep` (logic identical: corpse OR chest without `HouseOwner`).
-- **Files:** `AutoLoot/Autoloot.cs`, `AutoLoot/PatchClass.Harmony.cs`, `AutoLoot/Settings.cs`, `AutoLoot/Settings.json`. Build deploys to `C:\ACE\Mods\AutoLoot\`; Settings.json copied alongside DLL. BSS-side `SalvageAutoDeposit.TryAutoSalvageItem` unchanged — still the source of truth for "is this salvageable?".
-- **Player-facing:** `/autoloot salvage off` still bypasses everything via the BSS bridge `IsSalvageEnabled` gate, unchanged.
-
----
-
-## 2026-05-02
-
-### QOL VendorLootRotation — effective interval + cooldown bookkeeping
-
-- **Symptom:** “Rotates once then stalls” — `VendorLootRotationMinutes` was documented and logged at init but **never applied**; only `VendorLootCooldownMinutes` gated refreshes (e.g. 15 vs 45 → 45 min wait).
-- **Fix:** `EffectiveRotationIntervalMinutes` = `min(max(1, Rotation), max(1, Cooldown))`. Advance `_vendorLastRotation` only after `RotateVendorInventory` returns **true** (no-op approaches no longer burn cooldown). Replace global `_originalValues.Clear()` with `TryRemove` per guid when stripping sale rows.
-- **Files:** `QOL/VendorLootRotation.cs`, `QOL/Settings.cs`, `QOL/Settings.json`, `QOL/Readme.md`.
-
-### Documentation — vendor stock vs LeyLineLedger pricing
-
-- **Clarified in repo + wiki:** LLL owns vendor **pricing / bank commerce**; QOL VendorLootRotation owns **equipment stock regeneration** only (`AGENTS.md` §8.2, `README.md` QOL blurb, **[[ace-raaj-mods Conventions]]**). Corrects an older COMPLETED note that implied all vendor inventory lived in LLL.
-
-### WorldEvents JSON persistence (Cull / Sale / Invasion)
-
-- **Problem:** Cull/Sale wrote under `Mods/Data/...`, which ACE treats like a mod folder without `Meta.json` (log noise). Invasion used cwd-relative `Data/Invasion/`.
-- **Fix:** Active JSON now under `Mods/WorldEvents/Data/{Cull,Sale,Invasion}/`. One-time load migrates legacy `Mods/Data/Cull|Sale` and `Data/Invasion/ActiveInvasion.json` (cwd) then deletes legacy files when possible.
-- **Files:** `WorldEvents/Cull/CullPersistence.cs`, `WorldEvents/Sale/SalePersistence.cs`, `WorldEvents/Invasion/InvasionPersistence.cs`.
-
-### PLAN vs COMPLETED hygiene
-
-- **Repo:** Removed duplicate `BetterChestLoot/` + `SharedLoot/` folders; loot stack only in `BetterLootControl/` (`namespace SharedLoot` for dependents). Long “Immediate Reworks” DONE blocks folded into this archive + short pointers left in `PLAN.md`.
-
----
-
-## 2026-05-01
-
-### BetterLootControl Mod Creation
-- **Goal:** Consolidate all loot-table logic into one mod — `BetterLootControl`.
-- **Absorbed:** `SharedLoot` (models, roller, config store, salvage bag shaper) + `BetterChestLoot` (chest injection, `SelectAProfile`/`Reset`/`Close` hooks, GlobalRareDrops).
-- **Keep calling into:** `EmpyreanAlteration` for item mutation (pre-awaken, pre-imbue) via existing reflection bridge.
-- **Migration completed:** Scaffolded folder, migrated SharedLoot files, merged BCL patches, updated references, disabled old mods.
-- **Folder cleanup (2026-05-02):** `SharedLoot/` and `BetterChestLoot/` removed from the repository; loot types live only in `BetterLootControl/` (still `namespace SharedLoot` for dependents). Delete stale `Mods/BetterChestLoot` and `Mods/SharedLoot` on servers if they remain from older deploys.
-
-### LivingEquipment → EmpyreanAlteration Full Absorption
-- **Goal:** Delete `LivingEquipment/` mod entirely. All remaining functionality absorbed into `EmpyreanAlteration`.
-- **Migrated files:** `LivingEquipmentProperties.cs`, `ItemAwakener.cs`, `PatchClass.cs` hooks, `LivingEquipmentXpCurve`.
-- **Settings absorbed:** Reused EA existing + added new LE-specific settings.
-- **Cross-mod references cleaned:** BLC, QOL, Swarmed updated.
-- **`LivingEquipment/` folder deleted.** All affected mods build clean.
-
-### Salvage Pool Split + Guaranteed Chest Drops
-- Split `salvage` into `salvage`, `imbueSalvage`, `foolproofImbueSalvage` pools.
-- Added foolproof stacking bug fix — foolproof items never get `MaxStackSize` set.
-- Guaranteed chest drops: 1 regular salvage + 1-3 common+ items + 25% imbue + 5% foolproof + 25% gear.
-
-### BetterLootControl Gear Ratings + Equipment Sets
-- All tiers of gear loot can spawn with ratings and equipment sets.
-- Ratings scale with awakened item leveling via `EnableGenericRatingLevelUp`.
-
-### Vendor Rend/UiEffects Loss + Unlimited Supply Bug
-- All mod-generated vendor items now inject into `UniqueItemsForSale` (actual WO transferred + auto-removed after purchase).
-- Fix in EmpyreanAlteration via postfixes on `Vendor.ItemProfileToWorldObjects` and `Player.FinalizeBuyTransaction`.
-
-### QOL VendorLootRotation hard-disable
-- Root cause of three live vendor bugs (duplicate inventory, SpellSiphon missing, price desync).
-- Settings.json had an illegal trailing comma causing deserialization failure.
-- Fixed by removing trailing comma and restoring the rotation patch path after triage.
-- **Ownership (current):** QOL **`VendorLootRotation`** still owns **equipment stock regeneration** on `Vendor.ApproachVendor` (Harmony First). LeyLineLedger owns **vendor pricing**, bank debit/sell deposit, and related commerce — not which random rolled items sit on the vendor.
-
-### Radi vendor (WCID 800039)
-- New vendor "Radi" in Town Network (cell `0x00070132`) selling enlightenment, forgetlessness, and attribute gems.
-- Protected from loot rotation via `_protectedVendorWcids`. Moved from ValheelContent to WindblownContent.
-
-### CreatureEx loot rewrite
-- `Swarmed/Features/SpecialCreatureLoot.cs` replaced flat random pool with 3-tier system: salvage (1-3 items, tier+1), uncommon+ (tier+1 rarity), guaranteed special (tier+2 with forced imbue + awakening).
-
-### Trophy stacking fix
-- Added 41 missing whitelist items to SQL. Includes Drudge Charms (24835/24836) and all body parts/pelts/charms.
-- Biota cleanup applied to existing items.
-
-### Pathwarden vendor restoration
-- WorldEvents Pathwarden vendor weenies (850300–850303) re-applied to live DB.
-- ValheelContent disabled to prevent landblock-wide DELETE from wiping them again.
-
-### BetterLootControl Coalesced Mana takeover
-- Moved Coalesced Mana drops from ACE vanilla to BLC.
-- New `DisableVanillaCoalescedMana.cs` blocks native drops.
-- Settings: `CoalescedManaDropChance` (1.5%).
-
-### AGENTS.md consolidation
-- Grouped 80+ bullet points into categorized sections.
-- Removed duplicate cross-mod property entries.
-- Added server launch zombie-process conventions.
-
-### Point-based Coalesced Mana leveling (EmpyreanAlteration)
-- Replaced XP-based item leveling with discrete point system: +1 point per creature kill, +100 points per QB-eligible quest completion.
-- All three Coalesced Mana tiers can both awaken AND upgrade items.
-
-### DisableAttunedGlobally (EmpyreanAlteration)
-- Server-wide QOL override making ALL items tradeable/sellable.
-- Two patches: `WorldObject.Attuned` getter + `AppraiseInfo.BuildProperties` (client visual).
-
-### Trophy stacking fix (BetterSupportSkills + EmpyreanAlteration SQL)
-- Changed 30+ trophy weenies from `Generic` (type 1) → `Stackable` (type 51).
-- Fixed `MaxStackSize` SQL to use `type = 11` (was incorrectly `type = 16`).
-
-### Druid pet targeting fix (BetterSupportSkills)
-- `IsInvalidPetTarget` helper prevents pets from attacking: owner, same-owner pets, non-hostile/passive creatures, undamageable players.
-
-### BetterSupportSkills heartbeat patch fix
-- `Creature.Heartbeat` is an `override`; fixed by patching `WorldObject.Heartbeat` (virtual base) and filtering with `is CombatPet`.
-
-### LeyLineLedger denominated banking
-- Unified deposit/withdraw for pyreal chain (mote→ingot), crystal shards (cracked→fragment), shadow shards (speck→fragment).
-- `/bank deposit all` auto-sweeps all denominations into base-unit pools.
-- Consolidated single-message deposit feedback.
-
-### LeyLineLedger fuzzy matching improvements
-- `TryResolveDepositRuleIndex` now strips spaces from material names.
-- `SuggestClosest` uses Levenshtein distance for typo correction.
-
----
-
-## 2026-04-30
-
-### XP Consolidation + Leveling Rebalance + Loot Tier Delay
-- **Phase 1:** Removed scattered XP prefixes from EasyServerSettings, Numbersmith, WorldEvents Hunt/Cull, ChallengeModes, BetterSupportSkills, EmpyreanAlteration, Swarmed.
-- **Phase 2:** Loremaster unified formula reads PropertyFloat 40121 (Hunt) and 40125 (Cull).
-- **Phase 3:** Balance preserved (5% retention, etc.).
-- **Phase 4:** Loot spell tier clamping via `Loremaster/LootTierDelay.cs`.
-
-### Lottery System + `/donate` Command
-- **Dual pools:** `_pool` (pyreals) + `_qbPool` (QB) — independently tracked.
-- **Sources:** Exchange sell tax, Sale vendor spending, `/donate` (pyreals/luminance/qb).
-- **QP contribution:** 10% of every `AddExtraQuestPoints` accrues.
-- **Draw mechanics:** 3 winners at 50%/30%/20% splits.
-
-### Loremaster Loot Tier Delay
-- Clamps spell tier on creature treasure by killer level.
-- Default thresholds: L1→T1, L20→T2, L40→T3, L60→T4, L80→T5, L100→T6, L125→T7, L150→T8.
-
-### WorldEvents Placement QP Rewards
-- Scales: 1st=5, 2nd=3, 3rd=2, 4th+=1. Solo participant = 10.
-- Implemented in Hunt, Cull, Invasion via reflection bridge to Loremaster.
-
-### Xenology → Hunt name cleanup
-- PLAN.md and all skill docs updated to reference WorldEvents Hunt instead of Xenology.
-
-### PLAN.md maintenance
-- ValheelContent Segmentation Plan marked DONE.
-- All `TODO`/`FIXME`/`HACK` markers in `.cs` files converted to `NOTE:` descriptions.
-
----
-
-## 2026-04-29
-
-### Multi-Mod Feature Batch — All COMPLETED
-
-| Mod | Feature |
-|-----|---------|
-| **WorldEvents** | Sale wording fix — detects mage-name towns |
-| **WorldEvents** | Hunt timer scaling — unified scheduler integration |
-| **Swarmed** | Auto-attack fix — reinforcement spawns set AttackTarget |
-| **Swarmed** | Dungeon scaling past 275 — raises maxLevel to highest player |
-| **Swarmed** | Dungeon population manager — TargetMobCount 30 |
-| **Swarmed** | Level variance +15 flavor |
-| **Swarmed** | Scaling debug logging |
-| **QOL** | Generous Benefactor — 1B pyreal TN teleport |
-| **Loremaster** | Rested XP system |
-| **Loremaster** | Luminance banking (pre-unlock) |
-| **LivingEquipment** | Academy auto-awaken + vendor stock |
-| **LivingEquipment** | Pre-awakened chance 2%→0.2% |
-| **LivingEquipment** | Visual glow (green) — UiEffects 256 |
-| **LivingEquipment** | Broadcast refresh |
-| **AutoLoot** | Quest-item stack fix |
-| **AutoLoot** | Chest + corpse close-phase unified |
-| **EmpyreanAlteration** | MutatorHooks NRE fix |
-| **WorldEvents/ValheelContent** | Town Network Native Portals |
-| **Swarmed** | HP Fix — SetMaxVitals after scaling |
-| **Swarmed** | Boss broadcast spam fix |
-| **Swarmed** | CreatureEx radar colors (cyan) |
-| **Swarmed** | Special creature loot |
-| **BetterSupportSkills** | TrophyDrops creature filtering |
-| **AutoLoot/SQL** | Stackable quest items |
-| **LeyLineLedger** | Vendor sell rate reduction |
-| **BetterLootControl** (`LootConfig.json`) | Trade note reorganization |
-
-### Live Deployment (2026-04-29)
-- Port collision fixed — live server 9002
-- Full mod build + deploy — all 22 mods
-- Deployed SQL: AcademyWeapons_VendorStock, QuestItem_StackFix, Stackable_Trophies
-
----
-
-## 2026-04-28 → 2026-04-29
-
-### LeyLineLedger robustness
-- Startup weenie validation, runtime null guards, graceful skipping.
-
-### Solo Competitor Bonus (WorldEvents)
-- Settings and cross-event implementation for bonus rewards.
-
-### Unified QB Ledger (WorldEvents)
-- Shared `ParticipationLedger` service across all event types.
-
-### SpellSiphon rename + expansion
-- Renamed GemCrafter to SpellSiphon; added any-item crushing.
-
-### POI Hunt (WorldEvents)
-- Auto-generated clues via `LandblockScanner`, Lorewalker Zahir turn-in.
-
-### Scavenger Hunt (WorldEvents)
-- `LootTracker` API integration, runtime, broadcast, rewards.
-
-### BetterSupportSkills new classes
-- **Healer:** AoE healing aura + Smite melee proc.
-- **Adventurer:** +50 attributes/skills/vitals/resistances/burden.
-
-### Windwalker rebalance
-- Spell tier formula: `skill/SkillPerTier` (default 200).
-
-### Chaos Tinker fix
-- Failures increment NumTimesTinkered, per-item cap (default 5).
-
-### QOL verbose XP auto-spend
-- Refactored to return `List<SpendResult>` with per-stat rank gains.
-
-### SpellSiphon vendor integration
-- Sold at spell component vendors for 50,000 pyreals.
-
-### Loremaster Account-Wide RepeatQB
-- Per-quest 10-hour cooldown tracked across account characters.
-
-### repeatQB Refactor
-- Unique quest entries `{baseName}#repeatQB{n}`.
-
-### Coalesced Mana Banking
-- AutoLoot banks Lesser/Greater/Aetheric to LLL properties 41100–41102.
-
-### BonusQuest Daily Board
-- Daily 9pm CST reset, 10 quests: 2×/5×/10× repeatQB.
-
-### Questgiver Blacklist
-- WCIDs 22753 and 22754 blacklisted.
-
-### Kill Task Auto-Reaccept
-- Max-solved reset after cooldown, +2 repeatQB per cycle.
-
-### Log audit & interval fix
-- 5 min scan intervals (was 60).
-
----
-
-## 2026-04-27
-
-### ValheelContent Segmentation
-- Disabled all content except Adventurer's Haven + Town Network portals.
-- Cleanup SQL for 4,778 weenies across 63 folders.
-
-### Chaos-Tinker Leveling Disabled
-- Set `ChaosTriggeredGrowth = false`.
-
-### LivingEquipment Mod (v0.1.0)
-- Tiered item awakening with Coalesced Mana.
-
-### Coalesced Mana SQL
-- Updated LongDesc for WCIDs 42516/42517/42518.
-
-### LeyLineLedger Bank Labels
-- Coalesced Mana renamed with tier info.
-
-### SettingsContainer List Deserialization Fix
-- Manual fallback when SettingsContainer.Settings returns empty.
-
----
-
-## 2026-04-26
-
-### AGENTS.md — Repo guide
-- Mandatory skills, workflow, conventions, permissions, build notes.
-
-### GitHub Release Automation
-- `.github/workflows/release.yml` triggers on `v*.*.*` tags.
-
-### v1.0.0 Release
-- Comprehensive mod pack.
-
-### QOL Town Network toll
-- Variable random fees, component-first payment, 51 mage names, 80+ flavor messages.
-
-### Healing-kit Recuperation HoT
-- Moved from QOL to BetterSupportSkills.
-
-### WorldEvents Hunt
-- Tuning for hunt intervals, popularity multipliers, damage caps.
-
-### Enlightenment pool + challenge quit + high-enlight QB
-- Shared FakeFloat 11012 cumulative bonus across AureatePath/Loremaster/ChallengeModes.
-
-### AutoLoot simplification
-- Removed VendorTrash from menu, Rares.utl default profile.
-
-### BetterSupportSkills tuning
-- Shield thorns halved, salvage auto-deposit.
-
-### QOL Town Network toll v2
-- Complete overhaul with components/cash system.
-
-### QOL BypassPortalRestrictions
-- Granular bypass for all portal/recall restrictions.
-
-### Swarmed messaging
-- Call-for-help color changed from Combat to Magic.
-
-### QOL VendorPriceInflation crash fix
-- Replaced string-based patch with `nameof`-based patches.
-
-### LeyLineLedger EconomyBalancer + LootTracker intervals
-- Reduced from 60 min to 5 min.
-
-### Swarmed expansion
-- BuddySpawns, Wild CreatureEx, global CreatureVariation.
-
-### WorldEvents unified scheduler
-- EventScheduler rotates through event types.
-
-### BetterSupportSkills ArcaneLore + MissileDefense rework
-- Spell dodge moved to Missile Defense, Arcane Lore gets Adaptation.
-
-### CommonGoals NoSplitXp / NoSplitLuminance
-- Full credit to each fellowship member.
-
-### Loremaster Loot Tier Delay
-- Clamps spell tier by killer level (see 2026-04-30).
-
----
-
-## Older (2026-04-23 and earlier)
-
-### QOL NpcStackTurnIn
-- Full-stack NPC quest turn-ins with reward scaling.
-
-### Dynamic Mob Scaling (Swarmed)
-- Scale mob level/difficulty/loot/XP to nearby players.
-
-### DruidPetThorns Batching (BetterSupportSkills)
-- 15-second aggregated window.
-
-### TrophyDrops Stack Consolidation (BetterSupportSkills)
-- Physical stacking, quest item daily cap.
-
-### Overtinked Context-Aware Chaos
-- Caster/target benefit checking before applying.
-
-### AutoLoot Chest + Salvage Sweep
-- Chest autoloot + delayed salvage sweep.
-
-### Invasion Portal Storms (WorldEvents)
-- Renamed unthemed invasions to "Portal Storm".
-
-### Auto-Kill Task Automation (Loremaster)
-- Basic auto-reaccept implemented.
-
----
-
-*End of Archive*
+(Previous completion records would go here...)

@@ -78,7 +78,18 @@ public static class VendorLootRotation
     };
 
     // WCIDs known to be armorers (sell armor/weapons)
-    static readonly HashSet<uint> _armorerWcids = new();
+    static readonly HashSet<uint> _armorerWcids = new()
+    {
+        // Blacksmiths, Weaponsmiths, Armorers (100+ vendors)
+        12720, 1078, 31956, 32055, 11376, 4679, 4690, 28533, 1372, 1373, 1374, 695, 400,
+        6855, 9205, 9212, 6862, 2251, 2261, 5833, 401, 402, 1375, 1376, 1377, 9020,
+        11383, 11382, 24589, 24597, 678, 677, 2499, 9679, 2226, 649, 650, 30048, 2315,
+        8496, 730, 739, 5426, 5428, 11389, 858, 862, 863, 871, 712, 27246, 4695, 4704,
+        8433, 8440, 4540, 9415, 4546, 4437, 4438, 1146, 802, 4549, 5648, 22722, 1049,
+        1059, 11394, 661, 668, 975, 976, 30040, 2293, 2294, 835, 30065, 1354, 11401,
+        5436, 4562, 1815, 1816, 967, 972, 1825, 1835, 30052, 2541, 24220, 1393, 1394,
+        1395, 8226, 812, 813, 5641, 1038, 987,
+    };
 
     static readonly HashSet<uint> _bowyerWcids = new()
     {
@@ -844,6 +855,26 @@ public static class VendorLootRotation
                 itemCount++;
             }
         }
+        else if (vendorClass == VendorTypeClassification.Armorer)
+        {
+            // Generate melee weapons
+            int meleeTarget = _rng.Next(perCatMin, perCatMax + 1);
+            var meleeBatch = GenerateMeleeWeaponBatch(vendor, vendorTier, meleeTarget);
+            foreach (var wo in meleeBatch)
+            {
+                AddItemToVendor(vendor, wo, rotatedSet);
+                itemCount++;
+            }
+
+            // Generate armor
+            int armorTarget = _rng.Next(perCatMin, perCatMax + 1);
+            var armorBatch = GenerateArmorBatch(vendor, vendorTier, armorTarget);
+            foreach (var wo in armorBatch)
+            {
+                AddItemToVendor(vendor, wo, rotatedSet);
+                itemCount++;
+            }
+        }
         else
         {
             // Normal item generation for other vendors
@@ -1272,6 +1303,94 @@ public static class VendorLootRotation
         return batch;
     }
 
+    static List<WorldObject> GenerateMeleeWeaponBatch(Vendor vendor, int vendorTier, int targetCount)
+    {
+        var batch = new List<WorldObject>();
+        var profiles = GetTreasureProfiles();
+        int attempts = 0;
+        int maxAttempts = targetCount * 20; // Higher attempts for melee weapons
+
+        while (batch.Count < targetCount && attempts < maxAttempts)
+        {
+            int itemTier = RollVendorItemTier(vendorTier);
+            var profile = FindProfileForTier(profiles, itemTier);
+            if (profile == null)
+            {
+                attempts++;
+                continue;
+            }
+
+            try
+            {
+                // Try to generate a magic item (more likely to have melee weapons)
+                var item = LootGenerationFactory.CreateRandomLootObjects(profile, TreasureItemCategory.MagicItem);
+                if (item != null && (item.ItemType & ItemType.MeleeWeapon) != 0)
+                {
+                    int subScore = RollSubScore();
+                    ApplyQuality(item, itemTier, subScore);
+                    ApplyVendorUniqueTreatment(item, subScore);
+                    ApplyWieldRequirementCap(item, vendorTier);
+                    ClampItemValue(item, _settings?.VendorLootMinValue ?? 100, _settings?.VendorLootMaxValue ?? 10000);
+                    _originalValues[item.Guid] = item.Value ?? 0;
+                    batch.Add(item);
+                }
+                else
+                {
+                    item?.Destroy();
+                }
+            }
+            catch { /* Skip failed generations */ }
+
+            attempts++;
+        }
+
+        return batch;
+    }
+
+    static List<WorldObject> GenerateArmorBatch(Vendor vendor, int vendorTier, int targetCount)
+    {
+        var batch = new List<WorldObject>();
+        var profiles = GetTreasureProfiles();
+        int attempts = 0;
+        int maxAttempts = targetCount * 20; // Higher attempts for armor
+
+        while (batch.Count < targetCount && attempts < maxAttempts)
+        {
+            int itemTier = RollVendorItemTier(vendorTier);
+            var profile = FindProfileForTier(profiles, itemTier);
+            if (profile == null)
+            {
+                attempts++;
+                continue;
+            }
+
+            try
+            {
+                // Try to generate a magic item (more likely to have armor)
+                var item = LootGenerationFactory.CreateRandomLootObjects(profile, TreasureItemCategory.MagicItem);
+                if (item != null && (item.ItemType & ItemType.Armor) != 0)
+                {
+                    int subScore = RollSubScore();
+                    ApplyQuality(item, itemTier, subScore);
+                    ApplyVendorUniqueTreatment(item, subScore);
+                    ApplyWieldRequirementCap(item, vendorTier);
+                    ClampItemValue(item, _settings?.VendorLootMinValue ?? 100, _settings?.VendorLootMaxValue ?? 10000);
+                    _originalValues[item.Guid] = item.Value ?? 0;
+                    batch.Add(item);
+                }
+                else
+                {
+                    item?.Destroy();
+                }
+            }
+            catch { /* Skip failed generations */ }
+
+            attempts++;
+        }
+
+        return batch;
+    }
+
     static WorldObject? GenerateItem(Vendor vendor, List<TreasureDeath> allProfiles, int vendorTier, TreasureItemCategory category, ItemType? merchFilterBit)
     {
         try
@@ -1685,8 +1804,9 @@ public static class VendorLootRotation
         bool isJeweler = vendorClass == VendorTypeClassification.Jeweler;
         bool isMage = vendorClass == VendorTypeClassification.Mage;
         bool isBowyer = vendorClass == VendorTypeClassification.Bowyer;
+        bool isArmorer = vendorClass == VendorTypeClassification.Armorer;
 
-        // Determine imbue chance (higher for jewelers, mages, and bowyers)
+        // Determine imbue chance (higher for specialized vendors)
         double imbueChance = _settings.VendorLootImbueChance;
         if (isJeweler)
             imbueChance = _settings.VendorLootJewelerImbueChance;
@@ -1694,6 +1814,8 @@ public static class VendorLootRotation
             imbueChance = _settings.VendorLootMageImbueChance;
         else if (isBowyer)
             imbueChance = _settings.VendorLootBowyerImbueChance;
+        else if (isArmorer)
+            imbueChance = _settings.VendorLootArmorerImbueChance;
         
         // Roll for imbue
         if (!hasImbue && _rng.NextDouble() < imbueChance)
@@ -1706,7 +1828,7 @@ public static class VendorLootRotation
             ApplyImbueVisualEffect(item);
         }
 
-        // Determine awaken chance (higher for jewelers, mages, and bowyers)
+        // Determine awaken chance (higher for specialized vendors)
         double awakenChance = _settings.VendorLootAwakenChance;
         if (isJeweler)
             awakenChance = _settings.VendorLootJewelerAwakenChance;
@@ -1714,6 +1836,8 @@ public static class VendorLootRotation
             awakenChance = _settings.VendorLootMageAwakenChance;
         else if (isBowyer)
             awakenChance = _settings.VendorLootBowyerAwakenChance;
+        else if (isArmorer)
+            awakenChance = _settings.VendorLootArmorerAwakenChance;
         
         // Roll for awakening on high-tier items (tier 6+)
         if (vendorTier >= 6 && !hasAwakened && _rng.NextDouble() < awakenChance)
@@ -1744,7 +1868,7 @@ public static class VendorLootRotation
             valueMult *= _settings.VendorLootHighWorkmanshipValueMultiplier;
         }
 
-        // Roll for tinkering (jewelers, mages, and bowyers get higher chance)
+        // Roll for tinkering (specialized vendors get higher chance)
         double tinkerChance = 0.0;
         int minTinkers = 1;
         int maxTinkers = 3;
@@ -1766,6 +1890,12 @@ public static class VendorLootRotation
             tinkerChance = _settings.VendorLootBowyerTinkerChance;
             minTinkers = _settings.VendorLootBowyerMinTinkers;
             maxTinkers = _settings.VendorLootBowyerMaxTinkers;
+        }
+        else if (isArmorer)
+        {
+            tinkerChance = _settings.VendorLootArmorerTinkerChance;
+            minTinkers = _settings.VendorLootArmorerMinTinkers;
+            maxTinkers = _settings.VendorLootArmorerMaxTinkers;
         }
 
         if (tinkerChance > 0 && _rng.NextDouble() < tinkerChance)

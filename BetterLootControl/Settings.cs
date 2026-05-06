@@ -69,6 +69,13 @@ public class Settings
     public int VendorLootBowyerMinTinkers { get; init; } = 1;
     public int VendorLootBowyerMaxTinkers { get; init; } = 3;
 
+    // Armorer-specific enhancements (Blacksmiths/Weaponsmiths/Armorers)
+    public double VendorLootArmorerImbueChance { get; init; } = 0.60; // 60% imbue chance for armorer items
+    public double VendorLootArmorerAwakenChance { get; init; } = 0.25; // 25% awaken chance for tier 6+ armorer items
+    public double VendorLootArmorerTinkerChance { get; init; } = 0.50; // 50% chance to add tinkers
+    public int VendorLootArmorerMinTinkers { get; init; } = 1;
+    public int VendorLootArmorerMaxTinkers { get; init; } = 3;
+
     // Legacy/low-stat mode
     public bool VendorLootLowStatMode { get; init; } = false;
     public bool VendorLootSalvageOnRotation { get; init; } = false;

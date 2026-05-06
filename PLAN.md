@@ -2,7 +2,18 @@
 
 ## Progress (Recent)
 
-**2026-05-05:** ✅ BetterLootControl vendor overhaul complete — Jewelers (20) + Archmages (31) with premium enchantments, weapon imbues work on jewelry. See `COMPLETED.md` § 2026-05-05.
+### Shipped 2026-05-05
+- ✅ Artificer wisp scaling & spell fixes (consistent levels, correct Imperil spells)
+- ✅ Death Knight Nether spell fixes (Streak/Arc spell IDs)
+- ✅ NPC spawn safety margins (+1.0 unit vertical clearance)
+- ✅ Auto-salvage imbue bonus fix (all three paths)
+- ✅ Overtinked custom imbues in monster loot (25% chance)
+- ✅ AutoLoot lockpick auto-banking from corpses (Pass 6)
+- ✅ AutoLoot Currency profile (skeleton keys, Coalesced Mana)
+- ✅ GlobalKeyDrops null crash fix
+- ✅ BetterLootControl vendor overhaul complete — 340+ vendors, 6 types, multi-imbue, economy integration
+
+See `COMPLETED.md` for detailed write-ups.
 
 ## Bugs & Issues
 

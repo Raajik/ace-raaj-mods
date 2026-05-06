@@ -327,6 +327,21 @@ internal class LootGrowthItem : Mutator
 
     private static bool ApplyElementalRend(WorldObject item)
     {
+        // Check if item already has an elemental rending - only one allowed
+        var elementalRendings = new[] 
+        { 
+            ImbuedEffectType.AcidRending, 
+            ImbuedEffectType.ColdRending, 
+            ImbuedEffectType.ElectricRending, 
+            ImbuedEffectType.FireRending 
+        };
+        
+        if (item.ImbuedEffect != null && elementalRendings.Any(e => item.ImbuedEffect.HasFlag(e)))
+        {
+            // Item already has an elemental rending, skip to avoid conflicts
+            return false;
+        }
+        
         var (rend, damageType) = RendPool[Random.Shared.Next(RendPool.Length)];
         item.ImbuedEffect |= rend;
         item.SetProperty(PropertyInt.DamageType, (int)damageType);
@@ -342,7 +357,14 @@ internal class LootGrowthItem : Mutator
             ImbuedEffectType.CripplingBlow,
             ImbuedEffectType.ArmorRending,
         };
-        item.ImbuedEffect |= pool[Random.Shared.Next(pool.Length)];
+        
+        // Filter out imbues already on the item
+        var available = pool.Where(i => item.ImbuedEffect == null || !item.ImbuedEffect.HasFlag(i)).ToArray();
+        
+        if (available.Length == 0)
+            return false; // All secondary imbues already applied
+        
+        item.ImbuedEffect |= available[Random.Shared.Next(available.Length)];
         RefreshImbueUiEffects(item);
         return true;
     }
@@ -394,7 +416,14 @@ internal class LootGrowthItem : Mutator
             ImbuedEffectType.MeleeDefense,
             ImbuedEffectType.MissileDefense,
         };
-        item.ImbuedEffect |= pool[Random.Shared.Next(pool.Length)];
+        
+        // Filter out imbues already on the item
+        var available = pool.Where(i => item.ImbuedEffect == null || !item.ImbuedEffect.HasFlag(i)).ToArray();
+        
+        if (available.Length == 0)
+            return false; // All defense imbues already applied (can have all 3)
+        
+        item.ImbuedEffect |= available[Random.Shared.Next(available.Length)];
         RefreshImbueUiEffects(item);
         return true;
     }
@@ -483,7 +512,7 @@ internal class LootGrowthItem : Mutator
             return;
 
         string originalName = item.GetProperty(LivingEquipmentProperties.OriginalName) ?? item.Name ?? "Item";
-        string prefix = PatchClass.Settings.LootItemPreAwakenPrefix; // "Living"
+        string prefix = PatchClass.Settings.LootItemPreAwakenPrefix; // "Awakened"
         string awakenPrefix = PatchClass.Settings.ManualAwakenPrefix; // "Awakened"
 
         // Determine which prefix is currently applied

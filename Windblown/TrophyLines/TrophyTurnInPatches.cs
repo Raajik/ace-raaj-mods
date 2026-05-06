@@ -72,7 +72,18 @@ public partial class PatchClass
         }
         if (emoteSet.WeenieClassId != bulk.Wcid) return true;
 
+        // Resolve the NPC that owns this EmoteManager
+        var npc = __instance.WorldObject;
+        uint npcWcid = npc?.WeenieClassId ?? 0;
+
         if (!TrophyLineRegistry.TryGetTier(bulk.Wcid, out var line, out var tier))
+        {
+            _bulkPending.TryRemove(p.Guid.Full, out _);
+            return true;
+        }
+
+        // If this NPC is excluded (e.g. mask maker), let the vanilla emote chain run
+        if (npcWcid > 0 && line.ExcludedNpcWcids.Contains(npcWcid))
         {
             _bulkPending.TryRemove(p.Guid.Full, out _);
             return true;

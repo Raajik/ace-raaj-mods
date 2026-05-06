@@ -175,6 +175,9 @@ public static class VendorLootRotation
     };
 
     // WCIDs known to be mages (sell casters, jewelry, spell components)
+    // NOTE: If "Sage" vendor WCIDs exist and need to be explicitly classified,
+    // add them to this list. Otherwise, they'll be classified via the MerchandiseItemTypes
+    // fallback in ClassifyVendor() if they sell casters or (jewelry + gems).
     static readonly HashSet<uint> _mageWcids = new()
     {
         692,  // arwicarchmage
@@ -207,6 +210,8 @@ public static class VendorLootRotation
         2498, // craterlakearchmage
         2537, // karaarchmage
         2540, // licharchmage
+        4689, // aljalimaarchmage (Archmage Marnai ibn Ayyar - uses "Sage" template)
+        4694, // khayyabanarchmage (Najmima the Archmage - uses "Sage" template)
     };
 
     // Spellsiphon tool and Mana Lattice WCIDs
@@ -525,7 +530,7 @@ public static class VendorLootRotation
         {
             VendorTypeClassification.Jeweler => ItemType.Jewelry | ItemType.Gem,
             VendorTypeClassification.Armorer => ItemType.Armor | ItemType.MeleeWeapon | ItemType.MissileWeapon | ItemType.Clothing,
-            VendorTypeClassification.Mage => ItemType.Caster | ItemType.Jewelry | ItemType.Gem,
+            VendorTypeClassification.Mage => ItemType.Caster | ItemType.Jewelry | ItemType.Gem | ItemType.Clothing | ItemType.Armor, // Include Armor for robes (robes are Armor type in ACE, not Clothing)
             VendorTypeClassification.Bowyer => ItemType.MissileWeapon,
             VendorTypeClassification.General => GetMerchandiseEquipmentMask(vendor),
             _ => GetMerchandiseEquipmentMask(vendor)
@@ -1769,6 +1774,19 @@ public static class VendorLootRotation
         }
     }
 
+    /// <summary>
+    /// Filters an imbue pool to only include imbues compatible with what's already on the item.
+    /// Enforces tier rules: only one elemental rending, only one physical rending per item.
+    /// </summary>
+    static List<ImbuedEffectType> FilterCompatibleImbues(WorldObject item, ImbuedEffectType[] pool)
+    {
+        // Use the shared validator utility for consistency
+        var allCompatible = ImbuedEffectValidator.GetCompatibleImbues(item);
+        
+        // Filter to only those in the requested pool
+        return allCompatible.Where(i => pool.Contains(i)).ToList();
+    }
+
     static void ApplyRandomVendorImbue(WorldObject item)
     {
         try
@@ -1785,7 +1803,16 @@ public static class VendorLootRotation
                     ImbuedEffectType.SlashRending,
                     ImbuedEffectType.BludgeonRending,
                 };
-                var chosen = rendPool[_rng.Next(rendPool.Length)];
+                
+                // Filter pool to only include imbues compatible with existing ones
+                var compatiblePool = FilterCompatibleImbues(item, rendPool);
+                if (compatiblePool.Count == 0)
+                {
+                    ModManager.Log($"[BetterLoot] VendorLoot: No compatible weapon imbues for {item.Name} (existing: {item.ImbuedEffect})", ModManager.LogLevel.Debug);
+                    return;
+                }
+                
+                var chosen = compatiblePool[_rng.Next(compatiblePool.Count)];
                 item.ImbuedEffect |= chosen;
 
                 // Match damage type to rend
@@ -1817,7 +1844,16 @@ public static class VendorLootRotation
                     ImbuedEffectType.MissileDefense,
                     ImbuedEffectType.MagicDefense,
                 };
-                var chosen = defensePool[_rng.Next(defensePool.Length)];
+                
+                // Filter pool to only include imbues compatible with existing ones
+                var compatiblePool = FilterCompatibleImbues(item, defensePool);
+                if (compatiblePool.Count == 0)
+                {
+                    ModManager.Log($"[BetterLoot] VendorLoot: No compatible armor imbues for {item.Name} (existing: {item.ImbuedEffect})", ModManager.LogLevel.Debug);
+                    return;
+                }
+                
+                var chosen = compatiblePool[_rng.Next(compatiblePool.Count)];
                 item.ImbuedEffect |= chosen;
             }
             else if (IsJewelry(item))
@@ -1836,7 +1872,16 @@ public static class VendorLootRotation
                     ImbuedEffectType.MissileDefense,
                     ImbuedEffectType.MagicDefense,
                 };
-                var chosen = pool[_rng.Next(pool.Length)];
+                
+                // Filter pool to only include imbues compatible with existing ones
+                var compatiblePool = FilterCompatibleImbues(item, pool);
+                if (compatiblePool.Count == 0)
+                {
+                    ModManager.Log($"[BetterLoot] VendorLoot: No compatible jewelry imbues for {item.Name} (existing: {item.ImbuedEffect})", ModManager.LogLevel.Debug);
+                    return;
+                }
+                
+                var chosen = compatiblePool[_rng.Next(compatiblePool.Count)];
                 item.ImbuedEffect |= chosen;
                 
                 // Rare multi-imbue chance (compatible secondary imbues)
@@ -1893,63 +1938,12 @@ public static class VendorLootRotation
 
     static List<ImbuedEffectType> GetCompatibleSecondaryImbues(WorldObject item, ImbuedEffectType first, ImbuedEffectType? second = null)
     {
-        var compatible = new List<ImbuedEffectType>();
-
-        // Define imbue categories
-        var elementalRendings = new[] { ImbuedEffectType.AcidRending, ImbuedEffectType.FireRending, ImbuedEffectType.ColdRending, ImbuedEffectType.ElectricRending };
-        var physicalRendings = new[] { ImbuedEffectType.PierceRending, ImbuedEffectType.SlashRending, ImbuedEffectType.BludgeonRending };
-        var offensiveImbues = new[] { ImbuedEffectType.CriticalStrike, ImbuedEffectType.CripplingBlow, ImbuedEffectType.ArmorRending };
-        var defenseImbues = new[] { ImbuedEffectType.MeleeDefense, ImbuedEffectType.MissileDefense, ImbuedEffectType.MagicDefense };
-
-        // Already has flags
-        var existing = new HashSet<ImbuedEffectType>();
-        if (first != ImbuedEffectType.Undef) existing.Add(first);
-        if (second.HasValue && second.Value != ImbuedEffectType.Undef) existing.Add(second.Value);
-
-        // Rule: Only one elemental rending
-        bool hasElementalRending = elementalRendings.Any(e => existing.Contains(e));
-        
-        // Rule: Only one physical rending
-        bool hasPhysicalRending = physicalRendings.Any(e => existing.Contains(e));
-        
-        // Rule: Can have multiple offensive imbues (Crit + Crippling + ArmorRend)
-        // Rule: Can have multiple defense imbues
-
-        // Add offensive imbues (always compatible with each other and rendings)
-        foreach (var imbue in offensiveImbues)
-        {
-            if (!existing.Contains(imbue))
-                compatible.Add(imbue);
-        }
-
-        // Add ONE elemental rending if we don't have one yet
-        if (!hasElementalRending)
-        {
-            foreach (var imbue in elementalRendings)
-            {
-                if (!existing.Contains(imbue))
-                    compatible.Add(imbue);
-            }
-        }
-
-        // Add ONE physical rending if we don't have one yet (and item is a weapon)
-        if (!hasPhysicalRending && IsWeapon(item))
-        {
-            foreach (var imbue in physicalRendings)
-            {
-                if (!existing.Contains(imbue))
-                    compatible.Add(imbue);
-            }
-        }
-
-        // Defense imbues (can stack all 3)
-        foreach (var imbue in defenseImbues)
-        {
-            if (!existing.Contains(imbue))
-                compatible.Add(imbue);
-        }
-
-        return compatible;
+        // Use the shared validator utility - pass both first and second as "already applied"
+        var additionalImbues = second.HasValue && second.Value != ImbuedEffectType.Undef
+            ? new[] { first, second.Value }
+            : new[] { first };
+            
+        return ImbuedEffectValidator.GetCompatibleImbues(item, additionalImbues);
     }
 
     static void TryApplyCustomImbue(WorldObject item)
@@ -1988,13 +1982,32 @@ public static class VendorLootRotation
             };
 
             var chosenImbue = customImbues[_rng.Next(customImbues.Length)];
-            addMethod.Invoke(null, new object[] { item, chosenImbue });
+            string chosenName = chosenImbue.ToString();
 
-            // Nether Rending also needs ImbuedEffectType.NetherRending set
-            if (chosenImbue.ToString() == "NetherRending")
+            // Tier rule: custom tier is ONE from {Hemorrhage, Shatter, Cleaving}.
+            if (chosenName == "Hemorrhage" || chosenName == "Cleaving" || chosenName == "Shatter")
             {
-                item.ImbuedEffect |= ImbuedEffectType.NetherRending;
+                const int customTierMask = 8 | 2 | 16;
+                int raw = item.GetProperty((PropertyInt)40133) ?? 0;
+                if ((raw & customTierMask) != 0)
+                {
+                    ModManager.Log($"[BetterLoot] VendorLoot: Skipped custom-tier imbue {chosenName} for {item.Name} (already has custom-tier bits)", ModManager.LogLevel.Debug);
+                    return;
+                }
             }
+
+            // Nether Rending also needs ImbuedEffectType.NetherRending set.
+            // Tier rule: NetherRending is part of the global rending tier (one total rending).
+            if (chosenName == "NetherRending")
+            {
+                if (!ImbuedEffectValidator.TryAddImbue(item, ImbuedEffectType.NetherRending, out var reason))
+                {
+                    ModManager.Log($"[BetterLoot] VendorLoot: Skipped custom NetherRending for {item.Name} ({reason})", ModManager.LogLevel.Debug);
+                    return;
+                }
+            }
+
+            addMethod.Invoke(null, new object[] { item, chosenImbue });
 
             ModManager.Log($"[BetterLoot] VendorLoot: Applied custom imbue {chosenImbue} to {item.Name}", ModManager.LogLevel.Debug);
         }

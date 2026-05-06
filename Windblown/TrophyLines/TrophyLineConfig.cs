@@ -38,6 +38,12 @@ internal sealed class TrophyLineConfig
     public int BankCashProperty { get; set; } = 39999;
 
     public bool EnableBulkTurnIn { get; set; } = true;
+
+    /// <summary>
+    /// NPC WCIDs that should NOT have their Give emotes intercepted for this trophy line.
+    /// E.g. mask makers who should still receive heads and give masks instead of XP/bank credit.
+    /// </summary>
+    public List<uint> ExcludedNpcWcids { get; set; } = new();
 }
 
 internal sealed class TrophyTier

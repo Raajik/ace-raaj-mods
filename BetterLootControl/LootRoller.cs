@@ -337,6 +337,13 @@ public static class LootRoller
         // Try to apply Overtinked custom imbues (same 25% chance as vendor loot)
         TryApplyOvertinkedImbue(item);
 
+        // If the item now has an imbue, ensure it also has at least one spell
+        // (imbues are magical effects — non-magical items should not be imbued)
+        if (item.ImbuedEffect != 0 || (item.GetProperty((PropertyInt)40133) ?? 0) > 0)
+        {
+            EnsureImbuedItemHasSpells(item);
+        }
+
         // ── Ratings ──
         if (s.EnableLootRatings)
         {
@@ -383,6 +390,74 @@ public static class LootRoller
                     item.SetProperty(PropertyInt.EquipmentSetId, chosenId);
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// If an imbued item has no spells, adds 1-3 random loot spells so the imbue is always
+    /// on a magical item. Uses a spell list common to weapons/armor.
+    /// </summary>
+    static void EnsureImbuedItemHasSpells(WorldObject item)
+    {
+        // Check if item already has spells (SpellDID or spell book)
+        var spellDid = item.GetProperty(PropertyDataId.Spell);
+        bool hasSpellDid = spellDid.HasValue && spellDid.Value > 0;
+        bool hasSpellBook = item.Biota?.PropertiesSpellBook?.Count > 0;
+
+        if (hasSpellDid || hasSpellBook)
+            return;
+
+        // No spells found — add some. Use a compact pool of common loot spells.
+        // These are generic weapon/armor spells that ACE loot generation typically adds.
+        int[] spellPool =
+        {
+            // Melee weapon spells
+            2714,  // Blood Drinker VI
+            2723,  // Heart Seeker VI
+            2727,  // Defender VI
+            // Armor spells
+            2665,  // Bludgeoning Protection VI
+            2666,  // Slashing Protection VI
+            2663,  // Piercing Protection VI
+            2667,  // Acid Protection VI
+            2662,  // Flame Protection VI
+            2664,  // Frost Protection VI
+            2668,  // Lightning Protection VI
+            // Caster/jewelry spells
+            2645,  // Focus VI
+            2646,  // Willpower VI
+            2647,  // Coordination VI
+            2648,  // Quickness VI
+            2649,  // Self VI
+            2650,  // Strength VI
+            2651,  // Endurance VI
+            2815,  // Hermetic Link VI
+            2996,  // Moderate Magic Resistance
+        };
+
+        int count = ThreadSafeRandom.Next(1, 3);
+        var shuffled = spellPool.OrderBy(_ => Random.Shared.Next()).Take(count).ToArray();
+
+        foreach (int spellId in shuffled)
+        {
+            if (spellId <= 0) continue;
+            try
+            {
+                if (item.Biota == null)
+                    continue;
+                item.Biota.PropertiesSpellBook ??= new Dictionary<int, float>();
+                if (!item.Biota.PropertiesSpellBook.ContainsKey(spellId))
+                {
+                    item.Biota.PropertiesSpellBook[spellId] = 1.0f;
+                }
+            }
+            catch { }
+        }
+
+        // Set Magical flag so the blue glow shows
+        if (!item.UiEffects.HasValue || !item.UiEffects.Value.HasFlag(UiEffects.Magical))
+        {
+            item.UiEffects = (item.UiEffects ?? 0) | UiEffects.Magical;
         }
     }
 

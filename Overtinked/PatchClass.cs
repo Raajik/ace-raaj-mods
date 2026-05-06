@@ -388,7 +388,13 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         LesserImbueUpgrade.ApplyStrips(target, imbueEffect, s.EnableLesserImbueUpgradeToFull);
 
         if (RendingDamageTypes.ContainsKey(imbueEffect))
+        {
             target.ImbuedEffect &= ~AllRendingFlags;
+            // Also strip NetherRending from the custom 40133 bitmask. OvertinkedImbueStore.Get()
+            // checks EITHER the 40133 bit OR ImbuedEffect.NetherRending, so clearing only
+            // ImbuedEffect is not enough — Nether combat effects would still fire.
+            OvertinkedImbueStore.ClearFlags(target, OvertinkedImbueFlags.NetherRending);
+        }
 
         target.ImbuedEffect |= imbueEffect;
         if (RendingDamageTypes.TryGetValue(imbueEffect, out var rendDamageType))
@@ -461,14 +467,14 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         {
             // Hemorrhage is custom (40133). Do not strip existing ImbuedEffect rend bits (e.g. Bludgeon Rending); gameplay and appraisal use them.
             // Fire-only glow + CB underlay: HemorrhageWeaponVisual / HemorrhageWeaponVisualReassert.
-            OvertinkedImbueStore.Add(target, OvertinkedImbueFlags.Hemorrhage);
+            if (!OvertinkedImbueStore.TryAddCustomTier(target, OvertinkedImbueFlags.Hemorrhage, out _))
+                return false;
             HemorrhageWeaponVisual.ApplyIfHemorrhageWeapon(s, target);
             return true;
         }
         if (s.CleavingImbue?.Enabled == true && s.CleavingImbue.SalvageWcids != null && s.CleavingImbue.SalvageWcids.Contains(wcid))
         {
-            OvertinkedImbueStore.Add(target, OvertinkedImbueFlags.Cleaving);
-            return true;
+            return OvertinkedImbueStore.TryAddCustomTier(target, OvertinkedImbueFlags.Cleaving, out _);
         }
         if (s.NetherRendingImbue?.Enabled == true && s.NetherRendingImbue.SalvageWcids != null && s.NetherRendingImbue.SalvageWcids.Contains(wcid))
         {
@@ -480,8 +486,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
         if (s.ShatterImbue?.Enabled == true && s.ShatterImbue.SalvageWcids != null && s.ShatterImbue.SalvageWcids.Contains(wcid))
         {
-            OvertinkedImbueStore.Add(target, OvertinkedImbueFlags.Shatter);
-            return true;
+            return OvertinkedImbueStore.TryAddCustomTier(target, OvertinkedImbueFlags.Shatter, out _);
         }
         if (s.JewelryCleaveImbue?.Enabled == true && s.JewelryCleaveImbue.SalvageWcids != null && s.JewelryCleaveImbue.SalvageWcids.Contains(wcid))
         {
@@ -731,9 +736,52 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             target.SetProperty(prop, current + rolled);
         }
         if (!string.IsNullOrEmpty(buffed.ImbuedEffectTypeName) && Enum.TryParse<ImbuedEffectType>(buffed.ImbuedEffectTypeName, ignoreCase: true, out var effectType))
-            target.ImbuedEffect |= effectType;
+        {
+            ImbuedEffectType existing = target.ImbuedEffect;
+
+            ImbuedEffectType[] rendingTier =
+            {
+                ImbuedEffectType.AcidRending,
+                ImbuedEffectType.FireRending,
+                ImbuedEffectType.ColdRending,
+                ImbuedEffectType.ElectricRending,
+                ImbuedEffectType.PierceRending,
+                ImbuedEffectType.SlashRending,
+                ImbuedEffectType.BludgeonRending,
+                ImbuedEffectType.NetherRending,
+            };
+
+            ImbuedEffectType[] procTier =
+            {
+                ImbuedEffectType.ArmorRending,
+                ImbuedEffectType.CriticalStrike,
+                ImbuedEffectType.CripplingBlow,
+            };
+
+            if (existing.HasFlag(effectType))
+            {
+                ModManager.Log($"[Overtinked] Skipping {effectType} on {target.NameWithMaterial} - item already has this imbue", ModManager.LogLevel.Warn);
+            }
+            else if (rendingTier.Contains(effectType) && rendingTier.Any(e => existing.HasFlag(e)))
+            {
+                ModManager.Log($"[Overtinked] Skipping {effectType} on {target.NameWithMaterial} - item already has a rending-tier imbue", ModManager.LogLevel.Warn);
+            }
+            else if (procTier.Contains(effectType) && procTier.Any(e => existing.HasFlag(e)))
+            {
+                ModManager.Log($"[Overtinked] Skipping {effectType} on {target.NameWithMaterial} - item already has a proc-tier imbue", ModManager.LogLevel.Warn);
+            }
+            else
+            {
+                target.ImbuedEffect |= effectType;
+            }
+        }
         if (!string.IsNullOrEmpty(buffed.SecondaryStat) && buffed.SecondaryValue > 0)
             BuffedJewelrySecondaryStore.Add(target.Guid.Full, buffed.SecondaryStat, buffed.SecondaryValue);
+
+        // Stamp the source WCID at PropertyInt 40136 so BetterSupportSkills can grant the
+        // matching salvage when this jewelry is auto-salvaged. Only the last applied rule's
+        // WCID is stored; items with multiple buffed imbue rules are not expected.
+        target.SetProperty((PropertyInt)40136, (int)wcid);
 
         bool mergeJewelry = s.MergeSalvageTinkerEffectIntoBroadcast && s.ShowPlayerSalvageMessage;
         if (mergeJewelry)

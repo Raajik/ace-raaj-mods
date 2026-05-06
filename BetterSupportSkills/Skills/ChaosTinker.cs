@@ -68,6 +68,10 @@ internal static class ChaosTinker
         if (player == null || PatchClass.Settings?.EnableChaosTinkerAchievement != true)
             return;
 
+        // Skip synthetic mod recipes (SpellSiphon id=900001, etc.) — those are not tinkering.
+        if (recipe == null || recipe.Id >= 900000)
+            return;
+
         // successChance is 0..1 from RecipeManager.GetRecipeChance / HandleRecipe, not percent 0..100.
         bool rolledSuccess = Random.Shared.NextDouble() < successChance;
         if (rolledSuccess)
@@ -123,6 +127,10 @@ internal static class ChaosTinker
     {
         _wasChaosFailure = false;
         if (player == null)
+            return;
+
+        // Skip synthetic mod recipes (SpellSiphon id=900001, etc.) — those are not tinkering.
+        if (recipe == null || recipe.Id >= 900000)
             return;
 
         if (ChaosModeActive.GetValueOrDefault(player.Guid.Full, false))

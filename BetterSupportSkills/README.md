@@ -363,9 +363,70 @@ Failing a tinker while having any tinkering trained unlocks `/chaostinker` — a
 
 **Follow while moving:** When you are not in combat targeting (pet idle follow path), if **`SummoningClasses.FollowWhileOwnerMoving`** is true and your physics reports movement (`IsMovingOrAnimating`), pets use **`MoveFollowDistanceThreshold`** (default **6m**, capped by **`FollowDistanceThreshold`**) instead of the idle **15m** leash—so they snap / `MoveTo` sooner and stay with you while you run. Set **`FollowWhileOwnerMoving`** false to revert to distance-only follow.
 
+**Cantrip bonus pets:** When `EnableCantripBonusPets` is true (default), equipped Summoning Prowess cantrips grant extra pet capacity:
+- Minor=+1, Moderate=+2, Major=+3, Epic=+4, Legendary=+7
+- Only the highest cantrip tier on any equipped item counts
+- Checks SpellDID, ProcSpell, and item weenie spell books automatically
+- Configurable via `CantripBonusPetsLegendarySpellId` (0=disabled)
+
 Auto-summoned **CombatPets** (Druid / Elementalist / Necromancer / Enchanter / Artificer) still use ACE creature spell selection for most attacks. When `BlockPetWarVoidRingWallSpells` is **true**, War and Void **ring** and **wall** spells (plus full 360° spread projectiles) are blocked at `TryCastSpell` for pets tracked by this mod. Bolts, streaks, arcs, blasts, and volleys are unchanged either way.
 
 If a ring/wall projectile still appears from another source, `SpellProjectile.OnCollideObject` is patched so a tracked pet **cannot damage its `P_PetOwner`** (impact VFX only). Toggle either flag under `SummoningClasses` in `Settings.json` if you need legacy behavior.
+
+---
+
+### Salvage (Auto-Salvage)
+**Status:** ✅ Implemented  
+**Default:** Enabled (always active alongside LeyLineLedger)
+
+When a player creates salvage (via the `TryCreateInInventoryWithNetworking` path), BSS intercepts it and deposits the result directly into the player's **LeyLineLedger bank** instead of their inventory.
+
+- **Trained Salvaging:** 50% of the generated salvage is banked  
+- **Specialized Salvaging:** 100% of the generated salvage is banked  
+- The item disappears from the salvage creation result; a chat message confirms the deposit
+
+#### Imbue Salvage Bonus
+On top of the base salvage, weapons carrying imbues grant **bonus salvage matching the imbue type** at deposit time. This applies to all retail ACE imbues and all custom Overtinked imbues:
+
+| Imbue | Salvage | WCID |
+|---|---|---|
+| Acid Rending | Viridian | 21048 |
+| Bludgeon Rending | Mahogany | 21049 |
+| Cold Rending | Aquamarine | 21047 |
+| Electric Rending | Jet | 21046 |
+| Fire Rending | Red Garnet | 21045 |
+| Pierce Rending | Imperial Topaz | 21051 |
+| Slash Rending | Imperial Topaz | 21051 |
+| Nether Rending (custom) | Onyx | 21064 (from Overtinked settings, fallback 21064) |
+| Crippling Blow | Fire Opal | 21056 |
+| Infused Creature | Black Opal | 21060 |
+| Infused War | Sunstone | 21062 |
+| Infused Life | Red Garnet | 21045 |
+| Infused Void | Jet | 21046 |
+| Critical Strike | Black Opal | 21060 |
+| Crushing Blow | Fire Opal | 21056 |
+| Hemorrhage (custom) | Hematite | 21052 (from Overtinked settings) |
+| Cleaving (custom) | Malachite | 21053 (from Overtinked settings) |
+| Shatter (custom) | Lavender Jade | 21063 (from Overtinked settings) |
+| Buffed jewelry imbues | Source salvage | Read from PropertyInt 40136 (stamped by Overtinked at tinker time) |
+
+Each imbue that grants bonus salvage prints a per-line message:
+```
+[Auto-Salvage] Granted imbue salvage: Red Garnet +50 (bank: 1.23 → 1.73 bags)
+```
+
+#### Interop Modules
+
+**`OvertinkedImbueInterop.cs`** — reflection bridge to Overtinked  
+Loaded once on first use via `AppDomain.CurrentDomain.GetAssemblies()`. Reads `Overtinked.PatchClass.CurrentSettings` to get live `SalvageWcids` for each custom imbue config (`HemorrhageImbue`, `CleavingImbue`, `NetherRendingImbue`, `ShatterImbue`). Stays in sync with `Overtinked/Settings.json` without a hard project reference.
+
+- `GetCustomFlags(item)` — reads **PropertyInt 40133** bitmask (Cleaving=2, NetherRending=4, Hemorrhage=8, Shatter=16)
+- `HasHemorrhage/HasCleaving/HasShatter/HasNetherRending(flags)` — bitmask checks
+- `GetBuffedJewelryWcid(item)` — reads **PropertyInt 40136**, stamped by Overtinked's `TryApplyBuffedImbue` with the source salvage WCID at tinker time
+
+**`LeyLineLedgerSalvageInterop.cs`** — reflection bridge to LeyLineLedger  
+- `GetSalvagePropertyId(uint wcid)` — resolves the LLL `PropertyInt64` property ID for a given salvage WCID  
+- `DirectIncBanked(player, propertyId, amount)` — calls LLL's `IncBanked` with a pre-resolved property ID (avoids a second WCID→property lookup per imbue line)
 
 ---
 

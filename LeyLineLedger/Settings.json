@@ -112,7 +112,7 @@
       "// Id": "Weenie class id (WCID) of the bankable stack item.",
       "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
       "// VariantWeenieClassIds": "Optional. Extra WCIDs removed from inventory and credited to this same Prop when depositing (after canonical Id).",
-      "Name": "Sturdy Iron Keys (Diff <=250)",
+      "Name": "Sturdy Iron Key (1kD)",
       "Id": 6876,
       "Prop": 40110,
       "VariantWeenieClassIds": []
@@ -122,7 +122,7 @@
       "// Id": "Weenie class id (WCID) of the bankable stack item.",
       "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
       "// VariantWeenieClassIds": "Optional. Extra WCIDs removed from inventory and credited to this same Prop when depositing (after canonical Id).",
-      "Name": "Sturdy Steel Keys (Diff <=500)",
+      "Name": "Sturdy Steel Key (1kC)",
       "Id": 24477,
       "Prop": 40111,
       "VariantWeenieClassIds": []
@@ -132,7 +132,7 @@
       "// Id": "Weenie class id (WCID) of the bankable stack item.",
       "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
       "// VariantWeenieClassIds": "Optional. Extra WCIDs removed from inventory and credited to this same Prop when depositing (after canonical Id).",
-      "Name": "Mana Forge Keys (Diff <=750)",
+      "Name": "Mana Forge Key (5kD)",
       "Id": 38456,
       "Prop": 40112,
       "VariantWeenieClassIds": [38917, 38918, 38919, 38920]
@@ -142,7 +142,7 @@
       "// Id": "Weenie class id (WCID) of the bankable stack item.",
       "// Prop": "Character biota PropertyInt64 id storing banked quantity for this WCID.",
       "// VariantWeenieClassIds": "Optional. Extra WCIDs removed from inventory and credited to this same Prop when depositing (after canonical Id).",
-      "Name": "Legendary Keys (Diff <=1000)",
+      "Name": "Legendary Key (5kC)",
       "Id": 48746,
       "Prop": 40113,
       "VariantWeenieClassIds": [48747, 48748, 48749, 48750, 48914, 51558, 51586, 51648, 51954, 51963, 52010, 72048, 72338, 72474, 72600, 72628, 72635, 72669, 72807, 87168]

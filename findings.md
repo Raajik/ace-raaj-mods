@@ -1,48 +1,33 @@
-# Findings — Windblown mod scaffold (Phase 1)
+# Findings — Immutable Source of Truth Initiative
 
-## ACE WeenieCache internals (from `.references/ACRealms.WorldServer-2.1.4/.../WorldDatabaseWithEntityCache.cs`)
+## 2026-05-06 — Phase 2-4 Complete
 
-- `weenieCache` is a `ConcurrentDictionary<uint, ACE.Entity.Models.Weenie>` private field on `WorldDatabaseWithEntityCache` — accessible from mods because every mod uses `Krafs.Publicizer` with `PublicizeAll=true`.
-- `GetCachedWeenie(uint)` checks cache first, then falls through to DB via `GetWeenie(uint)`.
-- `GetCachedWeenie(string className)` looks up a parallel `weenieClassNameToClassIdCache`, then calls the uint overload.
-- `ClearCachedWeenie(uint)` exists; `ClearWeenieCache()` flushes everything (admin reload path).
-- `PopulateWeenieSpecificCaches()` snapshots into `weenieCacheByType` — only relevant for `GetRandomWeeniesOfType` (treasure rolling).
+### Feature Ownership Gaps Found
 
-## ACE.Entity.Models.Weenie shape
+1. **Defense imbue hang on armor (Overtinked)** — Known bug from 2026-05-03. Peridot/Yellow Topaz/Zircon on armor causes server hang. The RecipeManagerEx code reaches `ShowDialog` or `HandleRecipe` and hangs — root cause not yet determined. SEE: `AGENTS.md §8.11` and Overtinked investigation notes.
 
-- POCO with `IDictionary<PropertyInt,int> PropertiesInt`, `IDictionary<PropertyBool,bool> PropertiesBool`, `IDictionary<PropertyFloat,double> PropertiesFloat`, `IDictionary<PropertyString,string> PropertiesString`, `IDictionary<PropertyDataId,uint> PropertiesDID` etc.
-- `WeenieClassId`, `ClassName`, `WeenieType` are scalar properties.
-- Comment: *"Only populated collections and dictionaries are initialized. We do this to conserve memory in ACE.Server. Be sure to check for null first."* — meaning the cached vanilla weenie may have null collections that we must materialize before adding entries.
+2. **Gemcrafter appears empty** — Only `obj/` directory, no `.cs` or `.csproj` files. Likely a placeholder or abandoned mod. Action: evaluate for removal or formalize.
 
-## Mod scaffolding invariants (from `BetterSupportSkills.csproj`)
+3. **Work-In-Progress appears empty** — No source files. Likely detritus. Action: clean up.
 
-- `<TargetFramework>net10.0</TargetFramework>`
-- `<OutputPath>C:\ACE\Mods\$(AssemblyName)</OutputPath>` (cleaner than hardcoding the name)
-- `Krafs.Publicizer` 2.2.1 with `PublicizeAll=true` → all ACE internals accessible
-- `Lib.Harmony` 2.3.3 with `ExcludeAssets="runtime"` (server provides Harmony)
-- `ACEmulator.ACE.Shared` 1.* (no `ExcludeAssets="runtime"` — each mod bundles `ACE.Shared.dll`)
-- Conditional `$(Realms)` block included for ACRealms users (mirrors Lockboxes pattern)
-- ACE server DLLs: `Reference` + `Private=False` + `ExcludeAssets="all"`
-- `CleanupFilesRelease` post-build target removes `*.deps.json`, `*.runtimeconfig.json`, `*.pdb`, `runtimes\` (else **Missing IHarmonyMod Type** at load)
-- `ZipOutputPath` post-build target zips for distribution in Release
-- `Meta.json` and `Settings.json` `CopyToOutputDirectory=PreserveNewest`
+4. **Cross-mod feature overlap needs monitoring** — Several mods share feature space (e.g., CreatureEx between Swarmed and EmpyreanAlteration). The `FakeInt 10029` enum is the canonical connector. Documented in FEATURE_MATRIX.md.
 
-## Drudge charm canonical state (from `DrudgeCharm_TierWeenies_World.sql` + `DrudgeCharm_SunstoneUnderlay_2026-05-08.sql`)
+### Documentation Gaps (NOW CLOSED)
 
-All four WCIDs share base properties from vanilla 24835 (Bloodletter Drudge Charm), with the following deltas:
+All 22 primary mod READMEs now exist. All mods requiring Settings.json templates have them (23/23). The one gap was WindblownContent which now has a Settings.json created.
 
-| Field | 24835 | 850271 (Quality) | 850272 (Pristine) | 850273 (Perfect) |
-|---|---|---|---|---|
-| `ClassName` (weenie row) | `bloodletter_drudge_charm` (vanilla) | `drudgecharm_quality` | `drudgecharm_pristine` | `drudgecharm_perfect` |
-| `WeenieType` | (vanilla — Stackable=51) | 51 | 51 | 51 |
-| `PropertyString.Name` (1) | `Bloodletter Drudge Charm` | `Bloodletter Drudge Charm (Quality)` | `Bloodletter Drudge Charm (Pristine)` | `Bloodletter Drudge Charm (Perfect)` |
-| `PropertyString.PluralName` (20) | `Bloodletter Drudge Charms` | `Bloodletter Drudge Charms (Quality)` | `Bloodletter Drudge Charms (Pristine)` | `Bloodletter Drudge Charms (Perfect)` |
-| `PropertyString.LongDesc` (16) | `Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.` | (same) | (same) | (same) |
-| `PropertyString.Use` (14) | **deleted** | **deleted** | **deleted** | **deleted** |
-| `PropertyString.ShortDesc` (15) | **deleted** | **deleted** | **deleted** | **deleted** |
-| `PropertyDataId.IconUnderlay` (52) | **100676438** (sunstone) | 100676438 | 100676438 | 100676438 |
-| `PropertyInt.MaxStackSize` (11) | **999** | 999 | 999 | 999 |
-| `PropertyInt.UiEffects` (18) | **deleted** | **deleted** | **deleted** | **deleted** |
-| `PropertyInt.ImbuedEffect` (179) | **deleted** | **deleted** | **deleted** | **deleted** |
+### Docs That Need Correction (from previous session)
 
-`weenie_properties_create_list` for 24835 is also scrubbed (mod owns drops). That's a DB-level change to vanilla rows, not a custom-weenie thing — handled separately if/when we move the drop logic into Windblown (Phase 2).
+- `README.md`: AutoLoot still claims "corpse autoloot using .utl profiles" as primary story — now partially migrated to C# for currency/trophies behavior.
+- `AutoLoot/Readme.md`: still lists `Currency.utl` + `Trophies.utl` as shipped defaults.
+- `BetterLootControl/Readme.md` + `COMPLETED.md`: contain outdated "one elemental + one physical" compatibility statement.
+
+### Scripts Created
+
+- `scripts/validate_sot.sh` — automated audit (50 pass, 0 fail, 2 warnings)
+- Consider adding to GitHub Actions CI on push
+
+### ACRealms Notes (from Phase 1)
+
+- CustomSpells has `#if !REALM` conditional compilation — verify this still works on ACRealms builds
+- Referenced in `AGENTS.md §7.0` for ACRealms source lookup paths

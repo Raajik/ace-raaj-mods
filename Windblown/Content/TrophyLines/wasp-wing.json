@@ -11,28 +11,28 @@
           "TierName": "Regular",
           "Wcid": 7603,
           "DropChance": 0.025,
-          "XpFraction": 0.025,
+          "XpFraction": 0.05,
           "BankCredit": 25000
         },
         {
           "TierName": "Quality",
           "Wcid": 850283,
           "DropChance": 0.01,
-          "XpFraction": 0.05,
+          "XpFraction": 0.10,
           "BankCredit": 50000
         },
         {
           "TierName": "Pristine",
           "Wcid": 850284,
           "DropChance": 0.004,
-          "XpFraction": 0.075,
+          "XpFraction": 0.15,
           "BankCredit": 100000
         },
         {
           "TierName": "Perfect",
           "Wcid": 850285,
           "DropChance": 0.0015,
-          "XpFraction": 0.15,
+          "XpFraction": 0.30,
           "BankCredit": 250000
         }
       ],

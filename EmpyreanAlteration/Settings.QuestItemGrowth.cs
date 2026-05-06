@@ -134,7 +134,7 @@ public partial class Settings
     public string LootItemPreAwakenProfileWeightsDoc { get; init; } = "Profile weights per tier. Each entry is a list of 4 floats (QuickStart, Steady, Brutal, Casual). Order: Lesser, Greater, Aetheric.";
 
     [JsonPropertyName("// LootItemPreAwakenPrefix")]
-    public string LootItemPreAwakenPrefixDoc { get; init; } = "Prefix applied to pre-awakened item names, replacing the material type.";
+    public string LootItemPreAwakenPrefixDoc { get; init; } = "Prefix applied to pre-awakened item names, replacing the material type. Changed from 'Living' to 'Awakened'.";
 
     [JsonPropertyName("// LootItemPreAwakenUiEffects")]
     public string LootItemPreAwakenUiEffectsDoc { get; init; } = "UiEffects bitmask for pre-awakened items. Default 20 = BoostHealth|BoostStamina (renders as red outline in AC client).";
@@ -156,7 +156,7 @@ public partial class Settings
         new() { 0.25f, 0.25f, 0.25f, 0.25f },
         new() { 0.05f, 0.20f, 0.50f, 0.25f },
     };
-    public string LootItemPreAwakenPrefix { get; set; } = "Living";
+    public string LootItemPreAwakenPrefix { get; set; } = "Awakened";
     public uint LootItemPreAwakenUiEffects { get; set; } = 20;
 
     public bool EnableQuestItemWorkmanship { get; set; } = true;

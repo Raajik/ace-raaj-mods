@@ -1,0 +1,173 @@
+{
+  "Description": "Visual overrides for all mob head trophy items. Adds blue (Magical=1) glow + sunstone orange IconUnderlay (DID 100676438) to match pristine-tier appearance.",
+  "Weenies": [
+    {
+      "ClassId": 8144, "ClassName": "banderlinghead", "WeenieType": "Stackable", "BaseWcid": 8144,
+      "Notes": "Banderling Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 8145, "ClassName": "drudgehead", "WeenieType": "Stackable", "BaseWcid": 8145,
+      "Notes": "Drudge Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 8146, "ClassName": "mosswarthead", "WeenieType": "Stackable", "BaseWcid": 8146,
+      "Notes": "Mosswart Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 8147, "ClassName": "tuskerhead", "WeenieType": "Stackable", "BaseWcid": 8147,
+      "Notes": "Tusker Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 9097, "ClassName": "ursuinheaddecorative", "WeenieType": "Generic", "BaseWcid": 9097,
+      "Notes": "Ursuin Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 12215, "ClassName": "pumpkinhead", "WeenieType": "Generic", "BaseWcid": 12215,
+      "Notes": "Pumpkin Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 12216, "ClassName": "sclavushead", "WeenieType": "Stackable", "BaseWcid": 12216,
+      "Notes": "Sclavus Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 12219, "ClassName": "ursuinhead", "WeenieType": "Generic", "BaseWcid": 12219,
+      "Notes": "Ursuin Head alt — sibling of 9097, replaced at corpse-drop time.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 12225, "ClassName": "zombiehead", "WeenieType": "Generic", "BaseWcid": 12225,
+      "Notes": "Zombie Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 19446, "ClassName": "olthoihead", "WeenieType": "Generic", "BaseWcid": 19446,
+      "Notes": "Olthoi Head alt — sibling of 3680, replaced at corpse-drop time.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 22059, "ClassName": "evisceratorhead", "WeenieType": "Generic", "BaseWcid": 22059,
+      "Notes": "Eviscerator Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 24846, "ClassName": "mutilatorhead", "WeenieType": "Generic", "BaseWcid": 24846,
+      "Notes": "Mutilator Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 25554, "ClassName": "knathhead", "WeenieType": "Generic", "BaseWcid": 25554,
+      "Notes": "Knath Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 25561, "ClassName": "moarsmanhead", "WeenieType": "Stackable", "BaseWcid": 25561,
+      "Notes": "Moarsman Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 28886, "ClassName": "burungurukhead", "WeenieType": "Generic", "BaseWcid": 28886,
+      "Notes": "Burun Guruk Head — single-tier trophy. Burun Ruuk Head (28887) sibling replaced at corpse-drop.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 28887, "ClassName": "burunruukhead", "WeenieType": "Generic", "BaseWcid": 28887,
+      "Notes": "Burun Ruuk Head — sibling of 28886, replaced at corpse-drop time.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 28888, "ClassName": "chittickhead", "WeenieType": "Generic", "BaseWcid": 28888,
+      "Notes": "Chittick Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 28889, "ClassName": "mitehead", "WeenieType": "Generic", "BaseWcid": 28889,
+      "Notes": "Mite Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 34029, "ClassName": "shadowhead", "WeenieType": "Generic", "BaseWcid": 34029,
+      "Notes": "Shadow Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 36359, "ClassName": "cowhead", "WeenieType": "Generic", "BaseWcid": 36359,
+      "Notes": "Cow Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 36362, "ClassName": "mukkirhead", "WeenieType": "Generic", "BaseWcid": 36362,
+      "Notes": "Mukkir Head — single-tier trophy, pristine visual effects.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 3680, "ClassName": "olthoihead", "WeenieType": "Stackable", "BaseWcid": 3680,
+      "Notes": "Olthoi Head (base) — single-tier trophy. Also the one Tsua (8402) returns to you.",
+      "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 3687, "ClassName": "skeleton'sskull", "WeenieType": "Generic", "BaseWcid": 3687,
+      "Notes": "Skeleton's Skull — single-tier trophy. Used by mask makers for Skull Mask (8151).",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    },
+    {
+      "ClassId": 4121, "ClassName": "zombielichhead", "WeenieType": "Generic", "BaseWcid": 4121,
+      "Notes": "Lich Skull — single-tier trophy. Undead (lich/zombie) creature gate.",
+      "PropertiesInt": { "UiEffects": 1 },
+      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "Delete": { "PropertiesInt": ["ImbuedEffect"] }
+    }
+  ]
+}

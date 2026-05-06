@@ -80,6 +80,33 @@ public static class LeyLineLedgerSalvageInterop
     }
 
     /// <summary>
+    /// Returns the LLL property ID for this salvage WCID, or -1 if LLL is unavailable
+    /// or has no rule for this WCID.
+    /// </summary>
+    public static int GetSalvagePropertyId(uint salvageWcid)
+    {
+        EnsureInterop();
+        if (_lllGetSalvagePropertyByWcid != null)
+        {
+            int id = _lllGetSalvagePropertyByWcid(salvageWcid);
+            if (id > 0) return id;
+        }
+        return FindSalvagePropertyIdManual(salvageWcid, PatchClass.Settings);
+    }
+
+    /// <summary>
+    /// Calls LLL's IncBanked with a pre-resolved property ID.
+    /// Returns true if the increment was applied.
+    /// </summary>
+    public static bool DirectIncBanked(Player player, int propertyId, long amount)
+    {
+        EnsureInterop();
+        if (_lllIncBanked == null || propertyId <= 0) return false;
+        _lllIncBanked(player, propertyId, amount);
+        return true;
+    }
+
+    /// <summary>
     /// Credit salvage units to LeyLineLedger's bank.
     /// Returns true if LLL integration is available and credit was applied.
     /// </summary>

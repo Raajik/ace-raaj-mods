@@ -1,46 +1,27 @@
-# Active Work & Backlog
+# PLAN — Active Work
 
-## Progress (Recent)
+> This file tracks **current active work** and **backlog** only. Shipped features belong in `COMPLETED.md`.
 
-### Shipped 2026-05-05
-- ✅ CreatureEx imbue overlays + salvage bag generation (visual effects + LLL pattern)
-- ✅ Auto-salvage imbue message detail + Artificer wisp spell changes (Hecatomb/Harm/Drain)
-- ✅ Wisp spell components fix + cooking regen balanced to 2%/4% per sec
-- ✅ Artificer wisp complete combat overhaul (cast elemental arcs, fixed all arc spell IDs)
-- ✅ Loremaster quest completion XP message fix (accurate amount, condensed to single line)
-- ✅ Death Knight Nether spell fixes (Streak/Arc spell IDs)
-- ✅ NPC spawn safety margins (+1.0 unit vertical clearance)
-- ✅ Auto-salvage imbue bonus fix (all three paths)
-- ✅ Overtinked custom imbues in monster loot (25% chance)
-- ✅ AutoLoot lockpick auto-banking from corpses (Pass 6)
-- ✅ AutoLoot Currency profile (skeleton keys, Coalesced Mana)
-- ✅ GlobalKeyDrops null crash fix
-- ✅ BetterLootControl vendor overhaul complete — 340+ vendors, 6 types, multi-imbue, economy integration
+## Active
 
-See `COMPLETED.md` for detailed write-ups.
+- **Immutable Source of Truth Initiative** — Phase 5 ongoing (audit script ready, run monthly)
 
-## Bugs & Issues
+## Backlog / Upcoming
 
-### High Priority
+### Bug backlog
+- **Swarmed** — monitor CreatureEx loot for remaining items without icon underlays (secondary/defense-only items)
 
-1. **Salvage disappearing in chest** — When loot generates in a chest and player closes without looting, items disappear instead of being auto-salvaged. Need to find where container close happens in ACE and add auto-salvage logic. Should NOT apply to house storage.
+### Feature backlog
+- **BetterSupportSkills** — monitor summoner class cantrip bonus pets for balance; adjust `CantripBonusByTier` values if needed
+- **AutoLoot** — extend `TryBankAnyLllItem` with per-player toggle (full opt-in/out) when LLL items list grows large
+- **Gemcrafter / Work-In-Progress** — evaluate and clean up empty mods
+- **CI** — add `scripts/validate_sot.sh` to GitHub Actions workflow
 
-2. **Unenchantable on cloaks** — Cloaks show "Properties: Unenchantable" in client. Need to find what property causes this and add ability to globally add/remove it. (中等 - medium priority but user asked to track)
+### Docs backlog
+- `README.md`: AutoLoot still claims `.utl` profiles as primary story (now partially C#)
+- `AutoLoot/Readme.md`: still lists `Currency.utl` + `Trophies.utl` as shipped
+- `BetterLootControl/Readme.md` + `COMPLETED.md`: contain outdated imbue compatibility statement
 
-## Backlog (Greenfield)
-
-### Vendor Expansion Ideas
-- [ ] Armorer specialization (weapons/armor with combat-focused imbues)
-- [ ] Scrivener specialization (scrolls, spell components)
-- [ ] Provisioner specialization (food, potions, cooking ingredients)
-- [ ] Tinker specialization (salvage bags, tinkering tools, augmentation gems)
-
-### Loot System Ideas
-- [ ] Monster loot integration (Spellsiphons/Mana Lattices on corpses)
-- [ ] Treasure chest quality tiers
-- [ ] Equipment set bonuses
-
-## Implementation Notes
-- All vendor loot lives in `BetterLootControl` (single source of truth)
-- Jewelers/Archmages: specialized batch generators with higher enhancement rates
-- Testing: Deploy to `C:\ACE\` (test, port 9000) first, verify, then request live push
+## Progress (recent)
+- 2026-05-06 — Immutable Source of Truth: Phase 2-4 complete. FEATURE_MATRIX, 7 new READMEs, Docs template, PR template, audit script. See `COMPLETED.md`.
+- 2026-05-06 — Multi-mod fixes: imbue spells, Living→Awakened, cantrip bonus pets, key unlock-only, LLL auto-banking. See `COMPLETED.md`.

@@ -16,7 +16,7 @@ description: In the ace-raaj-mods repository, treat all conversations as ACE mod
 ## Consolidated mods in this repo
 
 - Treat as first-class mods any project with a `.csproj` directly under the repo root (one folder per deployable mod). Known gameplay mods include:
-  - `AethericWeaver`, `ChallengeModes`, `AureatePath`, `AutoLoot`, `EmpyreanAlteration`, `Gemcrafter`, `LeyLineLedger`, `Loremaster`, `Numbersmith`, `Overtinked`, `QOL`, `Swarmed` (healing-kit Recuperation HoT is in **BetterSupportSkills**, not QOL)
+  - `AethericWeaver`, `BetterLootControl`, `BetterSupportSkills`, `ChallengeModes`, `AureatePath`, `AutoLoot`, `EmpyreanAlteration`, `Gemcrafter`, `LeyLineLedger`, `Loremaster`, `Numbersmith`, `Overtinked`, `QOL`, `Swarmed`, `WorldEvents` (healing-kit Recuperation HoT is in **BetterSupportSkills**, not QOL)
 - Also present for tooling/QA (not typical server mods): `AceModQa`, `tools/DecalQaRunner`, `tools/LinearSync`, `tools/AceServerStringRef`
 - When the user asks to build or rebuild mods in this repo:
   - Discover all `.csproj` files within the repo (no `../` segments) and build each, or

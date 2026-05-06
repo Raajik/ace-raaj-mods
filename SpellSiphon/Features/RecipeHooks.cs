@@ -50,15 +50,15 @@ internal static class RecipeHooks
 			FailWCID = 0,
 			FailAmount = 0,
 			SuccessMessage = "[SpellSiphon] The spells are successfully extracted!",
-			FailMessage = "[SpellSiphon] The extraction fails catastrophically!",
+			FailMessage = "",  // Custom message sent in PostHandleRecipe postfix.
 			SuccessDestroySourceChance = 1.0,
 			SuccessDestroySourceAmount = 1,
 			SuccessDestroyTargetChance = 1.0,
 			SuccessDestroyTargetAmount = 1,
-			FailDestroySourceChance = 1.0,
+			FailDestroySourceChance = 1.0,   // Spellsiphon is consumed on failure.
 			FailDestroySourceAmount = 1,
-			FailDestroyTargetChance = 1.0,
-			FailDestroyTargetAmount = 1,
+			FailDestroyTargetChance = 0.0,   // Target item SURVIVES — the item's magic resisted.
+			FailDestroyTargetAmount = 0,
 			DataId = 0,
 			LastModified = DateTime.UtcNow
 		};
@@ -155,7 +155,13 @@ internal static class RecipeHooks
 			return;
 
 		if (!success || state.SpellIds == null || state.SpellIds.Count == 0)
+		{
+			if (!success)
+				player.SendMessage(
+					"The item's latent magic overwhelms your Spellsiphon, destroying it!",
+					ChatMessageType.Magic);
 			return;
+		}
 
 		// Rare crystal secondary roll (~3% = ~1% overall with 33% base)
 		if (state.IsRareCrystal)

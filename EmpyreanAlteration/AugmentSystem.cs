@@ -71,6 +71,34 @@ public enum AugmentGroup
 
 public static class AugmentHelper
 {
+    static readonly ImbuedEffectType[] RendingTier =
+    {
+        ImbuedEffectType.AcidRending,
+        ImbuedEffectType.FireRending,
+        ImbuedEffectType.ColdRending,
+        ImbuedEffectType.ElectricRending,
+        ImbuedEffectType.PierceRending,
+        ImbuedEffectType.SlashRending,
+        ImbuedEffectType.BludgeonRending,
+        ImbuedEffectType.NetherRending,
+    };
+
+    static readonly ImbuedEffectType[] ProcTier =
+    {
+        ImbuedEffectType.ArmorRending,
+        ImbuedEffectType.CriticalStrike,
+        ImbuedEffectType.CripplingBlow,
+    };
+
+    static bool HasAnyImbue(WorldObject target, ImbuedEffectType[] tier)
+    {
+        if (target == null)
+            return false;
+
+        ImbuedEffectType existing = target.ImbuedEffect;
+        return tier.Any(t => existing.HasFlag(t));
+    }
+
     public static Augment[] SetOf(this AugmentGroup type) => type switch
     {
         AugmentGroup.Full => Enum.GetValues<Augment>(),
@@ -146,7 +174,7 @@ public static class AugmentHelper
     /// </summary>
     static void SetImbuedEffectWithUnderlay(this WorldObject target, ImbuedEffectType effect)
     {
-        target.ImbuedEffect = effect;
+        target.ImbuedEffect |= effect;
         if (IconUnderlay.TryGetValue(effect, out var underlay))
             target.IconUnderlayId = underlay;
     }
@@ -181,13 +209,22 @@ public static class AugmentHelper
                 target.ArmorModVsElectric += 0.4f;
                 return true;
             case Augment.Peridot:
-                target.ImbuedEffect = ImbuedEffectType.MeleeDefense;
+                // Check if already has this defense imbue
+                if (target.ImbuedEffect != null && target.ImbuedEffect.HasFlag(ImbuedEffectType.MeleeDefense))
+                    return false; // Already has this imbue
+                target.ImbuedEffect |= ImbuedEffectType.MeleeDefense;
                 return true;
             case Augment.YellowTopaz:
-                target.ImbuedEffect = ImbuedEffectType.MissileDefense;
+                // Check if already has this defense imbue
+                if (target.ImbuedEffect != null && target.ImbuedEffect.HasFlag(ImbuedEffectType.MissileDefense))
+                    return false; // Already has this imbue
+                target.ImbuedEffect |= ImbuedEffectType.MissileDefense;
                 return true;
             case Augment.Zircon:
-                target.ImbuedEffect = ImbuedEffectType.MagicDefense;
+                // Check if already has this defense imbue
+                if (target.ImbuedEffect != null && target.ImbuedEffect.HasFlag(ImbuedEffectType.MagicDefense))
+                    return false; // Already has this imbue
+                target.ImbuedEffect |= ImbuedEffectType.MagicDefense;
                 return true;
             #endregion
 
@@ -230,13 +267,28 @@ public static class AugmentHelper
 
             #region magic item tinkering
             case Augment.Sunstone:
-                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.ArmorRending);
+                // Proc tier: only one of {ArmorRending, CriticalStrike, CripplingBlow}.
+                if (HasAnyImbue(target, ProcTier))
+                    return false;
+                target.ImbuedEffect |= ImbuedEffectType.ArmorRending;
+                if (IconUnderlay.TryGetValue(ImbuedEffectType.ArmorRending, out var sunstoneUnderlay))
+                    target.IconUnderlayId = sunstoneUnderlay;
                 return true;
             case Augment.FireOpal:
-                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.CripplingBlow);
+                // Proc tier: only one of {ArmorRending, CriticalStrike, CripplingBlow}.
+                if (HasAnyImbue(target, ProcTier))
+                    return false;
+                target.ImbuedEffect |= ImbuedEffectType.CripplingBlow;
+                if (IconUnderlay.TryGetValue(ImbuedEffectType.CripplingBlow, out var fireOpalUnderlay))
+                    target.IconUnderlayId = fireOpalUnderlay;
                 return true;
             case Augment.BlackOpal:
-                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.CriticalStrike);
+                // Proc tier: only one of {ArmorRending, CriticalStrike, CripplingBlow}.
+                if (HasAnyImbue(target, ProcTier))
+                    return false;
+                target.ImbuedEffect |= ImbuedEffectType.CriticalStrike;
+                if (IconUnderlay.TryGetValue(ImbuedEffectType.CriticalStrike, out var blackOpalUnderlay))
+                    target.IconUnderlayId = blackOpalUnderlay;
                 return true;
             case Augment.Opal:
                 target.ManaConversionMod = (target.ManaConversionMod ?? 0.0f) + 0.01f;
@@ -266,25 +318,60 @@ public static class AugmentHelper
                 target.WeaponOffense += 0.01f;
                 return true;
             case Augment.Emerald:
-                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.AcidRending);
+                // Rending tier: only one total rending (elemental/physical/nether).
+                if (HasAnyImbue(target, RendingTier))
+                    return false;
+                target.ImbuedEffect |= ImbuedEffectType.AcidRending;
+                if (IconUnderlay.TryGetValue(ImbuedEffectType.AcidRending, out var emeraldUnderlay))
+                    target.IconUnderlayId = emeraldUnderlay;
                 return true;
             case Augment.WhiteSapphire:
-                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.BludgeonRending);
+                // Rending tier: only one total rending (elemental/physical/nether).
+                if (HasAnyImbue(target, RendingTier))
+                    return false;
+                target.ImbuedEffect |= ImbuedEffectType.BludgeonRending;
+                if (IconUnderlay.TryGetValue(ImbuedEffectType.BludgeonRending, out var whiteSapphireUnderlay))
+                    target.IconUnderlayId = whiteSapphireUnderlay;
                 return true;
             case Augment.Aquamarine:
-                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.ColdRending);
+                // Rending tier: only one total rending (elemental/physical/nether).
+                if (HasAnyImbue(target, RendingTier))
+                    return false;
+                target.ImbuedEffect |= ImbuedEffectType.ColdRending;
+                if (IconUnderlay.TryGetValue(ImbuedEffectType.ColdRending, out var aquamarineUnderlay))
+                    target.IconUnderlayId = aquamarineUnderlay;
                 return true;
             case Augment.Jet:
-                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.ElectricRending);
+                // Rending tier: only one total rending (elemental/physical/nether).
+                if (HasAnyImbue(target, RendingTier))
+                    return false;
+                target.ImbuedEffect |= ImbuedEffectType.ElectricRending;
+                if (IconUnderlay.TryGetValue(ImbuedEffectType.ElectricRending, out var jetUnderlay))
+                    target.IconUnderlayId = jetUnderlay;
                 return true;
             case Augment.RedGarnet:
-                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.FireRending);
+                // Rending tier: only one total rending (elemental/physical/nether).
+                if (HasAnyImbue(target, RendingTier))
+                    return false;
+                target.ImbuedEffect |= ImbuedEffectType.FireRending;
+                if (IconUnderlay.TryGetValue(ImbuedEffectType.FireRending, out var redGarnetUnderlay))
+                    target.IconUnderlayId = redGarnetUnderlay;
                 return true;
             case Augment.BlackGarnet:
-                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.PierceRending);
+                // Rending tier: only one total rending (elemental/physical/nether).
+                if (HasAnyImbue(target, RendingTier))
+                    return false;
+                target.ImbuedEffect |= ImbuedEffectType.PierceRending;
+                if (IconUnderlay.TryGetValue(ImbuedEffectType.PierceRending, out var blackGarnetUnderlay))
+                    target.IconUnderlayId = blackGarnetUnderlay;
                 return true;
             case Augment.ImperialTopaz:
-                target.SetImbuedEffectWithUnderlay(ImbuedEffectType.SlashRending);
+                // Rending tier: only one total rending (elemental/physical/nether).
+                if (HasAnyImbue(target, RendingTier))
+                    return false;
+                target.ImbuedEffect |= ImbuedEffectType.SlashRending;
+                if (IconUnderlay.TryGetValue(ImbuedEffectType.SlashRending, out var imperialTopazUnderlay))
+                    target.IconUnderlayId = imperialTopazUnderlay;
                 return true;
             case Augment.FetishOfTheDarkIdols:
                 if (target.ImbuedEffect >= ImbuedEffectType.IgnoreAllArmor)
@@ -292,6 +379,9 @@ public static class AugmentHelper
                 target.ImbuedEffect |= ImbuedEffectType.IgnoreSomeMagicProjectileDamage;
                 return true;
             case Augment.RendAll:
+                // WARNING: This is an admin/debug augment that intentionally violates 
+                // the "only one elemental rending" and "only one physical rending" rules.
+                // It applies ALL rending types at once for testing purposes.
                 target.ImbuedEffect |= ImbuedEffectType.AcidRending | ImbuedEffectType.ColdRending | ImbuedEffectType.FireRending | ImbuedEffectType.ElectricRending |
                     ImbuedEffectType.BludgeonRending | ImbuedEffectType.PierceRending | ImbuedEffectType.SlashRending | ImbuedEffectType.NetherRending;
                 target.IconUnderlayId ??= IconUnderlay[ImbuedEffectType.Undef];

@@ -48,19 +48,18 @@ All commands start with `/autoloot`.
 
 ## Server Loot Profiles
 
-Profiles are `.utl` files placed by the server admin in the `LootProfiles/` folder. Players cannot create or upload their own — they simply toggle the server's profiles on or off. The **shipped** `Settings.json` sets **`DefaultActiveProfiles`** to the five files below (allowlist: only those names appear in `/autoloot`, and new characters get them enabled). If you set **`DefaultActiveProfiles`** to empty `[]` and leave **`DefaultProfile`** empty, first-login still uses the bundled five filenames in code (`Autoloot.BundledDefaultProfileFileNames`), but `/autoloot` lists every `.utl` on disk (admin-style). A non-empty explicit list always means allowlist mode for the command menu.
+Profiles are `.utl` files placed by the server admin in the `LootProfiles/` folder. Players cannot create or upload their own — they simply toggle the server's profiles on or off. The **shipped** `Settings.json` sets **`DefaultActiveProfiles`** to the profiles below (allowlist: only those names appear in `/autoloot`, and new characters get them enabled). If you set **`DefaultActiveProfiles`** to empty `[]` and leave **`DefaultProfile`** empty, first-login still uses the bundled filenames in code (`Autoloot.BundledDefaultProfileFileNames`), but `/autoloot` lists every `.utl` on disk (admin-style). A non-empty explicit list always means allowlist mode for the command menu.
 
 These profiles ship with the mod (under `LootProfiles/`):
 
 | Profile | What it loots |
 |---|---|
 | `BetterKeys.utl` | Sturdy keys (e.g. Sturdy Iron / Sturdy Steel) and related rules |
-| `Currency.utl` | Pyreals, trade notes, peas, alt currency, and combined currency rules |
 | `PyrealMotes.utl` | Pyreal Mote, Sliver, Nugget, Bar |
 | `Rares.utl` | Rare items (profile rare WCID rules) |
-| `Trophies.utl` | Trophies / extended targets (see UTL; may overlap rules with other profiles on your shard) |
+| `Trophies.utl` | Legacy trophy / extended targets (optional). Windblown now prefers C# passes + `Settings.UpgradedTrophyWeenieClassIds` for custom physical trophies. |
 
-**First-login defaults:** for any character that does not yet have `LootProfiles/PlayerData/{guid}.json`, the server enables **`DefaultActiveProfiles`** from `Settings.json` when that list is non-empty; otherwise the bundled five filenames in code (same set as above). That runs on **login** and **first kill**. To use a single legacy file for defaults, set **`DefaultProfile`** only (and see code paths for empty lists).
+**First-login defaults:** for any character that does not yet have `LootProfiles/PlayerData/{guid}.json`, the server enables **`DefaultActiveProfiles`** from `Settings.json` when that list is non-empty; otherwise the bundled filenames in code. That runs on **login** and **first kill**. To use a single legacy file for defaults, set **`DefaultProfile`** only (and see code paths for empty lists).
 
 Quest turn-in stockpiling for name fragments like Pincer / Tusk / Matron is handled by `NoDuplicateNames` in `Settings.json`, not by a separate profile.
 
@@ -113,6 +112,17 @@ Server admins can expand this list in `Settings.json`.
 | **House chest** (housing `HouseOwner` set, often named Storage) | **Never** | **Never** |
 
 Corpses never use the chest open hook (loot is already done at kill time). Opening a corpse without loot permission does not run `Container.Open` fully, so no duplicate pass.
+
+---
+
+## LLL Item Auto-Banking
+
+Any item in LeyLineLedger's `Settings.Items` list (keys, tokens, coins, writs, coalesced mana, etc.) is automatically detected via `LeyLineLedgerBankInterop.IsBankableWcid()` reflection bridge and credited to the bank when looted from corpses or chests. This runs in two passes:
+
+1. **Immediate pass** (silent, no chat) — during `ProcessContainerLootImmediate` alongside cash/keys/lockpicks
+2. **Pass 7** (with notification) — during `ProcessContainerLoot` after profiles, scrolls, keys, and lockpicks
+
+No profile or WCID allowlist is required — any item with an LLL `BankItem` entry is auto-caught.
 
 ---
 

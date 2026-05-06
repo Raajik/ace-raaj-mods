@@ -54,7 +54,7 @@ public static class LockpickAutoBank
     static bool BankRegular(Player player, WorldObject item, ref bool __result)
     {
         if (!PatchClass.Settings.EnableLockpickAutoBank) return true;
-        if (!HasLockpickSkill(player)) return true;
+        if (!HasLockpickAccess(player)) return true;
 
         var charges = (long)(item.Structure ?? item.MaxStructure ?? 1);
         if (charges <= 0) charges = 1;
@@ -85,7 +85,7 @@ public static class LockpickAutoBank
     static bool BankLimitless(Player player, WorldObject item, ref bool __result)
     {
         if (!PatchClass.Settings.EnableLockpickAutoBank) return true;
-        if (!HasLockpickSkill(player)) return true;
+        if (!HasLockpickAccess(player)) return true;
 
         var prevCount = player.GetProperty((PropertyInt64)PropLimitCount) ?? 0L;
         var newCount  = prevCount + 1;
@@ -158,9 +158,55 @@ public static class LockpickAutoBank
         return false;
     }
 
-    static bool HasLockpickSkill(Player player)
+    // ── AchievementUnlocked interop (one-time reflection init) ──────────────
+
+    static bool? _achievementApiAvailable;
+    static System.Reflection.MethodInfo? _hasAchievementMethod;
+
+    static void EnsureAchievementInterop()
+    {
+        if (_achievementApiAvailable.HasValue) return;
+        try
+        {
+            var asm = AppDomain.CurrentDomain.GetAssemblies()
+                .FirstOrDefault(a => string.Equals(a.GetName().Name, "AchievementUnlocked", StringComparison.Ordinal));
+            if (asm == null) { _achievementApiAvailable = false; return; }
+
+            var mgr = asm.GetType("AchievementUnlocked.AchievementManager");
+            _hasAchievementMethod = mgr?.GetMethod("HasAchievement", new[] { typeof(Player), typeof(string) });
+            _achievementApiAvailable = _hasAchievementMethod != null;
+            ModManager.Log($"[LLL] AchievementUnlocked interop for lockpick banking: {(_achievementApiAvailable == true ? "OK" : "method not found")}",
+                ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            _achievementApiAvailable = false;
+            ModManager.Log($"[LLL] AchievementUnlocked interop init failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    /// <summary>
+    /// Returns true when the player may use lockpick auto-banking:
+    /// either they have Lockpick trained/spec'd, or they hold the configured
+    /// AchievementUnlocked achievement (LockpickBankingAchievementId).
+    /// </summary>
+    static bool HasLockpickAccess(Player player)
     {
         var skill = player.GetCreatureSkill(Skill.Lockpick);
-        return skill != null && skill.AdvancementClass >= SkillAdvancementClass.Trained;
+        if (skill != null && skill.AdvancementClass >= SkillAdvancementClass.Trained)
+            return true;
+
+        var achievementId = PatchClass.Settings?.LockpickBankingAchievementId;
+        if (string.IsNullOrWhiteSpace(achievementId)) return false;
+
+        EnsureAchievementInterop();
+        if (_achievementApiAvailable != true || _hasAchievementMethod == null) return false;
+
+        try
+        {
+            var result = _hasAchievementMethod.Invoke(null, new object[] { player, achievementId });
+            return result is bool b && b;
+        }
+        catch { return false; }
     }
 }

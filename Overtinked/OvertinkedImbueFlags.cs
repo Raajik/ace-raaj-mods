@@ -20,6 +20,9 @@ public static class OvertinkedImbueStore
 
     private const int AllowedBits = (int)(OvertinkedImbueFlags.Hemorrhage | OvertinkedImbueFlags.Cleaving | OvertinkedImbueFlags.NetherRending | OvertinkedImbueFlags.Shatter);
 
+    // Tier 3 (Custom tier): ONE from {Hemorrhage, Shatter, Cleaving}.
+    private const int CustomTierMask = (int)(OvertinkedImbueFlags.Hemorrhage | OvertinkedImbueFlags.Cleaving | OvertinkedImbueFlags.Shatter);
+
     public static OvertinkedImbueFlags Get(WorldObject? wo)
     {
         if (wo == null)
@@ -47,11 +50,58 @@ public static class OvertinkedImbueStore
         target.SetProperty(CustomProp, (int)next);
     }
 
+    public static bool TryAddCustomTier(WorldObject target, OvertinkedImbueFlags toAdd, out string reason)
+    {
+        reason = string.Empty;
+
+        if (target == null)
+        {
+            reason = "Target is null";
+            return false;
+        }
+
+        if (toAdd != OvertinkedImbueFlags.Hemorrhage && toAdd != OvertinkedImbueFlags.Cleaving && toAdd != OvertinkedImbueFlags.Shatter)
+        {
+            reason = $"Not a custom-tier imbue: {toAdd}";
+            return false;
+        }
+
+        OvertinkedImbueFlags existing = Get(target);
+        OvertinkedImbueFlags existingTier = existing & (OvertinkedImbueFlags)CustomTierMask;
+        if (existingTier != OvertinkedImbueFlags.None)
+        {
+            reason = $"Already has custom-tier imbue: {existingTier}";
+            return false;
+        }
+
+        Add(target, toAdd);
+        return true;
+    }
+
     public static void Remove(WorldObject target)
     {
         if (target == null)
             return;
 
         target.RemoveProperty(CustomProp);
+    }
+
+    /// <summary>
+    /// Clears specific flag bits without touching others (e.g. preserve Cleaving when stripping NetherRending).
+    /// </summary>
+    public static void ClearFlags(WorldObject target, OvertinkedImbueFlags flags)
+    {
+        if (target == null || flags == OvertinkedImbueFlags.None)
+            return;
+
+        int raw  = target.GetProperty(CustomProp) ?? 0;
+        int next = raw & ~(int)flags;
+        if (next == raw)
+            return;
+
+        if (next == 0)
+            target.RemoveProperty(CustomProp);
+        else
+            target.SetProperty(CustomProp, next);
     }
 }

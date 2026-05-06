@@ -511,6 +511,20 @@ public static class SummoningClasses
         if (__instance is Player injuredSummoner)
         {
             LastCombatHitUtc[injuredSummoner.Guid.Full] = now;
+
+            // If the player currently has no live auto-summons, bypass the pulse gate
+            // so pets respawn immediately on the very next hit rather than waiting up to 1s.
+            var existingPets = ActiveSummons.GetOrAdd(injuredSummoner.Guid.Full, _ => new List<CombatPet>());
+            int livePets;
+            lock (existingPets) { livePets = existingPets.Count(p => p != null && !p.IsDestroyed); }
+
+            if (livePets == 0)
+            {
+                LastSummonPulseUtc[injuredSummoner.Guid.Full] = now;
+                TrySummonPets(injuredSummoner);
+                return;
+            }
+
             if (LastSummonPulseUtc.TryGetValue(injuredSummoner.Guid.Full, out var lastSelfPulse))
             {
                 if (now - lastSelfPulse < SummonPulseInterval)
@@ -718,7 +732,7 @@ public static class SummoningClasses
         int currentCount;
         lock (activePets) { currentCount = activePets.Count; }
 
-        int totalCap = classSettings.TotalCap;
+        int totalCap = classSettings.TotalCap + GetSummoningCantripBonus(player);
         if (currentCount >= totalCap) return;
 
         var randomType = enabledTypes[Random.Shared.Next(enabledTypes.Count)];
@@ -798,6 +812,96 @@ public static class SummoningClasses
         if (skill >= 150) return 2;
         if (skill >= 100) return 1;
         return 0;
+    }
+
+    // ── Summoning Cantrip Bonus Pets ───────────────────────────────────
+
+    // Spell IDs: CantripSummoningProwess1 (Minor, 6136), 2 (Moderate, 6135),
+    // 3 (Major, 6133), 4 (Epic, 6134). Legendary is a custom configurable spell ID.
+    static readonly uint[] SummoningProwessSpellIds = { 6136u, 6135u, 6133u, 6134u };
+
+    // Bonus pets per cantrip tier: Minor=1, Moderate=2, Major=3, Epic=4, Legendary=7
+    static readonly int[] CantripBonusByTier = { 1, 2, 3, 4, 7 };
+
+    /// <summary>
+    /// Returns bonus pet capacity from the player's highest equipped Summoning Prowess cantrip.
+    /// Checks all equipped items for the 4 standard cantrip tiers plus optional legendary.
+    /// Only the highest tier applies.
+    /// </summary>
+    static int GetSummoningCantripBonus(Player player)
+    {
+        var s = PatchClass.Settings?.SummoningClasses;
+        if (s?.EnableCantripBonusPets != true)
+            return 0;
+
+        int highestTier = -1;
+
+        // Check all equipped items for spell book entries via SpellDID
+        foreach (var equipped in player.EquippedObjects.Values)
+        {
+            if (equipped == null) continue;
+
+            // Check primary spell
+            var spellDid = equipped.GetProperty(PropertyDataId.Spell);
+            if (spellDid.HasValue && spellDid.Value > 0)
+            {
+                int tier = GetCantripTier(spellDid.Value, s.CantripBonusPetsLegendarySpellId);
+                if (tier > highestTier)
+                    highestTier = tier;
+            }
+
+            // Check proc spell (some items have spell on proc)
+            var procSpell = equipped.GetProperty(PropertyDataId.ProcSpell);
+            if (procSpell.HasValue && procSpell.Value > 0)
+            {
+                int tier = GetCantripTier(procSpell.Value, s.CantripBonusPetsLegendarySpellId);
+                if (tier > highestTier)
+                    highestTier = tier;
+            }
+        }
+
+        // Check the item's weenie for spell book entries (multi-spell items like jewelry, casters)
+        try
+        {
+            foreach (var equipped in player.EquippedObjects.Values)
+            {
+                if (equipped == null || equipped.Weenie == null) continue;
+
+                if (equipped.Weenie.PropertiesSpellBook is { Count: > 0 })
+                {
+                    foreach (var kvp in equipped.Weenie.PropertiesSpellBook)
+                    {
+                        int tier = GetCantripTier((uint)kvp.Key, s.CantripBonusPetsLegendarySpellId);
+                        if (tier > highestTier)
+                            highestTier = tier;
+                    }
+                }
+            }
+        }
+        catch { /* weenie spell book may not be populated in all contexts */ }
+
+        if (highestTier < 0 || highestTier >= CantripBonusByTier.Length)
+            return 0;
+
+        return CantripBonusByTier[highestTier];
+    }
+
+    /// <summary>
+    /// Returns the cantrip tier index (0=Minor, 1=Moderate, 2=Major, 3=Epic, 4=Legendary)
+    /// for a given spell ID, or -1 if not a Summoning Prowess cantrip.
+    /// </summary>
+    static int GetCantripTier(uint spellId, uint legendarySpellId)
+    {
+        for (int i = 0; i < SummoningProwessSpellIds.Length; i++)
+        {
+            if (SummoningProwessSpellIds[i] == spellId)
+                return i;
+        }
+
+        if (legendarySpellId > 0 && legendarySpellId == spellId)
+            return 4; // Legendary tier
+
+        return -1;
     }
 
     // Sets DefaultScale (ObjScale). Before EnterWorld: property only (InitPhysics reads it). After: refresh physics + broadcast.
@@ -1721,6 +1825,14 @@ public class SummoningClassesSettings
     [JsonPropertyName("// PetAwarenessRange")]
     public string PetAwarenessRangeDoc { get; init; } = "Pet aggro awareness range in meters.";
     public float PetAwarenessRange { get; set; } = 5.0f;
+
+    [JsonPropertyName("// EnableCantripBonusPets")]
+    public string EnableCantripBonusPetsDoc { get; init; } = "When true, equipped Summoning Prowess cantrips add extra pet cap: Minor=1, Moderate=2, Major=3, Epic=4, Legendary=7.";
+    public bool EnableCantripBonusPets { get; set; } = true;
+
+    [JsonPropertyName("// CantripBonusPetsLegendarySpellId")]
+    public string CantripBonusPetsLegendarySpellIdDoc { get; init; } = "Custom spell ID for Legendary-tier Summoning Prowess (grants +7 bonus pets). 0 = disabled.";
+    public uint CantripBonusPetsLegendarySpellId { get; set; } = 0;
 
     [JsonPropertyName("// FollowDistanceThreshold")]
     public string FollowDistanceThresholdDoc { get; init; } = "Distance before pet teleports/moves to follow player when you are not locomoting (see FollowWhileOwnerMoving).";

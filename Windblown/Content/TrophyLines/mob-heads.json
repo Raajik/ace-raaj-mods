@@ -1,0 +1,236 @@
+{
+  "Description": "All mob head trophy lines. Single tier each. Heads drop from their respective creature types. Collectors reward XP + bank credit on turn-in via TrophyTurnInPatches. Mask makers (8402, 8403, 8404, 12203, 12204, 12205, 34145) are excluded so they still give masks instead.",
+  "Lines": [
+    {
+      "Name": "BanderlingHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Banderling",
+      "TurnInDisplayName": "Banderling Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 8144, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "DrudgeHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Drudge",
+      "TurnInDisplayName": "Drudge Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 8145, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "MosswartHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Mosswart",
+      "TurnInDisplayName": "Mosswart Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 8146, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "TuskerHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 8147, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "UrsuinHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Ursuin",
+      "TurnInDisplayName": "Ursuin Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 9097, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [12219], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "PumpkinHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Scarecrow",
+      "TurnInDisplayName": "Pumpkin Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 12215, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "SclavusHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Sclavus",
+      "TurnInDisplayName": "Sclavus Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 12216, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "ZombieHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Undead",
+      "TurnInDisplayName": "Zombie Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 12225, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "OlthoiHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Olthoi",
+      "TurnInDisplayName": "Olthoi Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 3680, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [19446], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "SkeletonSkull",
+      "Enabled": true,
+      "CreatureTypeGate": "Skeleton",
+      "TurnInDisplayName": "Skeleton's Skull",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 3687, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "LichSkull",
+      "Enabled": true,
+      "CreatureTypeGate": "Undead",
+      "TurnInDisplayName": "Lich Skull",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 4121, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "EvisceratorHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Tumerok",
+      "TurnInDisplayName": "Eviscerator Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 22059, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "MutilatorHead",
+      "Enabled": true,
+      "CreatureTypeGate": "HollowMinion",
+      "TurnInDisplayName": "Mutilator Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 24846, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "KnathHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Knathtead",
+      "TurnInDisplayName": "Knath Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 25554, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "MoarsmanHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Moarsman",
+      "TurnInDisplayName": "Moarsman Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 25561, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "BurunGurukHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Burun",
+      "TurnInDisplayName": "Burun Guruk Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 28886, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [28887], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "ChittickHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Chittick",
+      "TurnInDisplayName": "Chittick Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 28888, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "MiteHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Mite",
+      "TurnInDisplayName": "Mite Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 28889, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "ShadowHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Shadow",
+      "TurnInDisplayName": "Shadow Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 34029, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "CowHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Cow",
+      "TurnInDisplayName": "Cow Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 36359, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    },
+    {
+      "Name": "MukkirHead",
+      "Enabled": true,
+      "CreatureTypeGate": "Mukkir",
+      "TurnInDisplayName": "Mukkir Head",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 36362, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [], "BankCashProperty": 39999, "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": [8402, 8403, 8404, 12203, 12204, 12205, 34145]
+    }
+  ]
+}

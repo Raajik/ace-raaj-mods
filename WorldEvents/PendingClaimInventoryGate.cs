@@ -25,8 +25,8 @@ internal static class PendingClaimInventoryGate
                 if (entry.Ironman)
                     item.SetProperty(FakeBool.Ironman, true);
 
-                if (string.Equals(entry.Source, "Hunt", StringComparison.OrdinalIgnoreCase) &&
-                    HuntBankInterop.CanAutoBankHuntLoot(player, item))
+                // Skip bankable items (currency or ledger items) from inventory check - they auto-bank
+                if (HuntBankInterop.CanAutoBankHuntLoot(player, item))
                 {
                     item.Destroy();
                     continue;

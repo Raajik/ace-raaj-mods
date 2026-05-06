@@ -161,6 +161,8 @@
     "ArtificerWispImperilDrainProcChance": 1.0,
     "ArtificerWispProcMaxSpellTier": 8,
     "ArtificerWispProcAoERadiusMeters": 10.0,
+    "EnableCantripBonusPets": true,
+    "CantripBonusPetsLegendarySpellId": 0,
     "Druid": {
       "Enabled": true,
       "TotalCap": 4,

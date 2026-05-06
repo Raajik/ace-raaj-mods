@@ -228,6 +228,21 @@ internal static class SpecialCreatureLoot
 
     static void ApplyElementalRend(WorldObject item)
     {
+        // Check if item already has an elemental or physical rending - only one of each allowed
+        var elementalRendings = new[] 
+        { 
+            ImbuedEffectType.AcidRending, 
+            ImbuedEffectType.ColdRending, 
+            ImbuedEffectType.ElectricRending, 
+            ImbuedEffectType.FireRending 
+        };
+        
+        if (item.ImbuedEffect != null && elementalRendings.Any(e => item.ImbuedEffect.HasFlag(e)))
+        {
+            // Item already has an elemental rending, skip to avoid conflicts
+            return;
+        }
+        
         var (rend, damageType) = RendPool[ThreadSafeRandom.Next(0, RendPool.Length - 1)];
         item.ImbuedEffect |= rend;
         item.SetProperty(PropertyInt.DamageType, (int)damageType);
@@ -242,7 +257,14 @@ internal static class SpecialCreatureLoot
             ImbuedEffectType.CripplingBlow,
             ImbuedEffectType.ArmorRending,
         };
-        item.ImbuedEffect |= pool[ThreadSafeRandom.Next(0, pool.Length - 1)];
+        
+        // Filter out imbues already on the item
+        var available = pool.Where(i => item.ImbuedEffect == null || !item.ImbuedEffect.HasFlag(i)).ToArray();
+        
+        if (available.Length == 0)
+            return; // All secondary imbues already applied
+        
+        item.ImbuedEffect |= available[ThreadSafeRandom.Next(0, available.Length - 1)];
     }
 
     static void ApplyArmorImbue(WorldObject item)
@@ -253,7 +275,14 @@ internal static class SpecialCreatureLoot
             ImbuedEffectType.MeleeDefense,
             ImbuedEffectType.MissileDefense,
         };
-        item.ImbuedEffect |= pool[ThreadSafeRandom.Next(0, pool.Length - 1)];
+        
+        // Filter out imbues already on the item
+        var available = pool.Where(i => item.ImbuedEffect == null || !item.ImbuedEffect.HasFlag(i)).ToArray();
+        
+        if (available.Length == 0)
+            return; // All defense imbues already applied (can have all 3)
+        
+        item.ImbuedEffect |= available[ThreadSafeRandom.Next(0, available.Length - 1)];
     }
 
     static bool IsShieldItem(WorldObject item)
@@ -356,17 +385,38 @@ internal static class SpecialCreatureLoot
     // Visual Effects (IconUnderlay + UiEffects glow)
     // =====================================================================
 
-    // Icon underlay mapping from RecipeManager (ACE vanilla)
+    // Icon underlay mapping — exact values from ACE RecipeManager.IconUnderlay
     static readonly Dictionary<ImbuedEffectType, uint> IconUnderlayMap = new()
     {
         { ImbuedEffectType.ColdRending,     0x06003353 },
         { ImbuedEffectType.ElectricRending, 0x06003354 },
         { ImbuedEffectType.AcidRending,     0x06003355 },
-        { ImbuedEffectType.PierceRending,   0x06003356 },
-        { ImbuedEffectType.FireRending,     0x06003357 },
+        { ImbuedEffectType.ArmorRending,    0x06003356 },
+        { ImbuedEffectType.CripplingBlow,   0x06003357 },
+        { ImbuedEffectType.CriticalStrike,  0x06003358 },
+        { ImbuedEffectType.FireRending,     0x06003359 },
+        { ImbuedEffectType.BludgeonRending, 0x0600335a },
+        { ImbuedEffectType.PierceRending,   0x0600335b },
         { ImbuedEffectType.SlashRending,    0x0600335c },
-        { ImbuedEffectType.BludgeonRending, 0x0600335b },
-        { ImbuedEffectType.NetherRending,   0x06003359 },
+        { ImbuedEffectType.NetherRending,   0x0600335d },
+    };
+
+    // Priority order for icon underlay selection (highest priority first)
+    static readonly ImbuedEffectType[] IconUnderlayPriority =
+    {
+        // Rending imbues first (most visually distinctive)
+        ImbuedEffectType.AcidRending,
+        ImbuedEffectType.FireRending,
+        ImbuedEffectType.ColdRending,
+        ImbuedEffectType.ElectricRending,
+        ImbuedEffectType.NetherRending,
+        ImbuedEffectType.PierceRending,
+        ImbuedEffectType.SlashRending,
+        ImbuedEffectType.BludgeonRending,
+        // Proc imbues second
+        ImbuedEffectType.ArmorRending,
+        ImbuedEffectType.CriticalStrike,
+        ImbuedEffectType.CripplingBlow,
     };
 
     static void ApplyImbueVisualEffects(WorldObject item)
@@ -406,12 +456,12 @@ internal static class SpecialCreatureLoot
             if (visualEffect != 0)
                 item.SetProperty(PropertyInt.UiEffects, currentEffects | visualEffect);
 
-            // Apply icon underlay (background texture) based on imbue type
-            foreach (var kvp in IconUnderlayMap)
+            // Apply icon underlay (background texture) based on imbue priority order
+            foreach (var imbueType in IconUnderlayPriority)
             {
-                if (item.ImbuedEffect.HasFlag(kvp.Key))
+                if (item.ImbuedEffect.HasFlag(imbueType) && IconUnderlayMap.TryGetValue(imbueType, out var underlayId))
                 {
-                    item.IconUnderlayId = kvp.Value;
+                    item.IconUnderlayId = underlayId;
                     break;
                 }
             }

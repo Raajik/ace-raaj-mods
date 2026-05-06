@@ -27,7 +27,7 @@ Enlightenment and wield-path tuning for endgame characters.
 - **XP curve control** — flatten or steepen the post-275 curve per server preference.
 
 ### AutoLoot
-Server-side corpse autoloot using `.utl` profiles (compatible with Decal UT classic profiles).
+Server-side corpse autoloot with optional `.utl` profiles (Decal UT classic compatible). Key/currency/trophy handling increasingly lives in C# passes so the shard can move away from `.utl` over time.
 - Auto-loot corpses on kill or on approach.
 - Optional vendor-trash pass (sell greys automatically).
 - Optional unknown-scroll pass (keep or destroy untrained scrolls).
@@ -79,7 +79,7 @@ A mutator pipeline for loot, corpses, generators, and player-driven item awakeni
 - **Point-based item leveling** — ALL creature kills grant +1 leveling point; QB-eligible quest completions grant +100. Items level up via discrete points instead of raw XP, decoupling from billion-XP/hour endgame player XP.
 - **Coalesced Mana awakening + upgrading** — All three tiers (Lesser 42516, Greater 42517, Aetheric 42518) can both awaken new items AND upgrade existing awakened items. QuickStart is the single configurable default profile.
 - **Loot-time item XP** (`LootGrowthItem`) — items can drop with XP progress already applied.
-- **Pre-awakened drops** (~0.2%) — Living-style tiered awakening with XP profiles (QuickStart/Steady/Brutal/Casual), "Living" rename, and visual glow.
+- **Pre-awakened drops** (~0.2%) — Awakened-style tiered awakening with XP profiles (QuickStart/Steady/Brutal/Casual), "Awakened" rename, and visual glow.
 - **Quest equipment guaranteed pre-awaken** — all NPC-given gear gets auto-awakened + workmanship + imbue.
 - **Pre-imbued loot** (~5%) — random elemental rend, slayer, cleave, or secondary imbue on weapons; defense imbue on armor.
 - **Wield requirement capping** — all loot items get `tier × 50` wield caps so drops match source creature difficulty.

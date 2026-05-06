@@ -31,8 +31,9 @@ For **Windblown / `wb_ace_world`**, after copying `Overtinked` to `C:\ACE-WB\Mod
 | **Numeric salvage** | Per-salvage rules: random range (e.g. Iron +1–5 damage) or fixed value. Use both WCIDs in `Wcids` for quest-reward pairs. |
 | **Failed numeric tinker** | If `EnableFailureRedesign` is on: apply the *opposite* effect instead of destroying the item (only for salvages in `SalvageRules`). |
 | **Failed imbue tinker** | If `EnableDefaultImbueFailureWorkmanship` is on: add +1 Workmanship to the item (cap 10) instead of destroying it. At cap, failure does nothing. Applies to standard imbues and custom (Hemorrhage/Cleaving/Nether). |
-| **New imbues** | Salvaged Yellow Garnet (default WCID **21087**) → **Hemorrhage**, Tiger Eye → **Cleaving**, Onyx → **Nether Rending**. Hemorrhage adds stacking flat Health DoT (staggered 1-damage hits) to the primary target and to other creatures within **AoERadiusMeters** of the primary; uses Crippling Blow icon underlay and Fire-only **UiEffects** via `HemorrhageWeaponVisual` — **does not remove** existing **`ImbuedEffect` rend bits** (e.g. Bludgeon Rending); Nether still replaces rends then re-applies Nether. Cleaving splashes a fraction of the primary hit; Nether Rending adds extra Nether damage on the primary target. Stock ACE never registers yellow garnet in `GetNewRecipe`; Overtinked resolves **`HemorrhageImbue.BaseRecipeId`** (default **4452**) when salvage WCID + valid melee/missile weapon would otherwise get “cannot be used”. |
-| **Buffed jewelry** | `BuffedImbueRules` replace default imbue strength (e.g. Hematite +25–50 HP, Malachite +25–50 Stam, Lavender Jade +25–50 Mana) and set the matching `ImbuedEffectTypeName`. |
+| **New imbues** | Yellow Garnet (21087) → **Hemorrhage**, Tiger Eye (21081) → **Cleaving**, Onyx (21064) → **Nether Rending**, White Jade (21084) → **Shatter**, Obsidian (21063) → **Jewelry Cleave**. Hemorrhage adds stacking flat Health DoT (staggered 1-damage hits) to the primary target and AoE victims; does **not** strip existing rend bits. Cleaving splashes a fraction of the primary hit to nearby targets. Nether Rending adds extra Nether damage on the primary target. Shatter applies a stacking debuff to creatures; at max stacks target is “broken” for a bonus damage fraction on all damage from that weapon. Stock ACE never registers Yellow Garnet / White Jade in `GetNewRecipe`; Overtinked resolves `HemorrhageImbue.BaseRecipeId` / `ShatterImbue.BaseRecipeId` (default **4452**) as a fallback. |
+| **Rending tier** | Nether Rending shares the rending slot with all standard elemental rends (Acid/Bludgeon/Cold/Electric/Fire/Pierce/Slash). Applying any rend — via the standard `TryMutate` path **or** via `TryApplyNewImbue` — strips all others from both `ImbuedEffect` and `PropertyInt 40133` (`OvertinkedImbueStore.ClearFlags`). |
+| **Buffed jewelry** | `BuffedImbueRules` replace default imbue strength (e.g. Hematite +25–50 HP, Malachite +25–50 Stam, Lavender Jade +25–50 Mana). `TryApplyBuffedImbue` stamps `PropertyInt 40136` with the source WCID so **BetterSupportSkills** can grant the matching salvage on auto-salvage. |
 
 ---
 
@@ -44,7 +45,7 @@ Edit `Settings.json` in the mod folder (e.g. `C:\ACE\Mods\Overtinked\`).
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `MaxTries` | 50 | Max tinkers allowed per item. |
+| `MaxTries` | 10 | Max tinkers allowed per item. |
 | `Scale` | 0.5 | Difficulty step between each extra tinker tier. |
 | `MaxImbueEffects` | 5 | Max imbue effects per item (by bit count). |
 | `EnableRecipeManagerPatch` | true | Use Overtinked’s craft flow (required for full tinkering + Hemorrhage combat). |
@@ -87,9 +88,11 @@ Vanilla adds the **count** of equipped pieces with that defense imbue directly t
 
 ### New imbues
 
-- **HemorrhageImbue** — `SalvageWcids` (default `[21087]` Salvaged Yellow Garnet), **`BaseRecipeId`** (default `4452`, template tinkering recipe for `GetRecipe` when vanilla returns null), `Enabled`, **`StacksPerApplication`**, **`MaxStacks`**, **`AoERadiusMeters`**, **`TickIntervalSeconds`**, **`DamagePerStackPerTick`**, **`StaggerBetweenHitsSeconds`**. Legacy JSON key **`BleedImbue`** still deserializes and merges if `HemorrhageImbue` has no salvage WCIDs.
-- **CleavingImbue** — `SalvageWcids`, `Enabled`, plus **`SplashRadiusMeters`**, **`SplashDamageFraction`** (of primary final damage per extra target), **`MaxSplashTargets`**.
-- **NetherRendingImbue** — `SalvageWcids`, `Enabled`, plus **`NetherDamageFraction`** (of primary final damage), **`MaxNetherBonusDamage`** (0 = no cap).
+- **HemorrhageImbue** — `SalvageWcids` (default `[21087]` Yellow Garnet), **`BaseRecipeId`** (default `4452`), `Enabled`, **`StacksPerApplication`**, **`MaxStacks`**, **`AoERadiusYards`** (× 0.9144 m; fallback `AoERadiusMeters` when 0), **`TickIntervalSeconds`**, **`DamagePerStackPerTick`**, **`StaggerBetweenHitsSeconds`**. Legacy JSON key **`BleedImbue`** still deserializes and merges if `HemorrhageImbue` has no salvage WCIDs.
+- **CleavingImbue** — `SalvageWcids` (default `[21081]` Tiger Eye), `Enabled`, **`SplashRadiusMeters`**, **`SplashDamageFraction`**, **`MaxSplashTargets`**, **`SplashDamagePlayerVictims`**, **`SplashDamageCapPerTarget`**.
+- **NetherRendingImbue** — `SalvageWcids` (default `[21064]` Onyx), `Enabled`, **`NetherDamageFraction`**, **`MaxNetherBonusDamage`** (0 = no cap), **`NetherBonusVsCreaturesMultiplier`**, **`NetherBonusVsPlayersMultiplier`**, **`NetherBonusSoftCap`**.
+- **ShatterImbue** — `SalvageWcids` (default `[21084]` White Jade), **`BaseRecipeId`** (default `4452`), `Enabled`, **`StacksPerHit`**, **`MaxStacks`**, **`DamageBonusPerStack`** (additive per-stack multiplier), **`BrokenDamageBonusFraction`** (extra fraction when target is at max stacks; applies to all damage from that weapon on that hit).
+- **JewelryCleaveImbue** — `SalvageWcids` (default `[21063]` Obsidian), `Enabled`, **`BonusTargets`** (extra cleave targets; ACE subtracts 1 internally so 1 bonus = `Cleaving` = 2). Only applies to jewelry items (`ItemType.Jewelry`).
 
 ### Buffed jewelry (`BuffedImbueRules`)
 

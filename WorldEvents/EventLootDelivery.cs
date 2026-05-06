@@ -22,10 +22,11 @@ internal static class EventLootDelivery
             item.SetProperty(FakeBool.Ironman, true);
 
         var tag = $"{entry.Source} {entry.Label}".Trim();
-        if (string.Equals(entry.Source, "Hunt", StringComparison.OrdinalIgnoreCase) &&
-            HuntBankInterop.TryLeyLineLedgerAutoBank(player, item, tag))
+        // Try auto-banking for ANY bankable item (currency or ledger items), not just Hunt
+        if (HuntBankInterop.TryLeyLineLedgerAutoBank(player, item, tag))
         {
-            player.SendMessage($"[WorldEvents] Claimed {item.Name} ({entry.Label}) — sent to hunt bank.");
+            var sourceTag = string.IsNullOrWhiteSpace(entry.Source) ? "WorldEvents" : entry.Source;
+            player.SendMessage($"[{sourceTag}] Claimed {item.Name} ({entry.Label}) — sent to bank.");
             return true;
         }
 

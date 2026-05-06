@@ -143,24 +143,43 @@ internal static class BuddySpawns
         }
     }
 
+    // null = untested, true = available, false = unavailable (cached after first failure)
+    static bool? _worldEventsAvailable = null;
+
     static int GetEffectiveBuddyIdleThresholdSeconds(int storedSeconds, Landblock lb)
     {
+        if (_worldEventsAvailable == false)
+            return storedSeconds;
+
         try
         {
-            if (!WorldEvents.SaleLandblockApi.IsLandblockOnSale((int)lb.Id.Raw))
-                return storedSeconds;
-
-            var scale = WorldEvents.SaleLandblockApi.BuddyIdleThresholdScale;
-            if (scale >= 1.0 - 1e-9)
-                return storedSeconds;
-
-            return Math.Max(5, (int)(storedSeconds * scale));
+            int result = GetWorldEventsThreshold(storedSeconds, lb);
+            _worldEventsAvailable = true;
+            return result;
         }
         catch (Exception)
         {
-            // WorldEvents not loaded or API unavailable
+            // WorldEvents assembly not loaded — stop trying
+            _worldEventsAvailable = false;
             return storedSeconds;
         }
+    }
+
+    // Separated into its own NoInlining method so the JIT only resolves WorldEvents
+    // types when this method is actually called, not when the caller is JIT-compiled.
+    // Without this split, a missing WorldEvents.dll throws before the try-catch fires.
+    [System.Runtime.CompilerServices.MethodImpl(
+        System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    static int GetWorldEventsThreshold(int storedSeconds, Landblock lb)
+    {
+        if (!WorldEvents.SaleLandblockApi.IsLandblockOnSale((int)lb.Id.Raw))
+            return storedSeconds;
+
+        var scale = WorldEvents.SaleLandblockApi.BuddyIdleThresholdScale;
+        if (scale >= 1.0 - 1e-9)
+            return storedSeconds;
+
+        return Math.Max(5, (int)(storedSeconds * scale));
     }
 
     static List<Creature> GetLivingCreatures(Landblock lb)

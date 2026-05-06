@@ -23,12 +23,8 @@ public class Settings
 
     [JsonPropertyName("// DefaultActiveProfiles")]
     public string DefaultActiveProfilesDoc { get; init; } =
-        "Shipped default: two LootProfiles/*.utl filenames (allowlist for /autoloot menu and new characters). Empty []: bundled list in code for first-login defaults only; /autoloot lists every .utl on disk. AutoSalvage is now material-type based and does not require a .utl profile. Key banking is baked into core (no profile needed).";
-    public List<string> DefaultActiveProfiles { get; set; } =
-    [
-        "Currency.utl",
-        "Trophies.utl",
-    ];
+        "Shipped default: LootProfiles/*.utl filenames (allowlist for /autoloot menu and new characters). Empty []: bundled list in code for first-login defaults only; /autoloot lists every .utl on disk. AutoSalvage is now material-type based and does not require a .utl profile. Key banking is baked into core (no profile needed). Pyreal trophies (motes/slivers/nuggets/bars) now auto-bank via C# code.";
+    public List<string> DefaultActiveProfiles { get; set; } = [];
 
     [JsonPropertyName("// DefaultProfile")]
     public string DefaultProfileDoc { get; init; } =
@@ -40,8 +36,57 @@ public class Settings
     public List<string> NoDuplicateNames { get; set; } = ["Pincer", "Tusk", "Matron"];
 
     [JsonPropertyName("// UpgradedTrophyWeenieClassIds")]
-    public string UpgradedTrophyWeenieClassIdsDoc { get; init; } = "Physical custom-trophy WCIDs: Pass 1 pulls these from corpse/chest into the player's pack before any .utl profile (no LLL ledger — real items). Default: Bloodletter Drudge charm line (24835, 850271–850273). See WindblownContent/docs/Windblown-Custom-Trophy-Settings.md when adding new trophy lines.";
-    public List<uint> UpgradedTrophyWeenieClassIds { get; set; } = [24835u, 850271u, 850272u, 850273u];
+    public string UpgradedTrophyWeenieClassIdsDoc { get; init; } = "Physical custom-trophy WCIDs: Pass 1 pulls these from corpse/chest into the player's pack before any .utl profile (no LLL ledger — real items). Includes drudge charms, rat tails, wasp wings, mob heads, and quest letters. See Windblown/docs/TrophyLineRegistry.md when adding new trophy lines.";
+    public List<uint> UpgradedTrophyWeenieClassIds { get; set; } =
+    [
+        // Drudge Charms
+        24835u, 850271u, 850272u, 850273u,
+        // Rat Tails
+        3681u,  // Black Rat Tail
+        3682u,  // Brown Rat Tail
+        4133u,  // Rat Tail (base, after sibling replacement)
+        // Rat Tail tiers
+        850280u, 850281u, 850282u,
+        // Wasp Wings
+        3699u,  // Blue Phyntos Wasp Wing
+        3700u,  // Gold Phyntos Wasp Wing
+        3701u,  // Green Phyntos Wasp Wing
+        3702u,  // Mire Phyntos Wasp Wing
+        3703u,  // Red Phyntos Wasp Wing
+        7603u,  // White Phyntos Wasp Wing (base)
+        8426u,  // Jungle Phyntos Wasp Wing
+        13089u, // Carpenter Wasp Wing
+        // Wasp Wing tiers
+        850283u, 850284u, 850285u,
+        // Mob Heads
+        8144u,  // Banderling Head
+        8145u,  // Drudge Head
+        8146u,  // Mosswart Head
+        8147u,  // Tusker Head
+        9097u,  // Ursuin Head
+        12215u, // Pumpkin Head
+        12216u, // Sclavus Head
+        12225u, // Zombie Head
+        3680u,  // Olthoi Head
+        3687u,  // Skeleton's Skull
+        4121u,  // Lich Skull
+        19446u, // Olthoi Head (alt)
+        22059u, // Eviscerator Head
+        24846u, // Mutilator Head
+        25554u, // Knath Head
+        25561u, // Moarsman Head
+        28886u, // Burun Guruk Head
+        28888u, // Chittick Head
+        28889u, // Mite Head
+        34029u, // Shadow Head
+        36359u, // Cow Head
+        36362u, // Mukkir Head
+        // Quest Letters
+        8701u,  // Lucky Gold Letter
+        8702u,  // Scarlet Red Letter
+        45875u, // Lucky Gold Letter (variant)
+        45876u, // Scarlet Red Letter (variant)
+    ];
 
     [JsonPropertyName("// KeysUnlockThreshold")]
     public string KeysUnlockThresholdDoc { get; init; } = "DEPRECATED — Key auto-banking is now unconditional for all players. This setting is kept for notification/achievement tracking only.";

@@ -50,6 +50,7 @@ internal static class CreatureVariation
             return;
 
         float mult = RollVariationMultiplier(variationSettings, guid);
+        bool friendly = creature.Attackable == false;
         creature.SetProperty((PropertyFloat)DeferredVariationPropertyId, mult);
 
         var chain = new ActionChain();
@@ -61,7 +62,7 @@ internal static class CreatureVariation
                 return;
 
             creature.RemoveProperty((PropertyFloat)DeferredVariationPropertyId);
-            ApplyVariation(creature, (float)stored.Value, variationSettings);
+            ApplyVariation(creature, (float)stored.Value, variationSettings, friendly);
         });
         chain.EnqueueChain();
     }
@@ -80,7 +81,7 @@ internal static class CreatureVariation
         return (float)ThreadSafeRandom.Next(min, max);
     }
 
-    public static void ApplyVariation(Creature creature, float multiplier, CreatureVariationSettings settings)
+    public static void ApplyVariation(Creature creature, float multiplier, CreatureVariationSettings settings, bool friendlyNpc = false)
     {
         if (creature == null || multiplier == 1.0f)
             return;
@@ -108,7 +109,10 @@ internal static class CreatureVariation
         // ensures Current is set to the actual computed maximum.
         creature.SetMaxVitals();
 
-        float newScale = (creature.ObjScale ?? 1.0f) * multiplier;
+        // Friendly (non-attackable) NPCs can only scale smaller by up to 25% — never larger.
+        // Scaling them up causes them to clip into geometry and disappear.
+        float scaleMult = friendlyNpc ? Math.Clamp(multiplier, 0.75f, 1.0f) : multiplier;
+        float newScale = (creature.ObjScale ?? 1.0f) * scaleMult;
         creature.ObjScale = Math.Clamp(newScale, 0.1f, 5.0f);
 
         int? currentDR = creature.GetProperty(PropertyInt.DamageRating);

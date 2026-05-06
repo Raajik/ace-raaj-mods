@@ -1,5 +1,85 @@
 # Completed Features & Fixes
 
+## 2026-05-06
+
+### Session 3: Immutable Source of Truth Initiative — Phases 2-4
+
+Standardized mod documentation, feature ownership mapping, and immutable source-of-truth governance for the entire ace-raaj-mods repo.
+
+**Phase 2: Feature Mapping**
+- Created `FEATURE_MATRIX.md` with 80+ feature rows across 14 categories
+- Every feature has: Owner mod, README status, Settings.json status, Status, Notes
+- Identified gaps: defense imbue hang (HIGH), empty mods (MEDIUM)
+
+**Phase 3: Documentation Standards**
+- Created `Docs/FeatureTemplate.md` (8-section template: intent, formulas, behavior, cross-mod, config, DB, testing, changelog)
+- Created **7 new READMEs** for previously undocumented critical mods:
+  - **EmpyreanAlteration** — 32 features, 16 mutators, 5 enums documented comprehensively
+  - **Swarmed** — 29 champion types, 4 systems (call-for-help, CreatureEx, buddy spawns, dungeon pop)
+  - **WorldEvents** — 7 event types (hunt, invasion, sale, cull, bonus quest, POI hunt, scavenger), scheduler, claim system
+  - **BetterKeys** — unlock-only behavior, bank integration, key WCID mapping
+  - **CommonGoals** — personal loot, no-split XP
+  - **AchievementUnlocked** — achievement system overview
+  - **Lockboxes** — tiered lockbox system
+  - **CustomSpells** — custom spell creation, equipment set bonuses
+- Created `WindblownContent/Settings.json` template (was missing)
+- Result: All 22 primary mods have READMEs; all 23 required mods have Settings.json
+
+**Phase 4: Process & Governance**
+- Created `.github/PULL_REQUEST_TEMPLATE.md` with full SoT checklist (feature ownership, docs, config, DB, build, git hygiene)
+- Created `scripts/validate_sot.sh` — automated audit script checking README coverage, Settings.json coverage, SoT docs, stale mods, SQL backup dir
+- Audit result: **50 pass, 0 fail, 2 warnings** (Gemcrafter empty, Work-In-Progress empty — known)
+- Added weekly SoT sync note to PLAN.md
+
+**Phase 5: Ongoing**
+- Audit script ready for CI/cron
+- Clean instructions for PR authors
+
+### Session 2: Multi-mod fixes (imbue spells, Living→Awakened, cantrip pets, key unlock, LLL auto-bank)
+
+**EmpyreanAlteration: "Living" prefix → "Awakened"**
+- `LootItemPreAwakenPrefix` default changed from `"Living"` to `"Awakened"`
+- All pre-awakened loot drops now show as "Awakened" instead of "Living"
+- Updated both repo and test server Settings.json
+
+**BetterSupportSkills: Summoner cantrip bonus pets**
+- Equipped Summoning Prowess cantrips now grant extra pet capacity:
+  - Minor=1, Moderate=2, Major=3, Epic=4, Legendary=7 bonus pets
+- New settings: `EnableCantripBonusPets` (default true), `CantripBonusPetsLegendarySpellId` (0=disabled)
+- TotalCap in TrySummonForClass dynamically includes the cantrip bonus
+
+**BetterLootControl: Imbued items must have spells**
+- Added `EnsureImbuedItemHasSpells()` — if an item receives an imbue (Overtinked custom imbue or standard) but has no spells, 1-3 random loot spells are added automatically
+- Ensures imbued items are always magical (no non-magical imbued items)
+
+**Swarmed: CreatureEx imbue overlay backgrounds**
+- Fixed `IconUnderlayMap` to match ACE RecipeManager canonical values exactly
+- Added missing entries: ArmorRending, CripplingBlow, CriticalStrike (had wrong/absent icons)
+- Added priority-based underlay selection (rending > proc > defense) instead of first-match
+
+**AutoLoot: General LLL item auto-banking**
+- Added `TryBankAnyLllItem()` using existing `LeyLineLedgerBankInterop.IsBankableWcid()` reflection bridge
+- Added immediate banking pass + Pass 7 for any LLL-bankable item found in containers
+- Updated early-exit check to include LLL item scanning
+
+**BetterKeys: Skeleton keys unlock-only (no auto-open)**
+- Made chest open suppression permanent — removed the 280ms time window
+- Skeleton keys now ONLY unlock chests; player clicks again to open manually
+
+**LeyLineLedger: Key display names**
+- Updated BankItem Names with lock-tier suffix: "Sturdy Iron Key (1kD)", "Legendary Key (5kC)", etc.
+
+### AutoLoot: reduce `.utl` dependency (Currency + Trophies)
+- Moved Currency and Trophy behaviors into C# passes (auto-loot/bank), shrinking the shard’s reliance on `.utl` profiles.
+- Added/extended Windblown custom trophy + letter handling via settings and existing QOL turn-in helpers.
+
+### BetterLootControl: vendor rotation fixes
+- Fixed Sage/Archmage vendor classification and ensured mage vendors can sell robes (robes are `ItemType.Armor` in ACE).
+- Fixed and globalized imbue compatibility enforcement using Windblown tier rules (see below).
+
+### WorldEvents: `/claim` inventory gating
+- Pending rewards now require manual `/claim` even while online (bankable items still auto-bank and bypass inventory gating).
+
 ## 2026-05-05 (Evening Session)
 
 ### CreatureEx Imbue Overlays + Salvage Bag Generation
@@ -389,9 +469,10 @@ Vendor items can now spawn with multiple compatible imbues (ultra-rare), creatin
 - 2% chance for 3rd compatible imbue
 
 **Compatibility Rules:**
-- Only one elemental rending (fire/cold/electric/acid)
-- Only one physical rending (slash/pierce/bludgeon)
-- All offensive and defense imbues can stack freely
+- Windblown tier rules (one per tier):
+  - **Tier 1 (Rending)**: one total from all rends (elemental + physical + nether)
+  - **Tier 2 (Proc)**: one total from ArmorRending / CriticalStrike / CripplingBlow
+  - **Tier 3 (Custom)**: one total from custom imbues (Hemorrhage / Shatter / Cleave, etc.)
 
 **Pricing:**
 Multi-imbue pricing is **exponential**: Each imbue = 5x multiplier, so:

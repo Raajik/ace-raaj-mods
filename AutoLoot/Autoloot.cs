@@ -34,11 +34,20 @@ public class AutoLoot
     static readonly string[] BundledDefaultProfileFileNames =
     [
         "Currency.utl",
-        "Trophies.utl",
     ];
 
     static readonly HashSet<uint> LockpickWcids = new()
         { 510, 511, 512, 513, 514, 515, 516, 545, 27672 };
+
+    // Pyreal trophy items that should auto-bank when looted (Motes, Slivers, Nuggets, Bars)
+    static readonly HashSet<uint> PyrealTrophyWcids = new()
+    {
+        6353,  // Pyreal Mote
+        6355,  // Pyreal Sliver
+        6354,  // Pyreal Nugget
+        6329,  // Pyreal Bar
+        36676, // Pyreal Bar (variant)
+    };
 
     // Level 8 spellcrafting components: quills, inks, skill glyphs
     static readonly HashSet<uint> Level8CompWcids = new()
@@ -341,6 +350,20 @@ public class AutoLoot
             return true;
         }
 
+        // Pyreal trophies (Motes, Slivers, Nuggets, Bars) — convert to pyreal value and bank
+        if (PyrealTrophyWcids.Contains(item.WeenieClassId))
+        {
+            long trophyValue = (long)(item.Value ?? 0) * (item.StackSize ?? 1);
+            if (trophyValue > 0)
+            {
+                int cashProp = PatchClass.Settings.BankCashProperty;
+                LeyLineLedgerBankInterop.IncBanked(player, cashProp, trophyValue);
+                player.UpdateCoinValue();
+                return true;
+            }
+            return false;
+        }
+
         if (item.WeenieClassId != Player.coinStackWcid &&
             !item.WeenieClassName.StartsWith("tradenote", StringComparison.OrdinalIgnoreCase) &&
             !PeaPyrealWcids.IsPea(item.WeenieClassId))
@@ -372,6 +395,24 @@ public class AutoLoot
             return false;
 
         if (!PatchClass.Settings.KeyBankProperties.TryGetValue(item.WeenieClassId, out var prop))
+            return false;
+
+        var qty = item.StackSize ?? 1;
+        LeyLineLedgerBankInterop.IncBanked(player, prop, qty);
+        return true;
+    }
+
+    /// <summary>
+    /// General-purpose LLL item banking: checks if this WCID matches any entry in
+    /// LeyLineLedger's Settings.Items list (via reflection) and banks it. Covers
+    /// any bankable item not already caught by TryBankKey or TryBankCurrency.
+    /// </summary>
+    static bool TryBankAnyLllItem(Player player, WorldObject item)
+    {
+        if (item == null || player == null)
+            return false;
+
+        if (!LeyLineLedgerBankInterop.IsBankableWcid(item.WeenieClassId, out int prop))
             return false;
 
         var qty = item.StackSize ?? 1;
@@ -1086,6 +1127,14 @@ public class AutoLoot
                 continue;
             }
 
+            // Any LLL-bankable item: silently bank
+            if (TryBankAnyLllItem(player, item))
+            {
+                if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                    removed?.Destroy();
+                continue;
+            }
+
             // Lockpicks: silently bank (if unlocked)
             if (TryBankLockpick(player, item))
             {
@@ -1137,7 +1186,8 @@ public class AutoLoot
         bool hasCoalesced = ContainerHasCoalescedMana(container);
         bool mayKeyBank = PatchClass.Settings?.KeyBankProperties?.Count > 0;
         bool hasPhysicalTrophyPass1 = PatchClass.Settings?.UpgradedTrophyWeenieClassIds is { Count: > 0 };
-        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps && !hasCoalesced && !mayKeyBank && !hasPhysicalTrophyPass1)
+        bool mayLllItemBank = container.Inventory.Values.Any(i => LeyLineLedgerBankInterop.IsBankableWcid(i.WeenieClassId, out _));
+        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps && !hasCoalesced && !mayKeyBank && !hasPhysicalTrophyPass1 && !mayLllItemBank)
         {
             if (debug)
                 ModManager.Log($"AutoLoot: ProcessContainerLoot early exit — no active loot for {player.Name}", ModManager.LogLevel.Info);
@@ -1354,6 +1404,25 @@ public class AutoLoot
                     var lpName = LootDisplayName(removed);
                     lootedItems.TryGetValue(lpName, out var existing);
                     lootedItems[lpName] = existing + (removed.StackSize ?? 1);
+                    lootedSet.Add(removed);
+                    removed.Destroy();
+                }
+            }
+
+            // ── Pass 7: General LLL item banking ─────────────────────────
+            // Any item not already caught that matches LeyLineLedger's BankItem list
+            // (e.g. A'nekshay Tokens, Colosseum Coins, MMD trade notes, etc.)
+            foreach (var item in items)
+            {
+                if (lootedSet.Contains(item) || item.IsDestroyed)
+                    continue;
+                if (!TryBankAnyLllItem(player, item))
+                    continue;
+                if (container.TryRemoveFromInventory(item.Guid, out var removed))
+                {
+                    var lllName = LootDisplayName(removed);
+                    lootedItems.TryGetValue(lllName, out var existing);
+                    lootedItems[lllName] = existing + (removed.StackSize ?? 1);
                     lootedSet.Add(removed);
                     removed.Destroy();
                 }

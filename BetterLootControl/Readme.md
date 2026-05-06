@@ -13,6 +13,15 @@ Improves chest and vendor loot quality and variety.
 
 This allows jewelers to sell powerful jewelry with weapon imbues that actually provide combat bonuses when worn.
 
+### Imbue-Spell Coupling
+Imbued items are **always magical** — if a gear item receives an imbue (Overtinked custom or standard) but has no spells, 1-3 random loot spells are auto-added. This ensures no non-magical imbued items exist in loot.
+
+### Imbue Tier Rules (Windblown)
+When an item rolls multiple imbues, compatibility is enforced by tier (at most **one pick per tier**):
+- **Tier 1 (Rending)**: **one** from the unified rending tier (all elemental rends, all physical rends, and Nether rending)
+- **Tier 2 (Proc)**: **one** from `ArmorRending` / `CriticalStrike` / `CripplingBlow`
+- **Tier 3 (Custom)**: **one** from custom imbues like Hemorrhage / Shatter / Cleave (as defined by Overtinked)
+
 ### Vendor Loot Rotation
 
 Vendors automatically rotate their equipment inventory on a schedule.

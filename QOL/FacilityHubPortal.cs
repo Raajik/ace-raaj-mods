@@ -184,9 +184,15 @@ internal static class FacilityHubPortal
         if (player == null)
             return false;
 
+        // When explicit fallback coordinates are configured (FallbackCell != 0), prefer them
+        // over portal weenie resolution — the portal's Destination in the DB may be stale or
+        // point to the wrong cell even when the gem/portal weenie itself exists.
+        if (GetQolSettings().FacilityHub.FallbackCell != 0)
+            return TryGetFacilityHubFallback(out destination);
+
         var gemWeenie = DatabaseManager.World.GetCachedWeenie(FacilityPortalGemWcid);
         if (gemWeenie is null)
-            return TryGetFacilityHubFallback(out destination);
+            return false;
 
         WorldObject? gemWo = null;
         WorldObject? portalWo = null;
@@ -194,19 +200,19 @@ internal static class FacilityHubPortal
         {
             gemWo = WorldObjectFactory.CreateNewWorldObject(gemWeenie);
             if (gemWo is not Gem)
-                return TryGetFacilityHubFallback(out destination);
+                return false;
 
             uint link = gemWo.GetProperty(PropertyDataId.LinkedPortalOne) ?? 0;
             if (link == 0)
-                return TryGetFacilityHubFallback(out destination);
+                return false;
 
             var portalWeenie = DatabaseManager.World.GetCachedWeenie(link);
             if (portalWeenie is null)
-                return TryGetFacilityHubFallback(out destination);
+                return false;
 
             portalWo = WorldObjectFactory.CreateNewWorldObject(portalWeenie);
             if (portalWo is not Portal portal)
-                return TryGetFacilityHubFallback(out destination);
+                return false;
 
             var destProp = typeof(Portal).GetProperty("Destination", BindingFlags.Public | BindingFlags.Instance);
             object? rawDest = destProp?.GetValue(portal);
@@ -216,7 +222,7 @@ internal static class FacilityHubPortal
                 return true;
             }
 
-            return TryGetFacilityHubFallback(out destination);
+            return false;
         }
         finally
         {

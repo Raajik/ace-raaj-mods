@@ -64,6 +64,9 @@ public class Settings
 
     [JsonPropertyName("SuppressImmediateChestOpenWindowMs")]
     public int SuppressImmediateChestOpenWindowMs { get; set; } = 280;
+
+    [JsonPropertyName("SuppressChestOpenDoc")]
+    public string SuppressChestOpenDoc { get; init; } = "When SuppressImmediateChestOpenAfterSkeletonKeyUnlock is true (default), skeleton keys ONLY unlock the chest without opening it. The open-on-unlock behavior is fully suppressed — player clicks the chest again to open manually. Prevents empty-loot-view issue from auto-open.";
 }
 
 [HarmonyPatch]
@@ -485,14 +488,10 @@ public partial class PatchClass : BasicPatch<Settings>
         if (pending.ChestGuid != __instance.Guid)
             return true;
 
-        int windowMs = RuntimeSettings.SuppressImmediateChestOpenWindowMs > 0 ? RuntimeSettings.SuppressImmediateChestOpenWindowMs : 280;
-        double elapsedMs = (DateTime.UtcNow - pending.UnlockUtc).TotalMilliseconds;
+        // Always suppress the very next open after a skeleton key unlock.
+        // The key just unlocks the chest — player clicks again to open manually.
         PendingSkeletonChestOpenSuppress.Remove(player);
-
-        if (elapsedMs <= windowMs)
-            return false;
-
-        return true;
+        return false;
     }
 
     static void RegisterSuppressFirstChestOpenAfterSkeletonUnlock(Player player, Chest chest)

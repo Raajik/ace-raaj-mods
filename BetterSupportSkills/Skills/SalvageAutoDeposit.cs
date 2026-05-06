@@ -435,7 +435,11 @@ public static class SalvageAutoDeposit
         var grantedSalvage = new List<(string Name, int Units, long Before, long After)>();
         int imbueSalvageCount = 0;
 
-        // Check each possible imbue effect and grant salvage for each one present
+        // Ensure Overtinked interop is initialised (no-op after first call).
+        OvertinkedImbueInterop.EnsureInterop();
+
+        // Check each possible imbue effect and grant salvage for each one present.
+        // WCIDs sourced from ImbueSalvageWcids.cs (authoritative retail mapping).
         // Elemental Rends
         if (imbue.HasFlag(ImbuedEffectType.FireRending))
         {
@@ -445,43 +449,44 @@ public static class SalvageAutoDeposit
         }
         if (imbue.HasFlag(ImbuedEffectType.ColdRending))
         {
-            var result = GrantImbueSalvage(player, 21088, 50); // Yellow Topaz
+            var result = GrantImbueSalvage(player, 21037, 50); // Aquamarine
             imbueSalvageCount += result.Count;
             if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.ElectricRending))
         {
-            var result = GrantImbueSalvage(player, 21079, 50); // Sunstone
+            var result = GrantImbueSalvage(player, 21056, 50); // Jet
             imbueSalvageCount += result.Count;
             if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.AcidRending))
         {
-            var result = GrantImbueSalvage(player, 21064, 50); // Obsidian
+            var result = GrantImbueSalvage(player, 21048, 50); // Emerald
             imbueSalvageCount += result.Count;
             if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.NetherRending))
         {
-            var result = GrantImbueSalvage(player, 21040, 50); // Black Opal
+            uint netherWcid = OvertinkedImbueInterop.NetherWcid > 0 ? OvertinkedImbueInterop.NetherWcid : 21064; // Onyx fallback
+            var result = GrantImbueSalvage(player, netherWcid, 50);
             imbueSalvageCount += result.Count;
             if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.PierceRending))
         {
-            var result = GrantImbueSalvage(player, 21057, 50); // Lapis Lazuli
+            var result = GrantImbueSalvage(player, 21039, 50); // Black Garnet
             imbueSalvageCount += result.Count;
             if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.SlashRending))
         {
-            var result = GrantImbueSalvage(player, 21046, 50); // Diamond
+            var result = GrantImbueSalvage(player, 21054, 50); // Imperial Topaz
             imbueSalvageCount += result.Count;
             if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.BludgeonRending))
         {
-            var result = GrantImbueSalvage(player, 21082, 50); // Tourmaline
+            var result = GrantImbueSalvage(player, 21086, 50); // White Sapphire
             imbueSalvageCount += result.Count;
             if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
@@ -495,13 +500,13 @@ public static class SalvageAutoDeposit
         }
         if (imbue.HasFlag(ImbuedEffectType.CripplingBlow))
         {
-            var result = GrantImbueSalvage(player, 21040, 50); // Black Opal
+            var result = GrantImbueSalvage(player, 21049, 50); // Fire Opal
             imbueSalvageCount += result.Count;
             if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.ArmorRending))
         {
-            var result = GrantImbueSalvage(player, 21040, 50); // Black Opal
+            var result = GrantImbueSalvage(player, 21079, 50); // Sunstone
             imbueSalvageCount += result.Count;
             if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
@@ -509,31 +514,62 @@ public static class SalvageAutoDeposit
         // Defense Imbues
         if (imbue.HasFlag(ImbuedEffectType.MagicDefense))
         {
-            var result = GrantImbueSalvage(player, 21065, 50); // Opal
+            var result = GrantImbueSalvage(player, 21089, 50); // Zircon
             imbueSalvageCount += result.Count;
             if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.MeleeDefense))
         {
-            var result = GrantImbueSalvage(player, 21065, 50); // Opal
+            var result = GrantImbueSalvage(player, 21066, 50); // Peridot
             imbueSalvageCount += result.Count;
             if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
         if (imbue.HasFlag(ImbuedEffectType.MissileDefense))
         {
-            var result = GrantImbueSalvage(player, 21065, 50); // Opal
+            var result = GrantImbueSalvage(player, 21088, 50); // Yellow Topaz
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
+        }
+
+        // Custom Overtinked imbues — stored as a bitmask at PropertyInt 40133, not in ImbuedEffect.
+        // NetherRending is already handled above (it also sets ImbuedEffect.NetherRending).
+        int customFlags = OvertinkedImbueInterop.GetCustomFlags(item);
+        if (OvertinkedImbueInterop.HasHemorrhage(customFlags) && OvertinkedImbueInterop.HemorrhageWcid > 0)
+        {
+            var result = GrantImbueSalvage(player, OvertinkedImbueInterop.HemorrhageWcid, 50); // Yellow Garnet
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
+        }
+        if (OvertinkedImbueInterop.HasCleaving(customFlags) && OvertinkedImbueInterop.CleavingWcid > 0)
+        {
+            var result = GrantImbueSalvage(player, OvertinkedImbueInterop.CleavingWcid, 50); // Tiger Eye
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
+        }
+        if (OvertinkedImbueInterop.HasShatter(customFlags) && OvertinkedImbueInterop.ShatterWcid > 0)
+        {
+            var result = GrantImbueSalvage(player, OvertinkedImbueInterop.ShatterWcid, 50); // White Jade
+            imbueSalvageCount += result.Count;
+            if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
+        }
+
+        // Buffed jewelry imbues (Hematite HP, Malachite Stam, Lavender Jade Mana, etc.).
+        // Overtinked stamps PropertyInt 40136 with the source salvage WCID at tinkering time.
+        uint buffedJewelryWcid = OvertinkedImbueInterop.GetBuffedJewelryWcid(item);
+        if (buffedJewelryWcid > 0)
+        {
+            var result = GrantImbueSalvage(player, buffedJewelryWcid, 50);
             imbueSalvageCount += result.Count;
             if (result.Count > 0) grantedSalvage.Add((result.Name, result.Units, result.Before, result.After));
         }
 
         if (imbueSalvageCount > 0 && grantedSalvage.Count > 0)
         {
-            var summary = string.Join(", ", grantedSalvage.Select(s => $"{s.Name} +{s.Units}"));
-            player.SendMessage($"[Auto-Salvage] Granted imbue salvage: {summary}");
-            
-            // Debug bank diff for each type
             foreach (var s in grantedSalvage)
             {
+                double beforeBags = s.Before / 100.0;
+                double afterBags  = s.After  / 100.0;
+                player.SendMessage($"[Auto-Salvage] Granted imbue salvage: {s.Name} +{s.Units} (bank: {beforeBags:F2} → {afterBags:F2} bags)");
                 ModManager.Log($"[BSS Imbue Salvage] {s.Name}: {s.Before} → {s.After} (+{s.Units})", ModManager.LogLevel.Debug);
             }
         }
@@ -552,10 +588,21 @@ public static class SalvageAutoDeposit
         }
 
         string displayName = GetMaterialNameByWcid(salvageWcid);
-        long before = 0;
-        long after = 0;
 
-        // Fallback to BSS's own property scheme - track before/after for message
+        // Try LLL first: resolve its property ID, read before from it, increment, compute after.
+        // Reading before/after from the same property LLL uses avoids the stale-BSS-property bug.
+        int lllProp = LeyLineLedgerSalvageInterop.GetSalvagePropertyId(salvageWcid);
+        if (lllProp > 0 && LeyLineLedgerSalvageInterop.DirectIncBanked(player, lllProp, units))
+        {
+            // before was the value BEFORE we incremented (read after resolving the prop but before inc isn't
+            // possible without a separate read — read now and subtract units as a reliable approximation)
+            long after  = player.GetProperty((PropertyInt64)lllProp) ?? units;
+            long before = after - units;
+            ModManager.Log($"[BSS Imbue Salvage] {displayName} (WCID {salvageWcid}) via LLL prop {lllProp}: {before} → {after}", ModManager.LogLevel.Debug);
+            return (1, displayName, units, before, after);
+        }
+
+        // BSS fallback
         int matIndex = GetMaterialIndex(salvageWcid);
         if (matIndex < 0 || matIndex > 108)
         {
@@ -564,25 +611,12 @@ public static class SalvageAutoDeposit
         }
 
         int bankProp = GetMaterialBankProperty(matIndex);
-        before = player.GetProperty((PropertyInt64)bankProp) ?? 0;
+        long bssBefore = player.GetProperty((PropertyInt64)bankProp) ?? 0;
+        long bssAfter  = bssBefore + units;
+        player.SetProperty((PropertyInt64)bankProp, bssAfter);
 
-        // Try LeyLineLedger integration first
-        if (LeyLineLedgerSalvageInterop.TryIncSalvage(player, salvageWcid, units))
-        {
-            // LLL succeeded - re-read from BSS property to get after value
-            // (LLL mirrors to BSS properties, so we can read the result)
-            after = player.GetProperty((PropertyInt64)bankProp) ?? before;
-            ModManager.Log($"[BSS Imbue Salvage] Granted {units} units of {displayName} (WCID {salvageWcid}) to {player.Name} via LLL. Bank prop {bankProp}: {before} → {after}", ModManager.LogLevel.Debug);
-            return (1, displayName, units, before, after);
-        }
-
-        // BSS fallback if LLL not available
-        after = before + units;
-        player.SetProperty((PropertyInt64)bankProp, after);
-        
-        ModManager.Log($"[BSS Imbue Salvage] Granted {units} units of {displayName} (WCID {salvageWcid}) to {player.Name}. Bank prop {bankProp}: {before} → {after} (BSS fallback)", ModManager.LogLevel.Debug);
-
-        return (1, displayName, units, before, after);
+        ModManager.Log($"[BSS Imbue Salvage] {displayName} (WCID {salvageWcid}) via BSS prop {bankProp}: {bssBefore} → {bssAfter}", ModManager.LogLevel.Debug);
+        return (1, displayName, units, bssBefore, bssAfter);
     }
 
     static string GetMaterialNameByWcid(uint wcid)

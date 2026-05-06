@@ -16,6 +16,10 @@ public class Settings
     public string EnableLockpickAutoBankDoc { get; init; } = "When true, lockpick items picked up by characters with Lockpick trained/spec'd are auto-converted to banked Lockpick Durability (PropertyInt64 40130). Limitless Lockpick (WCID 30253) activates passive regen via BetterSupportSkills.";
     public bool EnableLockpickAutoBank { get; set; } = true;
 
+    [JsonPropertyName("// LockpickBankingAchievementId")]
+    public string LockpickBankingAchievementIdDoc { get; init; } = "If non-empty, players who have earned this AchievementUnlocked achievement ID also qualify for lockpick auto-banking, even without the Lockpick skill trained. E.g. \"LockpickMastery\". Empty string = skill-only gate.";
+    public string LockpickBankingAchievementId { get; set; } = "";
+
     [JsonPropertyName("// EnablePathwardenAutoBank")]
     public string EnablePathwardenAutoBankDoc { get; init; } = "DEPRECATED — use EnableQuestSalvageAutoBank instead. Kept for backward compatibility. When true, Pathwarden NPC rewards (Sturdy Iron Keys) are deposited directly to bank. Granite/Steel bags have moved to the unified quest salvage system.";
     public bool EnablePathwardenAutoBank { get; set; } = true;
@@ -99,11 +103,12 @@ public class Settings
         new() { Name = "Colosseum Coin", Id = 36518, Prop = 40005 },
         new() { Name = "Ancient Mhoire Coin", Id = 35383, Prop = 40006 },
         new() { Name = "Promissory Note", Id = 43901, Prop = 40007 },
+        new() { Name = "Mutated Olthoi Gland", Id = 43747, Prop = 40008 },
         new() { Name = "Writ of Refuge", Id = 11710, Prop = 40114 },
-        new() { Name = "Sturdy Iron Key", Id = 6876, Prop = 40250 },
-        new() { Name = "Sturdy Steel Key", Id = 24477, Prop = 40500 },
-        new() { Name = "Mana Forge Key", Id = 38456, Prop = 40750 },
-        new() { Name = "Legendary Key", Id = 48746, Prop = 41000 },
+        new() { Name = "Sturdy Iron Key (1kD)", Id = 6876, Prop = 40250 },
+        new() { Name = "Sturdy Steel Key (1kC)", Id = 24477, Prop = 40500 },
+        new() { Name = "Mana Forge Key (5kD)", Id = 38456, Prop = 40750 },
+        new() { Name = "Legendary Key (5kC)", Id = 48746, Prop = 41000 },
         new() { Name = "Lesser Coalesced Mana (Awaken I, Lv.25)", Id = 42516, Prop = 41100, Aliases = new() { "lcm", "lesser" } },
         new() { Name = "Greater Coalesced Mana (Awaken II, Lv.50)", Id = 42517, Prop = 41101, Aliases = new() { "gcm", "greater" } },
         new() { Name = "Aetheric Coalesced Mana (Awaken III, Lv.75)", Id = 42518, Prop = 41102, Aliases = new() { "acm", "aetheric" } },
@@ -139,6 +144,7 @@ public class Settings
         { 36518, 500 },  // Colosseum Coin (was 5)
         { 35383, 300 },  // Ancient Mhoire Coin (was 3)
         { 43901, 100 },  // Promissory Note (was 1)
+        { 43747, 100 },  // Mutated Olthoi Gland
         { 11710, 500 }, // Writ of Refuge (was 5)
     };
 

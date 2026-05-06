@@ -927,6 +927,27 @@ public static class SummoningClasses
             int bonus = PatchClass.Settings?.SummoningClasses?.MasteryDamageRatingBonus ?? 10;
             var existing = pet.GetProperty(PropertyInt.DamageRating) ?? 0;
             pet.SetProperty(PropertyInt.DamageRating, existing + bonus);
+            
+            // Add rending to pet weapon
+            ApplyPetRending(pet, className);
+        }
+    }
+
+    static void ApplyPetRending(CombatPet pet, string className)
+    {
+        try
+        {
+            // Set IgnoreMagicArmor (armor rending) directly on the pet creature
+            pet.IgnoreMagicArmor = true;
+            
+            // Set IgnoreMagicResist (elemental rending) directly on the pet creature
+            pet.IgnoreMagicResist = true;
+            
+            ModManager.Log($"[BSS Summoning] Applied armor rending + magic resist penetration to {pet.Name} ({className})", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS Summoning] Failed to apply rending to {pet.Name}: {ex.Message}", ModManager.LogLevel.Warn);
         }
     }
 

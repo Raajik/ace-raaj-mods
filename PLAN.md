@@ -3,6 +3,7 @@
 ## Progress (Recent)
 
 ### Shipped 2026-05-05
+- ✅ Loremaster quest completion XP message fix (was showing 10x too high)
 - ✅ Artificer wisp scaling & spell fixes (consistent levels, correct Imperil spells)
 - ✅ Death Knight Nether spell fixes (Streak/Arc spell IDs)
 - ✅ NPC spawn safety margins (+1.0 unit vertical clearance)

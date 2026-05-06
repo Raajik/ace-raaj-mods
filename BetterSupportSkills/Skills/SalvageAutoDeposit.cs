@@ -226,6 +226,21 @@ public static class SalvageAutoDeposit
         ExitSuppression();
     }
 
+    // ── Imbue Salvage on Manual Salvage ──────────────────────────────────────
+    // When player manually salvages an imbued item with a salvage kit, grant
+    // 50 units of the corresponding imbue salvage for EACH imbue type.
+    
+    [HarmonyPatch(typeof(Player), "DoSalvaging")]
+    [HarmonyPostfix]
+    public static void PostDoSalvaging(Player __instance, WorldObject salvageTool, WorldObject target)
+    {
+        if (__instance == null || target == null)
+            return;
+
+        // Grant imbue salvage when manually salvaging an imbued item
+        TryGrantImbueSalvage(__instance, target);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     static bool TryGetMaterialSalvage(Player player, WorldObject item, SalvageSettings settings, out int materialIndex, out int rawUnits)
@@ -394,7 +409,7 @@ public static class SalvageAutoDeposit
             return;
 
         var imbue = item.ImbuedEffect;
-        if (imbue == null || imbue == 0)
+        if (imbue == null || imbue == ImbuedEffectType.Undef)
             return;
 
         var settings = PatchClass.Settings;

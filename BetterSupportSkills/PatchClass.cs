@@ -835,11 +835,9 @@ try
         if (Settings.EnableDruidPetThorns)
             enabledFeatures.Add(Features.DruidPetThorns);
         
-        // Rest disabled
-        /*
+        // Testing Salvage - SUSPECTED BROKEN PATCH
         if (Settings.EnableSalvage)
             enabledFeatures.Add(Features.SalvageSkill);
-        */
         // CombatClasses patches are applied manually in TryApplyCombatClassesPatch()
         // to avoid double-patching with declarative attributes.
 

@@ -209,7 +209,8 @@ internal static class DungeonPopulationManager
                 {
                     var terrainZ = lb.LandblockMesh.GetZ(new System.Numerics.Vector2(candidate.Pos.X, candidate.Pos.Y));
                     if (!float.IsNaN(terrainZ) && terrainZ > -999)
-                        candidate.Pos = new Vector3(candidate.Pos.X, candidate.Pos.Y, terrainZ + 0.05f);
+                        // Increased from 0.05f to 1.0f for better spawn safety margin
+                        candidate.Pos = new Vector3(candidate.Pos.X, candidate.Pos.Y, terrainZ + 1.0f);
                 }
             }
             catch { /* keep candidate Z if mesh unavailable */ }

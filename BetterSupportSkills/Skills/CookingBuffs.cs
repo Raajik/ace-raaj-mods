@@ -42,11 +42,70 @@ internal static class CookingBuffs
         }
     }
 
-    public static void OnPlayerLogin(Player player) { }
+    public static void OnPlayerLogin(Player player)
+    {
+        if (player == null)
+            return;
+
+        var settings = PatchClass.Settings;
+        if (settings?.EnableCooking != true)
+            return;
+
+        // Auto-strip old cooking spell enchantments if legacy mode is disabled
+        if (!settings.Cooking.CookingUseLegacySpellBuffs)
+        {
+            StripLegacyCookingEnchantments(player);
+        }
+    }
+
     public static void OnPlayerWorldOpen(Player player) { }
+
+    private static void StripLegacyCookingEnchantments(Player player)
+    {
+        var stripped = 0;
+
+        // Legacy spell IDs from Settings
+        var legacySpellIds = new List<int>
+        {
+            PatchClass.Settings.Cooking.LegendaryHealthSpell,
+            PatchClass.Settings.Cooking.LegendaryStaminaSpell,
+            PatchClass.Settings.Cooking.LegendaryManaSpell,
+            PatchClass.Settings.Cooking.ProdigalHealthSpell,
+            PatchClass.Settings.Cooking.ProdigalStaminaSpell,
+            PatchClass.Settings.Cooking.ProdigalManaSpell
+        };
+
+        // CustomSpells IDs (if loaded)
+        if (CheckCustomSpells())
+        {
+            legacySpellIds.AddRange(LegendarySpells);
+            legacySpellIds.AddRange(ProdigalSpells);
+            legacySpellIds.AddRange(SatiatedSpells);
+        }
+
+        // Remove duplicates
+        var uniqueIds = legacySpellIds.Distinct().ToList();
+
+        foreach (var spellId in uniqueIds)
+        {
+            var enchantment = player.EnchantmentManager.GetEnchantment((uint)spellId, player.Guid.Full);
+            if (enchantment != null)
+            {
+                player.EnchantmentManager.Dispel(enchantment);
+                stripped++;
+            }
+        }
+
+        if (stripped > 0)
+        {
+            DebugLog($"Stripped {stripped} legacy cooking enchantments from {player.Name}");
+            player.SendMessage($"Legacy cooking buffs removed. Natural regeneration from Cooking skill is now active.", ChatMessageType.Broadcast);
+        }
+    }
 
     public static bool PrefixPlayerEnterWorld(Player __instance)
     {
+        OnPlayerLogin(__instance);
         return true;
     }
 

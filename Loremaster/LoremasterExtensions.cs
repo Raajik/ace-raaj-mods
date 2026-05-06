@@ -437,11 +437,16 @@ public static class LoremasterExtensions
         var amount = (long)(xpToNext * fraction);
         if (amount <= 0) return;
 
+        // Apply base retention before granting and displaying
+        var baseRetention = Math.Clamp(s.BonusXpBaseRetentionPercent / 100.0, 0.0, 100.0);
+        var retained = (long)(amount * baseRetention);
+        if (retained <= 0) return;
+
         ExternalXpGrants.GrantQuestXpWithBaseRetention(player, amount);
 
         if (player.Notify(LMBool.NotifyQuestXp))
         {
-            var show = QuestXpAwardDisplay.EstimateCharacterXpAfterAchievementChain(player, amount);
+            var show = QuestXpAwardDisplay.EstimateCharacterXpAfterAchievementChain(player, retained);
             player.SendMessage($"[Loremaster] Completion bonus: +{show:N0} XP.");
         }
     }

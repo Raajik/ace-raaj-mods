@@ -802,6 +802,9 @@ try
 
         var enabledFeatures = new List<Features>();
 
+        // TEMPORARILY DISABLE ALL PATCH CATEGORIES TO ISOLATE BROKEN PATCH
+        // Will re-enable one by one
+        /*
         if (Settings.EnableAlchemy)
             enabledFeatures.Add(Features.AlchemySkill);
         
@@ -854,9 +857,11 @@ try
             enabledFeatures.Add(Features.DruidPetThorns);
         if (Settings.EnableSalvage)
             enabledFeatures.Add(Features.SalvageSkill);
+        */
         // CombatClasses patches are applied manually in TryApplyCombatClassesPatch()
         // to avoid double-patching with declarative attributes.
 
+        ModManager.Log($"[BSS] RegisterPatchCategories with {enabledFeatures.Count} features", ModManager.LogLevel.Info);
         ModC.RegisterPatchCategories(enabledFeatures.ToArray());
     }
 

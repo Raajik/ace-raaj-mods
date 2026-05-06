@@ -47,6 +47,7 @@ public static class VendorLootRotation
         Jeweler,      // Sells Jewelry and Gems
         Armorer,      // Sells Armor and Weapons
         Mage,         // Sells Casters, Jewelry, and spell components
+        Bowyer,       // Sells Missile Weapons and Ammunition
         General       // Sells everything (default behavior)
     }
 
@@ -77,6 +78,64 @@ public static class VendorLootRotation
 
     // WCIDs known to be armorers (sell armor/weapons)
     static readonly HashSet<uint> _armorerWcids = new();
+
+    static readonly HashSet<uint> _bowyerWcids = new()
+    {
+        403,   // arwicbowyer
+        651,   // easthambowyer
+        662,   // rithwicbowyer
+        671,   // cragstonebowyer
+        713,   // holtburgbowyer
+        733,   // glendenbowyer
+        798,   // mayoibowyer
+        814,   // yanshibowyer
+        836,   // shoushibowyer
+        864,   // hebianbowyer
+        977,   // samsurbowyer
+        988,   // zaikhalbowyer
+        1039,  // yaraqbowyer
+        1052,  // qalabarbowyer
+        1378,  // bowyeraluvian
+        1379,  // bowyergaron
+        1380,  // bowyersho
+        1817,  // tufabowyer
+        1828,  // uzizbowyer
+        2227,  // dryreachbowyer
+        2254,  // baishibowyer
+        2295,  // sawatobowyer
+        2316,  // forttethanabowyer
+        2533,  // stoneholdbowyer
+        4439,  // lytelthorpebowyer
+        4542,  // linbowyer
+        4550,  // nantobowyer
+        4563,  // toutoubowyer
+        4680,  // alarqasbowyer
+        4691,  // aljalimabowyer
+        4697,  // khayyabanbowyer
+        5423,  // glendeneastoutpostbowyer
+        5649,  // neydisacastlebowyer
+        6857,  // ayanbaqurbowyer
+        8227,  // xarabowyer
+        8435,  // krystbowyer
+        8494,  // freeholdbowyer
+        9023,  // bowyerwanderingtiofor
+        9207,  // ayanbaqurvirindibowyer
+        9416,  // linvaktukalbowyer
+        9677,  // danbybowyer
+        11378, // ahurengabowyer-xp
+        11403, // timarubowyer-xp
+        20924, // retreatbowyer
+        22723, // oolutangabowyer
+        24218, // waijhoubowyer
+        24591, // candethkeepbowyer
+        27247, // karabowyer
+        30031, // sanamarfletcher
+        30066, // silyunfletcher
+        40949, // ace40949-bowyeraliibnmahir
+        40961, // ace40961-bowyeraliibnmahir
+        40973, // ace40973-bowyeraliibnmahir
+        40984, // ace40984-bowyeraliibnmahir
+    };
 
     // WCIDs known to be mages (sell casters, jewelry, spell components)
     static readonly HashSet<uint> _mageWcids = new()
@@ -340,6 +399,8 @@ public static class VendorLootRotation
             return VendorTypeClassification.Armorer;
         if (_mageWcids.Contains(wcid))
             return VendorTypeClassification.Mage;
+        if (_bowyerWcids.Contains(wcid))
+            return VendorTypeClassification.Bowyer;
 
         // Fall back to MerchandiseItemTypes heuristic
         var merch = vendor.MerchandiseItemTypes;
@@ -382,6 +443,7 @@ public static class VendorLootRotation
             VendorTypeClassification.Jeweler => ItemType.Jewelry | ItemType.Gem,
             VendorTypeClassification.Armorer => ItemType.Armor | ItemType.MeleeWeapon | ItemType.MissileWeapon | ItemType.Clothing,
             VendorTypeClassification.Mage => ItemType.Caster | ItemType.Jewelry | ItemType.Gem,
+            VendorTypeClassification.Bowyer => ItemType.MissileWeapon,
             VendorTypeClassification.General => GetMerchandiseEquipmentMask(vendor),
             _ => GetMerchandiseEquipmentMask(vendor)
         };
@@ -761,6 +823,26 @@ public static class VendorLootRotation
                 itemCount++;
             }
         }
+        else if (vendorClass == VendorTypeClassification.Bowyer)
+        {
+            // Generate missile weapons (bows, crossbows, thrown)
+            int missileTarget = _rng.Next(perCatMin, perCatMax + 1);
+            var missileBatch = GenerateMissileWeaponBatch(vendor, vendorTier, missileTarget);
+            foreach (var wo in missileBatch)
+            {
+                AddItemToVendor(vendor, wo, rotatedSet);
+                itemCount++;
+            }
+
+            // Generate ammunition
+            int ammoTarget = _rng.Next(8, 21); // 8-20 ammo stacks
+            var ammoBatch = GenerateAmmunitionBatch(vendor, vendorTier, ammoTarget);
+            foreach (var wo in ammoBatch)
+            {
+                AddItemToVendor(vendor, wo, rotatedSet);
+                itemCount++;
+            }
+        }
         else
         {
             // Normal item generation for other vendors
@@ -1068,6 +1150,104 @@ public static class VendorLootRotation
                         int subScore = RollSubScore();
                         ApplyQuality(item, itemTier, subScore);
                         ApplyVendorUniqueTreatment(item, subScore);
+                        ApplyWieldRequirementCap(item, vendorTier);
+                        ClampItemValue(item, _settings?.VendorLootMinValue ?? 100, _settings?.VendorLootMaxValue ?? 10000);
+                        _originalValues[item.Guid] = item.Value ?? 0;
+                        batch.Add(item);
+                    }
+                    else
+                    {
+                        item.Destroy();
+                    }
+                }
+                else
+                {
+                    item?.Destroy();
+                }
+            }
+            catch { /* Skip failed generations */ }
+
+            attempts++;
+        }
+
+        return batch;
+    }
+
+    static List<WorldObject> GenerateMissileWeaponBatch(Vendor vendor, int vendorTier, int targetCount)
+    {
+        var batch = new List<WorldObject>();
+        var profiles = GetTreasureProfiles();
+        int attempts = 0;
+        int maxAttempts = targetCount * 20; // Higher attempts for missile weapons since it's rare
+
+        while (batch.Count < targetCount && attempts < maxAttempts)
+        {
+            int itemTier = RollVendorItemTier(vendorTier);
+            var profile = FindProfileForTier(profiles, itemTier);
+            if (profile == null)
+            {
+                attempts++;
+                continue;
+            }
+
+            try
+            {
+                // Try to generate a magic item (more likely to have missile weapons)
+                var item = LootGenerationFactory.CreateRandomLootObjects(profile, TreasureItemCategory.MagicItem);
+                if (item != null && (item.ItemType & ItemType.MissileWeapon) != 0)
+                {
+                    int subScore = RollSubScore();
+                    ApplyQuality(item, itemTier, subScore);
+                    ApplyVendorUniqueTreatment(item, subScore);
+                    ApplyWieldRequirementCap(item, vendorTier);
+                    ClampItemValue(item, _settings?.VendorLootMinValue ?? 100, _settings?.VendorLootMaxValue ?? 10000);
+                    _originalValues[item.Guid] = item.Value ?? 0;
+                    batch.Add(item);
+                }
+                else
+                {
+                    item?.Destroy();
+                }
+            }
+            catch { /* Skip failed generations */ }
+
+            attempts++;
+        }
+
+        return batch;
+    }
+
+    static List<WorldObject> GenerateAmmunitionBatch(Vendor vendor, int vendorTier, int targetCount)
+    {
+        var batch = new List<WorldObject>();
+        var profiles = GetTreasureProfiles();
+        int attempts = 0;
+        int maxAttempts = targetCount * 25; // Higher attempts for ammo (arrows, bolts, atlatl darts)
+
+        while (batch.Count < targetCount && attempts < maxAttempts)
+        {
+            int itemTier = RollVendorItemTier(vendorTier);
+            var profile = FindProfileForTier(profiles, itemTier);
+            if (profile == null)
+            {
+                attempts++;
+                continue;
+            }
+
+            try
+            {
+                // Try to generate mundane items (ammo is typically mundane)
+                var item = LootGenerationFactory.CreateRandomLootObjects(profile, TreasureItemCategory.MundaneItem);
+                if (item != null && (item.ItemType & ItemType.MissileWeapon) != 0)
+                {
+                    // Check if it's actually ammunition (stackable, typically arrows/bolts/darts)
+                    if (item.MaxStackSize.HasValue && item.MaxStackSize > 1)
+                    {
+                        // Set a good stack size for ammo
+                        item.SetStackSize(_rng.Next(100, 251)); // 100-250 per stack
+                        
+                        int subScore = RollSubScore();
+                        ApplyQuality(item, itemTier, subScore);
                         ApplyWieldRequirementCap(item, vendorTier);
                         ClampItemValue(item, _settings?.VendorLootMinValue ?? 100, _settings?.VendorLootMaxValue ?? 10000);
                         _originalValues[item.Guid] = item.Value ?? 0;
@@ -1445,13 +1625,16 @@ public static class VendorLootRotation
         bool hasHighWorkmanship = workmanship >= 8;
         bool isJeweler = vendorClass == VendorTypeClassification.Jeweler;
         bool isMage = vendorClass == VendorTypeClassification.Mage;
+        bool isBowyer = vendorClass == VendorTypeClassification.Bowyer;
 
-        // Determine imbue chance (higher for jewelers and mages)
+        // Determine imbue chance (higher for jewelers, mages, and bowyers)
         double imbueChance = _settings.VendorLootImbueChance;
         if (isJeweler)
             imbueChance = _settings.VendorLootJewelerImbueChance;
         else if (isMage)
             imbueChance = _settings.VendorLootMageImbueChance;
+        else if (isBowyer)
+            imbueChance = _settings.VendorLootBowyerImbueChance;
         
         // Roll for imbue
         if (!hasImbue && _rng.NextDouble() < imbueChance)
@@ -1464,12 +1647,14 @@ public static class VendorLootRotation
             ApplyImbueVisualEffect(item);
         }
 
-        // Determine awaken chance (higher for jewelers and mages)
+        // Determine awaken chance (higher for jewelers, mages, and bowyers)
         double awakenChance = _settings.VendorLootAwakenChance;
         if (isJeweler)
             awakenChance = _settings.VendorLootJewelerAwakenChance;
         else if (isMage)
             awakenChance = _settings.VendorLootMageAwakenChance;
+        else if (isBowyer)
+            awakenChance = _settings.VendorLootBowyerAwakenChance;
         
         // Roll for awakening on high-tier items (tier 6+)
         if (vendorTier >= 6 && !hasAwakened && _rng.NextDouble() < awakenChance)
@@ -1500,7 +1685,7 @@ public static class VendorLootRotation
             valueMult *= _settings.VendorLootHighWorkmanshipValueMultiplier;
         }
 
-        // Roll for tinkering (jewelers and mages get higher chance)
+        // Roll for tinkering (jewelers, mages, and bowyers get higher chance)
         double tinkerChance = 0.0;
         int minTinkers = 1;
         int maxTinkers = 3;
@@ -1516,6 +1701,12 @@ public static class VendorLootRotation
             tinkerChance = _settings.VendorLootMageTinkerChance;
             minTinkers = _settings.VendorLootMageMinTinkers;
             maxTinkers = _settings.VendorLootMageMaxTinkers;
+        }
+        else if (isBowyer)
+        {
+            tinkerChance = _settings.VendorLootBowyerTinkerChance;
+            minTinkers = _settings.VendorLootBowyerMinTinkers;
+            maxTinkers = _settings.VendorLootBowyerMaxTinkers;
         }
 
         if (tinkerChance > 0 && _rng.NextDouble() < tinkerChance)

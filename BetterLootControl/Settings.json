@@ -77,6 +77,11 @@
   "VendorLootMageTinkerChance": 0.55,
   "VendorLootMageMinTinkers": 1,
   "VendorLootMageMaxTinkers": 3,
+  "VendorLootBowyerImbueChance": 0.65,
+  "VendorLootBowyerAwakenChance": 0.30,
+  "VendorLootBowyerTinkerChance": 0.55,
+  "VendorLootBowyerMinTinkers": 1,
+  "VendorLootBowyerMaxTinkers": 3,
   "VendorLootLowStatMode": false,
   "VendorLootSalvageOnRotation": false,
   "VendorTierWcidMap": {

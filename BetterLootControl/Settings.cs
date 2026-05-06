@@ -62,6 +62,13 @@ public class Settings
     public int VendorLootMageMinTinkers { get; init; } = 1;
     public int VendorLootMageMaxTinkers { get; init; } = 3;
 
+    // Bowyer-specific enhancements
+    public double VendorLootBowyerImbueChance { get; init; } = 0.65; // 65% imbue chance for bowyer items
+    public double VendorLootBowyerAwakenChance { get; init; } = 0.30; // 30% awaken chance for tier 6+ bowyer items
+    public double VendorLootBowyerTinkerChance { get; init; } = 0.55; // 55% chance to add tinkers
+    public int VendorLootBowyerMinTinkers { get; init; } = 1;
+    public int VendorLootBowyerMaxTinkers { get; init; } = 3;
+
     // Legacy/low-stat mode
     public bool VendorLootLowStatMode { get; init; } = false;
     public bool VendorLootSalvageOnRotation { get; init; } = false;

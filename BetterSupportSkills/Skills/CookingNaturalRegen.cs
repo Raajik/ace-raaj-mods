@@ -28,17 +28,24 @@ internal static class CookingNaturalRegen
         // Check if player needs fast ticks (low vitals below threshold)
         bool needsFastTicks = IsLowOnVitals(__instance, settings);
 
+        var oldInterval = __instance.HeartbeatInterval ?? 5.0f;
         if (needsFastTicks)
         {
             // Switch to 1-second ticks for smooth regeneration when low
             if (__instance.HeartbeatInterval != 1.0f)
+            {
                 __instance.HeartbeatInterval = 1.0f;
+                ModManager.Log($"[BSS Cooking] {__instance.Name} heartbeat interval: {oldInterval}s -> 1.0s (LOW VITALS - H:{__instance.Health.Percent:P1} S:{__instance.Stamina.Percent:P1} M:{__instance.Mana.Percent:P1})", ModManager.LogLevel.Debug);
+            }
         }
         else
         {
             // Switch to 5-second ticks for efficiency when healthy
             if (__instance.HeartbeatInterval != 5.0f)
+            {
                 __instance.HeartbeatInterval = 5.0f;
+                ModManager.Log($"[BSS Cooking] {__instance.Name} heartbeat interval: {oldInterval}s -> 5.0s (HEALTHY)", ModManager.LogLevel.Debug);
+            }
         }
     }
 
@@ -50,7 +57,9 @@ internal static class CookingNaturalRegen
         if (player.Health.Percent < threshold || 
             player.Stamina.Percent < threshold || 
             player.Mana.Percent < threshold)
+        {
             return true;
+        }
 
         return false;
     }
@@ -61,19 +70,36 @@ internal static class CookingNaturalRegen
     public static void PostVitalHeartBeat(Player __instance, CreatureVital vital, bool __result)
     {
         if (__instance == null || vital == null)
+        {
+            ModManager.Log($"[BSS Cooking] PostVitalHeartBeat: player or vital is null", ModManager.LogLevel.Debug);
             return;
+        }
 
         var settings = PatchClass.Settings;
-        if (settings?.EnableCooking != true || settings.Cooking.CookingUseLegacySpellBuffs)
+        if (settings?.EnableCooking != true)
+        {
+            ModManager.Log($"[BSS Cooking] PostVitalHeartBeat: EnableCooking={settings?.EnableCooking}", ModManager.LogLevel.Debug);
             return;
+        }
+
+        if (settings.Cooking.CookingUseLegacySpellBuffs)
+        {
+            ModManager.Log($"[BSS Cooking] PostVitalHeartBeat: Legacy buffs mode enabled, skipping natural regen", ModManager.LogLevel.Debug);
+            return;
+        }
 
         var cookingSkill = __instance.GetCreatureSkill(Skill.Cooking);
         if (cookingSkill.AdvancementClass < SkillAdvancementClass.Trained)
+        {
+            ModManager.Log($"[BSS Cooking] {__instance.Name} PostVitalHeartBeat: Cooking not trained", ModManager.LogLevel.Debug);
             return;
+        }
 
         // Don't add bonus if already at max
         if (vital.Current >= vital.MaxValue)
-            return;
+        {
+            return; // Don't spam when at max
+        }
 
         // Calculate percentage-based bonus
         var percentPerTick = cookingSkill.AdvancementClass == SkillAdvancementClass.Specialized
@@ -81,18 +107,32 @@ internal static class CookingNaturalRegen
             : settings.Cooking.CookingRegenPercentPerTickTrained;
 
         if (percentPerTick <= 0)
+        {
+            ModManager.Log($"[BSS Cooking] {__instance.Name} PostVitalHeartBeat: percentPerTick={percentPerTick} (INVALID)", ModManager.LogLevel.Warn);
             return;
+        }
 
         // Bonus scales with heartbeat interval (5sec = 5x bonus, 1sec = 1x bonus)
         var interval = __instance.HeartbeatInterval ?? 5.0f;
         var bonusAmount = (int)(vital.MaxValue * percentPerTick * interval);
 
+        var vitalName = vital.Vital.ToString().Replace("Max", "");
+        
         if (bonusAmount > 0)
         {
+            var beforeCurrent = vital.Current;
             __instance.UpdateVitalDelta(vital, bonusAmount);
+            var afterCurrent = vital.Current;
+            var actualGain = afterCurrent - beforeCurrent;
             
-            if (vital.Vital == PropertyAttribute2nd.MaxHealth && bonusAmount > 0)
-                __instance.DamageHistory.OnHeal((uint)bonusAmount);
+            ModManager.Log($"[BSS Cooking] {__instance.Name} {vitalName} regen: +{actualGain} ({beforeCurrent}/{vital.MaxValue} -> {afterCurrent}/{vital.MaxValue}) [bonus={bonusAmount}, %={percentPerTick:P2}, interval={interval}s, spec={cookingSkill.AdvancementClass}]", ModManager.LogLevel.Info);
+            
+            if (vital.Vital == PropertyAttribute2nd.MaxHealth && actualGain > 0)
+                __instance.DamageHistory.OnHeal((uint)actualGain);
+        }
+        else
+        {
+            ModManager.Log($"[BSS Cooking] {__instance.Name} {vitalName} regen: bonusAmount=0 (maxVital={vital.MaxValue}, %={percentPerTick}, interval={interval})", ModManager.LogLevel.Warn);
         }
     }
 

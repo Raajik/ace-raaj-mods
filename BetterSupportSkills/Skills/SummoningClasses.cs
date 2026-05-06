@@ -1140,7 +1140,7 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         var randomElement = elementalTypes[Random.Shared.Next(elementalTypes.Length)];
         var arcIds = ArtificerArcSpells[randomElement];
 
-        // Cast arc spell at all enemies in range (wisps use owner's mana)
+        // Cast arc spell at all enemies in range (wisps cast for free, no components needed)
         foreach (var target in aoeTargets)
         {
             if (target == null || target.IsDestroyed || target.IsDead)
@@ -1148,8 +1148,10 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
 
             try
             {
-                // Use BssAutoCaster to cast the arc spell (no mana cost multiplier for wisps)
-                Skills.BssAutoCaster.TryCastSpellWithFallback(owner, arcIds, tier, target, 0.0);
+                // Direct cast bypasses component/mana checks (pets don't need reagents)
+                var spell = new ACE.Server.Entity.Spell((SpellId)arcIds[tier]);
+                if (!spell.NotFound)
+                    Skills.BssAutoCaster.CastSpellDirect(owner, spell, target);
             }
             catch (Exception ex)
             {

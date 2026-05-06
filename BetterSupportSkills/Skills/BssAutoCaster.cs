@@ -73,8 +73,9 @@ internal static class BssAutoCaster
     /// <summary>
     /// Casts a spell directly, bypassing HandleCastSpell for projectile spells
     /// to avoid interacting with other mods' split/splash prefixes.
+    /// PUBLIC for pet auto-casts (wisps, etc.) that shouldn't need components.
     /// </summary>
-    static bool CastSpellDirect(Player player, Spell spell, WorldObject target)
+    public static bool CastSpellDirect(Player player, Spell spell, WorldObject target)
     {
         // Guard against any recursive casting
         if (IsInAutoCast)

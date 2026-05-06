@@ -304,12 +304,12 @@ public class CookingSettings
     public bool CookingUseLegacySpellBuffs { get; set; } = false;
 
     [JsonPropertyName("// CookingRegenPercentPerTickTrained")]
-    public string CookingRegenPercentPerTickTrainedDoc { get; init; } = "Percentage of max vital restored per heartbeat tick when trained (e.g. 0.05 = 5% per 5 seconds normally, 5% per 1 second when low).";
-    public double CookingRegenPercentPerTickTrained { get; set; } = 0.01;
+    public string CookingRegenPercentPerTickTrainedDoc { get; init; } = "Percentage of max vital restored per heartbeat tick when trained (0.05 = 5% per tick; at 5sec interval when healthy = 5% per 5sec = 1%/sec; at 1sec interval when low = 5% per 1sec = 5%/sec).";
+    public double CookingRegenPercentPerTickTrained { get; set; } = 0.05;
 
     [JsonPropertyName("// CookingRegenPercentPerTickSpecialized")]
-    public string CookingRegenPercentPerTickSpecializedDoc { get; init; } = "Percentage of max vital restored per heartbeat tick when specialized (e.g. 0.10 = 10% per 5 seconds normally, 10% per 1 second when low).";
-    public double CookingRegenPercentPerTickSpecialized { get; set; } = 0.02;
+    public string CookingRegenPercentPerTickSpecializedDoc { get; init; } = "Percentage of max vital restored per heartbeat tick when specialized (0.10 = 10% per tick; at 5sec interval when healthy = 10% per 5sec = 2%/sec; at 1sec interval when low = 10% per 1sec = 10%/sec).";
+    public double CookingRegenPercentPerTickSpecialized { get; set; } = 0.10;
 
     [JsonPropertyName("// CookingFastRegenVitalThreshold")]
     public string CookingFastRegenVitalThresholdDoc { get; init; } = "When any vital (health/stamina/mana) falls below this percentage, heartbeat switches to 1-second intervals for fast recovery. Above threshold = 5-second intervals.";

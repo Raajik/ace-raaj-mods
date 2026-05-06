@@ -28,7 +28,8 @@ internal static class HybridClasses
         [DamageType.Slash] = new[] { 1835, 1836, 1837, 1838, 1839, 1840, 2156, 4467 },
         [DamageType.Bludgeon] = new[] { 1829, 1830, 1831, 1832, 1833, 1834, 2154, 4465 },
         [DamageType.Pierce] = new[] { 1811, 1812, 1813, 1814, 1815, 1816, 2142, 4453 }, // Force Streak
-        [DamageType.Nether] = new[] { 5366, 5367, 5368, 5369, 5354, 5355, 5356, 5357 },
+        // Nether Streak I-VIII (corrected spell IDs)
+        [DamageType.Nether] = new[] { 5357, 5358, 5359, 5360, 5345, 5346, 5347, 5348 },
     };
 
     // Arc spells by damage type
@@ -41,7 +42,8 @@ internal static class HybridClasses
         [DamageType.Slash] = new[] { 2762, 2763, 2764, 2765, 2766, 2767, 2768, 4431 },
         [DamageType.Bludgeon] = new[] { 2755, 2756, 2757, 2758, 2759, 2760, 2761, 4436 },
         [DamageType.Pierce] = new[] { 2727, 2728, 2729, 2730, 2731, 2732, 2733, 4433 }, // Force Arc
-        [DamageType.Nether] = new[] { 5378, 5371, 5372, 5373, 5374, 5375, 5376, 5377 },
+        // Nether Arc I-VIII (corrected spell IDs)
+        [DamageType.Nether] = new[] { 5369, 5362, 5363, 5364, 5365, 5366, 5367, 5368 },
     };
 
     // Volley spells by damage type

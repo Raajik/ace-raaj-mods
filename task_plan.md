@@ -1,44 +1,57 @@
-# Task Plan – Immutable Source of Truth Initiative
+# Olthoi Pincer Revamp — Task Plan
 
-## Phase 0 – Prep (Complete)
-- [x] Create tracking files: `task_plan.md`, `findings.md`, `progress.md`
-- [x] Create high-level roadmap: `PLAN.md`
-- [x] Create central registry: `FEATURE_TRUTH.md`
+## Goal
+- Remove quest cooldowns on all olthoi pincer quests
+- Make pincers rare drops from any olthoi kill (TrophyLines system)
+- Keep Behdo Yii's full reward chain (jewelry, kits, gems, notes, titles)
+- Allow turning reward items BACK to Behdo for bonus XP (bulk)
 
-## Phase 1 – Inventory All Mods (Complete)
-- [x] Run inventory script to generate: `mod_list.md`, `mod_overview.md`
-- [x] Record findings in `findings.md`
+## Phases
 
-## Phase 2 – Feature Mapping (Complete)
-- [x] Create feature-to-mod matrix: `FEATURE_MATRIX.md`
-- [x] For each mod, list known features and designate owning mod
-- [x] Identify duplicate ownership and gaps
-- [x] Update `FEATURE_TRUTH.md` with matrix cross-reference
-- [x] Log gaps in `findings.md`
+### Phase 1: DB — Backup + CD Removal + UiEffects ✅
+- [ ] Backup quest rows + pincer weenie_properties_int
+- [ ] SET min_Delta=0 on all 14 pincer quests
+- [ ] Add UiEffects=4096 (Nether/purple glow) to 10 pincer WCIDs
 
-## Phase 3 – Define Immutable Source-of-Truth Standards (Complete)
-- [x] Create documentation template: `Docs/FeatureTemplate.md`
-- [x] Ensure all mods have `Settings.json` template (filled WindblownContent gap)
-- [x] Create READMEs for HIGH-priority mods missing docs:
-  - EmpyreanAlteration (32 features, 16 mutators)
-  - Swarmed (29 champion types, 4 systems)
-  - WorldEvents (7 event types, scheduler, claim system)
-- [x] Create READMEs for MEDIUM-priority mods:
-  - BetterKeys, CommonGoals, AchievementUnlocked, Lockboxes, CustomSpells
+### Phase 2: TrophyLine JSON — olthoi-pincer.json
+- [ ] Line 1: OlthoiPincers — 10 tiers varying DropChance, ExcludedNpcWcids=[10842]
+- [ ] Line 2: BehdoJewelry — 10 jewelry WCIDs, DropChance=0, XpFraction=0.05
+- [ ] Line 3: BehdoHealingKits — 9229+22449, DropChance=0, XpFraction=0.01
+- [ ] Line 4: BehdoDispelGems — 9192+9193+51216, DropChance=0, XpFraction=0.01
 
-## Phase 4 – Process & Governance (Complete)
-- [x] Create PR template with SoT checklist: `.github/PULL_REQUEST_TEMPLATE.md`
-- [x] Create audit script: `scripts/validate_sot.sh`
-- [x] Verified: audit passes 50/50 (0 failures, 2 expected warnings)
+### Phase 3: Harmony Patch — Behdo reward turn-in
+- [ ] PreGiveObjectToNPC prefix handles reward items (jewelry/kits/gems) given to Behdo
+- [ ] Bulk drain all stacks, grant XP, send message, return false
 
-## Phase 5 – Ongoing Auditing (Next)
-- [ ] Run audit script monthly (or on significant changes)
-- [ ] Add audit script to CI pipeline (if applicable)
-- [ ] Clean up or formalize stale mods (Gemcrafter, Work-In-Progress)
+### Phase 4: Cross-mod settings
+- [ ] AutoLoot UpgradedTrophyWeenieClassIds — all 10 pincer WCIDs
+- [ ] AutoLoot NoDuplicateNames — "Pincer" fragment
 
-## Ongoing Maintenance
-- [x] Run `graphify update .` after code changes
-- [ ] Keep `FEATURE_MATRIX.md` in sync with new features
-- [ ] Keep `FEATURE_TRUTH.md` in sync
-- [ ] Update `COMPLETED.md` after each ship
-- [ ] Trim `PLAN.md` regularly
+### Phase 5: Build + Deploy test
+- [ ] Build Windblown project
+- [ ] Copy to C:\ACE\Mods\Windblown\
+- [ ] Apply SQL to ace_world
+- [ ] Restart test server, verify
+
+## Pincer Drop Rates (descending difficulty = rarer)
+
+| WCID | Name | DropChance |
+|------|------|-----------|
+| 10845 | Harvester Pincer | 2.0% |
+| 10844 | Gardener Pincer | 2.0% |
+| 10847 | Soldier Pincer | 1.5% |
+| 10846 | Legionary Pincer | 1.0% |
+| 27591 | Worker Pincer | 1.0% |
+| 10843 | Eviscerator Pincer | 0.5% |
+| 27590 | Warrior Pincer | 0.5% |
+| 27589 | Mutilator Pincer | 0.25% |
+| 51211 | Hive Eviscerator Pincer | 0.15% |
+| 51214 | Hive Warrior Pincer | 0.10% |
+
+## Turn-back-in rewards
+
+| Item Group | XP Fraction | Bulk |
+|-----------|------------|------|
+| 10 jewelry pieces | 0.05 | No (individual) |
+| Treated/Plentiful Healing Kits | 0.01 | Yes |
+| Dispel Gems (all 3) | 0.01 | Yes |

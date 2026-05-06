@@ -1,0 +1,78 @@
+{
+  "Description": "Olthoi Pincer revamp. 10 pincer WCIDs drop rarely from any Olthoi-type kill (not just boss rooms). Behdo Yii's vanilla emote chain handles the full reward. Separately, the reward items (jewelry/healing kits/dispel gems) can be given back to Behdo for bonus XP.",
+  "Lines": [
+    {
+      "Name": "OlthoiPincer",
+      "Enabled": true,
+      "CreatureTypeGate": "Olthoi",
+      "TurnInDisplayName": "Olthoi Pincer",
+      "Tiers": [
+        { "TierName": "Harvester",   "Wcid": 10845, "DropChance": 0.020, "XpFraction": 0.0, "BankCredit": 0 },
+        { "TierName": "Gardener",    "Wcid": 10844, "DropChance": 0.020, "XpFraction": 0.0, "BankCredit": 0 },
+        { "TierName": "Soldier",     "Wcid": 10847, "DropChance": 0.015, "XpFraction": 0.0, "BankCredit": 0 },
+        { "TierName": "Legionary",   "Wcid": 10846, "DropChance": 0.010, "XpFraction": 0.0, "BankCredit": 0 },
+        { "TierName": "Worker",      "Wcid": 27591, "DropChance": 0.010, "XpFraction": 0.0, "BankCredit": 0 },
+        { "TierName": "Eviscerator", "Wcid": 10843, "DropChance": 0.005, "XpFraction": 0.0, "BankCredit": 0 },
+        { "TierName": "Warrior",     "Wcid": 27590, "DropChance": 0.005, "XpFraction": 0.0, "BankCredit": 0 },
+        { "TierName": "Mutilator",   "Wcid": 27589, "DropChance": 0.0025,"XpFraction": 0.0, "BankCredit": 0 },
+        { "TierName": "Hive Eviscerator", "Wcid": 51211, "DropChance": 0.0015, "XpFraction": 0.0, "BankCredit": 0 },
+        { "TierName": "Hive Warrior",     "Wcid": 51214, "DropChance": 0.0010, "XpFraction": 0.0, "BankCredit": 0 }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [10842]
+    },
+    {
+      "Name": "BehdoJewelry",
+      "Enabled": true,
+      "CreatureTypeGate": "Olthoi",
+      "TurnInDisplayName": "Jewelry",
+      "Tiers": [
+        { "TierName": "Regular",  "Wcid": 27581, "DropChance": 0.0, "XpFraction": 0.05, "BankCredit": 0 },
+        { "TierName": "Regular",  "Wcid": 10858, "DropChance": 0.0, "XpFraction": 0.05, "BankCredit": 0 },
+        { "TierName": "Regular",  "Wcid": 27577, "DropChance": 0.0, "XpFraction": 0.05, "BankCredit": 0 },
+        { "TierName": "Regular",  "Wcid": 10841, "DropChance": 0.0, "XpFraction": 0.05, "BankCredit": 0 },
+        { "TierName": "Regular",  "Wcid": 27579, "DropChance": 0.0, "XpFraction": 0.05, "BankCredit": 0 },
+        { "TierName": "Regular",  "Wcid": 27580, "DropChance": 0.0, "XpFraction": 0.05, "BankCredit": 0 },
+        { "TierName": "Regular",  "Wcid": 27582, "DropChance": 0.0, "XpFraction": 0.05, "BankCredit": 0 },
+        { "TierName": "Regular",  "Wcid": 27578, "DropChance": 0.0, "XpFraction": 0.05, "BankCredit": 0 },
+        { "TierName": "Regular",  "Wcid": 51373, "DropChance": 0.0, "XpFraction": 0.05, "BankCredit": 0 },
+        { "TierName": "Regular",  "Wcid": 51374, "DropChance": 0.0, "XpFraction": 0.05, "BankCredit": 0 }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": []
+    },
+    {
+      "Name": "BehdoHealingKits",
+      "Enabled": true,
+      "CreatureTypeGate": "Olthoi",
+      "TurnInDisplayName": "Healing Kit",
+      "Tiers": [
+        { "TierName": "Regular",  "Wcid": 9229,  "DropChance": 0.0, "XpFraction": 0.01, "BankCredit": 0 },
+        { "TierName": "Regular",  "Wcid": 22449, "DropChance": 0.0, "XpFraction": 0.01, "BankCredit": 0 }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": []
+    },
+    {
+      "Name": "BehdoDispelGems",
+      "Enabled": true,
+      "CreatureTypeGate": "Olthoi",
+      "TurnInDisplayName": "Dispel Gem",
+      "Tiers": [
+        { "TierName": "Regular",  "Wcid": 9192,  "DropChance": 0.0, "XpFraction": 0.01, "BankCredit": 0 },
+        { "TierName": "Regular",  "Wcid": 9193,  "DropChance": 0.0, "XpFraction": 0.01, "BankCredit": 0 },
+        { "TierName": "Regular",  "Wcid": 51216, "DropChance": 0.0, "XpFraction": 0.01, "BankCredit": 0 }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true,
+      "ExcludedNpcWcids": []
+    }
+  ]
+}

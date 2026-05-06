@@ -24,7 +24,7 @@
     "Matron"
   ],
   "// UpgradedTrophyWeenieClassIds": "Pass 1: pocket these WCIDs into pack before .utl (physical trophies). Includes drudge charms, rat tails, wasp wings, mob heads, quest letters. See Windblown/docs/TrophyLineRegistry.md.",
-  "UpgradedTrophyWeenieClassIds": [24835, 850271, 850272, 850273, 4133, 850280, 850281, 850282, 7603, 850283, 850284, 850285, 8144, 8145, 8146, 8147, 9097, 12215, 12216, 12225, 3680, 3687, 4121, 19446, 22059, 24846, 25554, 25561, 28886, 28888, 28889, 34029, 36359, 36362, 8701, 8702, 45875, 45876],
+  "UpgradedTrophyWeenieClassIds": [24835, 850271, 850272, 850273, 4133, 850280, 850281, 850282, 7603, 850283, 850284, 850285, 8144, 8145, 8146, 8147, 9097, 12215, 12216, 12225, 3680, 3687, 4121, 19446, 22059, 24846, 25554, 25561, 28886, 28888, 28889, 34029, 36359, 36362, 8701, 8702, 45875, 45876, 10843, 10844, 10845, 10846, 10847, 27589, 27590, 27591, 51211, 51214],
   "// KeysUnlockThreshold": "Objects unlocked with keys to unlock BetterKeys.utl and key banking.",
   "KeysUnlockThreshold": 10,
   "// LockpickUnlockThreshold": "Objects unlocked with lockpicks to unlock lockpick corpse-loot banking.",

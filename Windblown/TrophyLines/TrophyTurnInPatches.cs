@@ -49,6 +49,61 @@ public partial class PatchClass
         _bulkPending[__instance.Guid.Full] = new BulkTurnInState(item.WeenieClassId, total, DateTime.UtcNow);
     }
 
+    /// <summary>
+    /// Behdo Yii reward item turn-in (jewelry, healing kits, dispel gems).
+    /// Behdo has no Give emotes for these items, so the vanilla GiveObjectToNPC would consume
+    /// the item without any emote chain firing. This prefix intercepts before consumption,
+    /// drains ALL stacks of that WCID, calculates XP from XpFraction, and skips the original method.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Player), "GiveObjectToNPC", new Type[] {
+        typeof(WorldObject), typeof(WorldObject), typeof(Container), typeof(Container), typeof(bool), typeof(int) })]
+    public static bool PreGiveObjectToNPC_BehdoReward(WorldObject item, WorldObject target, Player __instance)
+    {
+        if (item == null || __instance == null || target == null) return true;
+        if (target.WeenieClassId != 10842) return true; // Only Behdo Yii
+        if (Cfg?.EnableTrophyLines != true) return true;
+        if (!TrophyLineRegistry.IsReady) return true;
+        if (!TrophyLineRegistry.TryGetTier(item.WeenieClassId, out var line, out var tier)) return true;
+
+        // If Behdo is excluded from this line (e.g. pincer line), let the vanilla emote chain run
+        if (line.ExcludedNpcWcids.Contains(10842)) return true;
+
+        // Count ALL stacks of this WCID in inventory
+        int totalCount = 0;
+        foreach (var inv in __instance.GetInventoryItemsOfWCID(item.WeenieClassId))
+            totalCount += inv.StackSize ?? 1;
+
+        if (totalCount <= 0) return true;
+
+        // Drain all stacks (GiveObjectToNPC hasn't consumed anything yet since this is prefix)
+        foreach (var stack in __instance.GetInventoryItemsOfWCID(item.WeenieClassId).ToList())
+            __instance.TryRemoveFromInventoryWithNetworking(stack.Guid, out _, Player.RemoveFromInventoryAction.ConsumeItem);
+
+        long xpAmount = 0;
+        try
+        {
+            int level = __instance.Level ?? 1;
+            ulong bracket = __instance.GetXPBetweenLevels(level, level + 1);
+            double scaledXp = Math.Floor(bracket * (double)tier.XpFraction * totalCount);
+            xpAmount = scaledXp > long.MaxValue ? long.MaxValue : (long)scaledXp;
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Windblown.TrophyLines] Behdo reward calc failed for {__instance.Name} ({item.WeenieClassId}): {ex.Message}", ModManager.LogLevel.Error);
+        }
+
+        if (xpAmount > 0)
+            __instance.GrantXP(xpAmount, XpType.Quest, ShareType.None);
+
+        var displayName = BuildDisplayName(line, tier, totalCount);
+        __instance.SendMessage(
+            $"You turn in {totalCount:N0} {displayName} for {xpAmount:N0} experience.",
+            ChatMessageType.System);
+
+        return false; // Skip vanilla GiveObjectToNPC entirely
+    }
+
     // EmoteManager.ExecuteEmoteSet(PropertiesEmote, WorldObject, bool=false) is a trivial wrapper that
     // the JIT inlines, so a Harmony prefix on it never fires when called directly from
     // Player_Inventory.GiveObjectToNPC. Patch Enqueue (the non-trivial work) instead — and only

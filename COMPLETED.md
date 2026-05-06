@@ -2,6 +2,17 @@
 
 ## 2026-05-06
 
+### Olthoi Pincer Quest Revamp
+
+**Goal:** Remove quest cooldowns, make pincers rare drops, keep Behdo's full reward chain, allow turn-back-in of reward items for bonus XP.
+
+**Changes:**
+- **SQL:** Removed 20h cooldowns on all 14 pincer quests (`min_Delta=0` on OlthoiHunting1-8, HiveEvisPincer/Warrior, BroodPincerPickup, BroodMatronPincerPickedUp)
+- **SQL:** Added purple glow (`UiEffects=4096` Nether) to all 10 quest pincer WCIDs (10843-10847, 27589-27591, 51211, 51214)
+- **TrophyLine JSON** (`Windblown/Content/TrophyLines/olthoi-pincer.json`): 4 lines — pincer drops (2%→0.1% per CreatureType.Olthoi kill), jewelry turn-back-in (0.05 XP frac), healing kits (0.01 XP frac bulk), dispel gems (0.01 XP frac bulk)
+- **Harmony patch** (`TrophyTurnInPatches.cs`): New `PreGiveObjectToNPC_BehdoReward` prefix handles Behdo reward turn-in directly (no Give emote exists for reward items on Behdo)
+- **AutoLoot:** All 10 pincer WCIDs added to `UpgradedTrophyWeenieClassIds` for pack autoloot
+
 ### Hotfix: Salvage banking routes through LLL (BSS→LLL property mismatch)
 
 **Symptom:** Closing chests/corpses silently destroyed salvage bags instead of banking units to LLL. Auto-salvaged imbued items showed deposit messages but no credits appeared in `/bank salvage`.

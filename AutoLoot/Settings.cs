@@ -86,6 +86,17 @@ public class Settings
         8702u,  // Scarlet Red Letter
         45875u, // Lucky Gold Letter (variant)
         45876u, // Scarlet Red Letter (variant)
+        // Olthoi Pincers
+        10843u, // Eviscerator Pincer
+        10844u, // Gardener Pincer
+        10845u, // Harvester Pincer
+        10846u, // Legionary Pincer
+        10847u, // Soldier Pincer
+        27589u, // Mutilator Pincer
+        27590u, // Warrior Pincer
+        27591u, // Worker Pincer
+        51211u, // Hive Eviscerator Pincer
+        51214u, // Hive Warrior Pincer
     ];
 
     [JsonPropertyName("// KeysUnlockThreshold")]

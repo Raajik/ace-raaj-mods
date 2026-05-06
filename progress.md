@@ -1,35 +1,34 @@
-# Progress — Immutable Source of Truth
+# Olthoi Pincer Revamp — Progress Log
 
-## Phase 2-5 Complete ✓ (2026-05-06)
+## Session 2026-05-06
 
-### Phase 2: Feature Mapping ✓
-- **FEATURE_MATRIX.md** created with 80+ feature rows across 14 categories
-- Each feature has: Owner, README status, Settings.json status, Health status, Notes
-- Gaps identified: defense imbue hang (HIGH), empty mods (MEDIUM), missing READMEs (now filled)
+### Phase 1: DB ✅
+- Backed up quest rows + weenie_properties_int to `WindblownContent/sql-backups/2026-05-06/`
+- Set `min_Delta=0` on all 14 pincer quests (BroodMatron, Brood, HiveEvis, HiveWarrior, OlthoiHunting1-8)
+- Applied UiEffects=4096 (Nether/purple glow) to all 10 pincer WCIDs
+- SQL saved to `WindblownContent/Content/SQL/2026-05-06-olthoi-pincer-revamp.sql`
 
-### Phase 3: Documentation Standards ✓
-- **Docs/FeatureTemplate.md** created — 8-section template (intent, formulas, behavior, cross-mod, config, DB, testing, changelog)
-- **7 new READMEs created** for previously undocumented mods:
-  - EmpyreanAlteration — comprehensive (32 features, 16 mutators documented)
-  - Swarmed — all 29 champion types + 4 systems documented
-  - WorldEvents — all 7 event types + scheduler documented
-  - BetterKeys — unlock-only behavior, bank integration, key WCID mapping
-  - CommonGoals — personal loot, no-split XP
-  - AchievementUnlocked — achievement system overview
-  - Lockboxes — tiered lockbox system
-  - CustomSpells — spell creation, equipment set bonuses
-- **WindblownContent/Settings.json** created (was missing)
+### Phase 2: TrophyLine JSON ✅
+- Created `Windblown/Content/TrophyLines/olthoi-pincer.json` with 4 lines:
+  - OlthoiPincer: 10 tiers (2% → 0.1%), `ExcludedNpcWcids=[10842]` so Behdo's vanilla chain runs
+  - BehdoJewelry: 10 jewelry WCIDs, 0.05 XP fraction each, bulk turn-in
+  - BehdoHealingKits: treated/plentiful healing kits, 0.01 XP fraction, bulk
+  - BehdoDispelGems: 3 dispel gem WCIDs, 0.01 XP fraction, bulk
 
-### Phase 4: Process & Governance ✓
-- **`.github/PULL_REQUEST_TEMPLATE.md`** created with full SoT checklist (feature ownership, docs, config, DB, build, git hygiene)
-- **`scripts/validate_sot.sh`** created — automated audit checking:
-  - README coverage (22 mods checked)
-  - Settings.json coverage (23 mods checked)
-  - SoT docs existence (FEATURE_MATRIX, FEATURE_TRUTH, PR template, feature template)
-  - Stale mod detection (Gemcrafter, Work-In-Progress)
-  - SQL backup directory
-- Audit result: **50 pass, 0 fail, 2 warnings**
+### Phase 3: Harmony Patch ✅
+- Added `PreGiveObjectToNPC_BehdoReward` prefix in `TrophyTurnInPatches.cs`:
+  - Intercepts give to Behdo Yii (WCID 10842) for reward items
+  - Drains ALL stacks, calculates XP from XpFraction, grants XP, skips vanilla method
+  - Excluded NPC (10842) check passes for pincers so Behdo's emote chain runs
 
-### Phase 5: Ongoing ✓ (initial setup)
-- Audit script works and can be run via CI or cron
-- Weekly SoT sync noted in PLAN.md backlog
+### Phase 4: Cross-mod settings ✅
+- AutoLoot `UpgradedTrophyWeenieClassIds` — all 10 pincer WCIDs added to both `Settings.cs` and `Settings.json`
+- AutoLoot `NoDuplicateNames` — was already "Pincer"
+
+### Phase 5: Build + Deploy ✅
+- `Windblown.dll` built and deployed (no errors)
+- `AutoLoot.dll` built and deployed (no errors)
+- TrophyLines JSON copied to `C:\ACE\Mods\Windblown\Content\TrophyLines\`
+- AutoLoot `Settings.json` updated on test server with pincer WCIDs
+- Test server restarted
+- Logs confirm: "Registered 28 trophy line(s)" including OlthoiPincer, BehdoJewelry, BehdoHealingKits, BehdoDispelGems — no errors

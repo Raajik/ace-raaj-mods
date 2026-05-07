@@ -560,7 +560,7 @@ public static class SalvageAutoDeposit
             {
                 double beforeBags = s.Before / 100.0;
                 double afterBags  = s.After  / 100.0;
-                player.SendMessage($"[Auto-Salvage] Granted imbue salvage: {s.Name} +{s.Units} (bank: {beforeBags:F2} → {afterBags:F2} bags)");
+                player.SendMessage($"[Auto-Salvage] Granted imbue salvage: {s.Name} +{s.Units} (bank: {beforeBags:F2} -> {afterBags:F2} bags)");
                 ModManager.Log($"[BSS Imbue Salvage] {s.Name}: {s.Before} → {s.After} (+{s.Units})", ModManager.LogLevel.Debug);
             }
         }

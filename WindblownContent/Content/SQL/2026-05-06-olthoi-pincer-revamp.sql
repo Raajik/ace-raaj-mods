@@ -2,6 +2,7 @@
 -- Olthoi Pincer Revamp — 2026-05-06
 -- 1. Remove quest cooldowns on all pincer quests
 -- 2. Add purple glow (UiEffects=4096=Nether) to pincer WCIDs
+-- 3. Make pincers stackable (MaxStackSize=100)
 -- ============================================================
 
 -- Step 1: Remove cooldowns — pincers drop rarely, no timer needed
@@ -26,5 +27,19 @@ INSERT INTO weenie_properties_int (object_Id, type, value) VALUES
 (51211, 18, 4096),  -- Hive Eviscerator Pincer
 (51214, 18, 4096)   -- Hive Warrior Pincer
 ON DUPLICATE KEY UPDATE value = 4096;
+
+-- Step 3: Make pincers stackable (MaxStackSize=100)
+INSERT INTO weenie_properties_int (object_Id, type, value) VALUES
+(10843, 100, 100),  -- Eviscerator Pincer
+(10844, 100, 100),  -- Gardener Pincer
+(10845, 100, 100),  -- Harvester Pincer
+(10846, 100, 100),  -- Legionary Pincer
+(10847, 100, 100),  -- Soldier Pincer
+(27589, 100, 100),  -- Mutilator Pincer
+(27590, 100, 100),  -- Warrior Pincer
+(27591, 100, 100),  -- Worker Pincer
+(51211, 100, 100),  -- Hive Eviscerator Pincer
+(51214, 100, 100)   -- Hive Warrior Pincer
+ON DUPLICATE KEY UPDATE value = 100;
 
 SELECT 'OK' as status, COUNT(*) as rows_affected FROM quest WHERE min_Delta = 0 AND name LIKE 'OlthoiHunting%';

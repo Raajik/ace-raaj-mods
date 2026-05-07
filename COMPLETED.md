@@ -607,6 +607,34 @@ Multiple commits implementing each vendor type specialization, visual system, Ov
 
 ---
 
+### AutoLoot .utl profile archiving + stale prefs cleanup
+
+**Why:** `Currency.utl` had a VTClassic parse error on every login (`"Load profile returned an error"`). Both `.utl` files were the old VTClassic loot system — all banking is now handled by C# code paths (currency, trophies, keys, lockpicks, coalesced mana).
+
+**Changes:**
+- Moved `Currency.utl` and `Trophies.utl` → `AutoLoot/LootProfiles/archive/` (restorable)
+- Removed glob match in `.csproj` (no `.utl` files remain in `LootProfiles/` root → no more rebuild re-seeding)
+- Cleared `BundledDefaultProfileFileNames` in `Autoloot.cs` from `["Currency.utl"]` → `[]`
+- Cleared `DefaultActiveProfiles` in both repo and test `Settings.json` → `[]`
+- Added stale-profile-name pruning in `EnsureLoaded`: existing player prefs with `["Trophies.utl", "Currency.utl"]` get cleaned to `[]` on next login
+
+### Keys + Coalesced Mana death-loot fix
+
+**Symptom:** Skeleton keys (SIK/SSK/MFK/Legendary) and coalesced mana (Lesser/Greater/Aetheric) from BLC global drops were not being auto-banked from corpses.
+
+**Root cause:** Two timing problems:
+1. BLC's `GlobalKeyDrops` and `GlobalRareDrops` both postfix `Creature.GenerateTreasure` — same method as AutoLoot's `PostGenerateTreasure`. With no Harmony priority set, execution order was undefined. If AutoLoot ran **before** BLC, the corpse had no keys/mana yet, and BLC injected them *after*.
+2. `PostContainerOpen` only handled chests, not corpses — so even if items slipped through at death, they'd sit untouched.
+
+**Fix:**
+- `PatchClass.cs`: Set `priority = Priority.Last` on AutoLoot's manual `GenerateTreasure` postfix (runs **after** all other postfixes, including BLC's)
+- `PatchClass.Harmony.cs`: `PostContainerOpen` now handles `Corpse` too — catches any stragglers when the player opens the corpse
+
+### AGENTS.md — removed all ACRealms references
+
+Stripped the entire ACRealms section (§7.0), operator snapshot block, agent prompt block, realms/rulesets docs, ACRealms auto-restart watchdog, dead code paths, and all fork references. The directory was deleted; docs no longer reference it.
+
 ## Earlier Features
+
 
 (Previous completion records would go here...)

@@ -43,7 +43,7 @@ public class Duelist : CreatureEx
         if (mitigated < 1f && amount >= 1f)
             mitigated = 1f;
 
-        p.SendMessage($"{Name} parries part of your strike ({angle:F0}° / ±{HalfAngle:F0}°): {(int)amount} → {(int)mitigated}.");
+        p.SendMessage($"{Name} parries part of your strike ({angle:F0}° / ±{HalfAngle:F0}°): {(int)amount} -> {(int)mitigated}.");
         return base.TakeDamage(source, damageType, mitigated, crit);
     }
 }

@@ -132,7 +132,7 @@ internal static class DirtyFightingBuffs
     static readonly ConcurrentDictionary<(uint TargetGuid, uint SpellId), DateTime> LastDfMessageTime = new();
 
     /// <summary>
-    /// Prefix on FightDirty_SendMessage — suppresses chat messages when the same debuff
+    /// Prefix on FightDirty_SendMessage -- suppresses chat messages when the same debuff
     /// was messaged recently (indicating a duration refresh rather than a fresh application).
     /// </summary>
     [HarmonyPrefix]

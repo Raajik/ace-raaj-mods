@@ -32,10 +32,7 @@ public class AutoLoot
 
     static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    static readonly string[] BundledDefaultProfileFileNames =
-    [
-        "Currency.utl",
-    ];
+    static readonly string[] BundledDefaultProfileFileNames = [];
 
     static readonly HashSet<uint> LockpickWcids = new()
         { 510, 511, 512, 513, 514, 515, 516, 545, 27672 };
@@ -656,12 +653,18 @@ public class AutoLoot
 
             if (!ranFullDefaults)
             {
+                bool hadStaleNames = false;
                 foreach (var name in prefs.ActiveProfileNames)
                 {
                     var fullPath = allProfiles.FirstOrDefault(p =>
                         Path.GetFileName(p).Equals(name, StringComparison.OrdinalIgnoreCase));
 
-                    if (fullPath == null || playerProfileMap.ContainsKey(fullPath))
+                    if (fullPath == null)
+                    {
+                        hadStaleNames = true;
+                        continue;
+                    }
+                    if (playerProfileMap.ContainsKey(fullPath))
                         continue;
 
                     var core = new LootCore();
@@ -669,6 +672,10 @@ public class AutoLoot
                     core.LoadProfile(fullPath, false);
                     playerProfileMap[fullPath] = core;
                 }
+
+                // Prune stale profile names from prefs (e.g. archived .utl files)
+                if (hadStaleNames)
+                    SavePrefs(player);
             }
 
             if (!ranFullDefaults && playerProfileMap.IsEmpty && TrySeedDefaultLootProfilesFromDisk(player))
@@ -1039,7 +1046,7 @@ public class AutoLoot
 
         if (parameters.Length == 0 || !parameters[0].Equals("learn", StringComparison.OrdinalIgnoreCase))
         {
-            player.SendMessage("Usage: /scrolls learn — learns all readable scrolls in your inventory.");
+            player.SendMessage("Usage: /scrolls learn -- learns all readable scrolls in your inventory.");
             return;
         }
 

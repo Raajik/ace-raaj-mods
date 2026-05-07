@@ -148,7 +148,7 @@ internal static class ScavengerRuntime
                 {
                     loot.Location = player.Location.InFrontOf(0.5f);
                     loot.EnterWorld();
-                    player.SendMessage($"[ScavengerHunt] Loot reward: {loot.Name} — pack full, dropped at your feet.");
+                    player.SendMessage($"[ScavengerHunt] Loot reward: {loot.Name} -- pack full, dropped at your feet.");
                 }
                 else
                 {

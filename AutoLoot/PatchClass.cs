@@ -85,9 +85,10 @@ public partial class PatchClass : BasicPatch<Settings>
                     return;
                 }
 
-                ModC.Harmony.Patch(target, postfix: new HarmonyMethod(postfix));
+                var hm = new HarmonyMethod(postfix) { priority = Priority.Last };
+                ModC.Harmony.Patch(target, postfix: hm);
                 GenerateTreasurePostfixPatched = true;
-                ModManager.Log("AutoLoot: GenerateTreasure postfix applied (manual Harmony.Patch).", ModManager.LogLevel.Info);
+                ModManager.Log("AutoLoot: GenerateTreasure postfix applied (manual Harmony.Patch, priority=Last).", ModManager.LogLevel.Info);
             }
             catch (Exception ex)
             {

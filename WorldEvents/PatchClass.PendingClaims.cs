@@ -73,7 +73,7 @@ public partial class PatchClass
         if (pending <= 0)
             return;
 
-        player.SendMessage($"[WorldEvents] You have {pending} pending event reward(s). Type /claim to receive them. (/claim auto — toggle periodic auto-claim every 2h while online)", ChatMessageType.System);
+        player.SendMessage($"[WorldEvents] You have {pending} pending event reward(s). Type /claim to receive them. (/claim auto -- toggle periodic auto-claim every 2h while online)", ChatMessageType.System);
     }
 
     internal static void TryAutoClaimPendingRewards(Player player)

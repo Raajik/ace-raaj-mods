@@ -436,7 +436,7 @@ public partial class PatchClass : BasicPatch<Settings>
         for (var i = 0; i < top.Count; i++)
         {
             var entry = top[i];
-            player.SendMessage($"  {i + 1}. Account {entry.AccountId} — {entry.TotalEventCompletions} completion{(entry.TotalEventCompletions == 1 ? "" : "s")}");
+            player.SendMessage($"  {i + 1}. Account {entry.AccountId} -- {entry.TotalEventCompletions} completion{(entry.TotalEventCompletions == 1 ? "" : "s")}");
         }
     }
 
@@ -462,7 +462,7 @@ public partial class PatchClass : BasicPatch<Settings>
             var unique = entry.UniqueQuestNamesByEventType.TryGetValue("BonusQuest", out var names) ? names.Count : total;
             var repeats = total - unique;
             var repeatStr = repeats > 0 ? $", {repeats} repeat{(repeats == 1 ? "" : "s")}" : "";
-            player.SendMessage($"  {i + 1}. Account {entry.AccountId} — {unique} unique{repeatStr}");
+            player.SendMessage($"  {i + 1}. Account {entry.AccountId} -- {unique} unique{repeatStr}");
         }
     }
 
@@ -704,7 +704,7 @@ public partial class PatchClass : BasicPatch<Settings>
                     var targets = hunt.TargetSpecies.Count > 0
                         ? string.Join(", ", hunt.TargetSpecies.Select(s => HuntDisplay.SpeciesName(s)))
                         : "none";
-                    player.SendMessage($"  Hunt ({hunt.WindowStartUtc:HH:mm}–{hunt.WindowEndUtc:HH:mm} UTC): {targets}");
+                    player.SendMessage($"  Hunt ({hunt.WindowStartUtc:HH:mm}-{hunt.WindowEndUtc:HH:mm} UTC): {targets}");
                 }
                 else
                     player.SendMessage("  Hunt: no active window.");
@@ -760,7 +760,7 @@ public partial class PatchClass : BasicPatch<Settings>
                 var rem = cull.EndsUtc - DateTime.UtcNow;
                 var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
                 var tier = CullRuntime.GetSwarmTierFromKills(cull.TotalKills, settings);
-                player.SendMessage($"  Cull: {cull.TargetSpeciesName}s swarming — tier {tier}, {cull.TotalKills} kills, {remStr} remaining.");
+                player.SendMessage($"  Cull: {cull.TargetSpeciesName}s swarming -- tier {tier}, {cull.TotalKills} kills, {remStr} remaining.");
             }
             else
                 player.SendMessage("  Cull: no active cull.");
@@ -775,7 +775,7 @@ public partial class PatchClass : BasicPatch<Settings>
             {
                 var rem = sale.EndsUtc - DateTime.UtcNow;
                 var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
-                player.SendMessage($"  Sale: {sale.TownName} — {remStr} remaining.");
+                player.SendMessage($"  Sale: {sale.TownName} -- {remStr} remaining.");
             }
             else
                 player.SendMessage("  Sale: no active sale.");
@@ -795,11 +795,11 @@ public partial class PatchClass : BasicPatch<Settings>
                     {
                         var rem = currentRound.EndTime - DateTime.UtcNow;
                         var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
-                        player.SendMessage($"  POI Hunt: Round {currentRound.RoundNumber} active — {remStr} remaining.");
+                        player.SendMessage($"  POI Hunt: Round {currentRound.RoundNumber} active -- {remStr} remaining.");
                     }
                     else
                     {
-                        player.SendMessage("  POI Hunt: event active — no current round.");
+                        player.SendMessage("  POI Hunt: event active -- no current round.");
                     }
                 }
                 else
@@ -821,11 +821,11 @@ public partial class PatchClass : BasicPatch<Settings>
                     {
                         var rem = currentRound.EndTime - DateTime.UtcNow;
                         var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
-                        player.SendMessage($"  Scavenger Hunt: Round {currentRound.RoundNumber} — {currentRound.TargetName} — {remStr} remaining.");
+                        player.SendMessage($"  Scavenger Hunt: Round {currentRound.RoundNumber} -- {currentRound.TargetName} -- {remStr} remaining.");
                     }
                     else
                     {
-                        player.SendMessage("  Scavenger Hunt: event active — no current round.");
+                        player.SendMessage("  Scavenger Hunt: event active -- no current round.");
                     }
                 }
                 else
@@ -848,7 +848,7 @@ public partial class PatchClass : BasicPatch<Settings>
         if (!huntOnly)
         {
             var data = HuntRuntime.GetOrLoadPlayer(player.Guid.Full);
-            player.SendMessage($"[Hunt] Lifetime kills: {data.TotalLifetimeKills:N0} — Total Hunt XP: {data.TotalHuntXp:0.##}");
+            player.SendMessage($"[Hunt] Lifetime kills: {data.TotalLifetimeKills:N0} -- Total Hunt XP: {data.TotalHuntXp:0.##}");
         }
 
         lock (HuntRuntime.HuntLock)
@@ -856,17 +856,17 @@ public partial class PatchClass : BasicPatch<Settings>
             var hunt = HuntRuntime.ActiveHunt;
             if (hunt == null) { player.SendMessage("[Hunt] No active hunt window."); return; }
 
-            player.SendMessage($"[Hunt] Hunt window {hunt.WindowStartUtc:u} – {hunt.WindowEndUtc:u} UTC.");
+            player.SendMessage($"[Hunt] Hunt window {hunt.WindowStartUtc:u} - {hunt.WindowEndUtc:u} UTC.");
 
             if (hunt.TargetSpecies.Count == 0)
-                player.SendMessage("[Hunt] Bonus species: (none — need global kill data or adjust filters.)");
+                player.SendMessage("[Hunt] Bonus species: (none -- need global kill data or adjust filters.)");
             else
             {
                 for (var i = 0; i < hunt.TargetSpecies.Count; i++)
                 {
                     var speciesId = hunt.TargetSpecies[i];
                     hunt.TargetMultipliers.TryGetValue(speciesId, out var mult);
-                    player.SendMessage($"[Hunt] Bonus target {i + 1}/{hunt.TargetSpecies.Count}: {HuntDisplay.SpeciesName(speciesId)} — ×{mult:0.##}");
+                    player.SendMessage($"[Hunt] Bonus target {i + 1}/{hunt.TargetSpecies.Count}: {HuntDisplay.SpeciesName(speciesId)} -- ×{mult:0.##}");
                 }
             }
 
@@ -906,11 +906,11 @@ public partial class PatchClass : BasicPatch<Settings>
             {
                 var rem = currentRound.EndTime - DateTime.UtcNow;
                 var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
-                player.SendMessage($"[POI Hunt] Round {currentRound.RoundNumber} active — {remStr} remaining.");
+                player.SendMessage($"[POI Hunt] Round {currentRound.RoundNumber} active -- {remStr} remaining.");
             }
             else
             {
-                player.SendMessage($"[POI Hunt] Event {evt.EventId} active — no current round.");
+                player.SendMessage($"[POI Hunt] Event {evt.EventId} active -- no current round.");
             }
 
             var myFinds = evt.PlayerFindCounts.TryGetValue(player.Guid.Full, out var f) ? f : 0;
@@ -943,11 +943,11 @@ public partial class PatchClass : BasicPatch<Settings>
             {
                 var rem = currentRound.EndTime - DateTime.UtcNow;
                 var remStr = rem.TotalSeconds <= 0 ? "ending soon" : $"{(int)rem.TotalMinutes}m";
-                player.SendMessage($"[Scavenger Hunt] Round {currentRound.RoundNumber} — seeking {currentRound.TargetName} — {remStr} remaining.");
+                player.SendMessage($"[Scavenger Hunt] Round {currentRound.RoundNumber} -- seeking {currentRound.TargetName} -- {remStr} remaining.");
             }
             else
             {
-                player.SendMessage($"[Scavenger Hunt] Event {evt.EventId} active — no current round.");
+                player.SendMessage($"[Scavenger Hunt] Event {evt.EventId} active -- no current round.");
             }
 
             var myTurnIns = evt.PlayerTurnInCounts.TryGetValue(player.Guid.Full, out var t) ? t : 0;
@@ -982,11 +982,11 @@ public partial class PatchClass : BasicPatch<Settings>
 
             if (bq.QuestNames.Count == 0)
             {
-                player.SendMessage($"[Bonus Quest] Board is empty — next rotation in {rotateStr}.");
+                player.SendMessage($"[Bonus Quest] Board is empty -- next rotation in {rotateStr}.");
                 return;
             }
 
-            player.SendMessage($"[Bonus Quest] {bq.QuestNames.Count} active quest(s) — tiered XP (20%/15%/10%/5%). Next rotation in {rotateStr}:");
+            player.SendMessage($"[Bonus Quest] {bq.QuestNames.Count} active quest(s) -- tiered XP (20%/15%/10%/5%). Next rotation in {rotateStr}:");
 
             var now = DateTime.UtcNow;
             for (var i = 0; i < bq.QuestNames.Count; i++)
@@ -998,7 +998,7 @@ public partial class PatchClass : BasicPatch<Settings>
                 var remStr = rem.TotalSeconds <= 0 ? "expiring"
                     : rem.TotalHours >= 1 ? $"{(int)rem.TotalHours}h {rem.Minutes}m left"
                     : $"{(int)rem.TotalMinutes}m left";
-                player.SendMessage($"  {i + 1}. {display} — {remStr}");
+                player.SendMessage($"  {i + 1}. {display} -- {remStr}");
             }
 
             var completions = bq.PlayerCompletions.TryGetValue(player.Guid.Full, out var c) ? c : 0;
@@ -1057,7 +1057,7 @@ public partial class PatchClass : BasicPatch<Settings>
 
         var remaining = sale.EndsUtc - DateTime.UtcNow;
         var remStr = remaining.TotalSeconds <= 0 ? "ending soon" : $"{(int)remaining.TotalMinutes}m";
-        player.SendMessage($"[Sale] {sale.TownName} — ends in {remStr} ({sale.EndsUtc:u} UTC).");
+        player.SendMessage($"[Sale] {sale.TownName} -- ends in {remStr} ({sale.EndsUtc:u} UTC).");
         if (sale.MasterMageOnly)
             player.SendMessage("[Sale] All Master Mages are on sale.");
         else if (sale.IncludesMasterMage)
@@ -1083,7 +1083,7 @@ public partial class PatchClass : BasicPatch<Settings>
         var remaining = cull.EndsUtc - DateTime.UtcNow;
         var remStr = remaining.TotalSeconds <= 0 ? "ending soon" : $"{(int)remaining.TotalMinutes}m";
         var tier = CullRuntime.GetSwarmTierFromKills(cull.TotalKills, settings);
-        player.SendMessage($"[Cull] {cull.TargetSpeciesName}s swarming — tier {tier} (kills: {cull.TotalKills}), ends in {remStr}.");
+        player.SendMessage($"[Cull] {cull.TargetSpeciesName}s swarming -- tier {tier} (kills: {cull.TotalKills}), ends in {remStr}.");
 
         var top = cull.KillsByPlayer
             .OrderByDescending(kv => kv.Value)
@@ -1095,7 +1095,7 @@ public partial class PatchClass : BasicPatch<Settings>
             for (var i = 0; i < top.Count; i++)
             {
                 var name = cull.PlayerNames.TryGetValue(top[i].Key, out var n) ? n : $"GUID:{top[i].Key}";
-                player.SendMessage($"  {i + 1}. {name} — {top[i].Value} kill{(top[i].Value == 1 ? "" : "s")}");
+                player.SendMessage($"  {i + 1}. {name} -- {top[i].Value} kill{(top[i].Value == 1 ? "" : "s")}");
             }
         }
 

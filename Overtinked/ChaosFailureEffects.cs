@@ -620,7 +620,7 @@ public static class ChaosFailureEffects
         {
             SetWorkmanship(target, newValue);
             string msg = string.Format(Random.Shared.GetItems(WorkmanshipRefinementMessages, 1)[0], itemName);
-            player.SendMessage($"[Overtinked] {msg} Workmanship -{current - newValue} (now {newValue}) — future tinkers will be easier!", ChatMessageType.Craft);
+            player.SendMessage($"[Overtinked] {msg} Workmanship -{current - newValue} (now {newValue}) -- future tinkers will be easier!", ChatMessageType.Craft);
             ModManager.Log($"[Overtinked] Chaos WorkmanshipRefinement: {player.Name} -{current - newValue} workmanship on {target.Guid}", ModManager.LogLevel.Debug);
         }
         else
@@ -640,7 +640,7 @@ public static class ChaosFailureEffects
         target.SetProperty(PropertyInt.NumTimesTinkered, newValue);
 
         string msg = string.Format(Random.Shared.GetItems(TinkerRewindMessages, 1)[0], itemName);
-        player.SendMessage($"[Overtinked] {msg} Tinker count -{current - newValue} (now {newValue}) — you can tinker this more!", ChatMessageType.Craft);
+        player.SendMessage($"[Overtinked] {msg} Tinker count -{current - newValue} (now {newValue}) -- you can tinker this more!", ChatMessageType.Craft);
         ModManager.Log($"[Overtinked] Chaos TinkerRewind: {player.Name} -{current - newValue} tinkers on {target.Guid}", ModManager.LogLevel.Debug);
     }
 

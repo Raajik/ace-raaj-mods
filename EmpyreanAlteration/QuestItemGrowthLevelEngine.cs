@@ -801,7 +801,7 @@ internal static class QuestItemGrowthLevelEngine
                 anyScaled = true;
 
                 if (emitMessages)
-                    player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{amount} {name} ({current} → {next}).");
+                    player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{amount} {name} ({current} -> {next}).");
             }
         }
 

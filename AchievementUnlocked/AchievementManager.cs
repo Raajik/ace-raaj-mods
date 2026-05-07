@@ -705,7 +705,7 @@ public static class AchievementManager
         // Use flavorful messages for class achievements
         if (ach.Category.Equals("Classes", StringComparison.OrdinalIgnoreCase) && ClassFlavorMessages.TryGetValue(ach.Id, out var flavor))
         {
-            player.SendMessage($"{prefix} You unlocked '{ach.Name}' — {ach.Description}", ChatMessageType.Magic);
+            player.SendMessage($"{prefix} You unlocked '{ach.Name}' -- {ach.Description}", ChatMessageType.Magic);
 
             if (_settings?.BroadcastOnUnlock == true)
             {

@@ -72,7 +72,7 @@ internal static class PersonalLoot
             spawned++;
 
             if (cfg.NotifyOnPersonalLoot)
-                player.SendMessage($"[CommonGoals] Personal loot spawned nearby — {corpse.Name}.", ChatMessageType.System);
+                player.SendMessage($"[CommonGoals] Personal loot spawned nearby -- {corpse.Name}.", ChatMessageType.System);
         }
     }
 

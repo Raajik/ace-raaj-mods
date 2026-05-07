@@ -388,15 +388,15 @@ public static class LoremasterExtensions
             player.SendMessage($"  Chaos mult     : ×{cd:0.####}");
 
         // ── Farming Formula ──
-        player.SendMessage($"  ── How to maximize ──");
+        player.SendMessage($"  -- How to maximize --");
         player.SendMessage($"  Each QP is worth   : +{s.BonusPerQuestPoint / 100.0:0.#####}% XP multiplier");
         player.SendMessage($"  QP for +1% mult    : {100.0 / s.BonusPerQuestPoint:0.##} QP");
         player.SendMessage($"  Completion bonus   : {s.DefaultCompletionBonusXpMultiplier * 100:0.##}% + (QP × {s.CompletionBonusPerQuestPoint / 100.0:0.#####}%) of next-level XP");
         var cdReduct = player.GetQuestCooldownReduction();
         if (cdReduct > 0)
             player.SendMessage($"  Cooldown reduction : {cdReduct * 100:0.##}% (cap {s.QuestCooldownReductionCap * 100:0.##}%)");
-        player.SendMessage($"  Account-wide QP    : {(s.UseAccountWideQuests ? "YES — alts share QP, do not double-dip" : "NO — per-character only")}");
-        player.SendMessage($"  ── Tips ──");
+        player.SendMessage($"  Account-wide QP    : {(s.UseAccountWideQuests ? "YES -- alts share QP, do not double-dip" : "NO -- per-character only")}");
+        player.SendMessage($"  -- Tips --");
         player.SendMessage($"  1) Solve quests for QP (each completion = +1 QP)");
         player.SendMessage($"  2) Repeat-solve for repeatQB (stacked via unique quest entries)");
         player.SendMessage($"  3) Stack equipment with ItemXpBoost for raw kill XP");

@@ -23,7 +23,7 @@ public class Settings
 
     [JsonPropertyName("// DefaultActiveProfiles")]
     public string DefaultActiveProfilesDoc { get; init; } =
-        "Shipped default: LootProfiles/*.utl filenames (allowlist for /autoloot menu and new characters). Empty []: bundled list in code for first-login defaults only; /autoloot lists every .utl on disk. AutoSalvage is now material-type based and does not require a .utl profile. Key banking is baked into core (no profile needed). Pyreal trophies (motes/slivers/nuggets/bars) now auto-bank via C# code.";
+        "Archived. .utl profiles are no longer used; all banking is handled by C# code (currencies, trophies, keys, lockpicks, salvage). Keep empty.";
     public List<string> DefaultActiveProfiles { get; set; } = [];
 
     [JsonPropertyName("// DefaultProfile")]

@@ -8,13 +8,8 @@
   "BankCashProperty": 39999,
   "// LootProfilePath": "Folder for .utl loot profiles. Default empty: PatchClass sets Path.Combine(ModPath, \"LootProfiles\").",
   "LootProfilePath": "",
-  "// DefaultActiveProfiles": "Shipped default: Currency, Trophies, BetterKeys (locked until 10 key unlocks), AutoSalvage (locked until 50 salvages).",
-  "DefaultActiveProfiles": [
-    "Currency.utl",
-    "Trophies.utl",
-    "BetterKeys.utl",
-    "AutoSalvage.utl"
-  ],
+  "// DefaultActiveProfiles": "Archived. .utl profiles are no longer used; all banking is handled by C# code (currencies, trophies, keys, lockpicks, salvage).",
+  "DefaultActiveProfiles": [],
   "// DefaultProfile": "Legacy single file; leave empty.",
   "DefaultProfile": "",
   "// NoDuplicateNames": "Name substrings (case-insensitive): skip loot if player already owns same WCID.",

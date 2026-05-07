@@ -86,18 +86,30 @@ public partial class PatchClass
     [HarmonyPatch(typeof(Container), nameof(Container.Open))]
     public static void PostContainerOpen(Player player, Container __instance)
     {
-        if (player == null || __instance is not Chest chest)
+        if (player == null)
             return;
 
-        if (chest.HouseOwner.HasValue)
-            return;
+        if (__instance is Chest chest)
+        {
+            if (chest.HouseOwner.HasValue)
+                return;
 
-        if (PatchClass.Settings is not { EnableChestAutoLoot: true })
-            return;
+            if (PatchClass.Settings is not { EnableChestAutoLoot: true })
+                return;
 
-        AutoLoot.EnsureLoaded(player);
-        AutoLoot.ProcessContainerLootImmediate(player, chest);
-        AutoLoot.ProcessContainerLoot(player, chest);
+            AutoLoot.EnsureLoaded(player);
+            AutoLoot.ProcessContainerLootImmediate(player, chest);
+            AutoLoot.ProcessContainerLoot(player, chest);
+        }
+        else if (__instance is Corpse)
+        {
+            // Catch any keys, coalesced mana, or currency that don't get tied off at creature death
+            // (e.g. if BLC's GlobalKeyDrops/GlobalRareDrops injected items AFTER our death-time
+            // PostGenerateTreasure ran due to undefined Harmony priority ordering).
+            AutoLoot.EnsureLoaded(player);
+            AutoLoot.ProcessContainerLootImmediate(player, __instance);
+            AutoLoot.ProcessContainerLoot(player, __instance);
+        }
     }
 
     [HarmonyPrefix]

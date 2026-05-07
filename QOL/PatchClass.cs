@@ -434,7 +434,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         if (parameters.Length == 0)
         {
-            player.SendMessage("Usage: /wipe data — wipes all non-admin progress (achievements, quest points, bank balances).");
+            player.SendMessage("Usage: /wipe data -- wipes all non-admin progress (achievements, quest points, bank balances).");
             return;
         }
 
@@ -522,7 +522,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
                         var remaining = entry.Duration + entry.StartTime;
                         status = $"{remaining:F0}s remaining";
                     }
-                    player.SendMessage($"  [{spell.School}] {spell.Name} (Lv{spell.Level}) — {status}");
+                    player.SendMessage($"  [{spell.School}] {spell.Name} (Lv{spell.Level}) -- {status}");
                 }
             }
             return;

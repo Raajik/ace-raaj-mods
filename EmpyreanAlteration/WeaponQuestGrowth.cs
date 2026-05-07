@@ -57,7 +57,7 @@ internal static class WeaponQuestGrowth
         if (emitMessages)
         {
             string detail = string.Join("; ", parts);
-            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} — rare growth: {detail}.");
+            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} -- rare growth: {detail}.");
         }
 
         return true;
@@ -133,7 +133,7 @@ internal static class WeaponQuestGrowth
                     summary.DamageGained += 1;
                 appliedDescription = "+1 Damage";
                 if (emitMessages)
-                    player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage ({before} → {before + 1}).");
+                    player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage ({before} -> {before + 1}).");
                 return true;
             }
             case 1:
@@ -167,7 +167,7 @@ internal static class WeaponQuestGrowth
                     summary.WeaponOakSpeedSteps += 1;
                 appliedDescription = $"attack speed improved (-{delta} weapon time)";
                 if (emitMessages)
-                    player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and attacks faster (weapon time {spd} → {item.WeaponTime}).");
+                    player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and attacks faster (weapon time {spd} -> {item.WeaponTime}).");
                 return true;
             }
             case 4:
@@ -299,7 +299,7 @@ internal static class WeaponQuestGrowth
         }
         appliedDescription = "+1 base Damage (minor)";
         if (emitMessages)
-            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 base Damage ({before} → {before + 1}) from a minor surge.");
+            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 base Damage ({before} -> {before + 1}) from a minor surge.");
         return true;
     }
 
@@ -318,7 +318,7 @@ internal static class WeaponQuestGrowth
             summary.MinorDamageRatingCount++;
         appliedDescription = "+1 damage rating (minor)";
         if (emitMessages)
-            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage Rating ({drBefore} → {drBefore + 1}).");
+            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage Rating ({drBefore} -> {drBefore + 1}).");
         return true;
     }
 
@@ -337,7 +337,7 @@ internal static class WeaponQuestGrowth
             summary.MinorCritDamageRatingCount++;
         appliedDescription = "+1 crit damage rating (minor)";
         if (emitMessages)
-            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Crit Damage Rating ({critBefore} → {critBefore + 1}).");
+            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Crit Damage Rating ({critBefore} -> {critBefore + 1}).");
         return true;
     }
 

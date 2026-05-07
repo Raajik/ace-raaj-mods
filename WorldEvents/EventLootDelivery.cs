@@ -26,7 +26,7 @@ internal static class EventLootDelivery
         if (HuntBankInterop.TryLeyLineLedgerAutoBank(player, item, tag))
         {
             var sourceTag = string.IsNullOrWhiteSpace(entry.Source) ? "WorldEvents" : entry.Source;
-            player.SendMessage($"[{sourceTag}] Claimed {item.Name} ({entry.Label}) — sent to bank.");
+            player.SendMessage($"[{sourceTag}] Claimed {item.Name} ({entry.Label}) -- sent to bank.");
             return true;
         }
 
@@ -34,7 +34,7 @@ internal static class EventLootDelivery
         {
             item.Location = player.Location.InFrontOf(0.5f);
             item.EnterWorld();
-            player.SendMessage($"[WorldEvents] Claimed {item.Name} ({entry.Label}) — pack full, dropped at your feet.");
+            player.SendMessage($"[WorldEvents] Claimed {item.Name} ({entry.Label}) -- pack full, dropped at your feet.");
         }
         else
         {
@@ -57,7 +57,7 @@ internal static class EventLootDelivery
         {
             item.Location = player.Location.InFrontOf(0.5f);
             item.EnterWorld();
-            player.SendMessage($"[{source}] {label}: {item.Name} — pack full, dropped at your feet.");
+            player.SendMessage($"[{source}] {label}: {item.Name} -- pack full, dropped at your feet.");
         }
         else
         {

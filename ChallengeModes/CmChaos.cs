@@ -36,7 +36,7 @@ internal static class CmChaos
         PatchClass.SetChaosEnabled(player, true);
         PatchClass.OnChallengeStarted(player);
         CmCommands.RefreshChallengeRadar(player);
-        player.SendMessage($"Chaos is ON — Loremaster quest-point multiplier ×{mult:0.##}, Swarmed reinforcements escalate up to 5×, and aggro radius is tripled.");
+        player.SendMessage($"Chaos is ON -- Loremaster quest-point multiplier ×{mult:0.##}, Swarmed reinforcements escalate up to 5×, and aggro radius is tripled.");
     }
 
     internal static void Leave(Player player)

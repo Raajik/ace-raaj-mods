@@ -481,8 +481,8 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         var qp        = target.GetProperty(FakeFloat.QuestBonus) ?? 0;
         var totalMult = target.GetTotalXpMultiplier();
 
-        admin.SendMessage($"[Loremaster] Reset {target.Name}: {qp} QP → total XP mult {totalMult * 100.0:0.##}% of raw.");
-        target.SendMessage($"[Loremaster] Your quest bonus has been recalculated by an admin: {qp} QP → total XP mult {totalMult * 100.0:0.##}% of raw.");
+        admin.SendMessage($"[Loremaster] Reset {target.Name}: {qp} QP -> total XP mult {totalMult * 100.0:0.##}% of raw.");
+        target.SendMessage($"[Loremaster] Your quest bonus has been recalculated by an admin: {qp} QP -> total XP mult {totalMult * 100.0:0.##}% of raw.");
     }
 
     [CommandHandler("qb-resetall", AccessLevel.Admin, CommandHandlerFlag.None,
@@ -828,7 +828,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 player.AddExtraQuestPoints(1);
                 player.UpdateQuestPoints();
                 if (player.Notify(LMBool.NotifyQuest))
-                    player.SendMessage(LoremasterExtensions.FormatQpNotification($"+1 repeatQB — Kill task '{questName}' auto-reaccepted"));
+                    player.SendMessage(LoremasterExtensions.FormatQpNotification($"+1 repeatQB -- Kill task '{questName}' auto-reaccepted"));
 
                 // Now let vanilla handle the kill credit for this new cycle
                 return true;
@@ -883,7 +883,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             player.AddExtraQuestPoints(1);
             player.UpdateQuestPoints();
             if (player.Notify(LMBool.NotifyQuest))
-                player.SendMessage(LoremasterExtensions.FormatQpNotification($"+1 repeatQB — Kill task '{questName}' completed"));
+                player.SendMessage(LoremasterExtensions.FormatQpNotification($"+1 repeatQB -- Kill task '{questName}' completed"));
         }
     }
 

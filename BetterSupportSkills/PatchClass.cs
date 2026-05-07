@@ -889,7 +889,7 @@ try
                               ?? 15.0);
             if (!float.TryParse(parameters[1], out float requested) || requested < 0)
             {
-                player.SendMessage($"Usage: /cleave range <0–{serverMax:F1}>", ChatMessageType.System);
+                player.SendMessage($"Usage: /cleave range <0-{serverMax:F1}>", ChatMessageType.System);
                 return;
             }
             float clamped = Math.Clamp(requested, 0f, serverMax);

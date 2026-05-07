@@ -251,7 +251,7 @@ public static class Lottery
                 {
                     onlinePlayer.IncCash(pyrealPrize);
                     var qbMsg = qbPrize > 0 ? $" and {qbPrize:0.#} QB" : "";
-                    onlinePlayer.SendMessage($"🎉 You won {LeyLineLedgerHelpers.Ordinal(place)} place in the lottery! {pyrealPrize:N0} pyreals{qbMsg} have been credited to you!");
+                    onlinePlayer.SendMessage($"[Lottery] You won {LeyLineLedgerHelpers.Ordinal(place)} place in the lottery! {pyrealPrize:N0} pyreals{qbMsg} have been credited to you!");
                 }
                 else
                 {

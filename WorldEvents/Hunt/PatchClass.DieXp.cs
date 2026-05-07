@@ -1,4 +1,4 @@
-﻿namespace WorldEvents;
+namespace WorldEvents;
 
 public partial class PatchClass
 {
@@ -139,7 +139,7 @@ public partial class PatchClass
             var label = settings.UseAchievementXpForTiers
                 ? $"{data.TotalHuntXp:N0} Hunt XP"
                 : $"{data.TotalLifetimeKills:N0} lifetime kills";
-            player.SendMessage($"[Hunt] Achievement: {label} — loot tier offset +{tier} on qualifying drops.");
+            player.SendMessage($"[Hunt] Achievement: {label} -- loot tier offset +{tier} on qualifying drops.");
         }
     }
 }

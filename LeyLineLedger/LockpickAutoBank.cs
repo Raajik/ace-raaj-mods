@@ -95,7 +95,7 @@ public static class LockpickAutoBank
         if (prevCount == 0)
             player.SendMessage($"[Lockpick] Limitless Lockpick activated! Unlimited uses enabled (×{newCount}).");
         else
-            player.SendMessage($"[Lockpick] Limitless Lockpick stacked — unlimited uses ×{newCount}.");
+            player.SendMessage($"[Lockpick] Limitless Lockpick stacked -- unlimited uses ×{newCount}.");
 
         __result = true;
         return false;

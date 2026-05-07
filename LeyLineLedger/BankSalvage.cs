@@ -399,7 +399,7 @@ public static class BankSalvage
         {
             if (!int.TryParse(parameters[3], out wantBags) || wantBags < 1)
             {
-                player.SendMessage("Usage: /bank salvage redeem <material or WCID> [bags]  — bags must be a positive integer.");
+                player.SendMessage("Usage: /bank salvage redeem <material or WCID> [bags]  -- bags must be a positive integer.");
                 return;
             }
         }

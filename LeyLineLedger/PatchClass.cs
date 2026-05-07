@@ -1387,7 +1387,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 }
                 player.IncCash(-pyrealAmount);
                 Lottery.AddToPool(pyrealAmount);
-                player.SendMessage($"💰 You donated {pyrealAmount:N0} pyreals to the lottery pool. Prize pool is now {Lottery.GetPool():N0}.");
+                player.SendMessage($"You donated {pyrealAmount:N0} pyreals to the lottery pool. Prize pool is now {Lottery.GetPool():N0}.");
                 ModManager.Log($"[LeyLineLedger] {player.Name} donated {pyrealAmount:N0} pyreals to lottery pool.", ModManager.LogLevel.Info);
                 break;
 
@@ -1404,7 +1404,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 player.SetProperty(lumProp, bankedLum - lumAmount);
                 var lumValue = (long)(lumAmount * Settings.Lottery.DonateLuminanceRate);
                 Lottery.AddToPool(lumValue);
-                player.SendMessage($"✨ You donated {lumAmount:N0} luminance ({lumValue:N0} pyreal value) to the lottery pool. Prize pool is now {Lottery.GetPool():N0}.");
+                player.SendMessage($"You donated {lumAmount:N0} luminance ({lumValue:N0} pyreal value) to the lottery pool. Prize pool is now {Lottery.GetPool():N0}.");
                 ModManager.Log($"[LeyLineLedger] {player.Name} donated {lumAmount:N0} lum ({lumValue:N0}p value) to lottery pool.", ModManager.LogLevel.Info);
                 break;
 
@@ -1419,7 +1419,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
                 }
                 // Add donated QB directly to the QB prize pool (NOT pyreal pool)
                 Lottery.AddToQbPool(qbAmount);
-                player.SendMessage($"📜 You donated {qbAmount:0.#} QB to the lottery QB pool. QB prize pool is now {Lottery.GetQbPool():0.#}. Pyreal pool: {Lottery.GetPool():N0}.");
+                player.SendMessage($"You donated {qbAmount:0.#} QB to the lottery QB pool. QB prize pool is now {Lottery.GetQbPool():0.#}. Pyreal pool: {Lottery.GetPool():N0}.");
                 ModManager.Log($"[LeyLineLedger] {player.Name} donated {qbAmount:0.#} QB to lottery QB pool.", ModManager.LogLevel.Info);
                 break;
 

@@ -2,6 +2,36 @@
 
 ## 2026-05-07
 
+### Session: VendorLootRotation fixes (3 rounds) + defense imbue visuals
+
+**Goal:** Get vendor loot rotation working, stop mages losing robes, remove laggy robe lootgen, add yellow glow and +5 examine to defense imbue items.
+
+**Changes:**
+
+#### Round 1 — VendorLootRotation not firing (`_settings` null)
+- **Root cause:** `VendorLootRotation._settings` was null when Harmony prefix on `GameEventApproachVendor` fired at runtime. `Initialize()` set it in `OnStartSuccess` but that static didn't survive all load paths.
+- **Fix:** `OnVendorApproachEvent` falls back to `PatchClass.CurrentSettings` if `_settings` is null.
+- Removed verbose debug log spam on every approach.
+
+#### Round 2 — Mage vendors losing wizard robes
+- **Root cause:** Strip phase deleted ALL equipment matching Mage merch mask, including SQL-defined wizard robes. `GenerateRobeBatch` couldn't recreate them (lootgen rarely produces "Robe"-named items).
+- **Fix:** During strip for Mage vendors, preserve items whose name contains robe keywords.
+
+#### Round 3 — Robe lootgen removed, caster items tripled
+- Robe lootgen caused significant lag (~400-1000 lootgen calls per approach). Removed `GenerateRobeBatch` entirely.
+- Mage vendors now generate 3× caster items (`perCatMin*3` to `perCatMax*3`).
+- Also removed robe lootgen from Tailor vendor section.
+
+#### Defense imbue visual improvements (Both mods)
+- **Yellow glow (BetterLootControl):** Defense imbue items replace blue Magical flag with yellow (BoostHealth=4).
+- **"+5" examine text (Overtinked):** `CustomImbueAppraise.PostBuildProfile` now injects `Imbues +5 Melee/Missile/Magic Defense` into the examine LongDesc of any item with a defense imbue flag.
+
+**Cleanup:** Removed stale VendorLootRotation section from QOL/Readme.md (feature moved to BetterLootControl long ago).
+
+**Files changed:** `BetterLootControl/VendorLootRotation.cs`, `Overtinked/CustomImbueAppraise.cs`, `QOL/Readme.md`
+
+---
+
 ### Session: Salvage + key bank message overhaul, autosalvage modes, auto-loot fixes
 
 **Goal:** Combined `[Bank]` notification line, fix phantom salvage deposits, auto-unlock lockpick banking, autosalvage on/off/quiet modes, trophy auto-loot ordering fix.
@@ -42,6 +72,30 @@
 **Lessons learned (added to AGENTS.md §8.3):**
 - BasicPatch<T>.Settings is an instance property, not static — `GetField(Static)` returns null regardless of FlattenHierarchy
 - Cross-mod reflection for LLL settings should use `SalvageBank.DepositRules` via disk-file read or formula (40201 + (wcid - 20981)) for salvage property IDs
+
+### Session: wb_test watchdog registration (RunLevel Limited)
+
+**Goal:** Register wb_test (port 9000) auto-restart watchdog, matching void-test and live patterns.
+
+**Changes:**
+- Registered  scheduled task at  (non-admin) so ACE.Server.exe opens in the user's normal Windows Terminal, not an admin window
+- Cleared leftover  and  from prior admin-elevated watchdog runs
+- Watchdog now polls every 30s, restarts after 10s delay, caps at 10 restarts/hour with storm protection
+- All three server watchdogs (wb_test, live, void-test) now use 
+
+**Lesson learned:** Keep task principal at  for *registration* (script needs admin to create the task), but the task definition itself must use  so spawned processes open at user elevation.
+
+### Session: wb_test watchdog registration (RunLevel Limited)
+
+**Goal:** Register wb_test (port 9000) auto-restart watchdog, matching void-test and live patterns.
+
+**Changes:**
+- Registered `wb_test-Watchdog` scheduled task at `RunLevel Limited` (non-admin) so ACE.Server.exe opens in the user's normal Windows Terminal, not an admin window
+- Cleared leftover `BLOCKED.txt` and `state.json` from prior admin-elevated watchdog runs
+- Watchdog now polls every 30s, restarts after 10s delay, caps at 10 restarts/hour with storm protection
+- All three server watchdogs (wb_test, live, void-test) now use `RunLevel Limited`
+
+**Lesson learned:** Keep task principal at `RunLevel Highest` for *registration* (script needs admin to create the task), but the task definition itself must use `-Principal -RunLevel Limited` so spawned processes open at user elevation.
 
 ### Session: Conniving creature crash investigation (ONGOING)
 

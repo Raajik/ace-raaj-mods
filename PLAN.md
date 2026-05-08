@@ -4,7 +4,10 @@
 
 ## Infrastructure
 
-- **void-test isolated spot-check server** — `A:\void-test\` (port 9010, DBs `void-test_*`). Use `"push void"` to deploy. Auto-restart via `void-test-Watchdog` scheduled task (see AGENTS.md §8.1). Identify instances by path with the switch-wildcard command in AGENTS.md — all ACE.Server processes share the same image name.
+- **void-test isolated spot-check server** — `A:\void-test\` (port 9010, DBs `void-test_*`). Use `"push void"` to deploy. Auto-restart via `void-test-Watchdog` scheduled task (see AGENTS.md §8.1).
+- **wb_test** (port 9000) — auto-restart via `wb_test-Watchdog` scheduled task.
+- **live** (port 9002) — auto-restart via `ACE-WB-Watchdog` scheduled task.
+- **All watchdogs** use `RunLevel Limited` in the task principal so ACE opens in the user's normal Windows Terminal, not admin windows.
 
 ## Active
 
@@ -49,5 +52,5 @@
 - **BetterSupportSkills** — monitor summoner class cantrip bonus pets for balance. **Status:** current CantripBonusByTier values = {1,2,3,4,7}. Requires player feedback before adjusting.
 
 ## Progress (recent)
-- 2026-05-07 — **🟡 Conniving creature crash** — see Active section above. Salvage/key bank message overhaul shipped (see COMPLETED.md).
+- 2026-05-07 — **🟡 Conniving creature crash** — see Active section above. VendorLootRotation fix (settings null + robe preservation + robe removal for lag + defense imbue yellow glow/examine) shipped (see COMPLETED.md).
 - 2026-05-06 — AutoLoot .utl archive, stale prefs cleanup, BLC death-loot timing fix. See `COMPLETED.md`.

@@ -871,13 +871,47 @@ public static class VendorLootRotation
 
         _vendorRotatedItems[vendorGuid] = rotatedSet;
 
+        // Determine vendor class early so robe-preservation logic can use it.
+        var vendorClass = ClassifyVendor(vendor);
+
         // Strip only equipment types this vendor actually sells (MerchandiseItemTypes).
+        // For Mage vendors, PRESERVE existing SQL-defined wizard robes instead of stripping
+        // them — lootgen rarely produces "robe"-named items, so the regeneration below won't
+        // restore them otherwise.
         var equipmentGuids = vendor.DefaultItemsForSale
-            .Where(kvp => (kvp.Value.ItemType & equipmentAllowed) != 0)
+            .Where(kvp =>
+            {
+                if ((kvp.Value.ItemType & equipmentAllowed) == 0)
+                    return false;
+                if (vendorClass == VendorTypeClassification.Mage)
+                {
+                    var name = kvp.Value.Name ?? "";
+                    if (name.Contains("Robe", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("Vestment", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("Kaftan", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("Frock", StringComparison.OrdinalIgnoreCase))
+                        return false;
+                }
+                return true;
+            })
             .Select(kvp => kvp.Key)
             .ToList();
         var uniqueEquipmentGuids = vendor.UniqueItemsForSale
-            .Where(kvp => (kvp.Value.ItemType & equipmentAllowed) != 0)
+            .Where(kvp =>
+            {
+                if ((kvp.Value.ItemType & equipmentAllowed) == 0)
+                    return false;
+                if (vendorClass == VendorTypeClassification.Mage)
+                {
+                    var name = kvp.Value.Name ?? "";
+                    if (name.Contains("Robe", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("Vestment", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("Kaftan", StringComparison.OrdinalIgnoreCase) ||
+                        name.Contains("Frock", StringComparison.OrdinalIgnoreCase))
+                        return false;
+                }
+                return true;
+            })
             .Select(kvp => kvp.Key)
             .ToList();
         equipmentGuids.AddRange(uniqueEquipmentGuids);
@@ -892,8 +926,6 @@ public static class VendorLootRotation
         int perCatMax = Math.Max(perCatMin, _settings.VendorLootItemsPerCategoryMax);
         int itemCount = 0, magicCount = 0, mundaneCount = 0, salvageCount = 0;
 
-        // Special handling for jewelers and mages - generate specific item types
-        var vendorClass = ClassifyVendor(vendor);
         if (vendorClass == VendorTypeClassification.Jeweler)
         {
             // Generate jewelry

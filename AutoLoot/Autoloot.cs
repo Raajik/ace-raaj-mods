@@ -446,78 +446,27 @@ public class AutoLoot
     }
 
     /// <summary>
-    /// Snapshots current LLL salvage property values for all configured deposit rules.
+    /// Snapshots current LLL salvage property values for standard salvage WCIDs (20981-21089).
+    /// Property = 40201 + (wcid - 20981), matching default LLL config.
     /// Returns a list of (materialName, bankProp, beforeValue).
-    /// materialName is the compact name (e.g. "Steel", "Silver").
-    /// Returns empty list if LLL salvage is unavailable.
     /// </summary>
     static List<(string name, int prop, long before)> SnapshotLLLSalvageTotals(Player player)
     {
         var results = new List<(string, int, long)>();
-        try
+        const int firstProp = 40201;
+        const uint firstWcid = 20981;
+        const int count = 109;
+
+        for (int i = 0; i < count; i++)
         {
-            var (lllSettings, firstProp, rules) = ReadLLLSalvageConfig();
-            if (rules == null || rules.Count == 0)
-                return results;
-
-            for (int i = 0; i < rules.Count; i++)
-            {
-                object? rule = rules[i];
-                if (rule == null) continue;
-                var t = rule.GetType();
-                int bankProp = (int?)(t.GetProperty("BankProperty")?.GetValue(rule)) ?? 0;
-                if (bankProp == 0)
-                    bankProp = firstProp + i;
-
-                string name = (string?)(t.GetProperty("Name")?.GetValue(rule)) ?? $"Salvage ({bankProp})";
-                long before = LeyLineLedgerBankInterop.GetBanked(player, bankProp);
-                results.Add((CompactSalvageName(name), bankProp, before));
-            }
+            uint wcid = firstWcid + (uint)i;
+            int bankProp = firstProp + i;
+            string name = BetterSupportSkillsBridge.GetCompactSalvageName((uint)i, wcid);
+            long before = LeyLineLedgerBankInterop.GetBanked(player, bankProp);
+            results.Add((name, bankProp, before));
         }
-        catch { }
+
         return results;
-    }
-
-    static (object? settings, int firstProp, System.Collections.IList? rules) ReadLLLSalvageConfig()
-    {
-        // Settings is an instance property on BasicPatch<T> — can't reflect via static members.
-        // Read LLL's Settings.json from disk instead.
-        try
-        {
-            string? dir = Path.GetDirectoryName(typeof(AutoLoot).Assembly.Location);
-            if (string.IsNullOrEmpty(dir)) return (null, 0, null);
-
-            string path = Path.Combine(dir, "..", "LeyLineLedger", "Settings.json");
-            if (!File.Exists(path))
-                path = Path.Combine(dir, "..", "..", "LeyLineLedger", "Settings.json");
-            if (!File.Exists(path)) return (null, 0, null);
-
-            var json = File.ReadAllText(path);
-            var dto = System.Text.Json.JsonSerializer.Deserialize<LeyLineLedgerDump>(json);
-            if (dto?.SalvageBank?.DepositRules == null || dto.SalvageBank.DepositRules.Count == 0)
-                return (null, 0, null);
-
-            return (dto, dto.SalvageBank.FirstMaterialBankPropertyId, dto.SalvageBank.DepositRules);
-        }
-        catch { }
-        return (null, 0, null);
-    }
-
-    // Minimal DTO for parsing LLL's Settings.json salvage section
-    class LeyLineLedgerDump
-    {
-        public SalvageBankDump? SalvageBank { get; set; }
-    }
-    class SalvageBankDump
-    {
-        public int FirstMaterialBankPropertyId { get; set; } = 40201;
-        public List<SalvageDepositRuleDump> DepositRules { get; set; } = new();
-    }
-    class SalvageDepositRuleDump
-    {
-        public uint WeenieClassId { get; set; }
-        public string Name { get; set; } = "";
-        public int BankProperty { get; set; }
     }
 
     static string CompactSalvageName(string displayName)
@@ -655,11 +604,12 @@ public class AutoLoot
         static MethodInfo? _isEnabled;
         static MethodInfo? _tryAutoSalvageItem;
         static MethodInfo? _getSalvageRate;
+        static MethodInfo? _getMaterialName;
 
         // Never cache "resolve failed": BetterSupportSkills may load after AutoLoot's first call.
         static void Resolve()
         {
-            if (_tryAutoSalvageItem != null)
+            if (_tryAutoSalvageItem != null && _getMaterialName != null)
                 return;
 
             foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
@@ -675,6 +625,7 @@ public class AutoLoot
                 _isEnabled = t.GetMethod("IsEnabled", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player) }, null);
                 _tryAutoSalvageItem = t.GetMethod("TryAutoSalvageItem", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player), typeof(WorldObject) }, null);
                 _getSalvageRate = t.GetMethod("GetSalvageRate", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player) }, null);
+                _getMaterialName = t.GetMethod("GetMaterialName", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(int) }, null);
                 return;
             }
         }
@@ -709,6 +660,26 @@ public class AutoLoot
             Resolve();
             if (_tryAutoSalvageItem is null) return false;
             try { return _tryAutoSalvageItem.Invoke(null, new object?[] { player, item }) is true; } catch { return false; }
+        }
+
+        /// <summary>
+        /// Gets compact material name (e.g. "Steel") from BSS's GetMaterialName via material index.
+        /// Falls back to "Salvage ({wcid})".
+        /// </summary>
+        internal static string GetCompactSalvageName(uint materialIndex, uint wcid)
+        {
+            Resolve();
+            if (_getMaterialName != null)
+            {
+                try
+                {
+                    var name = _getMaterialName.Invoke(null, new object?[] { (int)materialIndex }) as string;
+                    if (!string.IsNullOrEmpty(name) && !name.StartsWith("Unknown", StringComparison.OrdinalIgnoreCase))
+                        return name;
+                }
+                catch { }
+            }
+            return $"Salvage ({wcid})";
         }
     }
 
@@ -1415,13 +1386,8 @@ public class AutoLoot
                 if (item.IsDestroyed)
                     continue;
 
-                if (noDupPatterns.Count > 0 &&
-                    noDupPatterns.Any(p => item.Name?.Contains(p, StringComparison.OrdinalIgnoreCase) == true) &&
-                    PlayerOwnsWcid(player, item.WeenieClassId))
-                {
-                    continue;
-                }
-
+                // Trophy items (physical autoloot-to-pack): check BEFORE no-duplicate
+                // so Pincers, heads, etc. are always picked up.
                 var trophyWcids = PatchClass.Settings?.UpgradedTrophyWeenieClassIds;
                 if (trophyWcids is { Count: > 0 } && trophyWcids.Contains(item.WeenieClassId))
                 {
@@ -1434,6 +1400,13 @@ public class AutoLoot
                     lootedItems[tname] = tex + tqty;
                     lootedSet.Add(trophyRemoved);
                     AutolootTryCreateInInventoryWithNetworking(player, trophyRemoved);
+                    continue;
+                }
+
+                if (noDupPatterns.Count > 0 &&
+                    noDupPatterns.Any(p => item.Name?.Contains(p, StringComparison.OrdinalIgnoreCase) == true) &&
+                    PlayerOwnsWcid(player, item.WeenieClassId))
+                {
                     continue;
                 }
 

@@ -121,10 +121,11 @@ public static class SalvageAutoDeposit
         {
             double depositUnits = rawUnits * rate;
             uint salvageWcid = (uint)(20981 + materialIndex);
-            int depositInt = Math.Max(1, (int)depositUnits); // floor but at least 1
+            int depositInt = Math.Max(1, (int)depositUnits);
             bool ok = LeyLineLedgerSalvageInterop.TryIncSalvage(player, salvageWcid, depositInt);
             if (!ok) return false;
             TryGrantImbueSalvage(player, item);
+            AccumulateForMessage(player, materialIndex, depositUnits);
             return true;
         }
 
@@ -141,6 +142,7 @@ public static class SalvageAutoDeposit
             int depositInt = Math.Max(1, (int)depositUnits);
             bool ok = LeyLineLedgerSalvageInterop.TryIncSalvage(player, item.WeenieClassId, depositInt);
             if (!ok) return false;
+            AccumulateForMessage(player, materialIndex, depositUnits);
             return true;
         }
 
@@ -195,6 +197,8 @@ public static class SalvageAutoDeposit
 
         // Grant imbue salvage when auto-salvaging an imbued item
         TryGrantImbueSalvage(__instance, item);
+
+        AccumulateForMessage(__instance, materialIndex, depositUnits);
 
         item.Destroy();
         __result = true;
@@ -333,12 +337,57 @@ public static class SalvageAutoDeposit
         return unitsPerItem;
     }
 
-    // Messaging is now handled by AutoLoot's combined bank notification —
-    // no longer sent from BSS directly to avoid duplicate messages.
+    static readonly ConcurrentDictionary<uint, Dictionary<int, double>> PlayerAccumulated = new();
+    static readonly ConcurrentDictionary<uint, DateTime> LastMessageTime = new();
+    const int MESSAGE_INTERVAL_SECONDS = 30;
+
+    // Accumulates salvage deposits and sends a consolidated summary line every 30s.
     static void AccumulateForMessage(Player player, int materialIndex, double depositUnits)
     {
-        // No-op: AutoLoot's ProcessContainerLoot handles the [Bank] notification
-        // with LLL totals showing "Silver total (+0.03)" format.
+        if (player == null) return;
+        var playerId = player.Guid.Full;
+        var accum = PlayerAccumulated.GetOrAdd(playerId, _ => new Dictionary<int, double>());
+        lock (accum)
+        {
+            accum.TryGetValue(materialIndex, out double cur);
+            accum[materialIndex] = cur + depositUnits;
+        }
+
+        var now = DateTime.UtcNow;
+        if (!LastMessageTime.TryGetValue(playerId, out var lastTime) ||
+            (now - lastTime).TotalSeconds >= MESSAGE_INTERVAL_SECONDS)
+        {
+            LastMessageTime[playerId] = now;
+            SendAccumulatedMessage(player, accum);
+        }
+    }
+
+    static void SendAccumulatedMessage(Player player, Dictionary<int, double> accum)
+    {
+        if (accum.Count == 0) return;
+
+        var parts = new List<string>();
+        lock (accum)
+        {
+            foreach (var kvp in accum)
+            {
+                if (kvp.Value < 0.01) continue;
+                double bags = kvp.Value / 100.0;
+                string matName = GetMaterialName(kvp.Key);
+                parts.Add($"{bags:F2} {matName}");
+            }
+            accum.Clear();
+        }
+
+        if (parts.Count == 0) return;
+
+        string msg = parts.Count switch
+        {
+            1 => $"Salvage: {parts[0]}",
+            2 => $"Salvage: {parts[0]} and {parts[1]}",
+            _ => $"Salvage: {string.Join(", ", parts.Take(parts.Count - 1))}, and {parts.Last()}"
+        };
+        player.SendMessage(msg);
     }
 
     // ── Imbue Salvage on Auto-Salvage ───────────────────────────────────────
@@ -506,7 +555,8 @@ public static class SalvageAutoDeposit
             {
                 double beforeBags = s.Before / 100.0;
                 double afterBags  = s.After  / 100.0;
-                player.SendMessage($"[Auto-Salvage] Granted imbue salvage: {s.Name} +{s.Units} (bank: {beforeBags:F2} -> {afterBags:F2} bags)");
+                // Suppressed: combined bank notification handles all salvage msgs
+                // player.SendMessage($"[Auto-Salvage] Granted imbue salvage: {s.Name} +{s.Units} (bank: {beforeBags:F2} -> {afterBags:F2} bags)");
                 ModManager.Log($"[BSS Imbue Salvage] {s.Name}: {s.Before} → {s.After} (+{s.Units})", ModManager.LogLevel.Debug);
             }
         }

@@ -1738,7 +1738,11 @@ public static class VendorLootRotation
             else if (item.ImbuedEffect.HasFlag(ImbuedEffectType.MeleeDefense) ||
                      item.ImbuedEffect.HasFlag(ImbuedEffectType.MissileDefense) ||
                      item.ImbuedEffect.HasFlag(ImbuedEffectType.MagicDefense))
-                visualEffect = 64;  // Defense imbues = purple
+            {
+                // Defense imbues = yellow glow. Remove Magical (blue) flag so yellow replaces it.
+                currentEffects &= ~1;
+                visualEffect = 4;  // BoostHealth = yellow
+            }
 
             if (visualEffect != 0)
                 item.SetProperty(PropertyInt.UiEffects, currentEffects | visualEffect);

@@ -27,6 +27,32 @@ internal static class CustomImbueAppraise
         if (s == null)
             return;
 
+        // -- Defense imbue bonus line (for vanilla defense-imbue items) --
+        // The salvage bag says "+X" but the resulting armor piece has no display.
+        // Inject the multiplier amount from DefenseImbueBonus into examine text.
+        if (s.DefenseImbueBonus > 0 && wo.ImbuedEffect != 0)
+        {
+            string? kind = null;
+            if (wo.ImbuedEffect.HasFlag(ImbuedEffectType.MeleeDefense))
+                kind = "Melee";
+            else if (wo.ImbuedEffect.HasFlag(ImbuedEffectType.MissileDefense))
+                kind = "Missile";
+            else if (wo.ImbuedEffect.HasFlag(ImbuedEffectType.MagicDefense))
+                kind = "Magic";
+
+            if (kind != null)
+            {
+                __instance.PropertiesString ??= new Dictionary<PropertyString, string>();
+                __instance.PropertiesString.TryGetValue(PropertyString.LongDesc, out string? current);
+                string bonusLine = $"Imbues +{s.DefenseImbueBonus} {kind} Defense";
+                string replacement = string.IsNullOrWhiteSpace(current)
+                    ? bonusLine
+                    : current + "\n" + bonusLine;
+                __instance.PropertiesString[PropertyString.LongDesc] = replacement;
+                __instance.Flags |= IdentifyResponseFlags.StringStatsTable;
+            }
+        }
+
         OvertinkedImbueFlags flags = OvertinkedImbueStore.Get(wo);
         if (flags == OvertinkedImbueFlags.None)
             return;
@@ -35,16 +61,15 @@ internal static class CustomImbueAppraise
         if (string.IsNullOrEmpty(imbueLine))
             return;
 
-        if (__instance.PropertiesString == null)
-            __instance.PropertiesString = new Dictionary<PropertyString, string>();
+        __instance.PropertiesString ??= new Dictionary<PropertyString, string>();
 
         // Full replace: current item name + imbue stats only (drops template LongDesc). Stops >> / workmanship merges on client.
         string nameLine = string.IsNullOrWhiteSpace(wo.Name) ? string.Empty : wo.Name.Trim();
-        string replacement = string.IsNullOrEmpty(nameLine)
+        string replacement2 = string.IsNullOrEmpty(nameLine)
             ? imbueLine
             : nameLine + "\n" + imbueLine;
 
-        __instance.PropertiesString[PropertyString.LongDesc] = replacement;
+        __instance.PropertiesString[PropertyString.LongDesc] = replacement2;
         __instance.PropertiesInt.Remove(PropertyInt.AppraisalLongDescDecoration);
         __instance.Flags |= IdentifyResponseFlags.StringStatsTable;
     }

@@ -37,6 +37,15 @@ public class AutoLoot
     static readonly HashSet<uint> LockpickWcids = new()
         { 510, 511, 512, 513, 514, 515, 516, 545, 27672 };
 
+    // Key acronym + difficulty cap for bank messages when looted
+    static readonly Dictionary<uint, (string acronym, string cap)> KeyDisplayNames = new()
+    {
+        { 6876, ("SIK", "1kD") },
+        { 24477, ("SSK", "1kC") },
+        { 38456, ("MFK", "5kD") },
+        { 48746, ("LegKey", "5kC") },
+    };
+
     // Pyreal trophy items that should auto-bank when looted (Motes, Slivers, Nuggets, Bars)
     static readonly HashSet<uint> PyrealTrophyWcids = new()
     {
@@ -387,6 +396,13 @@ public class AutoLoot
         return true;
     }
 
+    static string GetKeyLootLabel(uint wcid)
+    {
+        if (KeyDisplayNames.TryGetValue(wcid, out var info))
+            return $"{info.acronym} ({info.cap})";
+        return null; // caller falls back to LootDisplayName
+    }
+
     static bool TryBankKey(Player player, WorldObject item)
     {
         if (PatchClass.Settings?.KeyBankProperties is not { Count: > 0 })
@@ -416,6 +432,83 @@ public class AutoLoot
         var qty = item.StackSize ?? 1;
         LeyLineLedgerBankInterop.IncBanked(player, prop, qty);
         return true;
+    }
+
+    /// <summary>
+    /// Snapshots current LLL salvage property values for all configured deposit rules.
+    /// Returns a list of (materialName, bankProp, beforeValue).
+    /// materialName is the compact name (e.g. "Steel", "Silver").
+    /// Returns empty list if LLL salvage is unavailable.
+    /// </summary>
+    static List<(string name, int prop, long before)> SnapshotLLLSalvageTotals(Player player)
+    {
+        var results = new List<(string, int, long)>();
+        try
+        {
+            var (lllSettings, firstProp, rules) = ReadLLLSalvageConfig();
+            if (rules == null || rules.Count == 0)
+                return results;
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                object? rule = rules[i];
+                if (rule == null) continue;
+                var t = rule.GetType();
+                int bankProp = (int?)(t.GetProperty("BankProperty")?.GetValue(rule)) ?? 0;
+                if (bankProp == 0)
+                    bankProp = firstProp + i;
+
+                string name = (string?)(t.GetProperty("Name")?.GetValue(rule)) ?? $"Salvage ({bankProp})";
+                long before = LeyLineLedgerBankInterop.GetBanked(player, bankProp);
+                results.Add((CompactSalvageName(name), bankProp, before));
+            }
+        }
+        catch { }
+        return results;
+    }
+
+    static (object? settings, int firstProp, System.Collections.IList? rules) ReadLLLSalvageConfig()
+    {
+        try
+        {
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (!string.Equals(asm.GetName().Name, "LeyLineLedger", StringComparison.Ordinal))
+                    continue;
+
+                var st = asm.GetType("LeyLineLedger.Settings");
+                if (st == null) break;
+                var itemsProp = st.GetProperty("SalvageBank");
+                if (itemsProp == null) break;
+
+                var pt = asm.GetType("LeyLineLedger.PatchClass");
+                if (pt == null) break;
+                var sf = pt.GetField("Settings", BindingFlags.Public | BindingFlags.Static);
+                if (sf == null) break;
+                var settings = sf.GetValue(null);
+                if (settings == null) break;
+
+                var sb = itemsProp.GetValue(settings);
+                if (sb == null) break;
+                var sbType = sb.GetType();
+
+                var firstProp = (int?)(sbType.GetProperty("FirstMaterialBankPropertyId")?.GetValue(sb)) ?? 40201;
+                var rules = (System.Collections.IList?)(sbType.GetProperty("DepositRules")?.GetValue(sb));
+
+                return (settings, firstProp, rules);
+            }
+        }
+        catch { }
+        return (null, 0, null);
+    }
+
+    static string CompactSalvageName(string displayName)
+    {
+        string s = displayName.Trim();
+        const string prefix = "Salvaged ";
+        if (s.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return s.Substring(prefix.Length).Trim();
+        return s;
     }
 
     static bool TryBankLockpick(Player player, WorldObject item)
@@ -471,6 +564,12 @@ public class AutoLoot
 
     internal static bool IsLockpickBankingUnlocked(Player player)
     {
+        // Auto-unlocked for anyone with Lockpick trained or specialized
+        var skill = player.GetCreatureSkill(Skill.Lockpick);
+        if (skill != null && skill.AdvancementClass >= SkillAdvancementClass.Trained)
+            return true;
+
+        // Fallback: unlock threshold for achievement players without the skill
         var settings = PatchClass.Settings;
         if (settings is null) return false;
         var count = lockpickUnlocks.GetOrAdd(LootKey(player), 0);
@@ -1264,10 +1363,16 @@ public class AutoLoot
             var items = container.Inventory.Values.ToList();
             var activeProfiles = hasProfiles ? playerProfiles!.Values.ToList() : new List<LootCore>();
 
-            var lootedItems   = new Dictionary<string, int>();
-            var lootedSet     = new HashSet<WorldObject>();
+            var lootedItems      = new Dictionary<string, int>();
+            var lootedSet        = new HashSet<WorldObject>();
+            var keyBanked        = new Dictionary<string, int>();
+            var salvageDelta     = new Dictionary<string, long>();
 
             var noDupPatterns = PatchClass.Settings?.NoDuplicateNames ?? [];
+
+            // ── Snapshot LLL salvage totals BEFORE any BSS salvaging — BSS writes
+            // to LLL inside TryAutoSalvageItem (Pass 1), so we need the before-state.
+            var salvageBefore = SnapshotLLLSalvageTotals(player);
 
             // ── Pre-filter: known scrolls ────────────────────────────────────
             // Silently destroy scrolls the player already knows so they never
@@ -1450,9 +1555,10 @@ public class AutoLoot
                         continue;
                     if (container.TryRemoveFromInventory(item.Guid, out var removed))
                     {
-                        var keyName = LootDisplayName(removed);
-                        lootedItems.TryGetValue(keyName, out var existing);
-                        lootedItems[keyName] = existing + (removed.StackSize ?? 1);
+                        var keyLabel = GetKeyLootLabel(removed.WeenieClassId) ?? LootDisplayName(removed);
+                        var qty = removed.StackSize ?? 1;
+                        keyBanked.TryGetValue(keyLabel, out int cur);
+                        keyBanked[keyLabel] = cur + qty;
                         lootedSet.Add(removed);
                         removed.Destroy();
                     }
@@ -1499,40 +1605,91 @@ public class AutoLoot
                 }
             }
 
-            if (lootedItems.Count == 0)
-                return;
+            // ── Compute actual LLL salvage delta ────────────────────────────
+            foreach (var after in SnapshotLLLSalvageTotals(player))
+            {
+                string matName = after.name;
+                var match = salvageBefore.FirstOrDefault(s => s.name == matName);
+                long beforeVal = match.before;
+                long total = after.before;
+                long delta = total - beforeVal;
 
-            // ── Chat notification ────────────────────────────────────────────
+                if (delta <= 0)
+                    continue;
+
+                salvageDelta[matName] = total;
+            }
+
+            bool hasAny = lootedItems.Count > 0 || salvageDelta.Count > 0 || keyBanked.Count > 0 || level8CompsConvertedCorpse > 0;
+            if (!hasAny)
+                return;
 
             bool notify = lootNotifications.GetOrAdd(LootKey(player), true);
             if (!notify)
                 return;
 
+            int salvageMode = autosalvageMode.GetOrAdd(LootKey(player), 1);
+            bool showAllSalvage = salvageMode == 2; // FULL
+
+            var parts = new List<string>();
+
+            // ── Bank notification (keys + salvage) ────────────────────────
+            var bankMessages = new List<string>();
+
+            foreach (var kv in keyBanked)
+            {
+                string part = kv.Value == 1 ? kv.Key : $"{kv.Value:N0} {kv.Key}";
+                bankMessages.Add(part);
+            }
+
+            foreach (var kv in salvageDelta)
+            {
+                string matName = kv.Key;
+                long total = kv.Value;
+                double totalBags = total / 100.0;
+
+                // Only show when there's enough material to be meaningful
+                if (totalBags < 0.01)
+                    continue;
+
+                // Calculate the delta from what was there before
+                long beforeVal = salvageBefore.FirstOrDefault(s => s.name == matName).before;
+                long delta = total - beforeVal;
+
+                // For SHORT mode: only show when the delta is > 0.50 bag (half a bag deposit)
+                if (!showAllSalvage && delta < 50)
+                    continue;
+
+                string deltaStr = delta > 0 ? $"(+{delta / 100.0:F2})" : "";
+                bankMessages.Add($"{matName} {totalBags:F2} {deltaStr}");
+            }
+
+            if (bankMessages.Count > 0)
+            {
+                string bankLine = string.Join(", ", bankMessages);
+                parts.Add($"[Bank] {bankLine}");
+            }
+
+            // ── Regular looted items (profiles, lockpicks, general LLL, etc.) ─
             var regularItems = lootedItems
-                .Select(kvp =>
-                {
-                    return kvp.Value == 1 ? $"a {kvp.Key}" : $"{kvp.Value:N0} {kvp.Key}";
-                })
+                .Select(kvp => kvp.Value == 1 ? $"a {kvp.Key}" : $"{kvp.Value:N0} {kvp.Key}")
                 .ToList();
 
-            if (regularItems.Count > 0 || level8CompsConvertedCorpse > 0)
+            if (regularItems.Count > 0)
             {
-                var parts = new List<string>();
-                if (regularItems.Count > 0)
+                string itemList = regularItems.Count switch
                 {
-                    string itemList = regularItems.Count switch
-                    {
-                        1 => regularItems[0],
-                        2 => $"{regularItems[0]} and {regularItems[1]}",
-                        _ => string.Join(", ", regularItems.Take(regularItems.Count - 1)) + $", and {regularItems[^1]}"
-                    };
-                    parts.Add($"looted {itemList}");
-                }
-                if (level8CompsConvertedCorpse > 0)
-                    parts.Add($"converted {level8CompsConvertedCorpse} spellcrafting component(s) to {level8CompValueCorpse:N0} pyreals");
-
-                player.SendMessage($"[AutoLoot] {string.Join(", ", parts)}!");
+                    1 => regularItems[0],
+                    2 => $"{regularItems[0]} and {regularItems[1]}",
+                    _ => string.Join(", ", regularItems.Take(regularItems.Count - 1)) + $", and {regularItems[^1]}"
+                };
+                parts.Add($"looted {itemList}");
             }
+
+            if (level8CompsConvertedCorpse > 0)
+                parts.Add($"converted {level8CompsConvertedCorpse} spellcrafting component(s) to {level8CompValueCorpse:N0} pyreals");
+
+            player.SendMessage($"[AutoLoot] {string.Join(", ", parts)}!");
         }
         catch (Exception ex)
         {

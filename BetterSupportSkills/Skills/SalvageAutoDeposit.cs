@@ -14,9 +14,6 @@ public static class SalvageAutoDeposit
 {
     // Per-player explicit toggle. Missing key → use SalvageSettings.DefaultAutoSalvageEnabled.
     static readonly ConcurrentDictionary<uint, bool> AutoSalvageEnabled = new();
-    static readonly ConcurrentDictionary<uint, Dictionary<int, double>> PlayerAccumulated = new();
-    static readonly ConcurrentDictionary<uint, DateTime> LastMessageTime = new();
-    const int MESSAGE_INTERVAL_SECONDS = 60;
 
     // ── Cross-mod suppression API (LeyLineLedger redeem/withdraw, etc.) ──────
     // Other mods that legitimately create salvage stacks for the player (e.g.
@@ -124,9 +121,9 @@ public static class SalvageAutoDeposit
         {
             double depositUnits = rawUnits * rate;
             uint salvageWcid = (uint)(20981 + materialIndex);
-            LeyLineLedgerSalvageInterop.TryIncSalvage(player, salvageWcid, (int)depositUnits);
-            AccumulateForMessage(player, materialIndex, depositUnits);
-            // Grant imbue salvage bonus BEFORE destroying the item
+            int depositInt = Math.Max(1, (int)depositUnits); // floor but at least 1
+            bool ok = LeyLineLedgerSalvageInterop.TryIncSalvage(player, salvageWcid, depositInt);
+            if (!ok) return false;
             TryGrantImbueSalvage(player, item);
             return true;
         }
@@ -141,8 +138,9 @@ public static class SalvageAutoDeposit
             if (rawUnits <= 0) return false;
 
             double depositUnits = rawUnits * rate;
-            LeyLineLedgerSalvageInterop.TryIncSalvage(player, item.WeenieClassId, (int)depositUnits);
-            AccumulateForMessage(player, materialIndex, depositUnits);
+            int depositInt = Math.Max(1, (int)depositUnits);
+            bool ok = LeyLineLedgerSalvageInterop.TryIncSalvage(player, item.WeenieClassId, depositInt);
+            if (!ok) return false;
             return true;
         }
 
@@ -190,9 +188,10 @@ public static class SalvageAutoDeposit
             return true;
 
         double depositUnits = rawUnits * rate;
-        LeyLineLedgerSalvageInterop.TryIncSalvage(__instance, item.WeenieClassId, (int)depositUnits);
-
-        AccumulateForMessage(__instance, materialIndex, depositUnits);
+        int depositInt = Math.Max(1, (int)depositUnits);
+        bool ok = LeyLineLedgerSalvageInterop.TryIncSalvage(__instance, item.WeenieClassId, depositInt);
+        if (!ok)
+            return true; // LLL didn't take it — let the bag land in inventory
 
         // Grant imbue salvage when auto-salvaging an imbued item
         TryGrantImbueSalvage(__instance, item);
@@ -334,65 +333,12 @@ public static class SalvageAutoDeposit
         return unitsPerItem;
     }
 
+    // Messaging is now handled by AutoLoot's combined bank notification —
+    // no longer sent from BSS directly to avoid duplicate messages.
     static void AccumulateForMessage(Player player, int materialIndex, double depositUnits)
     {
-        var playerId = player.Guid.Full;
-        var accum = PlayerAccumulated.GetOrAdd(playerId, _ => new Dictionary<int, double>());
-        lock (accum)
-        {
-            if (!accum.ContainsKey(materialIndex))
-                accum[materialIndex] = 0;
-            accum[materialIndex] += depositUnits;
-        }
-
-        var now = DateTime.UtcNow;
-        if (!LastMessageTime.TryGetValue(playerId, out var lastTime) ||
-            (now - lastTime).TotalSeconds >= MESSAGE_INTERVAL_SECONDS)
-        {
-            LastMessageTime[playerId] = now;
-            SendAccumulatedMessage(player, accum);
-        }
-    }
-
-    static void SendAccumulatedMessage(Player player, Dictionary<int, double> accum)
-    {
-        if (accum.Count == 0)
-            return;
-
-        var parts = new List<string>();
-        double totalBags = 0;
-
-        lock (accum)
-        {
-            foreach (var kvp in accum)
-            {
-                int matIndex = kvp.Key;
-                double units = kvp.Value;
-                double bags = units / 100.0;
-                totalBags += bags;
-                if (bags >= 0.01)
-                {
-                    string matName = GetMaterialName(matIndex);
-                    parts.Add($"{bags:F2} {matName}");
-                }
-            }
-            accum.Clear();
-        }
-
-        if (parts.Count == 0)
-            return;
-
-        parts.Sort((a, b) => string.Compare(b, a, StringComparison.Ordinal));
-
-        string msg;
-        if (parts.Count == 1)
-            msg = $"Auto-salvage: {parts[0]} bag(s) deposited to bank.";
-        else if (parts.Count == 2)
-            msg = $"Auto-salvage: {parts[0]} and {parts[1]} bag(s) deposited.";
-        else
-            msg = $"Auto-salvage: {string.Join(", ", parts.Take(parts.Count - 1))}, and {parts.Last()} bag(s) deposited.";
-
-        player.SendMessage(msg);
+        // No-op: AutoLoot's ProcessContainerLoot handles the [Bank] notification
+        // with LLL totals showing "Silver total (+0.03)" format.
     }
 
     // ── Imbue Salvage on Auto-Salvage ───────────────────────────────────────

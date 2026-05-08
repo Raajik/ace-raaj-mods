@@ -20,6 +20,7 @@ Always check in this order:
 7. **Game mechanics / vanilla ACE behavior** - Follow **§7.0** (wiki first, then live tree, then `.references/`, then graphify/rg). Do not invent behavior from memory.
 
 ## 3. Repo Conventions
+- **ValheelContent is PERMANENTLY EXCLUDED from all deployments** — never copy `build/ValheelContent/` to any server (`C:\ACE\`, `C:\ACE-WB\`, `A:\void-test\`) unless the user explicitly asks to deploy it. This applies to ALL servers.
 - **Mod structure:** Each folder = deployable mod containing:
   - `Meta.json` - Enable/disable, hot-reload, version. **Do not change `Enabled` without user direction.**
   - `Settings.cs` - C# defaults. Use `JsonPropertyName("// ...")` doc band + values band pattern.

@@ -2,9 +2,43 @@
 
 > This file tracks **current active work** and **backlog** only. Shipped features belong in `COMPLETED.md`.
 
+## Infrastructure
+
+- **void-test isolated spot-check server** — `A:\void-test\` (port 9010, DBs `void-test_*`). Use `"push void"` to deploy. Auto-restart via `void-test-Watchdog` scheduled task (see AGENTS.md §8.1). Identify instances by path with the switch-wildcard command in AGENTS.md — all ACE.Server processes share the same image name.
+
 ## Active
 
-- (none — all current backlog items are stale/monitor-only)
+### 🔴 CRITICAL: Client crash on Yanshi/Xarabydun town entries (Conniving creature name corruption)
+
+**Symptom:** Client crashes when entering Yanshi (landblocks B46F/B470) or Xarabydun (934B). Creatures in these towns have their names corrupted — "Conniving" repeated 11–23× before the base creature name (e.g., "Conniving Conniving Conniving… Conniving Virindi Observer"). The AC client's `QualityFilter` system generates the "Conniving" adjective from the creature's Level property, but something is recursively modifying the Name property, causing it to stack.
+
+**What's been ruled out:**
+
+| Cause | Status | Evidence |
+|-------|--------|----------|
+| Invasion / Sale events | ✅ Ruled out | WorldEvents mod globally disabled in Meta.json; settings had Yanshi/Xarabydun removed from InvasionTowns + SaleTowns; server restarted |
+| BetterLootControl (VendorLootRotation) | ✅ Ruled out | BLC disabled via Meta.json |
+| Custom ace* NPC model data | ✅ Ruled out | All ace-prefixed weenies removed from landblock_instance (backed up); Virindi Delegate PhysicsState fixed; crash persists |
+| Swarmed mod | ✅ Ruled out | Disabled via Meta.json; server restarted; corrupted creatures still appear (meaning bug is in another mod or ACE core) |
+| Nemesis mod | ✅ Ruled out | Disabled via Meta.json |
+| Stale ActiveInvasion persistence | ✅ Ruled out | ActiveInvasion.json deleted; WorldEvents disabled |
+| Static landblock generators | ✅ Ruled out | All generators (1154, 1542, 7923, 4219, 3955, 5086) removed from Yanshi/Xarabydun (backed up); crash still happens |
+| Shard biota corruption | ✅ Partial | Deleted 2 corrupted biota from ace_shard ("Conniving Conniving Virindi Master", "Conniving Siessa Sclavus"); fresh corrupted creatures still generated |
+
+**Key clues:**
+- `/smite all` (kills all creatures in landblock) lets the player enter — confirms dynamic creatures cause the crash
+- The corrupted name pattern "Conniving" × 23 + base name suggests a recursive Name getter/setter bug where something reads the client-side quality-prefixed name and writes it back to the server-side Name property, compounding each time
+- "Conniving" is a vanilla AC quality adjective — NOT stored in any server DLL, exe, database, or source file. The AC client generates it from the `QualityFilter` / `MonsterLevel` property
+- The corrupted creatures appear in BOTH Yanshi and Xarabydun (shard-wide, not town-specific)
+- Persisted even after disabling Swarmed + Nemesis + WorldEvents → the source is still active or cached
+
+**Next investigation steps:**
+1. Try disabling remaining creature-affecting mods one at a time: Windblown (runtime weenie injection), QOL (TownNetworkToll), EmpyreanAlteration (item mutations)
+2. Check if "Conniving" comes from ACE core's own `CreatureNameGenerator` or `MonsterQuality` system
+3. If Swarmed was previously enabled and corrupted biota were written, check if `landblock_instance` or `landblock_instance_link` in ace_world were ever modified at runtime (ACE doesn't do this normally, but a mod might)
+4. Restore generators from sql-backups after fixing root cause
+
+**Status:** 🟡 Open — root cause not yet identified
 
 ## Backlog / Upcoming
 
@@ -15,4 +49,5 @@
 - **BetterSupportSkills** — monitor summoner class cantrip bonus pets for balance. **Status:** current CantripBonusByTier values = {1,2,3,4,7}. Requires player feedback before adjusting.
 
 ## Progress (recent)
-- 2026-05-06 — AutoLoot .utl archive, stale prefs cleanup, BLC death-loot timing fix (keys+coalesced mana now banked), AGENTS.md ACRealms purge. See `COMPLETED.md`.
+- 2026-05-07 — **🟡 Conniving creature crash** — see Active section above. Salvage/key bank message overhaul shipped (see COMPLETED.md).
+- 2026-05-06 — AutoLoot .utl archive, stale prefs cleanup, BLC death-loot timing fix. See `COMPLETED.md`.

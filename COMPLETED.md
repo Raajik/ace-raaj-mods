@@ -1,5 +1,77 @@
 # Completed Features & Fixes
 
+## 2026-05-07
+
+### Session: Salvage + key bank message overhaul, autosalvage modes, auto-loot fixes
+
+**Goal:** Combined `[Bank]` notification line, fix phantom salvage deposits, auto-unlock lockpick banking, autosalvage on/off/quiet modes, trophy auto-loot ordering fix.
+
+**Changes:**
+
+#### AutoLoot (`AutoLoot/Autoloot.cs`, `AutoLoot/Helpers/Commands.cs`)
+- **Key loot messages:** Show acronym + difficulty cap (SIK/SSK/MFK/LegKey) in `[Bank]` line instead of full item names
+- **Combined `[Bank]` notification:** Keys + salvage + pyreals merged into one line, e.g. `[AutoLoot] [Bank] SIK, Steel 3.05 (+0.03), 150k pyreals (+0.60 MMDs)!`
+- **Pyreal formatting:** Abbreviated (1k, 150k, 2.39M) with delta in MMD fractions
+- **Real LLL totals:** `SnapshotLLLSalvageTotals()` reads LLL property values at start and end of `ProcessContainerLoot` — no guessing, shows actual total + delta
+- **Trophy ordering fixed:** `UpgradedTrophyWeenieClassIds` check moved before `NoDuplicateNames` filter so Pincers/heads always get looted even if player already owns one
+- **/autosalvage modes:
+  - `on` (mode 1): Default. Periodic salvage summary + bag-fill alerts
+  - `full` (mode 2): All salvage amounts shown
+  - `quiet` (mode 3): Salvage still banks, no messages
+  - `off` (mode 0): Disabled
+- **/autosalvage on/off are now explicit** (no toggling)
+- **Lockpick banking:** Auto-unlocked for any player with Lockpick trained/specialized (was gated behind LockpickMaster achievement only)
+- **LLL-banked items tracked separately** from profile-looted items (avoids showing MMD in both bank and looted lines)
+
+#### BSS (`BetterSupportSkills/Skills/SalvageAutoDeposit.cs`)
+- **Per-item messages removed** — replaced by bag-fill alerts and periodic consolidated summary
+- **Bag-fill alerts:** `"You have filled another bag of {material}, {N} total banked."` fires when actual LLL balance crosses a 100-unit boundary
+- **Imbue salvage tracking:** `GrantImbueSalvage` now calls `AccumulateForMessage` so imbue deposits (Peridot, Black Opal, etc.) also trigger bag-fill alerts
+- **TryAutoSalvageItem returns false on LLL rejection** — items survive when LLL declines the deposit
+- **Math.Max(1, ...)** prevents 0-unit truncation at Trained rate (0.5 × 1 workmanship)
+- **SetMessagingMuted()** public API to suppress all salvage messaging
+
+#### BSS (`BetterSupportSkills/Skills/LeyLineLedgerSalvageInterop.cs`)
+- **Rewritten:** Uses formula `40201 + (wcid - 20981)` for LLL property IDs instead of broken reflection on BasicPatch<T>.Settings (instance property, not static)
+- Uses `AceRaajMods.Shared.LeyLineLedgerBankInterop` for actual bank writes (which resolves `IncBanked` on the correct `BankExtensions` class)
+
+#### BSS (`BetterSupportSkills/PatchClass.cs`)
+- **/autosalvage handler:** Now explicit (no toggle), supports `quiet` mode
+- Calls `SetMessagingMuted()` on SalvageAutoDeposit
+
+**Lessons learned (added to AGENTS.md §8.3):**
+- BasicPatch<T>.Settings is an instance property, not static — `GetField(Static)` returns null regardless of FlattenHierarchy
+- Cross-mod reflection for LLL settings should use `SalvageBank.DepositRules` via disk-file read or formula (40201 + (wcid - 20981)) for salvage property IDs
+
+### Session: Conniving creature crash investigation (ONGOING)
+
+**Goal:** Diagnose client crash on entering Yanshi/Xarabydun.
+
+**Root cause:** 🟡 NOT YET FOUND. Corrupted creature names with "Conniving" repeated 11–23× cause client to crash when rendering. The `QualityFilter` adjective is a client-side generated string from creature `Level` property, but something is recursively modifying the server-side Name property, causing the adjective to stack.
+
+**Ruled out:**
+- Invasion/Sale events (WorldEvents disabled)
+- BetterLootControl (disabled)
+- Custom ace* NPC models (removed from DB; backed up)
+- Swarmed / Nemesis (disabled)
+- Static generators (removed from Yanshi/Xarabydun; backed up)
+- Shard biota corruption (deleted 2 corrupted entries; still regenerates)
+
+**SQL operations (all backed up to WindblownContent/sql-backups/2026-05-07/):**
+- Removed all ace-prefixed custom weenies from Yanshi (B46F/B470) and Xarabydun (934B) landblock_instance + landblock_instance_link
+- Fixed Virindi Delegate (51297) PhysicsState: 268437423 (0x100007AF) → -1 (standard creature default)
+- Removed all generators (1154, 1542, 7923, 4219, 3955, 5086) and their links from Yanshi/Xarabydun
+- Deleted 2 corrupted shard biota with "Conniving" in name
+
+**Test server settings changed:**
+- WorldEvents/Meta.json: Enabled → false
+- WorldEvents/Settings.json: EnableInvasion, SaleEnabled, CullEnabled, EnableHunt, EnableBonusQuest → false
+- BetterLootControl/Meta.json: Enabled → false
+- Swarmed/Meta.json: Enabled → false
+- Nemesis/Meta.json: Enabled → false
+
+**Open question:** Where does "Conniving" as a server-side name prefix come from? It's not in any DLL, exe, database string, or source file. The AC client generates it, but corrupted biota show it persisted to server-side Name. Likely a recursive name getter bug in a mod or ACE core.
+
 ## 2026-05-06
 
 ### Olthoi Pincer Quest Revamp

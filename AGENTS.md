@@ -24,7 +24,7 @@ Always check in this order:
   - `Meta.json` - Enable/disable, hot-reload, version. **Do not change `Enabled` without user direction.**
   - `Settings.cs` - C# defaults. Use `JsonPropertyName("// ...")` doc band + values band pattern.
   - `Settings.json` (in repo) - **Template / shared defaults** for new installs, CI, and docs. Safe to edit for **new keys** and documented example values-not assumed to match what Windblown test is tuned to.
-  - `*.csproj` - Builds to `C:\ACE\Mods\$(AssemblyName)` locally.
+  - `*.csproj` - Builds to `A:\ai\projects\ace-raaj-mods\build\$(AssemblyName)\` locally (**never** touches any server at build time).
 
 **Test ACE `Settings.json` (operator source of truth - `C:\ACE\Mods\<AssemblyName>\Settings.json`):** The **installed** file on **`C:\ACE\`** is the **canonical balance and preference** snapshot for test. Agents and humans should treat it as **immutable** in the sense: **do not overwrite it** with the repo copy on deploy unless the operator explicitly wants a reset. When adding a feature with **new** JSON keys: update **`Settings.cs`** + repo **`Settings.json`** (defaults + doc band), **and** merge those keys into the test file (or edit test directly while iterating)-then backfill repo defaults from agreed-on values if you want shipped defaults to match post-balance. **`push test`** (§8.1): deploy DLL/Meta; **preserve** test `Settings.json` by default.
 - **Harmony patches:** Prefer `nameof` targeting. Prefix patch methods with `Pre`/`Post`/`Transpiler`. Use `PatchCategory` for grouped unpatch.
@@ -100,45 +100,103 @@ Always check in this order:
 
 **Trigger phrases:**
 - `"update docs"` - Full sweep: update `PLAN.md` (active only), `COMPLETED.md` if you shipped since last sweep, `AGENTS.md`, wiki, mod Readmes.
-- `"check logs"` — Check `C:\ACE\Server\ACE_Log.txt` (test ACE), `C:\ACE-WB\Server\ACE_Log.txt` (live).
-- `"push test"` - Deploy to test server (`C:\ACE\`, port 9000):
-  1. `dotnet build ModName/ModName.csproj`
-  2. Copy DLLs (and `Meta.json` if changed) from build output to `C:\ACE\Mods\ModName\` (local build already targets this path on the dev machine).
-  3. **`Settings.json`:** **Do not** replace test `C:\ACE\Mods\ModName\Settings.json` with the repo file by default-that path is the **operator balance source of truth** (§3). Only merge **new keys** from repo, or full-copy when operator explicitly requests a reset.
+- `"check logs"` — Check `C:\ACE\Server\ACE_Log.txt` (wb_test, port 9000), `C:\ACE-WB\Server\ACE_Log.txt` (live, port 9002), `A:\void-test\Server\ACE_Log.txt` (void-test, port 9010).
+- `"push test"` - Deploy to wb_test server (`C:\ACE\`, port 9000):
+  1. `dotnet build ModName/ModName.csproj` (output goes to `A:\ai\projects\ace-raaj-mods\build\ModName\` — **never** touches any server at build time).
+  2. Copy DLLs (and `Meta.json` if changed) from `A:\ai\projects\ace-raaj-mods\build\ModName\` to `C:\ACE\Mods\ModName\`.
+  3. **`Settings.json`:** **Do not** replace wb_test `C:\ACE\Mods\ModName\Settings.json` with the repo file by default — that path is the **operator balance source of truth** (§3). Only merge **new keys** from repo, or full-copy when operator explicitly requests a reset.
   4. Start in visible window (see reliable method below).
-- `"push live"` - Deploy to live (`C:\ACE-WB\`, port 9002). Same steps as test but target live dir. Restart live ACE.Server. Apply SQL to `wb_ace_world`/`wb_ace_shard`.
+- `"push live"` - Deploy to live (`C:\ACE-WB\`, port 9002). Same steps as push test but:
+  - Copy from `A:\ai\projects\ace-raaj-mods\build\ModName\` to `C:\ACE-WB\Mods\ModName\`.
+  - Restart live ACE.Server. Apply SQL to `wb_ace_world`/`wb_ace_shard`.
+- `"push void"` - Deploy to void-test spot-check server (`A:\void-test\`, port 9010). **This is the isolated spot-check instance — never deploy to wb_test or live from this workflow. Currently the only instance safe to restart freely for rapid iteration.**
+  1. `dotnet build ModName/ModName.csproj` (output goes to `A:\ai\projects\ace-raaj-mods\build\ModName\`).
+  2. Copy DLLs (and `Meta.json` if changed) from `A:\ai\projects\ace-raaj-mods\build\ModName\` to `A:\void-test\Mods\ModName\`.
+  3. **`Settings.json`:** Copy repo `Settings.json` to `A:\void-test\Mods\ModName\Settings.json` (void-test is spot-check, so defaults are fine; can still merge new keys if the file has test-specific values).
+  4. **SQL:** Apply any new/changed SQL to `void-test_world` (**NOT** `ace_world` or `wb_ace_world`). Use `mysql -u jeremy -pandersine11 void-test_world < path/file.sql`.
+  5. **Do NOT touch** `C:\ACE\Mods\*` settings files (belongs to wb_test). **Do NOT touch** `C:\ACE-WB\*` (live server).
+  6. Stop old void-test instance, clear log, start new instance (see startup/stop methods below, substituting `A:\void-test`).
 
 **Server startup (reliable method):**
 ```powershell
 powershell -Command "Start-Process -FilePath 'C:\ACE-WB\Server\ACE.Server.exe' -WorkingDirectory 'C:\ACE-WB\Server' -WindowStyle Normal"
 ```
-Substitute `C:\ACE\` for test. **Always verify with `tasklist | grep ACE.Server`.**
+Substitute `C:\ACE\` for test, `A:\void-test\` for void-test.
 
-**ACE.Server zombie processes on restart:** `taskkill /F /IM ACE.Server.exe` often leaves orphans. Use PowerShell double-whammy until `tasklist` confirms zero:
+**Identifying which ACE.Server instance is which:** All instances share the image name `ACE.Server.exe` — use `MainModule.FileName` in PowerShell:
 ```powershell
-powershell -Command "Get-Process ACE.Server -ErrorAction SilentlyContinue | Stop-Process -Force; Start-Sleep -Seconds 3"
+Get-Process ACE.Server -ErrorAction SilentlyContinue | Select-Object Id, @{N='Instance';E={
+    switch -Wildcard ($_.MainModule.FileName) {
+        '*void-test*'  { 'void-test (port 9010)' }
+        '*ACE-WB*'     { 'live (port 9002)' }
+        '*ACE\Server*' { 'wb_test (port 9000)' }
+        default        { 'UNKNOWN' }
+    }
+}}
 ```
 
-**Clear logs before every restart:** Old log output buries the current session's errors and misleads debugging. Always truncate before starting (use the same path you use for `"check logs"` for each instance):
+**ACE.Server zombie processes on restart:** `taskkill /F /IM ACE.Server.exe` is dangerous with multiple instances — it kills EVERYTHING named ACE.Server. Instead, use path-scoped stop:
 ```powershell
-$ > "C:\ACE-WB\Server\ACE_Log.txt"   # live
-$ > "C:\ACE\Server\ACE_Log.txt"      # test
+# Stop a specific instance by path (pick one):
+Get-Process ACE.Server -ErrorAction SilentlyContinue | Where-Object { $_.MainModule.FileName -like '*ACE\\Server*' } | Stop-Process -Force   # wb_test
+Get-Process ACE.Server -ErrorAction SilentlyContinue | Where-Object { $_.MainModule.FileName -like '*ACE-WB*' }     | Stop-Process -Force   # live
+Get-Process ACE.Server -ErrorAction SilentlyContinue | Where-Object { $_.MainModule.FileName -like '*void-test*' }  | Stop-Process -Force   # void-test
+Start-Sleep -Seconds 3
+```
+Confirm with the identification command above.
+
+**Clear logs before every restart:** Old log output buries the current session's errors and misleads debugging. Always truncate before starting:
+```powershell
+$ > "C:\ACE-WB\Server\ACE_Log.txt"      # live (port 9002)
+$ > "C:\ACE\Server\ACE_Log.txt"         # wb_test (port 9000)
+$ > "A:\void-test\Server\ACE_Log.txt"    # void-test (port 9010)
 ```
 
 **Port collision:** ACE binds `Port` and `Port+1`. Test on 9000, live on 9002 (not 9001). Always separate by ≥2 ports.
 
-**Live ACE-WB auto-restart (crash only, never touches test `C:\ACE\`):** Scripts under `scripts/` - see `scripts/README-ACE-WB-supervisor.md`.
-- **Watchdog (default in repo):** Scheduled task name `ACE-WB-Watchdog` runs `AceWbWatchdog.ps1` (polls `Win32_Process` for `ACE.Server.exe` whose path contains `ACE-WB`, then `Start-Process` with working dir `C:\ACE-WB\Server`). The task is registered **at logon as the interactive user** (not `SYSTEM`) so **ACE.Server.exe opens in a visible foreground console** on your desktop for live logs and server commands; the watchdog PowerShell host stays hidden. Re-register after script changes: `scripts\Register-AceWbWatchdogTask.ps1`. Restart delay and hourly restart cap are in the script; storm trip creates `C:\ACE-WB\Server\ace_wb_watchdog_BLOCKED.txt`. **Disable for debugging:** `scripts\Unregister-AceWbWatchdogTask.ps1` (elevated), then stop the stray `powershell` hosting the watchdog if any.
-- **NSSM (optional):** `scripts\Setup-NssmAceWb.ps1` installs service `ACE-WB`; do **not** run NSSM and the scheduled watchdog for the same instance (double-start risk).
-- **Never** use blanket `taskkill /IM ACE.Server.exe` when both servers run; it kills both processes. Scope by path/PID.
+**Auto-restart (all three servers, crash-only — never start on top of running instance):**
 
-**Verify deployed DLL timestamps before restarting:** After `dotnet build`, output goes to `C:\ACE\Mods\`. If you run two servers, copying DLLs to the wrong directory or forgetting to copy causes the old build to run. Always `ls -la` the deployed DLL and confirm mtime matches repo build.
+Each server has a watchdog script in its own `Server/` directory. All use the same pattern: path-scoped `Win32_Process` polling (never confuses instances), customizable restart delay/cap, storm detection with a `BLOCKED.txt` cut-out, and logging.
+
+| Server | Watchdog Script | Path Filter | Task Name | State/Block Files |
+|--------|----------------|-------------|-----------|-------------------|
+| wb_test (9000) | `C:\ACE\Server\WbTestWatchdog.ps1` | `*C:\ACE\Server*` | `wb_test-Watchdog` | `wb_test_watchdog_*` |
+| live (9002) | `C:\ACE-WB\Server\AceWbWatchdog.ps1` | `*ACE-WB*` | `ACE-WB-Watchdog` | `ace_wb_watchdog_*` |
+| void-test (9010) | `A:\void-test\Server\VoidTestWatchdog.ps1` | `*void-test*` | `void-test-Watchdog` | `void-test_watchdog_*` |
+
+**Register (elevated, one-time):**
+```powershell
+scripts\Register-WbTestWatchdogTask.ps1      # wb_test
+scripts\Register-AceWbWatchdogTask.ps1       # live
+scripts\Register-VoidTestWatchdogTask.ps1    # void-test
+```
+Each registers a scheduled task **at logon as the interactive user** (not SYSTEM) so ACE.Server.exe opens in a visible foreground console. The watchdog PowerShell host stays hidden.
+
+**Disable for debugging:**
+```powershell
+scripts\Unregister-WbTestWatchdogTask.ps1    # wb_test
+scripts\Unregister-AceWbWatchdogTask.ps1     # live
+scripts\Unregister-VoidTestWatchdogTask.ps1  # void-test
+```
+Or create the per-server `*_BLOCKED.txt` file in its `Server/` dir to pause without unregistering. Delete the file to resume.
+
+**Polls:** Every 30s. **Restart delay:** 10s (wb_test/void-test) / 20s (live). **Storm cap:** 10 restarts/hr (wb_test/void-test) / 5 (live). When capped, creates a `*_BLOCKED.txt` file.
+
+**Logs:**
+- `C:\ACE\Server\wb_test_watchdog.log`
+- `C:\ACE-WB\Server\ace_wb_watchdog.log`
+- `A:\void-test\Server\void-test_watchdog.log`
+
+**Live ACE-WB only — NSSM (alternative):** `scripts\Setup-NssmAceWb.ps1` installs service `ACE-WB`. Do **not** run NSSM and the scheduled watchdog for the same live instance (double-start risk).
+
+**Verify deployed DLL timestamps before restarting:** After `dotnet build`, output goes to `A:\ai\projects\ace-raaj-mods\build\ModName\`. If you run multiple servers, copying DLLs to the wrong directory or forgetting to copy causes the old build to run. Always `ls -la` the deployed DLL and confirm mtime matches repo build timestamp.
 
 **MySQL Database Access:**
 - Path: `C:/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe`
 - Host: 127.0.0.1, Port: 3306, Username: `jeremy`, Password: `andersine11`
-- Test: `ace_world` (weenies), `ace_shard` (biotas)
+- Test (wb_test): `ace_world` (weenies), `ace_shard` (biotas)
 - Live: `wb_ace_world`, `wb_ace_shard`
+- Void-test (spot-check): `void-test_world`, `void-test_shard`, `void-test_auth` (port 9010)
 - Examples:
   - `mysql -u jeremy -pandersine11 ace_world -e "SELECT * FROM weenie WHERE class_Id = 850200;"`
   - Apply SQL: `mysql -u jeremy -pandersine11 ace_world < path/to/file.sql`
@@ -209,6 +267,13 @@ $ > "C:\ACE\Server\ACE_Log.txt"      # test
 **`Meta.json` must copy to output directory** - In `.csproj`, ensure `<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>` for `Meta.json`. `Never` silently prevents mod loading.
 
 **Gracefully deprecating `Features` enum values:** (1) Add new enum value, (2) Keep OLD value for JSON backward compatibility, (3) Add DEPRECATED doc comment, (4) In `RegisterEnabledPatchCategories()`, check BOTH toggles. Remove old enum only after migration period.
+
+**`BasicPatch<T>.Settings` is an instance property NOT static** — It's declared on `BasicPatch<T>` (base class) and inherited by `PatchClass`. It's NOT a static field or property. `GetField("Settings", BindingFlags.Static | BindingFlags.FlattenHierarchy)` returns null. Cross-mod reflection that needs LLL's settings should either:
+  - Read the formula: `40201 + (wcid - 20981)` for salvage property IDs
+  - Or fully qualify: use `pt.GetField("Settings", BindingFlags.Public | BindingFlags.Instance)` on a concrete instance (but there's no static instance accessor)
+  - Best: read LLL's `Settings.json` from disk (sibling mod dir) for DTO-style deserialization
+  
+**`/autosalvage quiet` (mode 3):** Salvage still banks to LLL but all messaging is suppressed (no periodic summary, no bag-fill alerts). Uses `SalvageMessagingMuted` ConcurrentDictionary on `SalvageAutoDeposit`.
 
 **`SettingsContainer.Settings` may fail to deserialize `List<string>`** - ACE.Shared's `SettingsContainer` can return empty lists even when `Settings.json` contains valid arrays. Verify deserialized collections before using; if empty, manually deserialize with `JsonSerializer.Deserialize<Settings>(File.ReadAllText(path))`.
 

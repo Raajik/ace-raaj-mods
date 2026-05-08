@@ -487,19 +487,21 @@ public class AutoLoot
                 if (!string.Equals(asm.GetName().Name, "LeyLineLedger", StringComparison.Ordinal))
                     continue;
 
-                var st = asm.GetType("LeyLineLedger.Settings");
-                if (st == null) break;
-                var itemsProp = st.GetProperty("SalvageBank");
-                if (itemsProp == null) break;
-
                 var pt = asm.GetType("LeyLineLedger.PatchClass");
                 if (pt == null) break;
-                var sf = pt.GetField("Settings", BindingFlags.Public | BindingFlags.Static);
+
+                // Settings is a static field on BasicPatch<T>, inherited by PatchClass.
+                // Must use FlattenHierarchy to find inherited static members via reflection.
+                var sf = pt.GetField("Settings", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
                 if (sf == null) break;
                 var settings = sf.GetValue(null);
                 if (settings == null) break;
 
-                var sb = itemsProp.GetValue(settings);
+                var st = settings.GetType(); // LeyLineLedger.Settings
+                var sbProp = st.GetProperty("SalvageBank");
+                if (sbProp == null) break;
+
+                var sb = sbProp.GetValue(settings);
                 if (sb == null) break;
                 var sbType = sb.GetType();
 

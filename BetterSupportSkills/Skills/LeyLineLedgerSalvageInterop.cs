@@ -47,25 +47,28 @@ public static class LeyLineLedgerSalvageInterop
             if (!string.Equals(asm.GetName().Name, "LeyLineLedger", StringComparison.Ordinal))
                 continue;
 
-            var st = asm.GetType("LeyLineLedger.Settings");
-            if (st == null) break;
-            var sbProp = st.GetProperty("SalvageBank");
-            if (sbProp == null) break;
-
             var pt = asm.GetType("LeyLineLedger.PatchClass");
-            if (pt == null) break;
-            var sf = pt.GetField("Settings", BindingFlags.Public | BindingFlags.Static);
-            if (sf == null) break;
+            if (pt == null) { ModManager.Log("[BSS→LLL Salvage] DEBUG: LeyLineLedger.PatchClass type not found", ModManager.LogLevel.Warn); break; }
+
+            // Settings is a static field on BasicPatch<T> — use FlattenHierarchy to find inherited static members.
+            // BasicPatch<Settings> is the base, and Settings is on that base class, not on PatchClass itself.
+            var sf = pt.GetField("Settings", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+            if (sf == null) { ModManager.Log("[BSS→LLL Salvage] DEBUG: static field 'Settings' not found", ModManager.LogLevel.Warn); break; }
+            
             var settings = sf.GetValue(null);
-            if (settings == null) break;
+            if (settings == null) { ModManager.Log("[BSS→LLL Salvage] DEBUG: Settings field value is null", ModManager.LogLevel.Warn); break; }
+
+            var st = settings.GetType();
+            var sbProp = st.GetProperty("SalvageBank");
+            if (sbProp == null) { ModManager.Log("[BSS→LLL Salvage] DEBUG: SalvageBank property not found on Settings", ModManager.LogLevel.Warn); break; }
 
             var sb = sbProp.GetValue(settings);
-            if (sb == null) break;
-            var sbType = sb.GetType();
+            if (sb == null) { ModManager.Log("[BSS→LLL Salvage] DEBUG: SalvageBank value is null", ModManager.LogLevel.Warn); break; }
 
+            var sbType = sb.GetType();
             var firstProp = (int?)(sbType.GetProperty("FirstMaterialBankPropertyId")?.GetValue(sb)) ?? 40201;
             var rules = (IList?)(sbType.GetProperty("DepositRules")?.GetValue(sb));
-            if (rules == null) break;
+            if (rules == null) { ModManager.Log("[BSS→LLL Salvage] DEBUG: DepositRules is null", ModManager.LogLevel.Warn); break; }
 
             for (int i = 0; i < rules.Count; i++)
             {
@@ -81,6 +84,7 @@ public static class LeyLineLedgerSalvageInterop
 
                 _salvagePropByWcid[wcid] = bankProp;
             }
+            ModManager.Log($"[BSS→LLL Salvage] Resolved {_salvagePropByWcid.Count} salvage WCIDs from LLL settings (firstProp={firstProp}, rules.Count={rules.Count}).", ModManager.LogLevel.Info);
             return;
         }
     }

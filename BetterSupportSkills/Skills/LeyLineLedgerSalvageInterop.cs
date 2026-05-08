@@ -35,57 +35,57 @@ public static class LeyLineLedgerSalvageInterop
     }
 
     /// <summary>
-    /// Reads LLL's in-memory Settings to build a WCID → property ID map
-    /// from SalvageBank.DepositRules.
+    /// Reads LLL's Settings.json from disk to build a WCID → property ID map
+    /// from SalvageBank.DepositRules. Reflection on BasicPatch<T> won't work
+    /// because Settings is an instance property, not static.
     /// </summary>
     static void ResolveSalvagePropertyMap()
     {
         _salvagePropByWcid = new Dictionary<uint, int>();
 
-        foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
-        {
-            if (!string.Equals(asm.GetName().Name, "LeyLineLedger", StringComparison.Ordinal))
-                continue;
-
-            var pt = asm.GetType("LeyLineLedger.PatchClass");
-            if (pt == null) { ModManager.Log("[BSS→LLL Salvage] DEBUG: LeyLineLedger.PatchClass type not found", ModManager.LogLevel.Warn); break; }
-
-            // Settings is a static field on BasicPatch<T> — use FlattenHierarchy to find inherited static members.
-            // BasicPatch<Settings> is the base, and Settings is on that base class, not on PatchClass itself.
-            var sf = pt.GetField("Settings", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-            if (sf == null) { ModManager.Log("[BSS→LLL Salvage] DEBUG: static field 'Settings' not found", ModManager.LogLevel.Warn); break; }
-            
-            var settings = sf.GetValue(null);
-            if (settings == null) { ModManager.Log("[BSS→LLL Salvage] DEBUG: Settings field value is null", ModManager.LogLevel.Warn); break; }
-
-            var st = settings.GetType();
-            var sbProp = st.GetProperty("SalvageBank");
-            if (sbProp == null) { ModManager.Log("[BSS→LLL Salvage] DEBUG: SalvageBank property not found on Settings", ModManager.LogLevel.Warn); break; }
-
-            var sb = sbProp.GetValue(settings);
-            if (sb == null) { ModManager.Log("[BSS→LLL Salvage] DEBUG: SalvageBank value is null", ModManager.LogLevel.Warn); break; }
-
-            var sbType = sb.GetType();
-            var firstProp = (int?)(sbType.GetProperty("FirstMaterialBankPropertyId")?.GetValue(sb)) ?? 40201;
-            var rules = (IList?)(sbType.GetProperty("DepositRules")?.GetValue(sb));
-            if (rules == null) { ModManager.Log("[BSS→LLL Salvage] DEBUG: DepositRules is null", ModManager.LogLevel.Warn); break; }
-
-            for (int i = 0; i < rules.Count; i++)
-            {
-                object? rule = rules[i];
-                if (rule == null) continue;
-                var t = rule.GetType();
-                uint wcid = (uint?)(t.GetProperty("WeenieClassId")?.GetValue(rule)) ?? 0;
-                if (wcid == 0) continue;
-
-                int bankProp = (int?)(t.GetProperty("BankProperty")?.GetValue(rule)) ?? 0;
-                if (bankProp == 0)
-                    bankProp = firstProp + i;
-
-                _salvagePropByWcid[wcid] = bankProp;
-            }
-            ModManager.Log($"[BSS→LLL Salvage] Resolved {_salvagePropByWcid.Count} salvage WCIDs from LLL settings (firstProp={firstProp}, rules.Count={rules.Count}).", ModManager.LogLevel.Info);
+        // Find LLL's Settings.json: walk up from BSS assembly dir, look for sibling "LeyLineLedger" mod dir
+        string? assemblyDir = Path.GetDirectoryName(typeof(LeyLineLedgerSalvageInterop).Assembly.Location);
+        if (string.IsNullOrEmpty(assemblyDir))
             return;
+
+        // Try relative path first: BSS is at build/AutoLoot/BetterSupportSkills.dll,
+        // but at runtime it's at Mods/BetterSupportSkills/BetterSupportSkills.dll
+        string lllSettingsPath = Path.Combine(assemblyDir, "..", "LeyLineLedger", "Settings.json");
+        if (!File.Exists(lllSettingsPath))
+        {
+            // Try ACE mods root sibling approach
+            lllSettingsPath = Path.Combine(assemblyDir, "..", "..", "LeyLineLedger", "Settings.json");
+        }
+        if (!File.Exists(lllSettingsPath))
+        {
+            ModManager.Log($"[BSS→LLL Salvage] LLL Settings.json not found (tried: {lllSettingsPath})", ModManager.LogLevel.Warn);
+            return;
+        }
+
+        try
+        {
+            var json = File.ReadAllText(lllSettingsPath);
+            var lllSettings = System.Text.Json.JsonSerializer.Deserialize<LeyLineLedgerSettings>(json);
+            if (lllSettings?.SalvageBank?.DepositRules == null || lllSettings.SalvageBank.DepositRules.Count == 0)
+            {
+                ModManager.Log("[BSS→LLL Salvage] LLL Settings.json has no DepositRules", ModManager.LogLevel.Warn);
+                return;
+            }
+
+            int firstProp = lllSettings.SalvageBank.FirstMaterialBankPropertyId;
+            for (int i = 0; i < lllSettings.SalvageBank.DepositRules.Count; i++)
+            {
+                var rule = lllSettings.SalvageBank.DepositRules[i];
+                if (rule.WeenieClassId == 0) continue;
+                int bankProp = rule.BankProperty > 0 ? rule.BankProperty : firstProp + i;
+                _salvagePropByWcid[rule.WeenieClassId] = bankProp;
+            }
+
+            ModManager.Log($"[BSS→LLL Salvage] Resolved {_salvagePropByWcid.Count} salvage WCIDs from {lllSettingsPath}.", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BSS→LLL Salvage] Failed to parse LLL Settings.json: {ex.Message}", ModManager.LogLevel.Warn);
         }
     }
 
@@ -132,5 +132,23 @@ public static class LeyLineLedgerSalvageInterop
         LeyLineLedgerBankInterop.IncBanked(player, prop, units);
         ModManager.Log($"[BSS→LLL Salvage] Credited {units} units of WCID {salvageWcid} to property {prop}.", ModManager.LogLevel.Debug);
         return true;
+    }
+
+    // Minimal DTO for reading LLL Settings.json
+    class LeyLineLedgerSettings
+    {
+        public SalvageBankDto? SalvageBank { get; set; }
+    }
+
+    class SalvageBankDto
+    {
+        public int FirstMaterialBankPropertyId { get; set; }
+        public List<DepositRuleDto>? DepositRules { get; set; }
+    }
+
+    class DepositRuleDto
+    {
+        public uint WeenieClassId { get; set; }
+        public int BankProperty { get; set; }
     }
 }

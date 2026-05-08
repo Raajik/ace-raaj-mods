@@ -480,39 +480,44 @@ public class AutoLoot
 
     static (object? settings, int firstProp, System.Collections.IList? rules) ReadLLLSalvageConfig()
     {
+        // Settings is an instance property on BasicPatch<T> — can't reflect via static members.
+        // Read LLL's Settings.json from disk instead.
         try
         {
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (!string.Equals(asm.GetName().Name, "LeyLineLedger", StringComparison.Ordinal))
-                    continue;
+            string? dir = Path.GetDirectoryName(typeof(AutoLoot).Assembly.Location);
+            if (string.IsNullOrEmpty(dir)) return (null, 0, null);
 
-                var pt = asm.GetType("LeyLineLedger.PatchClass");
-                if (pt == null) break;
+            string path = Path.Combine(dir, "..", "LeyLineLedger", "Settings.json");
+            if (!File.Exists(path))
+                path = Path.Combine(dir, "..", "..", "LeyLineLedger", "Settings.json");
+            if (!File.Exists(path)) return (null, 0, null);
 
-                // Settings is a static field on BasicPatch<T>, inherited by PatchClass.
-                // Must use FlattenHierarchy to find inherited static members via reflection.
-                var sf = pt.GetField("Settings", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-                if (sf == null) break;
-                var settings = sf.GetValue(null);
-                if (settings == null) break;
+            var json = File.ReadAllText(path);
+            var dto = System.Text.Json.JsonSerializer.Deserialize<LeyLineLedgerDump>(json);
+            if (dto?.SalvageBank?.DepositRules == null || dto.SalvageBank.DepositRules.Count == 0)
+                return (null, 0, null);
 
-                var st = settings.GetType(); // LeyLineLedger.Settings
-                var sbProp = st.GetProperty("SalvageBank");
-                if (sbProp == null) break;
-
-                var sb = sbProp.GetValue(settings);
-                if (sb == null) break;
-                var sbType = sb.GetType();
-
-                var firstProp = (int?)(sbType.GetProperty("FirstMaterialBankPropertyId")?.GetValue(sb)) ?? 40201;
-                var rules = (System.Collections.IList?)(sbType.GetProperty("DepositRules")?.GetValue(sb));
-
-                return (settings, firstProp, rules);
-            }
+            return (dto, dto.SalvageBank.FirstMaterialBankPropertyId, dto.SalvageBank.DepositRules);
         }
         catch { }
         return (null, 0, null);
+    }
+
+    // Minimal DTO for parsing LLL's Settings.json salvage section
+    class LeyLineLedgerDump
+    {
+        public SalvageBankDump? SalvageBank { get; set; }
+    }
+    class SalvageBankDump
+    {
+        public int FirstMaterialBankPropertyId { get; set; } = 40201;
+        public List<SalvageDepositRuleDump> DepositRules { get; set; } = new();
+    }
+    class SalvageDepositRuleDump
+    {
+        public uint WeenieClassId { get; set; }
+        public string Name { get; set; } = "";
+        public int BankProperty { get; set; }
     }
 
     static string CompactSalvageName(string displayName)

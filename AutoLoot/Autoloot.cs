@@ -403,6 +403,17 @@ public class AutoLoot
         return null; // caller falls back to LootDisplayName
     }
 
+    static string FormatPyrealAmount(long pyreals)
+    {
+        return pyreals switch
+        {
+            >= 1_000_000_000 => $"{pyreals / 1_000_000_000.0:F2}B pyreals",
+            >= 1_000_000     => $"{pyreals / 1_000_000.0:F2}M pyreals",
+            >= 1_000         => $"{pyreals / 1_000.0:F0}k pyreals",
+            _                => $"{pyreals:N0} pyreals"
+        };
+    }
+
     static bool TryBankKey(Player player, WorldObject item)
     {
         if (PatchClass.Settings?.KeyBankProperties is not { Count: > 0 })
@@ -1367,6 +1378,7 @@ public class AutoLoot
             var lootedSet        = new HashSet<WorldObject>();
             var keyBanked        = new Dictionary<string, int>();
             var salvageDelta     = new Dictionary<string, long>();
+            var lllBankedItems   = new Dictionary<string, int>();
 
             var noDupPatterns = PatchClass.Settings?.NoDuplicateNames ?? [];
 
@@ -1597,8 +1609,9 @@ public class AutoLoot
                     if (container.TryRemoveFromInventory(item.Guid, out var removed))
                     {
                         var lllName = LootDisplayName(removed);
-                        lootedItems.TryGetValue(lllName, out var existing);
-                        lootedItems[lllName] = existing + (removed.StackSize ?? 1);
+                        var qty = removed.StackSize ?? 1;
+                        lllBankedItems.TryGetValue(lllName, out int cur);
+                        lllBankedItems[lllName] = cur + qty;
                         lootedSet.Add(removed);
                         removed.Destroy();
                     }
@@ -1620,7 +1633,7 @@ public class AutoLoot
                 salvageDelta[matName] = total;
             }
 
-            bool hasAny = lootedItems.Count > 0 || salvageDelta.Count > 0 || keyBanked.Count > 0 || level8CompsConvertedCorpse > 0;
+            bool hasAny = lootedItems.Count > 0 || lllBankedItems.Count > 0 || salvageDelta.Count > 0 || keyBanked.Count > 0 || level8CompsConvertedCorpse > 0;
             if (!hasAny)
                 return;
 
@@ -1662,6 +1675,28 @@ public class AutoLoot
 
                 string deltaStr = delta > 0 ? $"(+{delta / 100.0:F2})" : "";
                 bankMessages.Add($"{matName} {totalBags:F2} {deltaStr}");
+            }
+
+            // ── Merge raw pyreals and MMD into one pyreal amount ───────────
+            long totalPyreals = 0;
+            if (lootedItems.TryGetValue("Pyreals (banked)", out int pyValue) && pyValue > 0)
+            {
+                totalPyreals += pyValue;
+                lootedItems.Remove("Pyreals (banked)");
+            }
+            if (lllBankedItems.TryGetValue("MMD", out int mmdCount) && mmdCount > 0)
+            {
+                totalPyreals += mmdCount * 250_000L;
+                lllBankedItems.Remove("MMD");
+            }
+            if (totalPyreals > 0)
+                bankMessages.Add(FormatPyrealAmount(totalPyreals));
+
+            // Any remaining LLL-banked items (non-pyreal equivalents) show as-is
+            foreach (var kv in lllBankedItems)
+            {
+                string part = kv.Value == 1 ? kv.Key : $"{kv.Value:N0} {kv.Key}";
+                bankMessages.Add(part);
             }
 
             if (bankMessages.Count > 0)

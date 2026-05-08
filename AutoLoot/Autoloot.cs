@@ -1690,7 +1690,17 @@ public class AutoLoot
                 lllBankedItems.Remove("MMD");
             }
             if (totalPyreals > 0)
-                bankMessages.Add(FormatPyrealAmount(totalPyreals));
+            {
+                // Show delta in MMD terms (1 MMD = 250k pyreals)
+                long bankDelta = totalPyreals;
+                string pyMsg = FormatPyrealAmount(totalPyreals);
+                if (bankDelta > 0)
+                {
+                    double mmdDelta = bankDelta / 250_000.0;
+                    pyMsg += $" (+{mmdDelta:F2} MMDs)";
+                }
+                bankMessages.Add(pyMsg);
+            }
 
             // Any remaining LLL-banked items (non-pyreal equivalents) show as-is
             foreach (var kv in lllBankedItems)

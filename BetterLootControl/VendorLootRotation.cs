@@ -13,6 +13,8 @@ using ACE.Server.Entity;
 using ACE.Server.Factories;
 using ACE.Server.Factories.Enum;
 using ACE.Server.Managers;
+using ACE.Server.Network;
+using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.WorldObjects;
 using System.Reflection;
 using HarmonyLib;
@@ -238,13 +240,33 @@ public static class VendorLootRotation
         return Math.Min(rot, cool);
     }
 
+    /// <summary>
+    /// Entrypoint called from GameEventApproachVendor constructor hook (same level as LLL uses).
+    /// </summary>
+    public static void OnVendorApproachEvent(Session session, Vendor vendor, uint altCurrencySpent)
+    {
+        Player? player = session?.Player;
+        if (player == null || vendor == null)
+            return;
+
+        // Ensure _settings is set — fall back to PatchClass.CurrentSettings
+        // (Initialize() sets _settings but may not fire on hot-reload paths)
+        if (_settings is null)
+            _settings = PatchClass.CurrentSettings;
+
+        // Delegate to the existing rotation logic
+        OnVendorApproachPrefix(player, VendorType.Open, altCurrencySpent, vendor);
+    }
+
     private static void StartBackgroundTimer()
     {
         _timerCts?.Cancel();
         _timerCts = new CancellationTokenSource();
         var token = _timerCts.Token;
 
-        var intervalMs = 60_000; // Check every 60 seconds
+        // Match the effective rotation interval (min of Rotation, Cooldown), at least 1 min.
+        if (_settings is null) return;
+        var intervalMs = Math.Max(60_000, EffectiveRotationIntervalMinutes(_settings) * 60 * 1000);
 
         _ = Task.Run(async () =>
         {
@@ -269,8 +291,10 @@ public static class VendorLootRotation
 
     private static void WarmProfileCache()
     {
+        bool expired = _cachedTreasureProfiles == null || DateTime.UtcNow - _lastProfileCache >= TimeSpan.FromMinutes(5);
         var profiles = GetTreasureProfiles();
-        ModManager.Log($"[BetterLoot] VendorLootRotation: Cached {profiles.Count} TreasureDeath profiles.", ModManager.LogLevel.Info);
+        if (expired)
+            ModManager.Log($"[BetterLoot] VendorLootRotation: Cached {profiles.Count} TreasureDeath profiles (from DB).", ModManager.LogLevel.Info);
     }
 
     static List<TreasureDeath> GetTreasureProfiles()
@@ -749,7 +773,6 @@ public static class VendorLootRotation
         
         if (_settings is null || !_settings.EnableVendorLootRotation)
         {
-            ModManager.Log($"[BetterLoot] VendorLoot: Settings null or rotation disabled (settings null: {_settings is null}, enabled: {_settings?.EnableVendorLootRotation})", ModManager.LogLevel.Info);
             return;
         }
 

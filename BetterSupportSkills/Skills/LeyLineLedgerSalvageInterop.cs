@@ -1,17 +1,20 @@
+using System.Collections;
 using System.Reflection;
 using ACE.Server.Mods;
 using ACE.Server.WorldObjects;
+using AceRaajMods.Shared;
 
 namespace BetterSupportSkills.Skills;
 
 /// <summary>
 /// Bridge to LeyLineLedger's salvage bank system.
-/// LLL uses rule-based property indexing via DepositRules, not WCID-based.
+/// Uses AceRaajMods.Shared.LeyLineLedgerBankInterop for the actual bank write
+/// (which resolves the extension method on the correct BankExtensions class),
+/// and reflects LLL's in-memory Settings for WCID→property-ID mapping.
 /// </summary>
 public static class LeyLineLedgerSalvageInterop
 {
-    static Action<Player, int, long>? _lllIncBanked;
-    static Func<uint, int>? _lllGetSalvagePropertyByWcid;
+    static Dictionary<uint, int>? _salvagePropByWcid;
     static bool _interopTried;
 
     public static void EnsureInterop()
@@ -22,60 +25,63 @@ public static class LeyLineLedgerSalvageInterop
 
         try
         {
-            var asm = AppDomain.CurrentDomain.GetAssemblies()
-                .FirstOrDefault(a => string.Equals(a.GetName().Name, "LeyLineLedger", StringComparison.Ordinal));
-            if (asm == null)
-            {
-                ModManager.Log("[BSS→LLL Salvage] LeyLineLedger assembly not found", ModManager.LogLevel.Warn);
-                return;
-            }
-
-            // Get IncBanked extension method (player, propertyId, amount)
-            var patchClassType = asm.GetType("LeyLineLedger.PatchClass");
-            var incBankedMethod = patchClassType?.GetMethod(
-                "IncBanked",
-                BindingFlags.Public | BindingFlags.Static,
-                null,
-                new[] { typeof(Player), typeof(int), typeof(long) },
-                null);
-
-            if (incBankedMethod != null)
-            {
-                _lllIncBanked = (Action<Player, int, long>)Delegate.CreateDelegate(
-                    typeof(Action<Player, int, long>),
-                    incBankedMethod);
-            }
-
-            // Get helper to map WCID → property ID
-            var bankSalvageType = asm.GetType("LeyLineLedger.BankSalvage");
-            var getPropertyMethod = bankSalvageType?.GetMethod(
-                "GetSalvagePropertyByWcid",
-                BindingFlags.Public | BindingFlags.Static | BindingFlags.NonPublic,
-                null,
-                new[] { typeof(uint) },
-                null);
-
-            if (getPropertyMethod != null)
-            {
-                _lllGetSalvagePropertyByWcid = (Func<uint, int>)Delegate.CreateDelegate(
-                    typeof(Func<uint, int>),
-                    getPropertyMethod);
-            }
-
-            if (_lllIncBanked != null)
-            {
-                ModManager.Log("[BSS→LLL Salvage] Integration enabled", ModManager.LogLevel.Info);
-            }
-            else
-            {
-                ModManager.Log("[BSS→LLL Salvage] IncBanked method not found", ModManager.LogLevel.Warn);
-            }
+            ResolveSalvagePropertyMap();
+            ModManager.Log($"[BSS→LLL Salvage] Cached {_salvagePropByWcid?.Count ?? 0} salvage WCIDs from LLL settings.", ModManager.LogLevel.Info);
         }
         catch (Exception ex)
         {
             ModManager.Log($"[BSS→LLL Salvage] Integration failed: {ex.Message}", ModManager.LogLevel.Warn);
-            _lllIncBanked = null;
-            _lllGetSalvagePropertyByWcid = null;
+        }
+    }
+
+    /// <summary>
+    /// Reads LLL's in-memory Settings to build a WCID → property ID map
+    /// from SalvageBank.DepositRules.
+    /// </summary>
+    static void ResolveSalvagePropertyMap()
+    {
+        _salvagePropByWcid = new Dictionary<uint, int>();
+
+        foreach (Assembly asm in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            if (!string.Equals(asm.GetName().Name, "LeyLineLedger", StringComparison.Ordinal))
+                continue;
+
+            var st = asm.GetType("LeyLineLedger.Settings");
+            if (st == null) break;
+            var sbProp = st.GetProperty("SalvageBank");
+            if (sbProp == null) break;
+
+            var pt = asm.GetType("LeyLineLedger.PatchClass");
+            if (pt == null) break;
+            var sf = pt.GetField("Settings", BindingFlags.Public | BindingFlags.Static);
+            if (sf == null) break;
+            var settings = sf.GetValue(null);
+            if (settings == null) break;
+
+            var sb = sbProp.GetValue(settings);
+            if (sb == null) break;
+            var sbType = sb.GetType();
+
+            var firstProp = (int?)(sbType.GetProperty("FirstMaterialBankPropertyId")?.GetValue(sb)) ?? 40201;
+            var rules = (IList?)(sbType.GetProperty("DepositRules")?.GetValue(sb));
+            if (rules == null) break;
+
+            for (int i = 0; i < rules.Count; i++)
+            {
+                object? rule = rules[i];
+                if (rule == null) continue;
+                var t = rule.GetType();
+                uint wcid = (uint?)(t.GetProperty("WeenieClassId")?.GetValue(rule)) ?? 0;
+                if (wcid == 0) continue;
+
+                int bankProp = (int?)(t.GetProperty("BankProperty")?.GetValue(rule)) ?? 0;
+                if (bankProp == 0)
+                    bankProp = firstProp + i;
+
+                _salvagePropByWcid[wcid] = bankProp;
+            }
+            return;
         }
     }
 
@@ -86,23 +92,19 @@ public static class LeyLineLedgerSalvageInterop
     public static int GetSalvagePropertyId(uint salvageWcid)
     {
         EnsureInterop();
-        if (_lllGetSalvagePropertyByWcid != null)
-        {
-            int id = _lllGetSalvagePropertyByWcid(salvageWcid);
-            if (id > 0) return id;
-        }
-        return FindSalvagePropertyIdManual(salvageWcid, PatchClass.Settings);
+        if (_salvagePropByWcid != null && _salvagePropByWcid.TryGetValue(salvageWcid, out int id))
+            return id;
+        return -1;
     }
 
     /// <summary>
-    /// Calls LLL's IncBanked with a pre-resolved property ID.
-    /// Returns true if the increment was applied.
+    /// Calls the Shared LeyLineLedgerBankInterop to credit salvage units.
+    /// Returns true if the credit was applied.
     /// </summary>
     public static bool DirectIncBanked(Player player, int propertyId, long amount)
     {
-        EnsureInterop();
-        if (_lllIncBanked == null || propertyId <= 0) return false;
-        _lllIncBanked(player, propertyId, amount);
+        if (propertyId <= 0) return false;
+        LeyLineLedgerBankInterop.IncBanked(player, propertyId, amount);
         return true;
     }
 
@@ -114,91 +116,17 @@ public static class LeyLineLedgerSalvageInterop
     {
         EnsureInterop();
 
-        if (_lllIncBanked == null)
+        if (_salvagePropByWcid == null)
             return false;
 
-        // If LLL provides a WCID→property lookup, use it
-        if (_lllGetSalvagePropertyByWcid != null)
+        if (!_salvagePropByWcid.TryGetValue(salvageWcid, out int prop))
         {
-            int propertyId = _lllGetSalvagePropertyByWcid(salvageWcid);
-            if (propertyId > 0)
-            {
-                _lllIncBanked(player, propertyId, units);
-                ModManager.Log($"[BSS→LLL Salvage] Credited {units} units of WCID {salvageWcid} to property {propertyId}", ModManager.LogLevel.Debug);
-                return true;
-            }
+            ModManager.Log($"[BSS→LLL Salvage] No LLL property mapped for WCID {salvageWcid} (not in DepositRules).", ModManager.LogLevel.Warn);
+            return false;
         }
 
-        // Fallback: manually lookup property from settings
-        var settings = PatchClass.Settings;
-        int prop = FindSalvagePropertyIdManual(salvageWcid, settings);
-        if (prop > 0)
-        {
-            _lllIncBanked(player, prop, units);
-            ModManager.Log($"[BSS→LLL Salvage] Credited {units} units of WCID {salvageWcid} to property {prop} (manual lookup)", ModManager.LogLevel.Debug);
-            return true;
-        }
-
-        return false;
-    }
-
-    /// <summary>
-    /// Manual fallback: read LLL Settings.json and find the rule index for this WCID.
-    /// </summary>
-    static int FindSalvagePropertyIdManual(uint wcid, Settings? bssSettings)
-    {
-        try
-        {
-            // Read LLL Settings.json
-            var lllSettingsPath = Path.Combine(
-                Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "",
-                "..", // BetterSupportSkills
-                "LeyLineLedger",
-                "Settings.json");
-
-            if (!File.Exists(lllSettingsPath))
-                return -1;
-
-            var json = File.ReadAllText(lllSettingsPath);
-            var lllSettings = System.Text.Json.JsonSerializer.Deserialize<LeyLineLedgerSettings>(json);
-            if (lllSettings?.SalvageBank?.DepositRules == null)
-                return -1;
-
-            for (int i = 0; i < lllSettings.SalvageBank.DepositRules.Count; i++)
-            {
-                var rule = lllSettings.SalvageBank.DepositRules[i];
-                if (rule.WeenieClassId == wcid)
-                {
-                    // Use rule's custom BankProperty if set, otherwise FirstMaterialBankPropertyId + index
-                    return rule.BankProperty > 0
-                        ? rule.BankProperty
-                        : lllSettings.SalvageBank.FirstMaterialBankPropertyId + i;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[BSS→LLL Salvage] Manual lookup failed: {ex.Message}", ModManager.LogLevel.Debug);
-        }
-
-        return -1;
-    }
-
-    // Minimal DTO for reading LLL Settings.json
-    class LeyLineLedgerSettings
-    {
-        public SalvageBankDto? SalvageBank { get; set; }
-    }
-
-    class SalvageBankDto
-    {
-        public int FirstMaterialBankPropertyId { get; set; }
-        public List<DepositRuleDto>? DepositRules { get; set; }
-    }
-
-    class DepositRuleDto
-    {
-        public uint WeenieClassId { get; set; }
-        public int BankProperty { get; set; }
+        LeyLineLedgerBankInterop.IncBanked(player, prop, units);
+        ModManager.Log($"[BSS→LLL Salvage] Credited {units} units of WCID {salvageWcid} to property {prop}.", ModManager.LogLevel.Debug);
+        return true;
     }
 }

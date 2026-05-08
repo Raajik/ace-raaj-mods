@@ -948,19 +948,12 @@ public static class VendorLootRotation
         }
         else if (vendorClass == VendorTypeClassification.Mage)
         {
-            // Generate caster weapons (wands/orbs/staves)
-            int casterTarget = _rng.Next(perCatMin, perCatMax + 1);
+            // Generate caster weapons (wands/orbs/staves) — triple quantity since Mage
+            // vendors should be the prime source. Robe lootgen removed (caused lag + rarely
+            // produces results; SQL wizard robes are preserved during the strip phase).
+            int casterTarget = _rng.Next(perCatMin * 3, perCatMax * 3 + 1);
             var casterBatch = GenerateCasterBatch(vendor, vendorTier, casterTarget);
             foreach (var wo in casterBatch)
-            {
-                AddItemToVendor(vendor, wo, rotatedSet);
-                itemCount++;
-            }
-
-            // Generate magical robes
-            int robeTarget = _rng.Next(8, 21); // 8-20 robes
-            var robeBatch = GenerateRobeBatch(vendor, vendorTier, robeTarget);
-            foreach (var wo in robeBatch)
             {
                 AddItemToVendor(vendor, wo, rotatedSet);
                 itemCount++;
@@ -1017,14 +1010,6 @@ public static class VendorLootRotation
                 itemCount++;
             }
 
-            // Generate robes (same as mages)
-            int robeTarget = _rng.Next(8, 21); // 8-20 robes
-            var robeBatch = GenerateRobeBatch(vendor, vendorTier, robeTarget);
-            foreach (var wo in robeBatch)
-            {
-                AddItemToVendor(vendor, wo, rotatedSet);
-                itemCount++;
-            }
         }
         else if (vendorClass == VendorTypeClassification.Shopkeeper)
         {
@@ -1316,61 +1301,6 @@ public static class VendorLootRotation
                     ClampItemValue(item, _settings?.VendorLootMinValue ?? 100, _settings?.VendorLootMaxValue ?? 10000);
                     _originalValues[item.Guid] = item.Value ?? 0;
                     batch.Add(item);
-                }
-                else
-                {
-                    item?.Destroy();
-                }
-            }
-            catch { /* Skip failed generations */ }
-
-            attempts++;
-        }
-
-        return batch;
-    }
-
-    static List<WorldObject> GenerateRobeBatch(Vendor vendor, int vendorTier, int targetCount)
-    {
-        var batch = new List<WorldObject>();
-        var profiles = GetTreasureProfiles();
-        int attempts = 0;
-        int maxAttempts = targetCount * 50; // Very high attempts - robes are rare in loot tables
-
-        while (batch.Count < targetCount && attempts < maxAttempts)
-        {
-            int itemTier = RollVendorItemTier(vendorTier);
-            var profile = FindProfileForTier(profiles, itemTier);
-            if (profile == null)
-            {
-                attempts++;
-                continue;
-            }
-
-            try
-            {
-                // Robes are ItemType.Armor in ACE, not Clothing
-                var item = LootGenerationFactory.CreateRandomLootObjects(profile, TreasureItemCategory.MagicItem);
-                if (item != null && (item.ItemType & ItemType.Armor) != 0)
-                {
-                    // Check if it's a robe/vestment/kaftan by name
-                    var name = item.Name?.ToLowerInvariant() ?? "";
-                    bool isRobe = name.Contains("robe") || name.Contains("vestment") || name.Contains("kaftan") || name.Contains("frock");
-                    
-                    if (isRobe)
-                    {
-                        int subScore = RollSubScore();
-                        ApplyQuality(item, itemTier, subScore);
-                        ApplyVendorUniqueTreatment(item, subScore);
-                        ApplyWieldRequirementCap(item, vendorTier);
-                        ClampItemValue(item, _settings?.VendorLootMinValue ?? 100, _settings?.VendorLootMaxValue ?? 10000);
-                        _originalValues[item.Guid] = item.Value ?? 0;
-                        batch.Add(item);
-                    }
-                    else
-                    {
-                        item.Destroy();
-                    }
                 }
                 else
                 {

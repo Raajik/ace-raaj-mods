@@ -17,7 +17,14 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-VOID_MODS="/mnt/a/void-test/Mods"
+# Git Bash (MSYS): /a/void-test/Mods  WSL: /mnt/a/void-test/Mods  Override: VOID_MODS=/path/to/Mods
+if [ -z "${VOID_MODS:-}" ]; then
+  if [ -d "/a/void-test" ]; then
+    VOID_MODS="/a/void-test/Mods"
+  else
+    VOID_MODS="/mnt/a/void-test/Mods"
+  fi
+fi
 BUILD_DIR="$REPO_ROOT/build"
 
 cd "$REPO_ROOT"

@@ -40,4 +40,10 @@ public class Settings
     public string LogTrophyLinesVerboseDoc { get; init; } =
         "Log every drop roll, replacement, and turn-in event. Noisy; debugging only.";
     public bool LogTrophyLinesVerbose { get; set; } = false;
+
+    [JsonPropertyName("// EnableAcademyImbues")]
+    public string EnableAcademyImbuesDoc { get; init; } =
+        "When true, Academy weapons purchased from Kaelith (810001) in the Town Network " +
+        "are generated with a random rending imbue (Armor Rending, elemental Rending, or Nether Rending).";
+    public bool EnableAcademyImbues { get; set; } = true;
 }

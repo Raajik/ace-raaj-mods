@@ -41,7 +41,7 @@ public static class VendorLootRotation
 
     // WCIDs that must never be rotated and must keep their SQL create_list stock intact.
     // Pathwarden starter vendors and any other quest-critical vendors go here.
-    static readonly HashSet<uint> _protectedVendorWcids = new() { 810000, 810001 };
+    static readonly HashSet<uint> _protectedVendorWcids = new() { 810000 };
 
     // Vendor type classification for strict type enforcement
     enum VendorTypeClassification

@@ -51,6 +51,9 @@ public partial class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsNam
             {
                 ModManager.Log("[Windblown] EnableTrophyLines = false, skipping trophy line registry.", ModManager.LogLevel.Info);
             }
+
+            if (Cfg?.EnableAcademyImbues == true)
+                ModManager.Log("[Windblown] AcademyImbues setting present but no patch loaded.", ModManager.LogLevel.Info);
         }
         catch (Exception ex)
         {

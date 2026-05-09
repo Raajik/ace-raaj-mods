@@ -47,7 +47,7 @@
   "VendorLootRotationMinutes": 20,
   "VendorLootCooldownMinutes": 45,
   "VendorLootMode": "Blacklist",
-  "VendorLootWcids": [],
+  "VendorLootWcids": [810000, 810001, 810002, 810003],
   "VendorLootItemsPerCategoryMin": 15,
   "VendorLootItemsPerCategoryMax": 30,
   "VendorLootMinValue": 500,

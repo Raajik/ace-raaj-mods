@@ -1,5 +1,45 @@
 # Completed Features & Fixes
 
+## 2026-05-09
+
+### Town Network — Custom NPCs & Portal Additions
+
+**NPCs:**
+- **Jochi** (810000) — gem vendor, Sho male (Sir Tenshin appearance), cell `0x00070155`
+- **Swayss** (810002) — undead skill reset NPC, Shikken Moriyaki appearance, cell `0x00070155`
+  - InqYesNo confirmation → untrains all skills (no cost/timer)
+  - Fixed: `quest` column must match the InqYesNo `message` field on TestSuccess/TestFailure
+
+**Portals added to Town Network:**
+- Ayan Baqur, Wai Jhou, Abandoned Mines, Asheron's Castle
+
+**Removed:**
+- Kaelith (810001) — had persistent awakening/duplicate issues
+- Warden (810003) — attempted fresh start for imbue-on-purchase, abandoned
+
+**Infrastructure:**
+- `Windblown/docs/TownNetwork-Positions.md` — location tracking for NPCs/portals
+- `Windblown/Content/SQL/Vendors/05_TownNetworkPortals.sql` — portal SQL
+- `Windblown/Content/SQL/Vendors/04_Swayss_810002.sql` — Swayss SQL
+- AGENTS.md §8.7: Added warning: NEVER use `sed` on SQL dumps
+
+### Academy Weapon Imbue Patch (Abandoned)
+Tried to make Academy weapons sold by a TN vendor generate a random rend imbue.
+Killed by EA's `AcademyAutoAwakenHook` — postfixes
+`TryCreateInInventoryWithNetworking` and auto-awakens all Academy WCIDs from
+`AutoAwakenTier1Wcids` list on inventory entry. The item's name becomes
+"Awakened {ItemType}" (e.g. "Awakened MeleeWeapon").
+
+**Lesson:** EA's LivingItemHooks hook into the same method. Harmony priority
+battles are fragile. BetterLootControl also has `AwakenVendorItems` that runs
+on vendor approach.
+
+### BetterLootControl VendorLootRotation Fixes
+- Added `_protectedVendorWcids` — only 810000 (Radi/Jochi) is protected
+- Custom TN vendors (810001, 810002, 810003) go through blacklist check
+  via `VendorLootWcids` + `VendorLootMode=Blacklist` instead
+- `_awakenableVendorWcids` still has Academy weapon WCIDs — just blacklist the vendor
+
 ## 2026-05-08
 
 ### Custom Weenie Reorganization — WCID Ranges + Windblown Consolidation

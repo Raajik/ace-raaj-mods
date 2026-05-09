@@ -54,11 +54,12 @@ INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810000, 74,
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810000, 75, 1) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810000, 104, 10) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810000, 125, 1) ON DUPLICATE KEY UPDATE value = VALUES(value);
-INSERT INTO weenie_properties_string (object_Id, type, value) VALUES (810000, 1, 'Radi') ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_string (object_Id, type, value) VALUES (810000, 1, 'Jochi') ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_string (object_Id, type, value) VALUES (810000, 3, 'Male') ON DUPLICATE KEY UPDATE value = VALUES(value);
-INSERT INTO weenie_properties_string (object_Id, type, value) VALUES (810000, 4, 'Gharu''ndim') ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_string (object_Id, type, value) VALUES (810000, 4, 'Sho') ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_string (object_Id, type, value) VALUES (810000, 5, 'Grocer') ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_string (object_Id, type, value) VALUES (810000, 24, 'Town Network') ON DUPLICATE KEY UPDATE value = VALUES(value);
+-- DID: Sir Tenshin (14414) appearance — Sho male in robe
 INSERT INTO weenie_properties_d_i_d (object_Id, type, value) VALUES (810000, 1, 33554433) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_d_i_d (object_Id, type, value) VALUES (810000, 2, 150994945) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_d_i_d (object_Id, type, value) VALUES (810000, 3, 536870913) ON DUPLICATE KEY UPDATE value = VALUES(value);

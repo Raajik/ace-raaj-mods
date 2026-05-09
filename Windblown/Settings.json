@@ -6,6 +6,7 @@
   "// EnableSiblingReplacement": "When true (default), trophy lines whose ReplaceSiblingWcids list is non-empty will swap sibling WCIDs (e.g. colored Rat Tail variants) to the base WCID at corpse-drop time so players see one consistent name.",
   "// LogTrophyLinesSummary": "Log a one-line summary at Start() listing which trophy lines were registered.",
   "// LogTrophyLinesVerbose": "Log every drop roll, replacement, and turn-in event. Noisy; debugging only.",
+  "// EnableAcademyImbues": "When true, Academy weapons purchased from Kaelith (810001) are generated with a random rending imbue.",
 
   "EnableCustomWeenies": true,
   "LogWeenieRegistrySummary": true,
@@ -13,5 +14,6 @@
   "EnableTrophyLines": true,
   "EnableSiblingReplacement": true,
   "LogTrophyLinesSummary": true,
-  "LogTrophyLinesVerbose": false
+  "LogTrophyLinesVerbose": false,
+  "EnableAcademyImbues": true
 }

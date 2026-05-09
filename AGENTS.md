@@ -218,7 +218,13 @@ Or create the per-server `*_BLOCKED.txt` file in its `Server/` dir to pause with
   INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (X, 2, 31) ON DUPLICATE KEY UPDATE value = VALUES(value);
   ```
 - **MySQL 8.0 database names with hyphens:** Use backticks: `` `void-test_world` ``. The `-D` flag can't quote the name, use `mysql ... -D "void-test_world"` instead.
-- **ACE world SQL dump format:** The reference files `.references/ACE-World-16PY-db-v0.8.8.sql` and `.references/ACE-World-Database-v0.9.293.sql` contain `CREATE DATABASE ace_world; USE ace_world;` at the top. When piping into a differently-named DB, use `sed 's/ace_world/void-test_world/g'` to rewrite before import.
+- **ACE world SQL dump format:** The reference files `.references/ACE-World-16PY-db-v0.8.8.sql` and `.references/ACE-World-Database-v0.9.293.sql` contain `CREATE DATABASE ace_world; USE ace_world;` at the top. When piping into a differently-named DB:
+  - **NEVER use `sed` on SQL dumps** — ANY `sed` on a SQL dump WILL corrupt data values. The string "ace_world" can appear inside spell names, item names, palette IDs, comments, or auto-increment counters. `sed 's/33614/810003/g'` also corrupts because 33614 appears in comments, auto-increment seeds, and hex values.
+  - **Correct method:** Strip only the DB-level statements before piping, OR write SQL by hand:
+    ```bash
+    grep -v "CREATE DATABASE\|USE \`ace_world\`\|DROP DATABASE" ref.sql | mysql ... void-test_world
+    ```
+  - **To clone a weenie:** Write the INSERT statements manually or copy-paste the property rows by hand. Never sed a mysqldump.
 
 ### 8.2 Mod Architecture & Cross-Mod Integration
 

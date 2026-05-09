@@ -93,25 +93,22 @@ for mod_dir in */; do
 
   mkdir -p "$dst"
 
-  # Copy DLL
-  cp "$src/$name.dll" "$dst/$name.dll" 2>/dev/null && echo "  ✅ $name.dll" || echo "  ⚠️  $name.dll not found"
+  # Copy all DLLs from build output (mod + ProjectReference + NuGet deps)
+  # McMaster PluginLoader's per-mod ALC must resolve ALL dependencies locally,
+  # including transitive ProjectReferences (BetterLootControl, AceModQa) and
+  # NuGet packages (AngouriMath, ACE.Shared), otherwise JIT will crash at runtime.
+  count=0
+  for dll in "$src"/*.dll; do
+    [ -f "$dll" ] || continue
+    cp "$dll" "$dst/"
+    count=$((count + 1))
+  done
+  echo "  ✅ $count DLL(s)"
 
-  # Copy ACE.Shared.dll dependency (NuGet package, required per-mod)
-  # McMaster PluginLoader's per-mod ALC doesn't fall through to default ALC
-  # for assemblies ACE.Server itself doesn't reference.
-  if [ -f "$src/ACE.Shared.dll" ]; then
-    cp "$src/ACE.Shared.dll" "$dst/ACE.Shared.dll"
-    echo "    ACE.Shared.dll"
-  else
-    # Try first-built mod as fallback source
-    for first_mod in */; do
-      src_first="$BUILD_DIR/${first_mod%/}/ACE.Shared.dll"
-      if [ -f "$src_first" ]; then
-        cp "$src_first" "$dst/ACE.Shared.dll"
-        echo "    ACE.Shared.dll (from ${first_mod%/})"
-        break
-      fi
-    done
+  # Copy Content/ directory (e.g. Windblown custom weenies/trophies)
+  if [ -d "$src/Content" ]; then
+    cp -r "$src/Content" "$dst/Content"
+    echo "    Content/"
   fi
 
   # Copy Meta.json (prefer build output, fall back to source)

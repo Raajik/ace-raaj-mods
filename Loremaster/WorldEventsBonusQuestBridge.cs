@@ -1,4 +1,5 @@
 using System.Reflection;
+using ACE.Server.Managers;
 
 namespace Loremaster;
 
@@ -14,32 +15,64 @@ internal static class WorldEventsBonusQuestBridge
     const string MethodName = "IsActiveBonusQuest";
 
     static MethodInfo? _method;
-    static bool _resolved;
+    static bool _fullyResolved;
+    static bool _assemblyLogged;
+    static bool _targetLogged;
 
     static bool TryResolve()
     {
-        if (_resolved) return _method is not null;
-        _resolved = true;
+        if (_fullyResolved) return _method is not null;
+
         try
         {
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            Assembly? asm = null;
+            foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (!string.Equals(asm.GetName().Name, AssemblyShortName, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                var t = asm.GetType(RuntimeTypeName, throwOnError: false);
-                if (t is null) break;
-
-                _method = t.GetMethod(
-                    MethodName,
-                    BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public,
-                    binder: null,
-                    types: new[] { typeof(string) },
-                    modifiers: null);
-                break;
+                if (string.Equals(a.GetName().Name, AssemblyShortName, StringComparison.OrdinalIgnoreCase))
+                { asm = a; break; }
             }
+
+            if (asm is null)
+            {
+                if (!_assemblyLogged)
+                {
+                    _assemblyLogged = true;
+                    ModManager.Log("[Loremaster→WorldEvents] WorldEvents not loaded; bonus quest bridge inactive.", ModManager.LogLevel.Info);
+                }
+                return false;
+            }
+
+            var t = asm.GetType(RuntimeTypeName, throwOnError: false);
+            if (t is null)
+            {
+                if (!_targetLogged)
+                {
+                    _targetLogged = true;
+                    ModManager.Log("[Loremaster→WorldEvents] WorldEvents loaded but BonusQuestRuntime not found.", ModManager.LogLevel.Warn);
+                }
+                _fullyResolved = true;
+                return false;
+            }
+
+            _method = t.GetMethod(
+                MethodName,
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public,
+                binder: null,
+                types: new[] { typeof(string) },
+                modifiers: null);
+
+            _fullyResolved = true;
+            if (_method is not null)
+                ModManager.Log($"[Loremaster→WorldEvents] Resolved IsActiveBonusQuest on {t.FullName}.", ModManager.LogLevel.Info);
+            else
+                ModManager.Log($"[Loremaster→WorldEvents] WARNING: IsActiveBonusQuest not found on {t.FullName}.", ModManager.LogLevel.Warn);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _fullyResolved = true;
+            ModManager.Log($"[Loremaster→WorldEvents] Resolve error: {ex.GetType().Name}: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+
         return _method is not null;
     }
 
@@ -50,6 +83,11 @@ internal static class WorldEventsBonusQuestBridge
         {
             var result = _method!.Invoke(null, new object[] { questName });
             return result is true;
+        }
+        catch (TargetInvocationException tie) when (tie.InnerException is not null)
+        {
+            ModManager.Log($"[Loremaster→WorldEvents] IsActiveBonusQuest threw {tie.InnerException.GetType().Name}: {tie.InnerException.Message}", ModManager.LogLevel.Warn);
+            return false;
         }
         catch { return false; }
     }

@@ -9,7 +9,9 @@ namespace Loremaster;
 public static class QuestXpAwardDisplay
 {
     static MethodInfo? _challengeAchievementMult;
-    static bool _resolved;
+    static bool _fullyResolved;
+    static bool _assemblyLogged;
+    static bool _targetLogged;
 
     public static long EstimateCharacterXpAfterAchievementChain(Player? player, long levelFractionOrIntendedBarGain)
     {
@@ -23,8 +25,7 @@ public static class QuestXpAwardDisplay
 
     static double GetChallengeAchievementMult(Player player)
     {
-        if (!_resolved)
-            Resolve();
+        Resolve();
 
         if (_challengeAchievementMult is null)
             return 1.0;
@@ -33,27 +34,62 @@ public static class QuestXpAwardDisplay
         {
             return (double)(_challengeAchievementMult.Invoke(null, new object?[] { player }) ?? 1.0);
         }
-        catch
+        catch (TargetInvocationException tie) when (tie.InnerException is not null)
         {
+            ModManager.Log($"[Loremaster→ChallengeModes] GetQuestXpAchievementMultiplier threw {tie.InnerException.GetType().Name}: {tie.InnerException.Message}", ModManager.LogLevel.Warn);
+            return 1.0;
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Loremaster→ChallengeModes] Bridge error: {ex.GetType().Name}: {ex.Message}", ModManager.LogLevel.Warn);
             return 1.0;
         }
     }
 
     static void Resolve()
     {
-        _resolved = true;
-        foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+        if (_fullyResolved) return;
+
+        Assembly? asm = null;
+        foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
         {
-            if (!string.Equals(asm.GetName().Name, "ChallengeModes", StringComparison.Ordinal))
-                continue;
-            var t = asm.GetType("ChallengeModes.Features.ChallengeRewards");
-            _challengeAchievementMult = t?.GetMethod(
-                "GetQuestXpAchievementMultiplierForPlayer",
-                BindingFlags.Public | BindingFlags.Static,
-                null,
-                [typeof(Player)],
-                null);
+            if (string.Equals(a.GetName().Name, "ChallengeModes", StringComparison.Ordinal))
+            { asm = a; break; }
+        }
+
+        if (asm is null)
+        {
+            if (!_assemblyLogged)
+            {
+                _assemblyLogged = true;
+                ModManager.Log("[Loremaster→ChallengeModes] ChallengeModes not loaded; XP display estimate assumes 1.0x.", ModManager.LogLevel.Info);
+            }
             return;
         }
+
+        var t = asm.GetType("ChallengeModes.Features.ChallengeRewards");
+        if (t is null)
+        {
+            if (!_targetLogged)
+            {
+                _targetLogged = true;
+                ModManager.Log("[Loremaster→ChallengeModes] ChallengeModes loaded but ChallengeRewards not found.", ModManager.LogLevel.Warn);
+            }
+            _fullyResolved = true;
+            return;
+        }
+
+        _challengeAchievementMult = t.GetMethod(
+            "GetQuestXpAchievementMultiplierForPlayer",
+            BindingFlags.Public | BindingFlags.Static,
+            null,
+            [typeof(Player)],
+            null);
+        _fullyResolved = true;
+
+        if (_challengeAchievementMult is not null)
+            ModManager.Log($"[Loremaster→ChallengeModes] Resolved GetQuestXpAchievementMultiplierForPlayer on {t.FullName}.", ModManager.LogLevel.Info);
+        else
+            ModManager.Log($"[Loremaster→ChallengeModes] WARNING: GetQuestXpAchievementMultiplierForPlayer not found on {t.FullName}.", ModManager.LogLevel.Warn);
     }
 }

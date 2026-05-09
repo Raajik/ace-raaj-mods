@@ -17,12 +17,13 @@ internal static class WorldEventsSalePricing
     static PropertyInfo? _saleEnabled;
     static PropertyInfo? _saleVendorPriceMultiplier;
     static PropertyInfo? _saleVendorDiscountMultiplier;
-    static bool _resolveAttempted;
-    static bool _resolved;
+    static bool _fullyResolved;
+    static bool _assemblyLogged;
+    static bool _targetLogged;
 
     internal static double GetSaleMultiplier(Vendor vendor)
     {
-        if (!EnsureResolved() || vendor == null)
+        if (!Resolve() || vendor == null)
             return 1.0;
 
         var settings = _currentSettingsField?.GetValue(null);
@@ -66,46 +67,66 @@ internal static class WorldEventsSalePricing
         return mult;
     }
 
-    static bool EnsureResolved()
+    static bool Resolve()
     {
-        if (_resolved)
+        if (_fullyResolved)
             return _currentSettingsField != null;
-        if (_resolveAttempted)
+
+        Assembly? asm = null;
+        foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            if (string.Equals(a.GetName().Name, WorldEventsAssemblyName, StringComparison.OrdinalIgnoreCase))
+            { asm = a; break; }
+        }
+
+        if (asm is null)
+        {
+            if (!_assemblyLogged)
+            {
+                _assemblyLogged = true;
+                ModManager.Log("[LeyLineLedger→WorldEvents] WorldEvents not loaded; sale pricing multiplier stays 1.0.", ModManager.LogLevel.Info);
+            }
             return false;
-        _resolveAttempted = true;
+        }
 
         try
         {
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            var patchType = asm.GetType(PatchClassTypeName);
+            var settingsType = asm.GetType(SettingsTypeName);
+            var saleRt = asm.GetType(SaleRuntimeTypeName);
+            if (patchType == null || settingsType == null || saleRt == null)
             {
-                if (!string.Equals(asm.GetName().Name, WorldEventsAssemblyName, StringComparison.OrdinalIgnoreCase))
-                    continue;
-
-                var patchType = asm.GetType(PatchClassTypeName);
-                var settingsType = asm.GetType(SettingsTypeName);
-                var saleRt = asm.GetType(SaleRuntimeTypeName);
-                if (patchType == null || settingsType == null || saleRt == null)
-                    continue;
-
-                _currentSettingsField = patchType.GetField("CurrentSettings", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-                _settingsType = settingsType;
-                _saleEnabled = settingsType.GetProperty("SaleEnabled", BindingFlags.Instance | BindingFlags.Public);
-                _saleVendorPriceMultiplier = settingsType.GetProperty("SaleVendorPriceMultiplier", BindingFlags.Instance | BindingFlags.Public);
-                _saleVendorDiscountMultiplier = settingsType.GetProperty("SaleVendorDiscountMultiplier", BindingFlags.Instance | BindingFlags.Public);
-                _isVendorOnSale = saleRt.GetMethod("IsVendorOnSale", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public, null, new[] { typeof(int), typeof(string), typeof(uint) }, null);
-
-                if (_currentSettingsField != null && _isVendorOnSale != null)
+                if (!_targetLogged)
                 {
-                    _resolved = true;
-                    return true;
+                    _targetLogged = true;
+                    ModManager.Log("[LeyLineLedger→WorldEvents] WorldEvents loaded but expected types not found; sale pricing inactive.", ModManager.LogLevel.Warn);
                 }
+                _fullyResolved = true;
+                return false;
             }
-        }
-        catch
-        {
-            // WorldEvents absent or API drift — stay at 1.0
-        }
 
-        return false;
+            _currentSettingsField = patchType.GetField("CurrentSettings", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            _settingsType = settingsType;
+            _saleEnabled = settingsType.GetProperty("SaleEnabled", BindingFlags.Instance | BindingFlags.Public);
+            _saleVendorPriceMultiplier = settingsType.GetProperty("SaleVendorPriceMultiplier", BindingFlags.Instance | BindingFlags.Public);
+            _saleVendorDiscountMultiplier = settingsType.GetProperty("SaleVendorDiscountMultiplier", BindingFlags.Instance | BindingFlags.Public);
+            _isVendorOnSale = saleRt.GetMethod("IsVendorOnSale", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public, null, new[] { typeof(int), typeof(string), typeof(uint) }, null);
+
+            _fullyResolved = true;
+            if (_currentSettingsField != null && _isVendorOnSale != null)
+            {
+                ModManager.Log("[LeyLineLedger→WorldEvents] Resolved sale pricing bridge.", ModManager.LogLevel.Info);
+                return true;
+            }
+
+            ModManager.Log("[LeyLineLedger→WorldEvents] WARNING: WorldEvents loaded but sale pricing fields/methods not found.", ModManager.LogLevel.Warn);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _fullyResolved = true;
+            ModManager.Log($"[LeyLineLedger→WorldEvents] Resolve error: {ex.GetType().Name}: {ex.Message}", ModManager.LogLevel.Warn);
+            return false;
+        }
     }
 }

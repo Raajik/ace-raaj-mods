@@ -253,9 +253,6 @@ internal static class PathwardenVendorManager
     static string GetVendorName(uint wcid) => wcid switch
     {
         810001 => "Kaelith",
-        -- removed "Thornwick",
-        -- removed "Mirelle",
-        -- removed "Eldrin",
         _ => "Unknown"
     };
 }

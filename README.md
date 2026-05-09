@@ -27,14 +27,14 @@ Enlightenment and wield-path tuning for endgame characters.
 - **XP curve control** — flatten or steepen the post-275 curve per server preference.
 
 ### AutoLoot
-Server-side corpse autoloot with optional `.utl` profiles (Decal UT classic compatible). Key/currency/trophy handling increasingly lives in C# passes so the shard can move away from `.utl` over time.
+Server-side corpse autoloot with optional `.utl` profiles (Decal UT classic compatible). Key/currency/trophy handling increasingly lives in C# passes so the shard can move away from `.utl` over time. Windblown collector trophy Pass 1 uses **`WindblownCollectorTrophyPass1WeenieClassIds`** only when **`/autoloot trophies`** is on; letters and olthoi pincers use **`OtherPhysicalPass1WeenieClassIds`** (always).
 - Auto-loot corpses on kill or on approach.
 - Optional vendor-trash pass (sell greys automatically).
 - Optional unknown-scroll pass (keep or destroy untrained scrolls).
 - **Learned scroll summary** — after a successful learn, the mod does not echo the scroll name again in the aggregated loot line (vanilla message only).
 - `/autoloot` toggles and profile selection.
 - **Close-time material salvage** — after closing a corpse or non-house chest (house storage excluded), optional pass sends **material-type items and raw salvage bags** (WCID 20981–21089) through BetterSupportSkills auto-salvage into the material bank; other loot stays in the container. Coalesced Mana can still bank to LeyLineLedger on loot/close without a profile match.
-- **Loot stack consolidation** — merges duplicate same-WCID stackable rows in freshly generated corpses (e.g. multiple drudge charm create-list entries). Bloodletter Drudge charm **Quality / Pristine / Perfect** WCIDs **850271–850273** (+ base **24835**) — SQL `WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql`, forward `DrudgeCharm_SunstoneUnderlay_2026-05-08.sql`, clone template `WindblownContent/Content/SQL/README-TrophyCharmCloneTemplate.md`.
+- **Loot stack consolidation** — merges duplicate same-WCID stackable rows in freshly generated corpses (e.g. multiple drudge charm create-list entries). Windblown collector trophies (drudge/rat/wasp/scalp/mob heads) use custom WCIDs **850300–850336** with sibling replacement to vanilla bases; drudge tiers **850300–850303** include **24835** in replacement. SQL stub `Windblown/Content/SQL/Items/05_WindblownCollectorTrophies_850300-850336.sql`; registry `Windblown/docs/TrophyLineRegistry.md`.
 
 ### BetterLootControl
 Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot` chest mod; those folders removed from the repo). **Single source of truth for vendor loot rotation** (migrated from QOL 2026-05-05).

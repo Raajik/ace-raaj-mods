@@ -31,8 +31,8 @@ INSERT IGNORE INTO weenie_properties_string (object_Id, type, value) VALUES
 ,(800005, 16, 'A lucky gold letter, good for finding rare items. Collectors will reward you handsomely for these.');
 
 INSERT IGNORE INTO weenie_properties_d_i_d (object_Id, type, value) VALUES
-(800005,  1, 33557506) ,(800005,  3, 536870932)
-,(800005,  8, 100690901) ,(800005, 22, 872415275);
+(800005,  1, 33556918) ,(800005,  3, 536870932)
+,(800005,  8, 100671215) ,(800005, 22, 872415275);
 
 -- Scarlet Red Letter
 INSERT INTO weenie (class_Id, class_Name, type, last_Modified) VALUES
@@ -54,5 +54,5 @@ INSERT IGNORE INTO weenie_properties_string (object_Id, type, value) VALUES
 ,(800006, 16, 'A scarlet red letter, good for finding rare items. Collectors will reward you handsomely for these.');
 
 INSERT IGNORE INTO weenie_properties_d_i_d (object_Id, type, value) VALUES
-(800006,  1, 33557506) ,(800006,  3, 536870932)
-,(800006,  8, 100690900) ,(800006, 22, 872415275);
+(800006,  1, 33556920) ,(800006,  3, 536870932)
+,(800006,  8, 100671217) ,(800006, 22, 872415275);

@@ -19,14 +19,14 @@
 	</PropertyGroup>
 	<!--ACE References-->
 	<PropertyGroup Condition="!$(Realms)">
-		<ACEPath>C:\ACE\Server</ACEPath>
+		<ACEPath>/mnt/c/ACE/Server</ACEPath>
 	</PropertyGroup>
 	<ItemGroup Condition="!$(Realms)">
 		<PackageReference Include="ACEmulator.ACE.Shared" Version="1.*" />
 	</ItemGroup>
 	<!--Realms References-->
 	<PropertyGroup Condition="$(Realms)">
-		<ACEPath>C:\ACE\RealmServer</ACEPath>
+		<ACEPath>/mnt/c/ACE/RealmServer</ACEPath>
 	</PropertyGroup>
 	<ItemGroup Condition="$(Realms)">
 		<PackageReference Include="ACRealms.ACE.Shared" Version="1.*" />
@@ -105,7 +105,7 @@
 
 	<!--Copy SQL to ACE Content folder after build-->
 	<Target Name="CopySqlToContent" AfterTargets="PostBuildEvent">
-		<Copy SourceFiles="$(ProjectDir)InsertLockboxes.sql" DestinationFiles="C:\ACE\Server\Content\InsertLockboxes.sql" OverwriteReadOnlyFiles="true" />
+		<Copy SourceFiles="$(ProjectDir)InsertLockboxes.sql" DestinationFiles="/mnt/c/ACE/Server\Content\InsertLockboxes.sql" OverwriteReadOnlyFiles="true" />
 	</Target>
 
 	<!--More cleanup in Release mode?-->

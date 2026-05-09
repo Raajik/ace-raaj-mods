@@ -1,5 +1,0 @@
--- DEPRECATED 2026-05-08: superseded by DrudgeCharm_SunstoneUnderlay_2026-05-08.sql.
--- Per-tier 179 BludgeonRending bits + duplicated 14/15/16 strings replaced with sunstone IconUnderlay (DID 52 = 0x06003356) and single LongDesc 16.
--- Do not apply this file.
--- Canonical: DrudgeCharm_TierWeenies_World.sql
--- Forward idempotent: DrudgeCharm_SunstoneUnderlay_2026-05-08.sql

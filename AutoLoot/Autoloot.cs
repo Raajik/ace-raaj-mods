@@ -13,7 +13,7 @@ public class AutoLoot
     static readonly ConcurrentDictionary<uint, bool> unknownScrolls = new();
     static readonly ConcurrentDictionary<uint, bool> trophyEnabled = new();
     internal static readonly ConcurrentDictionary<uint, bool> lllBankingEnabled = new();
-    internal static readonly ConcurrentDictionary<uint, int> autosalvageMode = new(); // 0=off, 1=short, 2=full
+    internal static readonly ConcurrentDictionary<uint, int> autosalvageMode = new(); // 0=off, 1=short, 2=full, 3=quiet
     static readonly ConcurrentDictionary<uint, bool> loadedPlayers = new();
 
     // Achievement tracking
@@ -302,9 +302,9 @@ public class AutoLoot
     // Coalesced Mana WCIDs → LeyLineLedger bank PropertyInt64
     static readonly Dictionary<uint, int> CoalescedManaBankProps = new()
     {
-        { 42516, 41100 }, // Lesser Coalesced Mana
-        { 42517, 41101 }, // Greater Coalesced Mana
-        { 42518, 41102 }, // Aetheric Coalesced Mana
+        { 800000, 41100 }, // Lesser Coalesced Mana
+        { 800001, 41101 }, // Greater Coalesced Mana
+        { 800002, 41102 }, // Aetheric Coalesced Mana
     };
 
     static bool ContainerHasCoalescedMana(Container container)
@@ -605,6 +605,7 @@ public class AutoLoot
         static MethodInfo? _tryAutoSalvageItem;
         static MethodInfo? _getSalvageRate;
         static MethodInfo? _getMaterialName;
+        static MethodInfo? _setMessagingMuted;
 
         // Never cache "resolve failed": BetterSupportSkills may load after AutoLoot's first call.
         static void Resolve()
@@ -626,6 +627,7 @@ public class AutoLoot
                 _tryAutoSalvageItem = t.GetMethod("TryAutoSalvageItem", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player), typeof(WorldObject) }, null);
                 _getSalvageRate = t.GetMethod("GetSalvageRate", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player) }, null);
                 _getMaterialName = t.GetMethod("GetMaterialName", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(int) }, null);
+                _setMessagingMuted = t.GetMethod("SetMessagingMuted", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player), typeof(bool) }, null);
                 return;
             }
         }
@@ -680,6 +682,13 @@ public class AutoLoot
                 catch { }
             }
             return $"Salvage ({wcid})";
+        }
+
+        internal static void SetSalvageMessagingMuted(Player player, bool muted)
+        {
+            Resolve();
+            if (_setMessagingMuted is null) return;
+            try { _setMessagingMuted.Invoke(null, new object?[] { player, muted }); } catch { }
         }
     }
 
@@ -1208,6 +1217,11 @@ public class AutoLoot
 
     static bool _settingSalvageState;
 
+    public static void BridgeSetSalvageMessagingMuted(Player player, bool muted)
+    {
+        BetterSupportSkillsBridge.SetSalvageMessagingMuted(player, muted);
+    }
+
     public static void SetSalvageState(Player player, bool enabled)
     {
         if (_settingSalvageState) return;
@@ -1623,6 +1637,7 @@ public class AutoLoot
 
             int salvageMode = autosalvageMode.GetOrAdd(LootKey(player), 1);
             bool showAllSalvage = salvageMode == 2; // FULL
+            bool quietMode = salvageMode == 3;   // QUIET: suppress salvage msgs
 
             var parts = new List<string>();
 
@@ -1637,6 +1652,8 @@ public class AutoLoot
 
             foreach (var kv in salvageDelta)
             {
+                if (quietMode) continue;
+
                 string matName = kv.Key;
                 long total = kv.Value;
                 double totalBags = total / 100.0;

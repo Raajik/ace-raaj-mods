@@ -1,33 +1,50 @@
-# Findings — Immutable Source of Truth Initiative
+# WindblownContent → Windblown consolidation plan
 
-## 2026-05-06 — Phase 2-4 Complete
+## Files to KEEP and MOVE into Windblown/Content/SQL/
 
-### Feature Ownership Gaps Found
+### Items (800000-809999) — new WCID ranges
+| Old file | New file | Notes |
+|----------|----------|-------|
+| 08-custom-items/01_CoalescedMana_LesserGreaterAetheric.sql | Content/SQL/Items/01_CoalescedMana_800000-800002.sql | Rewrite to use 800000-800002 |
+| 08-custom-items/02_SpellSiphon_850200.sql | Content/SQL/Items/02_SpellSiphon_800003.sql | Rewrite to use 800003 |
+| 08-custom-items/03_ManaLattice_850201.sql | Content/SQL/Items/03_ManaLattice_800004.sql | Rewrite to use 800004 |
+| 08-custom-items/06_Create_Custom_Letters.sql | Content/SQL/Items/04_CustomLetters_800005-800006.sql | Rewrite to use 800005-800006 |
 
-1. **Defense imbue hang on armor (Overtinked)** — Known bug from 2026-05-03. Peridot/Yellow Topaz/Zircon on armor causes server hang. The RecipeManagerEx code reaches `ShowDialog` or `HandleRecipe` and hangs — root cause not yet determined. SEE: `AGENTS.md §8.11` and Overtinked investigation notes.
+### Vendors (810000-819999)
+| 01-weenies/Vendors/800039 Radi.sql | Content/SQL/Vendors/01_Radi_810000.sql | Rewrite + WCID |
+| 01-weenies/Vendors/850300 Kaelith.sql | Content/SQL/Vendors/02_Kaelith_810001.sql | Rewrite + WCID, drop Pathwarden armor/robes, keep only Academy weapons |
+| 02-landblocks/0007_TownNetwork_Vendors.sql | Content/SQL/Vendors/03_TownNetworkSpawns.sql | Rewrite with new WCIDs |
 
-2. **Gemcrafter appears empty** — Only `obj/` directory, no `.cs` or `.csproj` files. Likely a placeholder or abandoned mod. Action: evaluate for removal or formalize.
+### Pathwarden chests (vanilla WCIDs, additive)
+| 07-containers/PathwardenChests/33609-33612.sql | Content/SQL/Pathwarden/01_ChestAddLesserMana.sql | Add 10x Lesser Coalesced Mana |
+| 09-pricing/PathwardenGear_BasePrices.sql | Content/SQL/Pathwarden/02_BasePrices.sql | Keep, no changes |
 
-3. **Work-In-Progress appears empty** — No source files. Likely detritus. Action: clean up.
+### Vanilla tweaks (additive only, no revert needed)
+| Content/SQL/BroodMatronQueen_AllNinePartsGuaranteed.sql | Content/SQL/VanillaTweaks/01_BroodMatronQueen.sql | Keep |
+| Content/SQL/StatueReplicaSmall_BronzeSalvageGuaranteed.sql | Content/SQL/VanillaTweaks/02_StatueReplicaBronze.sql | Keep |
+| Content/SQL/2026-05-06-olthoi-pincer-revamp.sql | Content/SQL/VanillaTweaks/03_OlthoiPincerRevamp.sql | Keep |
+| Content/zzz_Salvage_Defense_Bonus_Update.sql | Content/SQL/VanillaTweaks/04_DefenseSalvageDescription.sql | Keep |
+| Content/SQL/RemoveAcademyPathwardenFromNonTnVendors.sql | Content/SQL/VanillaTweaks/05_RemoveAcademyFromNonTnVendors.sql | Keep |
 
-4. **Cross-mod feature overlap needs monitoring** — Several mods share feature space (e.g., CreatureEx between Swarmed and EmpyreanAlteration). The `FakeInt 10029` enum is the canonical connector. Documented in FEATURE_MATRIX.md.
+### Revert SQL (undo previous mutations)
+| (new) | Content/SQL/RevertVanillaMutations.sql | Revert trophy burden/value + letter type changes |
 
-### Documentation Gaps (NOW CLOSED)
-
-All 22 primary mod READMEs now exist. All mods requiring Settings.json templates have them (23/23). The one gap was WindblownContent which now has a Settings.json created.
-
-### Docs That Need Correction (from previous session)
-
-- `README.md`: AutoLoot still claims "corpse autoloot using .utl profiles" as primary story — now partially migrated to C# for currency/trophies behavior.
-- `AutoLoot/Readme.md`: still lists `Currency.utl` + `Trophies.utl` as shipped defaults.
-- `BetterLootControl/Readme.md` + `COMPLETED.md`: contain outdated "one elemental + one physical" compatibility statement.
-
-### Scripts Created
-
-- `scripts/validate_sot.sh` — automated audit (50 pass, 0 fail, 2 warnings)
-- Consider adding to GitHub Actions CI on push
-
-### ACRealms Notes (from Phase 1)
-
-- CustomSpells has `#if !REALM` conditional compilation — verify this still works on ACRealms builds
-- Referenced in `AGENTS.md §7.0` for ACRealms source lookup paths
+## Files to DELETE (not curated / not ours)
+- 01-weenies/2026-05-07_trophies_burden_value_1.sql (handled by JSON)
+- 03-vendor-stock/ (AcademyWeapons_VendorStock.sql deprecated)
+- 05-cleanup/ (unknown origin, not confirmed)
+- 06-lockboxes/ (WIP, leave for later)
+- 08-custom-items/04_LuckyGoldScarletRed_Stackable.sql (handled by custom letters + JSON)
+- 08-custom-items/CoalescedMana_LesserGreaterAetheric.sql (deprecated)
+- 08-custom-items/ (originals stay, we copy to Windblown)
+- Content/03-weenie/ (Facility Hub — NOT ours)
+- Content/06-landblock/ (NOT ours)
+- Content/SQL/DrudgeCharm_*.sql (handled by JSON)
+- Content/SQL/README-TrophyCharmCloneTemplate.md (moved if useful)
+- Content/zzz_Salvage_Defense_Bonus_Rollback.sql (irrelevant)
+- 04-npcs/ (empty)
+- artifacts/ (diffs, not ours)
+- baseline/ (reference, not deployment)
+- docs/ (move useful docs to Windblown/docs/)
+- scripts/ (Dust bootstrap — ACRealms dead code)
+- sql-backups/ (historical backups, can stay but not deployed)

@@ -1160,16 +1160,33 @@ internal static class ModCommandsList
         if (session?.Player is not Player player)
             return;
 
-        var currentlyEnabled = Skills.SalvageAutoDeposit.IsEnabled(player);
-        var newState = !currentlyEnabled;
+        bool newState;
+        if (parameters.Length > 0)
+        {
+            var arg = parameters[0].Trim().ToLowerInvariant();
+            bool quiet = arg == "quiet" || arg == "mute" || arg == "3";
+            if (arg == "off" || arg == "0" || arg == "disable")
+                newState = false;
+            else if (quiet || arg == "on" || arg == "1" || arg == "short" || arg == "full" || arg == "verbose")
+                newState = true;
+            else
+            {
+                player.SendMessage("Usage: /autosalvage on | off | quiet", ChatMessageType.System);
+                return;
+            }
 
-        if (parameters.Length > 0 && parameters[0].Trim().ToLowerInvariant() == "off")
-            newState = false;
+            Skills.SalvageAutoDeposit.SetMessagingMuted(player, quiet);
+        }
+        else
+        {
+            player.SendMessage("Usage: /autosalvage on | off", ChatMessageType.System);
+            return;
+        }
 
         Skills.SalvageAutoDeposit.SetEnabled(player, newState);
         AutoLootBridge.SetSalvageState(player, newState);
 
-        player.SendMessage($"Auto-salvage: {(newState ? "ON" : "OFF")} (auto-loots salvage to bank)", ChatMessageType.System);
+        player.SendMessage($"Auto-salvage: {(newState ? "ON" : "OFF")}", ChatMessageType.System);
     }
 
     [CommandHandler("bssadmin", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld)]

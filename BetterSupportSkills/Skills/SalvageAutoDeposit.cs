@@ -339,9 +339,19 @@ public static class SalvageAutoDeposit
 
     static readonly ConcurrentDictionary<uint, Dictionary<int, double>> PlayerAccumulated = new();
     static readonly ConcurrentDictionary<uint, DateTime> LastMessageTime = new();
+    static readonly ConcurrentDictionary<uint, Dictionary<int, int>> LastWholeBags = new(); // materialIndex -> last known whole bag count
+    static readonly ConcurrentDictionary<uint, bool> SalvageMessagingMuted = new(); // playerId -> suppress all salvage msgs
     const int MESSAGE_INTERVAL_SECONDS = 30;
+    const int UNITS_PER_BAG = 100;
+
+    public static void SetMessagingMuted(Player player, bool muted)
+    {
+        if (player != null)
+            SalvageMessagingMuted[player.Guid.Full] = muted;
+    }
 
     // Accumulates salvage deposits and sends a consolidated summary line every 30s.
+    // Also alerts when another full bag is filled.
     static void AccumulateForMessage(Player player, int materialIndex, double depositUnits)
     {
         if (player == null) return;
@@ -353,12 +363,36 @@ public static class SalvageAutoDeposit
             accum[materialIndex] = cur + depositUnits;
         }
 
-        var now = DateTime.UtcNow;
-        if (!LastMessageTime.TryGetValue(playerId, out var lastTime) ||
-            (now - lastTime).TotalSeconds >= MESSAGE_INTERVAL_SECONDS)
+        // Skip messaging when muted (quiet mode)
+        if (!SalvageMessagingMuted.GetOrAdd(playerId, false))
         {
-            LastMessageTime[playerId] = now;
-            SendAccumulatedMessage(player, accum);
+            // Check for whole-bag completion: read actual LLL balance, compare to last known count
+            uint salvageWcid = (uint)(20981 + materialIndex);
+            int prop = LeyLineLedgerSalvageInterop.GetSalvagePropertyId(salvageWcid);
+            if (prop > 0)
+            {
+                long total = AceRaajMods.Shared.LeyLineLedgerBankInterop.GetBanked(player, prop);
+                int fullBags = (int)(total / UNITS_PER_BAG);
+                var bagTracker = LastWholeBags.GetOrAdd(playerId, _ => new Dictionary<int, int>());
+                lock (bagTracker)
+                {
+                    bagTracker.TryGetValue(materialIndex, out int prevBags);
+                    if (fullBags > prevBags)
+                    {
+                        string matName = GetMaterialName(materialIndex);
+                        player.SendMessage($"You have filled another bag of {matName}, {fullBags} total banked.");
+                        bagTracker[materialIndex] = fullBags;
+                    }
+                }
+            }
+
+            var now = DateTime.UtcNow;
+            if (!LastMessageTime.TryGetValue(playerId, out var lastTime) ||
+                (now - lastTime).TotalSeconds >= MESSAGE_INTERVAL_SECONDS)
+            {
+                LastMessageTime[playerId] = now;
+                SendAccumulatedMessage(player, accum);
+            }
         }
     }
 
@@ -566,35 +600,33 @@ public static class SalvageAutoDeposit
         }
     }
 
+    /// <summary>
+    /// Grants imbue salvage units to LLL and feeds into bag-fill tracking.
+    /// </summary>
     static (int Count, string Name, int Units, long Before, long After) GrantImbueSalvage(Player player, uint salvageWcid, int units)
     {
         if (player == null || salvageWcid == 0)
-        {
-            ModManager.Log($"[BSS Imbue Salvage] GrantImbueSalvage called with null player or wcid=0", ModManager.LogLevel.Debug);
             return (0, "Unknown", 0, 0, 0);
-        }
 
-        string displayName = GetMaterialNameByWcid(salvageWcid);
-
-        // Try LLL first: resolve its property ID, read before from it, increment, compute after.
-        // Reading before/after from the same property LLL uses avoids the stale-BSS-property bug.
         int lllProp = LeyLineLedgerSalvageInterop.GetSalvagePropertyId(salvageWcid);
         if (lllProp > 0 && LeyLineLedgerSalvageInterop.DirectIncBanked(player, lllProp, units))
         {
-            // before was the value BEFORE we incremented (read after resolving the prop but before inc isn't
-            // possible without a separate read — read now and subtract units as a reliable approximation)
-            long after  = player.GetProperty((PropertyInt64)lllProp) ?? units;
+            string displayName = GetMaterialNameByWcid(salvageWcid);
+            long after = AceRaajMods.Shared.LeyLineLedgerBankInterop.GetBanked(player, lllProp);
             long before = after - units;
-            ModManager.Log($"[BSS Imbue Salvage] {displayName} (WCID {salvageWcid}) via LLL prop {lllProp}: {before} → {after}", ModManager.LogLevel.Debug);
+
+            // Feed into bag-fill tracker
+            int materialIndex = GetMaterialIndex(salvageWcid);
+            if (materialIndex >= 0)
+                AccumulateForMessage(player, materialIndex, units);
+
             return (1, displayName, units, before, after);
         }
 
-        // Fallback: write through LLL property resolution (catches gems/imbue-if LLL has the rule)
-        // This uses the same rule-index-based mapping as LLL's /bank salvage system.
+        // Fallback
         LeyLineLedgerSalvageInterop.TryIncSalvage(player, salvageWcid, units);
-
-        ModManager.Log($"[BSS Imbue Salvage] {displayName} (WCID {salvageWcid}) via LLL interop fallback", ModManager.LogLevel.Debug);
-        return (1, displayName, units, 0, 0);
+        string fallbackName = GetMaterialNameByWcid(salvageWcid);
+        return (1, fallbackName, units, 0, 0);
     }
 
     static string GetMaterialNameByWcid(uint wcid)

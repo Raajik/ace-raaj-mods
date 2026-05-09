@@ -1,34 +1,24 @@
-# Olthoi Pincer Revamp — Progress Log
+# progress.md — Architecture Deepening
 
-## Session 2026-05-06
+## Session 2026-05-07 — Plan creation
 
-### Phase 1: DB ✅
-- Backed up quest rows + weenie_properties_int to `WindblownContent/sql-backups/2026-05-06/`
-- Set `min_Delta=0` on all 14 pincer quests (BroodMatron, Brood, HiveEvis, HiveWarrior, OlthoiHunting1-8)
-- Applied UiEffects=4096 (Nether/purple glow) to all 10 pincer WCIDs
-- SQL saved to `WindblownContent/Content/SQL/2026-05-06-olthoi-pincer-revamp.sql`
+### What was done
+- Ran architecture exploration (improve-codebase-architecture skill) on ace-raaj-mods
+- Identified 4 deepening opportunities ranked by leverage
+- Measured code scale: 28 mods, 664 .cs files, 0 unit tests
+- Counted empty catch blocks (335), bridge files (20+), PatchClass sizes
+- Created task_plan.md with 4 phases
+- Created findings.md with research data
 
-### Phase 2: TrophyLine JSON ✅
-- Created `Windblown/Content/TrophyLines/olthoi-pincer.json` with 4 lines:
-  - OlthoiPincer: 10 tiers (2% → 0.1%), `ExcludedNpcWcids=[10842]` so Behdo's vanilla chain runs
-  - BehdoJewelry: 10 jewelry WCIDs, 0.05 XP fraction each, bulk turn-in
-  - BehdoHealingKits: treated/plentiful healing kits, 0.01 XP fraction, bulk
-  - BehdoDispelGems: 3 dispel gem WCIDs, 0.01 XP fraction, bulk
+### Key metrics captured
+- 20+ bridge/interop files with ~30-50 boilerplate lines each
+- 7 duplicated event lifecycle patterns in WorldEvents
+- 7 PatchClass.cs files over 800 lines
+- 5 Settings.cs files over 450 lines
 
-### Phase 3: Harmony Patch ✅
-- Added `PreGiveObjectToNPC_BehdoReward` prefix in `TrophyTurnInPatches.cs`:
-  - Intercepts give to Behdo Yii (WCID 10842) for reward items
-  - Drains ALL stacks, calculates XP from XpFraction, grants XP, skips vanilla method
-  - Excluded NPC (10842) check passes for pincers so Behdo's emote chain runs
-
-### Phase 4: Cross-mod settings ✅
-- AutoLoot `UpgradedTrophyWeenieClassIds` — all 10 pincer WCIDs added to both `Settings.cs` and `Settings.json`
-- AutoLoot `NoDuplicateNames` — was already "Pincer"
-
-### Phase 5: Build + Deploy ✅
-- `Windblown.dll` built and deployed (no errors)
-- `AutoLoot.dll` built and deployed (no errors)
-- TrophyLines JSON copied to `C:\ACE\Mods\Windblown\Content\TrophyLines\`
-- AutoLoot `Settings.json` updated on test server with pincer WCIDs
-- Test server restarted
-- Logs confirm: "Registered 28 trophy line(s)" including OlthoiPincer, BehdoJewelry, BehdoHealingKits, BehdoDispelGems — no errors
+### Next
+Phase 1 (CrossMod dispatch) is ready to start. When beginning Phase 1:
+1. Read `findings.md` for bridge file list
+2. Read `task_plan.md` Phase 1 section for detailed steps
+3. Start with `Shared/CrossMod.cs` creation
+4. Migrate one bridge file as proof of concept

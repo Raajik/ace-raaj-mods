@@ -41,7 +41,7 @@ public static class VendorLootRotation
 
     // WCIDs that must never be rotated and must keep their SQL create_list stock intact.
     // Pathwarden starter vendors and any other quest-critical vendors go here.
-    static readonly HashSet<uint> _protectedVendorWcids = new() { 850300, 850301, 850302, 850303, 800039 };
+    static readonly HashSet<uint> _protectedVendorWcids = new() { 810000, 810001 };
 
     // Vendor type classification for strict type enforcement
     enum VendorTypeClassification
@@ -217,8 +217,8 @@ public static class VendorLootRotation
     };
 
     // Spellsiphon tool and Mana Lattice WCIDs
-    const uint SpellsiphonToolWcid = 850200;
-    const uint ManaLatticeWcid = 850201;
+    const uint SpellsiphonToolWcid = 800003;
+    const uint ManaLatticeWcid = 800004;
 
     public static void Initialize(Settings settings)
     {

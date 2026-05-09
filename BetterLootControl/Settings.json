@@ -14,15 +14,15 @@
 
   "EnableGlobalRareDrops": true,
   "RareDropChance": 0.007,
-  "SpellsiphonToolWcid": 850200,
-  "ManaLatticeWcid": 850201,
+  "SpellsiphonToolWcid": 800003,
+  "ManaLatticeWcid": 800004,
   "ManaLatticeSpellCountMin": 3,
   "ManaLatticeSpellCountMax": 7,
 
   "CoalescedManaDropChance": 0.015,
-  "LesserCoalescedManaWcid": 42516,
-  "GreaterCoalescedManaWcid": 42517,
-  "AethericCoalescedManaWcid": 42518,
+  "LesserCoalescedManaWcid": 800000,
+  "GreaterCoalescedManaWcid": 800001,
+  "AethericCoalescedManaWcid": 800002,
 
   "EnableLootRatings": true,
   "GearTierWeights": [1.0, 2.0, 3.0, 4.0, 4.0, 3.0, 2.0, 1.0],

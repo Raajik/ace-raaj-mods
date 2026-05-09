@@ -5,15 +5,15 @@ public partial class Settings
 {
     [JsonPropertyName("// LesserCoalescedManaWcid")]
     public string LesserCoalescedManaWcidDoc { get; init; } = "WCID of Lesser Coalesced Mana — raises item cap by +5 (or awakens to +5).";
-    public uint LesserCoalescedManaWcid { get; set; } = 42516;
+    public uint LesserCoalescedManaWcid { get; set; } = 800000;
 
     [JsonPropertyName("// GreaterCoalescedManaWcid")]
     public string GreaterCoalescedManaWcidDoc { get; init; } = "WCID of Greater Coalesced Mana — raises item cap by +10 (or awakens to +10).";
-    public uint GreaterCoalescedManaWcid { get; set; } = 42517;
+    public uint GreaterCoalescedManaWcid { get; set; } = 800001;
 
     [JsonPropertyName("// AethericCoalescedManaWcid")]
     public string AethericCoalescedManaWcidDoc { get; init; } = "WCID of Aetheric Coalesced Mana — raises item cap by +15 (or awakens to +15).";
-    public uint AethericCoalescedManaWcid { get; set; } = 42518;
+    public uint AethericCoalescedManaWcid { get; set; } = 800002;
 
     [JsonPropertyName("// ManualAwakenPrefix")]
     public string ManualAwakenPrefixDoc { get; init; } = "Prefix applied to manually awakened item names (Coalesced Mana use-on-target). Default 'Awakened' distinguishes player-driven awakening from loot 'Living' prefix.";

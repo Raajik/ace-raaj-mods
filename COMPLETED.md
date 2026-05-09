@@ -1,5 +1,83 @@
 # Completed Features & Fixes
 
+## 2026-05-08
+
+### Custom Weenie Reorganization — WCID Ranges + Windblown Consolidation
+
+**Goal:** Organize all custom weenies by type into dedicated WCID ranges with 10k gaps, convert from REPLACE pattern to ADDITION pattern, consolidate WindblownContent into Windblown/.
+
+**New organized WCID ranges (documented in AGENTS.md §8.16):**
+- `800000–809999`: Items (Coalesced Mana, SpellSiphon, ManaLattice, Letters)
+- `810000–819999`: Vendors / NPCs (Radi, Kaelith)
+
+**Files reorganized into `Windblown/Content/SQL/`:**
+- `Items/01_CoalescedMana_800000-800002.sql`
+- `Items/02_SpellSiphon_800003.sql`, `Items/03_ManaLattice_800004.sql`
+- `Items/04_CustomLetters_800005-800006.sql`
+- `Vendors/01_Radi_810000.sql` (full vendor def: 87 gem items, emotes, attributes)
+- `Vendors/02_Kaelith_810001.sql` (26 Academy weapons only, trimmed from original)
+- `Vendors/03_TownNetworkSpawns.sql`
+- `Pathwarden/01_ChestAddLesserMana.sql` (10x Lesser Coalesced Mana)
+- `VanillaTweaks/` (Brood Matron, Statue Replica, Olthoi Pincers, Defense Salvage, RemoveAcademy)
+- `00_RevertVanillaMutations.sql` (restores 45875/45876 to Book type)
+
+**C# code updated across 6 mods:**
+- BetterLootControl: Settings.cs/Settings.json (coalesced mana + vendor WCIDs), VendorLootRotation (protected list), DefaultLootConfig, GlobalRareDrops
+- EmpyreanAlteration: Settings.LivingItem.cs + Settings.json
+- LeyLineLedger: Settings.cs (bank item IDs)
+- AutoLoot: Autoloot.cs (coalesced mana bank property mapping)
+- SpellSiphon: Settings.cs/Settings.json + VendorIntegration.cs
+- Windblown: LetterTurnInPatches.cs (850340→800005, 850341→800006)
+- WorldEvents: PathwardenVendorManager (3 dead vendors removed, Kaelith kept at 810001), Settings.cs
+- QOL/Lockboxes/Loremaster: LootConfig.json letter WCIDs updated
+
+**Void-test deployment:**
+- Fresh ACE World Database v0.9.293 baseline imported (43,911 weenies, includes Pathwarden chests)
+- All custom SQL applied with zero errors
+- Verify: 7 custom items (800000-800006), 2 vendors (810000-810001) with full definitions, 4 chests with 10x mana, all vanilla tweaks applied
+- void-test ACE server restarted and running on port 9010
+
+**Cleaned up:**
+- `WindblownContent/` **deleted** — all curated content moved to `Windblown/Content/SQL/`
+- Legacy sql-backups moved to `sql-backups/2026-05-08-windblown-legacy/`
+
+**AGENTS.md:**
+- MySQL quirks documented (hyphenated DB names, multi-row ON DUPLICATE KEY UPDATE incompatibility, ACE world SQL format)
+- WCID range allocation finalized
+- SQL vs JSON weenie strategy documented
+- SQL file organization conventions added
+
+**Learnings:**
+- MySQL 8.0 rejects multi-row `VALUES (v1),(v2) ON DUPLICATE KEY UPDATE` — write one INSERT per row
+- ACE world SQL dumps contain `CREATE DATABASE ace_world; USE ace_world;` — pipe through `sed 's/ace_world/void-test_world/g'` to target different DB
+- Body_part table columns: `d_Type`, `d_Val`, `d_Var` (not `damage_Type`, `dmg_Cur`, `dmg_Variance`)
+- ACE property tables with auto-increment `id` column: use `INSERT IGNORE INTO` (skip `REPLACE INTO`)
+
+**Goal:** Make letters stackable, remove random burden, add smart turn-in.
+
+**Root cause (why burden was insane):**
+- Letters were WeenieType.Book (8) → Books can't stack in ACE
+- Original SQL used wrong PropertyInt type IDs:
+  - `type=111` for MaxStackSize → 111 is PortalBitmask → "PK Lite" error
+  - `type=33` for StackSize → 33 is Bonded
+  - Missing `type=13` (StackUnitEncumbrance) and `type=15` (StackUnitValue)
+- ACE Stackable.SetEphemeralValues() fallback computed 300/900 burden/value from stale data
+
+**Final solution (after 6 attempts):**
+- DB: 850340 (Gold), 850341 (Red) — clean Stackable weenie type 51
+- Factory redirect: 45875→850340, 45876→850341 via CreateNewWorldObject prefix
+- Double Harmony postfix on Stackable.SetEphemeralValues + WorldObject.SetStackSize forces correct values
+- BLC/Loremaster/Lockboxes loot configs drop new WCIDs
+- Turn-in: drains entire stack, 10%/5% XP + 50k/25k bank credit via LLL interop
+- AGENTS.md §8.13 — full stackable checklist added
+
+**Key lessons:**
+1. Always check PropertyInt.cs for numeric type IDs — never guess
+2. Weenie table `type` column (Book=8, Stackable=51) controls ACE behavior
+3. ShallowCloneWeenie copies ALL book-only properties
+4. Both SetEphemeralValues() AND SetStackSize() can override values — patch both
+5. Stale weenie cache persists — use Harmony postfix to force-correct
+
 ## 2026-05-07
 
 ### Session: VendorLootRotation fixes (3 rounds) + defense imbue visuals

@@ -1,57 +1,64 @@
-# Olthoi Pincer Revamp — Task Plan
+# Weenie Reorganization Plan
 
-## Goal
-- Remove quest cooldowns on all olthoi pincer quests
-- Make pincers rare drops from any olthoi kill (TrophyLines system)
-- Keep Behdo Yii's full reward chain (jewelry, kits, gems, notes, titles)
-- Allow turning reward items BACK to Behdo for bonus XP (bulk)
+## Phase 0: What we're keeping (your WCIDs)
 
-## Phases
+### Custom WCIDs to reorganize
+- **Items (800000-809999):** Coalesced Mana (42516-42518), SpellSiphon (850200), ManaLattice (850201), Letters (850340-850341)
+- **Vendors (810000-819999):** Radi (800039), pick 1 Pathwarden vendor + consolidate Academy weapons stock
+- **Chests (vanilla 33609-33612):** stay as vanilla WCIDs, just additive updates
 
-### Phase 1: DB — Backup + CD Removal + UiEffects ✅
-- [ ] Backup quest rows + pincer weenie_properties_int
-- [ ] SET min_Delta=0 on all 14 pincer quests
-- [ ] Add UiEffects=4096 (Nether/purple glow) to 10 pincer WCIDs
+### JSON-only (stay as-is)
+- Trophy tiers (850271-850285) — runtime only, no DB WCID
+- Vanilla trophy overrides (UiEffects, IconUnderlay on 24835, 8144-8147, etc.)
 
-### Phase 2: TrophyLine JSON — olthoi-pincer.json
-- [ ] Line 1: OlthoiPincers — 10 tiers varying DropChance, ExcludedNpcWcids=[10842]
-- [ ] Line 2: BehdoJewelry — 10 jewelry WCIDs, DropChance=0, XpFraction=0.05
-- [ ] Line 3: BehdoHealingKits — 9229+22449, DropChance=0, XpFraction=0.01
-- [ ] Line 4: BehdoDispelGems — 9192+9193+51216, DropChance=0, XpFraction=0.01
+### Vanilla mutations to revert → JSON overrides
+These are existing vanilla WCIDs we modified with `ON DUPLICATE KEY UPDATE`. Restore them to defaults, then let JSON handle the overrides:
+- Trophy burden/value=1 (24835, 4133, 7603, 8144-8147, etc.)
+- Lucky Gold/Scarlet Red stackable (45875, 45876) — these should be custom WCIDs only
+- Olthoi pincer revamp (glows on vanilla WCIDs)
+- Defense salvage descriptions (vanilla salvage strings)
 
-### Phase 3: Harmony Patch — Behdo reward turn-in
-- [ ] PreGiveObjectToNPC prefix handles reward items (jewelry/kits/gems) given to Behdo
-- [ ] Bulk drain all stacks, grant XP, send message, return false
+### Vanilla mutations to keep (additive only — these add functionality)
+- Brood Matron Queen parts guarantee (adds create_list rows)
+- Bronze statue salvage guarantee (sets shade=0 on create_list)
+- Pathwarden chest adds (adds items to chests)
+- Lockboxes (WIP — new system)
+- Pathwarden gear pricing
+- RemoveAcademy from non-TN vendors
 
-### Phase 4: Cross-mod settings
-- [ ] AutoLoot UpgradedTrophyWeenieClassIds — all 10 pincer WCIDs
-- [ ] AutoLoot NoDuplicateNames — "Pincer" fragment
+## Phase 1: Build organized SQL
+### Item range allocation
+| New WCID | Old WCID | Name |
+|----------|----------|------|
+| 800000 | 42516 | Lesser Coalesced Mana |
+| 800001 | 42517 | Greater Coalesced Mana |
+| 800002 | 42518 | Aetheric Coalesced Mana |
+| 800003 | 850200 | SpellSiphon |
+| 800004 | 850201 | ManaLattice |
+| 800005 | 850340 | Lucky Gold Letter |
+| 800006 | 850341 | Scarlet Red Letter |
 
-### Phase 5: Build + Deploy test
-- [ ] Build Windblown project
-- [ ] Copy to C:\ACE\Mods\Windblown\
-- [ ] Apply SQL to ace_world
-- [ ] Restart test server, verify
+### Vendor range allocation
+| New WCID | Old WCID | Name |
+|----------|----------|------|
+| 810000 | 800039 | Radi (stays, very important) |
+| 810001 | ??? | One Pathwarden vendor (pick survivor) |
 
-## Pincer Drop Rates (descending difficulty = rarer)
+### Vanilla revert → JSON overrides
+- Revert `2026-05-07_trophies_burden_value_1.sql` changes
+- Revert Lucky Gold/Scarlet Red stackable mutations on 45875/45876
+- JSON handles all visual/mechanical tweaks
 
-| WCID | Name | DropChance |
-|------|------|-----------|
-| 10845 | Harvester Pincer | 2.0% |
-| 10844 | Gardener Pincer | 2.0% |
-| 10847 | Soldier Pincer | 1.5% |
-| 10846 | Legionary Pincer | 1.0% |
-| 27591 | Worker Pincer | 1.0% |
-| 10843 | Eviscerator Pincer | 0.5% |
-| 27590 | Warrior Pincer | 0.5% |
-| 27589 | Mutilator Pincer | 0.25% |
-| 51211 | Hive Eviscerator Pincer | 0.15% |
-| 51214 | Hive Warrior Pincer | 0.10% |
+## Phase 2: Apply to void-test_world
+1. Backup affected data
+2. Copy weenies from old WCIDs to new WCIDs (INSERT SELECT)
+3. Remove pre-awakened Pathwarden gear from vendors
+4. Consolidate vendors (1 survivor + Radi)
+5. Add 10 lesser coalesced mana to Pathwarden chests
+6. Update landblock references
+7. Restart void-test and verify
 
-## Turn-back-in rewards
-
-| Item Group | XP Fraction | Bulk |
-|-----------|------------|------|
-| 10 jewelry pieces | 0.05 | No (individual) |
-| Treated/Plentiful Healing Kits | 0.01 | Yes |
-| Dispel Gems (all 3) | 0.01 | Yes |
+## Phase 3: After verification
+1. Apply same to ace_world
+2. Update SQL files in repo to match new WCIDs
+3. Update C# code references

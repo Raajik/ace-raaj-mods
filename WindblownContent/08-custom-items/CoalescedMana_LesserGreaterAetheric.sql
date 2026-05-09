@@ -1,5 +1,0 @@
--- DEPRECATED: Old version used ItemUseable=No and wrong Icon/Setup DIDs (broken client art + unusable).
--- Canonical weenie template (apply to ace_world / restart server cache):
---   WindblownContent/08-custom-items/01_CoalescedMana_LesserGreaterAetheric.sql
--- Existing player stacks (shard biota) after weenie fix:
---   EmpyreanAlteration/Content/SQL/03-coalesced-mana-biota-template.sql

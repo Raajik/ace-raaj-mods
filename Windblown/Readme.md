@@ -6,9 +6,13 @@ Windblown server custom-content mod. Inject custom weenies into ACE's runtime we
 
 | Phase | Scope | State |
 |---|---|---|
-| 1 | Runtime weenie injection (`WeenieRegistry` + Harmony prefix on `WorldDatabaseWithEntityCache.GetCachedWeenie`). Ships the 4 Bloodletter Drudge Charm tiers (24835, 850271–850273). | **In progress (2026-05-04)** |
-| 2 | Generic trophy-line system (drop rolls + bulk turn-in). Extracts `DrudgeCharmTrophies` from `BetterSupportSkills`. | Planned |
-| 3 | SQL bootstrap subsystem for the small irreducible set of content that genuinely needs DB rows (landblock_instance, points_of_interest). | Planned |
+| 1 | Runtime weenie injection (`WeenieRegistry` + Harmony prefix). Custom WCIDs 850271–850285 for trophy tiers. | **Shipped** |
+| 2 | Generic trophy-line system (drop rolls + bulk turn-in). | **Shipped** — `Content/TrophyLines/*.json` |
+| 3 | SQL bootstrap for DB-needed content (vendors, landblock_instance, items that need world persistence). Organized under `Content/SQL/` by category: Items (800000-809999), Vendors (810000-819999), Pathwarden, VanillaTweaks. | **Shipped (2026-05-08)** |
+
+### WCID ranges (SQL content)
+
+See `AGENTS.md §8.16` for the full allocation.
 
 ## Architecture: runtime weenie injection
 

@@ -13,11 +13,17 @@ param(
 
 $ErrorActionPreference = "Stop"
 $scriptDir = $PSScriptRoot
-$watchdog = Join-Path $scriptDir "AceWbWatchdog.ps1"
-if (-not (Test-Path $watchdog))
+$watchdogSrc = Join-Path $scriptDir "AceWbWatchdog.ps1"
+$watchdogDst = "C:\ACE-WB\Server\AceWbWatchdog.ps1"
+
+# Deploy watchdog to server directory if not already there
+if (-not (Test-Path $watchdogDst))
 {
-    throw "Missing $watchdog"
+    if (-not (Test-Path $watchdogSrc)) { throw "Missing source: $watchdogSrc" }
+    Copy-Item -Path $watchdogSrc -Destination $watchdogDst -Force
+    Write-Host "Deployed AceWbWatchdog.ps1 to C:\ACE-WB\Server" -ForegroundColor Cyan
 }
+$watchdog = $watchdogDst
 
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
     [Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -29,6 +35,7 @@ if (-not $isAdmin)
 $taskName = "ACE-WB-Watchdog"
 $pwsh = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
 # Hidden host: only ACE.Server.exe should open a visible console (WindowStyle Normal in AceWbWatchdog.ps1).
+$watchdogDir = Split-Path $watchdog -Parent
 $arg = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$watchdog`""
 
 $existing = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
@@ -37,8 +44,10 @@ if ($existing)
     Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
 }
 
-$action = New-ScheduledTaskAction -Execute $pwsh -Argument $arg -WorkingDirectory $scriptDir
+$action = New-ScheduledTaskAction -Execute $pwsh -Argument $arg -WorkingDirectory $watchdogDir
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $RunAs
+$trigger.Repetition.Interval = [System.Xml.XmlConvert]::ToString([TimeSpan]::FromMinutes(1))
+$trigger.Repetition.Duration = [System.Xml.XmlConvert]::ToString([TimeSpan]::FromDays(365))
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
     -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
     -ExecutionTimeLimit (New-TimeSpan -Days 3650)

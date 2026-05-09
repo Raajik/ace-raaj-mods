@@ -1,5 +1,0 @@
--- DEPRECATED 2026-05-07: uniform sunstone rim (179=4, 18=0) + split 14/15/16 was superseded.
--- Current Windblown: Bloodletter display names, same Collectors sentence on types 14/15/16, per-tier 179+18.
--- Do not apply this file; it would revert to the old sunstone layout.
--- Canonical full reset: DrudgeCharm_TierWeenies_World.sql
--- Forward idempotent: DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql

@@ -378,7 +378,7 @@ internal static class RecipeHooks
 				}
 			}
 
-			// Make unstackable; Bonded differs from base tool so stacks never merge with uncharged 850200.
+			// Make unstackable; Bonded differs from base tool so stacks never merge with uncharged 800003.
 			charged.SetProperty(PropertyInt.MaxStackSize, 1);
 			charged.SetProperty(PropertyInt.StackSize, 1);
 			charged.SetProperty(PropertyInt.Bonded, (int)BondedStatus.Bonded);

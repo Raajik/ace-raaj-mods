@@ -516,10 +516,7 @@ public sealed class Settings
     public string PathwardenVendorWcidsDoc { get; init; } = "WCIDs of the Pathwarden vendor NPCs. These vendors restock when WorldEvents start and are tracked for analytics.";
     public List<uint> PathwardenVendorWcids { get; set; } = new()
     {
-        850300, // Kaelith
-        850301, // Thornwick
-        850302, // Mirelle
-        850303, // Eldrin
+        810001, // Kaelith
     };
 
     [JsonPropertyName("// InvasionTowns")]

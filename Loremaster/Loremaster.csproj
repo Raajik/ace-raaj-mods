@@ -4,7 +4,7 @@
 		<NoWarn>0436;1073;8509;MSB3277</NoWarn>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<OutputPath>C:\ACE\Mods\$(AssemblyName)</OutputPath>
+		<OutputPath>$(MSBuildProjectDirectory)\..\build\$(AssemblyName)</OutputPath>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 		<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

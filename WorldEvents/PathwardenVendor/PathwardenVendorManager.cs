@@ -14,7 +14,7 @@ using ACE.Server.WorldObjects;
 internal static class PathwardenVendorManager
 {
     // Vendor WCIDs
-    internal static readonly List<uint> VendorWcids = new() { 850300, 850301, 850302, 850303 };
+    internal static readonly List<uint> VendorWcids = new() { 810001 };
     
     // Purchase log file path
     static string PurchaseLogPath => Path.Combine(
@@ -252,10 +252,10 @@ internal static class PathwardenVendorManager
     
     static string GetVendorName(uint wcid) => wcid switch
     {
-        850300 => "Kaelith",
-        850301 => "Thornwick",
-        850302 => "Mirelle",
-        850303 => "Eldrin",
+        810001 => "Kaelith",
+        -- removed "Thornwick",
+        -- removed "Mirelle",
+        -- removed "Eldrin",
         _ => "Unknown"
     };
 }

@@ -22,6 +22,26 @@ function Write-WatchdogLog([string] $msg)
     Add-Content -Path $LogPath -Value $line -Encoding utf8
 }
 
+# Try Windows Terminal tabs first, fall back to Start-Process (separate window).
+$wt = Get-Command "wt.exe" -ErrorAction SilentlyContinue
+
+function Start-AceInstance()
+{
+    param([string]$ExePath, [string]$ServerDir, [string]$TabTitle)
+
+    if ($global:wt) {
+        Write-WatchdogLog "Launching via Windows Terminal tab (title: $TabTitle)"
+        try {
+            & $global:wt.Source -w 0 nt -d "$ServerDir" --title "$TabTitle" "$ExePath" 2>&1 | Out-Null
+            return $true
+        } catch {
+            Write-WatchdogLog "Windows Terminal failed: $($_.Exception.Message); falling back to Start-Process"
+        }
+    }
+    Start-Process -FilePath $ExePath -WorkingDirectory $ServerDir -WindowStyle Normal
+    return $true
+}
+
 function Get-WbAceProcess()
 {
     Get-CimInstance -ClassName Win32_Process -Filter "Name = '$AceExeName'" -ErrorAction SilentlyContinue |
@@ -125,9 +145,8 @@ while ($true)
                 if (-not $wb2)
                 {
                     # Foreground console when the scheduled task runs as an interactive user (not SYSTEM).
-                    Start-Process -FilePath $AceExePath -WorkingDirectory $AceWbServerDir -WindowStyle Normal -CreateNoWindow:$false
+                    Start-AceInstance -ExePath $AceExePath -ServerDir $AceWbServerDir -TabTitle "live"
                     Add-RestartRecord
-                    Write-WatchdogLog "Start-Process issued for $AceExePath"
                 }
                 else
                 {

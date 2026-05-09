@@ -1,2 +1,0 @@
--- DEPRECATED: per-tier 179/18 + examine strings are canonical in DrudgeCharm_TierWeenies_World.sql and forward DrudgeCharm_BloodletterPerTierRestore_2026-05-07.sql.
--- Kept so old links resolve. Do not apply this file.

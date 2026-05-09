@@ -109,9 +109,9 @@ public class Settings
         new() { Name = "Sturdy Steel Key (1kC)", Id = 24477, Prop = 40500 },
         new() { Name = "Mana Forge Key (5kD)", Id = 38456, Prop = 40750 },
         new() { Name = "Legendary Key (5kC)", Id = 48746, Prop = 41000 },
-        new() { Name = "Lesser Coalesced Mana (Awaken I, Lv.25)", Id = 42516, Prop = 41100, Aliases = new() { "lcm", "lesser" } },
-        new() { Name = "Greater Coalesced Mana (Awaken II, Lv.50)", Id = 42517, Prop = 41101, Aliases = new() { "gcm", "greater" } },
-        new() { Name = "Aetheric Coalesced Mana (Awaken III, Lv.75)", Id = 42518, Prop = 41102, Aliases = new() { "acm", "aetheric" } },
+        new() { Name = "Lesser Coalesced Mana (Awaken I, Lv.25)", Id = 800000, Prop = 41100, Aliases = new() { "lcm", "lesser" } },
+        new() { Name = "Greater Coalesced Mana (Awaken II, Lv.50)", Id = 800001, Prop = 41101, Aliases = new() { "gcm", "greater" } },
+        new() { Name = "Aetheric Coalesced Mana (Awaken III, Lv.75)", Id = 800002, Prop = 41102, Aliases = new() { "acm", "aetheric" } },
     };
 
     [JsonPropertyName("// ExcessSetToMax")]

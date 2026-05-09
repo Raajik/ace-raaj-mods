@@ -1,0 +1,161 @@
+-- pre DrudgeCharm_SunstoneUnderlay_2026-05-08 scoped dump
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+DROP TABLE IF EXISTS `weenie`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `weenie` (
+  `class_Id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Weenie Class Id (wcid) / (WCID) / (weenieClassId)',
+  `class_Name` varchar(100) NOT NULL COMMENT 'Weenie Class Name (W_????_CLASS)',
+  `type` int NOT NULL DEFAULT '0' COMMENT 'WeenieType',
+  `last_Modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`class_Id`),
+  UNIQUE KEY `className_UNIQUE` (`class_Name`)
+) ENGINE=InnoDB AUTO_INCREMENT=101189996 DEFAULT CHARSET=utf8mb3 COMMENT='Weenies';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `weenie` WRITE;
+/*!40000 ALTER TABLE `weenie` DISABLE KEYS */;
+INSERT INTO `weenie` VALUES (24835,'drudgecharmbloodletter',51,'2026-05-01 21:32:47'),(850271,'drudgecharm_quality',51,'2026-05-04 15:41:44'),(850272,'drudgecharm_pristine',51,'2026-05-04 15:41:44'),(850273,'drudgecharm_perfect',51,'2026-05-04 15:41:44');
+/*!40000 ALTER TABLE `weenie` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+DROP TABLE IF EXISTS `weenie_properties_int`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `weenie_properties_int` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique Id of this Property',
+  `object_Id` int unsigned NOT NULL COMMENT 'Id of the object this property belongs to',
+  `type` smallint unsigned NOT NULL COMMENT 'Type of Property the value applies to (PropertyInt.????)',
+  `value` int NOT NULL COMMENT 'Value of this Property',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `wcid_int_type_uidx` (`object_Id`,`type`),
+  CONSTRAINT `wcid_int` FOREIGN KEY (`object_Id`) REFERENCES `weenie` (`class_Id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=615829 DEFAULT CHARSET=utf8mb3 COMMENT='Int Properties of Weenies';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `weenie_properties_int` WRITE;
+/*!40000 ALTER TABLE `weenie_properties_int` DISABLE KEYS */;
+INSERT INTO `weenie_properties_int` VALUES (155566,24835,1,128),(155567,24835,3,21),(155568,24835,5,40),(155569,24835,8,20),(155570,24835,9,0),(610030,24835,11,999),(155571,24835,16,1),(615722,24835,18,128),(155572,24835,19,5),(155573,24835,93,1044),(615721,24835,179,32),(615580,850271,1,128),(615581,850271,3,21),(615582,850271,5,40),(615583,850271,8,20),(615584,850271,9,0),(615694,850271,11,999),(615585,850271,12,40),(615586,850271,14,5),(615587,850271,16,1),(615588,850271,18,256),(615589,850271,19,5),(615590,850271,33,1),(615591,850271,93,1044),(615592,850271,111,100),(615630,850271,179,64),(615595,850272,1,128),(615596,850272,3,21),(615597,850272,5,40),(615598,850272,8,20),(615599,850272,9,0),(615695,850272,11,999),(615600,850272,12,40),(615601,850272,14,5),(615602,850272,16,1),(615603,850272,18,1),(615604,850272,19,5),(615605,850272,33,1),(615606,850272,93,1044),(615607,850272,111,100),(615631,850272,179,128),(615610,850273,1,128),(615611,850273,3,21),(615612,850273,5,40),(615613,850273,8,20),(615614,850273,9,0),(615696,850273,11,999),(615615,850273,12,40),(615616,850273,14,5),(615617,850273,16,1),(615618,850273,18,64),(615619,850273,19,5),(615620,850273,33,1),(615621,850273,93,1044),(615622,850273,111,100),(615632,850273,179,256);
+/*!40000 ALTER TABLE `weenie_properties_int` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+DROP TABLE IF EXISTS `weenie_properties_string`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `weenie_properties_string` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique Id of this Property',
+  `object_Id` int unsigned NOT NULL COMMENT 'Id of the object this property belongs to',
+  `type` smallint unsigned NOT NULL COMMENT 'Type of Property the value applies to (PropertyString.????)',
+  `value` text NOT NULL COMMENT 'Value of this Property',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `wcid_string_type_uidx` (`object_Id`,`type`),
+  CONSTRAINT `wcid_string` FOREIGN KEY (`object_Id`) REFERENCES `weenie` (`class_Id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=96403 DEFAULT CHARSET=utf8mb3 COMMENT='String Properties of Weenies';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `weenie_properties_string` WRITE;
+/*!40000 ALTER TABLE `weenie_properties_string` DISABLE KEYS */;
+INSERT INTO `weenie_properties_string` VALUES (25680,24835,1,'Bloodletter Drudge Charm'),(96346,24835,14,'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),(96347,24835,15,'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),(96348,24835,16,'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),(96358,24835,20,'Bloodletter Drudge Charms'),(96306,850271,1,'Bloodletter Drudge Charm (Quality)'),(96312,850271,14,'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),(96313,850271,15,'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),(96314,850271,16,'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),(96340,850271,20,'Bloodletter Drudge Charms (Quality)'),(96307,850272,1,'Bloodletter Drudge Charm (Pristine)'),(96315,850272,14,'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),(96316,850272,15,'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),(96317,850272,16,'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),(96341,850272,20,'Bloodletter Drudge Charms (Pristine)'),(96308,850273,1,'Bloodletter Drudge Charm (Perfect)'),(96318,850273,14,'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),(96319,850273,15,'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),(96320,850273,16,'Collectors and Trophy Collectors will reward a great deal of experience and pyreals for turning in these charms.'),(96342,850273,20,'Bloodletter Drudge Charms (Perfect)');
+/*!40000 ALTER TABLE `weenie_properties_string` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+DROP TABLE IF EXISTS `weenie_properties_d_i_d`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `weenie_properties_d_i_d` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT COMMENT 'Unique Id of this Property',
+  `object_Id` int unsigned NOT NULL COMMENT 'Id of the object this property belongs to',
+  `type` smallint unsigned NOT NULL COMMENT 'Type of Property the value applies to (PropertyDataId.????)',
+  `value` int unsigned NOT NULL COMMENT 'Value of this Property',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `wcid_did_type_uidx` (`object_Id`,`type`),
+  CONSTRAINT `wcid_did` FOREIGN KEY (`object_Id`) REFERENCES `weenie` (`class_Id`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=269155 DEFAULT CHARSET=utf8mb3 COMMENT='DataID Properties of Weenies';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `weenie_properties_d_i_d` WRITE;
+/*!40000 ALTER TABLE `weenie_properties_d_i_d` DISABLE KEYS */;
+INSERT INTO `weenie_properties_d_i_d` VALUES (71244,24835,1,33554683),(71245,24835,3,536870932),(71246,24835,6,67111919),(71247,24835,7,268435832),(71248,24835,8,100674479),(71249,24835,22,872415275),(71250,24835,36,234881046),(269116,850271,1,33554683),(269117,850271,3,536870932),(269118,850271,6,67111919),(269119,850271,7,268435832),(269120,850271,8,100670040),(269121,850271,22,872415275),(269122,850271,36,234881046),(269123,850272,1,33554683),(269124,850272,3,536870932),(269125,850272,6,67111919),(269126,850272,7,268435832),(269127,850272,8,100670040),(269128,850272,22,872415275),(269129,850272,36,234881046),(269130,850273,1,33554683),(269131,850273,3,536870932),(269132,850273,6,67111919),(269133,850273,7,268435832),(269134,850273,8,100670040),(269135,850273,22,872415275),(269136,850273,36,234881046);
+/*!40000 ALTER TABLE `weenie_properties_d_i_d` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+

@@ -11,6 +11,7 @@ using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
 using ACE.Server.Managers;
 using ACE.Server.Network;
+using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.WorldObjects;
 using HarmonyLib;
 
@@ -62,6 +63,12 @@ public partial class PatchClass : BasicPatch<Settings>
         {
             VendorLootRotation.Initialize(Settings);
             ModManager.Log("BetterLootControl: VendorLootRotation initialized", ModManager.LogLevel.Info);
+
+            // Manually patch GameEventApproachVendor constructor — auto-discovery silently
+            // misses Vendor.ApproachVendor on some builds (LLL intercepts the constructor,
+            // and the (Player,...) overload we used to target never fires). Patching the
+            // constructor guarantees we hook at the same level LLL uses successfully.
+            ApplyVendorApproachPatch();
         }
         else
         {
@@ -365,20 +372,40 @@ public partial class PatchClass : BasicPatch<Settings>
     }
 
     // =====================================================================
-    // Vendor Loot Rotation Hook
+    // Vendor Loot Rotation Hook — manual patch on GameEventApproachVendor
     // =====================================================================
 
     /// <summary>
-    /// Hook into vendor approach to rotate stock.
-    /// Priority: First to ensure our rotation runs before other mods.
+    /// Manually applies a Harmony prefix on the GameEventApproachVendor constructor.
+    /// LLL's Debit.cs uses the same entrypoint successfully. We piggyback here so our
+    /// rotation fires every time a vendor approach packet is built.
     /// </summary>
-    [HarmonyPatch(typeof(Vendor), nameof(Vendor.ApproachVendor), new Type[] { typeof(Player), typeof(VendorType), typeof(uint) })]
-    [HarmonyPrefix]
-    public static void PreApproachVendor(Player player, VendorType action, uint altCurrencySpent, Vendor __instance)
+    private static void ApplyVendorApproachPatch()
     {
-        if (CurrentSettings?.EnableVendorLootRotation != true)
-            return;
+        try
+        {
+            var target = AccessTools.Constructor(typeof(GameEventApproachVendor), new Type[] { typeof(Session), typeof(Vendor), typeof(uint) });
+            if (target == null)
+            {
+                ModManager.Log("[BetterLoot] VendorLoot: GameEventApproachVendor constructor not found!", ModManager.LogLevel.Error);
+                return;
+            }
 
-        VendorLootRotation.OnVendorApproachPrefix(player, action, altCurrencySpent, __instance);
+            var prefix = AccessTools.Method(typeof(VendorLootRotation), nameof(VendorLootRotation.OnVendorApproachEvent));
+            if (prefix == null)
+            {
+                ModManager.Log("[BetterLoot] VendorLoot: OnVendorApproachEvent method not found!", ModManager.LogLevel.Error);
+                return;
+            }
+
+            var harmony = new Harmony("com.ACE.ACEmulator.BetterLootControl");
+            harmony.Patch(target, prefix: new HarmonyMethod(prefix));
+
+            ModManager.Log("[BetterLoot] VendorLoot: Applied prefix on GameEventApproachVendor constructor.", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BetterLoot] VendorLoot: Failed to apply vendor approach patch: {ex.Message}", ModManager.LogLevel.Error);
+        }
     }
 }

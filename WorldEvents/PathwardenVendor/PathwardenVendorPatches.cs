@@ -6,7 +6,7 @@ using HarmonyLib;
 
 /// <summary>
 /// Harmony patches for Pathwarden vendor purchase tracking.
-/// Records all purchases from vendor WCIDs 850300-850303.
+/// Records all purchases from vendor WCIDs 810001 (Kaelith only).
 /// </summary>
 [HarmonyPatchCategory(nameof(PathwardenVendorPatches))]
 internal static class PathwardenVendorPatches

@@ -211,30 +211,31 @@ internal class Commands
         var arg = parameters.Length > 0 ? parameters[0].Trim().ToLowerInvariant() : "";
 
         int mode;
-        string label;
         switch (arg)
         {
             case "0" or "off" or "disable":
                 mode = 0;
-                label = "OFF";
                 break;
             case "1" or "short" or "on":
                 mode = 1;
-                label = "SHORT (batch summary)";
                 break;
             case "2" or "full" or "verbose":
                 mode = 2;
-                label = "FULL (per-item + bag %)";
+                break;
+            case "3" or "quiet" or "mute":
+                mode = 3;
                 break;
             default:
                 var current = AutoLoot.autosalvageMode.GetOrAdd(player.Guid.Full, 1);
-                string currentLabel = current switch { 0 => "OFF", 1 => "SHORT", 2 => "FULL", _ => "SHORT" };
-                player.SendMessage($"[AutoSalvage] Current mode: {currentLabel}. Usage: /autosalvage off | short | full");
+                string currentLabel = current switch { 0 => "OFF", 1 => "SHORT", 2 => "FULL", 3 => "QUIET", _ => "SHORT" };
+                player.SendMessage($"[AutoSalvage] Current mode: {currentLabel}. Usage: /autosalvage off | short | full | quiet");
                 return;
         }
 
         AutoLoot.autosalvageMode[player.Guid.Full] = mode;
         AutoLoot.SetSalvageState(player, mode > 0);
+        AutoLoot.BridgeSetSalvageMessagingMuted(player, mode == 3);
+        string label = mode switch { 0 => "OFF", 1 => "SHORT", 2 => "FULL", 3 => "QUIET", _ => "?" };
         player.SendMessage($"[AutoSalvage] Mode: {label}");
     }
 }

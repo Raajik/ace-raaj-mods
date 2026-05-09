@@ -173,6 +173,13 @@ scripts\Register-VoidTestWatchdogTask.ps1    # void-test
 ```
 Each registers a scheduled task **at logon as the interactive user** (not SYSTEM) so ACE.Server.exe opens in a visible foreground console. The watchdog PowerShell host stays hidden.
 
+**Important:** All watchdog tasks must use `RunLevel Limited` (not `RunLevel Highest`) in the scheduled task principal so that ACE.Server.exe opens in the user's normal Windows Terminal (not an admin window). If a watchdog keeps opening admin terminal tabs, unregister and re-register:
+```powershell
+Unregister-ScheduledTask -TaskName 'wb_test-Watchdog' -Confirm:$false
+# Then run the Register script WITHOUT -Verb RunAs elevation on the task itself
+```
+The `Register-*` scripts themselves must run elevated (to create the task), but the task's `-Principal -RunLevel Limited` ensures ACE opens at user level.
+
 **Disable for debugging:**
 ```powershell
 scripts\Unregister-WbTestWatchdogTask.ps1    # wb_test
@@ -193,16 +200,25 @@ Or create the per-server `*_BLOCKED.txt` file in its `Server/` dir to pause with
 **Verify deployed DLL timestamps before restarting:** After `dotnet build`, output goes to `A:\ai\projects\ace-raaj-mods\build\ModName\`. If you run multiple servers, copying DLLs to the wrong directory or forgetting to copy causes the old build to run. Always `ls -la` the deployed DLL and confirm mtime matches repo build timestamp.
 
 **MySQL Database Access:**
-- Path: `C:/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe`
+- Path (WSL from repo root): `"/mnt/c/Program Files/MySQL/MySQL Server 8.4/bin/mysql.exe"` (the 8.4 install folder is where `mysql.exe` lives; the client binary reports 8.0.x internally — that's backward compat, use the 8.4 path).
+- Path (PowerShell from Windows): `C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe`
 - Host: 127.0.0.1, Port: 3306, Username: `jeremy`, Password: `andersine11`
 - Test (wb_test): `ace_world` (weenies), `ace_shard` (biotas)
 - Live: `wb_ace_world`, `wb_ace_shard`
 - Void-test (spot-check): `void-test_world`, `void-test_shard`, `void-test_auth` (port 9010)
 - Examples:
-  - `mysql -u jeremy -pandersine11 ace_world -e "SELECT * FROM weenie WHERE class_Id = 850200;"`
-  - Apply SQL: `mysql -u jeremy -pandersine11 ace_world < path/to/file.sql`
+  - Query (WSL): `"/mnt/c/Program Files/MySQL/MySQL Server 8.4/bin/mysql.exe" -u jeremy -pandersine11 ace_world -e "SELECT * FROM weenie WHERE class_Id = 850200;"`
+  - Apply SQL (WSL): `"/mnt/c/Program Files/MySQL/MySQL Server 8.4/bin/mysql.exe" -u jeremy -pandersine11 ace_world < path/to/file.sql`
+  - Export dump (WSL): `"/mnt/c/Program Files/MySQL/MySQL Server 8.4/bin/mysqldump.exe" -u jeremy -pandersine11 ace_world weenie --where="class_Id = 850200" > output.sql`
 - **`INSERT INTO ... ON DUPLICATE KEY UPDATE`** - `weenie_properties_int` has `UNIQUE KEY` on `(object_Id, type)`. `UPDATE ... WHERE` silently does nothing if row absent. Always use `INSERT INTO ... ON DUPLICATE KEY UPDATE value = Z;`.
 - **Verify DB state after applying SQL** - `SELECT type, value FROM weenie_properties_int WHERE object_Id = X AND type = Y;`
+- **MySQL 8.0 multi-row INSERT ON DUPLICATE KEY UPDATE:** Do NOT use `INSERT INTO t (c) VALUES (v1),(v2) ON DUPLICATE KEY UPDATE c=VALUES(c)` — MySQL 8.0 rejects the multi-row VALUES syntax when combined with `ON DUPLICATE KEY UPDATE`. Write one INSERT per row instead:
+  ```sql
+  INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (X, 1, 16) ON DUPLICATE KEY UPDATE value = VALUES(value);
+  INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (X, 2, 31) ON DUPLICATE KEY UPDATE value = VALUES(value);
+  ```
+- **MySQL 8.0 database names with hyphens:** Use backticks: `` `void-test_world` ``. The `-D` flag can't quote the name, use `mysql ... -D "void-test_world"` instead.
+- **ACE world SQL dump format:** The reference files `.references/ACE-World-16PY-db-v0.8.8.sql` and `.references/ACE-World-Database-v0.9.293.sql` contain `CREATE DATABASE ace_world; USE ace_world;` at the top. When piping into a differently-named DB, use `sed 's/ace_world/void-test_world/g'` to rewrite before import.
 
 ### 8.2 Mod Architecture & Cross-Mod Integration
 
@@ -389,7 +405,113 @@ AST-only, no API cost. Graph output moved out of repo to keep working tree clean
 
 **New mod scaffolding** - Copy existing mod: `.csproj` (change AssemblyName/RootNamespace), `Meta.json`, `Settings.cs`, `Settings.json`, `GlobalUsings.cs`, `PatchClass.cs` inheriting `BasicPatch<Settings>`. Build with `dotnet build`.
 
-### 8.11 Patterns & Idioms
+### 8.11 NEVER GUESS WITH ACE — ALWAYS VERIFY
+
+ACE enums, categories, property IDs, and mechanics are **never what you assume**. The naming convention for `EmoteCategory.Give` is `6` (not `7`, which is `Use`). `WeenieType.Book` is `8` and its items are **not stackable** — only `WeenieType.Stackable` (`51`) items can stack. Guessing these numbers or relationships leads to wrong queries, broken mods, and wasted time.
+
+**Always follow the evidence chain:**
+
+1. **Emotes** — Read `ACE.Entity.Enum.EmoteCategory.cs` and `EmoteType.cs` in `.references/` for the numeric value of each category/type. Do not guess what `7` means — it might be `Use`, not `Give`.
+2. **WeenieType** — Read `ACE.Entity.Enum.WeenieType.cs`. `Book` (`8`) and `Generic` (`1`) do **not** support stack properties. Only `Stackable` (`51`) does.
+3. **PropertyInt** — Check `ACE.Entity.Enum.Properties.PropertyInt.cs` for the numeric `type` values.
+4. **Stack mechanics** — ACE only stacks items whose base weenie has `WeenieType.Stackable` (`51`). Changing `PropertiesInt` alone does not make a Book item stackable. The `type` column on the `weenie` table must be changed to `51`.
+5. **Quest caps** — The `max_Solves` column on the `quest` table defines how many times a quest can be completed. Timer-based limits use `min_Delta` (seconds between completions).
+6. **Collector NPC rewards** — Defined in `weenie_properties_emote (category=6 = Give)` with `weenie_Class_Id` = the item being given. The emote chain can include `TakeItems` (type 74), `AwardNoShareXP` (type 62), and `Give` (type 3) actions.
+7. **Document findings** — Use the wiki and/or `findings.md` for the current session, so future agents don't repeat the same lookups.
+8. **When in doubt about a DB query result** — Check the ACE source for how the table is read/processed at runtime.
+
+### 8.12 MONETARY REWARDS MUST GO THROUGH LLL BANK INTEROP
+
+Whenever a Harmony patch grants a monetary/pyreal reward (trade notes, pyreals, bank credit), it **must** use  to deposit directly into the player's LeyLineLedger bank account. Do **not** give trade notes or physical pyreal items — those clutter inventory and bypass LLL's banking system.
+
+
+
+This shows the bank delta popup in the client and works whether LLL is loaded or not (falls back to PropertyInt64 biota write). Add  using and reference the  project or ensure the interop class is compile-time available.
+
+### 8.13 Stackable Items — Complete Checklist (Don't Guess)
+
+Making items stackable in ACE requires changing BOTH the `weenie` table type AND specific `weenie_properties_int` type values. There is no single "Stackable" flag — you need the right combination of type property IDs.
+
+#### 8.13.1 SQL Approach (fast, clean — use for permanent items)
+
+Change weenie type and add ALL required int properties:
+
+```sql
+UPDATE weenie SET type = 51 WHERE class_Id IN (45875, 45876);
+INSERT INTO weenie_properties_int (object_Id, type, value) VALUES
+(45875,  5, 1),     -- EncumbranceVal
+(45875,  8, 1),     -- Mass
+(45875, 11, 100),   -- MaxStackSize  TYPE 11, NOT 111!
+(45875, 12, 1),     -- StackSize
+(45875, 13, 1),     -- StackUnitEncumbrance
+(45875, 14, 1),     -- StackUnitMass
+(45875, 15, 1),     -- StackUnitValue
+(45875, 16, 1),     -- ItemUseable = Use
+(45875, 19, 1),     -- Value
+(45875, 33, 1),     -- Bonded = Normal
+(45875, 93, 1044)   -- PhysicsState
+ON DUPLICATE KEY UPDATE value = VALUES(value);
+```
+
+Common wrong-type bugs:
+
+| Intended | WRONG type | Symptom |
+|---|---|---|
+| MaxStackSize | `111` (PortalBitmask) | "cannot use as PK Lite" |
+| StackSize | `33` (Bonded) | Items never stack |
+| StackUnitEncumbrance | `12` (StackSize) | Burden from stack count, not unit weight |
+| StackUnitValue | `14` (StackUnitMass) | Value from mass, not value per unit |
+
+Always check `ACE.Entity.Enum.Properties.PropertyInt.cs` for correct type IDs.
+
+#### 8.13.2 Runtime Forcing (Harmony postfixes)
+
+If the weenie cache keeps serving stale/wrong values, force-correct via Harmony postfixes on both the constructor AND SetStackSize paths:
+
+```csharp
+[HarmonyPostfix]
+[HarmonyPatch(typeof(Stackable), "SetEphemeralValues")]
+public static void PostfixSetEphemeral(Stackable __instance) {
+    if (!IsCustom(__instance.WeenieClassId)) return;
+    __instance.StackUnitEncumbrance = 1; __instance.StackUnitValue = 1;
+    __instance.MaxStackSize = 100;
+}
+
+[HarmonyPostfix]
+[HarmonyPatch(typeof(WorldObject), "SetStackSize")]
+public static void PostfixSetStackSize(WorldObject __instance) {
+    if (!IsCustom(__instance.WeenieClassId)) return;
+    __instance.StackUnitEncumbrance = 1; __instance.StackUnitValue = 1;
+    __instance.EncumbranceVal = (__instance.StackSize ?? 1);
+    __instance.Value = (__instance.StackSize ?? 1);
+}
+```
+
+#### 8.13.3 Shard Biota Cleanup
+
+Existing items with wrong StackUnit values won't self-heal:
+
+```sql
+UPDATE biota_properties_int SET value = 1 WHERE object_Id IN (
+  SELECT id FROM biota WHERE weenie_Class_Id IN (850340, 850341)
+) AND type IN (13, 15);
+UPDATE biota_properties_int bp
+JOIN biota_properties_int bp2 ON bp2.object_Id = bp.object_Id AND bp2.type = 12
+SET bp.value = bp2.value
+WHERE bp.object_Id IN (SELECT id FROM biota WHERE weenie_Class_Id IN (850340, 850341))
+AND bp.type IN (5, 19);
+```
+
+#### 8.13.4 Checklist for Making Other Items Stackable
+
+When told "olthoi heads / mob heads are doing the same thing":
+
+1. Check if `WeenieType` is `Generic (1)` or `Book (8)` — these don't stack
+2. Use SQL to change to `WeenieType.Stackable (51)` + set all 11 required int props
+3. Add the double Harmony postfix (8.13.2) if wrong values persist
+4. Clean stale biota from shard (8.13.3)
+
+### 8.14 Patterns & Idioms
 
 **Verbose result tracking** - When a method spends/allocates/consumes resources across multiple targets, return a `record` with per-target details. Example: `SpendResult(string Name, int RanksGained, long XpSpent)`.
 
@@ -470,6 +592,124 @@ The hang likely occurs in **ShowDialog** (waiting for client confirmation respon
 - Overtinked/LesserImbueUpgrade.cs - Handles rending imbues, no defense handling needed
 
 ---
+
+### 8.15 Custom Weenie Strategy — SQL Database vs JSON Runtime
+
+Windblown provides two systems for adding custom weenies. Choosing the right one depends on how the weenie is used.
+
+#### SQL Database (INSERT only — never DELETE+INSERT)
+
+**Use when:**
+- The weenie must exist **even if the Windblown mod is disabled** (world integrity)
+- The weenie is referenced by `landblock_instance`, `landblock_instance_link`, `weenie_properties_create_list`, generators, or other DB foreign keys
+- The weenie is an **NPC, Vendor, Creature, Portal, Generator, or Contract** — these need to be in the DB for ACE's spawn/quest systems to find them
+- The weenie has position data (`weenie_properties_position`) — positioning is DB-only
+- Examples: SpellSiphon, ManaLattice, LuckyGold/ScarletRed letters, all Facility Hub NPCs/mobs/guards/contracts/generators/portals
+
+**Rules:**
+1. **Always use `INSERT ... ON DUPLICATE KEY UPDATE`** — never `DELETE FROM weenie WHERE ...` + `INSERT`. Additions only, never removals.
+2. Each custom weenie gets its own `.sql` file under the matching category subfolder (see §8.16 for ranges).
+3. Apply to `void-test_world` first for testing, then `ace_world` when verified.
+4. Keep a backup of affected rows under `WindblownContent/sql-backups/<date>/` before each apply.
+
+#### JSON Runtime (`Windblown/Content/Weenies/*.json`)
+
+**Use when:**
+- You want to **override properties** of an existing vanilla weenie without touching the DB
+- You're creating a **tiered variant** that clones a base weenie and overrides a few properties
+- The weenie is purely additive (a player will never find the WCID in the DB, only through mod code at runtime)
+- You need the **`MirrorEmoteFromWcid`** feature — lets a custom WCID piggyback on an existing NPC's `EmoteCategory.Give` chain without modifying the NPC
+- Iteration speed matters — edit JSON, restart, test. No DB script to write.
+- Examples: Trophy tier upgrades (850271+), vanilla trophy property overrides (UiEffects, IconUnderlay, MaxStackSize)
+
+**Rules:**
+1. Only use for **items** (Stackable, Generic, etc.) — not NPCs, creatures, portals, generators, or contracts.
+2. Use `BaseWcid` to clone from a cached vanilla weenie rather than duplicating all properties.
+3. `MirrorEmoteFromWcid` is the cleanest way to make an item redeemable at existing NPCs without modifying NPC data.
+4. The JSON system fires at Windblown startup — if Windblown is disabled, these weenies don't exist at runtime. This is fine for additive content.
+
+#### Comparison table
+
+| Aspect | SQL DB | JSON Runtime |
+|--------|--------|-------------|
+| Persists without mod | ✅ Yes | ❌ No |
+| Supports NPCs/Creatures | ✅ Yes | ❌ No |
+| Supports Emote Mirror | ❌ No | ✅ Yes |
+| Referenceable by landblock/generators | ✅ Yes | ❌ No |
+| Iteration speed | Slow (SQL→DB→restart) | Fast (edit→restart) |
+| Cross-DB sync needed | ✅ Yes (each DB separately) | ❌ No (runtime only) |
+| Vanilla weenie mutation risk | ❌ High (if using DELETE) | ✅ None (clone + overlay) |
+
+### 8.16 WCID Range Allocation
+
+All custom Windblown weenies (new WCIDs) must be assigned within these ranges.
+SQL weenies live in `Windblown/Content/SQL/<Category>/`. JSON runtime weenies live in `Windblown/Content/Weenies/`.
+
+| Range | Category | Currently allocated |
+|-------|----------|--------------------|
+| `800000–809999` | **Items** | 800000=Lesser Coalesced Mana, 800001=Greater, 800002=Aetheric, 800003=SpellSiphon, 800004=ManaLattice, 800005=Lucky Gold Letter, 800006=Scarlet Red Letter |
+| `810000–819999` | **Vendors / NPCs** | 810000=Radi, 810001=Kaelith (surviving Pathwarden vendor) |
+| `820000–829999` | **Creatures / Mobs** | (available) |
+| `830000–839999` | **Generators** | (available) |
+| `840000–849999` | **Portals** | (available) |
+| `850000–859999` | **Contracts / Quests** | (available) |
+| `860000–869999` | **Landblocks** | (available) |
+
+**Rules:**
+- Each category has 10,000 IDs — enough for significant growth without hitting other categories.
+- **Trophy-tier items** (drudge charm upgrades, rat tail upgrades, wasp wing upgrades) live in JSON only — they do NOT get DB WCIDs. See `Windblown/Content/Weenies/*.json`.
+- **Vanilla property overrides** (UiEffects, IconUnderlay, MaxStackSize on existing vanilla WCIDs) live in JSON only — never modify vanilla DB rows.
+- The old WCID ranges (42516-42518, 800039, 850200-850341) were migrated from and should not be used for new things. They are kept in ace_world legacy data but code defaults now point to the new organized ranges.
+
+### 8.17 SQL File Organization
+
+All curated SQL files live under `Windblown/Content/SQL/` organized by category:
+
+```
+Windblown/Content/SQL/
+├── 00_RevertVanillaMutations.sql        # Undo past vanilla DB edits
+├── Items/                                # Range 800000-809999
+│   ├── 01_CoalescedMana_800000-800002.sql
+│   ├── 02_SpellSiphon_800003.sql
+│   ├── 03_ManaLattice_800004.sql
+│   └── 04_CustomLetters_800005-800006.sql
+├── Vendors/                              # Range 810000-819999
+│   ├── 01_Radi_810000.sql
+│   ├── 02_Kaelith_810001.sql
+│   └── 03_TownNetworkSpawns.sql
+├── Pathwarden/
+│   ├── 01_ChestAddLesserMana.sql         # Add 10x Lesser Coalesced Mana
+│   └── 02_BasePrices.sql
+├── VanillaTweaks/                        # Additive vanilla changes
+│   ├── 01_BroodMatronQueen.sql
+│   ├── 02_StatueReplicaBronze.sql
+│   ├── 03_OlthoiPincerRevamp.sql
+│   ├── 04_DefenseSalvageDescription.sql
+│   └── 05_RemoveAcademyFromNonTnVendors.sql
+```
+INSERT INTO weenie_properties_int (object_Id, type, value)
+SELECT {new_id}, type, value
+FROM weenie_properties_int WHERE object_Id = {old_id};
+
+INSERT INTO weenie_properties_string (object_Id, type, value)
+SELECT {new_id}, type, value
+FROM weenie_properties_string WHERE object_Id = {old_id};
+
+-- ... repeat for bool, float, DID, IID, int64, position, create_list, emote, emote_action,
+--     book, book_page_data, event_filter, anim_part, palette, texture_map, attribute,
+--     attribute_2nd, body_part, skill, spell_book, generator
+
+-- 4. Update foreign references (landblock_instance, create_list, generators that point to old_id)
+UPDATE landblock_instance SET weenie_Class_Id = {new_id} WHERE weenie_Class_Id = {old_id};
+UPDATE weenie_properties_create_list SET destination_Type = {new_id} WHERE destination_Type = {old_id};
+UPDATE weenie_properties_create_list SET weenie_Class_Id = {new_id} WHERE weenie_Class_Id = {old_id};
+UPDATE weenie_properties_generator SET weenie_Class_Id = {new_id} WHERE weenie_Class_Id = {old_id};
+UPDATE weenie_properties_emote SET weenie_Class_Id = {new_id} WHERE weenie_Class_Id = {old_id};
+UPDATE weenie_properties_emote_action SET weenie_Class_Id = {new_id} WHERE weenie_Class_Id = {old_id};
+
+-- 5. Only delete old WCID after everything is verified working
+-- DELETE FROM weenie WHERE class_Id = {old_id};  -- DANGER: cascades to property tables
+```
 
 ## 9. External Knowledge Base
 - **`A:\obsidian\jeremy\AGENT.md`** — LLM Wiki Agent rulebook. Consult at end of every task for knowledge persistence instructions.

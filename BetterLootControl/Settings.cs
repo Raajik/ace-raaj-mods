@@ -12,7 +12,7 @@ public class Settings
 
     // -- Vendor Loot Rotation --
     // Rotates equipment stock on vendor approach from MerchandiseItemTypes.
-    // Protected TN Pathwarden vendors 850300-850303 and 800039 are skipped.
+    // Protected TN Pathwarden vendors 810000-810001 are skipped.
     public bool EnableVendorLootRotation { get; init; } = true;
     public int VendorLootRotationMinutes { get; init; } = 20;
     public int VendorLootCooldownMinutes { get; init; } = 45;
@@ -116,8 +116,8 @@ public class Settings
     // -- Global Rare Drops (SpellSiphon / Mana Lattice / Coalesced Mana) --
     public bool EnableGlobalRareDrops { get; init; } = true;
     public double RareDropChance { get; init; } = 0.005; // 0.5%
-    public uint SpellsiphonToolWcid { get; init; } = 850200;
-    public uint ManaLatticeWcid { get; init; } = 850201;
+    public uint SpellsiphonToolWcid { get; init; } = 800003;
+    public uint ManaLatticeWcid { get; init; } = 800004;
 
     // Pre-rolled spells on Mana Lattice drops (SpellSiphon gem pool when that mod is loaded).
     public int ManaLatticeSpellCountMin { get; init; } = 3;
@@ -125,9 +125,9 @@ public class Settings
 
     // -- Coalesced Mana Drops (replaces ACE vanilla TryRollMundaneAddon) --
     public double CoalescedManaDropChance { get; init; } = 0.015; // 1.5% per corpse with DeathTreasure
-    public uint LesserCoalescedManaWcid { get; init; } = 42516;
-    public uint GreaterCoalescedManaWcid { get; init; } = 42517;
-    public uint AethericCoalescedManaWcid { get; init; } = 42518;
+    public uint LesserCoalescedManaWcid { get; init; } = 800000;
+    public uint GreaterCoalescedManaWcid { get; init; } = 800001;
+    public uint AethericCoalescedManaWcid { get; init; } = 800002;
 
     // -- Global Key Drops (skeleton keys, separate from DefaultLootConfig) --
     public bool EnableGlobalKeyDrops { get; init; } = true;

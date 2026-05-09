@@ -16,8 +16,8 @@
       { "wcid": 6353, "name": "Pyreal Mote", "stackSize": 1 },
       { "wcid": 6355, "name": "Pyreal Sliver", "stackSize": 1 },
       { "wcid": 6876, "name": "Sturdy Iron Key", "stackSize": 1 },
-      { "wcid": 45876, "name": "Scarlet Red Letter", "stackSize": 1 },
-      { "wcid": 45875, "name": "Lucky Gold Letter", "stackSize": 1 },
+      { "wcid": 800006, "name": "Scarlet Red Letter", "stackSize": 1 },
+      { "wcid": 800005, "name": "Lucky Gold Letter", "stackSize": 1 },
       { "wcid": 44711, "name": "Lesser Stamina Kit", "stackSize": 1 },
       { "wcid": 44713, "name": "Lesser Mana Kit", "stackSize": 1 }
     ],

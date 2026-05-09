@@ -1,5 +1,0 @@
-{
-  "// WindblownContent Settings Template": "Template only — copy values to installed Settings.json, do NOT overwrite operator test file.",
-  "// Trophy Settings": "Trophy configuration is driven by JSON files under Content/TrophyLines/",
-  "// Custom Trophy Settings": "See docs/Windblown-Custom-Trophy-Settings.md for WCID checklist, autoloot, and bulk turn-in documentation"
-}

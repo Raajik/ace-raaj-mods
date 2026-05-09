@@ -6,7 +6,7 @@
 		<EnablePreviewFeatures>true</EnablePreviewFeatures>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
-		<OutputPath>C:\ACE\Mods\$(AssemblyName)</OutputPath>
+		<OutputPath>$(MSBuildProjectDirectory)\..\build\$(AssemblyName)</OutputPath>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 		<AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>

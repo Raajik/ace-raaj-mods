@@ -32,8 +32,9 @@ internal static class DefaultLootConfig
                     new() { wcid = 6057, name = "Tiny Shard", stackSize = 1 },
                     new() { wcid = 6353, name = "Pyreal Mote", stackSize = 1 },
                     new() { wcid = 6355, name = "Pyreal Sliver", stackSize = 1 },
-                    new() { wcid = 45876, name = "Scarlet Red Letter", stackSizeMin = 3, stackSizeMax = 10 },
-                    new() { wcid = 45875, name = "Lucky Gold Letter", stackSizeMin = 3, stackSizeMax = 10 },
+                    // Windblown custom stackable letters (vanilla 45875/45876 are WeenieType.Book)
+                    new() { wcid = 800006, name = "Scarlet Red Letter", stackSizeMin = 3, stackSizeMax = 10 },
+                    new() { wcid = 800005, name = "Lucky Gold Letter", stackSizeMin = 3, stackSizeMax = 10 },
                     new() { wcid = 44711, name = "Lesser Stamina Kit", stackSize = 1 },
                     new() { wcid = 44713, name = "Lesser Mana Kit", stackSize = 1 }
                 },
@@ -52,11 +53,11 @@ internal static class DefaultLootConfig
                     new() { wcid = 6623, name = "Crystal Fragment", stackSize = 1 },
                     new() { wcid = 6622, name = "Sparkling Gem", stackSize = 1 },
                     new() { wcid = 6354, name = "Pyreal Nugget", stackSize = 1 },
-                    new() { wcid = 850200, name = "Spellsiphon", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 800003, name = "Spellsiphon", stackSizeMin = 1, stackSizeMax = 10 },
                     // Custom Coalesced Mana (replaces vanilla ACE drops; controlled by BLC)
-                    new() { wcid = 42516, name = "Lesser Coalesced Mana", stackSize = 1 },
-                    new() { wcid = 42517, name = "Greater Coalesced Mana", stackSize = 1 },
-                    new() { wcid = 42518, name = "Aetheric Coalesced Mana", stackSize = 1 }
+                    new() { wcid = 800000, name = "Lesser Coalesced Mana", stackSize = 1 },
+                    new() { wcid = 800001, name = "Greater Coalesced Mana", stackSize = 1 },
+                    new() { wcid = 800002, name = "Aetheric Coalesced Mana", stackSize = 1 }
                 }
             },
             salvage = new LootCategory

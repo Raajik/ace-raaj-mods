@@ -299,6 +299,84 @@ public class AutoLoot
         }
     }
 
+    /// <summary>
+    /// Tries to merge a WorldObject's stack quantity into existing stacks of the same WCID
+    /// in the player's inventory. Returns true if the item was fully merged (nothing left to create).
+    /// The item's StackSize is reduced by the amount successfully merged; if it reaches 0 or
+    /// below the item should be destroyed by the caller.
+    /// Sends network updates for each existing stack that was modified.
+    /// </summary>
+    static bool TryMergeIntoExistingStacks(Player player, WorldObject item)
+    {
+        if (player == null || item == null)
+            return false;
+
+        uint wcid = item.WeenieClassId;
+        int qty = item.StackSize ?? 1;
+        if (qty <= 0)
+            return true; // nothing to merge, consider it done
+
+        int maxStack = item.MaxStackSize ?? 1;
+        if (maxStack <= 1)
+            return false; // non-stackable, can't merge
+
+        // Find existing stacks of same WCID in player's inventory (main pack + side packs)
+        var existingStacks = new List<WorldObject>();
+        foreach (var invItem in player.Inventory.Values)
+        {
+            if (invItem.WeenieClassId == wcid && !invItem.IsDestroyed)
+            {
+                int curStack = invItem.StackSize ?? 1;
+                int room = maxStack - curStack;
+                if (room > 0)
+                    existingStacks.Add(invItem);
+            }
+            // Check inside containers (side packs)
+            if (invItem is Container container)
+            {
+                foreach (var sub in container.Inventory.Values)
+                {
+                    if (sub.WeenieClassId == wcid && !sub.IsDestroyed)
+                    {
+                        int curStack = sub.StackSize ?? 1;
+                        int room = maxStack - curStack;
+                        if (room > 0)
+                            existingStacks.Add(sub);
+                    }
+                }
+            }
+        }
+
+        if (existingStacks.Count == 0)
+            return false;
+
+        foreach (var existing in existingStacks)
+        {
+            if (qty <= 0) break;
+
+            int curStack = existing.StackSize ?? 1;
+            int room = maxStack - curStack;
+            if (room <= 0) continue;
+
+            int toAdd = Math.Min(qty, room);
+            existing.StackSize = curStack + toAdd;
+            item.StackSize = (item.StackSize ?? 1) - toAdd;
+            qty -= toAdd;
+
+            // Send network update so client sees the new stack size
+            player.Session?.Network.EnqueueSend(new GameMessageSetStackSize(existing));
+        }
+
+        // If fully merged, mark the original item as empty
+        if ((item.StackSize ?? 1) <= 0)
+        {
+            item.StackSize = 0;
+            return true;
+        }
+
+        return false;
+    }
+
     // Coalesced Mana WCIDs → LeyLineLedger bank PropertyInt64
     static readonly Dictionary<uint, int> CoalescedManaBankProps = new()
     {
@@ -1413,7 +1491,18 @@ public class AutoLoot
                     lootedItems.TryGetValue(tname, out int tex);
                     lootedItems[tname] = tex + tqty;
                     lootedSet.Add(trophyRemoved);
-                    AutolootTryCreateInInventoryWithNetworking(player, trophyRemoved);
+
+                    // Try to merge into existing stacks first
+                    if (!TryMergeIntoExistingStacks(player, trophyRemoved))
+                    {
+                        // No existing stack had room — create a new item
+                        AutolootTryCreateInInventoryWithNetworking(player, trophyRemoved);
+                    }
+                    else
+                    {
+                        // Fully merged — destroy the empty placeholder
+                        trophyRemoved.Destroy();
+                    }
                     continue;
                 }
 

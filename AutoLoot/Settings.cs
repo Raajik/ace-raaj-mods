@@ -41,21 +41,12 @@ public class Settings
     [
         // Drudge Charms
         24835u, 850271u, 850272u, 850273u,
-        // Rat Tails
-        3681u,  // Black Rat Tail
-        3682u,  // Brown Rat Tail
-        4133u,  // Rat Tail (base, after sibling replacement)
+        // Rat Tails (base, sibling variants replaced by Windblown at drop time)
+        4133u,
         // Rat Tail tiers
         850280u, 850281u, 850282u,
-        // Wasp Wings
-        3699u,  // Blue Phyntos Wasp Wing
-        3700u,  // Gold Phyntos Wasp Wing
-        3701u,  // Green Phyntos Wasp Wing
-        3702u,  // Mire Phyntos Wasp Wing
-        3703u,  // Red Phyntos Wasp Wing
-        7603u,  // White Phyntos Wasp Wing (base)
-        8426u,  // Jungle Phyntos Wasp Wing
-        13089u, // Carpenter Wasp Wing
+        // Wasp Wings (base, sibling variants replaced by Windblown at drop time)
+        7603u,
         // Wasp Wing tiers
         850283u, 850284u, 850285u,
         // Mob Heads
@@ -67,10 +58,9 @@ public class Settings
         12215u, // Pumpkin Head
         12216u, // Sclavus Head
         12225u, // Zombie Head
-        3680u,  // Olthoi Head
+        3680u,  // Olthoi Head (alt 19446 replaced by Windblown at drop time)
         3687u,  // Skeleton's Skull
         4121u,  // Lich Skull
-        19446u, // Olthoi Head (alt)
         22059u, // Eviscerator Head
         24846u, // Mutilator Head
         25554u, // Knath Head
@@ -81,11 +71,11 @@ public class Settings
         34029u, // Shadow Head
         36359u, // Cow Head
         36362u, // Mukkir Head
-        // Quest Letters
-        8701u,  // Lucky Gold Letter
-        8702u,  // Scarlet Red Letter
-        45875u, // Lucky Gold Letter (variant)
-        45876u, // Scarlet Red Letter (variant)
+        // Quest Letters — new organized-range stackable WCIDs
+        8701u,  // Lucky Gold Letter (vanilla)
+        8702u,  // Scarlet Red Letter (vanilla)
+        800005u, // Lucky Gold Letter (new organized range)
+        800006u, // Scarlet Red Letter (new organized range)
         // Olthoi Pincers
         10843u, // Eviscerator Pincer
         10844u, // Gardener Pincer

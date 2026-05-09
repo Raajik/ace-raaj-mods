@@ -26,9 +26,12 @@ public partial class PatchClass
         new Type[] { typeof(uint) })]
     public static void PreCreateNewWorldObject_RedirectLetters(ref uint weenieClassId)
     {
-        if (weenieClassId == 45875)
+        // Redirect old vanilla letter WCIDs to the new organized-range stackable versions.
+        // 8701/8702 are the original non-stackable book-type Lucky Gold / Scarlet Red Letters
+        // from vanilla ACE treasure generation. 45875/45876 are older custom variants.
+        if (weenieClassId == 8701 || weenieClassId == 45875)
             weenieClassId = GoldLetterNew;
-        else if (weenieClassId == 45876)
+        else if (weenieClassId == 8702 || weenieClassId == 45876)
             weenieClassId = RedLetterNew;
     }
 
@@ -69,10 +72,10 @@ public partial class PatchClass
     const int BankCashProperty = 39999;
 
     static bool IsLetter(uint wcid) =>
-        wcid == 45875 || wcid == 45876 || wcid == 800005 || wcid == 800006;
+        wcid == 8701 || wcid == 8702 || wcid == 45875 || wcid == 45876 || wcid == 800005 || wcid == 800006;
 
     static bool IsGoldLetter(uint wcid) =>
-        wcid == 45875 || wcid == 800005;
+        wcid == 8701 || wcid == 45875 || wcid == 800005;
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), "GiveObjectToNPC", new Type[] {

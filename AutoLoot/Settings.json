@@ -18,8 +18,10 @@
     "Tusk",
     "Matron"
   ],
-  "// UpgradedTrophyWeenieClassIds": "Pass 1: pocket these WCIDs into pack before .utl (physical trophies). Includes drudge charms, rat tails, wasp wings, mob heads, quest letters. See Windblown/docs/TrophyLineRegistry.md.",
-  "UpgradedTrophyWeenieClassIds": [24835, 850271, 850272, 850273, 4133, 850280, 850281, 850282, 7603, 850283, 850284, 850285, 8144, 8145, 8146, 8147, 9097, 12215, 12216, 12225, 3680, 3687, 4121, 22059, 24846, 25554, 25561, 28886, 28888, 28889, 34029, 36359, 36362, 8701, 8702, 800005, 800006, 10843, 10844, 10845, 10846, 10847, 27589, 27590, 27591, 51211, 51214],
+  "// WindblownCollectorTrophyPass1WeenieClassIds": "Pass 1: pocket these Windblown collector trophy WCIDs when /autoloot trophies is ON (850300-850336). See Windblown/docs/TrophyLineRegistry.md.",
+  "WindblownCollectorTrophyPass1WeenieClassIds": [850300, 850301, 850302, 850303, 850304, 850305, 850306, 850307, 850308, 850309, 850310, 850311, 850312, 850313, 850314, 850315, 850316, 850317, 850318, 850319, 850320, 850321, 850322, 850323, 850324, 850325, 850326, 850327, 850328, 850329, 850330, 850331, 850332, 850333, 850334, 850335, 850336],
+  "// OtherPhysicalPass1WeenieClassIds": "Pass 1: always pocket these physical quest items (letters, olthoi pincers) regardless of /autoloot trophies.",
+  "OtherPhysicalPass1WeenieClassIds": [8701, 8702, 800005, 800006, 10843, 10844, 10845, 10846, 10847, 27589, 27590, 27591, 51211, 51214],
   "// KeysUnlockThreshold": "Objects unlocked with keys to unlock BetterKeys.utl and key banking.",
   "KeysUnlockThreshold": 10,
   "// LockpickUnlockThreshold": "Objects unlocked with lockpicks to unlock lockpick corpse-loot banking.",

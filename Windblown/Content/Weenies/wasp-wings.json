@@ -1,12 +1,13 @@
 {
-  "Description": "Wasp Wing tier line. Base WCID 7603 (vanilla 'White Phyntos Wasp Wing') renamed to plain 'Wasp Wing'; color variants (3699-3703, 8426, 13089) merged via sibling replacement. Three new tier WCIDs (850283-850285) clone from 7603. Per-tier UiEffects glow (white/green/blue/purple) AND sunstone orange IconUnderlay (DID 52 = 100676438) on all tiers, matching Drudge Charms. Higher tiers route through any NPC's WCID 7603 Give emote.",
+  "Description": "Wasp Wing tier line — custom WCIDs 850308-850311 only. Clones from 7603; MirrorEmoteFromWcid 7603. Value=1, EncumbranceVal=1; sunstone IconUnderlay 100676438.",
   "Weenies": [
     {
-      "ClassId": 7603,
-      "ClassName": "waspwing",
+      "ClassId": 850308,
+      "ClassName": "waspwing_regular_wb",
       "WeenieType": "Stackable",
       "BaseWcid": 7603,
-      "Notes": "Regular tier (vanilla 'White Phyntos Wasp Wing' renamed). Sibling colored variants get replaced with this WCID at corpse-drop time.",
+      "MirrorEmoteFromWcid": 7603,
+      "Notes": "Regular tier (custom). Frost (128) glow.",
       "PropertiesString": {
         "Name": "Wasp Wing",
         "PluralName": "Wasp Wings",
@@ -15,6 +16,8 @@
       "PropertiesInt": {
         "MaxStackSize": 999,
         "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
         "UiEffects": 128
       },
       "PropertiesDID": {
@@ -26,12 +29,12 @@
       }
     },
     {
-      "ClassId": 850283,
-      "ClassName": "waspwing_quality",
+      "ClassId": 850309,
+      "ClassName": "waspwing_quality_wb",
       "WeenieType": "Stackable",
       "BaseWcid": 7603,
       "MirrorEmoteFromWcid": 7603,
-      "Notes": "Quality tier. Green (Acid=256) glow.",
+      "Notes": "Quality tier. Acid (256) glow.",
       "PropertiesString": {
         "Name": "Wasp Wing (Quality)",
         "PluralName": "Wasp Wings (Quality)",
@@ -40,6 +43,8 @@
       "PropertiesInt": {
         "MaxStackSize": 999,
         "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
         "UiEffects": 256
       },
       "PropertiesDID": {
@@ -51,12 +56,12 @@
       }
     },
     {
-      "ClassId": 850284,
-      "ClassName": "waspwing_pristine",
+      "ClassId": 850310,
+      "ClassName": "waspwing_pristine_wb",
       "WeenieType": "Stackable",
       "BaseWcid": 7603,
       "MirrorEmoteFromWcid": 7603,
-      "Notes": "Pristine tier. Blue (Magical=1) glow.",
+      "Notes": "Pristine tier. Magical (1) glow.",
       "PropertiesString": {
         "Name": "Wasp Wing (Pristine)",
         "PluralName": "Wasp Wings (Pristine)",
@@ -65,6 +70,8 @@
       "PropertiesInt": {
         "MaxStackSize": 999,
         "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
         "UiEffects": 1
       },
       "PropertiesDID": {
@@ -76,12 +83,12 @@
       }
     },
     {
-      "ClassId": 850285,
-      "ClassName": "waspwing_perfect",
+      "ClassId": 850311,
+      "ClassName": "waspwing_perfect_wb",
       "WeenieType": "Stackable",
       "BaseWcid": 7603,
       "MirrorEmoteFromWcid": 7603,
-      "Notes": "Perfect tier. Purple (Lightning=64) glow.",
+      "Notes": "Perfect tier. Lightning (64) glow.",
       "PropertiesString": {
         "Name": "Wasp Wing (Perfect)",
         "PluralName": "Wasp Wings (Perfect)",
@@ -90,6 +97,8 @@
       "PropertiesInt": {
         "MaxStackSize": 999,
         "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
         "UiEffects": 64
       },
       "PropertiesDID": {

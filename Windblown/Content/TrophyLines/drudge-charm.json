@@ -1,5 +1,5 @@
 {
-  "Description": "Drudge Charm tier line -- migrated 2026-05-04 from BetterSupportSkills DrudgeCharmTrophySettings + QuestTurnInCap.BulkQuestWcids. Drops from any CreatureType.Drudge kill (independent rolls per tier), bulk turn-in to any NPC that accepts WCID 24835 (10 vanilla Collector NPCs). No sibling replacement (drudge charms have a long history of variant WCIDs but the user wants only the Bloodletter line live). XP fractions and bank credits match the prior DrudgeCharmTrophies defaults.",
+  "Description": "Drudge Charm tier line — four custom WCIDs (850300-850303). Tiers[0] is the Regular custom item (sibling replacement target). Vanilla WCID 24835 is listed in ReplaceSiblingWcids so corpse drops reroute to 850300; MirrorEmoteFromWcid on weenies still points at 24835 for Collector Give emotes. Retired 850271-850273.",
   "Lines": [
     {
       "Name": "DrudgeCharm",
@@ -9,34 +9,34 @@
       "Tiers": [
         {
           "TierName": "Regular",
-          "Wcid": 24835,
+          "Wcid": 850300,
           "DropChance": 0.025,
           "XpFraction": 0.05,
           "BankCredit": 25000
         },
         {
           "TierName": "Quality",
-          "Wcid": 850271,
+          "Wcid": 850301,
           "DropChance": 0.01,
           "XpFraction": 0.10,
           "BankCredit": 50000
         },
         {
           "TierName": "Pristine",
-          "Wcid": 850272,
+          "Wcid": 850302,
           "DropChance": 0.004,
           "XpFraction": 0.15,
           "BankCredit": 100000
         },
         {
           "TierName": "Perfect",
-          "Wcid": 850273,
+          "Wcid": 850303,
           "DropChance": 0.0015,
           "XpFraction": 0.30,
           "BankCredit": 250000
         }
       ],
-      "ReplaceSiblingWcids": [],
+      "ReplaceSiblingWcids": [24835],
       "BankCashProperty": 39999,
       "EnableBulkTurnIn": true
     }

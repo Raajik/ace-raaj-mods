@@ -1487,9 +1487,13 @@ public class AutoLoot
         bool hasCoalesced = ContainerHasCoalescedMana(container);
         bool mayKeyBank = lllOn && PatchClass.Settings?.KeyBankProperties?.Count > 0;
         bool trophiesOn = trophyEnabled.GetOrAdd(LootKey(player), true);
-        bool hasPhysicalTrophyPass1 = trophiesOn && PatchClass.Settings?.UpgradedTrophyWeenieClassIds is { Count: > 0 };
+        var wbTrophyPass1 = PatchClass.Settings?.WindblownCollectorTrophyPass1WeenieClassIds;
+        var otherPhysicalPass1 = PatchClass.Settings?.OtherPhysicalPass1WeenieClassIds;
+        bool mayWindblownTrophyPass1 = trophiesOn && wbTrophyPass1 is { Count: > 0 };
+        bool mayOtherPhysicalPass1 = otherPhysicalPass1 is { Count: > 0 };
+        bool hasPhysicalPass1 = mayWindblownTrophyPass1 || mayOtherPhysicalPass1;
         bool mayLllItemBank = lllOn && container.Inventory.Values.Any(i => LeyLineLedgerBankInterop.IsBankableWcid(i.WeenieClassId, out _));
-        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps && !hasCoalesced && !mayKeyBank && !hasPhysicalTrophyPass1 && !mayLllItemBank)
+        if (!hasProfiles && !hasScrolls && !hasSalvage && !hasLevel8Comps && !hasCoalesced && !mayKeyBank && !hasPhysicalPass1 && !mayLllItemBank)
         {
             if (debug)
                 ModManager.Log($"AutoLoot: ProcessContainerLoot early exit — no active loot for {player.Name}", ModManager.LogLevel.Info);
@@ -1537,10 +1541,13 @@ public class AutoLoot
                 if (item.IsDestroyed)
                     continue;
 
-                // Trophy items (physical autoloot-to-pack): check BEFORE no-duplicate
-                // so Pincers, heads, etc. are always picked up.
-                var trophyWcids = PatchClass.Settings?.UpgradedTrophyWeenieClassIds;
-                if (trophyWcids is { Count: > 0 } && trophyWcids.Contains(item.WeenieClassId))
+                // Trophy / physical Pass 1: Windblown collector trophies (gated by /autoloot trophies) and other
+                // physical quest items (letters, pincers) always — check BEFORE no-duplicate.
+                bool windblownTrophyMatch = mayWindblownTrophyPass1
+                    && wbTrophyPass1!.Contains(item.WeenieClassId);
+                bool otherPhysicalMatch = mayOtherPhysicalPass1
+                    && otherPhysicalPass1!.Contains(item.WeenieClassId);
+                if (windblownTrophyMatch || otherPhysicalMatch)
                 {
                     if (!container.TryRemoveFromInventory(item.Guid, out var trophyRemoved))
                         break;

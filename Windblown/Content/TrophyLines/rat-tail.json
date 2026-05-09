@@ -1,5 +1,5 @@
 {
-  "Description": "Rat Tail tier line. Drops from any CreatureType.Rat kill. ReplaceSiblingWcids covers all vanilla colored Rat Tail variants (3681-3685 black/brown/grey/red/white, 4134 russet, 8223 swamp Xara) -- they get swapped to the base 4133 'Rat Tail' at corpse-drop time so the player only sees one consistent name. Same XP/bank rates as Drudge Charm tier line.",
+  "Description": "Rat Tail tier line — four custom WCIDs (850304-850307). Tiers[0] is Regular custom; ReplaceSiblingWcids includes vanilla base 4133 and colored variants so drops consolidate to 850304. MirrorEmoteFromWcid 4133. Retired 850280-850282.",
   "Lines": [
     {
       "Name": "RatTail",
@@ -9,34 +9,34 @@
       "Tiers": [
         {
           "TierName": "Regular",
-          "Wcid": 4133,
+          "Wcid": 850304,
           "DropChance": 0.025,
           "XpFraction": 0.05,
           "BankCredit": 25000
         },
         {
           "TierName": "Quality",
-          "Wcid": 850280,
+          "Wcid": 850305,
           "DropChance": 0.01,
           "XpFraction": 0.10,
           "BankCredit": 50000
         },
         {
           "TierName": "Pristine",
-          "Wcid": 850281,
+          "Wcid": 850306,
           "DropChance": 0.004,
           "XpFraction": 0.15,
           "BankCredit": 100000
         },
         {
           "TierName": "Perfect",
-          "Wcid": 850282,
+          "Wcid": 850307,
           "DropChance": 0.0015,
           "XpFraction": 0.30,
           "BankCredit": 250000
         }
       ],
-      "ReplaceSiblingWcids": [3681, 3682, 3683, 3684, 3685, 4134, 8223],
+      "ReplaceSiblingWcids": [4133, 3681, 3682, 3683, 3684, 3685, 4134, 8223],
       "BankCashProperty": 39999,
       "EnableBulkTurnIn": true
     }

@@ -1,0 +1,113 @@
+{
+  "Description": "Banderling Scalp tier line — custom WCIDs 850312-850315. Clones from 3693; MirrorEmoteFromWcid 3693. IconUnderlay 3353 (cyan plate test) on all tiers; Value=1, EncumbranceVal=1.",
+  "Weenies": [
+    {
+      "ClassId": 850312,
+      "ClassName": "banderlingscalp_regular_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3693,
+      "MirrorEmoteFromWcid": 3693,
+      "Notes": "Regular tier (custom). Frost (128) glow.",
+      "PropertiesString": {
+        "Name": "Banderling Scalp",
+        "PluralName": "Banderling Scalps",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 3353
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850313,
+      "ClassName": "banderlingscalp_quality_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3693,
+      "MirrorEmoteFromWcid": 3693,
+      "Notes": "Quality tier. Acid (256) glow.",
+      "PropertiesString": {
+        "Name": "Banderling Scalp (Quality)",
+        "PluralName": "Banderling Scalps (Quality)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 3353
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850314,
+      "ClassName": "banderlingscalp_pristine_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3693,
+      "MirrorEmoteFromWcid": 3693,
+      "Notes": "Pristine tier. Magical (1) glow.",
+      "PropertiesString": {
+        "Name": "Banderling Scalp (Pristine)",
+        "PluralName": "Banderling Scalps (Pristine)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 3353
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850315,
+      "ClassName": "banderlingscalp_perfect_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3693,
+      "MirrorEmoteFromWcid": 3693,
+      "Notes": "Perfect tier. Lightning (64) glow.",
+      "PropertiesString": {
+        "Name": "Banderling Scalp (Perfect)",
+        "PluralName": "Banderling Scalps (Perfect)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 64
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 3353
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    }
+  ]
+}

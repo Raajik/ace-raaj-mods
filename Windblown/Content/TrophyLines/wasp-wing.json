@@ -1,5 +1,5 @@
 {
-  "Description": "Wasp Wing tier line. Drops from any CreatureType.PhyntosWasp kill. ReplaceSiblingWcids covers all vanilla colored Wasp Wing variants (3699 blue, 3700 gold, 3701 green, 3702 mire, 3703 red, 8426 jungle, 13089 carpenter newbie academy) -- they get swapped to the base 7603 'Wasp Wing' at corpse-drop time. Same XP/bank rates as Drudge Charm tier line.",
+  "Description": "Wasp Wing tier line — four custom WCIDs (850308-850311). Tiers[0] is Regular custom; ReplaceSiblingWcids includes vanilla base 7603 and colored wing WCIDs. MirrorEmoteFromWcid 7603. Retired 850283-850285.",
   "Lines": [
     {
       "Name": "WaspWing",
@@ -9,34 +9,34 @@
       "Tiers": [
         {
           "TierName": "Regular",
-          "Wcid": 7603,
+          "Wcid": 850308,
           "DropChance": 0.025,
           "XpFraction": 0.05,
           "BankCredit": 25000
         },
         {
           "TierName": "Quality",
-          "Wcid": 850283,
+          "Wcid": 850309,
           "DropChance": 0.01,
           "XpFraction": 0.10,
           "BankCredit": 50000
         },
         {
           "TierName": "Pristine",
-          "Wcid": 850284,
+          "Wcid": 850310,
           "DropChance": 0.004,
           "XpFraction": 0.15,
           "BankCredit": 100000
         },
         {
           "TierName": "Perfect",
-          "Wcid": 850285,
+          "Wcid": 850311,
           "DropChance": 0.0015,
           "XpFraction": 0.30,
           "BankCredit": 250000
         }
       ],
-      "ReplaceSiblingWcids": [3699, 3700, 3701, 3702, 3703, 8426, 13089],
+      "ReplaceSiblingWcids": [7603, 3699, 3700, 3701, 3702, 3703, 8426, 13089],
       "BankCashProperty": 39999,
       "EnableBulkTurnIn": true
     }

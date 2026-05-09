@@ -1,12 +1,13 @@
 {
-  "Description": "Drudge Charm tier line. Replicates DrudgeCharm_TierWeenies_World.sql + DrudgeCharm_SunstoneUnderlay_2026-05-08.sql at runtime, plus per-tier UiEffects glows: white / green / blue / purple. LongDesc updated 2026-05-04 to drop the 'Trophy Collectors' clause -- only Collectors accept these charms; Trophy Collectors do not. 'Bloodletter' prefix dropped 2026-05-04 (regular and tier WCIDs all show as 'Drudge Charm[(Tier)]'). No SQL deployment required.",
+  "Description": "Drudge Charm tier line — custom WCIDs 850300-850303 only. Clones from 24835; MirrorEmoteFromWcid 24835 for Collector Give emotes. PropertiesInt include Value=1 and EncumbranceVal=1 per Windblown trophy template; sunstone IconUnderlay 100676438 on all tiers.",
   "Weenies": [
     {
-      "ClassId": 24835,
-      "ClassName": "drudgecharmbloodletter",
+      "ClassId": 850300,
+      "ClassName": "drudgecharm_regular_wb",
       "WeenieType": "Stackable",
       "BaseWcid": 24835,
-      "Notes": "Regular tier. Sunstone IconUnderlay + white (Frost=128) UiEffects glow.",
+      "MirrorEmoteFromWcid": 24835,
+      "Notes": "Regular tier (custom). Frost (128) glow.",
       "PropertiesString": {
         "Name": "Drudge Charm",
         "PluralName": "Drudge Charms",
@@ -15,6 +16,8 @@
       "PropertiesInt": {
         "MaxStackSize": 999,
         "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
         "UiEffects": 128
       },
       "PropertiesDID": {
@@ -26,12 +29,12 @@
       }
     },
     {
-      "ClassId": 850271,
-      "ClassName": "drudgecharm_quality",
+      "ClassId": 850301,
+      "ClassName": "drudgecharm_quality_wb",
       "WeenieType": "Stackable",
       "BaseWcid": 24835,
       "MirrorEmoteFromWcid": 24835,
-      "Notes": "Quality tier. Sunstone underlay + green (Acid=256) glow. NPCs that accept 24835 also accept this WCID via the Give-emote mirror.",
+      "Notes": "Quality tier. Acid (256) glow.",
       "PropertiesString": {
         "Name": "Drudge Charm (Quality)",
         "PluralName": "Drudge Charms (Quality)",
@@ -40,6 +43,8 @@
       "PropertiesInt": {
         "MaxStackSize": 999,
         "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
         "UiEffects": 256
       },
       "PropertiesDID": {
@@ -51,12 +56,12 @@
       }
     },
     {
-      "ClassId": 850272,
-      "ClassName": "drudgecharm_pristine",
+      "ClassId": 850302,
+      "ClassName": "drudgecharm_pristine_wb",
       "WeenieType": "Stackable",
       "BaseWcid": 24835,
       "MirrorEmoteFromWcid": 24835,
-      "Notes": "Pristine tier. Sunstone underlay + blue (Magical=1) glow. Inherits Collector NPC acceptance from 24835 via emote mirror.",
+      "Notes": "Pristine tier. Magical (1) glow.",
       "PropertiesString": {
         "Name": "Drudge Charm (Pristine)",
         "PluralName": "Drudge Charms (Pristine)",
@@ -65,6 +70,8 @@
       "PropertiesInt": {
         "MaxStackSize": 999,
         "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
         "UiEffects": 1
       },
       "PropertiesDID": {
@@ -76,12 +83,12 @@
       }
     },
     {
-      "ClassId": 850273,
-      "ClassName": "drudgecharm_perfect",
+      "ClassId": 850303,
+      "ClassName": "drudgecharm_perfect_wb",
       "WeenieType": "Stackable",
       "BaseWcid": 24835,
       "MirrorEmoteFromWcid": 24835,
-      "Notes": "Perfect tier. Sunstone underlay + purple (Lightning=64) glow. Inherits Collector NPC acceptance from 24835 via emote mirror.",
+      "Notes": "Perfect tier. Lightning (64) glow.",
       "PropertiesString": {
         "Name": "Drudge Charm (Perfect)",
         "PluralName": "Drudge Charms (Perfect)",
@@ -90,6 +97,8 @@
       "PropertiesInt": {
         "MaxStackSize": 999,
         "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
         "UiEffects": 64
       },
       "PropertiesDID": {

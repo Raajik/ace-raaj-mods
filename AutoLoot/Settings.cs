@@ -35,58 +35,38 @@ public class Settings
     public string NoDuplicateNamesDoc { get; init; } = "Name substrings (case-insensitive): if an item matches and the player already has same WCID in inventory, skip loot — reduces quest-timer bypass via stockpiling. Add more fragments as needed.";
     public List<string> NoDuplicateNames { get; set; } = ["Pincer", "Tusk", "Matron"];
 
-    [JsonPropertyName("// UpgradedTrophyWeenieClassIds")]
-    public string UpgradedTrophyWeenieClassIdsDoc { get; init; } = "Physical custom-trophy WCIDs: Pass 1 pulls these from corpse/chest into the player's pack before any .utl profile (no LLL ledger — real items). Includes drudge charms, rat tails, wasp wings, mob heads, and quest letters. See Windblown/docs/TrophyLineRegistry.md when adding new trophy lines.";
-    public List<uint> UpgradedTrophyWeenieClassIds { get; set; } =
+    [JsonPropertyName("// WindblownCollectorTrophyPass1WeenieClassIds")]
+    public string WindblownCollectorTrophyPass1WeenieClassIdsDoc { get; init; } =
+        "Windblown collector trophy WCIDs (850300-850336): Pass 1 pulls these from corpse/chest into the pack only when /autoloot trophies is ON. Tiered lines + mob heads + banderling scalp. See Windblown/docs/TrophyLineRegistry.md.";
+    public List<uint> WindblownCollectorTrophyPass1WeenieClassIds { get; set; } =
     [
-        // Drudge Charms
-        24835u, 850271u, 850272u, 850273u,
-        // Rat Tails (base, sibling variants replaced by Windblown at drop time)
-        4133u,
-        // Rat Tail tiers
-        850280u, 850281u, 850282u,
-        // Wasp Wings (base, sibling variants replaced by Windblown at drop time)
-        7603u,
-        // Wasp Wing tiers
-        850283u, 850284u, 850285u,
-        // Mob Heads
-        8144u,  // Banderling Head
-        8145u,  // Drudge Head
-        8146u,  // Mosswart Head
-        8147u,  // Tusker Head
-        9097u,  // Ursuin Head
-        12215u, // Pumpkin Head
-        12216u, // Sclavus Head
-        12225u, // Zombie Head
-        3680u,  // Olthoi Head (alt 19446 replaced by Windblown at drop time)
-        3687u,  // Skeleton's Skull
-        4121u,  // Lich Skull
-        22059u, // Eviscerator Head
-        24846u, // Mutilator Head
-        25554u, // Knath Head
-        25561u, // Moarsman Head
-        28886u, // Burun Guruk Head
-        28888u, // Chittick Head
-        28889u, // Mite Head
-        34029u, // Shadow Head
-        36359u, // Cow Head
-        36362u, // Mukkir Head
-        // Quest Letters — new organized-range stackable WCIDs
-        8701u,  // Lucky Gold Letter (vanilla)
-        8702u,  // Scarlet Red Letter (vanilla)
-        800005u, // Lucky Gold Letter (new organized range)
-        800006u, // Scarlet Red Letter (new organized range)
-        // Olthoi Pincers
-        10843u, // Eviscerator Pincer
-        10844u, // Gardener Pincer
-        10845u, // Harvester Pincer
-        10846u, // Legionary Pincer
-        10847u, // Soldier Pincer
-        27589u, // Mutilator Pincer
-        27590u, // Warrior Pincer
-        27591u, // Worker Pincer
-        51211u, // Hive Eviscerator Pincer
-        51214u, // Hive Warrior Pincer
+        850300u, 850301u, 850302u, 850303u,
+        850304u, 850305u, 850306u, 850307u,
+        850308u, 850309u, 850310u, 850311u,
+        850312u, 850313u, 850314u, 850315u,
+        850316u, 850317u, 850318u, 850319u, 850320u, 850321u, 850322u, 850323u, 850324u, 850325u, 850326u, 850327u,
+        850328u, 850329u, 850330u, 850331u, 850332u, 850333u, 850334u, 850335u, 850336u,
+    ];
+
+    [JsonPropertyName("// OtherPhysicalPass1WeenieClassIds")]
+    public string OtherPhysicalPass1WeenieClassIdsDoc { get; init; } =
+        "Other physical quest items: Pass 1 pulls these into the pack regardless of /autoloot trophies (letters, olthoi pincers, etc.). Keep disjoint from WindblownCollectorTrophyPass1WeenieClassIds.";
+    public List<uint> OtherPhysicalPass1WeenieClassIds { get; set; } =
+    [
+        8701u,
+        8702u,
+        800005u,
+        800006u,
+        10843u,
+        10844u,
+        10845u,
+        10846u,
+        10847u,
+        27589u,
+        27590u,
+        27591u,
+        51211u,
+        51214u,
     ];
 
     [JsonPropertyName("// KeysUnlockThreshold")]

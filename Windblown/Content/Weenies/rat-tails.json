@@ -1,12 +1,13 @@
 {
-  "Description": "Rat Tail tier line. Base WCID 4133 (vanilla 'Tan Rat Tail') is renamed to plain 'Rat Tail' since color variants are merged via TrophyLine sibling replacement. Three new tier WCIDs (850280-850282) clone from 4133. Visual: per-tier UiEffects glow (white / green / blue / purple) AND sunstone orange IconUnderlay (DID 52 = 100676438) on all tiers, matching Drudge Charms. Higher tiers route through any NPC's WCID 4133 Give emote via MirrorEmoteFromWcid.",
+  "Description": "Rat Tail tier line — custom WCIDs 850304-850307 only. Clones from 4133; MirrorEmoteFromWcid 4133. Value=1, EncumbranceVal=1; sunstone IconUnderlay 100676438.",
   "Weenies": [
     {
-      "ClassId": 4133,
-      "ClassName": "rattail",
+      "ClassId": 850304,
+      "ClassName": "rattail_regular_wb",
       "WeenieType": "Stackable",
       "BaseWcid": 4133,
-      "Notes": "Regular tier (vanilla 'Tan Rat Tail' renamed). Sibling colored variants (3681-3685, 4134, 8223) get replaced with this WCID at corpse-drop time.",
+      "MirrorEmoteFromWcid": 4133,
+      "Notes": "Regular tier (custom). Frost (128) glow.",
       "PropertiesString": {
         "Name": "Rat Tail",
         "PluralName": "Rat Tails",
@@ -15,6 +16,8 @@
       "PropertiesInt": {
         "MaxStackSize": 999,
         "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
         "UiEffects": 128
       },
       "PropertiesDID": {
@@ -26,12 +29,12 @@
       }
     },
     {
-      "ClassId": 850280,
-      "ClassName": "rattail_quality",
+      "ClassId": 850305,
+      "ClassName": "rattail_quality_wb",
       "WeenieType": "Stackable",
       "BaseWcid": 4133,
       "MirrorEmoteFromWcid": 4133,
-      "Notes": "Quality tier. Green (Acid=256) glow.",
+      "Notes": "Quality tier. Acid (256) glow.",
       "PropertiesString": {
         "Name": "Rat Tail (Quality)",
         "PluralName": "Rat Tails (Quality)",
@@ -40,6 +43,8 @@
       "PropertiesInt": {
         "MaxStackSize": 999,
         "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
         "UiEffects": 256
       },
       "PropertiesDID": {
@@ -51,12 +56,12 @@
       }
     },
     {
-      "ClassId": 850281,
-      "ClassName": "rattail_pristine",
+      "ClassId": 850306,
+      "ClassName": "rattail_pristine_wb",
       "WeenieType": "Stackable",
       "BaseWcid": 4133,
       "MirrorEmoteFromWcid": 4133,
-      "Notes": "Pristine tier. Blue (Magical=1) glow.",
+      "Notes": "Pristine tier. Magical (1) glow.",
       "PropertiesString": {
         "Name": "Rat Tail (Pristine)",
         "PluralName": "Rat Tails (Pristine)",
@@ -65,6 +70,8 @@
       "PropertiesInt": {
         "MaxStackSize": 999,
         "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
         "UiEffects": 1
       },
       "PropertiesDID": {
@@ -76,12 +83,12 @@
       }
     },
     {
-      "ClassId": 850282,
-      "ClassName": "rattail_perfect",
+      "ClassId": 850307,
+      "ClassName": "rattail_perfect_wb",
       "WeenieType": "Stackable",
       "BaseWcid": 4133,
       "MirrorEmoteFromWcid": 4133,
-      "Notes": "Perfect tier. Purple (Lightning=64) glow.",
+      "Notes": "Perfect tier. Lightning (64) glow.",
       "PropertiesString": {
         "Name": "Rat Tail (Perfect)",
         "PluralName": "Rat Tails (Perfect)",
@@ -90,6 +97,8 @@
       "PropertiesInt": {
         "MaxStackSize": 999,
         "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
         "UiEffects": 64
       },
       "PropertiesDID": {

@@ -18,16 +18,12 @@
 		<Realms>$(DefineConstants.Contains('REALM'))</Realms>
 	</PropertyGroup>
 	<!--ACE References-->
-	<PropertyGroup Condition="!$(Realms)">
-		<ACEPath>/mnt/c/ACE/Server</ACEPath>
-	</PropertyGroup>
+	
 	<ItemGroup Condition="!$(Realms)">
 		<PackageReference Include="ACEmulator.ACE.Shared" Version="1.*" />
 	</ItemGroup>
 	<!--Realms References-->
-	<PropertyGroup Condition="$(Realms)">
-		<ACEPath>/mnt/c/ACE/RealmServer</ACEPath>
-	</PropertyGroup>
+	
 	<ItemGroup Condition="$(Realms)">
 		<PackageReference Include="ACRealms.ACE.Shared" Version="1.*" />
 	</ItemGroup>

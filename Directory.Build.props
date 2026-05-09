@@ -1,0 +1,18 @@
+<Project>
+  <!--
+    Directory.Build.props — Shared build config for all mod .csproj files.
+    Sets the ACE binary directory so every mod resolves $(ACEPath) correctly.
+
+    Default:          C:\ACE\Server
+    WSL autodetect:   /mnt/c/ACE/Server  (when ACE.Server.dll exists there)
+    Override env var: ACE_EMULATOR_PATH   (absolute path, no trailing slash)
+  -->
+  <PropertyGroup>
+    <ACE_EMULATOR_PATH Condition="'$(ACE_EMULATOR_PATH)' == ''">$([System.Environment]::GetEnvironmentVariable('ACE_EMULATOR_PATH'))</ACE_EMULATOR_PATH>
+    <ACE_EMULATOR_PATH Condition="'$(ACE_EMULATOR_PATH)' == '' And Exists('/mnt/c/ACE/Server/ACE.Server.dll')">/mnt/c/ACE/Server</ACE_EMULATOR_PATH>
+    <ACE_EMULATOR_PATH Condition="'$(ACE_EMULATOR_PATH)' == ''">C:\ACE\Server</ACE_EMULATOR_PATH>
+    <ACEPath>$(ACE_EMULATOR_PATH)</ACEPath>
+    <!-- Legacy: ACE.Shared submodule references $(Realms) in Condition attributes -->
+    <Realms>$(DefineConstants.Contains('REALM'))</Realms>
+  </PropertyGroup>
+</Project>

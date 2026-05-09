@@ -5,10 +5,10 @@ namespace Windblown;
 
 /// <summary>
 /// Routes Give/Refuse emote lookups for mirrored WCIDs through the source WCID's emote chain on the
-/// SAME NPC. When the player gives e.g. 850271 (Bloodletter Drudge Charm Quality) to a Collector,
+/// SAME NPC. When the player gives e.g. 850301 (Drudge Charm Quality) to a Collector,
 /// vanilla <c>WorldObject.HasGiveOrRefuseEmoteForItem</c> only checks the NPC's emote table for an
-/// entry keyed to 850271 — and finds nothing. We postfix it: if the original lookup failed and the
-/// item's WCID has a mirror source registered (e.g. 850271 → 24835), we retry with the source WCID
+/// entry keyed to 850301 — and finds nothing. We postfix it: if the original lookup failed and the
+/// item's WCID has a mirror source registered (e.g. 850301 → 24835), we retry with the source WCID
 /// on the same NPC. If that succeeds, we clone the resulting <see cref="ACE.Entity.Models.PropertiesEmote"/>
 /// with <c>WeenieClassId</c> set to the player's actual item WCID so downstream patches
 /// (BetterSupportSkills <c>PreExecuteEmoteSet</c>) see a matching key.

@@ -166,38 +166,20 @@ When Assess Creature is trained or specialized, grants **guaranteed extra loot r
 
 > **Note:** Creature-type validation is now enforced. `TrophyDrops.cs` checks the dying creature's `WeenieClassId` against a per-trophy whitelist before creating the item, preventing e.g. tusker tusks from dropping on drudges. Champion and special mobs drop stacks of 1–8.
 
-**Drudge charm tiers (`DrudgeCharmTrophies`, 2026-05):** When **`EnableTrophyDrops`** is on, **`DrudgeCharmTrophies.Enabled`** adds **species-only** rolls on **`CreatureType.Drudge`** kills (defaults **2.5%** base WCID **24835** (Bloodletter Drudge Charm), **1% / 0.4% / 0.15%** for **850271–850273** *Quality / Pristine / Perfect*) — four independent rolls, independent of Assess extra-roll count. Requires world weenies + scrubbed create lists (repo **`WindblownContent/Content/SQL/DrudgeCharm_TierWeenies_World.sql`**, template **`README-TrophyCharmCloneTemplate.md`**). **`QuestTurnInCap`** treats all four WCIDs as bulk quest charms: tiered quest XP (**2.5% / 5% / 7.5% / 15%** of **`GetXPBetweenLevels(level, level+1)`** per charm turned in), **per-tier bank credit** (**25k / 50k / 100k / 250k** per charm by default, same face values as ACE trade-note weenies **7376 / 2626 / 2627 / 20630** — **no physical notes**) via **`LeyLineLedgerBankInterop.IncBanked`** (`BankCashProperty`, LLL when present else `PropertyInt64`); **no daily turn-in cap** on this path (other quest trophy WCIDs still use **`QuestTrophyDrops`** + **`QuestTurnInTracker`** when enabled). **QOL** / **AutoLoot** / **BetterLootControl** / **HybridClasses** ship matching allowlists or stack rules.
+**Drudge charm tiers (Windblown, 2026-05+):** Species-only drudge charm drops and bulk Collector turn-in live in **`Windblown/Content/TrophyLines/drudge-charm.json`** (runtime weenies **`Windblown/Content/Weenies/drudge-charms.json`**). Custom tier WCIDs **850300–850303** (Regular → Perfect); vanilla **24835** remains the mirror emote source and sibling-replacement target alongside **850300**. Server DB still needs weenie rows for those WCIDs (see **`Windblown/Content/SQL/Items/05_WindblownCollectorTrophies_850300-850336.sql`**). **QOL**, **AutoLoot**, and **BetterLootControl** use the new band; drudge charm logic is **not** configured via legacy **`DrudgeCharmTrophies`** in **`Settings.json`** (that block is ignored / removed — see **`Settings.cs`** migration comments).
 
-**Settings:**
+**Settings (Assess extra rolls only):**
 ```json
-"EnableTrophyDrops": true,
-"TrophyDrops": {
-  "MaxExtraRolls": 3,
-  "BonusTreasureChance": 0.0
-},
-"DrudgeCharmTrophies": {
-  "Enabled": true,
-  "DropChanceRegular": 0.025,
-  "DropChanceRare1": 0.01,
-  "DropChanceRare2": 0.004,
-  "DropChanceRare3": 0.0015,
-  "WcidRegular": 24835,
-  "WcidRare1": 850271,
-  "WcidRare2": 850272,
-  "WcidRare3": 850273,
-  "XpFractionRegular": 0.025,
-  "XpFractionRare1": 0.05,
-  "XpFractionRare2": 0.075,
-  "XpFractionRare3": 0.15,
-  "BankTradeNoteValuePerCharmRegular": 25000,
-  "BankTradeNoteValuePerCharmRare1": 50000,
-  "BankTradeNoteValuePerCharmRare2": 100000,
-  "BankTradeNoteValuePerCharmRare3": 250000,
-  "BankCashProperty": 39999
+{
+  "EnableTrophyDrops": true,
+  "TrophyDrops": {
+    "MaxExtraRolls": 3,
+    "BonusTreasureChance": 0.0
+  }
 }
 ```
 
-Older `Settings.json` that still has **`BankPyrealsPerCharm`** but no tier keys: all four **`BankTradeNoteValuePerCharm*`** deserialize as **0**, so the mod keeps using that **flat per-charm** value for every tier until you add the new keys.
+Drudge charm **drop rates, WCIDs, and turn-in rewards** are authored under **`Windblown/Content/TrophyLines/drudge-charm.json`** (not `BetterSupportSkills/Settings.json`).
 
 ---
 

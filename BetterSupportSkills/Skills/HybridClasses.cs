@@ -53,7 +53,7 @@ internal static class HybridClasses
         [DamageType.Cold] = new[] { 3680, 3681, 144, 145, 146, 147, 2147, 4458 },
         [DamageType.Electric] = new[] { 3684, 3685, 148, 149, 150, 151, 2151, 4462 },
         [DamageType.Slash] = new[] { 3667, 3668, 160, 161, 162, 163, 2134, 4445 },
-        [DamageType.Bludgeon] = new[] { 24835, 850271, 850272, 850273, 3670, 140, 141, 142, 143, 2135, 4446 },
+        [DamageType.Bludgeon] = new[] { 3669, 3670, 140, 141, 142, 143, 2135, 4446 },
         [DamageType.Pierce] = new[] { 3676, 3677, 156, 157, 158, 159, 2143, 4454 }, // Force Volley
         [DamageType.Nether] = new[] { 0, 0, 0, 0, 0, 0, 0, 0 }, // No nether volley
     };

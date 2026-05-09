@@ -6,7 +6,7 @@ Windblown server custom-content mod. Inject custom weenies into ACE's runtime we
 
 | Phase | Scope | State |
 |---|---|---|
-| 1 | Runtime weenie injection (`WeenieRegistry` + Harmony prefix). Custom WCIDs 850271–850285 for trophy tiers. | **Shipped** |
+| 1 | Runtime weenie injection (`WeenieRegistry` + Harmony prefix). Windblown collector trophy band **850300–850336** (drudge/rat/wasp/scalp/mob heads; retired **850271–850285**). | **Shipped** |
 | 2 | Generic trophy-line system (drop rolls + bulk turn-in). | **Shipped** — `Content/TrophyLines/*.json` |
 | 3 | SQL bootstrap for DB-needed content (vendors, landblock_instance, items that need world persistence). Organized under `Content/SQL/` by category: Items (800000-809999), Vendors (810000-819999), Pathwarden, VanillaTweaks. | **Shipped (2026-05-08)** |
 
@@ -26,19 +26,26 @@ Each entry inherits from a `BaseWcid` (typically the closest vanilla weenie). Th
 
 ```json
 {
-  "ClassId": 850271,
-  "ClassName": "drudgecharm_quality",
+  "ClassId": 850301,
+  "ClassName": "drudgecharm_quality_wb",
   "WeenieType": "Stackable",
   "BaseWcid": 24835,
+  "MirrorEmoteFromWcid": 24835,
   "PropertiesString": {
-    "Name": "Bloodletter Drudge Charm (Quality)",
-    "PluralName": "Bloodletter Drudge Charms (Quality)"
+    "Name": "Drudge Charm (Quality)",
+    "PluralName": "Drudge Charms (Quality)"
   },
-  "PropertiesInt": { "MaxStackSize": 999 },
+  "PropertiesInt": {
+    "MaxStackSize": 999,
+    "StackSize": 1,
+    "Value": 1,
+    "EncumbranceVal": 1,
+    "UiEffects": 256
+  },
   "PropertiesDID": { "IconUnderlay": 100676438 },
   "Delete": {
     "PropertiesString": ["Use", "ShortDesc"],
-    "PropertiesInt":    ["UiEffects", "ImbuedEffect"]
+    "PropertiesInt": ["ImbuedEffect"]
   }
 }
 ```

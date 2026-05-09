@@ -3,34 +3,32 @@
 | Mod | Purpose (first line of README) | Settings.json? | Cross-mod refs? |
 |---|---|---|---|
 | AceModQa | No README | ❌ |  |
-| AchievementUnlocked | No README | ✅ |  |
+| AchievementUnlocked | AchievementUnlocked | ✅ |  |
 | AureatePath | # AureatePath | ✅ |  |
 | AutoLoot | AutoLoot | ✅ | 🔗 |
-| BetterKeys | No README | ✅ | 🔗 |
+| AutoSalvage | No README | ❌ | 🔗 |
+| BetterKeys | BetterKeys | ✅ | 🔗 |
 | BetterLootControl | BetterLootControl | ✅ | 🔗 |
 | BetterSupportSkills | BetterSupportSkills | ✅ | 🔗 |
 | ChallengeModes | ChallengeModes | ✅ | 🔗 |
-| CommonGoals | No README | ✅ |  |
-| CustomSpells | No README | ✅ |  |
-| Data | No README | ❌ | 🔗 |
+| CommonGoals | CommonGoals | ✅ | 🔗 |
+| CustomSpells | CustomSpells | ✅ |  |
 | EasyServerSettings | EasyServerSettings | ✅ |  |
-| EmpyreanAlteration | No README | ✅ | 🔗 |
-| Gemcrafter | No README | ❌ |  |
-| graphify-out | No README | ❌ |  |
+| EmpyreanAlteration | EmpyreanAlteration | ✅ | 🔗 |
 | LeyLineLedger | LeyLineLedger | ✅ | 🔗 |
-| Lockboxes | No README | ✅ |  |
+| Lockboxes | Lockboxes | ✅ |  |
 | Loremaster | Loremaster | ✅ | 🔗 |
 | Numbersmith | # Numbersmith | ✅ |  |
 | Overtinked | Overtinked | ✅ | 🔗 |
 | QOL | QOL | ✅ | 🔗 |
 | Shared | No README | ❌ | 🔗 |
 | SpellSiphon | SpellSiphon | ✅ | 🔗 |
-| Swarmed | No README | ✅ |  |
-| ValheelContent | No README | ✅ | 🔗 |
+| Swarmed | Swarmed | ✅ | 🔗 |
+| ValheelContent | No README | ✅ |  |
 | Windblown | Windblown | ✅ | 🔗 |
-| WindblownContent | WindblownContent | ❌ | 🔗 |
+| WindblownContent | No README | ❌ | 🔗 |
 | Work-In-Progress | No README | ❌ |  |
-| WorldEvents | No README | ✅ | 🔗 |
-| LeyLineLedger | LeyLineLedger | ✅ | 🔗 |
-| Lockboxes | No README | ✅ | 🔗 |
-| Loremaster | Loremaster | ✅ |  |
+| WorldEvents | WorldEvents | ✅ | 🔗 |
+| build | No README | ❌ | 🔗 |
+| graphify-out | No README | ❌ |  |
+| sql-backups | No README | ❌ | 🔗 |

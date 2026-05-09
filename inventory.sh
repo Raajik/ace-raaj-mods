@@ -14,6 +14,8 @@ SKIP=(
   "docs"
   "tools"
   "templates"
+  "Gemcrafter"      # empty build artifacts (deleted)
+  "Data"            # empty root folder (deleted)
   ".*"
 )
 

@@ -1123,34 +1123,76 @@ internal static class ModCommandsList
             player.SendMessage(line, ChatMessageType.System);
     }
 
-    // -- AutoLoot bridge ------------------------------------------------------
+    // -- AutoLoot bridge (hardened) -----------------------------------------
 
     static class AutoLootBridge
     {
         static MethodInfo? _setSalvageState;
-        static bool _resolved;
+        static bool _fullyResolved;
+        static bool _assemblyLogged;
+        static bool _typeLogged;
 
         static void Resolve()
         {
-            _resolved = true;
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            if (_fullyResolved) return;
+
+            Assembly? asm = null;
+            foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (!string.Equals(asm.GetName().Name, "AutoLoot", StringComparison.Ordinal))
-                    continue;
-                var t = asm.GetType("AutoLoot.AutoLoot");
-                if (t != null)
-                {
-                    _setSalvageState = t.GetMethod("SetSalvageState", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player), typeof(bool) }, null);
-                }
-                break;
+                if (string.Equals(a.GetName().Name, "AutoLoot", StringComparison.Ordinal))
+                { asm = a; break; }
             }
+
+            if (asm is null)
+            {
+                if (!_assemblyLogged)
+                {
+                    _assemblyLogged = true;
+                    ModManager.Log("[BSS→AutoLoot] AutoLoot not loaded; bridge will activate if it appears later.", ModManager.LogLevel.Info);
+                }
+                return;
+            }
+
+            var t = asm.GetType("AutoLoot.AutoLoot");
+            if (t is null)
+            {
+                if (!_typeLogged)
+                {
+                    _typeLogged = true;
+                    ModManager.Log("[BSS→AutoLoot] AutoLoot loaded but AutoLoot.AutoLoot type missing; bridge inactive.", ModManager.LogLevel.Warn);
+                }
+                _fullyResolved = true;
+                return;
+            }
+
+            _setSalvageState = t.GetMethod(
+                "SetSalvageState",
+                BindingFlags.Public | BindingFlags.Static, null,
+                new[] { typeof(Player), typeof(bool) }, null);
+
+            _fullyResolved = true;
+            if (_setSalvageState is not null)
+                ModManager.Log($"[BSS→AutoLoot] Resolved SetSalvageState on {t.FullName}. Bridge active.", ModManager.LogLevel.Info);
+            else
+                ModManager.Log("[BSS→AutoLoot] WARNING: SetSalvageState not found on AutoLoot.AutoLoot; bridge inactive.", ModManager.LogLevel.Warn);
         }
 
         internal static void SetSalvageState(Player player, bool enabled)
         {
-            if (!_resolved) Resolve();
-            if (_setSalvageState == null) return;
-            try { _setSalvageState.Invoke(null, new object?[] { player, enabled }); } catch { }
+            Resolve();
+            if (_setSalvageState is null) return;
+            try
+            {
+                _setSalvageState.Invoke(null, new object?[] { player, enabled });
+            }
+            catch (TargetInvocationException tie) when (tie.InnerException is not null)
+            {
+                ModManager.Log($"[BSS→AutoLoot] SetSalvageState threw {tie.InnerException.GetType().Name}: {tie.InnerException.Message}", ModManager.LogLevel.Warn);
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[BSS→AutoLoot] SetSalvageState error: {ex.GetType().Name}: {ex.Message}", ModManager.LogLevel.Warn);
+            }
         }
     }
 

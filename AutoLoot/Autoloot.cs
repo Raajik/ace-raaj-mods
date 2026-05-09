@@ -674,7 +674,9 @@ public class AutoLoot
         SavePrefs(player);
     }
 
-    // ── BetterSupportSkills bridge ───────────────────────────────────────────
+    // ── BetterSupportSkills bridge (hardened) ────────────────────────────
+    // Pattern: resolve-once, log-once, typed-exception wrappers.
+    // Keeps trying until the assembly appears (late-load support).
 
     static class BetterSupportSkillsBridge
     {
@@ -685,89 +687,146 @@ public class AutoLoot
         static MethodInfo? _getMaterialName;
         static MethodInfo? _setMessagingMuted;
 
-        // Never cache "resolve failed": BetterSupportSkills may load after AutoLoot's first call.
+        static bool _fullyResolved;
+        static bool _assemblyLogged;
+        static bool _typeLogged;
+
         static void Resolve()
         {
-            if (_tryAutoSalvageItem != null && _getMaterialName != null)
-                return;
+            if (_fullyResolved) return;
 
-            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            Assembly? asm = null;
+            foreach (var a in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (!string.Equals(asm.GetName().Name, "BetterSupportSkills", StringComparison.Ordinal))
-                    continue;
+                if (string.Equals(a.GetName().Name, "BetterSupportSkills", StringComparison.Ordinal))
+                { asm = a; break; }
+            }
 
-                var t = asm.GetType("BetterSupportSkills.Skills.SalvageAutoDeposit");
-                if (t is null)
-                    continue;
+            if (asm is null)
+            {
+                if (!_assemblyLogged)
+                {
+                    _assemblyLogged = true;
+                    ModManager.Log("[AutoLoot→BSS] BetterSupportSkills not loaded; bridge will activate if it appears later.", ModManager.LogLevel.Info);
+                }
+                return; // keep trying (late-load)
+            }
 
-                _setEnabled = t.GetMethod("SetEnabled", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player), typeof(bool) }, null);
-                _isEnabled = t.GetMethod("IsEnabled", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player) }, null);
-                _tryAutoSalvageItem = t.GetMethod("TryAutoSalvageItem", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player), typeof(WorldObject) }, null);
-                _getSalvageRate = t.GetMethod("GetSalvageRate", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player) }, null);
-                _getMaterialName = t.GetMethod("GetMaterialName", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(int) }, null);
-                _setMessagingMuted = t.GetMethod("SetMessagingMuted", BindingFlags.Public | BindingFlags.Static, null, new[] { typeof(Player), typeof(bool) }, null);
+            var t = asm.GetType("BetterSupportSkills.Skills.SalvageAutoDeposit");
+            if (t is null)
+            {
+                if (!_typeLogged)
+                {
+                    _typeLogged = true;
+                    ModManager.Log("[AutoLoot→BSS] BetterSupportSkills loaded but SalvageAutoDeposit type missing; bridge inactive.", ModManager.LogLevel.Warn);
+                }
+                _fullyResolved = true;
                 return;
             }
+
+            _setEnabled        = GetMethod(t, "SetEnabled",        typeof(Player), typeof(bool));
+            _isEnabled         = GetMethod(t, "IsEnabled",         typeof(Player));
+            _tryAutoSalvageItem= GetMethod(t, "TryAutoSalvageItem",typeof(Player), typeof(WorldObject));
+            _getSalvageRate    = GetMethod(t, "GetSalvageRate",    typeof(Player));
+            _getMaterialName   = GetMethod(t, "GetMaterialName",   typeof(int));
+            _setMessagingMuted = GetMethod(t, "SetMessagingMuted", typeof(Player), typeof(bool));
+
+            int found = CountFound();
+            if (found == 6)
+            {
+                _fullyResolved = true;
+                ModManager.Log($"[AutoLoot→BSS] Resolved all 6 methods on {t.FullName}. Bridge active.", ModManager.LogLevel.Info);
+            }
+            else
+            {
+                _fullyResolved = true;
+                var missing = string.Join(", ", MissingMethods());
+                ModManager.Log($"[AutoLoot→BSS] WARNING: Resolved only {found}/6 methods on {t.FullName}. Missing: {missing}.", ModManager.LogLevel.Warn);
+            }
+        }
+
+        static MethodInfo? GetMethod(Type t, string name, params Type[] p)
+            => t.GetMethod(name, BindingFlags.Public | BindingFlags.Static, null, p, null);
+
+        static int CountFound()
+        {
+            int n = 0;
+            if (_setEnabled        != null) n++;
+            if (_isEnabled         != null) n++;
+            if (_tryAutoSalvageItem!= null) n++;
+            if (_getSalvageRate    != null) n++;
+            if (_getMaterialName   != null) n++;
+            if (_setMessagingMuted != null) n++;
+            return n;
+        }
+
+        static IEnumerable<string> MissingMethods()
+        {
+            if (_setEnabled        is null) yield return "SetEnabled";
+            if (_isEnabled         is null) yield return "IsEnabled";
+            if (_tryAutoSalvageItem is null) yield return "TryAutoSalvageItem";
+            if (_getSalvageRate    is null) yield return "GetSalvageRate";
+            if (_getMaterialName   is null) yield return "GetMaterialName";
+            if (_setMessagingMuted is null) yield return "SetMessagingMuted";
+        }
+
+        static void InvokeVoid(MethodInfo? mi, params object?[] args)
+        {
+            if (mi is null) return;
+            try { mi.Invoke(null, args); }
+            catch (TargetInvocationException tie) when (tie.InnerException is not null)
+            {
+                ModManager.Log($"[AutoLoot→BSS] {mi.Name} threw {tie.InnerException.GetType().Name}: {tie.InnerException.Message}", ModManager.LogLevel.Warn);
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[AutoLoot→BSS] {mi.Name} error: {ex.GetType().Name}: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+        }
+
+        static T Invoke<T>(MethodInfo? mi, object?[] args, T fallback)
+        {
+            if (mi is null) return fallback;
+            try
+            {
+                var r = mi.Invoke(null, args);
+                if (r is T v) return v;
+            }
+            catch (TargetInvocationException tie) when (tie.InnerException is not null)
+            {
+                ModManager.Log($"[AutoLoot→BSS] {mi.Name} threw {tie.InnerException.GetType().Name}: {tie.InnerException.Message}", ModManager.LogLevel.Warn);
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[AutoLoot→BSS] {mi.Name} error: {ex.GetType().Name}: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+            return fallback;
         }
 
         internal static void SetSalvageEnabled(Player player, bool enabled)
-        {
-            Resolve();
-            if (_setEnabled is null) return;
-            try { _setEnabled.Invoke(null, new object?[] { player, enabled }); } catch { }
-        }
+            => InvokeVoid(_setEnabled, player, enabled);
 
         internal static bool IsSalvageEnabled(Player player)
-        {
-            Resolve();
-            if (_isEnabled is null) return false;
-            try { return _isEnabled.Invoke(null, new object?[] { player }) is true; } catch { return false; }
-        }
+            => Invoke(_isEnabled, new object?[] { player }, false);
 
         internal static double GetSalvageRate(Player player)
-        {
-            Resolve();
-            if (_getSalvageRate is null) return 0.0;
-            try { return _getSalvageRate.Invoke(null, new object?[] { player }) is double rate ? rate : 0.0; } catch { return 0.0; }
-        }
+            => Invoke(_getSalvageRate, new object?[] { player }, 0.0);
 
-        /// <summary>
-        /// Delegates to BetterSupportSkills.SalvageAutoDeposit.TryAutoSalvageItem.
-        /// Returns true if the item was salvaged and destroyed by BSS.
-        /// </summary>
         internal static bool TryAutoSalvage(Player player, WorldObject item)
-        {
-            Resolve();
-            if (_tryAutoSalvageItem is null) return false;
-            try { return _tryAutoSalvageItem.Invoke(null, new object?[] { player, item }) is true; } catch { return false; }
-        }
+            => Invoke(_tryAutoSalvageItem, new object?[] { player, item }, false);
 
-        /// <summary>
-        /// Gets compact material name (e.g. "Steel") from BSS's GetMaterialName via material index.
-        /// Falls back to "Salvage ({wcid})".
-        /// </summary>
         internal static string GetCompactSalvageName(uint materialIndex, uint wcid)
         {
             Resolve();
-            if (_getMaterialName != null)
-            {
-                try
-                {
-                    var name = _getMaterialName.Invoke(null, new object?[] { (int)materialIndex }) as string;
-                    if (!string.IsNullOrEmpty(name) && !name.StartsWith("Unknown", StringComparison.OrdinalIgnoreCase))
-                        return name;
-                }
-                catch { }
-            }
+            if (_getMaterialName is null) return $"Salvage ({wcid})";
+            var name = Invoke(_getMaterialName, new object?[] { (int)materialIndex }, (string?)null);
+            if (!string.IsNullOrEmpty(name) && !name.StartsWith("Unknown", StringComparison.OrdinalIgnoreCase))
+                return name;
             return $"Salvage ({wcid})";
         }
 
         internal static void SetSalvageMessagingMuted(Player player, bool muted)
-        {
-            Resolve();
-            if (_setMessagingMuted is null) return;
-            try { _setMessagingMuted.Invoke(null, new object?[] { player, muted }); } catch { }
-        }
+            => InvokeVoid(_setMessagingMuted, player, muted);
     }
 
     // ── Persistence helpers ──────────────────────────────────────────────────

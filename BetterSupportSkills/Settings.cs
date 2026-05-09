@@ -564,12 +564,12 @@ public class MagicWithoutManaConversionSettings
     public bool TripleLifeHarmful { get; set; } = true;
 
     [JsonPropertyName("// CreatureEnchantmentWeaveSpellId")]
-    public string CreatureEnchantmentWeaveSpellIdDoc { get; init; } = "CustomSpells id granting +50 CE when MC untrained (single stack via WeaveStacksForPlus50).";
-    public int CreatureEnchantmentWeaveSpellId { get; set; } = 90000017;
+    public string CreatureEnchantmentWeaveSpellIdDoc { get; init; } = "ACE spell id granting +50 CE when MC untrained (single stack via WeaveStacksForPlus50). Weave of the Creature Enchantment V (5622).";
+    public int CreatureEnchantmentWeaveSpellId { get; set; } = 5622;
 
     [JsonPropertyName("// ItemEnchantmentWeaveSpellId")]
-    public string ItemEnchantmentWeaveSpellIdDoc { get; init; } = "CustomSpells id granting +50 IE when MC untrained.";
-    public int ItemEnchantmentWeaveSpellId { get; set; } = 90000018;
+    public string ItemEnchantmentWeaveSpellIdDoc { get; init; } = "ACE spell id granting +50 IE when MC untrained. Weave of the Item Enchantment V (5652).";
+    public int ItemEnchantmentWeaveSpellId { get; set; } = 5652;
 
     [JsonPropertyName("// WeaveStacksForPlus50")]
     public string WeaveStacksForPlus50Doc { get; init; } = "How many weave casts to apply on login (use 1 with CustomSpells +50 templates).";

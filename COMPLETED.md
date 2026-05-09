@@ -838,6 +838,34 @@ Multiple commits implementing each vendor type specialization, visual system, Ov
 
 Stripped the entire ACRealms section (§7.0), operator snapshot block, agent prompt block, realms/rulesets docs, ACRealms auto-restart watchdog, dead code paths, and all fork references. The directory was deleted; docs no longer reference it.
 
+## 2026-05-08 (Late Evening)
+
+### wb_test Server Reset (fresh world DB) + BSS Weave Spell Fix
+
+**Symptom:** wb_test kept crashing when Empanada Chaos logged in — NRE in `TryApplyWeaveBuffs` because custom spell IDs 90000017/90000018 didn't exist in ace_world.
+
+**Root cause:** ace_world contaminated with old Valheel data (29,573 weenies, 3,743 spells, no Windblown custom WCIDs). Custom spell IDs 90000017/90000018 were runtime-only (CustomSpells cache) but `new Spell()` queried the DB, not the cache.
+
+**Executed:**
+- ✅ ace_shard backed up (`WindblownContent/sql-backups/2026-05-08/ace_shard_full.sql`, 1.5M)
+- ✅ ace_auth backed up (`ace_auth_full.sql`, 5.3K)
+- ✅ ace_world old reference backed up (`ace_world_old_reference.sql`)
+- ✅ void-test_world cloned over ace_world — weenies 29,573 → 43,920, spells 3,743 → 6,266
+- ✅ All proper Windblown custom WCIDs now present (800000-810001)
+- ✅ Characters/accounts preserved (ace_shard + ace_auth untouched)
+- ✅ Empanada Chaos logged in successfully post-restart
+
+**BSS weave spell fix (3 files):**
+| File | Old | New |
+|------|-----|-----|
+| `Settings.cs` default | 90000017 / 90000018 | 5622 / 5652 |
+| Repo `Settings.json` | 90000017 / 90000018 | 5622 / 5652 |
+| Test `C:\ACE\Mods\...\Settings.json` | 90000017 / 90000018 | 5622 / 5652 |
+
+Spells: **5622** = Weave of the Creature Enchantment V (+50 CE), **5652** = Weave of the Item Enchantment V (+50 IE) — real ACE spells from the fresh DB.
+
+**Remaining:** Pre-existing build errors in `SummoningClasses.cs` (missing usings) need fixing for clean BSS deploy.
+
 ## Earlier Features
 
 

@@ -35,14 +35,12 @@ if ($existing)
 }
 
 $action = New-ScheduledTaskAction -Execute $pwsh -Argument $arg -WorkingDirectory $watchdogDir
-$trigger = New-ScheduledTaskTrigger -AtLogOn -User $RunAs
-$trigger.Repetition.Interval = [System.Xml.XmlConvert]::ToString([TimeSpan]::FromMinutes(1))
-$trigger.Repetition.Duration = [System.Xml.XmlConvert]::ToString([TimeSpan]::FromDays(365))
+$trigger = New-ScheduledTaskTrigger -AtLogOn -User $RunAs -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration (New-TimeSpan -Days 365)
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
     -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
     -ExecutionTimeLimit (New-TimeSpan -Days 3650)
 
-$principal = New-ScheduledTaskPrincipal -UserId $RunAs -LogonType Interactive -RunLevel Highest
+$principal = New-ScheduledTaskPrincipal -UserId $RunAs -LogonType Interactive -RunLevel Limited
 
 $regArgs = @{
     TaskName    = $taskName

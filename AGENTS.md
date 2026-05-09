@@ -389,6 +389,13 @@ Set via `PropertyInt.UiEffects`, then broadcast `GameMessagePublicUpdateProperty
 
 **Commit and push after EVERY bug fix** - After verifying (build + deploy + confirm), immediately `git commit` with descriptive message and `git push`. Never leave working tree dirty with solved problems.
 
+**Pushing from WSL:** The `git push` command fails inside WSL because the remote uses HTTPS (not SSH) and no credential helper is configured in WSL. Use the Windows Git binary with a WSL-to-Windows path conversion:
+```bash
+WINPATH=$(wslpath -w /mnt/a/ai/projects/ace-raaj-mods)
+"/mnt/c/Program Files/Git/bin/git.exe" -C "$WINPATH" push
+```
+This picks up GitHub credentials stored in Windows Credential Manager. The commit itself is done with the WSL `git` (no auth needed).
+
 **Auto-update docs after EVERY code push** - After `git push`, perform full "update docs" sweep: trim `PLAN.md`, append `COMPLETED.md` if something shipped, update `AGENTS.md` when conventions change, refresh stale mod Readmes, and write findings to wiki (`A:\obsidian\jeremy\wiki\`) with `[[Page Name]]` links.
 
 **Run `graphify update .` after any session that touched code** - The graphify knowledge graph (`.cursor/rules/graphify.mdc`) tracks cross-module relationships. Stale graphs mislead future agents. After modifying code, run from repo root:

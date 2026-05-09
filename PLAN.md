@@ -52,6 +52,6 @@
 - **BetterSupportSkills** — monitor summoner class cantrip bonus pets for balance. **Status:** current CantripBonusByTier values = {1,2,3,4,7}. Requires player feedback before adjusting.
 
 ## Progress (recent)
-- 2026-05-08 — **Custom weenie reorganization**: WCIDs moved to organized ranges (800000-809999 items, 810000-819999 vendors), WindblownContent consolidated into Windblown/ with type-based SQL folders, vanilla mutations reverted, fresh void-test_world deployed. See `COMPLETED.md`.
+- 2026-05-08 — **wb_test server reset**: ace_world replaced with void-test_world fresh clone (43,920 weenies, proper Windblown custom WCIDs). BSS weave spell IDs updated from 90000017/90000018 → 5622/5652 (real ACE Weave V spells). Empanada Chaos logged in successfully.
 - 2026-05-07 — **🟡 Conniving creature crash** — see Active section above.
 - 2026-05-06 — AutoLoot .utl archive, stale prefs cleanup, BLC death-loot timing fix.

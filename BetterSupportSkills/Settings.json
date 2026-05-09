@@ -61,8 +61,8 @@
   "MagicWithoutManaConversion": {
     "EchoWarVoidHarmful": true,
     "TripleLifeHarmful": true,
-    "CreatureEnchantmentWeaveSpellId": 90000017,
-    "ItemEnchantmentWeaveSpellId": 90000018,
+    "CreatureEnchantmentWeaveSpellId": 5622,
+    "ItemEnchantmentWeaveSpellId": 5652,
     "WeaveStacksForPlus50": 1
   },
   "EnableMeleeLifeSpellProc": true,

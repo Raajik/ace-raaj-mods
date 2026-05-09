@@ -46,13 +46,11 @@ if ($existing)
 
 $action = New-ScheduledTaskAction -Execute $pwsh -Argument $arg -WorkingDirectory $watchdogDir
 $trigger = New-ScheduledTaskTrigger -AtLogOn -User $RunAs
-$trigger.Repetition.Interval = [System.Xml.XmlConvert]::ToString([TimeSpan]::FromMinutes(1))
-$trigger.Repetition.Duration = [System.Xml.XmlConvert]::ToString([TimeSpan]::FromDays(365))
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
     -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1) `
     -ExecutionTimeLimit (New-TimeSpan -Days 3650)
 
-$principal = New-ScheduledTaskPrincipal -UserId $RunAs -LogonType Interactive -RunLevel Highest
+$principal = New-ScheduledTaskPrincipal -UserId $RunAs -LogonType Interactive -RunLevel Limited
 
 $regArgs = @{
     TaskName    = $taskName
@@ -71,6 +69,12 @@ else
 {
     Register-ScheduledTask @regArgs
 }
+
+# Add repetition interval/duration to the logon trigger (AtLogOn parameter set doesn't support -RepetitionInterval natively)
+$task = Get-ScheduledTask -TaskName $taskName
+$task.Triggers[0].Repetition.Interval = 'PT1M'
+$task.Triggers[0].Repetition.Duration = 'P365D'
+$task | Set-ScheduledTask
 
 Write-Host "Registered task '$taskName' for $RunAs (Interactive at log on). Watchdog host is hidden; ACE.Server.exe starts visible."
 Write-Host "If NSSM service ACE-WB is also installed, stop it first or you will get duplicate live processes."

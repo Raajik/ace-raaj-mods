@@ -75,7 +75,7 @@ When `EnableQuestSalvageAutoBank` is true (default), quest reward salvage bags a
 | 33620 (Pathwarden) | Granite | 20985 |
 | 33621 (Pathwarden) | Steel | 20993 |
 
-- Each bag deposits **100 units** (1 full standard bag) to the matching material bank property.
+- Each bag deposits **100 units** (1 full standard bag) to the matching material bank property (same **`ResolveMaterialBankProperty`** / `DepositRules` lookup as `/bank salvage`; **no** WCID-offset fallback if the regular salvage WCID is missing from rules).
 - Intercepted at the `Player.GiveFromEmote` level (NPC emote rewards), so this works for **Clutch of Kings NPCs** and any other quest giver using emotes.
 
 ### Pathwarden rewards (PathwardenAutoBank)
@@ -88,7 +88,11 @@ When `EnablePathwardenAutoBank` is true (default), returning Pathwarden armor pi
 
 When `SalvageBank.DirectDepositOnSalvage` is true, items created by salvage recipes (tinkering bench output) are instantly deposited to the material bank.
 
-**DepositRules metadata (Windblown):** Nether Rending is credited on **Salvaged Onyx (WCID 21064)** under weapon tinkering; **Salvaged Obsidian (21063)** is **`Useless`** / no apparent use (matches Overtinked + vanilla Obsidian). Row order in `Settings.json` must stay fixed so bank `PropertyInt64` indices do not shift.
+**How bank property IDs are chosen:** For each `DepositRules` row at index `i`, the bank slot is **`rule.BankProperty`** if non-zero, else **`SalvageBank.FirstMaterialBankPropertyId + i`**. Matching deposits (inventory, recipe output, quest bags) resolve the row by **WeenieClassId**, **OutputBagWeenieClassId** (when different from primary), and **AdditionalDepositWeenieClassIds** — same source WCID set as `BankSalvage.GetDepositSourceWcids`.
+
+**Legacy WCID-offset stray balances:** If BetterSupportSkills (pre-fix) or another path credited **`FirstMaterialBankPropertyId + (WCID − 20981)`** while the rule index differed, units could sit on the wrong property. **`BankSalvage.MaybeMergeLegacyWcidOffsetSalvageBank`** runs on **player enter world** and when **`/bank salvage`** runs (after `MaybePurgeLegacyPooledSalvage`): for each stack salvage WCID **20981–21089** with a matching rule, if legacy ≠ resolved and legacy **> 0**, merge into resolved and zero legacy. Players get one summary line when anything moved.
+
+**DepositRules metadata (Windblown):** Nether Rending is credited on **Salvaged Onyx (WCID 21064)** under weapon tinkering; **Salvaged Obsidian (21063)** is **`Useless`** / no apparent use (matches Overtinked + vanilla Obsidian). Inserting or reordering rows changes which `PropertyInt64` each material uses — coordinate with any SQL/biota tooling and run the merge once after fixing clients.
 
 ### Skeleton key appraisal (`SkeletonKeyAppraisal`)
 

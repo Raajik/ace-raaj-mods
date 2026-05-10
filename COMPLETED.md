@@ -1,5 +1,44 @@
 # Completed Features & Fixes
 
+## 2026-05-10
+
+### LeyLineLedger / BetterSupportSkills — Salvage bank `PropertyInt64` alignment + legacy auto-merge
+
+**Problem:** BetterSupportSkills auto-salvage credited stack salvage WCIDs **20981–21089** using **`FirstMaterialBankPropertyId + (WCID − 20981)`** (WCID order). LeyLineLedger’s `/bank salvage` material bank uses **`FirstMaterialBankPropertyId + DepositRules row index`** (or per-rule **`BankProperty`**). After `DepositRules` gained non-sequential rows (e.g. gems after **20995**), bag-fill messaging and credits could hit the **wrong** `PropertyInt64` while status read the **correct** slot (e.g. Brass **21042**).
+
+**Fix (code):**
+- **`Shared/LeyLineLedgerSalvageBankInterop.cs`** — reflects `LeyLineLedger.PatchClass.Settings.SalvageBank` and resolves the bank property the same way as `BankSalvage` (deposit source WCIDs per rule). Used by BetterSupportSkills when the LeyLineLedger assembly is loaded; legacy offset only if LLL is not present.
+- **`BetterSupportSkills`** — `LeyLineLedgerSalvageInterop.GetSalvagePropertyId` / `TryIncSalvage`, `SalvageAutoDeposit` (`PickLeastBankedMaterial`, `GetMaterialBankProperty`), and repo `.csproj` compile link for the shared file.
+- **`LeyLineLedger/QuestSalvageAutoBank.cs`** — removed WCID-offset fallback when no rule matches (refuse + log instead of wrong property).
+
+**Fix (data migration):**
+- **`BankSalvage.MaybeMergeLegacyWcidOffsetSalvageBank`** — on **`Player.PlayerEnterWorld`** (with existing legacy pool purge) and at **`/bank salvage`** entry, for each WCID **20981–21089** with a matching rule: if **legacy** slot ≠ **resolved** slot and legacy balance **> 0**, **`IncBanked`** merge into correct slot and zero legacy. One player message + server log when anything moved.
+
+**Files:** `Shared/LeyLineLedgerSalvageBankInterop.cs`, `BetterSupportSkills/BetterSupportSkills.csproj`, `BetterSupportSkills/Skills/LeyLineLedgerSalvageInterop.cs`, `BetterSupportSkills/Skills/SalvageAutoDeposit.cs`, `LeyLineLedger/QuestSalvageAutoBank.cs`, `LeyLineLedger/BankSalvage.cs`.
+
+**Commits:** `07522e2e` (interop + BSS + quest), `8bd328c9` (LLL auto-merge).
+
+### BetterLootControl — VendorLootRotation Harmony Fix
+
+**Problem:** Vendor loot rotation auto-discovered `[HarmonyPrefix]` + `[HarmonyPatch]` methods added to `PatchClass` were silently ignored by `Harmony.PatchAllUncategorized()`. All new patches (`PrePlayerHeartbeat`, `PreVendorApproach`) never fired. Existing chest patches worked because they were present at initial compile time.
+
+**Root cause:** Unknown — possibly a `PatchAllUncategorized` caching or assembly scanning issue in the ACE.Shared NuGet package that differentiates between compile-time and later-added methods in the same partial class.
+
+**Solution:** Replaced auto-discovery with manual `ModC.Harmony.Patch()` on `GameEventApproachVendor(Session, Vendor, uint)` constructor in `ApplyVendorApproachPatch()` called from `OnStartSuccess()`. This bypasses auto-discovery entirely.
+
+**Priority fix:** Added `[HarmonyPriority(Priority.First)]` to ensure BLC's prefix runs BEFORE LLL's `PreCtorGameEventApproachVendor` prefix (which has default priority). This fixes the original ordering bug where LLL wrote the vendor packet before BLC rotated the stock.
+
+**Flow:**
+1. Player approaches vendor → `GameEventApproachVendor` constructor about to run
+2. BLC's `PreGameEventApproachVendor` fires (Priority.First) → calls `VendorLootRotation.OnVendorApproachPrefix()` → rotates items in `DefaultItemsForSale`/`UniqueItemsForSale`
+3. LLL's `PreCtorGameEventApproachVendor` fires (Normal priority) → writes vendor packet with already-rotated items
+4. (Original constructor body skipped by LLL returning false)
+
+**Files changed:**
+- `BetterLootControl/PatchClass.cs` — Removed broken auto-discovered patches (`PrePlayerHeartbeat`, `PreVendorApproach`), restored manual `Harmony.Patch()` with `Priority.First` targeting `GameEventApproachVendor` ctor
+
+**Verified:** Patch confirmed applied in ACE log: `[BLC] ApplyVendorApproachPatch: Patched GameEventApproachVendor ctor with Priority.First`
+
 ## 2026-05-09
 
 ### Town Network — Custom NPCs & Portal Additions

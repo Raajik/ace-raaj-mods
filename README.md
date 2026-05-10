@@ -119,7 +119,8 @@ Banking and ledger system for items, currency, luminance, and denominated commod
 - **Vendor integration** — bankers and vendors can act as ledger access points.
 - **Vendor sell rate reduction** — configurable multiplier (default 3%) on vendor payouts to combat inflation.
 - **Vendor sell payout floor** — optional minimum pyreals when selling items to vendors (`VendorMinSellPayoutPyreals`), applied after other vendor patches.
-- **Salvage bank metadata** — Nether Rending credits **Salvaged Onyx (21064)**; **Salvaged Obsidian (21063)** is junk (`Useless`), matching Overtinked. Do not reorder `DepositRules` rows without shifting bank `PropertyInt64` indices.
+- **Salvage bank (`/bank salvage`)** — Stack salvage WCIDs **20981–21089** bank to character `PropertyInt64` slots: **`FirstMaterialBankPropertyId + DepositRules` index** or per-rule **`BankProperty`** (see `LeyLineLedger/Settings.json`). **Not** `FirstMaterialBankPropertyId + (WCID − 20981)` unless rules stay strictly WCID-sorted. **BetterSupportSkills** auto-salvage resolves the same slot via **`Shared/LeyLineLedgerSalvageBankInterop`** when LeyLineLedger is loaded. **On login** (and when opening `/bank salvage`), LeyLineLedger **auto-merges** any stray balance still sitting on the old WCID-offset slot into the correct rule slot.
+- **Salvage bank metadata** — Nether Rending credits **Salvaged Onyx (21064)**; **Salvaged Obsidian (21063)** is junk (`Useless`), matching Overtinked. Reordering or inserting `DepositRules` rows shifts material bank property indices — plan migrations if you change row order.
 - **Skeleton key appraisal** — optional `AppraiseInfo` postfix appends lock-cap suffixes `(1kD)` / `(1kC)` / `(5kD)` / `(5kC)` for Windblown key WCIDs (aligned with BetterKeys).
 
 ### Loremaster

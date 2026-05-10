@@ -49,7 +49,11 @@ Always check in this order:
 | `FakeBool 12001` | Event announcement opt-out | WorldEvents |
 | `FakeBool 12002` | **Legacy** periodic auto-claim flag (pre-json); migrated to `Mods/WorldEvents/PendingClaimsAuto/<guid>.json` on login/tick - do not reuse for new features | WorldEvents |
 
-**Windblown custom trophies (physical stackables):** When adding tiered quest trophies that should **autoloot to the pack** as real items (not LLL ledger rows), follow **`WindblownContent/docs/Windblown-Custom-Trophy-Settings.md`** - WCID checklist, AutoLoot Pass 1 (`UpgradedTrophyWeenieClassIds`), QOL bulk turn-in, BSS drops/turn-in, SQL template. Extend that doc with each new line.
+**Windblown custom trophies (physical stackables):** When adding tiered quest trophies that should **autoloot to the pack** as real items (not LLL ledger rows):
+  - **New tiered trophy template:** `Windblown/docs/Tiered-Trophy-Template.md` — copy-paste JSON templates for weenies, trophy lines, and SQL. Automatically get blue underlay + black number overlays + creature-type-gated drops + turn-in rewards.
+  - **AutoLoot:** Update `UpgradedTrophyWeenieClassIds` in AutoLoot `Settings.json`.
+  - **Bulk turn-in:** Already handled by `EnableBulkTurnIn: true` in the trophy line JSON.
+  - **Extend existing SQL** (`Content/SQL/Items/05_WindblownCollectorTrophies...sql`) or create a new file per trophy line.
 
 ## 4. Agent Permissions
 - **DO:** Edit repo `Settings.json` for templates/new keys; tune **test** `C:\ACE\Mods\<Mod>\Settings.json` for balance. Fix bugs, refactor for clarity.
@@ -144,6 +148,7 @@ Always check in this order:
 | Stackable items need 11 int props | SQL template + Harmony postfixes | [[Stackable Items Checklist]] |
 | SQL dumps contain `CREATE DATABASE` | Strip before piping; never `sed` a dump | [[operations/SQL Procedures]] |
 | `SpellId.Undef` in blast spells | Filter `Undef` from rolled lists | [[ACE Vanilla Behavior Traps]] |
+| `InqYesNo` emote type 75: `message` vs `test_String` | `message` = player-facing text, `test_String` = routing key. Swapped = routing key shown as popup | [[ACE Vanilla Behavior Traps]] |
 | Non-sequential ACE IDs | Use hardcoded arrays, never arithmetic | [[ACE Vanilla Behavior Traps]] |
 
 ### 8.5 Workflows & Agent Behavior
@@ -170,6 +175,12 @@ ACE enums, property IDs, and mechanics are **never what you assume**. `WeenieTyp
 ### 8.7 MONETARY REWARDS MUST GO THROUGH LLL BANK INTEROP
 
 Whenever a Harmony patch grants a monetary/pyreal reward, it **must** use `LeyLineLedgerBankInterop.DepositToBank`. Do **not** give trade notes or physical pyreal items — they clutter inventory and bypass LLL's banking system. Works whether LLL is loaded or not (falls back to PropertyInt64 biota write).
+
+### 8.7a Stack salvage bank (`PropertyInt64`) — LLL is source of truth
+
+Material bank slots for stack salvage WCIDs **20981–21089** are **`SalvageBank.FirstMaterialBankPropertyId + DepositRules row index`** unless the row sets **`BankProperty`** — see `LeyLineLedger.BankSalvage.ResolveMaterialBankProperty`. **Do not** assume **`FirstMaterialBankPropertyId + (WCID − 20981)`** unless every rule row stays strictly WCID-sequential.
+
+**BetterSupportSkills** credits those units via **`Shared/LeyLineLedgerSalvageBankInterop`** + **`LeyLineLedgerBankInterop.IncBanked`** so messaging and `/bank salvage status` stay aligned. **LeyLineLedger** runs **`MaybeMergeLegacyWcidOffsetSalvageBank`** on login and at `/bank salvage` to fold any pre-fix stray legacy-slot balance into the resolved slot.
 
 ### 8.8 Wiki Reference Index
 

@@ -126,10 +126,19 @@ public partial class PatchClass
         }
 
         var displayName = BuildDisplayName(line, tier, consumed);
-        string bankMsg = bankDelta > 0 ? $" and {bankDelta:N0} pyreals" : "";
-        __instance.SendMessage(
-            $"You turn in {consumed:N0} {displayName} for {xpAmount:N0} experience{bankMsg}.",
-            ChatMessageType.System);
+        if (bankDelta > 0)
+        {
+            long totalBanked = LeyLineLedgerBankInterop.GetBanked(__instance, line.BankCashProperty);
+            __instance.SendMessage(
+                $"Collector Vaetha accepts your {consumed:N0} {displayName}. {bankDelta:N0} pyreals deposited into your bank account ({totalBanked:N0} total, +{bankDelta:N0}).",
+                ChatMessageType.System);
+        }
+        else
+        {
+            __instance.SendMessage(
+                $"Collector Vaetha accepts your {consumed:N0} {displayName}.",
+                ChatMessageType.System);
+        }
 
         // Flavor text on a separate line (Vaetha only)
         if (npcWcid == 810003 && !string.IsNullOrWhiteSpace(flavor))

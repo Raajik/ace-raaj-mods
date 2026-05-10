@@ -155,26 +155,6 @@ public class Settings
     public string EnableTownNetworkTollDoc { get; init; } = "When true, Town Network–matched portals debit banked pyreals (see TownNetworkToll) after ACE portal checks; insufficient funds can block or drain all bank per InsufficientFundsMode.";
     public bool EnableTownNetworkToll { get; set; } = true;
 
-    [JsonPropertyName("// EnableVendorPackBurdenRelief")]
-    public string EnableVendorPackBurdenReliefDoc { get; init; } = "When true, wearing (and optionally carrying in main inventory) configured pack WCIDs multiplies total encumbrance via Creature.GetEncumbrance. Per-WCID multipliers use PackBurdenWcidMultipliers when non-empty; otherwise VendorPackBurdenMultiplier applies to VendorPackBurdenWcids. The smallest multiplier (most relief) wins when multiple packs match.";
-    public bool EnableVendorPackBurdenRelief { get; set; } = false;
-
-    [JsonPropertyName("// VendorPackBurdenMultiplier")]
-    public string VendorPackBurdenMultiplierDoc { get; init; } = "Fallback applied when PackBurdenWcidMultipliers is empty and a listed WCID in VendorPackBurdenWcids matches.";
-    public double VendorPackBurdenMultiplier { get; set; } = 0.95;
-
-    [JsonPropertyName("// VendorPackBurdenWcids")]
-    public string VendorPackBurdenWcidsDoc { get; init; } = "Item WCIDs treated as burden-relief packs when PackBurdenWcidMultipliers is empty.";
-    public List<uint> VendorPackBurdenWcids { get; set; } = new() { 166, 136 };
-
-    [JsonPropertyName("// PackBurdenWcidMultipliers")]
-    public string PackBurdenWcidMultipliersDoc { get; init; } = "Optional map of pack WeenieClassId → encumbrance multiplier (0.01–1.0). When non-empty, only WCIDs listed here qualify; smallest multiplier among equipped + optional inventory matches is used.";
-    public Dictionary<uint, double> PackBurdenWcidMultipliers { get; set; } = new();
-
-    [JsonPropertyName("// PackBurdenIncludeMainInventory")]
-    public string PackBurdenIncludeMainInventoryDoc { get; init; } = "When true, pack WCIDs in the main inventory container (not nested packs) also count toward relief (best multiplier still wins).";
-    public bool PackBurdenIncludeMainInventory { get; set; } = true;
-
     [JsonPropertyName("// EnableFullKillXpPerDamager")]
     public string EnableFullKillXpPerDamagerDoc { get; init; } = "When true, replaces ACE kill/luminance split by damage percent: each player (or pet owner) in DamageHistory earns the full creature XpOverride and full LuminanceAward (vanilla uses proportional split). Healing credit is unchanged (ACE does not award kill XP for healing in this path).";
     public bool EnableFullKillXpPerDamager { get; set; } = false;

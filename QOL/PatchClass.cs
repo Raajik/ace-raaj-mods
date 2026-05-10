@@ -32,8 +32,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             else
                 ModManager.Log("QOL: SkillAlterationDevice.GetTotalSpecializedCredits(Player) not found; max-spec patch skipped.", ModManager.LogLevel.Warn);
 
-            VendorPackBurdenRelief.TryApplyHarmony(harmony);
-
             if (Settings?.EnableFacilityHub == true)
                 FacilityHubPortal.ApplyHarmony(harmony);
         }
@@ -132,8 +130,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             enabledFeatures.Add(Features.BypassPortalRestrictions);
         if (Settings.EnableTownNetworkToll)
             enabledFeatures.Add(Features.TownNetworkToll);
-        if (Settings.EnableVendorPackBurdenRelief)
-            enabledFeatures.Add(Features.VendorPackBurdenRelief);
         if (Settings.EnableFullKillXpPerDamager)
             enabledFeatures.Add(Features.FullKillXpPerDamager);
         // Legacy GiveNpcSingleFromStack migrated to NpcStackTurnIn; either old or new enablement works.

@@ -241,12 +241,13 @@ public static class VendorLootRotation
     }
 
     /// <summary>
-    /// Entrypoint called from GameEventApproachVendor constructor hook (same level as LLL uses).
+    /// Entrypoint called from Vendor.ApproachVendor prefix — fires BEFORE the
+    /// GameEventApproachVendor constructor (where LLL writes the approach packet).
+    /// Rotated items are in DefaultItemsForSale before the packet is built.
     /// </summary>
-    public static void OnVendorApproachEvent(Session session, Vendor vendor, uint altCurrencySpent)
+    public static void OnVendorApproachEvent(Player player, VendorType action, uint altCurrencySpent, Vendor __instance)
     {
-        Player? player = session?.Player;
-        if (player == null || vendor == null)
+        if (player == null || __instance == null)
             return;
 
         // Ensure _settings is set — fall back to PatchClass.CurrentSettings
@@ -255,7 +256,7 @@ public static class VendorLootRotation
             _settings = PatchClass.CurrentSettings;
 
         // Delegate to the existing rotation logic
-        OnVendorApproachPrefix(player, VendorType.Open, altCurrencySpent, vendor);
+        OnVendorApproachPrefix(player, action, altCurrencySpent, __instance);
     }
 
     private static void StartBackgroundTimer()

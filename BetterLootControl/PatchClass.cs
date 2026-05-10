@@ -383,18 +383,18 @@ public partial class PatchClass : BasicPatch<Settings>
     // =====================================================================
 
     /// <summary>
-    /// Manually applies a Harmony prefix on the GameEventApproachVendor constructor.
-    /// LLL's Debit.cs uses the same entrypoint successfully. We piggyback here so our
-    /// rotation fires every time a vendor approach packet is built.
+    /// Applies a Harmony prefix on Vendor.ApproachVendor — fires BEFORE the
+    /// GameEventApproachVendor constructor (where LLL writes the approach packet).
+    /// This ensures rotated items are in DefaultItemsForSale before the packet is built.
     /// </summary>
-    private static void ApplyVendorApproachPatch()
+    private void ApplyVendorApproachPatch()
     {
         try
         {
-            var target = AccessTools.Constructor(typeof(GameEventApproachVendor), new Type[] { typeof(Session), typeof(Vendor), typeof(uint) });
+            var target = AccessTools.Method(typeof(Vendor), nameof(Vendor.ApproachVendor), new Type[] { typeof(Player), typeof(VendorType), typeof(uint) });
             if (target == null)
             {
-                ModManager.Log("[BetterLoot] VendorLoot: GameEventApproachVendor constructor not found!", ModManager.LogLevel.Error);
+                ModManager.Log("[BetterLoot] VendorLoot: Vendor.ApproachVendor not found!", ModManager.LogLevel.Error);
                 return;
             }
 
@@ -405,10 +405,9 @@ public partial class PatchClass : BasicPatch<Settings>
                 return;
             }
 
-            var harmony = new Harmony("com.ACE.ACEmulator.BetterLootControl");
-            harmony.Patch(target, prefix: new HarmonyMethod(prefix));
+            ModC.Harmony.Patch(target, prefix: new HarmonyMethod(prefix));
 
-            ModManager.Log("[BetterLoot] VendorLoot: Applied prefix on GameEventApproachVendor constructor.", ModManager.LogLevel.Info);
+            ModManager.Log("[BetterLoot] VendorLoot: Applied prefix on Vendor.ApproachVendor.", ModManager.LogLevel.Info);
         }
         catch (Exception ex)
         {

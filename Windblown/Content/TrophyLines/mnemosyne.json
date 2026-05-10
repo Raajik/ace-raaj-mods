@@ -1,0 +1,33 @@
+{
+  "Description": "Mnemosyne tier lines — 6 custom WCIDs (850352-850357) on Undead. Two lines: regular Mnemosynes (Tiny/Small/Large) and Unlocked variants (Unlocked Tiny/Small/Large). Names kept from vanilla items for familiarity. ReplaceSiblingWcids covers all 6 vanilla WCIDs (9310-9315).",
+  "Lines": [
+    {
+      "Name": "Mnemosyne",
+      "Enabled": true,
+      "CreatureTypeGate": "Undead",
+      "TurnInDisplayName": "Mnemosyne",
+      "Tiers": [
+        { "TierName": "Regular",  "Wcid": 850352, "DropChance": 0.025,  "XpFraction": 0.05,  "BankCredit": 25000 },
+        { "TierName": "Quality",  "Wcid": 850353, "DropChance": 0.01,   "XpFraction": 0.10,  "BankCredit": 50000 },
+        { "TierName": "Pristine", "Wcid": 850354, "DropChance": 0.004,  "XpFraction": 0.15,  "BankCredit": 100000 }
+      ],
+      "ReplaceSiblingWcids": [9314, 9312, 9310, 9315, 9313, 9311],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    },
+    {
+      "Name": "UnlockedMnemosyne",
+      "Enabled": true,
+      "CreatureTypeGate": "Undead",
+      "TurnInDisplayName": "Unlocked Mnemosyne",
+      "Tiers": [
+        { "TierName": "Regular",  "Wcid": 850355, "DropChance": 0.015,  "XpFraction": 0.08,  "BankCredit": 40000 },
+        { "TierName": "Quality",  "Wcid": 850356, "DropChance": 0.006,  "XpFraction": 0.12,  "BankCredit": 75000 },
+        { "TierName": "Perfect",  "Wcid": 850357, "DropChance": 0.0015, "XpFraction": 0.30,  "BankCredit": 250000 }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    }
+  ]
+}

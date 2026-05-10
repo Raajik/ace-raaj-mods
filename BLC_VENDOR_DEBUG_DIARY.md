@@ -54,37 +54,44 @@ Vendor loot rotation (BetterLootControl) doesn't work. Vendors show vanilla ACE 
 - **Result:** Never fires. BLC_TEST2.txt not created.
 - **Significance:** Player.Heartbeat fires every 5 seconds. If it doesn't fire, **ALL new Harmony patches in PatchClass are silently failing**.
 
-## Current State
-- **Working patches (in PatchClass):** `PostSelectAProfile`, `PrefixChestReset`, `PostChestReset`, `PostChestClose`
-- **Failing patches (in PatchClass):** Every new `[HarmonyPrefix] + [HarmonyPatch(...)]` method I add
-- **Suspected cause:** Some difference between how the ORIGINAL working patches were compiled vs newly added ones. The original patches compile without `// Test:` comment headers... but that shouldn't matter.
+## Fix Applied (May 10, 2025)
 
-## Key Observations
-1. `BLC_DEBUG.txt` IS written (file I/O works, mod runs)
-2. `BLC_VENDOR.txt` is NEVER written (patches never fire)
-3. Both old and new methods are in the SAME **partial class `PatchClass`** with same `[HarmonyPatch]` class attribute
-4. Old methods work — new methods don't
-5. The existing working patches (`PrefixChestReset` etc.) use:
-   - `[HarmonyPatch(typeof(Chest), nameof(Chest.Reset))]`
-   - `[HarmonyPrefix]`
-   - The order IS `[HarmonyPatch]` BEFORE `[HarmonyPrefix]`
-6. My new patches may have had the wrong attribute order (tried both orders). LAST BUILD has `[HarmonyPatch]` before `[HarmonyPrefix]` (matching working patches).
+### Strategy: Manual `Harmony.Patch()` on GameEventApproachVendor ctor with `Priority.First`
 
-## Things NOT Yet Tried
-1. **Reboot** — old process holding port 9010 (PID 15528) may be a zombie from wt.exe
-2. **Use `HarmonyPatchCategory`** with explicit `RegisterPatchCategories()` call instead of relying on `PatchAllUncategorized`
-3. **Directly modify `OnStartSuccess`** to call rotation via existing `VendorLootRotation.RotateOnApproach()` — bypass Harmony entirely, just call it from the timer or startup
-4. **Check if `PatchAllUncategorized` in NuGet ACE.Shared v1.0.9 is filtering differently from source v1.0.8**
+**Root cause of auto-discovery failures:** New `[HarmonyPrefix]` + `[HarmonyPatch]` methods added to `PatchClass` after initial compilation don't get picked up by `Harmony.PatchAllUncategorized()`. The existing working patches (`PostSelectAProfile`, `PrefixChestReset`, etc.) worked because they were present at compile time. New patches added later are silently ignored.
+
+**The fix:** Use manual `Harmony.Patch()` via `ModC.Harmony.Patch(targetCtor, prefix: ...)` in `ApplyVendorApproachPatch()`. This bypasses auto-discovery entirely.
+
+**Priority ordering:**
+- BLC's prefix uses `[HarmonyPriority(Priority.First)]` — runs FIRST
+- LLL's `PreCtorGameEventApproachVendor` has default priority — runs SECOND
+- The original constructor body runs LAST
+
+This ensures BLC rotates vendor stock into `DefaultItemsForSale`/`UniqueItemsForSale` BEFORE LLL writes the approach packet.
+
+### How It Works
+1. `OnStartSuccess()` → if `EnableVendorLootRotation` is true → `ApplyVendorApproachPatch()`:
+   - Finds `GameEventApproachVendor(Session, Vendor, uint)` constructor via reflection
+   - Calls `ModC.Harmony.Patch()` with `PreGameEventApproachVendor` as prefix (Priority.First)
+2. When any player approaches any vendor, `PreGameEventApproachVendor` fires FIRST:
+   - Writes to BLC_VENDOR.txt for debugging
+   - Calls `VendorLootRotation.OnVendorApproachPrefix()` which does the actual rotation
+   - Returns `true` so LLL's prefix and original constructor still run
 
 ## Build Order
-To build + deploy:
 ```bash
 cd /mnt/a/ai/projects/ace-raaj-mods
 dotnet build BetterLootControl/BetterLootControl.csproj
-bash scripts/deploy-void-test.sh
+# Kill server, then copy DLLs:
+rm -rf /mnt/a/void-test/Mods/BetterLootControl/
+mkdir -p /mnt/a/void-test/Mods/BetterLootControl/
+cp build/BetterLootControl/*.dll build/BetterLootControl/Meta.json /mnt/a/void-test/Mods/BetterLootControl/
+# Restart server (watchdog will auto-start)
 ```
-Then kill ALL ACE processes (not just ACE.Server.exe):
-```powershell
-Get-Process ACE.Server,dotnet,windows*terminal* | Stop-Process -Force
-```
-Or just reboot.
+
+## Status (May 10, 06:47)
+- Build: **Successful**
+- Deploy: **Successful**
+- Patch: **Confirmed applied** — `[BLC] ApplyVendorApproachPatch: Patched GameEventApproachVendor ctor with Priority.First`
+- BLC_DEBUG.txt: Present with confirmation log
+- **Needs:** Player to approach a vendor to test actual rotation and verify ROTATION happens BEFORE LLL writes the packet

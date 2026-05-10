@@ -1,0 +1,32 @@
+{
+  "Description": "Olthoi Ichor — custom stackable version of 10864 (vanilla Olthoi Ichor). Single-tier trophy; blue underlay. MirrorEmoteFromWcid 3680 (Olthoi Head) for collector turn-in.",
+  "Weenies": [
+    {
+      "ClassId": 850339,
+      "ClassName": "olthoiichor_custom_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 10864,
+      "MirrorEmoteFromWcid": 3680,
+      "Notes": "Olthoi Ichor (custom, stackable). Blue IconUnderlay 100676435. Stackable with MaxStackSize 999.",
+      "PropertiesString": {
+        "Name": "Olthoi Ichor",
+        "PluralName": "Olthoi Ichors",
+        "Use": "The uses for this potent acid are still unknown.",
+        "ShortDesc": "A thick, acrid ichor collected from an Olthoi."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 15,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435
+      },
+      "Delete": {
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    }
+  ]
+}

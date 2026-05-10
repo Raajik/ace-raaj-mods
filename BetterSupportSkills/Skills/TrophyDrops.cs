@@ -296,47 +296,18 @@ internal static class TrophyDropsBonus
     {
         return trophyWcid switch
         {
-            // Tusker Tusks
-            22419 => creatureWcid == 22611, // Armored Tusker Tusk → Armored Tusker
-            22420 => creatureWcid == 22583, // Assailer Tusk → Assailer
-            22421 => creatureWcid == 22585, // Tusker Crimsonback Tusk → Tusker Crimsonback
-            22422 => creatureWcid == 22587, // Devastator Tusk → Devastator
-            22423 => creatureWcid == 22589, // Female Tusker Tusk → Female Tusker
-            22424 => creatureWcid == 22591, // Goldenback Tusker Tusk → Goldenback Tusker
-            22425 => creatureWcid == 22593, // Tusker Guard Tusk → Tusker Guard
-            22426 => creatureWcid == 22595, // Tusker Liberator Tusk → Tusker Liberator
-            22427 => creatureWcid == 22597, // Male Tusker Tusk → Male Tusker
-            22428 => creatureWcid == 22613, // Plated Tusker Tusk → Plated Tusker
-            22429 => creatureWcid == 22599, // Rampager Tusk → Rampager
-            22430 => creatureWcid == 22601, // Tusker Redeemer Tusk → Tusker Redeemer
-            22431 => creatureWcid == 22603, // Silver Tusker Tusk → Silver Tusker
-            22432 => creatureWcid is 22605 or 22604, // Tusker Slave Tusk → Tusker Slave
-            19478 => creatureWcid is 1628 or 22604, // Sharp Tusker Slave Tusk → Tusker Slave
-            29054 => creatureWcid == 29052, // Fledgemaster's Tusk → Ruschk Fledgemaster
-            51351 => creatureWcid == 51350, // Snow Tusker Leader Tusk → Snow Tusker Leader
+            // Obsolete: Tusker Tusk entries removed 2026-05-10 — now owned by Windblown TrophyLines (tusker-tusk.json) with per-creature WCID gating.
 
-            // Olthoi Pincers
-            10843 => creatureWcid == 11725, // Eviscerator Pincer → Olthoi Eviscerator
-            10844 => creatureWcid == 11726, // Gardener Pincer → Olthoi Gardener
-            10845 => creatureWcid == 11727, // Harvester Pincer → Olthoi Harvester
-            10846 => creatureWcid == 11728, // Legionary Pincer → Olthoi Legionary
-            10847 => creatureWcid == 11729, // Soldier Pincer → Olthoi Soldier
+            // Obsolete: Olthoi Pincer entries removed 2026-05-10 — now owned by Windblown TrophyLines (olthoi-pincer.json) with per-creature WCID gating.
+
+            // Brood Matron / Brood Pincers (separate from the 10 standard pincers — not in olthoi-pincer.json)
             24357 => creatureWcid == 24452, // Brood Matron Pincer → Olthoi Brood Matron
-            27589 => creatureWcid is 23481 or 24298 or 24453 or 27503 or 27571
-                        or 72423 or 72693 or 72719 or 72720 or 72721 or 72722, // Mutilator Pincer → Olthoi Mutilator variants
-            27590 => creatureWcid == 27572, // Warrior Pincer → Olthoi Warrior
-            27591 => creatureWcid == 27573, // Worker Pincer → Olthoi Worker
-            51211 => creatureWcid == 72697, // Hive Eviscerator Pincer → Olthoi Hive Eviscerator
-            51214 => creatureWcid == 51213, // Hive Warrior Pincer → Olthoi Hive Warrior
             72696 => creatureWcid is 72695 or 72727 or 72728 or 72729 or 72730, // Brood Pincer → Olthoi Hive Brood
 
-            // Eater Jaws
-            28718 => creatureWcid == 28847, // Ravenous Eater Jaw → Ravenous Eater
-            28719 => creatureWcid == 28848, // Insatiable Eater Jaw → Insatiable Eater
-            42104 => creatureWcid == 28848, // Upper Insatiable Eater Jaw → Insatiable Eater
-            28725 => creatureWcid == 28849, // Engorged Eater Jaw → Engorged Eater
-            28726 => creatureWcid == 28850, // Voracious Eater Jaw → Voracious Eater
-            28727 => creatureWcid == 28851, // Abhorrent Eater Jaw → Abhorrent Eater
+            // Obsolete: Eater Jaw entries removed 2026-05-10 — now owned by Windblown TrophyLines (eater-jaw.json) with per-creature WCID gating.
+
+            // Other quest trophies (not in TrophyLines — still use BSS QuestTrophyDrops)
+            29054 => creatureWcid == 29052, // Fledgemaster's Tusk → Ruschk Fledgemaster
             28827 => creatureWcid == 28829, // Marauder's Jaw → Marauder
 
             _ => false

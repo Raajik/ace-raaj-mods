@@ -1,5 +1,5 @@
 {
-  "Description": "Drudge Charm tier line — custom WCIDs 850300-850303 only. Clones from 24835; MirrorEmoteFromWcid 24835 for Collector Give emotes. PropertiesInt include Value=1 and EncumbranceVal=1 per Windblown trophy template; sunstone IconUnderlay 100676438 on all tiers.",
+  "Description": "Drudge Charm tier line \u2014 custom WCIDs 850300-850303 only. Clones from 24835; MirrorEmoteFromWcid 24835 for Collector Give emotes. PropertiesInt include Value=1 and EncumbranceVal=1 per Windblown trophy template; ice blue IconUnderlay 100676435 + black number overlays.",
   "Weenies": [
     {
       "ClassId": 850300,
@@ -11,7 +11,7 @@
       "PropertiesString": {
         "Name": "Drudge Charm",
         "PluralName": "Drudge Charms",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -21,11 +21,17 @@
         "UiEffects": 128
       },
       "PropertiesDID": {
-        "IconUnderlay": 100676438
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -38,7 +44,7 @@
       "PropertiesString": {
         "Name": "Drudge Charm (Quality)",
         "PluralName": "Drudge Charms (Quality)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -48,11 +54,17 @@
         "UiEffects": 256
       },
       "PropertiesDID": {
-        "IconUnderlay": 100676438
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -65,7 +77,7 @@
       "PropertiesString": {
         "Name": "Drudge Charm (Pristine)",
         "PluralName": "Drudge Charms (Pristine)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -75,11 +87,17 @@
         "UiEffects": 1
       },
       "PropertiesDID": {
-        "IconUnderlay": 100676438
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -92,7 +110,7 @@
       "PropertiesString": {
         "Name": "Drudge Charm (Perfect)",
         "PluralName": "Drudge Charms (Perfect)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -102,11 +120,17 @@
         "UiEffects": 64
       },
       "PropertiesDID": {
-        "IconUnderlay": 100676438
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690979
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     }
   ]

@@ -1,0 +1,20 @@
+{
+  "Description": "Swamp Stone tier line — four custom WCIDs (850348-850351). Uses vanilla WCID 3694 as clone/mirror source. ReplaceSiblingWcids [3694] routes vanilla swamp stone drops to Regular tier 850348.",
+  "Lines": [
+    {
+      "Name": "SwampStone",
+      "Enabled": true,
+      "CreatureTypeGate": "Mosswart",
+      "TurnInDisplayName": "Swamp Stone",
+      "Tiers": [
+        { "TierName": "Regular",  "Wcid": 850348, "DropChance": 0.025, "XpFraction": 0.05,  "BankCredit": 25000 },
+        { "TierName": "Quality",  "Wcid": 850349, "DropChance": 0.01,   "XpFraction": 0.10,  "BankCredit": 50000 },
+        { "TierName": "Pristine", "Wcid": 850350, "DropChance": 0.004,  "XpFraction": 0.15,  "BankCredit": 100000 },
+        { "TierName": "Perfect",  "Wcid": 850351, "DropChance": 0.0015, "XpFraction": 0.30,  "BankCredit": 250000 }
+      ],
+      "ReplaceSiblingWcids": [3694],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    }
+  ]
+}

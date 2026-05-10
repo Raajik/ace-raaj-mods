@@ -1,0 +1,117 @@
+{
+  "Description": "Sharp Tusker Slave Tusk tier line — custom WCIDs 850358-850361. Clones from 19478; MirrorEmoteFromWcid 19478. Blue IconUnderlay 100676435 + black number overlays 1-4.",
+  "Weenies": [
+    {
+      "ClassId": 850358,
+      "ClassName": "tuskerslavetusk_regular_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 19478,
+      "MirrorEmoteFromWcid": 19478,
+      "Notes": "Regular tier (custom). Frost (128) glow. Overlay '1' top-right black (100690976).",
+      "PropertiesString": {
+        "Name": "Sharp Tusker Slave Tusk",
+        "PluralName": "Sharp Tusker Slave Tusks",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these tusks to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850359,
+      "ClassName": "tuskerslavetusk_quality_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 19478,
+      "MirrorEmoteFromWcid": 19478,
+      "Notes": "Quality tier. Acid (256) glow. Overlay '2' top-right black (100690977).",
+      "PropertiesString": {
+        "Name": "Sharp Tusker Slave Tusk (Quality)",
+        "PluralName": "Sharp Tusker Slave Tusks (Quality)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these tusks to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850360,
+      "ClassName": "tuskerslavetusk_pristine_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 19478,
+      "MirrorEmoteFromWcid": 19478,
+      "Notes": "Pristine tier. Magical (1) glow. Overlay '3' top-right black (100690978).",
+      "PropertiesString": {
+        "Name": "Sharp Tusker Slave Tusk (Pristine)",
+        "PluralName": "Sharp Tusker Slave Tusks (Pristine)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these tusks to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850361,
+      "ClassName": "tuskerslavetusk_perfect_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 19478,
+      "MirrorEmoteFromWcid": 19478,
+      "Notes": "Perfect tier. Lightning (64) glow. Overlay '4' top-right black (100690979).",
+      "PropertiesString": {
+        "Name": "Sharp Tusker Slave Tusk (Perfect)",
+        "PluralName": "Sharp Tusker Slave Tusks (Perfect)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these tusks to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 64
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690979
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    }
+  ]
+}

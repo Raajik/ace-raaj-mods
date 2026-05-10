@@ -1,0 +1,117 @@
+{
+  "Description": "Swamp Stone tier line — custom WCIDs 850348-850351. Clones from 3694; MirrorEmoteFromWcid 3694. Blue IconUnderlay 100676435 + black number overlays 1-4.",
+  "Weenies": [
+    {
+      "ClassId": 850348,
+      "ClassName": "swampstone_regular_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3694,
+      "MirrorEmoteFromWcid": 3694,
+      "Notes": "Regular tier (custom). Frost (128) glow. Overlay '1' top-right black (100690976).",
+      "PropertiesString": {
+        "Name": "Swamp Stone",
+        "PluralName": "Swamp Stones",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these stones to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850349,
+      "ClassName": "swampstone_quality_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3694,
+      "MirrorEmoteFromWcid": 3694,
+      "Notes": "Quality tier. Acid (256) glow. Overlay '2' top-right black (100690977).",
+      "PropertiesString": {
+        "Name": "Swamp Stone (Quality)",
+        "PluralName": "Swamp Stones (Quality)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these stones to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850350,
+      "ClassName": "swampstone_pristine_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3694,
+      "MirrorEmoteFromWcid": 3694,
+      "Notes": "Pristine tier. Magical (1) glow. Overlay '3' top-right black (100690978).",
+      "PropertiesString": {
+        "Name": "Swamp Stone (Pristine)",
+        "PluralName": "Swamp Stones (Pristine)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these stones to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850351,
+      "ClassName": "swampstone_perfect_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3694,
+      "MirrorEmoteFromWcid": 3694,
+      "Notes": "Perfect tier. Lightning (64) glow. Overlay '4' top-right black (100690979).",
+      "PropertiesString": {
+        "Name": "Swamp Stone (Perfect)",
+        "PluralName": "Swamp Stones (Perfect)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these stones to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 64
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690979
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    }
+  ]
+}

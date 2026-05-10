@@ -1,0 +1,343 @@
+{
+  "Description": "Tusker Tusk revamp — per-creature gating (migrated from BSS QuestTrophyDrops 2026-05-10). Each named tusk drops at 2.5% only from its matching tusker varieties. Vanilla quest rewards intact when turned in to Brighteyes the Tailor (22642). Portal gem rewards (Aphus Lassel, Frozen Valley) have separate turn-in lines at 5% XP-to-next-level each.",
+  "Lines": [
+    {
+      "Name": "Tusker_Female",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Female",
+          "Wcid": 22423,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [236, 5599, 22588, 22589, 27310]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_Male",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Male",
+          "Wcid": 22427,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [11, 22596, 22597, 27311]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_Crimsonback",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Crimsonback",
+          "Wcid": 22421,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [1627, 22584, 22585]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_Goldenback",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Goldenback",
+          "Wcid": 22424,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [235, 5600, 22590, 22591]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_Redeemer",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Redeemer",
+          "Wcid": 22430,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [22520, 22600, 22601]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_Liberator",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Liberator",
+          "Wcid": 22426,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [22519, 22594, 22595]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_Slave",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Slave",
+          "Wcid": 22432,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [1628, 11624, 22604, 22605]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_Guard",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Guard",
+          "Wcid": 22425,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [1629, 21525, 22592, 22593]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_Silver",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Silver",
+          "Wcid": 22431,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [7184, 8544, 22602, 22603]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_Armored",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Armored",
+          "Wcid": 22419,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [11540, 22610, 22611]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_Rampager",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Rampager",
+          "Wcid": 22429,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [10810, 10811, 16916, 21526, 22599]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_Plated",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Plated",
+          "Wcid": 22428,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [11541, 22612, 22613]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_Assailer",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Assailer",
+          "Wcid": 22420,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [22053, 22582, 22583, 27800]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_Devastator",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "Devastator",
+          "Wcid": 22422,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [22518, 22586, 22587, 27509]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Tusker_SnowTuskerLeader",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Tusker Tusk",
+      "Tiers": [
+        {
+          "TierName": "SnowTuskerLeader",
+          "Wcid": 51351,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [43592, 43593, 43594, 43733, 43734, 51350]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "PortalGem_AphusLassel",
+      "Enabled": true,
+      "CreatureTypeGate": "Tusker",
+      "TurnInDisplayName": "Portal Gem",
+      "Tiers": [
+        {
+          "TierName": "AphusLassel",
+          "Wcid": 22729,
+          "DropChance": 0.0,
+          "XpFraction": 0.05,
+          "BankCredit": 0
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": []
+    },
+    {
+      "Name": "PortalGem_FrozenValley",
+      "Enabled": true,
+      "CreatureTypeGate": "Eater",
+      "TurnInDisplayName": "Portal Gem",
+      "Tiers": [
+        {
+          "TierName": "FrozenValley",
+          "Wcid": 51372,
+          "DropChance": 0.0,
+          "XpFraction": 0.05,
+          "BankCredit": 0
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": []
+    }
+  ]
+}

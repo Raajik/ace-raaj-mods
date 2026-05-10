@@ -5,8 +5,8 @@ INSERT INTO weenie (class_Id, class_Name, type, last_Modified) VALUES (810002, '
 ON DUPLICATE KEY UPDATE class_Name = VALUES(class_Name), type = VALUES(type), last_Modified = NOW();
 
 -- Ints: NPC / Creature properties
-INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810002, 1, 16) ON DUPLICATE KEY UPDATE value = VALUES(value);
-INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810002, 2, 31) ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810002, 1, 16) ON DUPLICATE KEY UPDATE value = VALUES(value); -- ItemType: Creature
+INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810002, 2, 19) ON DUPLICATE KEY UPDATE value = VALUES(value); -- CreatureType: Undead
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810002, 16, 32) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810002, 25, 3) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810002, 27, 0) ON DUPLICATE KEY UPDATE value = VALUES(value);
@@ -77,9 +77,9 @@ INSERT IGNORE INTO weenie_properties_emote_action (emote_Id, `order`, type, dela
 
 -- Use → InqYesNo confirmation (like Fianhe)
 INSERT IGNORE INTO weenie_properties_emote (id, object_Id, category, probability) VALUES (93157, 810002, 7, 1);
-INSERT IGNORE INTO weenie_properties_emote_action (emote_Id, `order`, type, delay, extent, test_String, message)
-    VALUES (93157, 0, 75, 0, 1, 'FreeRedistribute', 'Would you like to redistribute your skills?');
--- Note: message=routing key (FreeRedistribute), test_String=popup text (Would you like...)
+INSERT IGNORE INTO weenie_properties_emote_action (emote_Id, `order`, type, delay, extent, message, test_String)
+    VALUES (93157, 0, 75, 0, 1, 'Would you like to redistribute your skills?', 'FreeRedistribute');
+-- Note: message=popup text, test_String=routing quest key (FreeRedistribute)
 
 -- On Yes (TestSuccess "FreeRedistribute"): untrain all skills
 INSERT IGNORE INTO weenie_properties_emote (id, object_Id, category, probability, quest) VALUES (93158, 810002, 22, 1, 'FreeRedistribute');

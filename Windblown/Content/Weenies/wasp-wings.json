@@ -1,5 +1,5 @@
 {
-  "Description": "Wasp Wing tier line — custom WCIDs 850308-850311 only. Clones from 7603; MirrorEmoteFromWcid 7603. Value=1, EncumbranceVal=1; sunstone IconUnderlay 100676438.",
+  "Description": "Wasp Wing tier line \u2014 custom WCIDs 850308-850311 only. Clones from 7603; MirrorEmoteFromWcid 7603. Value=1, EncumbranceVal=1; ice blue IconUnderlay 100676435 + black number overlays",
   "Weenies": [
     {
       "ClassId": 850308,
@@ -11,7 +11,7 @@
       "PropertiesString": {
         "Name": "Wasp Wing",
         "PluralName": "Wasp Wings",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these wings."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these wings to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -21,11 +21,17 @@
         "UiEffects": 128
       },
       "PropertiesDID": {
-        "IconUnderlay": 100676438
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -38,7 +44,7 @@
       "PropertiesString": {
         "Name": "Wasp Wing (Quality)",
         "PluralName": "Wasp Wings (Quality)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these wings."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these wings to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -48,11 +54,17 @@
         "UiEffects": 256
       },
       "PropertiesDID": {
-        "IconUnderlay": 100676438
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -65,7 +77,7 @@
       "PropertiesString": {
         "Name": "Wasp Wing (Pristine)",
         "PluralName": "Wasp Wings (Pristine)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these wings."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these wings to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -75,11 +87,17 @@
         "UiEffects": 1
       },
       "PropertiesDID": {
-        "IconUnderlay": 100676438
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -92,7 +110,7 @@
       "PropertiesString": {
         "Name": "Wasp Wing (Perfect)",
         "PluralName": "Wasp Wings (Perfect)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these wings."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these wings to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -102,11 +120,17 @@
         "UiEffects": 64
       },
       "PropertiesDID": {
-        "IconUnderlay": 100676438
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690979
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     }
   ]

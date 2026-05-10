@@ -191,9 +191,12 @@ INSERT IGNORE INTO weenie_properties_create_list (object_Id, destination_Type, w
 INSERT IGNORE INTO weenie_properties_create_list (object_Id, destination_Type, weenie_Class_Id, stack_Size, palette, shade, try_To_Bond) VALUES (810000, 4, 22942, -1, 0, 0, False);
 
 
--- Kaelith (810001) - Academy weapons
+-- Timewalker Kaleb (810001) — Trophy & failsafe vendor (MMD sink)
+-- Sells original replaced trophy items for 1 MMD each.
+-- Uses AlternateCurrency 20630 (MMD) so prices are in MMD.
+-- BuyPrice (float 37) tuneable for final pricing.
 
-INSERT INTO weenie (class_Id, class_Name, type, last_Modified) VALUES (810001, 'kaelith_academy_vendor', 12, NOW()) ON DUPLICATE KEY UPDATE class_Name = VALUES(class_Name), type = VALUES(type), last_Modified = NOW();
+INSERT INTO weenie (class_Id, class_Name, type, last_Modified) VALUES (810001, 'timewalker_kaleb_vendor', 12, NOW()) ON DUPLICATE KEY UPDATE class_Name = VALUES(class_Name), type = VALUES(type), last_Modified = NOW();
 
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 1, 16) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 2, 31) ON DUPLICATE KEY UPDATE value = VALUES(value);
@@ -202,18 +205,17 @@ INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 7, -1
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 16, 32) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 25, 250) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 27, 0) ON DUPLICATE KEY UPDATE value = VALUES(value);
-INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 74, 0) ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 74, 2048) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 75, 0) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 76, 100000) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 93, 2098200) ON DUPLICATE KEY UPDATE value = VALUES(value);
-INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 113, 1) ON DUPLICATE KEY UPDATE value = VALUES(value);
-INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 126, 125) ON DUPLICATE KEY UPDATE value = VALUES(value);
-INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 127, 125) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 133, 4) ON DUPLICATE KEY UPDATE value = VALUES(value);
-INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 134, 16) ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810001, 134, 102) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_bool (object_Id, type, value) VALUES (810001, 1, True) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_bool (object_Id, type, value) VALUES (810001, 19, False) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_bool (object_Id, type, value) VALUES (810001, 39, True) ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_bool (object_Id, type, value) VALUES (810001, 41, True) ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_d_i_d (object_Id, type, value) VALUES (810001, 57, 20630) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 1, 5) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 3, 0.16) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 4, 5) ON DUPLICATE KEY UPDATE value = VALUES(value);
@@ -227,7 +229,7 @@ INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 17,
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 18, 1) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 19, 0.6) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 37, 1) ON DUPLICATE KEY UPDATE value = VALUES(value);
-INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 38, 1) ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 38, 0) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 54, 3) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 64, 1) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 65, 1) ON DUPLICATE KEY UPDATE value = VALUES(value);
@@ -237,3 +239,52 @@ INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 68,
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 69, 1) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 70, 1) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810001, 104, 10) ON DUPLICATE KEY UPDATE value = VALUES(value);
+
+INSERT INTO weenie_properties_string (object_Id, type, value) VALUES (810001, 1, 'Timewalker Kaleb') ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_string (object_Id, type, value) VALUES (810001, 3, 'Male') ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_string (object_Id, type, value) VALUES (810001, 4, 'Sho') ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_string (object_Id, type, value) VALUES (810001, 5, 'Merchant') ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_string (object_Id, type, value) VALUES (810001, 24, 'Town Network') ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_d_i_d (object_Id, type, value) VALUES (810001, 1, 33554433) ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_d_i_d (object_Id, type, value) VALUES (810001, 2, 150994945) ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_d_i_d (object_Id, type, value) VALUES (810001, 3, 536870913) ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_d_i_d (object_Id, type, value) VALUES (810001, 4, 805306368) ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT INTO weenie_properties_d_i_d (object_Id, type, value) VALUES (810001, 8, 100667446) ON DUPLICATE KEY UPDATE value = VALUES(value);
+INSERT IGNORE INTO weenie_properties_attribute (object_Id, type, init_Level, level_From_C_P, c_P_Spent) VALUES (810001, 1, 20, 0, 0);
+INSERT IGNORE INTO weenie_properties_attribute (object_Id, type, init_Level, level_From_C_P, c_P_Spent) VALUES (810001, 2, 25, 0, 0);
+INSERT IGNORE INTO weenie_properties_attribute (object_Id, type, init_Level, level_From_C_P, c_P_Spent) VALUES (810001, 3, 45, 0, 0);
+INSERT IGNORE INTO weenie_properties_attribute (object_Id, type, init_Level, level_From_C_P, c_P_Spent) VALUES (810001, 4, 35, 0, 0);
+INSERT IGNORE INTO weenie_properties_attribute (object_Id, type, init_Level, level_From_C_P, c_P_Spent) VALUES (810001, 5, 35, 0, 0);
+INSERT IGNORE INTO weenie_properties_attribute (object_Id, type, init_Level, level_From_C_P, c_P_Spent) VALUES (810001, 6, 25, 0, 0);
+INSERT IGNORE INTO weenie_properties_attribute_2nd (object_Id, type, init_Level, level_From_C_P, c_P_Spent, current_Level) VALUES (810001, 1, 25, 0, 0, 38);
+INSERT IGNORE INTO weenie_properties_attribute_2nd (object_Id, type, init_Level, level_From_C_P, c_P_Spent, current_Level) VALUES (810001, 3, 50, 0, 0, 75);
+INSERT IGNORE INTO weenie_properties_attribute_2nd (object_Id, type, init_Level, level_From_C_P, c_P_Spent, current_Level) VALUES (810001, 5, 20, 0, 0, 45);
+INSERT IGNORE INTO weenie_properties_body_part (object_Id, `key`, d_Type, d_Val, d_Var, base_Armor, armor_Vs_Slash, armor_Vs_Pierce, armor_Vs_Bludgeon, armor_Vs_Cold, armor_Vs_Fire, armor_Vs_Acid, armor_Vs_Electric, armor_Vs_Nether, b_h, h_l_f, m_l_f, l_l_f, h_r_f, m_r_f, l_r_f, h_l_b, m_l_b, l_l_b, h_r_b, m_r_b, l_r_b) VALUES (810001, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0.33, 0, 0, 0.33, 0, 0, 0.33, 0, 0, 0.33, 0, 0);
+INSERT IGNORE INTO weenie_properties_body_part (object_Id, `key`, d_Type, d_Val, d_Var, base_Armor, armor_Vs_Slash, armor_Vs_Pierce, armor_Vs_Bludgeon, armor_Vs_Cold, armor_Vs_Fire, armor_Vs_Acid, armor_Vs_Electric, armor_Vs_Nether, b_h, h_l_f, m_l_f, l_l_f, h_r_f, m_r_f, l_r_f, h_l_b, m_l_b, l_l_b, h_r_b, m_r_b, l_r_b) VALUES (810001, 1, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0.44, 0.17, 0, 0.44, 0.17, 0, 0.44, 0.17, 0, 0.44, 0.17, 0);
+INSERT IGNORE INTO weenie_properties_body_part (object_Id, `key`, d_Type, d_Val, d_Var, base_Armor, armor_Vs_Slash, armor_Vs_Pierce, armor_Vs_Bludgeon, armor_Vs_Cold, armor_Vs_Fire, armor_Vs_Acid, armor_Vs_Electric, armor_Vs_Nether, b_h, h_l_f, m_l_f, l_l_f, h_r_f, m_r_f, l_r_f, h_l_b, m_l_b, l_l_b, h_r_b, m_r_b, l_r_b) VALUES (810001, 2, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0.17, 0, 0, 0.17, 0, 0, 0.17, 0, 0, 0.17, 0);
+INSERT IGNORE INTO weenie_properties_body_part (object_Id, `key`, d_Type, d_Val, d_Var, base_Armor, armor_Vs_Slash, armor_Vs_Pierce, armor_Vs_Bludgeon, armor_Vs_Cold, armor_Vs_Fire, armor_Vs_Acid, armor_Vs_Electric, armor_Vs_Nether, b_h, h_l_f, m_l_f, l_l_f, h_r_f, m_r_f, l_r_f, h_l_b, m_l_b, l_l_b, h_r_b, m_r_b, l_r_b) VALUES (810001, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0.23, 0.03, 0, 0.23, 0.03, 0, 0.23, 0.03, 0, 0.23, 0.03, 0);
+INSERT IGNORE INTO weenie_properties_body_part (object_Id, `key`, d_Type, d_Val, d_Var, base_Armor, armor_Vs_Slash, armor_Vs_Pierce, armor_Vs_Bludgeon, armor_Vs_Cold, armor_Vs_Fire, armor_Vs_Acid, armor_Vs_Electric, armor_Vs_Nether, b_h, h_l_f, m_l_f, l_l_f, h_r_f, m_r_f, l_r_f, h_l_b, m_l_b, l_l_b, h_r_b, m_r_b, l_r_b) VALUES (810001, 4, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0.3, 0, 0, 0.3, 0, 0, 0.3, 0, 0, 0.3, 0);
+INSERT IGNORE INTO weenie_properties_body_part (object_Id, `key`, d_Type, d_Val, d_Var, base_Armor, armor_Vs_Slash, armor_Vs_Pierce, armor_Vs_Bludgeon, armor_Vs_Cold, armor_Vs_Fire, armor_Vs_Acid, armor_Vs_Electric, armor_Vs_Nether, b_h, h_l_f, m_l_f, l_l_f, h_r_f, m_r_f, l_r_f, h_l_b, m_l_b, l_l_b, h_r_b, m_r_b, l_r_b) VALUES (810001, 5, 4, 2, 0.75, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0.2, 0, 0, 0.2, 0, 0, 0.2, 0, 0, 0.2, 0);
+INSERT IGNORE INTO weenie_properties_body_part (object_Id, `key`, d_Type, d_Val, d_Var, base_Armor, armor_Vs_Slash, armor_Vs_Pierce, armor_Vs_Bludgeon, armor_Vs_Cold, armor_Vs_Fire, armor_Vs_Acid, armor_Vs_Electric, armor_Vs_Nether, b_h, h_l_f, m_l_f, l_l_f, h_r_f, m_r_f, l_r_f, h_l_b, m_l_b, l_l_b, h_r_b, m_r_b, l_r_b) VALUES (810001, 6, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0.13, 0.18, 0, 0.13, 0.18, 0, 0.13, 0.18, 0, 0.13, 0.18);
+INSERT IGNORE INTO weenie_properties_body_part (object_Id, `key`, d_Type, d_Val, d_Var, base_Armor, armor_Vs_Slash, armor_Vs_Pierce, armor_Vs_Bludgeon, armor_Vs_Cold, armor_Vs_Fire, armor_Vs_Acid, armor_Vs_Electric, armor_Vs_Nether, b_h, h_l_f, m_l_f, l_l_f, h_r_f, m_r_f, l_r_f, h_l_b, m_l_b, l_l_b, h_r_b, m_r_b, l_r_b) VALUES (810001, 7, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0.6, 0, 0, 0.6, 0, 0, 0.6, 0, 0, 0.6);
+INSERT IGNORE INTO weenie_properties_body_part (object_Id, `key`, d_Type, d_Val, d_Var, base_Armor, armor_Vs_Slash, armor_Vs_Pierce, armor_Vs_Bludgeon, armor_Vs_Cold, armor_Vs_Fire, armor_Vs_Acid, armor_Vs_Electric, armor_Vs_Nether, b_h, h_l_f, m_l_f, l_l_f, h_r_f, m_r_f, l_r_f, h_l_b, m_l_b, l_l_b, h_r_b, m_r_b, l_r_b) VALUES (810001, 8, 4, 2, 0.75, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0.22, 0, 0, 0.22, 0, 0, 0.22, 0, 0, 0.22);
+
+-- Shop inventory: replaced trophy originals
+INSERT IGNORE INTO weenie_properties_create_list (object_Id, destination_Type, weenie_Class_Id, stack_Size, palette, shade, try_To_Bond) VALUES (810001, 4, 10864, -1, 0, 0, False);
+INSERT IGNORE INTO weenie_properties_create_list (object_Id, destination_Type, weenie_Class_Id, stack_Size, palette, shade, try_To_Bond) VALUES (810001, 4, 24835, -1, 0, 0, False);
+INSERT IGNORE INTO weenie_properties_create_list (object_Id, destination_Type, weenie_Class_Id, stack_Size, palette, shade, try_To_Bond) VALUES (810001, 4, 4133, -1, 0, 0, False);
+INSERT IGNORE INTO weenie_properties_create_list (object_Id, destination_Type, weenie_Class_Id, stack_Size, palette, shade, try_To_Bond) VALUES (810001, 4, 7603, -1, 0, 0, False);
+INSERT IGNORE INTO weenie_properties_create_list (object_Id, destination_Type, weenie_Class_Id, stack_Size, palette, shade, try_To_Bond) VALUES (810001, 4, 3693, -1, 0, 0, False);
+
+-- Emotes (vendor greetings)
+INSERT IGNORE INTO weenie_properties_emote (id, object_Id, category, probability) VALUES (93110, 810001, 2, 0.5);
+INSERT IGNORE INTO weenie_properties_emote (id, object_Id, category, probability, vendor_Type) VALUES (93111, 810001, 2, 0.25, 5);
+INSERT IGNORE INTO weenie_properties_emote (id, object_Id, category, probability, vendor_Type) VALUES (93112, 810001, 2, 0.5, 5);
+INSERT IGNORE INTO weenie_properties_emote (id, object_Id, category, probability, vendor_Type) VALUES (93113, 810001, 2, 0.75, 5);
+INSERT IGNORE INTO weenie_properties_emote_action (emote_Id, `order`, type, delay, extent, motion, message) VALUES (93110, 0, 10, 0, 1, NULL, 'Time flows like a river, and relics wash ashore. What memory stirs you today?');
+INSERT IGNORE INTO weenie_properties_emote_action (emote_Id, `order`, type, delay, extent, motion) VALUES (93111, 0, 5, 0, 1, 318767239);
+INSERT IGNORE INTO weenie_properties_emote_action (emote_Id, `order`, type, delay, extent, motion) VALUES (93112, 0, 5, 0, 1, 318767229);
+INSERT IGNORE INTO weenie_properties_emote_action (emote_Id, `order`, type, delay, extent, motion) VALUES (93113, 0, 5, 0, 1, 318767238);
+INSERT IGNORE INTO weenie_properties_create_list (object_Id, destination_Type, weenie_Class_Id, stack_Size, palette, shade, try_To_Bond) VALUES (810001, 2, 5893, 0, 0, 0, False);
+INSERT IGNORE INTO weenie_properties_create_list (object_Id, destination_Type, weenie_Class_Id, stack_Size, palette, shade, try_To_Bond) VALUES (810001, 2, 127, 0, 7, 0.33, False);
+INSERT IGNORE INTO weenie_properties_create_list (object_Id, destination_Type, weenie_Class_Id, stack_Size, palette, shade, try_To_Bond) VALUES (810001, 2, 132, 0, 18, 1, False);

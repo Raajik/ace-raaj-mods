@@ -1,5 +1,5 @@
 {
-  "Description": "Mob head custom WCIDs 850316-850336. Each clones from its vanilla head BaseWcid with MirrorEmoteFromWcid for Collector Give emotes. Value=1, EncumbranceVal=1; Magical UiEffects; sunstone IconUnderlay 100676438. Sibling-only vanilla rows removed — replacement is TrophyLines/mob-heads.json ReplaceSiblingWcids.",
+  "Description": "Mob head custom WCIDs 850316-850336. Each clones from its vanilla head BaseWcid with MirrorEmoteFromWcid for Collector Give emotes. Value=1, EncumbranceVal=1; t3-equivalent: Magical UiEffects (1), blue IconUnderlay (100676435), black '3' IconOverlay (100690978).",
   "Weenies": [
     {
       "ClassId": 850316,
@@ -9,7 +9,7 @@
       "MirrorEmoteFromWcid": 8144,
       "Notes": "Banderling Head (custom).",
       "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -20,7 +20,7 @@
       "MirrorEmoteFromWcid": 8145,
       "Notes": "Drudge Head (custom).",
       "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -31,7 +31,7 @@
       "MirrorEmoteFromWcid": 8146,
       "Notes": "Mosswart Head (custom).",
       "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -42,7 +42,7 @@
       "MirrorEmoteFromWcid": 8147,
       "Notes": "Tusker Head (custom).",
       "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -53,7 +53,7 @@
       "MirrorEmoteFromWcid": 9097,
       "Notes": "Ursuin Head (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -64,7 +64,7 @@
       "MirrorEmoteFromWcid": 12215,
       "Notes": "Pumpkin Head (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -75,7 +75,7 @@
       "MirrorEmoteFromWcid": 12216,
       "Notes": "Sclavus Head (custom).",
       "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -86,7 +86,7 @@
       "MirrorEmoteFromWcid": 12225,
       "Notes": "Zombie Head (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -97,7 +97,7 @@
       "MirrorEmoteFromWcid": 3680,
       "Notes": "Olthoi Head (custom).",
       "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -108,7 +108,7 @@
       "MirrorEmoteFromWcid": 3687,
       "Notes": "Skeleton's Skull (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -119,7 +119,7 @@
       "MirrorEmoteFromWcid": 4121,
       "Notes": "Lich Skull (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -130,7 +130,7 @@
       "MirrorEmoteFromWcid": 22059,
       "Notes": "Eviscerator Head (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -141,7 +141,7 @@
       "MirrorEmoteFromWcid": 24846,
       "Notes": "Mutilator Head (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -152,7 +152,7 @@
       "MirrorEmoteFromWcid": 25554,
       "Notes": "Knath Head (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -163,7 +163,7 @@
       "MirrorEmoteFromWcid": 25561,
       "Notes": "Moarsman Head (custom).",
       "PropertiesInt": { "MaxStackSize": 999, "StackSize": 1, "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -174,7 +174,7 @@
       "MirrorEmoteFromWcid": 28886,
       "Notes": "Burun Guruk Head (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -185,7 +185,7 @@
       "MirrorEmoteFromWcid": 28888,
       "Notes": "Chittick Head (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -196,7 +196,7 @@
       "MirrorEmoteFromWcid": 28889,
       "Notes": "Mite Head (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -207,7 +207,7 @@
       "MirrorEmoteFromWcid": 34029,
       "Notes": "Shadow Head (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -218,7 +218,7 @@
       "MirrorEmoteFromWcid": 36359,
       "Notes": "Cow Head (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     },
     {
@@ -229,7 +229,7 @@
       "MirrorEmoteFromWcid": 36362,
       "Notes": "Mukkir Head (custom).",
       "PropertiesInt": { "Value": 1, "EncumbranceVal": 1, "UiEffects": 1 },
-      "PropertiesDID": { "IconUnderlay": 100676438 },
+      "PropertiesDID": { "IconUnderlay": 100676435, "IconOverlay": 100690978 },
       "Delete": { "PropertiesInt": ["ImbuedEffect"] }
     }
   ]

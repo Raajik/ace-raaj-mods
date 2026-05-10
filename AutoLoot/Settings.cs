@@ -37,7 +37,7 @@ public class Settings
 
     [JsonPropertyName("// WindblownCollectorTrophyPass1WeenieClassIds")]
     public string WindblownCollectorTrophyPass1WeenieClassIdsDoc { get; init; } =
-        "Windblown collector trophy WCIDs (850300-850336): Pass 1 pulls these from corpse/chest into the pack only when /autoloot trophies is ON. Tiered lines + mob heads + banderling scalp. See Windblown/docs/TrophyLineRegistry.md.";
+        "Windblown collector trophy WCIDs (850300-850361): Pass 1 pulls these from corpse/chest into the pack only when /autoloot trophies is ON. Tiered lines + mob heads + scalp + claw + sinew + stone + mnemosyne + tusk + tumerok. See Windblown/docs/TrophyLineRegistry.md.";
     public List<uint> WindblownCollectorTrophyPass1WeenieClassIds { get; set; } =
     [
         850300u, 850301u, 850302u, 850303u,
@@ -46,6 +46,13 @@ public class Settings
         850312u, 850313u, 850314u, 850315u,
         850316u, 850317u, 850318u, 850319u, 850320u, 850321u, 850322u, 850323u, 850324u, 850325u, 850326u, 850327u,
         850328u, 850329u, 850330u, 850331u, 850332u, 850333u, 850334u, 850335u, 850336u,
+        850340u, 850341u, 850342u, 850343u,
+        850344u, 850345u, 850346u, 850347u,
+        850348u, 850349u, 850350u, 850351u,
+        850352u, 850353u, 850354u,
+        850355u, 850356u, 850357u,
+        850358u, 850359u, 850360u, 850361u,
+        850362u, 850363u, 850364u, 850365u,
     ];
 
     [JsonPropertyName("// OtherPhysicalPass1WeenieClassIds")]

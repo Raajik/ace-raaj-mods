@@ -1,0 +1,17 @@
+{
+  "Description": "Olthoi Ichor trophy line — custom WCID 850339. T2-equivalent: 1.0% drop from ALL olthoi, 0.10 XP fraction, 50k bank credit. Acid glow + black '2' overlay. Vanilla 10864 sibling replacement handled by TurnInPatches.",
+  "Lines": [
+    {
+      "Name": "OlthoiIchor",
+      "Enabled": true,
+      "CreatureTypeGate": "Olthoi",
+      "TurnInDisplayName": "Olthoi Ichor",
+      "Tiers": [
+        { "TierName": "Regular", "Wcid": 850339, "DropChance": 0.01, "XpFraction": 0.10, "BankCredit": 50000 }
+      ],
+      "ReplaceSiblingWcids": [10864],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    }
+  ]
+}

@@ -12,8 +12,8 @@ namespace Windblown;
 public partial class PatchClass
 {
     // Custom letter WCIDs
-    const uint GoldLetterNew = 800005;
-    const uint RedLetterNew = 800006;
+    const uint GoldLetterNew = 850337;
+    const uint RedLetterNew = 850338;
 
     static bool IsCustomLetter(uint wcid) => wcid == GoldLetterNew || wcid == RedLetterNew;
 
@@ -72,10 +72,10 @@ public partial class PatchClass
     const int BankCashProperty = 39999;
 
     static bool IsLetter(uint wcid) =>
-        wcid == 8701 || wcid == 8702 || wcid == 45875 || wcid == 45876 || wcid == 800005 || wcid == 800006;
+        wcid == 8701 || wcid == 8702 || wcid == 45875 || wcid == 45876 || wcid == 850337 || wcid == 850338;
 
     static bool IsGoldLetter(uint wcid) =>
-        wcid == 8701 || wcid == 45875 || wcid == 800005;
+        wcid == 8701 || wcid == 45875 || wcid == 850337;
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), "GiveObjectToNPC", new Type[] {

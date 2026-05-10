@@ -1,0 +1,117 @@
+{
+  "Description": "Tumerok Insignia tier line — custom WCIDs 850362-850365. Clones from 3695 (Gold Tumerok Insignia); MirrorEmoteFromWcid 3695. Base item renamed from 'Gold Tumerok Insignia' to 'Tumerok Insignia'. Blue IconUnderlay 100676435 + black number overlays 1-4.",
+  "Weenies": [
+    {
+      "ClassId": 850362,
+      "ClassName": "tumerokinsignia_regular_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3695,
+      "MirrorEmoteFromWcid": 3695,
+      "Notes": "Regular tier (custom). Frost (128) glow. Overlay '1' top-right black (100690976). Base name stripped of 'Gold' prefix.",
+      "PropertiesString": {
+        "Name": "Tumerok Insignia",
+        "PluralName": "Tumerok Insignias",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these insignias to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850363,
+      "ClassName": "tumerokinsignia_quality_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3695,
+      "MirrorEmoteFromWcid": 3695,
+      "Notes": "Quality tier. Acid (256) glow. Overlay '2' top-right black (100690977).",
+      "PropertiesString": {
+        "Name": "Tumerok Insignia (Quality)",
+        "PluralName": "Tumerok Insignias (Quality)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these insignias to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850364,
+      "ClassName": "tumerokinsignia_pristine_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3695,
+      "MirrorEmoteFromWcid": 3695,
+      "Notes": "Pristine tier. Magical (1) glow. Overlay '3' top-right black (100690978).",
+      "PropertiesString": {
+        "Name": "Tumerok Insignia (Pristine)",
+        "PluralName": "Tumerok Insignias (Pristine)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these insignias to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850365,
+      "ClassName": "tumerokinsignia_perfect_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3695,
+      "MirrorEmoteFromWcid": 3695,
+      "Notes": "Perfect tier. Lightning (64) glow. Overlay '4' top-right black (100690979).",
+      "PropertiesString": {
+        "Name": "Tumerok Insignia (Perfect)",
+        "PluralName": "Tumerok Insignias (Perfect)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these insignias to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 64
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690979
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    }
+  ]
+}

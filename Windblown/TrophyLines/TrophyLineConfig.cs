@@ -57,6 +57,14 @@ internal sealed class TrophyTier
     /// <summary>0..1 chance per kill to roll one of this tier (independent rolls per tier).</summary>
     public double DropChance { get; set; }
 
+    /// <summary>
+    /// Optional: if populated, only creatures whose WeenieClassId is in this list can roll this tier.
+    /// If empty/null, falls back to the line-level CreatureTypeGate (current default behavior).
+    /// Use for per-creature gating where different mobs of the same CreatureType drop different items
+    /// (e.g. specific olthoi pincer types from specific olthoi varieties).
+    /// </summary>
+    public List<uint>? CreatureWcidGate { get; set; }
+
     /// <summary>Fraction of `GetXPBetweenLevels(level, level+1)` granted per turned-in unit.</summary>
     public float XpFraction { get; set; }
 

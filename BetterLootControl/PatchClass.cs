@@ -375,36 +375,65 @@ public partial class PatchClass : BasicPatch<Settings>
     }
 
     // =====================================================================
-    // Vendor Loot Rotation Hook — manual patch on GameEventApproachVendor
+    // Vendor Loot Rotation Hook — manual prefix on GameEventApproachVendor constructor
+    // Runs FIRST (Priority.First) so vendor stock is rotated before LLL writes the packet.
     // =====================================================================
 
     private void ApplyVendorApproachPatch()
     {
         try
         {
-            File.AppendAllText("BLC_DEBUG.txt", DateTime.Now + " [BLC] ApplyVendorApproachPatch OK" + Environment.NewLine);
+            var targetCtor = typeof(GameEventApproachVendor).GetConstructors()
+                .FirstOrDefault(c =>
+                {
+                    var p = c.GetParameters();
+                    return p.Length == 3
+                        && p[0].ParameterType == typeof(Session)
+                        && p[1].ParameterType == typeof(Vendor)
+                        && p[2].ParameterType == typeof(uint);
+                });
+
+            if (targetCtor == null)
+            {
+                ModManager.Log("[BLC] ApplyVendorApproachPatch: Could not find GameEventApproachVendor ctor(Session,Vendor,uint)", ModManager.LogLevel.Error);
+                return;
+            }
+
+            var prefix = new HarmonyMethod(typeof(PatchClass), nameof(PreGameEventApproachVendor));
+            ModC.Harmony.Patch(targetCtor, prefix: prefix);
+
+            ModManager.Log("[BLC] ApplyVendorApproachPatch: Patched GameEventApproachVendor ctor with Priority.First", ModManager.LogLevel.Info);
+            File.AppendAllText("BLC_DEBUG.txt", DateTime.Now + " [BLC] Patched GameEventApproachVendor ctor Priority.First" + Environment.NewLine);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BLC] ApplyVendorApproachPatch FAILED: {ex}", ModManager.LogLevel.Error);
+        }
     }
 
     /// <summary>
-    /// Auto-discovered prefix on GameEventApproachVendor constructor — same target as LLL's Debit.
-    /// Fires before the constructor body runs and before LLL's prefix (if priority is lower).
-    /// Returns true so the original constructor and other prefixes still run.
+    /// Manual prefix on GameEventApproachVendor constructor.
+    /// Rotates vendor stock BEFORE the packet is written (and before LLL's prefix runs).
+    /// Priority.First ensures this runs before LLL's normal-priority prefix.
+    /// Returns true so other prefixes (LLL) and the original constructor can still run.
     /// </summary>
-    [HarmonyPatch(typeof(Player), nameof(Player.Heartbeat), new Type[] { typeof(double) })]
-    [HarmonyPrefix]
-    public static bool PrePlayerHeartbeat(double currentUnixTime, Player __instance)
+    [HarmonyPriority(Priority.First)]
+    public static bool PreGameEventApproachVendor(Session session, Vendor vendor, uint altCurrencySpent, ref GameEventApproachVendor __instance)
     {
-        try { File.AppendAllText("BLC_TEST2.txt", DateTime.Now.ToString("HH:mm:ss.fff") + " Heartbeat " + __instance.Name + Environment.NewLine); } catch { }
-        return true;
-    }
+        try
+        {
+            if (session?.Player == null || vendor == null)
+                return true;
 
-    [HarmonyPatch(typeof(Vendor), nameof(Vendor.ApproachVendor))]
-    [HarmonyPrefix]
-    public static bool PreVendorApproach(Player player, VendorType action, uint altCurrencySpent, Vendor __instance)
-    {
-        try { File.AppendAllText("BLC_VENDOR.txt", DateTime.Now.ToString("HH:mm:ss.fff") + " [BLC] ApproachVendor FIRED vendor=" + __instance?.Name + " (WCID=" + __instance?.WeenieClassId + ") player=" + player?.Name + Environment.NewLine); } catch { }
-        return true;
+            File.AppendAllText("BLC_VENDOR.txt", DateTime.Now.ToString("HH:mm:ss.fff") + " [BLC] PreGameEventApproachVendor: vendor=" + vendor.Name + " (WCID=" + vendor.WeenieClassId + ") player=" + session.Player.Name + Environment.NewLine);
+
+            VendorLootRotation.OnVendorApproachPrefix(session.Player, VendorType.Open, altCurrencySpent, vendor);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BLC] PreGameEventApproachVendor error: {ex}", ModManager.LogLevel.Warn);
+        }
+
+        return true; // let other prefixes (LLL) and original run
     }
 }

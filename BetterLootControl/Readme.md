@@ -250,6 +250,21 @@ All values in `Settings.json`:
 
 ### Harmony Patches
 
+**PatchClass.cs (auto-discovered via `[HarmonyPatch]` class attribute):**
+- `PostSelectAProfile` — Adds guaranteed loot items to chests after loot generation
+- `PrefixChestReset` — Clears "already filled" tracking on chest reset
+- `PostChestReset` — Sets random reset interval on chests
+- `PostChestClose` — Sets random reset interval when player closes chest
+
+**PatchClass.cs (manual `Harmony.Patch()` in `OnStartSuccess`):**
+- `PreGameEventApproachVendor` — Triggers vendor loot rotation on player approach
+  - Targets: `GameEventApproachVendor(Session, Vendor, uint)` constructor
+  - Priority: `[HarmonyPriority(Priority.First)]` — runs BEFORE LLL's prefix
+  - Calls `VendorLootRotation.OnVendorApproachPrefix()` to rotate stock
+  - Returns `true` so LLL and original constructor still run
+
+**Why manual instead of auto-discovered:** New `[HarmonyPrefix]` + `[HarmonyPatch]` methods added after the class was originally compiled are silently ignored by `Harmony.PatchAllUncategorized()`. Manual `Harmony.Patch()` bypasses this cache/bug.
+
 **JewelryImbuePatches.cs:**
 - `GetWeaponCriticalChance` - Adds jewelry CriticalStrike bonus
 - `GetWeaponMagicCritFrequency` - Adds jewelry CriticalStrike for magic

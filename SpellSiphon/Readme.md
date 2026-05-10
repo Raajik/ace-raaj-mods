@@ -62,11 +62,12 @@ Template is a **Gem** with **Contained** use and **Creature** target (same patte
 1. Build: `dotnet build SpellSiphon/SpellSiphon.csproj`
 2. Output goes to `C:\ACE\Mods\SpellSiphon\` by default.
 3. Enable in `Meta.json` (`Enabled: true`).
-4. **Run the SQL** in `Content/SQL/` against your live `ace_world` database:
-   ```bash
-   mysql -h 127.0.0.1 -P 3306 -u <user> -p<pass> ace_world < Content/SQL/Spellsiphon_Tool_Create.sql
-   mysql -h 127.0.0.1 -P 3306 -u <user> -p<pass> ace_world < Content/SQL/CoalescedMana_Update.sql
+4. **Run the SQL** in `Content/SQL/` against the target database (follow the deployment chain: `void-test_world` → `ace_world` → `wb_ace_world`):
+   ```powershell
+   Get-Content "Content/SQL/Spellsiphon_Tool_Create.sql" | & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' -u jeremy -pandersine11 ace_world
+   Get-Content "Content/SQL/CoalescedMana_Update.sql" | & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' -u jeremy -pandersine11 ace_world
    ```
+   Replace `ace_world` with the appropriate database for your target server.
 5. **Restart the server** — ACE caches weenies at startup; weenie changes require a restart.
 6. Tune `Settings.json` to taste.
 

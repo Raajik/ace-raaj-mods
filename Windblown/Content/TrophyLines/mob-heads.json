@@ -1,5 +1,5 @@
 {
-  "Description": "Mob head trophy lines — 21 custom WCIDs (850316-850336), same line order as before. Vanilla head WCIDs only appear in Windblown weenie JSON as BaseWcid/MirrorEmoteFromWcid; sibling variants stay in ReplaceSiblingWcids where applicable.",
+  "Description": "Mob head trophy lines — 21 custom WCIDs (850316-850336). Each head drops at t3 rate (0.4%) from its respective CreatureType. Turn in to Collector Vaetha (810003) in the Town Network for t3-equivalent XP + bank credit (0.15 fraction, 100k bank). Vanilla sibling heads removed from drops — sold by Timewalker Kaleb (810001).",
   "Lines": [
     {
       "Name": "BanderlingHead",
@@ -7,7 +7,7 @@
       "CreatureTypeGate": "Banderling",
       "TurnInDisplayName": "Banderling Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850316, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+          { "TierName": "Regular", "Wcid": 850316, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [8144],
       "BankCashProperty": 39999,
@@ -20,7 +20,7 @@
       "CreatureTypeGate": "Drudge",
       "TurnInDisplayName": "Drudge Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850317, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850317, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [8145],
       "BankCashProperty": 39999,
@@ -33,7 +33,7 @@
       "CreatureTypeGate": "Mosswart",
       "TurnInDisplayName": "Mosswart Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850318, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850318, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [8146],
       "BankCashProperty": 39999,
@@ -46,7 +46,7 @@
       "CreatureTypeGate": "Tusker",
       "TurnInDisplayName": "Tusker Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850319, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850319, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [8147],
       "BankCashProperty": 39999,
@@ -59,7 +59,7 @@
       "CreatureTypeGate": "Ursuin",
       "TurnInDisplayName": "Ursuin Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850320, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850320, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [9097, 12219],
       "BankCashProperty": 39999,
@@ -72,7 +72,7 @@
       "CreatureTypeGate": "Scarecrow",
       "TurnInDisplayName": "Pumpkin Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850321, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850321, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [12215],
       "BankCashProperty": 39999,
@@ -85,7 +85,7 @@
       "CreatureTypeGate": "Sclavus",
       "TurnInDisplayName": "Sclavus Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850322, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850322, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [12216],
       "BankCashProperty": 39999,
@@ -98,7 +98,7 @@
       "CreatureTypeGate": "Undead",
       "TurnInDisplayName": "Zombie Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850323, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850323, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [12225],
       "BankCashProperty": 39999,
@@ -111,7 +111,7 @@
       "CreatureTypeGate": "Olthoi",
       "TurnInDisplayName": "Olthoi Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850324, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850324, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [3680, 19446],
       "BankCashProperty": 39999,
@@ -124,7 +124,7 @@
       "CreatureTypeGate": "Skeleton",
       "TurnInDisplayName": "Skeleton's Skull",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850325, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850325, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [3687],
       "BankCashProperty": 39999,
@@ -137,7 +137,7 @@
       "CreatureTypeGate": "Undead",
       "TurnInDisplayName": "Lich Skull",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850326, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850326, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [4121],
       "BankCashProperty": 39999,
@@ -150,7 +150,7 @@
       "CreatureTypeGate": "Tumerok",
       "TurnInDisplayName": "Eviscerator Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850327, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850327, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [22059],
       "BankCashProperty": 39999,
@@ -163,7 +163,7 @@
       "CreatureTypeGate": "HollowMinion",
       "TurnInDisplayName": "Mutilator Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850328, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850328, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [24846],
       "BankCashProperty": 39999,
@@ -176,7 +176,7 @@
       "CreatureTypeGate": "Knathtead",
       "TurnInDisplayName": "Knath Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850329, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850329, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [25554],
       "BankCashProperty": 39999,
@@ -189,7 +189,7 @@
       "CreatureTypeGate": "Moarsman",
       "TurnInDisplayName": "Moarsman Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850330, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850330, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [25561],
       "BankCashProperty": 39999,
@@ -202,7 +202,7 @@
       "CreatureTypeGate": "Burun",
       "TurnInDisplayName": "Burun Guruk Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850331, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850331, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [28886, 28887],
       "BankCashProperty": 39999,
@@ -215,7 +215,7 @@
       "CreatureTypeGate": "Chittick",
       "TurnInDisplayName": "Chittick Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850332, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850332, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [28888],
       "BankCashProperty": 39999,
@@ -228,7 +228,7 @@
       "CreatureTypeGate": "Mite",
       "TurnInDisplayName": "Mite Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850333, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850333, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [28889],
       "BankCashProperty": 39999,
@@ -241,7 +241,7 @@
       "CreatureTypeGate": "Shadow",
       "TurnInDisplayName": "Shadow Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850334, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850334, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [34029],
       "BankCashProperty": 39999,
@@ -254,7 +254,7 @@
       "CreatureTypeGate": "Cow",
       "TurnInDisplayName": "Cow Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850335, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850335, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [36359],
       "BankCashProperty": 39999,
@@ -267,7 +267,7 @@
       "CreatureTypeGate": "Mukkir",
       "TurnInDisplayName": "Mukkir Head",
       "Tiers": [
-        { "TierName": "Regular", "Wcid": 850336, "DropChance": 0.015, "XpFraction": 0.05, "BankCredit": 100000 }
+        { "TierName": "Regular", "Wcid": 850336, "DropChance": 0.004, "XpFraction": 0.15, "BankCredit": 100000 }
       ],
       "ReplaceSiblingWcids": [36362],
       "BankCashProperty": 39999,

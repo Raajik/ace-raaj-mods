@@ -1,0 +1,20 @@
+{
+  "Description": "Olthoi Claw tier line — four custom WCIDs (850340-850343). Uses vanilla WCID 3679 as clone/mirror source. ReplaceSiblingWcids [3679] routes vanilla claw drops to Regular tier 850340.",
+  "Lines": [
+    {
+      "Name": "OlthoiClaw",
+      "Enabled": true,
+      "CreatureTypeGate": "Olthoi",
+      "TurnInDisplayName": "Olthoi Claw",
+      "Tiers": [
+        { "TierName": "Regular",  "Wcid": 850340, "DropChance": 0.025, "XpFraction": 0.05,  "BankCredit": 25000 },
+        { "TierName": "Quality",  "Wcid": 850341, "DropChance": 0.01,   "XpFraction": 0.10,  "BankCredit": 50000 },
+        { "TierName": "Pristine", "Wcid": 850342, "DropChance": 0.004,  "XpFraction": 0.15,  "BankCredit": 100000 },
+        { "TierName": "Perfect",  "Wcid": 850343, "DropChance": 0.0015, "XpFraction": 0.30,  "BankCredit": 250000 }
+      ],
+      "ReplaceSiblingWcids": [3679],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    }
+  ]
+}

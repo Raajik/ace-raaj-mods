@@ -1,0 +1,125 @@
+{
+  "Description": "Eater Jaw revamp — per-creature gating (migrated from BSS QuestTrophyDrops 2026-05-10). Each named jaw drops at 2.5% only from its matching eater varieties. Note: Insatiable Eater Jaw (28719) and Upper Insatiable Eater Jaw (42104) both drop from Insatiable Eaters. Vanilla quest rewards intact when turned in to Brighteyes the Tailor (22642). Portal gem reward (Frozen Valley) has separate turn-in line at 5% XP-to-next-level.",
+  "Lines": [
+    {
+      "Name": "Eater_Engorged",
+      "Enabled": true,
+      "CreatureTypeGate": "Eater",
+      "TurnInDisplayName": "Eater Jaw",
+      "Tiers": [
+        {
+          "TierName": "Engorged",
+          "Wcid": 28725,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [28642, 28849, 32314]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Eater_Voracious",
+      "Enabled": true,
+      "CreatureTypeGate": "Eater",
+      "TurnInDisplayName": "Eater Jaw",
+      "Tiers": [
+        {
+          "TierName": "Voracious",
+          "Wcid": 28726,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [28639, 28850, 30851]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Eater_Abhorrent",
+      "Enabled": true,
+      "CreatureTypeGate": "Eater",
+      "TurnInDisplayName": "Eater Jaw",
+      "Tiers": [
+        {
+          "TierName": "Abhorrent",
+          "Wcid": 28727,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [28641, 28851]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Eater_Ravenous",
+      "Enabled": true,
+      "CreatureTypeGate": "Eater",
+      "TurnInDisplayName": "Eater Jaw",
+      "Tiers": [
+        {
+          "TierName": "Ravenous",
+          "Wcid": 28718,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [28637, 28847, 35121, 80035]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Eater_UpperInsatiable",
+      "Enabled": true,
+      "CreatureTypeGate": "Eater",
+      "TurnInDisplayName": "Eater Jaw",
+      "Tiers": [
+        {
+          "TierName": "UpperInsatiable",
+          "Wcid": 42104,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [28635, 28808, 28848]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    },
+    {
+      "Name": "Eater_Insatiable",
+      "Enabled": true,
+      "CreatureTypeGate": "Eater",
+      "TurnInDisplayName": "Eater Jaw",
+      "Tiers": [
+        {
+          "TierName": "Insatiable",
+          "Wcid": 28719,
+          "DropChance": 0.025,
+          "XpFraction": 0.0,
+          "BankCredit": 0,
+          "CreatureWcidGate": [28635, 28808, 28848]
+        }
+      ],
+      "ReplaceSiblingWcids": [],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": false,
+      "ExcludedNpcWcids": [22642]
+    }
+  ]
+}

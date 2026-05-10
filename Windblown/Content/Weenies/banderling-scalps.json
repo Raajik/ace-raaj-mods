@@ -1,5 +1,5 @@
 {
-  "Description": "Banderling Scalp tier line — custom WCIDs 850312-850315. Clones from 3693; MirrorEmoteFromWcid 3693. IconUnderlay 3353 (cyan plate test) on all tiers; Value=1, EncumbranceVal=1.",
+  "Description": "Banderling Scalp tier line — custom WCIDs 850312-850315. Clones from 3693; MirrorEmoteFromWcid 3693. IconUnderlay 100676435 (cold rend / ice blue) on all tiers; Value=1, EncumbranceVal=1.",
   "Weenies": [
     {
       "ClassId": 850312,
@@ -7,11 +7,11 @@
       "WeenieType": "Stackable",
       "BaseWcid": 3693,
       "MirrorEmoteFromWcid": 3693,
-      "Notes": "Regular tier (custom). Frost (128) glow.",
+      "Notes": "Regular tier (custom). Frost (128) glow. IconOverlay '1' top-right black (100690976).",
       "PropertiesString": {
         "Name": "Banderling Scalp",
         "PluralName": "Banderling Scalps",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -21,7 +21,8 @@
         "UiEffects": 128
       },
       "PropertiesDID": {
-        "IconUnderlay": 3353
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
       },
       "Delete": {
         "PropertiesString": ["Use", "ShortDesc"],
@@ -34,11 +35,11 @@
       "WeenieType": "Stackable",
       "BaseWcid": 3693,
       "MirrorEmoteFromWcid": 3693,
-      "Notes": "Quality tier. Acid (256) glow.",
+      "Notes": "Quality tier. Acid (256) glow. IconOverlay '2' top-right black (100690977).",
       "PropertiesString": {
         "Name": "Banderling Scalp (Quality)",
         "PluralName": "Banderling Scalps (Quality)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -48,7 +49,8 @@
         "UiEffects": 256
       },
       "PropertiesDID": {
-        "IconUnderlay": 3353
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
       },
       "Delete": {
         "PropertiesString": ["Use", "ShortDesc"],
@@ -61,11 +63,11 @@
       "WeenieType": "Stackable",
       "BaseWcid": 3693,
       "MirrorEmoteFromWcid": 3693,
-      "Notes": "Pristine tier. Magical (1) glow.",
+      "Notes": "Pristine tier. Magical (1) glow. IconOverlay '3' top-right black (100690978).",
       "PropertiesString": {
         "Name": "Banderling Scalp (Pristine)",
         "PluralName": "Banderling Scalps (Pristine)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -75,7 +77,8 @@
         "UiEffects": 1
       },
       "PropertiesDID": {
-        "IconUnderlay": 3353
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
       },
       "Delete": {
         "PropertiesString": ["Use", "ShortDesc"],
@@ -88,11 +91,11 @@
       "WeenieType": "Stackable",
       "BaseWcid": 3693,
       "MirrorEmoteFromWcid": 3693,
-      "Notes": "Perfect tier. Lightning (64) glow.",
+      "Notes": "Perfect tier. Lightning (64) glow. IconOverlay '4' top-right black (100690979).",
       "PropertiesString": {
         "Name": "Banderling Scalp (Perfect)",
         "PluralName": "Banderling Scalps (Perfect)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps."
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -102,7 +105,8 @@
         "UiEffects": 64
       },
       "PropertiesDID": {
-        "IconUnderlay": 3353
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690979
       },
       "Delete": {
         "PropertiesString": ["Use", "ShortDesc"],

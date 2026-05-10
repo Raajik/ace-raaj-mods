@@ -49,6 +49,7 @@
 - **Swarmed** — monitor CreatureEx loot for remaining items without icon underlays. **Status:** defense imbues (Melee/Missile/MagicDefense) have no known client icon underlay DIDs — blocked unless assets are found.
 
 ### Feature backlog
+- **All mods: persistent data consolidation** — WorldEvents (pending claims, participation, kill tracking, bonus quests) and other mods store state files inside `Mods/<name>/...`. These get lost on a clean wipe/deploy. Ideally, all persistent mod state lives in a shared location like `Server/data/` partitioned by mod name, so wipe-and-redeploy doesn't lose tracking data.
 - **BetterSupportSkills** — monitor summoner class cantrip bonus pets for balance. **Status:** current CantripBonusByTier values = {1,2,3,4,7}. Requires player feedback before adjusting.
 
 ## Progress (recent)

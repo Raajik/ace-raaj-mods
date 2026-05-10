@@ -1,0 +1,117 @@
+{
+  "Description": "Large Lugian Sinew tier line — custom WCIDs 850344-850347. Clones from 7043; MirrorEmoteFromWcid 7043. Blue IconUnderlay 100676435 + black number overlays 1-4. ReplaceSiblingWcids includes both 7043 (Large) and 7042 (Small) to remove both vanilla sinews from the loot pool.",
+  "Weenies": [
+    {
+      "ClassId": 850344,
+      "ClassName": "lugiansinew_regular_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 7043,
+      "MirrorEmoteFromWcid": 7043,
+      "Notes": "Regular tier (custom). Frost (128) glow. Overlay '1' top-right black (100690976).",
+      "PropertiesString": {
+        "Name": "Large Lugian Sinew",
+        "PluralName": "Large Lugian Sinews",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these sinews to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850345,
+      "ClassName": "lugiansinew_quality_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 7043,
+      "MirrorEmoteFromWcid": 7043,
+      "Notes": "Quality tier. Acid (256) glow. Overlay '2' top-right black (100690977).",
+      "PropertiesString": {
+        "Name": "Large Lugian Sinew (Quality)",
+        "PluralName": "Large Lugian Sinews (Quality)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these sinews to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850346,
+      "ClassName": "lugiansinew_pristine_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 7043,
+      "MirrorEmoteFromWcid": 7043,
+      "Notes": "Pristine tier. Magical (1) glow. Overlay '3' top-right black (100690978).",
+      "PropertiesString": {
+        "Name": "Large Lugian Sinew (Pristine)",
+        "PluralName": "Large Lugian Sinews (Pristine)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these sinews to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850347,
+      "ClassName": "lugiansinew_perfect_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 7043,
+      "MirrorEmoteFromWcid": 7043,
+      "Notes": "Perfect tier. Lightning (64) glow. Overlay '4' top-right black (100690979).",
+      "PropertiesString": {
+        "Name": "Large Lugian Sinew (Perfect)",
+        "PluralName": "Large Lugian Sinews (Perfect)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these sinews to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 64
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690979
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    }
+  ]
+}

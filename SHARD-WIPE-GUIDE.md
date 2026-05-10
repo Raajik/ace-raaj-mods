@@ -11,13 +11,13 @@ Wipe the `ace_shard` database to flush out any stale/unwanted world-spawned biot
 Run these to snapshot the test server state before touching anything:
 
 ```powershell
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 ace_shard -e "SELECT id, account_Id, name FROM ace_shard.character WHERE is_Deleted = 0;"
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 ace_shard -e "SELECT id, account_Id, name FROM ace_shard.character WHERE is_Deleted = 0;"
 
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 ace_shard -e "SELECT COUNT(*) FROM biota;"
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 ace_shard -e "SELECT COUNT(*) FROM biota;"
 
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 ace_shard -e "SELECT COUNT(*) FROM house_permission;"
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 ace_shard -e "SELECT COUNT(*) FROM house_permission;"
 
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 ace_auth -e "SELECT accountId, accountName, accessLevel FROM account;"
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 ace_auth -e "SELECT accountId, accountName, accessLevel FROM account;"
 ```
 
 ---
@@ -45,17 +45,17 @@ mkdir A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe
 ## Step 4: Full shard dump (safety rollback point)
 
 ```powershell
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqldump.exe" -u jeremy -pandersine11 ace_shard > A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\ace_shard_full.sql
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe" -u jeremy -pandersine11 ace_shard > A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\ace_shard_full.sql
 ```
 
-> Revert if needed: `call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 ace_shard < A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\ace_shard_full.sql`
+> Revert if needed: `call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 ace_shard < A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\ace_shard_full.sql`
 
 ---
 
 ## Step 5: Dump accounts (`ace_auth`)
 
 ```powershell
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqldump.exe" -u jeremy -pandersine11 ace_auth > A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\ace_auth_full.sql
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe" -u jeremy -pandersine11 ace_auth > A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\ace_auth_full.sql
 ```
 
 ---
@@ -75,7 +75,7 @@ Save this as `A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wi
 ```batch
 @echo off
 REM === Dump character tables and character-owned biota from ace_shard ===
-SET MYSQL="C:\Program Files\MySQL\MySQL Server 8.4\bin\mysqldump.exe"
+SET MYSQL="C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe"
 SET DB=ace_shard
 SET DIR=A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe
 
@@ -83,16 +83,16 @@ echo Dumping characters...
 call %MYSQL% -u jeremy -pandersine11 %DB% character character_properties_contract_registry character_properties_fill_comp_book character_properties_friend_list character_properties_quest_registry character_properties_shortcut_bar character_properties_spell_bar character_properties_squelch character_properties_title_book > %DIR%\characters.sql
 
 echo Creating temp biota ID set...
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 %DB% -e "DROP TABLE IF EXISTS _backup_biota_ids; CREATE TABLE _backup_biota_ids SELECT object_Id FROM biota_properties_i_i_d WHERE type=1 AND value IN (SELECT id FROM ace_shard.character WHERE is_Deleted = 0);"
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 %DB% -e "DROP TABLE IF EXISTS _backup_biota_ids; CREATE TABLE _backup_biota_ids SELECT object_Id FROM biota_properties_i_i_d WHERE type=1 AND value IN (SELECT id FROM ace_shard.character WHERE is_Deleted = 0);"
 
 REM Add houses/apartments owned via IID type 32 (HouseOwner), type 33 (House), and type 34 (Slumlord)
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 %DB% -e "INSERT IGNORE INTO _backup_biota_ids SELECT object_Id FROM biota_properties_i_i_d WHERE type IN (32,33,34) AND value IN (SELECT id FROM ace_shard.character WHERE is_Deleted = 0);"
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 %DB% -e "INSERT IGNORE INTO _backup_biota_ids SELECT object_Id FROM biota_properties_i_i_d WHERE type IN (32,33,34) AND value IN (SELECT id FROM ace_shard.character WHERE is_Deleted = 0);"
 
 REM Add the character player biota rows themselves
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 %DB% -e "INSERT IGNORE INTO _backup_biota_ids SELECT id FROM ace_shard.character WHERE is_Deleted = 0;"
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 %DB% -e "INSERT IGNORE INTO _backup_biota_ids SELECT id FROM ace_shard.character WHERE is_Deleted = 0;"
 
 REM Add one level of nested containers (bags inside bags)
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 %DB% -e "INSERT IGNORE INTO _backup_biota_ids SELECT object_Id FROM biota_properties_i_i_d WHERE type=1 AND value IN (SELECT object_Id FROM _backup_biota_ids);"
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 %DB% -e "INSERT IGNORE INTO _backup_biota_ids SELECT object_Id FROM biota_properties_i_i_d WHERE type=1 AND value IN (SELECT object_Id FROM _backup_biota_ids);"
 
 echo Dumping character biota...
 call %MYSQL% -u jeremy -pandersine11 %DB% biota --where="id IN (SELECT object_Id FROM _backup_biota_ids)" > %DIR%\biota_character_owned.sql
@@ -106,7 +106,7 @@ echo Dumping house permissions...
 call %MYSQL% -u jeremy -pandersine11 %DB% house_permission > %DIR%\house_permission.sql
 
 echo Cleaning up temp table...
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 %DB% -e "DROP TABLE IF EXISTS _backup_biota_ids;"
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 %DB% -e "DROP TABLE IF EXISTS _backup_biota_ids;"
 
 echo Done. All character data backed up to %DIR%
 ```
@@ -130,7 +130,7 @@ dir A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\*.sql
 ## Step 8: Wipe the shard database
 
 ```powershell
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 -e "DROP DATABASE ace_shard; CREATE DATABASE ace_shard;"
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 -e "DROP DATABASE ace_shard; CREATE DATABASE ace_shard;"
 ```
 
 ---
@@ -157,18 +157,18 @@ tasklist | findstr ACE.Server
 
 ```powershell
 REM Restore characters and their properties
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 ace_shard < A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\characters.sql
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 ace_shard < A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\characters.sql
 
 REM Restore character-owned biota
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 ace_shard < A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\biota_character_owned.sql
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 ace_shard < A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\biota_character_owned.sql
 
 REM Restore all biota property tables
 for %%t in (allegiance anim_part attribute attribute_2nd body_part book book_page_data bool create_list d_i_d emote emote_action enchantment_registry event_filter float generator i_i_d int int64 palette position skill spell_book string texture_map) do (
-    call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 ace_shard < A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\biota_props_%%t.sql
+    call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 ace_shard < A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\biota_props_%%t.sql
 )
 
 REM Restore house permissions
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 ace_shard < A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\house_permission.sql
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 ace_shard < A:\ai\projects\ace-raaj-mods\WindblownContent\sql-backups\shard-wipe\house_permission.sql
 ```
 
 ---
@@ -176,7 +176,7 @@ call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersi
 ## Step 11: Verify no duplicate biota IDs
 
 ```powershell
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 ace_shard -e "SELECT id, COUNT(*) FROM biota GROUP BY id HAVING COUNT(*) > 1;"
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 ace_shard -e "SELECT id, COUNT(*) FROM biota GROUP BY id HAVING COUNT(*) > 1;"
 ```
 
 If this returns any rows, there's a collision that needs fixing.
@@ -203,7 +203,7 @@ Wait 30 seconds, then:
 If you suspect a specific WCID range (e.g., custom 850xxx items), run:
 
 ```powershell
-call "C:\Program Files\MySQL\MySQL Server 8.4\bin\mysql.exe" -u jeremy -pandersine11 ace_shard -e "SELECT b.id, b.weenie_Class_Id, w.class_Name FROM biota b JOIN ace_world.weenie w ON b.weenie_Class_Id = w.class_Id WHERE b.weenie_Class_Id >= 850000 ORDER BY b.weenie_Class_Id;"
+call "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u jeremy -pandersine11 ace_shard -e "SELECT b.id, b.weenie_Class_Id, w.class_Name FROM biota b JOIN ace_world.weenie w ON b.weenie_Class_Id = w.class_Id WHERE b.weenie_Class_Id >= 850000 ORDER BY b.weenie_Class_Id;"
 ```
 
 If custom items appear in the shard after wipe, they're being spawned from `ace_world` templates — meaning the content is in your source database, not leaked data.

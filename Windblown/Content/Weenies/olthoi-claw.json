@@ -1,0 +1,117 @@
+{
+  "Description": "Olthoi Claw tier line — custom WCIDs 850340-850343. Clones from 3679; MirrorEmoteFromWcid 3679. Blue IconUnderlay 100676435 + black number overlays 1-4.",
+  "Weenies": [
+    {
+      "ClassId": 850340,
+      "ClassName": "olthoiclaw_regular_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3679,
+      "MirrorEmoteFromWcid": 3679,
+      "Notes": "Regular tier (custom). Frost (128) glow. Overlay '1' top-right black (100690976).",
+      "PropertiesString": {
+        "Name": "Olthoi Claw",
+        "PluralName": "Olthoi Claws",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these claws to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850341,
+      "ClassName": "olthoiclaw_quality_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3679,
+      "MirrorEmoteFromWcid": 3679,
+      "Notes": "Quality tier. Acid (256) glow. Overlay '2' top-right black (100690977).",
+      "PropertiesString": {
+        "Name": "Olthoi Claw (Quality)",
+        "PluralName": "Olthoi Claws (Quality)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these claws to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850342,
+      "ClassName": "olthoiclaw_pristine_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3679,
+      "MirrorEmoteFromWcid": 3679,
+      "Notes": "Pristine tier. Magical (1) glow. Overlay '3' top-right black (100690978).",
+      "PropertiesString": {
+        "Name": "Olthoi Claw (Pristine)",
+        "PluralName": "Olthoi Claws (Pristine)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these claws to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850343,
+      "ClassName": "olthoiclaw_perfect_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3679,
+      "MirrorEmoteFromWcid": 3679,
+      "Notes": "Perfect tier. Lightning (64) glow. Overlay '4' top-right black (100690979).",
+      "PropertiesString": {
+        "Name": "Olthoi Claw (Perfect)",
+        "PluralName": "Olthoi Claws (Perfect)",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these claws to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 64
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690979
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    }
+  ]
+}

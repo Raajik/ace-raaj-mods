@@ -38,6 +38,8 @@ public partial class PatchClass
                         foreach (var tier in line.Tiers)
                         {
                             if (tier.Wcid == 0 || tier.DropChance <= 0.0) continue;
+                            // Optional per-creature gate: if populated, only listed creature WCIDs can roll this tier
+                            if (tier.CreatureWcidGate is { Count: > 0 } && !tier.CreatureWcidGate.Contains(__instance.WeenieClassId)) continue;
                             if (ThreadSafeRandom.Next(0.0f, 1.0f) >= tier.DropChance) continue;
 
                             try

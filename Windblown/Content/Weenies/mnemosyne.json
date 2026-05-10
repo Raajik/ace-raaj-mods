@@ -1,0 +1,173 @@
+{
+  "Description": "Mnemosyne tier lines — 6 custom WCIDs (850352-850357). Two lines: regular (Tiny/Small/Large, 850352-850354) and Unlocked (Unlocked Tiny/Small/Large, 850355-850357). Clones from 9310; MirrorEmoteFromWcid 9310. Blue IconUnderlay 100676435 + black number overlays.",
+  "Weenies": [
+    {
+      "ClassId": 850352,
+      "ClassName": "mnemosyne_regular_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 9310,
+      "MirrorEmoteFromWcid": 9310,
+      "Notes": "Regular Mnemosyne (line 1) — Regular tier. Frost (128) glow. Overlay '1' black (100690976). Replaces vanilla Tiny Mnemosyne (9314, t1).",
+      "PropertiesString": {
+        "Name": "Tiny Mnemosyne",
+        "PluralName": "Tiny Mnemosynes",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these mnemosynes to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850353,
+      "ClassName": "mnemosyne_quality_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 9310,
+      "MirrorEmoteFromWcid": 9310,
+      "Notes": "Regular Mnemosyne (line 1) — Quality tier. Acid (256) glow. Overlay '2' black (100690977). Replaces vanilla Small Mnemosyne (9312, t2).",
+      "PropertiesString": {
+        "Name": "Small Mnemosyne",
+        "PluralName": "Small Mnemosynes",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these mnemosynes to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850354,
+      "ClassName": "mnemosyne_pristine_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 9310,
+      "MirrorEmoteFromWcid": 9310,
+      "Notes": "Regular Mnemosyne (line 1) — Pristine tier. Magical (1) glow. Overlay '3' black (100690978). Replaces vanilla Large Mnemosyne (9310, t3).",
+      "PropertiesString": {
+        "Name": "Large Mnemosyne",
+        "PluralName": "Large Mnemosynes",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these mnemosynes to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850355,
+      "ClassName": "mnemosyne_unlocked_tiny_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 9310,
+      "MirrorEmoteFromWcid": 9310,
+      "Notes": "Unlocked Mnemosyne (line 2) — Regular tier. Frost (128) glow. Overlay '1' black (100690976). Replaces vanilla Unlocked Tiny Mnemosyne (9315, t2).",
+      "PropertiesString": {
+        "Name": "Unlocked Tiny Mnemosyne",
+        "PluralName": "Unlocked Tiny Mnemosynes",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these mnemosynes to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850356,
+      "ClassName": "mnemosyne_unlocked_small_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 9310,
+      "MirrorEmoteFromWcid": 9310,
+      "Notes": "Unlocked Mnemosyne (line 2) — Quality tier. Acid (256) glow. Overlay '2' black (100690977). Replaces vanilla Unlocked Small Mnemosyne (9313, t3).",
+      "PropertiesString": {
+        "Name": "Unlocked Small Mnemosyne",
+        "PluralName": "Unlocked Small Mnemosynes",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these mnemosynes to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850357,
+      "ClassName": "mnemosyne_unlocked_large_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 9310,
+      "MirrorEmoteFromWcid": 9310,
+      "Notes": "Unlocked Mnemosyne (line 2) — Perfect tier. Lightning (64) glow. Overlay '4' black (100690979). Replaces vanilla Unlocked Large Mnemosyne (9311, t4).",
+      "PropertiesString": {
+        "Name": "Unlocked Large Mnemosyne",
+        "PluralName": "Unlocked Large Mnemosynes",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these mnemosynes to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 64
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690979
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    }
+  ]
+}

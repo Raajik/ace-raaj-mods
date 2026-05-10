@@ -1,0 +1,20 @@
+{
+  "Description": "Large Lugian Sinew tier line — four custom WCIDs (850344-850347). Uses vanilla WCID 7043 as clone/mirror source. ReplaceSiblingWcids includes both 7043 (Large) and 7042 (Small) to pull both vanilla sinews out of the loot pool.",
+  "Lines": [
+    {
+      "Name": "LugianSinew",
+      "Enabled": true,
+      "CreatureTypeGate": "Lugian",
+      "TurnInDisplayName": "Large Lugian Sinew",
+      "Tiers": [
+        { "TierName": "Regular",  "Wcid": 850344, "DropChance": 0.025, "XpFraction": 0.05,  "BankCredit": 25000 },
+        { "TierName": "Quality",  "Wcid": 850345, "DropChance": 0.01,   "XpFraction": 0.10,  "BankCredit": 50000 },
+        { "TierName": "Pristine", "Wcid": 850346, "DropChance": 0.004,  "XpFraction": 0.15,  "BankCredit": 100000 },
+        { "TierName": "Perfect",  "Wcid": 850347, "DropChance": 0.0015, "XpFraction": 0.30,  "BankCredit": 250000 }
+      ],
+      "ReplaceSiblingWcids": [7043, 7042],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    }
+  ]
+}

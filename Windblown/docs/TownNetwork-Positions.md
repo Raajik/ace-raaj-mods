@@ -9,6 +9,7 @@ destinations change.
 | NPC | WCID | Cell | Position | Facing | 
 |-----|------|------|----------|--------|
 | Jochi (gem vendor) | 810000 | `0x00070155` | `[78.482, -60.464, 0.005]` | W=0.370 Z=-0.929 |
+| Timewalker Kaleb (trophy failsafe) | 810001 | `0x00070155` | `[78.179, -61.993, 0.005]` | W=0.913 Z=-0.407 |
 | Swayss (skill reset) | 810002 | `0x00070155` | `[79.886, -61.775, 0.005]` | W=0.921 Z=0.389 |
 
 ## Portal Additions

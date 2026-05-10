@@ -997,12 +997,9 @@ public class QuestTrophyDropsSettings
     public int ChampionStackSizeMax { get; set; } = 8;
 
     [JsonPropertyName("// QuestItemWcids")]
-    public string QuestItemWcidsDoc { get; init; } = "WCIDs of quest items that can drop as bonus trophies.";
+    public string QuestItemWcidsDoc { get; init; } = "WCIDs of quest items that can drop as bonus trophies. Pincer/tusk/jaw WCIDs removed 2026-05-10 — now owned by Windblown TrophyLines with per-creature WCID gating.";
     public List<uint> QuestItemWcids { get; set; } = new()
     {
-        22419, 22423, 22424, 22427, 22428, 22431, // Tusker Tusks
-        10843, 10844, 10845, 10846, 10847, 27589, 27590, 27591, 51211, 51214, // Olthoi Pincers
-        28718, 28725, 28726, 28727, 42104 // Eater Jaws
     };
 
     [JsonPropertyName("// XpSuppressedMessage")]

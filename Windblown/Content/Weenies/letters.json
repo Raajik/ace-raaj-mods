@@ -1,0 +1,57 @@
+{
+  "Description": "Lucky Gold Letter (850337) and Scarlet Red Letter (850338) as stackable trophies. Clones from original letter WCIDs (45875, 45876) for MirrorEmoteFromWcid. Blue IconUnderlay (100676435), no number overlay. Value=1, EncumbranceVal=1.",
+  "Weenies": [
+    {
+      "ClassId": 850337,
+      "ClassName": "luckygoldletter_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 45875,
+      "MirrorEmoteFromWcid": 45875,
+      "Notes": "Lucky Gold Letter (stackable trophy). Blue underlay. T2 (Quality) reward.",
+      "PropertiesString": {
+        "Name": "Lucky Gold Letter",
+        "PluralName": "Lucky Gold Letters",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these letters to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 100,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    },
+    {
+      "ClassId": 850338,
+      "ClassName": "scarletredletter_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 45876,
+      "MirrorEmoteFromWcid": 45876,
+      "Notes": "Scarlet Red Letter (stackable trophy). Blue underlay. T1 (Regular) reward.",
+      "PropertiesString": {
+        "Name": "Scarlet Red Letter",
+        "PluralName": "Scarlet Red Letters",
+        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these letters to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 100,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435
+      },
+      "Delete": {
+        "PropertiesString": ["Use", "ShortDesc"],
+        "PropertiesInt": ["ImbuedEffect"]
+      }
+    }
+  ]
+}

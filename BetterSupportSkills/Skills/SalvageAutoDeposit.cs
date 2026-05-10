@@ -280,10 +280,7 @@ public static class SalvageAutoDeposit
         return true;
     }
 
-    /// <summary>
-    /// Given a list of MaterialType IDs, finds the ones with the lowest banked amount
-    /// and returns a random valid salvage WCID from that subset.
-    /// </summary>
+    // Given MaterialType IDs, picks salvage WCIDs with lowest banked units (same PropertyInt64 as LLL DepositRules).
     static int? PickLeastBankedMaterial(Player player, int[] materialTypes)
     {
         var candidates = new List<(int MaterialType, int SalvageWcid, long Banked)>();
@@ -297,7 +294,10 @@ public static class SalvageAutoDeposit
             if (matIndex < 0 || matIndex > 108)
                 continue;
 
-            int bankProp = GetMaterialBankProperty(matIndex);
+            int bankProp = LeyLineLedgerSalvageInterop.GetSalvagePropertyId((uint)wcid);
+            if (bankProp <= 0)
+                continue;
+
             long banked = player.GetProperty((PropertyInt64)bankProp) ?? 0;
             candidates.Add((mt, wcid, banked));
         }
@@ -314,8 +314,9 @@ public static class SalvageAutoDeposit
 
     public static int GetMaterialBankProperty(int materialIndex)
     {
-        var baseProp = PatchClass.Settings?.Salvage?.MaterialBankPropertyBase ?? 40201;
-        return baseProp + materialIndex;
+        if (materialIndex < 0 || materialIndex > 108)
+            return -1;
+        return LeyLineLedgerSalvageInterop.GetSalvagePropertyId((uint)(20981 + materialIndex));
     }
 
     static bool IsSalvageStack(uint wcid) => wcid >= 20981 && wcid <= 21089;

@@ -89,6 +89,7 @@
 
 	<ItemGroup>
 		<Compile Include="..\Shared\LeyLineLedgerBankInterop.cs" Link="Shared\LeyLineLedgerBankInterop.cs" />
+		<Compile Include="..\Shared\LeyLineLedgerSalvageBankInterop.cs" Link="Shared\LeyLineLedgerSalvageBankInterop.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

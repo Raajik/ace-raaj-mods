@@ -129,21 +129,16 @@ public static class QuestSalvageAutoBank
 
         var sb = settings.SalvageBank;
         int? ruleIndex = FindSalvageRuleIndex(sb, regularSalvageWcid);
+        if (!ruleIndex.HasValue || ruleIndex.Value < 0 || ruleIndex.Value >= sb.DepositRules.Count)
+        {
+            ModManager.Log(
+                $"[QuestSalvageAutoBank] No SalvageBank.DepositRules entry for regular salvage WCID {regularSalvageWcid}; refusing deposit (WCID-offset fallback removed — wrong PropertyInt64).",
+                ModManager.LogLevel.Warn);
+            return false;
+        }
 
-        int bankProp;
-        if (ruleIndex.HasValue && ruleIndex.Value < sb.DepositRules.Count)
-        {
-            var rule = sb.DepositRules[ruleIndex.Value];
-            bankProp = rule.BankProperty != 0 ? rule.BankProperty : sb.FirstMaterialBankPropertyId + ruleIndex.Value;
-        }
-        else
-        {
-            // Fallback: estimate property based on regular salvage WCID offset
-            int matIndex = (int)(regularSalvageWcid - 20981);
-            if (matIndex < 0)
-                return false;
-            bankProp = sb.FirstMaterialBankPropertyId + matIndex;
-        }
+        var matchedRule = sb.DepositRules[ruleIndex.Value];
+        int bankProp = matchedRule.BankProperty != 0 ? matchedRule.BankProperty : sb.FirstMaterialBankPropertyId + ruleIndex.Value;
 
         int unitsPerBag = sb.Redeem?.UnitsPerBag ?? 100;
         long depositUnits = unitsPerBag * (long)bagCount;

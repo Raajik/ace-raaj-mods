@@ -8,4 +8,8 @@
 INSERT IGNORE INTO landblock_instance (guid, weenie_Class_Id, obj_Cell_Id, origin_X, origin_Y, origin_Z, angles_W, angles_X, angles_Y, angles_Z, is_Link_Child, last_Modified)
 VALUES (0x70130055, 3930, 0x00070143, 65.600296, -56.225960, 0.005000, 0.175151, 0, 0, -0.984542, False, NOW());
 
+-- Behdo Yii (10842) — Olthoi pincer quest rewards
+INSERT IGNORE INTO landblock_instance (guid, weenie_Class_Id, obj_Cell_Id, origin_X, origin_Y, origin_Z, angles_W, angles_X, angles_Y, angles_Z, is_Link_Child, last_Modified)
+VALUES (0x70130056, 10842, 0x00070143, 67.669632, -56.158134, 0.005000, 0.004230, 0, 0, 0.999991, False, NOW());
+
 SELECT 'OK' as status;

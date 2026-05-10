@@ -794,6 +794,11 @@ public static class VendorLootRotation
     {
         try { File.AppendAllText("BLC_DEBUG.txt", DateTime.Now + " [BLC] OnVendorApproachPrefix called for " + __instance.Name + " (WCID " + __instance.WeenieClassId + ")" + Environment.NewLine); } catch { }
 
+        // Ensure _settings is set — fall back to PatchClass.CurrentSettings
+        // (Initialize() sets _settings but may not survive ALC reload cycles)
+        if (_settings is null)
+            _settings = PatchClass.CurrentSettings;
+
         if (_settings is null || !_settings.EnableVendorLootRotation)
         {
             try { File.AppendAllText("BLC_DEBUG.txt", DateTime.Now + " [BLC]   -> SKIP: settings null or disabled" + Environment.NewLine); } catch { }

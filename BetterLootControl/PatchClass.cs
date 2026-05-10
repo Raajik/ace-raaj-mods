@@ -42,7 +42,13 @@ public partial class PatchClass : BasicPatch<Settings>
         base.Start();
         Settings = SettingsContainer.Settings ?? new Settings();
         CurrentSettings = Settings;
-    }
+
+        // Manual Harmony.Patch on Vendor.LoadInventory — always runs from Start()
+        // regardless of async void lifecycle in BasicPatch.Start().
+        // Auto-discovery of new Harmony patches in this assembly silently fails
+        // (BLC_VENDOR_DEBUG_DIARY.md), so we patch explicitly here.
+        if (Settings?.EnableVendorLootRotation == true)
+            VendorApproachPatches.Apply(ModC.Harmony);    }
 
     public override async Task OnStartSuccess()
     {
@@ -70,8 +76,6 @@ public partial class PatchClass : BasicPatch<Settings>
         {
             VendorLootRotation.Initialize(Settings);
             ModManager.Log("BetterLootControl: VendorLootRotation initialized", ModManager.LogLevel.Info);
-
-            ApplyVendorApproachPatch();
         }
         else
         {
@@ -373,67 +377,5 @@ public partial class PatchClass : BasicPatch<Settings>
     {
         return LootRoller.TryCreateRandomItem(LootConfigStore.GetLoadedOrDefault());
     }
-
-    // =====================================================================
-    // Vendor Loot Rotation Hook — manual prefix on GameEventApproachVendor constructor
-    // Runs FIRST (Priority.First) so vendor stock is rotated before LLL writes the packet.
-    // =====================================================================
-
-    private void ApplyVendorApproachPatch()
-    {
-        try
-        {
-            var targetCtor = typeof(GameEventApproachVendor).GetConstructors()
-                .FirstOrDefault(c =>
-                {
-                    var p = c.GetParameters();
-                    return p.Length == 3
-                        && p[0].ParameterType == typeof(Session)
-                        && p[1].ParameterType == typeof(Vendor)
-                        && p[2].ParameterType == typeof(uint);
-                });
-
-            if (targetCtor == null)
-            {
-                ModManager.Log("[BLC] ApplyVendorApproachPatch: Could not find GameEventApproachVendor ctor(Session,Vendor,uint)", ModManager.LogLevel.Error);
-                return;
-            }
-
-            var prefix = new HarmonyMethod(typeof(PatchClass), nameof(PreGameEventApproachVendor));
-            ModC.Harmony.Patch(targetCtor, prefix: prefix);
-
-            ModManager.Log("[BLC] ApplyVendorApproachPatch: Patched GameEventApproachVendor ctor with Priority.First", ModManager.LogLevel.Info);
-            File.AppendAllText("BLC_DEBUG.txt", DateTime.Now + " [BLC] Patched GameEventApproachVendor ctor Priority.First" + Environment.NewLine);
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[BLC] ApplyVendorApproachPatch FAILED: {ex}", ModManager.LogLevel.Error);
-        }
-    }
-
-    /// <summary>
-    /// Manual prefix on GameEventApproachVendor constructor.
-    /// Rotates vendor stock BEFORE the packet is written (and before LLL's prefix runs).
-    /// Priority.First ensures this runs before LLL's normal-priority prefix.
-    /// Returns true so other prefixes (LLL) and the original constructor can still run.
-    /// </summary>
-    [HarmonyPriority(Priority.First)]
-    public static bool PreGameEventApproachVendor(Session session, Vendor vendor, uint altCurrencySpent, ref GameEventApproachVendor __instance)
-    {
-        try
-        {
-            if (session?.Player == null || vendor == null)
-                return true;
-
-            File.AppendAllText("BLC_VENDOR.txt", DateTime.Now.ToString("HH:mm:ss.fff") + " [BLC] PreGameEventApproachVendor: vendor=" + vendor.Name + " (WCID=" + vendor.WeenieClassId + ") player=" + session.Player.Name + Environment.NewLine);
-
-            VendorLootRotation.OnVendorApproachPrefix(session.Player, VendorType.Open, altCurrencySpent, vendor);
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[BLC] PreGameEventApproachVendor error: {ex}", ModManager.LogLevel.Warn);
-        }
-
-        return true; // let other prefixes (LLL) and original run
-    }
 }
+

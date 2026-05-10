@@ -72,12 +72,35 @@ public partial class PatchClass
         if (line.ExcludedNpcWcids.Contains(npcWcid)) return true;
 
         // Only process this for NPCs that have TrophyLines-relevant turn-in items.
-        // Currently: Behdo Yii (10842) reward items + Brighteyes (22642) portal gems.
-        if (npcWcid != 10842 && npcWcid != 22642) return true;
+        // Behdo Yii (10842) reward items, Brighteyes (22642) portal gems,
+        // Collector Vaetha (810003) all custom trophy turn-ins.
+        if (npcWcid != 10842 && npcWcid != 22642 && npcWcid != 810003) return true;
 
-        // Consume just the single item being given (1-at-a-time, no bulk drain)
+        // Bank credit (Vaetha uses bank, others might not)
         int consumed = item.StackSize ?? 1;
-        __instance.TryRemoveFromInventoryWithNetworking(item.Guid, out _, Player.RemoveFromInventoryAction.ConsumeItem);
+        long bankDelta = 0;
+
+        // Vaetha: bulk drain ALL stacks of this WCID (prefix fires before GiveObjectToNPC consumes anything)
+        if (npcWcid == 810003)
+        {
+            // Count and drain all stacks in inventory (including the one being given)
+            int totalCount = consumed;
+            __instance.TryRemoveFromInventoryWithNetworking(item.Guid, out _, Player.RemoveFromInventoryAction.ConsumeItem);
+            foreach (var stack in __instance.GetInventoryItemsOfWCID(item.WeenieClassId).ToList())
+            {
+                totalCount += stack.StackSize ?? 1;
+                __instance.TryRemoveFromInventoryWithNetworking(stack.Guid, out _, Player.RemoveFromInventoryAction.ConsumeItem);
+            }
+            consumed = totalCount;
+
+            bankDelta = tier.BankCredit * consumed;
+            if (bankDelta > 0)
+                LeyLineLedgerBankInterop.IncBanked(__instance, line.BankCashProperty, bankDelta);
+        }
+
+        // Behdo / Brighteyes: consume just the single item being given
+        if (npcWcid == 10842 || npcWcid == 22642)
+            __instance.TryRemoveFromInventoryWithNetworking(item.Guid, out _, Player.RemoveFromInventoryAction.ConsumeItem);
 
         long xpAmount = 0;
         try
@@ -95,10 +118,26 @@ public partial class PatchClass
         if (xpAmount > 0)
             __instance.GrantXP(xpAmount, XpType.Quest, ShareType.None);
 
+        // Random flavor text per tier (Vaetha only)
+        string flavor = "";
+        if (npcWcid == 810003 && !string.IsNullOrWhiteSpace(tier.TierName))
+        {
+            flavor = GetVaethaFlavor(tier.TierName);
+        }
+
         var displayName = BuildDisplayName(line, tier, consumed);
+        string bankMsg = bankDelta > 0 ? $" and {bankDelta:N0} pyreals" : "";
         __instance.SendMessage(
-            $"You turn in {consumed:N0} {displayName} for {xpAmount:N0} experience.",
+            $"You turn in {consumed:N0} {displayName} for {xpAmount:N0} experience{bankMsg}.",
             ChatMessageType.System);
+
+        // Flavor text on a separate line (Vaetha only)
+        if (npcWcid == 810003 && !string.IsNullOrWhiteSpace(flavor))
+        {
+            __instance.SendMessage(
+                $"Collector Vaetha tells you, \"{flavor.Trim('"')}\"",
+                ChatMessageType.System);
+        }
 
         return false; // Skip vanilla GiveObjectToNPC entirely
     }
@@ -229,4 +268,133 @@ public partial class PatchClass
             return singular + "es";
         return singular + "s";
     }
+
+    [ThreadStatic] static Random? _flavorRng;
+
+    static string GetVaethaFlavor(string tierName)
+    {
+        _flavorRng ??= new Random();
+
+        // T1 / Regular — simple acknowledgment
+        // T2 / Quality — mild praise
+        // T3 / Pristine — noticeable enthusiasm
+        // T4 / Perfect — ecstatic
+
+        var tier = tierName.ToLowerInvariant() switch
+        {
+            "regular" or "t1" or "harvester" or "gardener" or "worker" or "soldier" or
+            "legionary" or "female" or "male" or "crimsonback" or "goldenback" or "slave" or
+            "guard" or "silver" or "armored" or "snowtuskerleader" or
+            "engorged" or "voracious" or "abhorrent" or "ravenouse" or "upperinsatiable" or "insatiable"
+                => 0,
+            "quality" or "t2" => 1,
+            "pristine" or "t3" => 2,
+            "perfect" or "t4" => 3,
+            _ => 0
+        };
+
+        return tier switch
+        {
+            0 => _t1Flavor[_flavorRng.Next(_t1Flavor.Length)],
+            1 => _t2Flavor[_flavorRng.Next(_t2Flavor.Length)],
+            2 => _t3Flavor[_flavorRng.Next(_t3Flavor.Length)],
+            3 => _t4Flavor[_flavorRng.Next(_t4Flavor.Length)],
+            _ => ""
+        };
+    }
+
+    static readonly string[] _t1Flavor = new[]
+    {
+        "\"A fine addition to my collection.\"",
+        "\"I can always use more of these.\"",
+        "\"Thank you, this will do nicely.\"",
+        "\"Every piece helps the cause.\"",
+        "\"I'll find a place for this.\"",
+        "\"Ah, the usual. Much appreciated.\"",
+        "\"Not the finest I've seen, but it'll do.\"",
+        "\"Keep them coming, I say!\"",
+        "\"Another crate for the back room.\"",
+        "\"Simple, but effective.\"",
+        "\"I never tire of these.\"",
+        "\"A humble offering, gratefully received.\"",
+        "\"One more for the tally.\"",
+        "\"Every little bit counts.\"",
+        "\"Good eye spotting this one.\"",
+        "\"I'll take good care of it.\"",
+        "\"You're doing Dereth a service.\"",
+        "\"Needs a bit of polish, but fine.\"",
+        "\"Just what I expected. Thank you.\"",
+        "\"Another satisfied transaction!\""
+    };
+
+    static readonly string[] _t2Flavor = new[]
+    {
+        "\"Oh, this is quite good!\"",
+        "\"Quality item! You found this yourself?\"",
+        "\"Now THIS is what I'm talking about.\"",
+        "\"A cut above the usual haul.\"",
+        "\"Well preserved. Well done!\"",
+        "\"Excellent craftsmanship on this one.\"",
+        "\"I shall treasure this piece.\"",
+        "\"You have a keen eye for quality.\"",
+        "\"This will fetch a fine price.\"",
+        "\"Remarkable condition!\"",
+        "\"I'd recognize quality anywhere.\"",
+        "\"A worthy addition indeed.\"",
+        "\"This stands out from the rest.\"",
+        "\"You've outdone yourself this time.\"",
+        "\"Delightful! Simply delightful!\"",
+        "\"I can already tell this is special.\"",
+        "\"Not bad, not bad at all!\"",
+        "\"You clearly know what you're doing.\"",
+        "\"Top shelf material!\"" 
+    };
+
+    static readonly string[] _t3Flavor = new[]
+    {
+        "\"By the Light! This is magnificent!\"",
+        "\"I've not seen one this fine in years!\"",
+        "\"Pristine! Absolutely pristine!\"",
+        "\"You found this WHERE? Incredible!\"",
+        "\"This belongs in a museum!\"",
+        "\"Exceptionally rare piece. Well done!\"",
+        "\"I am genuinely impressed.\"",
+        "\"Now THAT is a trophy worth having.\"",
+        "\"The detail on this is stunning.\"",
+        "\"A rare gem, literally and figuratively.\"",
+        "\"This will be the centerpiece of my collection.\"",
+        "\"You have earned my deepest respect.\"",
+        "\"Extraordinary! I'm at a loss for words.\"",
+        "\"I must have this! Name your price!\"",
+        "\"Flawless. Simply flawless.\"",
+        "\"I'll be telling stories about this one.\"",
+        "\"A true adventurer's prize!\"",
+        "\"This is why I do what I do.\"",
+        "\"The sheen! The quality! Impeccable!\"",
+        "\"You've made my entire month.\""
+    };
+
+    static readonly string[] _t4Flavor = new[]
+    {
+        "\"IMPERFECT? NO—THIS IS BEYOND PERFECT!\"",
+        "\"I... I need to sit down. This is unreal.\"",
+        "\"Legends will be written about this piece!\"",
+        "\"HOW did you acquire this?!\"",
+        "\"This belongs in the Royal Vault!\"",
+        "\"I would trade my entire collection for this!\"",
+        "\"A once-in-a-lifetime find!\"",
+        "\"This is the apex of trophies. Unbelievable.\"",
+        "\"The gods themselves would weep at this sight.\"",
+        "\"I am not worthy to even hold this!\"",
+        "\"This changes everything!\"",
+        "\"Perfection incarnate! There is no higher!\"",
+        "\"You have done the impossible!\"",
+        "\"My grandchildren will hear of this day.\"",
+        "\"I shall build a shrine for this piece.\"",
+        "\"This is the finest I have ever seen.\"",
+        "\"Beyond my wildest expectations!\"",
+        "\"You are a legend among adventurers!\"",
+        "\"I'm trembling. This is too much!\"",
+        "\"Elation! Pure elation! Thank you!\""
+    };
 }

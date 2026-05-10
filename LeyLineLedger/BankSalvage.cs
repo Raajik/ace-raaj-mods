@@ -1,4 +1,5 @@
 using ACE.Database;
+using ACE.Server.Mods;
 using System.Globalization;
 using System.Reflection;
 using static ACE.Server.WorldObjects.Player;
@@ -21,6 +22,7 @@ public static class BankSalvage
         }
 
         MaybePurgeLegacyPooledSalvage(player, settings.SalvageBank);
+        MaybeMergeLegacyWcidOffsetSalvageBank(player, settings.SalvageBank);
 
         if (parameters.Length < 2 || string.IsNullOrEmpty(parameters[1]))
         {
@@ -346,6 +348,49 @@ public static class BankSalvage
 
         player.IncBanked(propId, -v);
         player.SendMessage($"Obsolete pooled salvage removed ({v:N0} units). Banking is per material only.");
+    }
+
+    // BetterSupportSkills used FirstMaterialBankPropertyId + (WCID - 20981) for stack salvage 20981–21089.
+    // LeyLineLedger uses FirstMaterialBankPropertyId + DepositRules index (or BankProperty). When those differ,
+    // units could sit on the wrong PropertyInt64. Move any stray legacy-slot balance into the rule-resolved slot.
+    static void MaybeMergeLegacyWcidOffsetSalvageBank(Player player, SalvageBankSettings sb)
+    {
+        if (player is null || sb.DepositRules.Count == 0)
+            return;
+
+        const uint minSalvageWcid = 20981;
+        const uint maxSalvageWcid = 21089;
+
+        long totalMoved = 0;
+        for (uint wcid = minSalvageWcid; wcid <= maxSalvageWcid; wcid++)
+        {
+            int? ruleIdx = TryResolveDepositRuleIndexByWcid(sb.DepositRules, wcid);
+            if (ruleIdx is null)
+                continue;
+
+            SalvageDepositRule rule = sb.DepositRules[ruleIdx.Value];
+            int correctProp = ResolveMaterialBankProperty(sb, ruleIdx.Value, rule);
+            int legacyProp = sb.FirstMaterialBankPropertyId + (int)(wcid - minSalvageWcid);
+            if (legacyProp == correctProp)
+                continue;
+
+            long stray = player.GetBanked(legacyProp);
+            if (stray <= 0)
+                continue;
+
+            player.IncBanked(correctProp, stray);
+            player.IncBanked(legacyProp, -stray);
+            totalMoved += stray;
+        }
+
+        if (totalMoved <= 0)
+            return;
+
+        player.SendMessage(
+            $"Salvage bank: moved {totalMoved:N0} units from obsolete property slot(s) into the correct material balances (legacy auto-salvage alignment).");
+        ModManager.Log(
+            $"[LeyLineLedger] Merged legacy WCID-offset salvage bank PropertyInt64 balance for {player.Name} ({player.Guid}): {totalMoved} units total.",
+            ModManager.LogLevel.Info);
     }
 
     static void RedeemBags(Session session, string[] parameters, Settings settings)
@@ -1035,6 +1080,8 @@ public static class BankSalvage
         if (__instance is null) return;
         var s = PatchClass.Settings;
         if (s?.SalvageBank.Enabled != true) return;
+        MaybePurgeLegacyPooledSalvage(__instance, s.SalvageBank);
+        MaybeMergeLegacyWcidOffsetSalvageBank(__instance, s.SalvageBank);
         TryGrantSalvageHoarder(__instance, s.SalvageBank);
     }
 }

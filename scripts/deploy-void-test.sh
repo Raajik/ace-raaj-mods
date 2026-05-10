@@ -10,6 +10,12 @@
 #   4. Excludes ValheelContent (permanently), Shared/ (no csproj), build/ (output dir)
 #   5. Prints a restart reminder
 #
+# ⚠️  SQL DOES NOT AUTO-DEPLOY. After running this script, you MUST apply any
+#    new/changed SQL files in Windblown/Content/SQL/ manually:
+#    Get-Content "A:\path\to\script.sql" | & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' -u jeremy -pandersine11 void-test_world
+#
+#    See Windblown/docs/CustomTrophyNPC-Deployment-Standard.md for the full SOP.
+#
 # Trigger phrase for agents:  "push void" or "deploy void"
 # See AGENTS.md §5.
 

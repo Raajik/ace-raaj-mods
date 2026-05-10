@@ -3,26 +3,42 @@
 > **Last updated**: 2026-05-10
 > **Scope**: Deploying a custom trophy (stackable weenie + trophy line config + Harmony patches) with a failsafe NPC vendor and any item removal patches.
 
-## Overview
+## Deploy Procedure (clean fresh build)
 
-Each custom trophy deployment involves up to 5 categories of work:
+Every deploy must be a **full clean deploy** — wipe and recreate the Mods folder, then apply SQL:
 
-| # | Category | What | Where |
-|---|----------|------|-------|
-| 1 | **Weenie JSON** | Runtime weenie override (stackable, icon, name, etc.) | `Windblown/Content/Weenies/<name>.json` |
-| 2 | **Trophy line config** | Drop chance, creature gate, sibling replacement, credits | `Windblown/Content/TrophyLines/<name>.json` |
-| 3 | **SQL – weenie registration** | Register WCID + recipe redirect (if needed) | `Windblown/Content/SQL/Items/<number>_<name>.sql` |
-| 4 | **SQL – NPC vendor** | Vendor weenie definition + item list | `Windblown/Content/SQL/Vendors/01_Radi_810000.sql` |
-| 5 | **SQL – NPC spawn** | Placement in Town Network | `Windblown/Content/SQL/Vendors/03_TownNetworkSpawns.sql` |
-| 6 | **Harmony patch – item removal** | Block vanilla WCIDs from creation | `Windblown/ItemsRemovalPatches.cs` |
-| 7 | **Config updates** | AutoLoot, QOL bulk turn-in | `AutoLoot/Settings.json`, `QOL/Settings.json` |
-| 8 | **Documentation** | TrophyLineRegistry, TownNetwork-Positions, Radi | `Windblown/docs/*.md` |
+1. **Kill** the ACE server process
+2. **Build** all mods: `dotnet build ModName/ModName.csproj`
+3. **Wipe** `A:\void-test\Mods\*` entirely
+4. **Copy** all build output (DLLs + Content + Meta.json + Settings.json)
+5. **Apply SQL** to `void-test_world` — ALL new/changed SQL files in `Content/SQL/`
+   ```powershell
+   Get-Content "A:\path\to\script.sql" | & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' -u jeremy -pandersine11 void-test_world
+   ```
+6. **Restart** ACE server (watchdog or manual)
 
----
+> **SQL doesn't auto-deploy.** Every SQL change must be manually executed against the target MySQL database (void-test_world → ace_world → wb_ace_world). Back up first with `mysqldump`.
 
-## Step 1: Define the custom weenie (JSON)
+## Mandatory SOP for ALL new trophy items
 
-**File**: `Windblown/Content/Weenies/<name>.json`
+| Step | Action | File/Location |
+|------|--------|---------------|
+| 1 | Add weenie JSON | `Windblown/Content/Weenies/<name>.json` |
+| 2 | Add TrophyLines config | `Windblown/Content/TrophyLines/<name>.json` |
+| 3 | Add SQL weenie registration | `Windblown/Content/SQL/Items/<number>.sql` |
+| 4 | **Add vanilla base WCIDs to Kaleb** | `Windblown/Content/SQL/VanillaTweaks/11_KalebVanillaHeadsAndIchor.sql` |
+| 5 | **Add Give emotes to Vaetha** | MySQL: `INSERT INTO weenie_properties_emote (object_Id, category, probability, weenie_Class_Id) VALUES (810003, 1, 1, <new_wcid>);` |
+| 6 | **Add to AutoLoot** | `AutoLoot/Settings.json` → `WindblownCollectorTrophyPass1WeenieClassIds` or `OtherPhysicalPass1WeenieClassIds` |
+| 7 | Remove pickup timers (if replacing quest items) | `UPDATE quest SET min_Delta = 0 WHERE name IN ('...');` |
+| 8 | Remove vanilla create_list entries from creatures | `DELETE FROM weenie_properties_create_list WHERE weenie_Class_Id IN (...);` |
+| 9 | Backup | `mysqldump` scoped into `sql-backups/YYYY-MM-DD/` |
+
+### Why this is mandatory
+
+- **Kaleb**: Players must be able to buy vanilla base items (for recipes, collectors, nostalgia). All replaced vanilla WCIDs go on Kaleb with `destination_Type=4`.
+- **Vaetha Give emotes**: Vaetha needs a direct Give emote entry for EVERY custom trophy WCID so the `PreGiveObjectToNPC_TurnInReward` prefix fires. Without it, the player can't hand the item to her.
+- **AutoLoot**: Trophies should autoloot to pack when `/autoloot trophies` is enabled. Collector trophies go in `WindblownCollectorTrophyPass1WeenieClassIds`, physical quest items in `OtherPhysicalPass1WeenieClassIds`.
+- **Pickup timers**: Vanilla quest items have cooldowns. Set `min_Delta=0` so they can always be picked up. The turn-in cooldown (10h) is handled by the quest reward emote separately.
 
 Minimal required fields:
 

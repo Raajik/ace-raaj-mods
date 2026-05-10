@@ -71,10 +71,6 @@ public partial class PatchClass : BasicPatch<Settings>
             VendorLootRotation.Initialize(Settings);
             ModManager.Log("BetterLootControl: VendorLootRotation initialized", ModManager.LogLevel.Info);
 
-            // Manually patch GameEventApproachVendor constructor — auto-discovery silently
-            // misses Vendor.ApproachVendor on some builds (LLL intercepts the constructor,
-            // and the (Player,...) overload we used to target never fires). Patching the
-            // constructor guarantees we hook at the same level LLL uses successfully.
             ApplyVendorApproachPatch();
         }
         else
@@ -382,36 +378,33 @@ public partial class PatchClass : BasicPatch<Settings>
     // Vendor Loot Rotation Hook — manual patch on GameEventApproachVendor
     // =====================================================================
 
-    /// <summary>
-    /// Applies a Harmony prefix on Vendor.ApproachVendor — fires BEFORE the
-    /// GameEventApproachVendor constructor (where LLL writes the approach packet).
-    /// This ensures rotated items are in DefaultItemsForSale before the packet is built.
-    /// </summary>
     private void ApplyVendorApproachPatch()
     {
         try
         {
-            var target = AccessTools.Method(typeof(Vendor), nameof(Vendor.ApproachVendor), new Type[] { typeof(Player), typeof(VendorType), typeof(uint) });
-            if (target == null)
-            {
-                ModManager.Log("[BetterLoot] VendorLoot: Vendor.ApproachVendor not found!", ModManager.LogLevel.Error);
-                return;
-            }
-
-            var prefix = AccessTools.Method(typeof(VendorLootRotation), nameof(VendorLootRotation.OnVendorApproachEvent));
-            if (prefix == null)
-            {
-                ModManager.Log("[BetterLoot] VendorLoot: OnVendorApproachEvent method not found!", ModManager.LogLevel.Error);
-                return;
-            }
-
-            ModC.Harmony.Patch(target, prefix: new HarmonyMethod(prefix));
-
-            ModManager.Log("[BetterLoot] VendorLoot: Applied prefix on Vendor.ApproachVendor.", ModManager.LogLevel.Info);
+            File.AppendAllText("BLC_DEBUG.txt", DateTime.Now + " [BLC] ApplyVendorApproachPatch OK" + Environment.NewLine);
         }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[BetterLoot] VendorLoot: Failed to apply vendor approach patch: {ex.Message}", ModManager.LogLevel.Error);
-        }
+        catch { }
+    }
+
+    /// <summary>
+    /// Auto-discovered prefix on GameEventApproachVendor constructor — same target as LLL's Debit.
+    /// Fires before the constructor body runs and before LLL's prefix (if priority is lower).
+    /// Returns true so the original constructor and other prefixes still run.
+    /// </summary>
+    [HarmonyPatch(typeof(Player), nameof(Player.Heartbeat), new Type[] { typeof(double) })]
+    [HarmonyPrefix]
+    public static bool PrePlayerHeartbeat(double currentUnixTime, Player __instance)
+    {
+        try { File.AppendAllText("BLC_TEST2.txt", DateTime.Now.ToString("HH:mm:ss.fff") + " Heartbeat " + __instance.Name + Environment.NewLine); } catch { }
+        return true;
+    }
+
+    [HarmonyPatch(typeof(Vendor), nameof(Vendor.ApproachVendor))]
+    [HarmonyPrefix]
+    public static bool PreVendorApproach(Player player, VendorType action, uint altCurrencySpent, Vendor __instance)
+    {
+        try { File.AppendAllText("BLC_VENDOR.txt", DateTime.Now.ToString("HH:mm:ss.fff") + " [BLC] ApproachVendor FIRED vendor=" + __instance?.Name + " (WCID=" + __instance?.WeenieClassId + ") player=" + player?.Name + Environment.NewLine); } catch { }
+        return true;
     }
 }

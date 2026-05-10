@@ -63,14 +63,25 @@ if [ "$BUILD_FAILED" -ne 0 ]; then
 fi
 echo ""
 
-# ── Step 2: Wipe void-test Mods/ ──────────────────────────────────────────
-echo "=== Step 2: Wiping $VOID_MODS ==="
+# ── Step 2: Kill running server so watchdog can't start mid-deploy ───────
+echo "=== Step 2: Killing running ACE server ==="
+if command -v powershell.exe &>/dev/null; then
+  powershell.exe -Command "Get-Process ACE.Server -ErrorAction SilentlyContinue | Stop-Process -Force" 2>/dev/null || true
+fi
+# Clear watchdog block so next poll will restart clean
+rm -f "$(dirname "$VOID_MODS")/Server/void-test_watchdog_BLOCKED.txt"
+rm -f "$(dirname "$VOID_MODS")/Server/void-test_watchdog_state.json"
+echo "  Done."
+echo ""
+
+# ── Step 3: Wipe void-test Mods/ ──────────────────────────────────────────
+echo "=== Step 3: Wiping $VOID_MODS ==="
 rm -rf "$VOID_MODS"/*
 echo "  Done."
 echo ""
 
-# ── Step 3: Copy build output ─────────────────────────────────────────────
-echo "=== Step 3: Copying mods ==="
+# ── Step 4: Copy build output ─────────────────────────────────────────────
+echo "=== Step 4: Copying mods ==="
 for mod_dir in */; do
   name="${mod_dir%/}"
   csproj="$name/$name.csproj"

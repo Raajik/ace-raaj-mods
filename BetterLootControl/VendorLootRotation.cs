@@ -245,9 +245,31 @@ public static class VendorLootRotation
     /// GameEventApproachVendor constructor (where LLL writes the approach packet).
     /// Rotated items are in DefaultItemsForSale before the packet is built.
     /// </summary>
-    public static void OnVendorApproachEvent(Player player, VendorType action, uint altCurrencySpent, Vendor __instance)
+    // Keep the old manual-patch entrypoint for backward compat (removed from code path but referenced by BLC_DEBUG)
+    public static void RotateOnApproach(Player? player, Vendor vendor)
     {
-        if (player == null || __instance == null)
+        try { File.AppendAllText("BLC_VENDOR.txt", DateTime.Now.ToString("HH:mm:ss.fff") + " [BLC] RotateOnApproach called for " + vendor.Name + " (WCID=" + vendor.WeenieClassId + ") player=" + (player?.Name ?? "null") + Environment.NewLine); } catch { }
+
+        if (player == null)
+            return;
+
+        if (_settings is null)
+            _settings = PatchClass.CurrentSettings;
+
+        OnVendorApproachPrefix(player, VendorType.Open, 0, vendor);
+    }
+
+    // Keep the old manual-patch entrypoint for backward compat (removed from code path but referenced by BLC_DEBUG)
+    public static void OnVendorApproachEvent(Session session, Vendor vendor, uint altCurrencySpent, ref GameEventApproachVendor __instance)
+    {
+        try
+        {
+            File.AppendAllText("BLC_VENDOR.txt", DateTime.Now.ToString("HH:mm:ss.fff") + " [BLC] FIRED vendor=" + vendor?.Name + " (WCID=" + vendor?.WeenieClassId + ")" + Environment.NewLine);
+        }
+        catch { }
+
+        Player? player = session?.Player;
+        if (player == null || vendor == null)
             return;
 
         // Ensure _settings is set — fall back to PatchClass.CurrentSettings
@@ -256,7 +278,7 @@ public static class VendorLootRotation
             _settings = PatchClass.CurrentSettings;
 
         // Delegate to the existing rotation logic
-        OnVendorApproachPrefix(player, action, altCurrencySpent, __instance);
+        OnVendorApproachPrefix(player, VendorType.Open, altCurrencySpent, vendor);
     }
 
     private static void StartBackgroundTimer()
@@ -770,10 +792,11 @@ public static class VendorLootRotation
 
     public static void OnVendorApproachPrefix(Player player, VendorType action, uint altCurrencySpent, Vendor __instance)
     {
-        ModManager.Log($"[BetterLoot] VendorLoot: OnVendorApproachPrefix called for {__instance.Name} (WCID {__instance.WeenieClassId})", ModManager.LogLevel.Info);
-        
+        try { File.AppendAllText("BLC_DEBUG.txt", DateTime.Now + " [BLC] OnVendorApproachPrefix called for " + __instance.Name + " (WCID " + __instance.WeenieClassId + ")" + Environment.NewLine); } catch { }
+
         if (_settings is null || !_settings.EnableVendorLootRotation)
         {
+            try { File.AppendAllText("BLC_DEBUG.txt", DateTime.Now + " [BLC]   -> SKIP: settings null or disabled" + Environment.NewLine); } catch { }
             return;
         }
 

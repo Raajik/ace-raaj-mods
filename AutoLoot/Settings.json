@@ -21,7 +21,7 @@
   "// WindblownCollectorTrophyPass1WeenieClassIds": "Pass 1: pocket these Windblown collector trophy WCIDs when /autoloot trophies is ON (850300-850365). See Windblown/docs/TrophyLineRegistry.md.",
   "WindblownCollectorTrophyPass1WeenieClassIds": [850300, 850301, 850302, 850303, 850304, 850305, 850306, 850307, 850308, 850309, 850310, 850311, 850312, 850313, 850314, 850315, 850316, 850317, 850318, 850319, 850320, 850321, 850322, 850323, 850324, 850325, 850326, 850327, 850328, 850329, 850330, 850331, 850332, 850333, 850334, 850335, 850336, 850339, 850340, 850341, 850342, 850343, 850344, 850345, 850346, 850347, 850348, 850349, 850350, 850351, 850352, 850353, 850354, 850355, 850356, 850357, 850358, 850359, 850360, 850361, 850362, 850363, 850364, 850365],
   "// OtherPhysicalPass1WeenieClassIds": "Pass 1: always pocket these physical quest items (letters, olthoi pincers) regardless of /autoloot trophies.",
-  "OtherPhysicalPass1WeenieClassIds": [8701, 8702, 800005, 800006, 10843, 10844, 10845, 10846, 10847, 27589, 27590, 27591, 51211, 51214],
+  "OtherPhysicalPass1WeenieClassIds": [8701, 8702, 800005, 800006, 10843, 10844, 10845, 10846, 10847, 27589, 27590, 27591, 51211, 51214, 22419, 22420, 22421, 22422, 22423, 22424, 22425, 22426, 22427, 22428, 22429, 22430, 22431, 22432, 51351, 28718, 28719, 28725, 28726, 28727, 42104],
   "// KeysUnlockThreshold": "Objects unlocked with keys to unlock BetterKeys.utl and key banking.",
   "KeysUnlockThreshold": 10,
   "// LockpickUnlockThreshold": "Objects unlocked with lockpicks to unlock lockpick corpse-loot banking.",

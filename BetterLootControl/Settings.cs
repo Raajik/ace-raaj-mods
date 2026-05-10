@@ -97,6 +97,14 @@ public class Settings
     public bool VendorLootLowStatMode { get; init; } = false;
     public bool VendorLootSalvageOnRotation { get; init; } = false;
 
+    // -- Loot Economy Control (value + quantity adjustments on corpse loot) --
+    public bool EnableLootEconomyControl { get; init; } = false;
+    public double LootValueMultiplier { get; init; } = 0.1;
+    public int LootValueMaxCap { get; init; } = 500;
+    public double LootMagicalItemExtraReduction { get; init; } = 0.3;
+    public double LootAmountReduction { get; init; } = 0.7;
+    public bool EnableLootAmountBoostWIP { get; init; } = false;
+
     // Vendor tier overrides
     public Dictionary<int, int> VendorTierWcidMap { get; init; } = new();
     public Dictionary<int, int> VendorTierLandblockMap { get; init; } = new();

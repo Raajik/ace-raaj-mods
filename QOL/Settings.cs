@@ -29,7 +29,6 @@ public enum Features
     // so existing Settings.json that references it does not silently break deserialization,
     // but the category string now resolves to NpcStackTurnIn patches.
     NpcStackTurnIn,
-    LootEconomyControl,
 
     KillXpMessage,
     BundleGive,
@@ -192,29 +191,8 @@ public class Settings
     public string NpcStackTurnInDoc { get; init; } = "Configuration for full-stack NPC quest turn-ins. See NpcStackTurnInSettings.";
     public NpcStackTurnInSettings NpcStackTurnIn { get; set; } = new();
 
-    [JsonPropertyName("// EnableLootEconomyControl")]
-    public string EnableLootEconomyControlDoc { get; init; } = "Reduce loot value and amount to help reign in the pyreal economy. LootValueMultiplier scales item values; LootAmountReduction reduces drop count by percentage.";
-    public bool EnableLootEconomyControl { get; set; } = false;
-
-    [JsonPropertyName("// LootValueMultiplier")]
-    public string LootValueMultiplierDoc { get; init; } = "Multiplies loot item values (0.1 = 10% of original value, 0.01 = 1%). Applied after generation to all loot items.";
-    public double LootValueMultiplier { get; set; } = 0.1;
-
-    [JsonPropertyName("// LootValueMaxCap")]
-    public string LootValueMaxCapDoc { get; init; } = "Absolute maximum value in pyreals for any loot item after multiplier. 0 = disabled (no cap).";
-    public int LootValueMaxCap { get; set; } = 500;
-
-    [JsonPropertyName("// LootMagicalItemExtraReduction")]
-    public string LootMagicalItemExtraReductionDoc { get; init; } = "Additional multiplier for magical items (cantrips, imbues). Stacks with LootValueMultiplier. 0.5 = half the already-reduced value.";
-    public double LootMagicalItemExtraReduction { get; set; } = 0.3;
-
-    [JsonPropertyName("// LootAmountReduction")]
-    public string LootAmountReductionDoc { get; init; } = "Loot amount multiplier: 0.0-1.0 reduces drops (0.7 = keep 30%%), >1.0 adds extra items (1.5 = 50%% more, WIP).";
-    public double LootAmountReduction { get; set; } = 0.7;
-
-    [JsonPropertyName("// EnableLootAmountBoostWIP")]
-    public string EnableLootAmountBoostWIPDoc { get; init; } = "WIP: Enable multiplier >1.0 for extra loot drops. Not fully implemented yet.";
-    public bool EnableLootAmountBoostWIP { get; set; } = false;
+    // [MOVED] EnableLootEconomyControl + LootValueMultiplier/MaxCap/MagicalReduction/AmountReduction
+    // were migrated to BetterLootControl. Remove from Settings.json if present.
 
     [JsonPropertyName("// GiveNpcSingleStackWeenieTypes")]
     public string GiveNpcSingleStackWeenieTypesDoc { get; init; } = "WeenieTypes that receive the give clamp (typically Generic for trophies). Only applies when MaxStackSize > 1.";

@@ -58,6 +58,13 @@ public partial class PatchClass : BasicPatch<Settings>
         var vlrEnabled = Settings?.EnableVendorLootRotation ?? false;
         ModManager.Log($"[BetterLoot] OnStartSuccess: EnableVendorLootRotation = {vlrEnabled}", ModManager.LogLevel.Info);
 
+        // Initialize LootEconomyControl (value/quantity adjustments on corpse loot)
+        if (Settings?.EnableLootEconomyControl == true)
+        {
+            LootEconomyControl.Initialize(Settings);
+            ModManager.Log("[BetterLootControl] LootEconomyControl initialized", ModManager.LogLevel.Info);
+        }
+
         // Initialize VendorLootRotation
         if (vlrEnabled)
         {

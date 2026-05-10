@@ -139,11 +139,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         // Legacy GiveNpcSingleFromStack migrated to NpcStackTurnIn; either old or new enablement works.
         if (Settings.EnableNpcStackTurnIn || Settings.EnableGiveNpcSingleFromStack)
             enabledFeatures.Add(Features.NpcStackTurnIn);
-        if (Settings.EnableLootEconomyControl)
-        {
-            enabledFeatures.Add(Features.LootEconomyControl);
-            LootEconomyControl.Initialize(Settings);
-        }
 
         if (Settings.EnableKillXpMessage)
             enabledFeatures.Add(Features.KillXpMessage);

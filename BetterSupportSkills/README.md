@@ -406,9 +406,9 @@ Loaded once on first use via `AppDomain.CurrentDomain.GetAssemblies()`. Reads `O
 - `HasHemorrhage/HasCleaving/HasShatter/HasNetherRending(flags)` — bitmask checks
 - `GetBuffedJewelryWcid(item)` — reads **PropertyInt 40136**, stamped by Overtinked's `TryApplyBuffedImbue` with the source salvage WCID at tinker time
 
-**`LeyLineLedgerSalvageInterop.cs`** — reflection bridge to LeyLineLedger  
-- `GetSalvagePropertyId(uint wcid)` — resolves the LLL `PropertyInt64` property ID for a given salvage WCID  
-- `DirectIncBanked(player, propertyId, amount)` — calls LLL's `IncBanked` with a pre-resolved property ID (avoids a second WCID→property lookup per imbue line)
+**`LeyLineLedgerSalvageInterop.cs`** — bridge to LeyLineLedger material bank writes  
+- `GetSalvagePropertyId(uint wcid)` — delegates to **`AceRaajMods.Shared.LeyLineLedgerSalvageBankInterop`**, which reflects **`LeyLineLedger.PatchClass.Settings.SalvageBank`** and matches **`DepositRules`** the same way as **`BankSalvage`** (primary WCID, output bag WCID, additional deposit WCIDs). When LeyLineLedger is **not** loaded, falls back once to the legacy **`FirstMaterialBankPropertyId + (WCID − 20981)`** formula (logged). If LLL is loaded but no rule matches, returns **`-1`** and **`TryIncSalvage`** skips the credit (warn log).
+- `DirectIncBanked(player, propertyId, amount)` — calls shared **`LeyLineLedgerBankInterop.IncBanked`** with a pre-resolved property ID (imbue bonus lines).
 
 ---
 
@@ -464,6 +464,11 @@ All features can be toggled in `Settings.json`:
 - `/bss commands` - Show available commands
 
 ## Changelog
+
+### 2026-05-10
+- **Salvage ↔ LeyLineLedger bank slot alignment:** Stack salvage **20981–21089** now credits the same **`PropertyInt64`** as `/bank salvage` (`DepositRules` index / `BankProperty`), not **`FirstMaterialBankPropertyId + (WCID − 20981)`**. Shared resolver: **`../Shared/LeyLineLedgerSalvageBankInterop.cs`** (linked from `BetterSupportSkills.csproj`). Fixes desync between bag-fill totals and **`/bank salvage status`** when rules are not WCID-sorted (e.g. Brass **21042**).
+- **Category “least banked” gem picks** (`PickLeastBankedMaterial`) read balances from the **resolved** property id per WCID.
+- **LeyLineLedger** migrates old stray balances automatically: **`MaybeMergeLegacyWcidOffsetSalvageBank`** on login and at **`/bank salvage`** entry merges legacy-offset slots into rule slots when they differ.
 
 ### 2026-05-03
 - **Death Knight:** **`CombatClasses.DeathKnight.MaxVoidSpellTier`** (1–8) caps nether proc tier after `floor(VoidMagic.Base / SkillPerTier)`; tier is the **spell ID index** in the nether streak/arc lists (not the client “spell level” label). Repo `Settings.json` sets **2** so procs stay on the first two nether spells only. **`ManaCostMultiplier` 0** = no mana for those auto-casts (components still apply if `EnableAutoCastReagentCosts` is on).

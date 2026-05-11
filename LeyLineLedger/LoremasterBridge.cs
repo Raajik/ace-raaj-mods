@@ -10,6 +10,7 @@ internal static class LoremasterBridge
 {
     static MethodInfo? _donateQb;
     static MethodInfo? _grantLotteryQb;
+    static MethodInfo? _grantLotteryQbOffline;
     static bool _fullyResolved;
     static bool _assemblyLogged;
     static bool _targetLogged;
@@ -71,6 +72,30 @@ internal static class LoremasterBridge
         }
     }
 
+    internal static void GrantLotteryQbPrizeOffline(uint characterBiotaId, float amount)
+    {
+        if (amount <= 0)
+            return;
+
+        Resolve();
+
+        if (_grantLotteryQbOffline is null)
+            return;
+
+        try
+        {
+            _grantLotteryQbOffline.Invoke(null, new object?[] { characterBiotaId, amount });
+        }
+        catch (TargetInvocationException tie) when (tie.InnerException is not null)
+        {
+            ModManager.Log($"[LeyLineLedger→Loremaster] GrantLotteryQbPrizeOffline threw {tie.InnerException.GetType().Name}: {tie.InnerException.Message}", ModManager.LogLevel.Warn);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger→Loremaster] GrantLotteryQbPrizeOffline error: {ex.GetType().Name}: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
     static void Resolve()
     {
         if (_fullyResolved) return;
@@ -116,10 +141,16 @@ internal static class LoremasterBridge
             null,
             new[] { typeof(Player), typeof(float) },
             null);
+        _grantLotteryQbOffline = t.GetMethod(
+            "GrantLotteryQbPrizeOffline",
+            BindingFlags.Public | BindingFlags.Static,
+            null,
+            new[] { typeof(uint), typeof(float) },
+            null);
 
         _fullyResolved = true;
-        if (_donateQb is not null && _grantLotteryQb is not null)
-            ModManager.Log($"[LeyLineLedger→Loremaster] Resolved both QB methods on {t.FullName}.", ModManager.LogLevel.Info);
+        if (_donateQb is not null && _grantLotteryQb is not null && _grantLotteryQbOffline is not null)
+            ModManager.Log($"[LeyLineLedger→Loremaster] Resolved QB methods (online + offline lottery) on {t.FullName}.", ModManager.LogLevel.Info);
         else
             ModManager.Log($"[LeyLineLedger→Loremaster] WARNING: Could not resolve all QB methods on {t.FullName}.", ModManager.LogLevel.Warn);
     }

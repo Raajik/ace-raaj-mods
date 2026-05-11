@@ -218,7 +218,7 @@ public class Settings
     public SkeletonKeyAppraisalSettings SkeletonKeyAppraisal { get; set; } = new();
 
     [JsonPropertyName("// Lottery")]
-    public string LotteryDoc { get; init; } = "Weekly lottery fed by exchange sell tax. Virtual tickets purchased with banked pyreals.";
+    public string LotteryDoc { get; init; } = "Auto-draw lottery: pyreal + QB pools; tickets from bank. Winnings credit online/offline players to LeyLineLedger /bank (account-wide JSON or character biota when isolated). Offline QB writes QuestPointsExtra (11011) on shard biota. WorldEvents /claim inbox is not wired for lottery payouts.";
     public LotterySettings Lottery { get; set; } = new();
 }
 

@@ -328,39 +328,30 @@ public static class Lottery
                 return;
             }
 
-            // Credit winners
+            // Credit winners (pyreals always to LeyLineLedger /bank balance; QB online + offline via shard biota)
+            var s = Settings;
             foreach (var (charId, name, pyrealPrize, qbPrize, place) in winners)
             {
                 var onlinePlayer = PlayerManager.GetAllOnline().FirstOrDefault(p => p.Guid.Full == charId);
                 if (onlinePlayer != null)
                 {
-                    onlinePlayer.IncCash(pyrealPrize);
+                    onlinePlayer.IncBanked(s.CashProperty, pyrealPrize);
+                    onlinePlayer.UpdateCoinValue();
                     var qbMsg = qbPrize > 0 ? $" and {qbPrize:0.#} QB" : "";
-                    onlinePlayer.SendMessage($"[Lottery] You won {LeyLineLedgerHelpers.Ordinal(place)} place in the lottery! {pyrealPrize:N0} pyreals{qbMsg} have been credited to you!");
+                    onlinePlayer.SendMessage(
+                        $"[Lottery] You won {LeyLineLedgerHelpers.Ordinal(place)} place! {pyrealPrize:N0} pyreals credited to your /bank balance{qbMsg}.");
                 }
                 else
                 {
-                    var cashProp = Settings.CashProperty;
-                    var bankRow = context.BiotaPropertiesInt64
-                        .FirstOrDefault(p => p.ObjectId == charId && p.Type == cashProp);
-
-                    if (bankRow != null)
-                        bankRow.Value += pyrealPrize;
-                    else
-                        context.BiotaPropertiesInt64.Add(new BiotaPropertiesInt64
-                        {
-                            ObjectId = charId,
-                            Type = (ushort)cashProp,
-                            Value = pyrealPrize
-                        });
+                    CreditOfflineLotteryPyreals(context, s, charId, pyrealPrize, name, place);
                 }
 
-                // Grant QB prize (online only for now)
                 if (qbPrize > 0)
                 {
-                    var p = onlinePlayer ?? PlayerManager.GetOnlinePlayer(charId);
-                    if (p != null)
-                        LoremasterBridge.GrantLotteryQbPrize(p, (float)qbPrize);
+                    if (onlinePlayer != null)
+                        LoremasterBridge.GrantLotteryQbPrize(onlinePlayer, (float)qbPrize);
+                    else
+                        LoremasterBridge.GrantLotteryQbPrizeOffline(charId, (float)qbPrize);
                 }
             }
 
@@ -396,6 +387,92 @@ public static class Lottery
         {
             ModManager.Log($"[LeyLineLedger] Lottery draw failed: {ex}", ModManager.LogLevel.Error);
         }
+    }
+
+    static void CreditOfflineLotteryPyreals(ShardDbContext ctx, Settings s, uint charId, long pyrealPrize, string name, int place)
+    {
+        if (pyrealPrize <= 0)
+            return;
+
+        var targetChar = ctx.Character.FirstOrDefault(c => c.Id == charId && !c.IsDeleted);
+        if (targetChar is null)
+        {
+            ModManager.Log($"[LeyLineLedger] Lottery offline credit skipped: no character row for {name} ({charId}).", ModManager.LogLevel.Warn);
+            return;
+        }
+
+        var cashU = (ushort)s.CashProperty;
+
+        if (OfflineWinnerUsesCharacterBiotaBank(ctx, s, charId))
+        {
+            var bankRow = ctx.BiotaPropertiesInt64.FirstOrDefault(p => p.ObjectId == charId && p.Type == cashU);
+            if (bankRow != null)
+                bankRow.Value += pyrealPrize;
+            else
+            {
+                ctx.BiotaPropertiesInt64.Add(new BiotaPropertiesInt64
+                {
+                    ObjectId = charId,
+                    Type = cashU,
+                    Value = pyrealPrize,
+                });
+            }
+
+            ModManager.Log(
+                $"[LeyLineLedger] Lottery offline {name} ({charId}) {LeyLineLedgerHelpers.Ordinal(place)}: +{pyrealPrize:N0}p to character bank biota (challenge / non–account-wide).",
+                ModManager.LogLevel.Info);
+            return;
+        }
+
+        AccountBankStore.AddToAccountByOfflineCharacter(targetChar, s.CashProperty, pyrealPrize);
+        ModManager.Log(
+            $"[LeyLineLedger] Lottery offline {name} ({charId}) {LeyLineLedgerHelpers.Ordinal(place)}: +{pyrealPrize:N0}p to account-wide bank file.",
+            ModManager.LogLevel.Info);
+    }
+
+    static bool OfflineWinnerUsesCharacterBiotaBank(ShardDbContext ctx, Settings s, uint characterId)
+    {
+        if (!s.AccountWideBank)
+            return true;
+
+        if (TryChallengeModesOfflineActiveChallenge(characterId))
+            return true;
+
+        ushort iron = (ushort)FakeBool.Ironman;
+        ushort hc = (ushort)FakeBool.Hardcore;
+
+        return ctx.BiotaPropertiesBool.AsNoTracking().Any(b => b.ObjectId == characterId && b.Type == iron && b.Value)
+            || ctx.BiotaPropertiesBool.AsNoTracking().Any(b => b.ObjectId == characterId && b.Type == hc && b.Value);
+    }
+
+    static bool TryChallengeModesOfflineActiveChallenge(uint characterId)
+    {
+        try
+        {
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                if (!string.Equals(asm.GetName().Name, "ChallengeModes", StringComparison.Ordinal))
+                    continue;
+
+                var t = asm.GetType("ChallengeModes.PatchClass");
+                var m = t?.GetMethod(
+                    "OfflineBiotaHasActiveChallenge",
+                    BindingFlags.Public | BindingFlags.Static,
+                    binder: null,
+                    new[] { typeof(uint) },
+                    null);
+
+                if (m is null)
+                    return false;
+
+                return (bool)(m.Invoke(null, new object[] { characterId }) ?? false);
+            }
+        }
+        catch
+        {
+        }
+
+        return false;
     }
 
     static void DrainQpContributions()

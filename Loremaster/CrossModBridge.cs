@@ -57,6 +57,40 @@ public static class CrossModBridge
             player.SendMessage(LoremasterExtensions.FormatQpNotification($"+{amount} QB from lottery prize!"));
     }
 
+    // Persists lottery QB for a logged-out character (same biota row Loremaster uses for QuestPointsExtra).
+    public static void GrantLotteryQbPrizeOffline(uint characterBiotaId, float amount)
+    {
+        if (amount <= 0)
+            return;
+
+        try
+        {
+            using var ctx = new ShardDbContext();
+            ushort t = (ushort)LMFloat.QuestPointsExtra;
+            var row = ctx.BiotaPropertiesFloat.FirstOrDefault(p => p.ObjectId == characterBiotaId && p.Type == t);
+            var next = (double)((float)(row?.Value ?? 0.0) + amount);
+            if (row is null)
+            {
+                ctx.BiotaPropertiesFloat.Add(new BiotaPropertiesFloat
+                {
+                    ObjectId = characterBiotaId,
+                    Type = t,
+                    Value = next,
+                });
+            }
+            else
+            {
+                row.Value = next;
+            }
+
+            ctx.SaveChanges();
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[Loremaster] GrantLotteryQbPrizeOffline failed for {characterBiotaId}: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
     /// <summary>
     /// Drains the accumulated QP lottery contribution pool and returns the whole amount.
     /// Called by LeyLineLedger before each lottery draw.

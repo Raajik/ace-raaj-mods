@@ -21,6 +21,8 @@
 #   SYNC_WORLD_DRY_RUN=1 bash scripts/sync-world-void-test-to-wb-test.sh
 #
 # See AGENTS.md §5.
+# World schema only: if ACE uses a separate shard database, clone that schema with the same
+# pattern (different script/env names) — this script does not touch shard.
 
 set -euo pipefail
 

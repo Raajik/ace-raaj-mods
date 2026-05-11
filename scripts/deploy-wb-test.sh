@@ -29,6 +29,7 @@
 # before running. That forces WB_TEST_SQL_DATABASE to VOID_SQL_DATABASE (default void-test_world).
 # You must also point the C:\ACE ACE.Server world config at that same database name, or only
 # filesystem parity holds. Do not run void-test and wb_test writers against one DB concurrently.
+# Two ACE instances 24/7: use separate DBs + scripts/sync-world-void-test-to-wb-test.sh (AGENTS.md §5).
 
 set -euo pipefail
 

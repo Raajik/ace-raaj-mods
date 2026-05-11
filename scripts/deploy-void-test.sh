@@ -39,6 +39,13 @@ BUILD_DIR="$REPO_ROOT/build"
 
 cd "$REPO_ROOT"
 
+if [ -f "$REPO_ROOT/scripts/.deploy-mysql.env" ]; then
+  set +u
+  # shellcheck disable=SC1090
+  . "$REPO_ROOT/scripts/.deploy-mysql.env"
+  set -u
+fi
+
 echo "=== deploy-void-test.sh ==="
 echo "Repo: $REPO_ROOT"
 echo "Target: $VOID_MODS"

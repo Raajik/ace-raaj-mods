@@ -57,6 +57,13 @@ BUILD_DIR="$REPO_ROOT/build"
 
 cd "$REPO_ROOT"
 
+if [ -f "$REPO_ROOT/scripts/.deploy-mysql.env" ]; then
+  set +u
+  # shellcheck disable=SC1090
+  . "$REPO_ROOT/scripts/.deploy-mysql.env"
+  set -u
+fi
+
 if [ "${DEPLOY_TEST_MATCH_VOID_WORLD_DB:-0}" = "1" ]; then
   export WB_TEST_SQL_DATABASE="${VOID_SQL_DATABASE:-void-test_world}"
 fi

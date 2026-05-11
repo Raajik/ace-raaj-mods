@@ -5,8 +5,8 @@
 # canonical void-test world into wb_test's world DB so wb_test matches void-test world state.
 #
 # Prerequisites:
-#   export ACE_MYSQL_USER=...
-#   export ACE_MYSQL_PASSWORD=...
+#   export ACE_MYSQL_USER=...  export ACE_MYSQL_PASSWORD=...
+#   Or create scripts/.deploy-mysql.env (gitignored; see scripts/.deploy-mysql.env.example).
 #   Optional: MYSQL_EXE (default: MySQL 8.0 under Program Files on Windows)
 #   Optional: VOID_SQL_DATABASE (default void-test_world), WB_TEST_SQL_DATABASE (default ace_world)
 #
@@ -42,6 +42,13 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+if [ -f "$REPO_ROOT/scripts/.deploy-mysql.env" ]; then
+  set +u
+  # shellcheck disable=SC1090
+  . "$REPO_ROOT/scripts/.deploy-mysql.env"
+  set -u
+fi
 
 SOURCE_DB="${VOID_SQL_DATABASE:-void-test_world}"
 DEST_DB="${WB_TEST_SQL_DATABASE:-ace_world}"

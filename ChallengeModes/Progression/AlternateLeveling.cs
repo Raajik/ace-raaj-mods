@@ -13,7 +13,7 @@ public class AlternateLeveling
                 return true;
 
             __result = false;
-            __instance.SendMessage("In Aptitude mode, skills can only be raised through usage. Use your skills in combat, crafting, and exploration.", ChatMessageType.Broadcast);
+            // No chat: blocked paths (e.g. client skill panel) fire often; /cm help + /xp spend already explain Aptitude.
             return false;
         }
 

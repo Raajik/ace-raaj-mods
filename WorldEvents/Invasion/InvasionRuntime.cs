@@ -783,6 +783,19 @@ internal static class InvasionRuntime
         return low == 0xFFFFu || low == 0u || (low >= 0x0001u && low < 0x0100u);
     }
 
+    static bool IsAllowedDynamicLandblock(InvasionTownSettings town, LandblockId landblockId)
+    {
+        if (town.DynamicLandblocks.Count == 0)
+            return true;
+
+        var landblock = (int)landblockId.Raw;
+        if (town.DynamicLandblocks.Contains(landblock))
+            return true;
+
+        var centerLb = (int)(town.TownCenterObjCellId >> 16);
+        return centerLb != 0 && centerLb == landblock;
+    }
+
     static Position? GenerateSingleSpawnPosition(InvasionTownSettings town, Random rng, float? overrideAngle = null, float? overrideDist = null)
     {
         const int maxAttempts = 50;
@@ -808,10 +821,10 @@ internal static class InvasionRuntime
             }
             catch { /* fallback to town center Z */ }
 
-            var pos = new Position(0u, ox, oy, z,
+            var pos = new Position(town.TownCenterObjCellId, ox, oy, z,
                 0f, 0f, (float)Math.Sin(facing / 2), (float)Math.Cos(facing / 2));
             pos.LandblockId = new LandblockId(pos.GetCell());
-            if (!IsUnusableInvasionObjCell(pos.LandblockId.Raw))
+            if (!IsUnusableInvasionObjCell(pos.LandblockId.Raw) && IsAllowedDynamicLandblock(town, pos.LandblockId))
                 return pos;
         }
 

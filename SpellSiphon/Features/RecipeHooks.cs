@@ -75,11 +75,6 @@ internal static class RecipeHooks
 		if (s == null || !s.Enabled)
 			return;
 
-		// If a recipe was already found, don't override
-		if (__result != null)
-			return;
-
-		// Must be Spellsiphon on a valid source item
 		if (source?.WeenieClassId != s.SpellsiphonToolWcid)
 			return;
 
@@ -90,6 +85,18 @@ internal static class RecipeHooks
 		if (!IsValidSourceItem(target, s))
 			return;
 
+		// Gem-only mode: only inject when ACE matched no recipe (avoid stealing unrelated combos).
+		if (!s.EnableAnyItemExtraction)
+		{
+			if (__result != null)
+				return;
+
+			__result = GetSpellsiphonRecipe();
+			return;
+		}
+
+		// Any spell-bearing item: Spellsiphon extraction must win over vanilla item-on-item matches
+		// (food stacks, misc use recipes) so extraction dialog still runs.
 		__result = GetSpellsiphonRecipe();
 	}
 
@@ -241,8 +248,8 @@ internal static class RecipeHooks
 		if (!s.EnableAnyItemExtraction)
 			return (item.ItemType & ItemType.Gem) != 0 || item.WeenieType == WeenieType.Gem;
 
-		bool hasSpells = (item.Biota?.PropertiesSpellBook?.Count > 0) || (item.SpellDID > 0);
-		return hasSpells;
+		// Same sources as PreHandleRecipe / ReadItemSpellIds (SpellDID + PropertyDataId.Spell, not only spellbook).
+		return ReadItemSpellIds(item).Count > 0;
 	}
 
 	private static double CalculateSuccessRate(Player player, Settings s)

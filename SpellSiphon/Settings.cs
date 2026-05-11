@@ -49,7 +49,7 @@ public class Settings
 
 	// Extraction behavior
 	[JsonPropertyName("// EnableAnyItemExtraction")]
-	public string EnableAnyItemExtractionDoc { get; init; } = "Allow extracting spells from any spell-bearing item (not just gems).";
+	public string EnableAnyItemExtractionDoc { get; init; } = "Allow extracting spells from any spell-bearing item (not just gems). When true, Spellsiphon extraction overrides other ACE GetRecipe matches (e.g. food) so spellbook / Spell / SpellDID items still open the extraction dialog.";
 	public bool EnableAnyItemExtraction { get; set; } = true;
 
 	[JsonPropertyName("// AllowAttunedAndBonded")]

@@ -26,7 +26,7 @@
   "MaxSuccessRate": 95.0,
   "// RareCrystalSecondarySuccessChance": "Rare crystals: secondary roll after primary OK (0–1). Crafting dialog shows primary × this (e.g. 0.03 × 33% ≈ 1%).",
   "RareCrystalSecondarySuccessChance": 0.03,
-  "// EnableAnyItemExtraction": "Allow extracting spells from any spell-bearing item (not just gems).",
+  "// EnableAnyItemExtraction": "Allow extracting spells from any spell-bearing item (not just gems). When true, Spellsiphon overrides other ACE recipes on use (e.g. food) so extraction still runs.",
   "EnableAnyItemExtraction": true,
   "// AllowAttunedAndBonded": "Allow extracting spells from attuned and bonded items.",
   "AllowAttunedAndBonded": true,

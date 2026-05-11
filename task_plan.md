@@ -39,6 +39,12 @@ Stop two live log issues on void-test:
 - [x] Update `AGENTS.md` to require branch-first workflow for edit sessions
 - [x] Link the new workflow from the wiki index and related operations docs
 
+### Phase 6 — Align CI source-of-truth checks
+- [x] Inspect `validate_sot.sh` failure and determine whether `WindblownContent` is still intended as a live mod
+- [x] Update validator to treat `Windblown` as the active owner for trophy/content work
+- [x] Update source-of-truth docs/templates that still point to `WindblownContent`
+- [x] Run validator locally and confirm fail/warn set matches current architecture
+
 ## Root Cause Hypotheses
 
 1. **Salvage resolver bug**: `Shared/LeyLineLedgerSalvageBankInterop.cs` reflects `PatchClass.Settings` with `BindingFlags.Public | BindingFlags.Static`, but `Settings` is inherited from `BasicPatch<Settings>`. Source test confirms inherited static property lookup needs `BindingFlags.FlattenHierarchy`, otherwise every salvage WCID fails while LLL is loaded.

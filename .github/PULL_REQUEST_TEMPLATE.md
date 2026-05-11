@@ -35,7 +35,7 @@ about: Standard PR template with Immutable Source of Truth checklist
 ### Database (if applicable)
 - [ ] SQL scripts placed under `Content/SQL/` (or mod's Content directory)
 - [ ] Scripts applied to `ace_world` (test) and verified with `SELECT`
-- [ ] Backup created under `WindblownContent/sql-backups/YYYY-MM-DD/` before SQL apply
+- [ ] Backup created under `sql-backups/YYYY-MM-DD/` before SQL apply
 - [ ] Biota cleanup script included if existing items need updates
 
 ### Build & Test

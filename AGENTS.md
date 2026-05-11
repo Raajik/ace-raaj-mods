@@ -65,7 +65,7 @@ Always check in this order:
 ## 4. Agent Permissions
 - **DO:** Edit repo `Settings.json` for templates/new keys; tune **test** `C:\ACE\Mods\<Mod>\Settings.json` for balance. Fix bugs, refactor for clarity.
 - **DO:** Apply SQL you add or change under mod `Content/SQL/` to the target MySQL database yourself, following **`void-test_world` first** → **`ace_world`** (push test) → **`wb_ace_world`** (push live). Verify with `SELECT`.
-- **DO:** **Back up before SQL that adds or mutates world/shard data** - `mysqldump` (scoped) into `WindblownContent/sql-backups/YYYY-MM-DD/` before applying. See wiki `operations/SQL Procedures` for full guide.
+- **DO:** **Back up before SQL that adds or mutates world/shard data** - `mysqldump` (scoped) into `sql-backups/YYYY-MM-DD/` before applying. See wiki `operations/SQL Procedures` for full guide.
 - **DO:** Commit and push after every bug fix or problem solved. Never accumulate uncommitted fixes.
 - **DO NOT:** Change `Meta.json` enablement without explicit user direction.
 - **DO NOT:** Create new mods without confirming scope.

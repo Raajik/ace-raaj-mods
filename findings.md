@@ -52,3 +52,12 @@
   - **PR** = request to merge branch into `main`
   - **merge** = branch changes actually land on `main`
 - For this repo, "commit after every bug fix" should mean **commit on a task branch after verification**, not "keep stacking direct commits on `main`."
+
+## CI source-of-truth audit alignment
+
+- `scripts/validate_sot.sh` still treated `WindblownContent` as an active required mod for `Readme.md` and `Settings.json` coverage.
+- The validator also still expected SQL backups under `WindblownContent/sql-backups/`, while the repo root already uses `sql-backups/`.
+- `WindblownContent/` still exists in the repo, but it is effectively legacy/empty and should not drive active mod validation.
+- `FEATURE_MATRIX.md`, `FEATURE_TRUTH.md`, `AGENTS.md`, and `.github/PULL_REQUEST_TEMPLATE.md` also contained stale `WindblownContent` ownership / backup-path references.
+- Correct fix is to align the validator and source-of-truth docs to the current architecture where `Windblown` owns trophies/custom turn-ins. Adding fake `WindblownContent/Settings.json` or `Readme.md` would only preserve bad repo truth.
+- `Gemcrafter/` and `Work-In-Progress/` were empty legacy folders with no tracked files. Deleting them is safe and the source-of-truth audit should stop warning about them instead of preserving dead placeholders.

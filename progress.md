@@ -51,3 +51,13 @@
 - Added `A:\obsidian\jeremy\wiki\operations\Git Workflow.md` with the recommended branch-first model, command sequence, and commit/push/PR/merge mental model
 - Linked the new page from `A:\obsidian\jeremy\wiki\index.md` and `A:\obsidian\jeremy\wiki\operations\Deploy Procedures.md`
 - Updated `AGENTS.md` startup + workflow sections to require: update `main` → create task branch → implement/verify → commit/push on branch → PR into `main`
+
+## Follow-up — CI validator alignment
+
+- PR CI failed on `scripts/validate_sot.sh`
+- Inspected failure log and confirmed it was checking for legacy `WindblownContent/Readme.md`, `WindblownContent/Settings.json`, and `WindblownContent/sql-backups/`
+- Confirmed user intent is for trophy/content ownership to live under `Windblown`, not to resurrect `WindblownContent`
+- Updated validator and source-of-truth docs/templates to point at current `Windblown` ownership and root `sql-backups/`
+- Deleted empty legacy `Gemcrafter/` and `Work-In-Progress/` directories (no tracked files inside either folder)
+- Removed stale audit/matrix references to those deleted placeholders
+- Re-ran `bash scripts/validate_sot.sh` locally: **48 passed, 0 failed, 0 warnings**

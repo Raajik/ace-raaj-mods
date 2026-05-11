@@ -1,6 +1,6 @@
--- Radi (810000) - Gem vendor
+-- Jochi (810000) - Town Network gem vendor
 
-INSERT INTO weenie (class_Id, class_Name, type, last_Modified) VALUES (810000, 'radi_tn_gem_vendor', 12, NOW()) ON DUPLICATE KEY UPDATE class_Name = VALUES(class_Name), type = VALUES(type), last_Modified = NOW();
+INSERT INTO weenie (class_Id, class_Name, type, last_Modified) VALUES (810000, 'jochi_tn_gem_vendor', 12, NOW()) ON DUPLICATE KEY UPDATE class_Name = VALUES(class_Name), type = VALUES(type), last_Modified = NOW();
 
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810000, 1, 16) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (810000, 2, 31) ON DUPLICATE KEY UPDATE value = VALUES(value);

@@ -20,6 +20,10 @@
 
 **Files:** `SpellSiphon/Features/RecipeHooks.cs`, `SpellSiphon/Settings.cs`, `SpellSiphon/Settings.json`.
 
+### Windblown — rename Jochi vendor SQL file (was Radi)
+
+**Change:** `Windblown/Content/SQL/Vendors/01_Radi_810000.sql` → **`01_Jochi_810000.sql`**. Header + `weenie.class_Name` **`radi_tn_gem_vendor`** → **`jochi_tn_gem_vendor`**. Spawn comment in `03_TownNetworkSpawns.sql` updated. Removed stray **`01_Radi_810000.sql.tmp`**.
+
 ## 2026-05-10
 
 ### Windblown — Swayss skill-reset NPC is Creature, not Vendor
@@ -138,7 +142,7 @@ battles are fragile. BetterLootControl also has `AwakenVendorItems` that runs
 on vendor approach.
 
 ### BetterLootControl VendorLootRotation Fixes
-- Added `_protectedVendorWcids` — only 810000 (Radi/Jochi) is protected
+- Added `_protectedVendorWcids` — only 810000 (Jochi) is protected
 - Custom TN vendors (810001, 810002, 810003) go through blacklist check
   via `VendorLootWcids` + `VendorLootMode=Blacklist` instead
 - `_awakenableVendorWcids` still has Academy weapon WCIDs — just blacklist the vendor
@@ -151,13 +155,13 @@ on vendor approach.
 
 **New organized WCID ranges (documented in AGENTS.md §8.16):**
 - `800000–809999`: Items (Coalesced Mana, SpellSiphon, ManaLattice, Letters)
-- `810000–819999`: Vendors / NPCs (Radi, Kaelith)
+- `810000–819999`: Vendors / NPCs (Jochi, Kaelith)
 
 **Files reorganized into `Windblown/Content/SQL/`:**
 - `Items/01_CoalescedMana_800000-800002.sql`
 - `Items/02_SpellSiphon_800003.sql`, `Items/03_ManaLattice_800004.sql`
 - `Items/04_CustomLetters_800005-800006.sql`
-- `Vendors/01_Radi_810000.sql` (full vendor def: 87 gem items, emotes, attributes)
+- `Vendors/01_Jochi_810000.sql` (full vendor def: 87 gem items, emotes, attributes; was `01_Radi_810000.sql`)
 - `Vendors/02_Kaelith_810001.sql` (26 Academy weapons only, trimmed from original)
 - `Vendors/03_TownNetworkSpawns.sql`
 - `Pathwarden/01_ChestAddLesserMana.sql` (10x Lesser Coalesced Mana)

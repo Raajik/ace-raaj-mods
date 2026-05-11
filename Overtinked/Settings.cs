@@ -15,9 +15,13 @@ public class Settings
     [JsonPropertyName("// MaxImbueEffects")]
     public string MaxImbueEffectsDoc { get; init; } = "Max imbue effects allowed on an item (checked via bit count of ImbuedEffect).";
 
-    [JsonPropertyName("// EnableWorkmanshipImbueFallback")]
-    public string EnableWorkmanshipImbueFallbackDoc { get; init; } =
-        "When GetRecipe returns null but target has workmanship (ItemWorkmanship or Workmanship float) and source is Overtinked imbue/salvage/buffed-jewelry material, inject a tinkering shell recipe so MIT can run. Standard imbues resolve a cached recipe by mutation DataId (scan range below); numeric SalvageRules use ShellRecipeId only. If VerifyRequirements still fails, widen cookbook or relax recipe reqs in DB.";
+    [JsonPropertyName("// EnableWorkmanshipSalvageRuleFallback")]
+    public string EnableWorkmanshipSalvageRuleFallbackDoc { get; init; } =
+        "When GetRecipe is null and source matches SalvageRules (numeric salvage bags): inject WorkmanshipSalvageFallbackShellRecipeId so MIT runs; TryMutate applies rule by WCID. Safer default true. Independent from imbue/jewelry fallback.";
+
+    [JsonPropertyName("// EnableWorkmanshipImbueJewelryRecipeFallback")]
+    public string EnableWorkmanshipImbueJewelryRecipeFallbackDoc { get; init; } =
+        "When GetRecipe is null and source is standard imbue salvage, Cleaving/Nether/Shatter-style imbue not handled elsewhere, or BuffedImbueRules WCID: resolve mutation recipe via scan range or generic shell. Default false — opt-in after validating scan bounds / shell recipe on your shard.";
 
     [JsonPropertyName("// WorkmanshipSalvageFallbackShellRecipeId")]
     public string WorkmanshipSalvageFallbackShellRecipeIdDoc { get; init; } =
@@ -27,7 +31,12 @@ public class Settings
     public string WorkmanshipImbueMutationRecipeScanMinIdDoc { get; init; } = "Inclusive lower bound when indexing tinkering recipes by Recipe.DataId for standard imbue salvages.";
 
     [JsonPropertyName("// WorkmanshipImbueMutationRecipeScanMaxId")]
-    public string WorkmanshipImbueMutationRecipeScanMaxIdDoc { get; init; } = "Inclusive upper bound for mutation scan (first recipe per DataId wins).";
+    public string WorkmanshipImbueMutationRecipeScanMaxIdDoc { get; init; } =
+        "Inclusive upper bound for mutation scan (first tinkering recipe per DataId wins). Span from Min to Max is capped internally to reduce accidental huge scans.";
+
+    [JsonPropertyName("// WorkmanshipImbueMutationRecipeScanMaxSpan")]
+    public string WorkmanshipImbueMutationRecipeScanMaxSpanDoc { get; init; } =
+        "Max inclusive id span (max − min + 1) when building mutation cache; wider ranges clamp with a warning. Default 2500.";
 
     [JsonPropertyName("// EnableRecipeManagerPatch")]
     public string EnableRecipeManagerPatchDoc { get; init; } = "When true, patches RecipeManager.UseObjectOnTarget (and related) for tinkering flow.";
@@ -133,13 +142,17 @@ public class Settings
     public const string JewelryCleaveCategory = "OvertinkedJewelryCleave";
 
     // Cookbook gap-fill: workmanship-bearing targets + Overtinked salvage/imbue sources (see // doc keys above).
-    public bool EnableWorkmanshipImbueFallback { get; set; } = true;
+    public bool EnableWorkmanshipSalvageRuleFallback { get; set; } = true;
+
+    public bool EnableWorkmanshipImbueJewelryRecipeFallback { get; set; } = false;
 
     public uint WorkmanshipSalvageFallbackShellRecipeId { get; set; } = 4452;
 
     public uint WorkmanshipImbueMutationRecipeScanMinId { get; set; } = 4200;
 
     public uint WorkmanshipImbueMutationRecipeScanMaxId { get; set; } = 4700;
+
+    public uint WorkmanshipImbueMutationRecipeScanMaxSpan { get; set; } = 2500;
 
     // When true, patches RecipeManager.UseObjectOnTarget (and related) for tinkering flow.
     public bool EnableRecipeManagerPatch { get; set; } = true;

@@ -1,10 +1,11 @@
+using System;
 using ACE.Database;
 using ACE.Database.Models.World;
 
 namespace Overtinked;
 
 // When cookbook has no row for salvage × target WCID (custom / awakened gear), GetRecipe returns null.
-// If target already has workmanship, supply a tinkering shell recipe so UseObjectOnTarget proceeds.
+// If target already has workmanship, optionally supply a tinkering shell or mutation-matched recipe so MIT proceeds.
 // TryMutate (PreTryMutateCore) still applies the correct imbue/salvage rule by source WCID / mutation DataId.
 internal static class WorkmanshipImbueFallback
 {
@@ -35,10 +36,7 @@ internal static class WorkmanshipImbueFallback
 		if (__result != null)
 			return;
 
-		if (s?.EnableWorkmanshipImbueFallback != true)
-			return;
-
-		if (player == null || source == null || target == null)
+		if (s == null || player == null || source == null || target == null)
 			return;
 
 		if (!WorkmanshipTargets.HasQualifyingWorkmanship(target))
@@ -46,22 +44,27 @@ internal static class WorkmanshipImbueFallback
 
 		uint sw = source.WeenieClassId;
 
-		bool eligible =
-			SalvageEffectApplier.GetRule(s, sw) != null
-			|| ImbueSalvageWcids.IsImbueSalvage(sw, s)
-			|| IsBuffedJewelrySalvage(s, sw);
+		bool hasSalvageRule = SalvageEffectApplier.GetRule(s, sw) != null;
+		bool imbueSalvage = ImbueSalvageWcids.IsImbueSalvage(sw, s);
+		bool buffedJewelry = IsBuffedJewelrySalvage(s, sw);
 
-		if (!eligible)
+		if (!hasSalvageRule && !imbueSalvage && !buffedJewelry)
 			return;
 
-		if (SalvageEffectApplier.GetRule(s, sw) != null)
+		if (hasSalvageRule)
 		{
+			if (!s.EnableWorkmanshipSalvageRuleFallback)
+				return;
+
 			Recipe? shell = LoadShellRecipe(s);
 			if (shell != null)
 				__result = shell;
 
 			return;
 		}
+
+		if (!s.EnableWorkmanshipImbueJewelryRecipeFallback)
+			return;
 
 		ImbuedEffectType? imbue = ImbueSalvageWcids.GetImbueForWcid(sw);
 		if (imbue.HasValue && ImbuedEffectToMutationDataId.TryGetValue(imbue.Value, out uint dataId))
@@ -103,7 +106,16 @@ internal static class WorkmanshipImbueFallback
 
 		Recipe? cooked = DatabaseManager.World.GetCachedRecipe(rid);
 		if (cooked == null)
+		{
 			ModManager.Log($"[Overtinked] Workmanship imbue fallback: shell recipe {rid} not in world cache.", ModManager.LogLevel.Warn);
+			return null;
+		}
+
+		if (!cooked.IsTinkering())
+		{
+			ModManager.Log($"[Overtinked] Workmanship imbue fallback: recipe {rid} is not tinkering — refusing shell.", ModManager.LogLevel.Warn);
+			return null;
+		}
 
 		return cooked;
 	}
@@ -128,23 +140,69 @@ internal static class WorkmanshipImbueFallback
 			if (_mutationDataIdToRecipe != null)
 				return;
 
-			Dictionary<uint, Recipe> dict = new();
-			uint min = s.WorkmanshipImbueMutationRecipeScanMinId;
-			uint max = s.WorkmanshipImbueMutationRecipeScanMaxId;
+			uint scanMin = s.WorkmanshipImbueMutationRecipeScanMinId;
+			uint scanMax = s.WorkmanshipImbueMutationRecipeScanMaxId;
 
-			for (uint id = min; id <= max; id++)
+			if (scanMin > scanMax)
 			{
-				Recipe? r = DatabaseManager.World.GetCachedRecipe(id);
-				if (r == null || !r.IsTinkering())
-					continue;
+				(scanMin, scanMax) = (scanMax, scanMin);
+				ModManager.Log("[Overtinked] Workmanship imbue fallback: mutation scan MinId > MaxId — swapped bounds.", ModManager.LogLevel.Warn);
+			}
 
-				uint md = r.DataId;
-				if (!dict.ContainsKey(md))
-					dict[md] = r;
+			uint spanCap = s.WorkmanshipImbueMutationRecipeScanMaxSpan;
+			if (spanCap == 0)
+				spanCap = 2500;
+
+			const uint HardCapMutationScanSpan = 10000;
+			if (spanCap > HardCapMutationScanSpan)
+			{
+				ModManager.Log($"[Overtinked] Workmanship imbue fallback: WorkmanshipImbueMutationRecipeScanMaxSpan {spanCap} exceeds hard cap {HardCapMutationScanSpan}; clamped.", ModManager.LogLevel.Warn);
+				spanCap = HardCapMutationScanSpan;
+			}
+
+			uint origScanMax = scanMax;
+			ulong range = (ulong)scanMax - scanMin + 1UL;
+
+			if (range > spanCap)
+			{
+				ulong newEnd = (ulong)scanMin + spanCap - 1UL;
+				if (newEnd > uint.MaxValue)
+					scanMax = uint.MaxValue;
+				else if (newEnd < scanMin)
+					scanMax = scanMin;
+				else
+					scanMax = (uint)newEnd;
+
+				ModManager.Log(
+					$"[Overtinked] Workmanship imbue fallback: mutation scan span {(ulong)origScanMax - scanMin + 1UL} exceeds MaxSpan {spanCap}; clamped max id {origScanMax} → {scanMax}.",
+					ModManager.LogLevel.Warn);
+			}
+
+			ulong scanCount = (ulong)scanMax - scanMin + 1UL;
+			Dictionary<uint, Recipe> dict = new();
+
+			try
+			{
+				for (ulong offset = 0; offset < scanCount; offset++)
+				{
+					uint id = (uint)((ulong)scanMin + offset);
+					Recipe? r = DatabaseManager.World.GetCachedRecipe(id);
+					if (r == null || !r.IsTinkering())
+						continue;
+
+					uint md = r.DataId;
+					if (!dict.ContainsKey(md))
+						dict[md] = r;
+				}
+			}
+			catch (Exception ex)
+			{
+				ModManager.Log($"[Overtinked] Workmanship imbue fallback: mutation scan failed ({ex.Message}). Indexed entries cleared.", ModManager.LogLevel.Error);
+				dict.Clear();
 			}
 
 			_mutationDataIdToRecipe = dict;
-			ModManager.Log($"[Overtinked] Workmanship imbue fallback: indexed {dict.Count} tinkering mutation DataIds from recipe ids {min}-{max}.", ModManager.LogLevel.Info);
+			ModManager.Log($"[Overtinked] Workmanship imbue fallback: indexed {dict.Count} tinkering mutation DataIds from recipe ids {scanMin}-{scanMax}.", ModManager.LogLevel.Info);
 		}
 	}
 }

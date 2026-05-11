@@ -16,7 +16,7 @@
 
 **Wiki:** `A:/obsidian/jeremy/wiki/SpellSiphon.md` (vendor + apply vs extraction).
 
-**Commit:** `f523e954`.
+**Commit:** `4bc0a8ab`.
 
 ### LeyLineLedger / BetterSupportSkills — Salvage bank `PropertyInt64` alignment + legacy auto-merge
 

@@ -66,13 +66,12 @@ Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot`
 See `BetterLootControl/Readme.md` for full vendor documentation.
 
 ### ChallengeModes
-A challenge-hub mod for alternate playstyles:
-- **SSF (Solo Self-Found)** — restricted trading, storage, and buff access.
-- **Hardcore** — permadeath with optional legacy storage.
-- **Alternate Leveling** — milestone-based XP/luminance where your furthest segment does not regress on death.
-- **Aptitude** (WIP) — skill-restriction challenge framework.
+Player-facing challenge hub focused on **Chaos** and **Aptitude** (SSF/Hardcore/Alternate Leveling are not advertised in `/cm`; legacy SSF admin clear remains).
+- **Chaos** — stronger creature awareness (**5×** `VisualAwarenessRange` for targeting), Loremaster **quest points ×3** when paired with the QB bridge, optional messaging for `CmFloat` XP bonus (`11013`) vs QB stacking. **Autoloot pyreals:** **10%** to bank, **90%** to LeyLineLedger **lottery pool** (`AddToPool`).
+- **Aptitude** — while on, QOL **forces** `/xp spend auto` with **no stop-before-max cap** (stop **0**); manual spend and turning auto off are blocked until aptitude ends or **`/cm quit`** restores prior prefs.
+- **LeyLineLedger lottery** — pool + next draw time **persist to JSON** (configurable file name); default draw interval **4320 minutes** (3 days).
 
-Use `/cm` in-game to view and enroll in challenges. See `ChallengeModes/Readme.md` for full flows.
+Use `/cm` in-game for chaos, aptitude, and quit. See `ChallengeModes/Readme.md` for detail.
 
 ### EmpyreanAlteration
 A mutator pipeline for loot, corpses, generators, and player-driven item awakening.

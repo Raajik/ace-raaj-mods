@@ -10,7 +10,7 @@
 
 **File:** `BetterLootControl/VendorLootRotation.cs`.
 
-**Commit:** `79a0a676`.
+**Commit:** `14704482`.
 
 ### SpellSiphon — vendor stacks 250, `TargetType` widen, apply vs extraction guard
 

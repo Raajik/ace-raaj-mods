@@ -20,6 +20,12 @@
 # Dry run (dump only, no import):
 #   SYNC_WORLD_DRY_RUN=1 bash scripts/sync-world-void-test-to-wb-test.sh
 #
+# Partial sync (only listed tables — leaves other tables in dest untouched; use if world+shard
+# share one DB and you must not touch biota/character tables):
+#   SYNC_WORLD_TABLES="weenie,weenie_properties_emote,weenie_properties_emote_action,landblock_instance" \
+#     bash scripts/sync-world-void-test-to-wb-test.sh
+#   (comma-separated, no spaces required; trims spaces around names.)
+#
 # See AGENTS.md §5.
 # World schema only: if ACE uses a separate shard database, clone that schema with the same
 # pattern (different script/env names) — this script does not touch shard.
@@ -31,6 +37,19 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 SOURCE_DB="${VOID_SQL_DATABASE:-void-test_world}"
 DEST_DB="${WB_TEST_SQL_DATABASE:-ace_world}"
+
+# Optional: comma-separated table names → mysqldump only those tables (partial replace on dest).
+SYNC_TABLE_ARGS=()
+if [ -n "${SYNC_WORLD_TABLES:-}" ]; then
+  _csv="${SYNC_WORLD_TABLES//$'\r'/}"
+  _lines=()
+  mapfile -t _lines < <(printf '%s' "$_csv" | tr ',' '\n')
+  for _t in "${_lines[@]}"; do
+    _t="${_t#"${_t%%[![:space:]]*}"}"
+    _t="${_t%"${_t##*[![:space:]]}"}"
+    [ -n "$_t" ] && SYNC_TABLE_ARGS+=("$_t")
+  done
+fi
 
 if [ -z "${ACE_MYSQL_USER:-}" ] || [ -z "${ACE_MYSQL_PASSWORD+x}" ]; then
   echo "ERROR: Set ACE_MYSQL_USER and ACE_MYSQL_PASSWORD." >&2
@@ -62,6 +81,13 @@ echo "=== sync-world-void-test-to-wb-test.sh ==="
 echo "Source DB: $SOURCE_DB"
 echo "Dest DB:   $DEST_DB"
 echo "Backup:    $BACKUP_FILE"
+if [ "${#SYNC_TABLE_ARGS[@]}" -gt 0 ]; then
+  echo "Mode:      PARTIAL (${#SYNC_TABLE_ARGS[@]} tables)"
+  echo "Tables:    ${SYNC_TABLE_ARGS[*]}"
+else
+  echo "Mode:      FULL (entire database $DEST_DB will be replaced from $SOURCE_DB)"
+  echo "           If player/biota data lives in this DB, confirm config or use SYNC_WORLD_TABLES."
+fi
 echo ""
 
 cnf="$(mktemp "${TMPDIR:-/tmp}/ace-world-sync-XXXXXX.cnf")"
@@ -84,20 +110,34 @@ echo "=== Step 2: Dump $SOURCE_DB → rewrite DB name → import into $DEST_DB =
 # sed rewrites every backtick-qualified source schema token to dest (USE + rare `src`.`tbl` refs).
 sed_rewrite='s/`'"${SOURCE_DB}"'`/`'"${DEST_DB}"'`/g'
 
+DUMP_BASE_FLAGS=(--defaults-extra-file="$cnf" --default-character-set=utf8mb4
+  --single-transaction --set-gtid-purged=OFF --triggers)
+if [ "${#SYNC_TABLE_ARGS[@]}" -eq 0 ]; then
+  DUMP_BASE_FLAGS+=(--routines --events)
+fi
+
 if [ "${SYNC_WORLD_DRY_RUN:-0}" = "1" ]; then
   DUMP_ONLY="$BACKUP_ROOT/${SOURCE_DB}-dry-run-${STAMP}.sql"
-  "$MYSQL_EXE" --defaults-extra-file="$cnf" --default-character-set=utf8mb4 \
-    --single-transaction --set-gtid-purged=OFF --routines --triggers --events \
-    "$SOURCE_DB" | sed "$sed_rewrite" >"$DUMP_ONLY"
+  if [ "${#SYNC_TABLE_ARGS[@]}" -gt 0 ]; then
+    "$MYSQL_EXE" "${DUMP_BASE_FLAGS[@]}" "$SOURCE_DB" "${SYNC_TABLE_ARGS[@]}" \
+      | sed "$sed_rewrite" >"$DUMP_ONLY"
+  else
+    "$MYSQL_EXE" "${DUMP_BASE_FLAGS[@]}" "$SOURCE_DB" \
+      | sed "$sed_rewrite" >"$DUMP_ONLY"
+  fi
   echo "  Dry run: wrote $DUMP_ONLY (no import)."
   exit 0
 fi
 
-"$MYSQL_EXE" --defaults-extra-file="$cnf" --default-character-set=utf8mb4 \
-  --single-transaction --set-gtid-purged=OFF --routines --triggers --events \
-  "$SOURCE_DB" \
-  | sed "$sed_rewrite" \
-  | "$MYSQL_EXE" --defaults-extra-file="$cnf" --default-character-set=utf8mb4 "$DEST_DB"
+if [ "${#SYNC_TABLE_ARGS[@]}" -gt 0 ]; then
+  "$MYSQL_EXE" "${DUMP_BASE_FLAGS[@]}" "$SOURCE_DB" "${SYNC_TABLE_ARGS[@]}" \
+    | sed "$sed_rewrite" \
+    | "$MYSQL_EXE" --defaults-extra-file="$cnf" --default-character-set=utf8mb4 "$DEST_DB"
+else
+  "$MYSQL_EXE" "${DUMP_BASE_FLAGS[@]}" "$SOURCE_DB" \
+    | sed "$sed_rewrite" \
+    | "$MYSQL_EXE" --defaults-extra-file="$cnf" --default-character-set=utf8mb4 "$DEST_DB"
+fi
 
 echo "  Done."
 echo ""

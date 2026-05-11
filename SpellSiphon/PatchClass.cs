@@ -120,6 +120,17 @@ public class PatchClass : BasicPatch<Settings>
 							ModManager.Log("[SpellSiphon] Vendor integration enabled.", ModManager.LogLevel.Info);
 						}
 					}
+
+					MethodInfo? itemProfileToWo = AccessTools.Method(typeof(Vendor), "ItemProfileToWorldObjects", new Type[] { typeof(ItemProfile) });
+					if (itemProfileToWo != null)
+					{
+						MethodInfo? stackPost = AccessTools.Method(typeof(VendorStackUnitPricePostfix), nameof(VendorStackUnitPricePostfix.Postfix));
+						if (stackPost != null)
+						{
+							ModC.Harmony.Patch(itemProfileToWo, postfix: new HarmonyMethod(stackPost));
+							ModManager.Log("[SpellSiphon] Vendor stack unit price postfix enabled.", ModManager.LogLevel.Info);
+						}
+					}
 				}
 
 				HooksApplied = true;

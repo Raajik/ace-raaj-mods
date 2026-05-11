@@ -60,6 +60,10 @@
   "ManaLatticeWcid": 850201,
   "// VendorPrice": "Price in pyreals for the SpellSiphon tool at vendors.",
   "VendorPrice": 10000,
-  "// VendorSpellsiphonStackSize": "Stack count for uncharged Spellsiphon tools added by vendor injection (<= weenie MaxStackSize, default 250).",
-  "VendorSpellsiphonStackSize": 250
+  "// VendorSpellsiphonStackSize": "Max units per purchase for blank Spellsiphon at vendors (trade-note style; unit price = VendorPrice). <= weenie MaxStackSize.",
+  "VendorSpellsiphonStackSize": 250,
+  "// VendorManaLatticePrice": "Pyreal value per blank Mana Lattice at vendors (per unit for stackable sale).",
+  "VendorManaLatticePrice": 5000,
+  "// VendorManaLatticeMaxBuy": "Max units per purchase for blank Mana Lattice at vendors.",
+  "VendorManaLatticeMaxBuy": 250
 }

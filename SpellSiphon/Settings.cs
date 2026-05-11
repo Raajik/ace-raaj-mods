@@ -122,6 +122,14 @@ public class Settings
 	public int VendorPrice { get; set; } = 10000;
 
 	[JsonPropertyName("// VendorSpellsiphonStackSize")]
-	public string VendorSpellsiphonStackSizeDoc { get; init; } = "Stack size for uncharged Spellsiphon tools injected at mage/jeweler vendors (must be <= weenie MaxStackSize).";
+	public string VendorSpellsiphonStackSizeDoc { get; init; } = "Max units per purchase for blank Spellsiphon at vendors (trade-note style; unit price = VendorPrice). Clamped to weenie MaxStackSize.";
 	public int VendorSpellsiphonStackSize { get; set; } = 250;
+
+	[JsonPropertyName("// VendorManaLatticePrice")]
+	public string VendorManaLatticePriceDoc { get; init; } = "Pyreal value per blank Mana Lattice at vendors (stackable sale uses StackUnitValue).";
+	public int VendorManaLatticePrice { get; set; } = 5000;
+
+	[JsonPropertyName("// VendorManaLatticeMaxBuy")]
+	public string VendorManaLatticeMaxBuyDoc { get; init; } = "Max units per purchase for blank Mana Lattice at vendors (trade-note style).";
+	public int VendorManaLatticeMaxBuy { get; set; } = 250;
 }

@@ -5,10 +5,8 @@ using HarmonyLib;
 
 namespace SpellSiphon;
 
-/// <summary>
-/// Injects the SpellSiphon tool and Mana Lattice into vendor inventories.
-/// Sells at both mages (spell component vendors) and jewelers (jewelry/gem vendors).
-/// </summary>
+// Injects SpellSiphon tool + Mana Lattice into vendor DefaultItemsForSale (trade-note style:
+// StackUnitValue = unit pyreals, template StackSize 1, VendorShopCreateListStackSize = max buy).
 internal static class VendorIntegration
 {
 	// WCIDs for spell components — identifies "mage" vendors
@@ -45,8 +43,16 @@ internal static class VendorIntegration
 		if (!isMage && !isJeweler)
 			return;
 
-		InjectTool(__instance, vendorWcid, PatchClass.Settings?.SpellsiphonToolWcid ?? 850200, PatchClass.Settings?.VendorPrice ?? 10000);
-		InjectTool(__instance, vendorWcid, PatchClass.Settings?.ManaLatticeWcid ?? 850201, 5000);
+		Settings? st = PatchClass.Settings;
+		uint spellsiphonWcid = st?.SpellsiphonToolWcid ?? 850200;
+		uint latticeWcid = st?.ManaLatticeWcid ?? 850201;
+		int siphonUnit = st?.VendorPrice ?? 10000;
+		int siphonMaxBuy = System.Math.Clamp(st?.VendorSpellsiphonStackSize ?? 250, 1, 250);
+		int latticeUnit = st?.VendorManaLatticePrice ?? 5000;
+		int latticeMaxBuy = System.Math.Clamp(st?.VendorManaLatticeMaxBuy ?? 250, 1, 250);
+
+		InjectTool(__instance, vendorWcid, spellsiphonWcid, siphonUnit, siphonMaxBuy);
+		InjectTool(__instance, vendorWcid, latticeWcid, latticeUnit, latticeMaxBuy);
 	}
 
 	static bool VendorAlreadySellsWcid(Vendor vendor, uint wcid)
@@ -72,7 +78,22 @@ internal static class VendorIntegration
 		return false;
 	}
 
-	static void InjectTool(Vendor vendor, uint vendorWcid, uint toolWcid, int price)
+	static void ConfigureDefaultShopStack(WorldObject tool, int unitPricePyr, int maxBuyPerTransaction)
+	{
+		if ((tool.MaxStackSize ?? 0) > 0)
+		{
+			int cap = System.Math.Min(maxBuyPerTransaction, tool.MaxStackSize ?? maxBuyPerTransaction);
+			tool.SetProperty(PropertyInt.StackUnitValue, unitPricePyr);
+			tool.SetStackSize(1);
+			tool.VendorShopCreateListStackSize = cap;
+		}
+		else
+		{
+			tool.Value = unitPricePyr;
+		}
+	}
+
+	static void InjectTool(Vendor vendor, uint vendorWcid, uint toolWcid, int unitPricePyr, int maxBuyPerTransaction)
 	{
 		if (VendorAlreadySellsWcid(vendor, toolWcid))
 			return;
@@ -88,25 +109,16 @@ internal static class VendorIntegration
 		if (tool == null)
 			return;
 
-		tool.Value = price;
 		tool.ContainerId = vendor.Guid.Full;
 
-		uint spellsiphonWcid = PatchClass.Settings?.SpellsiphonToolWcid ?? 850200;
-		if (toolWcid == spellsiphonWcid)
-		{
-			int stack = Math.Clamp(PatchClass.Settings?.VendorSpellsiphonStackSize ?? 250, 1, 250);
-			tool.SetProperty(PropertyInt.MaxStackSize, stack);
-			tool.SetProperty(PropertyInt.StackSize, stack);
-		}
+		ConfigureDefaultShopStack(tool, unitPricePyr, maxBuyPerTransaction);
 
 		tool.CalculateObjDesc();
 
-		if (vendor.DefaultItemsForSale != null && !vendor.DefaultItemsForSale.ContainsKey(tool.Guid)
-			&& vendor.UniqueItemsForSale != null && !vendor.UniqueItemsForSale.ContainsKey(tool.Guid))
+		if (vendor.DefaultItemsForSale != null && !vendor.DefaultItemsForSale.ContainsKey(tool.Guid))
 		{
-			tool.SoldTimestamp = Time.GetUnixTime();
-			vendor.UniqueItemsForSale[tool.Guid] = tool;
-			ModManager.Log($"[SpellSiphon] Added {tool.Name} to vendor {vendor.Name} (WCID {vendorWcid}) for {price:N0} pyreals.", ModManager.LogLevel.Info);
+			vendor.DefaultItemsForSale.Add(tool.Guid, tool);
+			ModManager.Log($"[SpellSiphon] Added {tool.Name} to vendor {vendor.Name} (WCID {vendorWcid}) default shop: unit {unitPricePyr:N0} pyreals, max buy {maxBuyPerTransaction}.", ModManager.LogLevel.Info);
 		}
 	}
 

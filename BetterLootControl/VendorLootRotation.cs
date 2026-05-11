@@ -1192,6 +1192,10 @@ public static class VendorLootRotation
             if (TradeNoteWcids.Contains(kvp.Value.WeenieClassId))
                 continue;
 
+            // Plain Spellsiphon / Mana Lattice use StackUnitValue + SetStackSize; overwriting Value breaks buy math.
+            if (kvp.Value.WeenieClassId == SpellsiphonToolWcid || kvp.Value.WeenieClassId == ManaLatticeWcid)
+                continue;
+
             if (_originalValues.TryGetValue(kvp.Key, out var originalValue))
             {
                 var newValue = (int)(originalValue * taxMult);
@@ -2341,8 +2345,20 @@ public static class VendorLootRotation
                 return null;
             }
 
-            // Set a premium price
-            spellsiphon.Value = 15000;
+            // Trade-note style default shop: unit pyreals on StackUnitValue, max buy capped to weenie MaxStackSize.
+            int unit = 10000;
+            int maxBuy = 250;
+            if ((spellsiphon.MaxStackSize ?? 0) > 0)
+            {
+                int cap = Math.Min(maxBuy, spellsiphon.MaxStackSize ?? maxBuy);
+                spellsiphon.SetProperty(PropertyInt.StackUnitValue, unit);
+                spellsiphon.SetStackSize(1);
+                spellsiphon.VendorShopCreateListStackSize = cap;
+            }
+            else
+            {
+                spellsiphon.Value = unit;
+            }
 
             return spellsiphon;
         }
@@ -2368,8 +2384,19 @@ public static class VendorLootRotation
             // Plain version should NOT have magic glow (no spells)
             manaLattice.UiEffects = (UiEffects?)((int)(manaLattice.UiEffects ?? 0) & ~(int)UiEffects.Magical);
 
-            // Set a premium price
-            manaLattice.Value = 20000;
+            int unit = 5000;
+            int maxBuy = 250;
+            if ((manaLattice.MaxStackSize ?? 0) > 0)
+            {
+                int cap = Math.Min(maxBuy, manaLattice.MaxStackSize ?? maxBuy);
+                manaLattice.SetProperty(PropertyInt.StackUnitValue, unit);
+                manaLattice.SetStackSize(1);
+                manaLattice.VendorShopCreateListStackSize = cap;
+            }
+            else
+            {
+                manaLattice.Value = unit;
+            }
 
             return manaLattice;
         }

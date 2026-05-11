@@ -2,6 +2,16 @@
 
 ## 2026-05-10
 
+### SpellSiphon — vendor blank tools as trade-note stacks (quantity × unit price)
+
+**Problem:** Injected blank Spellsiphon lived in **`UniqueItemsForSale`** with **`StackSize` 250**. ACE unique buys hand over the **whole** `WorldObject`; quantity UI does not scale cost like trade notes. Buying “2” could still grant a full vendor stack / wrong pricing.
+
+**Fix:** Add blank tools to **`DefaultItemsForSale`** with **`PropertyInt.StackUnitValue`** = unit pyreals, **`SetStackSize(1)`** on the shop row, **`VendorShopCreateListStackSize`** = max per purchase (from `VendorSpellsiphonStackSize` / new `VendorManaLatticeMaxBuy`). Harmony **postfix** on **`Vendor.ItemProfileToWorldObjects`** reapplies unit pricing to stacks ACE creates at purchase time (fresh WO from weenie). **BetterLootControl** plain jeweler Spellsiphon/Mana Lattice generators use the same pattern; luxury tax loop skips those WCIDs so it does not overwrite **`Value`** on stackable math.
+
+**Files:** `SpellSiphon/VendorIntegration.cs`, `SpellSiphon/VendorStackUnitPricePostfix.cs`, `SpellSiphon/PatchClass.cs`, `SpellSiphon/Settings.cs` / `Settings.json`, `BetterLootControl/VendorLootRotation.cs`.
+
+**Commit:** `adb7a22a`.
+
 ### BetterLootControl — vendor rotation cooldown survives landblock reload
 
 **Problem:** Vendor loot rotation keyed cooldown + rotated-item tracking by **vendor instance `Guid.Full`**. Landblock reload / weenie cache respawn creates a **new** vendor object → new guid → cooldown never hit → **`RotateVendorInventory` ran every `LoadInventory`**, stripping SQL/default jewelry stock and regenerating (often looked like a “nuked” jeweler).

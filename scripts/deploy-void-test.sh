@@ -5,10 +5,12 @@
 #
 # What it does:
 #   1. Builds every mod in the repo that has a .csproj
-#   2. WIPES A:\void-test\Mods\ entirely (clean slate, no stale DLLs)
-#   3. Copies each mod's DLL + Meta.json + Settings.json from build/ output
-#   4. Excludes ValheelContent (permanently), Shared/ (no csproj), build/ (output dir)
-#   5. Prints a restart reminder
+#   2. Stops only ACE.Server processes whose command line includes the void-test install path
+#      (does not kill C:\ACE or other ACE instances)
+#   3. WIPES A:\void-test\Mods\ entirely (clean slate, no stale DLLs)
+#   4. Copies each mod's DLL + Meta.json + Settings.json from build/ output
+#   5. Excludes ValheelContent (permanently), Shared/ (no csproj), build/ (output dir)
+#   6. Prints a restart reminder
 #
 # ⚠️  SQL DOES NOT AUTO-DEPLOY (push void = DLL + Settings + YOU apply SQL to void-test_world).
 #    PowerShell pipe pattern (wiki: operations/SQL Procedures, operations/Deploy Procedures):
@@ -70,10 +72,43 @@ if [ "$BUILD_FAILED" -ne 0 ]; then
 fi
 echo ""
 
-# ── Step 2: Kill running server so watchdog can't start mid-deploy ───────
-echo "=== Step 2: Killing running ACE server ==="
-if command -v powershell.exe &>/dev/null; then
-  powershell.exe -Command "Get-Process ACE.Server -ErrorAction SilentlyContinue | Stop-Process -Force" 2>/dev/null || true
+# ── Step 2: Kill void-test ACE only (do not stop C:\\ACE or other instances) ─
+echo "=== Step 2: Killing void-test ACE.Server only ==="
+VOID_ROOT="$(dirname "$VOID_MODS")"
+VOID_PS_ROOT=""
+if command -v cygpath &>/dev/null; then
+  VOID_PS_ROOT="$(cygpath -w "$VOID_ROOT" 2>/dev/null || true)"
+elif command -v wslpath &>/dev/null; then
+  VOID_PS_ROOT="$(wslpath -w "$VOID_ROOT" 2>/dev/null || true)"
+fi
+if [ -z "$VOID_PS_ROOT" ]; then
+  # Last resort: dirname as-is (PowerShell may still match if path appears in command line)
+  VOID_PS_ROOT="$VOID_ROOT"
+fi
+
+if command -v powershell.exe &>/dev/null && [ -n "$VOID_PS_ROOT" ]; then
+  export DEPLOY_VOID_ROOT="$VOID_PS_ROOT"
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -Command '
+    $voidRoot = $env:DEPLOY_VOID_ROOT
+    if ([string]::IsNullOrWhiteSpace($voidRoot)) { exit 0 }
+    $like = "*" + $voidRoot + "*"
+    $procs = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
+      $cl = $_.CommandLine
+      if ([string]::IsNullOrEmpty($cl)) { return $false }
+      if ($cl -notlike $like) { return $false }
+      $n = $_.Name
+      if ($n -eq "ACE.Server.exe" -or $n -like "ACE.Server*.exe") { return $true }
+      if (($n -eq "dotnet.exe" -or $n -eq "dotnet") -and ($cl -match "ACE[\\/]Server")) { return $true }
+      return $false
+    })
+    foreach ($p in $procs) {
+      Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
+    }
+    Write-Host ("  Stopped void-test ACE process(es): " + $procs.Count)
+  ' 2>/dev/null || true
+  unset DEPLOY_VOID_ROOT || true
+else
+  echo "  (skipped: powershell.exe or void root path unavailable — stop void-test ACE manually if needed)"
 fi
 # Clear watchdog block so next poll will restart clean
 rm -f "$(dirname "$VOID_MODS")/Server/void-test_watchdog_BLOCKED.txt"

@@ -923,52 +923,63 @@ public static class VendorLootRotation
         // Determine vendor class early so robe-preservation logic can use it.
         var vendorClass = ClassifyVendor(vendor);
 
-        // Strip only equipment types this vendor actually sells (MerchandiseItemTypes).
-        // For Mage vendors, PRESERVE existing SQL-defined wizard robes instead of stripping
-        // them — lootgen rarely produces "robe"-named items, so the regeneration below won't
-        // restore them otherwise.
-        var equipmentGuids = vendor.DefaultItemsForSale
-            .Where(kvp =>
-            {
-                if ((kvp.Value.ItemType & equipmentAllowed) == 0)
-                    return false;
-                if (vendorClass == VendorTypeClassification.Mage)
-                {
-                    var name = kvp.Value.Name ?? "";
-                    if (name.Contains("Robe", StringComparison.OrdinalIgnoreCase) ||
-                        name.Contains("Vestment", StringComparison.OrdinalIgnoreCase) ||
-                        name.Contains("Kaftan", StringComparison.OrdinalIgnoreCase) ||
-                        name.Contains("Frock", StringComparison.OrdinalIgnoreCase))
-                        return false;
-                }
-                return true;
-            })
-            .Select(kvp => kvp.Key)
-            .ToList();
-        var uniqueEquipmentGuids = vendor.UniqueItemsForSale
-            .Where(kvp =>
-            {
-                if ((kvp.Value.ItemType & equipmentAllowed) == 0)
-                    return false;
-                if (vendorClass == VendorTypeClassification.Mage)
-                {
-                    var name = kvp.Value.Name ?? "";
-                    if (name.Contains("Robe", StringComparison.OrdinalIgnoreCase) ||
-                        name.Contains("Vestment", StringComparison.OrdinalIgnoreCase) ||
-                        name.Contains("Kaftan", StringComparison.OrdinalIgnoreCase) ||
-                        name.Contains("Frock", StringComparison.OrdinalIgnoreCase))
-                        return false;
-                }
-                return true;
-            })
-            .Select(kvp => kvp.Key)
-            .ToList();
-        equipmentGuids.AddRange(uniqueEquipmentGuids);
-        foreach (var guid in equipmentGuids.Distinct())
+        // Jewelers: do NOT strip all SQL create_list jewelry/gems from DefaultItemsForSale.
+        // Rotation only adds rolled stock to UniqueItemsForSale; wiping Default leaves the shop
+        // empty (or SpellSiphon-only) when lootgen returns few items. Prior rotation GUIDs are
+        // already removed above via oldRotated.
+        if (vendorClass != VendorTypeClassification.Jeweler)
         {
-            ForgetOriginalValue(guid);
-            vendor.DefaultItemsForSale.Remove(guid);
-            vendor.UniqueItemsForSale.Remove(guid);
+            // Strip only equipment types this vendor actually sells (MerchandiseItemTypes).
+            // For Mage vendors, PRESERVE existing SQL-defined wizard robes instead of stripping
+            // them — lootgen rarely produces "robe"-named items, so the regeneration below won't
+            // restore them otherwise.
+            var equipmentGuids = vendor.DefaultItemsForSale
+                .Where(kvp =>
+                {
+                    if ((kvp.Value.ItemType & equipmentAllowed) == 0)
+                        return false;
+                    if (vendorClass == VendorTypeClassification.Mage)
+                    {
+                        var name = kvp.Value.Name ?? "";
+                        if (name.Contains("Robe", StringComparison.OrdinalIgnoreCase) ||
+                            name.Contains("Vestment", StringComparison.OrdinalIgnoreCase) ||
+                            name.Contains("Kaftan", StringComparison.OrdinalIgnoreCase) ||
+                            name.Contains("Frock", StringComparison.OrdinalIgnoreCase))
+                            return false;
+                    }
+                    return true;
+                })
+                .Select(kvp => kvp.Key)
+                .ToList();
+            var uniqueEquipmentGuids = vendor.UniqueItemsForSale
+                .Where(kvp =>
+                {
+                    if ((kvp.Value.ItemType & equipmentAllowed) == 0)
+                        return false;
+                    if (vendorClass == VendorTypeClassification.Mage)
+                    {
+                        var name = kvp.Value.Name ?? "";
+                        if (name.Contains("Robe", StringComparison.OrdinalIgnoreCase) ||
+                            name.Contains("Vestment", StringComparison.OrdinalIgnoreCase) ||
+                            name.Contains("Kaftan", StringComparison.OrdinalIgnoreCase) ||
+                            name.Contains("Frock", StringComparison.OrdinalIgnoreCase))
+                            return false;
+                    }
+                    return true;
+                })
+                .Select(kvp => kvp.Key)
+                .ToList();
+            equipmentGuids.AddRange(uniqueEquipmentGuids);
+            foreach (var guid in equipmentGuids.Distinct())
+            {
+                ForgetOriginalValue(guid);
+                vendor.DefaultItemsForSale.Remove(guid);
+                vendor.UniqueItemsForSale.Remove(guid);
+            }
+        }
+        else
+        {
+            ModManager.Log($"[BetterLoot] VendorLoot: Jeweler {vendor.Name}: preserving SQL DefaultItemsForSale; rolled stock appends to Unique only.", ModManager.LogLevel.Info);
         }
 
         int perCatMin = Math.Max(1, _settings.VendorLootItemsPerCategoryMin);

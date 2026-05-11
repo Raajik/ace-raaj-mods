@@ -8,9 +8,9 @@
 
 **Fix:** Use stable key **`(Location.LandblockId, WeenieClassId)`** (`VendorRotationStableKey`) for `_vendorLastRotation` and `_vendorRotatedItems`. `ClearVendorCooldown` now takes `(LandblockId, uint weenieClassId)`.
 
-**File:** `BetterLootControl/VendorLootRotation.cs`.
+**Follow-up (jeweler only):** Skip the broad strip that removed **all** jewelry/gems from `DefaultItemsForSale` before lootgen refill. Rolled stock is appended to **`UniqueItemsForSale` only**; stripping Default left shops **empty or SpellSiphon-only** when lootgen returned few rows. Prior rotation rows are still removed via `oldRotated`.
 
-**Commit:** `14704482`.
+**File:** `BetterLootControl/VendorLootRotation.cs`.
 
 ### SpellSiphon — vendor stacks 250, `TargetType` widen, apply vs extraction guard
 

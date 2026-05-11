@@ -41,7 +41,8 @@ public partial class Settings
     public string QuestGrowthMaxImbueEffectsDoc { get; init; } = "Cap on imbue effect bits for quest growth level-up imbue rolls.";
 
     [JsonPropertyName("// SpellGrowth")]
-    public string SpellGrowthDoc { get; init; } = "Spell and cantrip growth on quest-growth item level-up.";
+    public string SpellGrowthDoc { get; init; } =
+        "Spell and cantrip growth on quest-growth item level-up. SpellGrowth.AllowNewSpellLinesOnLevelUp false (default) = upgrades only + no weapon ladder adds + no minor random cantrips.";
 
     [JsonPropertyName("// QuestGrowthUtility")]
     public string QuestGrowthUtilityDoc { get; init; } =
@@ -98,10 +99,22 @@ public partial class Settings
     [JsonPropertyName("// RatingLevelUpAmount")]
     public string RatingLevelUpAmountDoc { get; init; } = "How much each existing rating increases per interval (default 1).";
 
+    [JsonPropertyName("// EnableRandomEquipmentSetOnLevelUpIfMissing")]
+    public string EnableRandomEquipmentSetOnLevelUpIfMissingDoc { get; init; } =
+        "When true, equippable items with no equipment set may roll QuestGrowthRandomEquipmentSetChance on each level-up to assign a random set (cloak skill sets for cloaks/jewelry; armor-style sets for weapons, shields, and non-jewelry clothing).";
+
+    [JsonPropertyName("// QuestGrowthRandomEquipmentSetChance")]
+    public string QuestGrowthRandomEquipmentSetChanceDoc { get; init; } =
+        "Per level-up probability (0..1) to try assigning a random set when EquipmentSetId is 0. 0 disables the roll.";
+
     public bool EnableGenericRatingLevelUp { get; set; } = true;
     public int RatingLevelUpInterval { get; set; } = 5;
     public int CloakRatingLevelUpInterval { get; set; } = 1;
     public int RatingLevelUpAmount { get; set; } = 1;
+
+    public bool EnableRandomEquipmentSetOnLevelUpIfMissing { get; set; } = true;
+
+    public double QuestGrowthRandomEquipmentSetChance { get; set; } = 0.12;
 
     public int QuestGrowthCatchUpSummarizeMinLevels { get; set; } = 12;
 
@@ -317,6 +330,10 @@ public class SpellGrowthSettings
     [JsonPropertyName("// CantripLines")]
     public string CantripLinesDoc { get; init; } = "Cantrip lines are ordered tiers; the helper adds base tier then upgrade upward.";
 
+    [JsonPropertyName("// AllowNewSpellLinesOnLevelUp")]
+    public string AllowNewSpellLinesOnLevelUpDoc { get; init; } =
+        "When false (default), level-up spell growth only upgrades spells/cantrips already on the item (same line → higher tier; cantrip Minor→Moderate etc.). No new spell lines, no first-tier cantrip adds, and weapon ladder does not add missing ladder spells. Imbues, salvage-like rolls, ratings, and stats still apply. Set true to restore prior random new-spell behavior.";
+
     public bool Enabled { get; set; } = true;
 
     public bool AutoPopulateFromDat { get; set; } = true;
@@ -330,6 +347,8 @@ public class SpellGrowthSettings
     public double SpellUpgradeChance { get; set; } = 0.35;
 
     public double CantripUpgradeChance { get; set; } = 0.50;
+
+    public bool AllowNewSpellLinesOnLevelUp { get; set; } = false;
 
     public List<int> WeaponSpellIds { get; set; } = new();
 

@@ -53,6 +53,8 @@
   "// QuestGrowthSalvageRules": "Salvage-like tinker rules for quest item level-up growth (same shape as Overtinked SalvageRules; duplicate WCIDs for quest-reward pairs).",
   "// QuestGrowthMaxImbueEffects": "Cap on imbue effect bits for quest growth level-up imbue rolls.",
   "// QuestGrowthCatchUpSummarizeMinLevels": "When level jump is >= this, one combined player message; per-level Info logs are skipped during that catch-up.",
+  "// EnableRandomEquipmentSetOnLevelUpIfMissing": "When true, items with no EquipmentSetId may roll QuestGrowthRandomEquipmentSetChance each level-up to gain a random set (see Settings.cs).",
+  "// QuestGrowthRandomEquipmentSetChance": "0..1 chance per level-up to assign a random set when none; 0 disables.",
   "// SpellGrowth": "Spell and cantrip growth on quest-growth item level-up.",
   "// WeaponQuestGrowth": "Quest weapons: deterministic elemental rend first, 5% extra imbues, ordered spell ladder, equal stat rolls, minor outcome pool.",
   "Enabled": true,
@@ -132,6 +134,8 @@
   "RatingLevelUpInterval": 5,
   "CloakRatingLevelUpInterval": 1,
   "RatingLevelUpAmount": 1,
+  "EnableRandomEquipmentSetOnLevelUpIfMissing": true,
+  "QuestGrowthRandomEquipmentSetChance": 0.12,
   "QuestGrowthSalvageRules": [
     {
       "// Wcids": "Both normal and quest-reward WCIDs so behavior is consistent.",
@@ -412,6 +416,7 @@
     "// CantripOutcomeWeight": "Relative weight when choosing a cantrip outcome.",
     "// SpellUpgradeChance": "Unused: retained for JSON compatibility.",
     "// CantripUpgradeChance": "Unused: retained for JSON compatibility.",
+    "// AllowNewSpellLinesOnLevelUp": "false (default): only upgrade spells/cantrips already on the item; weapon ladder never adds missing lines. true: restores random new spell lines / first cantrip tier / ladder adds.",
     "// WeaponSpellIds": "When non-empty, replaces auto weapon spell pools.",
     "// ArmorOrJewelrySpellIds": "Legacy explicit spell IDs when Jewelry/ArmorClothing lists are empty.",
     "// GenericSpellIds": "Explicit generic spell IDs when non-empty.",
@@ -431,6 +436,7 @@
     "CantripOutcomeWeight": 1,
     "SpellUpgradeChance": 0.35,
     "CantripUpgradeChance": 0.5,
+    "AllowNewSpellLinesOnLevelUp": false,
     "WeaponSpellIds": [],
     "ArmorOrJewelrySpellIds": [],
     "JewelrySpellIds": [],

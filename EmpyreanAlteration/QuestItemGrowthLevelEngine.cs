@@ -6,14 +6,17 @@ internal static class QuestItemGrowthLevelEngine
     private const double WeaponImbueChanceWhenNone = 0.8;
     private const double WeaponExtraImbueChance = 0.1;
 
-    // After at least one imbue (ImbuedEffect != 0), prefer adding spells until the spellbook has this many entries.
+    // After at least one imbue (ImbuedEffect != 0), prefer adding spells until the spellbook has this many entries (only when new spell lines are allowed).
     private const int PrioritizeSpellsUntilSpellBookCount = 4;
 
     private static int GetSpellBookCount(WorldObject item) =>
         item?.Biota?.PropertiesSpellBook?.Count ?? 0;
 
-    private static bool ShouldPrioritizeSpellsOverImbueAndSalvage(WorldObject item) =>
-        item != null && item.ImbuedEffect != 0 && GetSpellBookCount(item) < PrioritizeSpellsUntilSpellBookCount;
+    private static bool ShouldPrioritizeSpellsOverImbueAndSalvage(WorldObject item, Settings settings) =>
+        item != null
+        && item.ImbuedEffect != 0
+        && GetSpellBookCount(item) < PrioritizeSpellsUntilSpellBookCount
+        && (settings.SpellGrowth?.AllowNewSpellLinesOnLevelUp ?? false);
 
     internal sealed class GrowthSummary
     {
@@ -115,6 +118,20 @@ internal static class QuestItemGrowthLevelEngine
             applied = true;
         }
 
+        if (settings.EnableRandomEquipmentSetOnLevelUpIfMissing && IsEquippableForFallback(item))
+        {
+            int curEs = item.GetProperty(PropertyInt.EquipmentSetId) ?? 0;
+            if (curEs == 0)
+            {
+                double p = settings.QuestGrowthRandomEquipmentSetChance;
+                if (p > 0 && Random.Shared.NextDouble() < Math.Min(1.0, p))
+                {
+                    if (TryGrantRandomEquipmentSetIfMissing(item, player, level, emitMessages))
+                        applied = true;
+                }
+            }
+        }
+
         // Generic rating scaling: ALL items with existing ratings get a bump every N levels.
         // This ensures BetterLootControl-generated ratings on weapons, armor, and jewelry all scale.
         int ratingInterval = QuestGrowthItemHelpers.IsCloakEquipment(item)
@@ -162,7 +179,7 @@ internal static class QuestItemGrowthLevelEngine
             && WeaponQuestGrowth.TryApplyRarePropertyLevelUp(item, player, level, settings, emitMessages, summary))
             return true;
 
-        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item);
+        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item, settings);
 
         if (!prioritizeSpells)
         {
@@ -219,7 +236,7 @@ internal static class QuestItemGrowthLevelEngine
     private static bool TryApplyArmorLevelUp(WorldObject item, Player player, int level, Settings settings, bool emitMessages, GrowthSummary? summary)
     {
         // 1) Try a defensive imbue / effect first (skipped while prioritizing spell fill after first imbue).
-        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item);
+        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item, settings);
 
         if (!prioritizeSpells)
         {
@@ -354,7 +371,7 @@ internal static class QuestItemGrowthLevelEngine
 
     private static bool TryApplyShieldLevelUp(WorldObject item, Player player, int level, Settings settings, bool emitMessages, GrowthSummary? summary)
     {
-        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item);
+        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item, settings);
 
         if (!prioritizeSpells)
         {
@@ -407,7 +424,7 @@ internal static class QuestItemGrowthLevelEngine
     {
         // Jewelry: strongly prefer an imbue if none exists, then spells/cantrips, then fall back to defensive/utility salvage-like tweaks.
         // After one imbue and while spellbook has fewer than four entries: spells and other effects before further imbues.
-        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item);
+        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item, settings);
 
         if (!prioritizeSpells)
         {
@@ -763,6 +780,35 @@ internal static class QuestItemGrowthLevelEngine
         }
 
         return true;
+    }
+
+    private static bool TryGrantRandomEquipmentSetIfMissing(WorldObject item, Player player, int level, bool emitMessages)
+    {
+        if (item == null || player == null)
+            return false;
+
+        try
+        {
+            EquipmentSetGroup group = QuestGrowthItemHelpers.IsCloakEquipment(item) || IsJewelry(item.Name ?? string.Empty)
+                ? EquipmentSetGroup.Cloak
+                : EquipmentSetGroup.Armor;
+
+            EquipmentSet[] pool = group.SetOf();
+            if (pool.Length == 0)
+                return false;
+
+            EquipmentSet pick = pool[Random.Shared.Next(0, pool.Length)];
+            item.SetProperty(PropertyInt.EquipmentSetId, (int)pick);
+
+            if (emitMessages)
+                player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and aligns with the {pick} equipment set.");
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 
     /// <summary>

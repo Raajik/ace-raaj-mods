@@ -85,6 +85,8 @@ internal static class WeaponQuestGrowth
         int treasureTier = ReadTreasureTier(item, settings);
         WeaponQuestGrowthSettings wq = settings.WeaponQuestGrowth;
 
+        bool allowNew = settings.SpellGrowth?.AllowNewSpellLinesOnLevelUp ?? false;
+
         return SpellGrowthHelper.TryOrderedWeaponSpellLadderStep(
             item,
             player,
@@ -94,6 +96,7 @@ internal static class WeaponQuestGrowth
             treasureTier,
             wq.SpellUpgradeChance,
             wq.SpellAddChance,
+            allowNew,
             emitMessages,
             out appliedDescription);
     }
@@ -249,7 +252,8 @@ internal static class WeaponQuestGrowth
 
         if (r < cW)
         {
-            if (SpellGrowthHelper.TryAddMinorCantripByNameFragments(item, wt, frags, out string? sn))
+            if (settings.SpellGrowth?.AllowNewSpellLinesOnLevelUp == true
+                && SpellGrowthHelper.TryAddMinorCantripByNameFragments(item, wt, frags, out string? sn))
             {
                 appliedDescription = $"minor cantrip ({sn})";
                 if (summary != null)

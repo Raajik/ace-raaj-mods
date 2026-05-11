@@ -224,6 +224,9 @@ internal static partial class SpellGrowthHelper
             }
         }
 
+        if (!cfg.AllowNewSpellLinesOnLevelUp)
+            return false;
+
         // Add a new spell line from pool if missing (never add a lower-tier spell in an existing line).
         int? spellId = FindFirstNotPresentNewLine(item, pool, presentLineToTier);
         if (!spellId.HasValue)
@@ -275,6 +278,9 @@ internal static partial class SpellGrowthHelper
                 return true;
             }
         }
+
+        if (!cfg.AllowNewSpellLinesOnLevelUp)
+            return false;
 
         // Add the first tier of a line not present
         foreach (var line in lines)

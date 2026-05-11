@@ -13,6 +13,7 @@ internal static partial class SpellGrowthHelper
         int treasureTier,
         double upgradeChance,
         double addChance,
+        bool allowNewSpellLines,
         bool emitMessages,
         out string? appliedDescription)
     {
@@ -37,7 +38,7 @@ internal static partial class SpellGrowthHelper
                 return true;
         }
 
-        if (Random.Shared.NextDouble() < addChance)
+        if (allowNewSpellLines && Random.Shared.NextDouble() < addChance)
         {
             if (TryOrderedAdd(item, player, level, orderedLineKeys, pool, present, maxTierRank, emitMessages, out appliedDescription))
                 return true;

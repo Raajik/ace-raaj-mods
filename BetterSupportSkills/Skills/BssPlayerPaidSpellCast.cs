@@ -20,10 +20,17 @@ internal static class BssPlayerPaidSpellCast
         BssAutoCaster.IsInAutoCast = true;
         try
         {
+            if (player.PhysicsObj?.Position == null)
+                return false;
+
             // DoCastSpell_Inner compares StartPos vs current position; procs are not real windups — pin so we do not fizzle.
             player.StartPos = new ACE.Server.Physics.Common.Position(player.PhysicsObj.Position);
 
-            uint magicSkill = player.GetCreatureSkill(spell.School).Current;
+            var magicSkillRow = player.GetCreatureSkill(spell.School);
+            if (magicSkillRow == null)
+                return false;
+
+            uint magicSkill = magicSkillRow.Current;
             Player.CastingPreCheckStatus status = player.GetCastingPreCheckStatus(spell, magicSkill, isWeaponSpell: false);
 
             if (!player.CalculateManaUsage(status, spell, target, casterItem: null, out uint manaUsed))

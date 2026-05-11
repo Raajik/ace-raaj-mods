@@ -15,6 +15,7 @@ public static class Lottery
     private static readonly object _qbPoolLock = new();
     private static DateTime _nextDrawUtc = DateTime.MinValue;
     private static string? _persistPath;
+    private static string? _legacyPersistPath;
 
     public static Settings Settings => PatchClass.Settings;
 
@@ -25,19 +26,21 @@ public static class Lottery
         public DateTime NextDrawUtc { get; set; }
     }
 
-    public static void InitializePersistence(string persistenceFilePath)
+    public static void InitializePersistence(string persistenceFilePath, string legacyPersistenceFilePath)
     {
         _persistPath = persistenceFilePath;
+        _legacyPersistPath = legacyPersistenceFilePath;
     }
 
     static void LoadPersistedState()
     {
-        if (string.IsNullOrWhiteSpace(_persistPath) || !File.Exists(_persistPath))
+        var loadPath = ResolveLoadPath();
+        if (string.IsNullOrWhiteSpace(loadPath) || !File.Exists(loadPath))
             return;
 
         try
         {
-            var text = File.ReadAllText(_persistPath);
+            var text = File.ReadAllText(loadPath);
             var dto = JsonSerializer.Deserialize<LotteryPersistDto>(text);
             if (dto is null)
                 return;
@@ -48,6 +51,9 @@ public static class Lottery
                 _qbPool = Math.Max(0, dto.QbPool);
             if (dto.NextDrawUtc != DateTime.MinValue)
                 _nextDrawUtc = dto.NextDrawUtc;
+
+            if (!string.Equals(loadPath, _persistPath, StringComparison.OrdinalIgnoreCase))
+                SavePersistedState();
         }
         catch (Exception ex)
         {
@@ -83,10 +89,36 @@ public static class Lottery
                 Directory.CreateDirectory(dir);
 
             File.WriteAllText(_persistPath, JsonSerializer.Serialize(dto, new JsonSerializerOptions { WriteIndented = true }));
+            TryDeleteLegacyPersistedState();
         }
         catch (Exception ex)
         {
             ModManager.Log($"[LeyLineLedger] Lottery persistence save failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    static string? ResolveLoadPath()
+    {
+        if (!string.IsNullOrWhiteSpace(_persistPath) && File.Exists(_persistPath))
+            return _persistPath;
+
+        if (!string.IsNullOrWhiteSpace(_legacyPersistPath) && File.Exists(_legacyPersistPath))
+            return _legacyPersistPath;
+
+        return _persistPath;
+    }
+
+    static void TryDeleteLegacyPersistedState()
+    {
+        if (string.IsNullOrWhiteSpace(_legacyPersistPath) || !File.Exists(_legacyPersistPath))
+            return;
+
+        try
+        {
+            File.Delete(_legacyPersistPath);
+        }
+        catch
+        {
         }
     }
 

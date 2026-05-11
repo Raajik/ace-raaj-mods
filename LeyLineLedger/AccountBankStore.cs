@@ -11,45 +11,15 @@ internal static class AccountBankStore
 {
     static readonly ConcurrentDictionary<string, object> Locks = new();
 
-    static readonly string ModDataDir = LeyLineLedgerDataPaths.InModData("AccountBanks");
-    static readonly string OldModDataDir = Path.Combine(
-        Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location ?? ".") ?? ".",
-        "Server", "ModData", "LeyLineLedger", "AccountBanks");
-
-    static bool _migrationAttempted;
-
-    static void MaybeMigrateFromOldPath()
+    static string ModDataDir
     {
-        if (_migrationAttempted)
-            return;
-        _migrationAttempted = true;
-
-        if (!Directory.Exists(OldModDataDir))
-            return;
-
-        try
+        get
         {
-            Directory.CreateDirectory(ModDataDir);
-            var files = Directory.GetFiles(OldModDataDir, "*.json");
-            int copied = 0;
-            foreach (var f in files)
-            {
-                var name = Path.GetFileName(f);
-                var dest = Path.Combine(ModDataDir, name);
-                if (!File.Exists(dest))
-                {
-                    File.Copy(f, dest);
-                    copied++;
-                }
-            }
-            if (copied > 0)
-                ModManager.Log($"[LeyLineLedger] Migrated {copied} account bank file(s) from old path to {ModDataDir}", ModManager.LogLevel.Info);
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[LeyLineLedger] Account bank migration failed: {ex.Message}", ModManager.LogLevel.Warn);
+            return LeyLineLedgerDataPaths.InModData("AccountBanks");
         }
     }
+
+    static string LegacyModDataDir => LeyLineLedgerDataPaths.InLegacyModRoot("Data", "AccountBanks");
 
     static object Gate(string storageKey) => Locks.GetOrAdd(storageKey, _ => new object());
 
@@ -71,6 +41,9 @@ internal static class AccountBankStore
 
     static string FilePath(string storageKey) =>
         Path.Combine(ModDataDir, $"{storageKey.Replace(':', '_')}.json");
+
+    static string LegacyFilePath(string storageKey) =>
+        Path.Combine(LegacyModDataDir, $"{storageKey.Replace(':', '_')}.json");
 
     internal static IEnumerable<int> EnumerateBankProps(Settings s)
     {
@@ -302,9 +275,8 @@ internal static class AccountBankStore
 
     static AccountBankData ReadOrCreate(string storageKey)
     {
-        MaybeMigrateFromOldPath();
         Directory.CreateDirectory(ModDataDir);
-        var path = FilePath(storageKey);
+        var path = ResolveReadPath(storageKey);
         if (!File.Exists(path))
             return new AccountBankData();
 
@@ -327,6 +299,35 @@ internal static class AccountBankStore
         var path = FilePath(storageKey);
         var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(path, json);
+        TryDeleteLegacyFile(storageKey);
+    }
+
+    static string ResolveReadPath(string storageKey)
+    {
+        var currentPath = FilePath(storageKey);
+        if (File.Exists(currentPath))
+            return currentPath;
+
+        var legacyPath = LegacyFilePath(storageKey);
+        if (File.Exists(legacyPath))
+            return legacyPath;
+
+        return currentPath;
+    }
+
+    static void TryDeleteLegacyFile(string storageKey)
+    {
+        var legacyPath = LegacyFilePath(storageKey);
+        if (!File.Exists(legacyPath))
+            return;
+
+        try
+        {
+            File.Delete(legacyPath);
+        }
+        catch
+        {
+        }
     }
 
     static string Normalize(string name) => name.Trim().ToLowerInvariant();

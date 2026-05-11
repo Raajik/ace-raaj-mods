@@ -33,6 +33,23 @@ public class CreatureEx : Creature
         }
     }
 
+    protected void ApplyNamePrefixOnce(string prefix)
+    {
+        if (string.IsNullOrWhiteSpace(prefix) || string.IsNullOrWhiteSpace(Name))
+            return;
+
+        string normalizedPrefix = prefix.EndsWith(' ') ? prefix : $"{prefix} ";
+        string baseName = Name;
+
+        while (baseName.StartsWith(normalizedPrefix, StringComparison.OrdinalIgnoreCase))
+            baseName = baseName.Substring(normalizedPrefix.Length);
+
+        if (string.IsNullOrWhiteSpace(baseName))
+            return;
+
+        Name = normalizedPrefix + baseName;
+    }
+
     #region Commands
     static CreatureExType[] types = Enum.GetValues<CreatureExType>();
     static string availableTypes = string.Join('\n', types.Select(x => $"  {x.ToString()} - {(int)x}"));

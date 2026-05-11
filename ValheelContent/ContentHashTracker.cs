@@ -31,6 +31,10 @@ internal static class ContentHashTracker
     {
         try
         {
+            var directory = Path.GetDirectoryName(statePath);
+            if (!string.IsNullOrWhiteSpace(directory))
+                Directory.CreateDirectory(directory);
+
             var json = JsonSerializer.Serialize(state, JsonOptions);
             File.WriteAllText(statePath, json);
         }

@@ -4,9 +4,10 @@ namespace WorldEvents;
 
 internal static class SalePersistence
 {
-    static string DataDir => WorldEventsDataPaths.InModData("Data", "Sale");
+    static string DataDir => WorldEventsDataPaths.InModData("Sale");
     static string ActiveSalePath => Path.Combine(DataDir, "ActiveSale.json");
-    static string LegacyActiveSalePath => WorldEventsDataPaths.InLegacyModRoot("Data", "Sale", "ActiveSale.json");
+    static string LegacyWorldEventsActiveSalePath => WorldEventsDataPaths.InLegacyData("Sale", "ActiveSale.json");
+    static string LegacyGlobalActiveSalePath => Path.Combine(ModManager.ModPath, "Data", "Sale", "ActiveSale.json");
 
     internal static void EnsureDirectories() => Directory.CreateDirectory(DataDir);
 
@@ -21,15 +22,16 @@ internal static class SalePersistence
                 return JsonSerializer.Deserialize<ActiveSaleData>(json);
             }
 
-            if (File.Exists(LegacyActiveSalePath))
+            var legacyPath = ResolveLegacyPath();
+            if (legacyPath != null)
             {
-                var json = File.ReadAllText(LegacyActiveSalePath);
+                var json = File.ReadAllText(legacyPath);
                 var data = JsonSerializer.Deserialize<ActiveSaleData>(json);
                 if (data != null)
                     SaveActiveSale(data);
                 try
                 {
-                    File.Delete(LegacyActiveSalePath);
+                    File.Delete(legacyPath);
                 }
                 catch
                 {
@@ -64,5 +66,16 @@ internal static class SalePersistence
     {
         try { if (File.Exists(ActiveSalePath)) File.Delete(ActiveSalePath); }
         catch { }
+    }
+
+    static string? ResolveLegacyPath()
+    {
+        if (File.Exists(LegacyWorldEventsActiveSalePath))
+            return LegacyWorldEventsActiveSalePath;
+
+        if (File.Exists(LegacyGlobalActiveSalePath))
+            return LegacyGlobalActiveSalePath;
+
+        return null;
     }
 }

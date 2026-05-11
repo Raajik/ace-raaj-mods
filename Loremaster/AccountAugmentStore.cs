@@ -10,14 +10,8 @@ using ACE.Server.WorldObjects;
 internal static class AccountAugmentStore
 {
     static readonly ConcurrentDictionary<string, object> Locks = new();
-
-    static string ModDataDir
-    {
-        get
-        {
-            return LoremasterDataPaths.InModData("AccountAugments");
-        }
-    }
+    static string ModDataDir => LoremasterDataPaths.InModData("AccountAugments");
+    static string LegacyDataDir => LoremasterDataPaths.InLegacyData("AccountAugments");
 
     static object Gate(string storageKey) => Locks.GetOrAdd(storageKey, _ => new object());
 
@@ -30,6 +24,9 @@ internal static class AccountAugmentStore
 
     static string FilePath(string storageKey) =>
         Path.Combine(ModDataDir, $"{storageKey.Replace(':', '_')}.json");
+
+    static string LegacyFilePath(string storageKey) =>
+        Path.Combine(LegacyDataDir, $"{storageKey.Replace(':', '_')}.json");
 
     // ── Account-wide augment properties ───────────────────────────────
 
@@ -118,9 +115,28 @@ internal static class AccountAugmentStore
     {
         Directory.CreateDirectory(ModDataDir);
         var path = FilePath(storageKey);
-        if (!File.Exists(path))
+        if (File.Exists(path))
+            return ReadFromPath(path, storageKey);
+
+        var legacyPath = LegacyFilePath(storageKey);
+        if (!File.Exists(legacyPath))
             return new AccountAugmentData();
 
+        try
+        {
+            var data = ReadFromPath(legacyPath, storageKey);
+            Write(storageKey, data);
+            TryDeleteLegacyFile(legacyPath);
+            return data;
+        }
+        catch
+        {
+            return new AccountAugmentData();
+        }
+    }
+
+    static AccountAugmentData ReadFromPath(string path, string storageKey)
+    {
         try
         {
             var json = File.ReadAllText(path);
@@ -140,6 +156,21 @@ internal static class AccountAugmentStore
         var path = FilePath(storageKey);
         var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(path, json);
+        TryDeleteLegacyFile(LegacyFilePath(storageKey));
+    }
+
+    static void TryDeleteLegacyFile(string legacyPath)
+    {
+        if (!File.Exists(legacyPath))
+            return;
+
+        try
+        {
+            File.Delete(legacyPath);
+        }
+        catch
+        {
+        }
     }
 
     // ── Public API ────────────────────────────────────────────────────

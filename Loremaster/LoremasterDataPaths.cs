@@ -7,10 +7,12 @@ internal static class LoremasterDataPaths
     static readonly string ServerRoot = ResolveServerRoot();
 
     internal static string ModDataRoot => Path.Combine(ServerRoot, "ModData", "Loremaster");
-    internal static string LegacyModRoot => Path.Combine(ModManager.ModPath, "Loremaster");
+    internal static string LegacyModRoot => ResolveLegacyModRoot();
+    internal static string LegacyDataRoot => Path.Combine(LegacyModRoot, "Data");
 
     internal static string InModData(params string[] parts) => Combine(ModDataRoot, parts);
     internal static string InLegacyModRoot(params string[] parts) => Combine(LegacyModRoot, parts);
+    internal static string InLegacyData(params string[] parts) => Combine(LegacyDataRoot, parts);
 
     static string ResolveServerRoot()
     {
@@ -21,14 +23,33 @@ internal static class LoremasterDataPaths
             if (!string.IsNullOrWhiteSpace(serverDirectory))
                 return serverDirectory;
         }
-        catch { }
+        catch
+        {
+        }
 
         return AppDomain.CurrentDomain.BaseDirectory;
     }
 
+    static string ResolveLegacyModRoot()
+    {
+        try
+        {
+            var modDirectory = PatchClass.GetModDirectory();
+            if (!string.IsNullOrWhiteSpace(modDirectory))
+                return modDirectory;
+        }
+        catch
+        {
+        }
+
+        return Path.GetFullPath(Path.Combine(ModManager.ModPath, "Loremaster"));
+    }
+
     static string Combine(string root, params string[] parts)
     {
-        if (parts == null || parts.Length == 0) return root;
+        if (parts == null || parts.Length == 0)
+            return root;
+
         var allParts = new string[parts.Length + 1];
         allParts[0] = root;
         Array.Copy(parts, 0, allParts, 1, parts.Length);

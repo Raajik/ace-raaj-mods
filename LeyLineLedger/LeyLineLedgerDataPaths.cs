@@ -7,10 +7,29 @@ internal static class LeyLineLedgerDataPaths
     static readonly string ServerRoot = ResolveServerRoot();
 
     internal static string ModDataRoot => Path.Combine(ServerRoot, "ModData", "LeyLineLedger");
-    internal static string LegacyModRoot => Path.Combine(ModManager.ModPath, "LeyLineLedger");
+    internal static string LegacyModRoot => Path.GetDirectoryName(typeof(PatchClass).Assembly.Location) ?? "";
 
-    internal static string InModData(params string[] parts) => Combine(ModDataRoot, parts);
-    internal static string InLegacyModRoot(params string[] parts) => Combine(LegacyModRoot, parts);
+    internal static string InModData(params string[] parts)
+        => Path.Combine([ModDataRoot, .. parts]);
+
+    internal static string InLegacyModRoot(params string[] parts)
+        => Path.Combine([LegacyModRoot, .. parts]);
+
+    internal static string ResolveConfiguredPath(string configuredPath)
+    {
+        if (Path.IsPathRooted(configuredPath))
+            return configuredPath;
+
+        return InModData(configuredPath);
+    }
+
+    internal static string ResolveLegacyConfiguredPath(string configuredPath)
+    {
+        if (Path.IsPathRooted(configuredPath))
+            return configuredPath;
+
+        return InLegacyModRoot(configuredPath);
+    }
 
     static string ResolveServerRoot()
     {
@@ -21,17 +40,10 @@ internal static class LeyLineLedgerDataPaths
             if (!string.IsNullOrWhiteSpace(serverDirectory))
                 return serverDirectory;
         }
-        catch { }
+        catch
+        {
+        }
 
         return AppDomain.CurrentDomain.BaseDirectory;
-    }
-
-    static string Combine(string root, params string[] parts)
-    {
-        if (parts == null || parts.Length == 0) return root;
-        var allParts = new string[parts.Length + 1];
-        allParts[0] = root;
-        Array.Copy(parts, 0, allParts, 1, parts.Length);
-        return Path.Combine(allParts);
     }
 }

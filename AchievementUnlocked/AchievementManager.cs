@@ -17,6 +17,10 @@ public static class AchievementManager
     // In-memory cache of account-wide progress (quests + kills) for fast tier evaluation
     static readonly ConcurrentDictionary<uint, int> AccountProgressCache = new();
 
+    static string LegacyAccountDataPath => AchievementUnlockedDataPaths.InLegacyModRoot("AccountAchievements.json");
+    static string LegacyAccountPoolBonusPath => AchievementUnlockedDataPaths.InLegacyModRoot("AccountPoolBonus.json");
+    static string LegacyAccountMilestoneBonusPath => AchievementUnlockedDataPaths.InLegacyModRoot("AccountMilestoneBonus.json");
+
     public static event Action<Player, Achievement>? OnAchievementUnlocked;
 
     public static IReadOnlyList<Achievement> AllAchievements => _ordered;
@@ -64,9 +68,9 @@ public static class AchievementManager
 
         _initialized = true;
 
-        var modDir = AchievementUnlockedDataPaths.ModDataRoot;
-        AccountDataPath = Path.Combine(modDir, "AccountAchievements.json");
-        AccountTierProgressPath = Path.Combine(modDir, "AccountTierProgress.json");
+        AccountDataPath = AchievementUnlockedDataPaths.InModData("AccountAchievements.json");
+        AccountTierProgressPath = AchievementUnlockedDataPaths.InModData("AccountTierProgress.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(AccountDataPath)!);
         LoadAccountData();
         LoadAccountPoolBonus();
         LoadAccountMilestoneBonus();
@@ -152,15 +156,22 @@ public static class AchievementManager
     {
         try
         {
-            if (File.Exists(AccountDataPath))
+            var path = ResolveLoadPath(AccountDataPath, LegacyAccountDataPath);
+            if (path != null && File.Exists(path))
             {
-                var json = File.ReadAllText(AccountDataPath);
+                var json = File.ReadAllText(path);
                 var data = JsonSerializer.Deserialize<Dictionary<uint, List<string>>>(json);
                 if (data != null)
                 {
                     AccountUnlocks.Clear();
                     foreach (var kvp in data)
                         AccountUnlocks[kvp.Key] = new HashSet<string>(kvp.Value);
+
+                    if (path != AccountDataPath)
+                    {
+                        SaveAccountData();
+                        TryDeleteLegacyFile(LegacyAccountDataPath);
+                    }
                 }
                 ModManager.Log($"[AchievementUnlocked] Loaded account data for {AccountUnlocks.Count} accounts.", ModManager.LogLevel.Info);
             }
@@ -175,12 +186,14 @@ public static class AchievementManager
     {
         try
         {
+            Directory.CreateDirectory(Path.GetDirectoryName(AccountDataPath)!);
             var data = new Dictionary<uint, List<string>>();
             foreach (var kvp in AccountUnlocks)
                 data[kvp.Key] = new List<string>(kvp.Value);
 
             var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(AccountDataPath, json);
+            TryDeleteLegacyFile(LegacyAccountDataPath);
         }
         catch (Exception ex)
         {
@@ -197,7 +210,7 @@ public static class AchievementManager
     {
         try
         {
-            var path = AccountPoolBonusPath;
+            var path = ResolveLoadPath(AccountPoolBonusPath, LegacyAccountPoolBonusPath);
             if (File.Exists(path))
             {
                 var json = File.ReadAllText(path);
@@ -207,6 +220,12 @@ public static class AchievementManager
                     AccountPoolBonus.Clear();
                     foreach (var kvp in data)
                         AccountPoolBonus[kvp.Key] = kvp.Value;
+
+                    if (path != AccountPoolBonusPath)
+                    {
+                        SaveAccountPoolBonus();
+                        TryDeleteLegacyFile(LegacyAccountPoolBonusPath);
+                    }
                 }
             }
         }
@@ -221,12 +240,14 @@ public static class AchievementManager
         try
         {
             var path = AccountPoolBonusPath;
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             var data = new Dictionary<uint, float>();
             foreach (var kvp in AccountPoolBonus)
                 data[kvp.Key] = kvp.Value;
 
             var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(path, json);
+            TryDeleteLegacyFile(LegacyAccountPoolBonusPath);
         }
         catch (Exception ex)
         {
@@ -238,7 +259,7 @@ public static class AchievementManager
     {
         try
         {
-            var path = AccountMilestoneBonusPath;
+            var path = ResolveLoadPath(AccountMilestoneBonusPath, LegacyAccountMilestoneBonusPath);
             if (File.Exists(path))
             {
                 var json = File.ReadAllText(path);
@@ -248,6 +269,12 @@ public static class AchievementManager
                     AccountMilestoneBonus.Clear();
                     foreach (var kvp in data)
                         AccountMilestoneBonus[kvp.Key] = kvp.Value;
+
+                    if (path != AccountMilestoneBonusPath)
+                    {
+                        SaveAccountMilestoneBonus();
+                        TryDeleteLegacyFile(LegacyAccountMilestoneBonusPath);
+                    }
                 }
             }
         }
@@ -262,12 +289,14 @@ public static class AchievementManager
         try
         {
             var path = AccountMilestoneBonusPath;
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             var data = new Dictionary<uint, float>();
             foreach (var kvp in AccountMilestoneBonus)
                 data[kvp.Key] = kvp.Value;
 
             var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(path, json);
+            TryDeleteLegacyFile(LegacyAccountMilestoneBonusPath);
         }
         catch (Exception ex)
         {
@@ -723,6 +752,31 @@ public static class AchievementManager
                 var broadcast = $"{player.Name} unlocked the achievement '{ach.Name}'!";
                 PlayerManager.BroadcastToAll(new GameMessageSystemChat(broadcast, ChatMessageType.Magic));
             }
+        }
+    }
+
+    static string? ResolveLoadPath(string currentPath, string legacyPath)
+    {
+        if (File.Exists(currentPath))
+            return currentPath;
+
+        if (File.Exists(legacyPath))
+            return legacyPath;
+
+        return null;
+    }
+
+    static void TryDeleteLegacyFile(string path)
+    {
+        if (!File.Exists(path))
+            return;
+
+        try
+        {
+            File.Delete(path);
+        }
+        catch
+        {
         }
     }
 

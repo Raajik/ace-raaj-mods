@@ -866,10 +866,47 @@ public class AutoLoot
 
     static string GetPlayerDataPath(Player player)
     {
-        EnsureLootProfilePathForDiskOps();
-        var dir = Path.Combine(PatchClass.Settings!.LootProfilePath, "PlayerData");
+        var dir = AutoLootDataPaths.PlayerDataRoot;
         Directory.CreateDirectory(dir);
         return Path.Combine(dir, $"{player.Guid.Full}.json");
+    }
+
+    static string? GetLegacyPlayerDataPath(Player player)
+    {
+        EnsureLootProfilePathForDiskOps();
+        if (PatchClass.Settings is null || string.IsNullOrWhiteSpace(PatchClass.Settings.LootProfilePath))
+            return null;
+
+        var legacyDir = Path.Combine(PatchClass.Settings.LootProfilePath, "PlayerData");
+        return Path.Combine(legacyDir, $"{player.Guid.Full}.json");
+    }
+
+    static string ResolvePlayerDataReadPath(Player player)
+    {
+        var currentPath = GetPlayerDataPath(player);
+        if (File.Exists(currentPath))
+            return currentPath;
+
+        var legacyPath = GetLegacyPlayerDataPath(player);
+        if (!string.IsNullOrWhiteSpace(legacyPath) && File.Exists(legacyPath))
+            return legacyPath;
+
+        return currentPath;
+    }
+
+    static void TryDeleteLegacyPlayerData(Player player)
+    {
+        var legacyPath = GetLegacyPlayerDataPath(player);
+        if (string.IsNullOrWhiteSpace(legacyPath) || !File.Exists(legacyPath))
+            return;
+
+        try
+        {
+            File.Delete(legacyPath);
+        }
+        catch
+        {
+        }
     }
 
     internal static void EnsureLoaded(Player player)
@@ -885,7 +922,7 @@ public class AutoLoot
         if (!loadedPlayers.TryAdd(player.Guid.Full, true))
             return;
 
-        var path = GetPlayerDataPath(player);
+        var path = ResolvePlayerDataReadPath(player);
         if (!File.Exists(path))
         {
             TryApplyDefaultProfilesForNewCharacter(player);
@@ -900,6 +937,12 @@ public class AutoLoot
             {
                 loadedPlayers.TryRemove(player.Guid.Full, out _);
                 return;
+            }
+
+            if (!string.Equals(path, GetPlayerDataPath(player), StringComparison.OrdinalIgnoreCase))
+            {
+                SavePrefs(player);
+                TryDeleteLegacyPlayerData(player);
             }
 
             AutolootSalvageDefaultsAppliedByPlayer[LootKey(player)] = prefs.AutolootSalvageDefaultsApplied;
@@ -1000,6 +1043,7 @@ public class AutoLoot
 
             var path = GetPlayerDataPath(player);
             File.WriteAllText(path, JsonSerializer.Serialize(prefs, JsonOptions));
+            TryDeleteLegacyPlayerData(player);
         }
         catch (Exception ex)
         {

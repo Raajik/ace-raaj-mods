@@ -350,7 +350,7 @@ public class PatchClass : BasicPatch<Settings>
     static void SendStatus(Session session)
     {
         var modDir = _modDir;
-        var statePath = Path.Combine(modDir, "import-state.json");
+        var statePath = ContentImporter.ResolveStatePath();
         var state = ContentHashTracker.LoadState(statePath);
         var player = session.Player;
 

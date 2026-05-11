@@ -641,7 +641,7 @@ public class PublicExchangeSettings
     public long SeedQuantity { get; set; } = 10;
 
     [JsonPropertyName("// PoolJsonPath")]
-    public string PoolJsonPathDoc { get; init; } = "Relative path to exchange pool JSON file.";
+    public string PoolJsonPathDoc { get; init; } = "Exchange pool JSON file. Relative paths now resolve under Server/ModData/LeyLineLedger; absolute paths are used as-is. Legacy mod-folder file is read once and migrated automatically.";
     public string PoolJsonPath { get; set; } = "ExchangePool.json";
 
     [JsonPropertyName("// PriceVariancePercent")]
@@ -672,7 +672,7 @@ public class LotterySettings
     public int DrawIntervalMinutes { get; set; } = 4320;
 
     [JsonPropertyName("// PersistenceFileName")]
-    public string PersistenceFileNameDoc { get; init; } = "JSON file under the LeyLineLedger mod folder storing pyreal pool, QB pool, and next draw UTC across ACE restarts.";
+    public string PersistenceFileNameDoc { get; init; } = "Lottery state JSON. Relative paths now resolve under Server/ModData/LeyLineLedger; absolute paths are used as-is. Legacy mod-folder file is read once and migrated automatically.";
     public string PersistenceFileName { get; set; } = "LotteryState.json";
 
     [JsonPropertyName("// TicketPropertyId")]

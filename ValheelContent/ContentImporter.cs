@@ -13,12 +13,25 @@ internal static class ContentImporter
     private static Settings? _settings;
     private static string _contentPath = "";
     private static string _statePath = "";
+    private static string _legacyStatePath = "";
 
     public static void Initialize(Settings settings, string modDirectory)
     {
         _settings = settings;
         _contentPath = Path.Combine(modDirectory, "Content");
-        _statePath = Path.Combine(modDirectory, "import-state.json");
+        _statePath = ValheelContentDataPaths.CurrentImportStatePath;
+        _legacyStatePath = ValheelContentDataPaths.LegacyImportStatePath(modDirectory);
+    }
+
+    public static string ResolveStatePath()
+    {
+        if (File.Exists(_statePath))
+            return _statePath;
+
+        if (!string.Equals(_legacyStatePath, _statePath, StringComparison.OrdinalIgnoreCase) && File.Exists(_legacyStatePath))
+            return _legacyStatePath;
+
+        return _statePath;
     }
 
     public static bool IsSqlImportAllowed()
@@ -47,7 +60,7 @@ internal static class ContentImporter
         var cfg = _settings!;
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
-        var previousState = ContentHashTracker.LoadState(_statePath);
+        var previousState = ContentHashTracker.LoadState(ResolveStatePath());
         var currentHashes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         var categories = Directory.GetDirectories(_contentPath)
@@ -162,6 +175,7 @@ internal static class ContentImporter
             LastImportUtc = DateTime.UtcNow,
             FileHashes = currentHashes
         });
+        TryDeleteLegacyState();
 
         stopwatch.Stop();
 
@@ -173,6 +187,22 @@ internal static class ContentImporter
         if (isFirstRun && cfg.RequireRestartAfterFirstImport && importedFiles > 0)
         {
             ModManager.Log("[Valheel] FIRST IMPORT COMPLETE. A server restart is strongly recommended to ensure all ACE caches are fully refreshed and new content is available.", ModManager.LogLevel.Warn);
+        }
+    }
+
+    static void TryDeleteLegacyState()
+    {
+        if (string.IsNullOrWhiteSpace(_legacyStatePath) ||
+            string.Equals(_legacyStatePath, _statePath, StringComparison.OrdinalIgnoreCase) ||
+            !File.Exists(_legacyStatePath))
+            return;
+
+        try
+        {
+            File.Delete(_legacyStatePath);
+        }
+        catch
+        {
         }
     }
 

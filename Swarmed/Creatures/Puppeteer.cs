@@ -23,7 +23,7 @@ public class Puppeteer : CreatureEx
         if (GeneratorProfiles is null || GeneratorProfiles.Count > 0)
             return;
 
-        Name = "Conniving " + Name;
+        ApplyNamePrefixOnce("Conniving");
 
         generator = new()
         {

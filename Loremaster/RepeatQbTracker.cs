@@ -10,6 +10,8 @@ namespace Loremaster;
 public static class RepeatQbTracker
 {
     static readonly string DataPath = LoremasterDataPaths.InModData("RepeatQbTracker.json");
+    static readonly string LegacyDataPath = LoremasterDataPaths.InLegacyModRoot("RepeatQbTracker.json");
+    static readonly string LegacyOldDataPath = LoremasterDataPaths.InLegacyModRoot("AccountRepeatQuests.json");
 
     static readonly Dictionary<uint, Dictionary<string, long>> _data = new();
     static bool _loaded;
@@ -19,23 +21,29 @@ public static class RepeatQbTracker
         if (_loaded) return;
         try
         {
-            // Migrate from old filename if it exists
-            var oldPath = LoremasterDataPaths.InModData("AccountRepeatQuests.json");
-            if (File.Exists(oldPath) && !File.Exists(DataPath))
-            {
-                File.Move(oldPath, DataPath);
-                ModManager.Log("[repeatQB] Migrated AccountRepeatQuests.json → RepeatQbTracker.json", ModManager.LogLevel.Info);
-            }
+            Directory.CreateDirectory(Path.GetDirectoryName(DataPath)!);
 
-            if (File.Exists(DataPath))
+            var path = ResolveLoadPath();
+            if (path != null && File.Exists(path))
             {
-                var json = File.ReadAllText(DataPath);
+                var json = File.ReadAllText(path);
                 var data = JsonSerializer.Deserialize<Dictionary<uint, Dictionary<string, long>>>(json);
                 if (data is not null)
                 {
                     _data.Clear();
                     foreach (var kvp in data)
                         _data[kvp.Key] = new Dictionary<string, long>(kvp.Value, StringComparer.OrdinalIgnoreCase);
+
+                    if (path != DataPath)
+                    {
+                        Save();
+                        TryDeleteLegacyFiles();
+
+                        if (path == LegacyOldDataPath)
+                            ModManager.Log("[repeatQB] Migrated AccountRepeatQuests.json -> RepeatQbTracker.json (ModData)", ModManager.LogLevel.Info);
+                        else
+                            ModManager.Log("[repeatQB] Migrated RepeatQbTracker.json -> ModData/RepeatQbTracker.json", ModManager.LogLevel.Info);
+                    }
                 }
             }
         }
@@ -50,8 +58,10 @@ public static class RepeatQbTracker
     {
         try
         {
+            Directory.CreateDirectory(Path.GetDirectoryName(DataPath)!);
             var json = JsonSerializer.Serialize(_data, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(DataPath, json);
+            TryDeleteLegacyFiles();
         }
         catch (Exception ex)
         {
@@ -93,5 +103,39 @@ public static class RepeatQbTracker
             return (false, TimeSpan.Zero);
 
         return (true, TimeSpan.FromSeconds(cooldownSeconds - elapsed));
+    }
+
+    static string? ResolveLoadPath()
+    {
+        if (File.Exists(DataPath))
+            return DataPath;
+
+        if (File.Exists(LegacyDataPath))
+            return LegacyDataPath;
+
+        if (File.Exists(LegacyOldDataPath))
+            return LegacyOldDataPath;
+
+        return null;
+    }
+
+    static void TryDeleteLegacyFiles()
+    {
+        TryDeleteIfExists(LegacyDataPath);
+        TryDeleteIfExists(LegacyOldDataPath);
+    }
+
+    static void TryDeleteIfExists(string path)
+    {
+        if (!File.Exists(path))
+            return;
+
+        try
+        {
+            File.Delete(path);
+        }
+        catch
+        {
+        }
     }
 }

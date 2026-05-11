@@ -54,9 +54,13 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         if (string.IsNullOrEmpty(modDir))
             modDir = Path.Combine(ModManager.ModPath, "QOL");
 
-        PlayerProfileStore.Initialize(modDir);
+        PlayerProfileStore.Initialize(
+            QolDataPaths.InModData("PlayerProfiles.json"),
+            Path.Combine(modDir, "PlayerProfiles.json"));
         Stackable.Initialize(modDir, Settings.Stackable);
-        XpTracker.Initialize(modDir);
+        XpTracker.Initialize(
+            QolDataPaths.InModData("xp-tracker"),
+            Path.Combine(modDir, "xp-tracker"));
 
         RegisterEnabledPatchCategories();
         ApplyWorldOpenSideEffects();

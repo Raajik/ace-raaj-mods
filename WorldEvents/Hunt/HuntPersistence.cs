@@ -10,19 +10,34 @@ internal static class HuntPersistence
     };
 
     internal static string DataDirectory =>
-        WorldEventsDataPaths.InModData("Data");
+        WorldEventsDataPaths.InModData("Hunt");
+
+    internal static string LegacyDataDirectory =>
+        WorldEventsDataPaths.InLegacyData();
 
     internal static string GlobalFile =>
         Path.Combine(DataDirectory, "GlobalSpeciesKills.json");
 
+    internal static string LegacyGlobalFile =>
+        Path.Combine(LegacyDataDirectory, "GlobalSpeciesKills.json");
+
     internal static string PlayersDirectory =>
         Path.Combine(DataDirectory, "Players");
+
+    internal static string LegacyPlayersDirectory =>
+        Path.Combine(LegacyDataDirectory, "Players");
 
     internal static string ActiveHuntFile =>
         Path.Combine(DataDirectory, "ActiveHunt.json");
 
+    internal static string LegacyActiveHuntFile =>
+        Path.Combine(LegacyDataDirectory, "ActiveHunt.json");
+
     internal static string PlayerFile(uint guidFull) =>
         Path.Combine(PlayersDirectory, $"{guidFull:X}.json");
+
+    internal static string LegacyPlayerFile(uint guidFull) =>
+        Path.Combine(LegacyPlayersDirectory, $"{guidFull:X}.json");
 
     internal static void EnsureDirectories()
     {
@@ -34,10 +49,11 @@ internal static class HuntPersistence
     {
         try
         {
-            if (!File.Exists(GlobalFile))
+            var path = File.Exists(GlobalFile) ? GlobalFile : LegacyGlobalFile;
+            if (!File.Exists(path))
                 return new GlobalSpeciesKillsData();
 
-            var json = File.ReadAllText(GlobalFile);
+            var json = File.ReadAllText(path);
             return JsonSerializer.Deserialize<GlobalSpeciesKillsData>(json, JsonOptions) ?? new GlobalSpeciesKillsData();
         }
         catch (Exception ex)
@@ -54,6 +70,7 @@ internal static class HuntPersistence
             EnsureDirectories();
             var json = JsonSerializer.Serialize(data, JsonOptions);
             File.WriteAllText(GlobalFile, json);
+            DeleteIfExists(LegacyGlobalFile);
         }
         catch (Exception ex)
         {
@@ -65,7 +82,7 @@ internal static class HuntPersistence
     {
         try
         {
-            var path = PlayerFile(guidFull);
+            var path = ResolvePlayerReadPath(guidFull);
             if (!File.Exists(path))
                 return new PlayerHuntData();
 
@@ -87,6 +104,7 @@ internal static class HuntPersistence
             var path = PlayerFile(guidFull);
             var json = JsonSerializer.Serialize(data, JsonOptions);
             File.WriteAllText(path, json);
+            DeleteIfExists(LegacyPlayerFile(guidFull));
         }
         catch (Exception ex)
         {
@@ -98,10 +116,11 @@ internal static class HuntPersistence
     {
         try
         {
-            if (!File.Exists(ActiveHuntFile))
+            var path = File.Exists(ActiveHuntFile) ? ActiveHuntFile : LegacyActiveHuntFile;
+            if (!File.Exists(path))
                 return null;
 
-            var json = File.ReadAllText(ActiveHuntFile);
+            var json = File.ReadAllText(path);
             return JsonSerializer.Deserialize<ActiveHuntData>(json, JsonOptions);
         }
         catch (Exception ex)
@@ -118,6 +137,7 @@ internal static class HuntPersistence
             EnsureDirectories();
             var json = JsonSerializer.Serialize(data, JsonOptions);
             File.WriteAllText(ActiveHuntFile, json);
+            DeleteIfExists(LegacyActiveHuntFile);
         }
         catch (Exception ex)
         {
@@ -131,10 +151,35 @@ internal static class HuntPersistence
         {
             if (File.Exists(ActiveHuntFile))
                 File.Delete(ActiveHuntFile);
+            DeleteIfExists(LegacyActiveHuntFile);
         }
         catch (Exception ex)
         {
             ModManager.Log($"[Hunt] ClearActiveHunt failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    static string ResolvePlayerReadPath(uint guidFull)
+    {
+        var newPath = PlayerFile(guidFull);
+        if (File.Exists(newPath))
+            return newPath;
+
+        var legacyPath = LegacyPlayerFile(guidFull);
+        return File.Exists(legacyPath) ? legacyPath : newPath;
+    }
+
+    static void DeleteIfExists(string path)
+    {
+        if (!File.Exists(path))
+            return;
+
+        try
+        {
+            File.Delete(path);
+        }
+        catch
+        {
         }
     }
 }

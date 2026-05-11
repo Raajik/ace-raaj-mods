@@ -16,13 +16,15 @@ internal static class XpTracker
     static readonly ConcurrentDictionary<uint, bool> _aptitudeForcedAutoSpendByGuid = new();
     static readonly ConcurrentDictionary<uint, DateTime> _lastAutoSpendMsgUtc = new();
     static string _dataDir = "";
+    static string _legacyDataDir = "";
     static readonly object _saveLock = new();
 
     readonly record struct SpendResult(string Name, int RanksGained, long XpSpent);
 
-    internal static void Initialize(string modDirectory)
+    internal static void Initialize(string dataDir, string legacyDataDir)
     {
-        _dataDir = Path.Combine(modDirectory, "xp-tracker");
+        _dataDir = dataDir;
+        _legacyDataDir = legacyDataDir;
         Directory.CreateDirectory(_dataDir);
     }
 
@@ -668,9 +670,19 @@ internal static class XpTracker
     static XpLifetimeRecord? LoadRecord(uint guid)
     {
         if (string.IsNullOrEmpty(_dataDir)) return null;
-        var path = Path.Combine(_dataDir, $"{guid}.json");
+        var path = ResolveReadPath(guid);
         if (!File.Exists(path)) return null;
-        try { return JsonSerializer.Deserialize<XpLifetimeRecord>(File.ReadAllText(path)); }
+        try
+        {
+            var record = JsonSerializer.Deserialize<XpLifetimeRecord>(File.ReadAllText(path));
+            if (record != null && path != CurrentPath(guid))
+            {
+                WriteRecord(guid, record);
+                TryDeleteLegacyFile(guid);
+            }
+
+            return record;
+        }
         catch { return null; }
     }
 
@@ -678,14 +690,15 @@ internal static class XpTracker
         long luminance, long bankDeposits, Dictionary<string, long> killsByMob)
     {
         if (string.IsNullOrEmpty(_dataDir)) return;
-        var path = Path.Combine(_dataDir, $"{guid}.json");
+        var path = CurrentPath(guid);
         lock (_saveLock)
         {
             XpLifetimeRecord rec;
             try
             {
-                rec = File.Exists(path)
-                    ? JsonSerializer.Deserialize<XpLifetimeRecord>(File.ReadAllText(path)) ?? new()
+                var readPath = ResolveReadPath(guid);
+                rec = File.Exists(readPath)
+                    ? JsonSerializer.Deserialize<XpLifetimeRecord>(File.ReadAllText(readPath)) ?? new()
                     : new();
             }
             catch { rec = new(); }
@@ -702,8 +715,54 @@ internal static class XpTracker
                 rec.KillsByMob[k] = prev + v;
             }
 
-            try { File.WriteAllText(path, JsonSerializer.Serialize(rec, new JsonSerializerOptions { WriteIndented = true })); }
+            try
+            {
+                WriteRecord(guid, rec);
+                TryDeleteLegacyFile(guid);
+            }
             catch { }
+        }
+    }
+
+    static string CurrentPath(uint guid) => Path.Combine(_dataDir, $"{guid}.json");
+
+    static string LegacyPath(uint guid) => Path.Combine(_legacyDataDir, $"{guid}.json");
+
+    static string ResolveReadPath(uint guid)
+    {
+        var currentPath = CurrentPath(guid);
+        if (File.Exists(currentPath))
+            return currentPath;
+
+        var legacyPath = LegacyPath(guid);
+        if (File.Exists(legacyPath))
+            return legacyPath;
+
+        return currentPath;
+    }
+
+    static void WriteRecord(uint guid, XpLifetimeRecord record)
+    {
+        var path = CurrentPath(guid);
+        Directory.CreateDirectory(_dataDir);
+        File.WriteAllText(path, JsonSerializer.Serialize(record, new JsonSerializerOptions { WriteIndented = true }));
+    }
+
+    static void TryDeleteLegacyFile(uint guid)
+    {
+        if (string.IsNullOrEmpty(_legacyDataDir))
+            return;
+
+        var legacyPath = LegacyPath(guid);
+        if (!File.Exists(legacyPath))
+            return;
+
+        try
+        {
+            File.Delete(legacyPath);
+        }
+        catch
+        {
         }
     }
 

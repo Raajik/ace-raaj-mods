@@ -1,5 +1,5 @@
 # Apply every repo mod's Content/SQL/**/*.sql to a MySQL database (default ace_world for wb_test).
-# Applies Content/SQL-shard/**/*.sql to $ShardDatabase when WB_TEST_SHARD_DATABASE is set (split world/shard installs).
+# Applies Content/SQL-shard/**/*.sql to $ShardDatabase when a shard DB is supplied.
 # Excludes ValheelContent and Shared; only directories with ModName/ModName.csproj.
 #
 # Credentials (required for non-WhatIf):
@@ -7,7 +7,10 @@
 #   $env:ACE_MYSQL_PASSWORD
 # Optional:
 #   $env:MYSQL_EXE - path to mysql.exe (default: MySQL 8.0 under Program Files)
-#   $env:WB_TEST_SHARD_DATABASE - shard DB name for Content/SQL-shard (e.g. ace_shard). If unset, shard SQL is skipped with a warning when present.
+#   $env:SHARD_DATABASE - generic shard DB name for Content/SQL-shard
+#   $env:WB_TEST_SHARD_DATABASE - wb_test shard DB name for Content/SQL-shard (legacy/current)
+#   $env:VOID_SHARD_DATABASE - void-test shard DB name for Content/SQL-shard
+#   If no shard DB is set, shard SQL is skipped with a warning when present.
 #
 # Usage:
 #   $env:ACE_MYSQL_USER='jeremy'; $env:ACE_MYSQL_PASSWORD='...'
@@ -19,7 +22,18 @@ param(
 
     [string] $Database = 'ace_world',
 
-    [string] $ShardDatabase = $env:WB_TEST_SHARD_DATABASE,
+    [string] $ShardDatabase = $(if (-not [string]::IsNullOrWhiteSpace($env:SHARD_DATABASE)) {
+            $env:SHARD_DATABASE
+        }
+        elseif (-not [string]::IsNullOrWhiteSpace($env:WB_TEST_SHARD_DATABASE)) {
+            $env:WB_TEST_SHARD_DATABASE
+        }
+        elseif (-not [string]::IsNullOrWhiteSpace($env:VOID_SHARD_DATABASE)) {
+            $env:VOID_SHARD_DATABASE
+        }
+        else {
+            ''
+        }),
 
     [string] $MysqlExe = $(if ($env:MYSQL_EXE) { $env:MYSQL_EXE } else { 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' }),
 
@@ -40,7 +54,7 @@ $repoRootFull = (Resolve-Path -LiteralPath $RepoRoot).Path
 # WSL bash does not pass exported vars to powershell.exe unless WSLENV is set; load same file bash deploy sources.
 $deployMysqlEnv = Join-Path $repoRootFull 'scripts\.deploy-mysql.env'
 if ((Test-Path -LiteralPath $deployMysqlEnv) -and
-    ([string]::IsNullOrWhiteSpace($MysqlUser) -or [string]::IsNullOrWhiteSpace($MysqlPassword))) {
+    ([string]::IsNullOrWhiteSpace($MysqlUser) -or [string]::IsNullOrWhiteSpace($MysqlPassword) -or [string]::IsNullOrWhiteSpace($ShardDatabase))) {
     Get-Content -LiteralPath $deployMysqlEnv | ForEach-Object {
         $line = $_.Trim()
         if ($line -match '^\s*#' -or $line -eq '') { return }
@@ -58,9 +72,29 @@ if ((Test-Path -LiteralPath $deployMysqlEnv) -and
         if ($k -eq 'ACE_MYSQL_PASSWORD' -and [string]::IsNullOrWhiteSpace($MysqlPassword)) {
             Set-Item -Path Env:ACE_MYSQL_PASSWORD -Value $v
         }
+        if ($k -eq 'SHARD_DATABASE' -and [string]::IsNullOrWhiteSpace($ShardDatabase)) {
+            Set-Item -Path Env:SHARD_DATABASE -Value $v
+        }
+        if ($k -eq 'WB_TEST_SHARD_DATABASE' -and [string]::IsNullOrWhiteSpace($ShardDatabase)) {
+            Set-Item -Path Env:WB_TEST_SHARD_DATABASE -Value $v
+        }
+        if ($k -eq 'VOID_SHARD_DATABASE' -and [string]::IsNullOrWhiteSpace($ShardDatabase)) {
+            Set-Item -Path Env:VOID_SHARD_DATABASE -Value $v
+        }
     }
     if ([string]::IsNullOrWhiteSpace($MysqlUser)) { $MysqlUser = $env:ACE_MYSQL_USER }
     if ([string]::IsNullOrWhiteSpace($MysqlPassword)) { $MysqlPassword = $env:ACE_MYSQL_PASSWORD }
+    if ([string]::IsNullOrWhiteSpace($ShardDatabase)) {
+        if (-not [string]::IsNullOrWhiteSpace($env:SHARD_DATABASE)) {
+            $ShardDatabase = $env:SHARD_DATABASE
+        }
+        elseif (-not [string]::IsNullOrWhiteSpace($env:WB_TEST_SHARD_DATABASE)) {
+            $ShardDatabase = $env:WB_TEST_SHARD_DATABASE
+        }
+        elseif (-not [string]::IsNullOrWhiteSpace($env:VOID_SHARD_DATABASE)) {
+            $ShardDatabase = $env:VOID_SHARD_DATABASE
+        }
+    }
 }
 
 $mods = @(Get-ChildItem -LiteralPath $repoRootFull -Directory -ErrorAction Stop | Where-Object {
@@ -156,7 +190,7 @@ try {
 
     if ($shardOrdered.Count -gt 0) {
         if ([string]::IsNullOrWhiteSpace($ShardDatabase)) {
-            Write-Warning ("Skipping {0} Content\SQL-shard file(s); set WB_TEST_SHARD_DATABASE (e.g. ace_shard)." -f $shardOrdered.Count)
+            Write-Warning ("Skipping {0} Content\SQL-shard file(s); set SHARD_DATABASE, WB_TEST_SHARD_DATABASE, or VOID_SHARD_DATABASE." -f $shardOrdered.Count)
         }
         else {
             Write-Host ''

@@ -61,31 +61,30 @@ internal static class WipeProgress
             if (string.IsNullOrWhiteSpace(parentDir))
                 parentDir = modDir;
 
-            // Also wipe from ModData (survives deploy but contains live state)
-            string serverRoot;
+            var serverDir = AppDomain.CurrentDomain.BaseDirectory;
             try
             {
-                serverRoot = Path.GetDirectoryName(typeof(ModManager).Assembly.Location) ?? ".";
+                var serverAssemblyPath = typeof(ModManager).Assembly.Location;
+                var resolvedServerDir = Path.GetDirectoryName(serverAssemblyPath);
+                if (!string.IsNullOrWhiteSpace(resolvedServerDir))
+                    serverDir = resolvedServerDir;
             }
             catch
             {
-                serverRoot = ".";
             }
-            var modDataRoot = Path.GetFullPath(Path.Combine(serverRoot, "ModData"));
 
             var filesToWipe = new[]
             {
+                Path.Combine(serverDir, "ModData", "AchievementUnlocked", "AccountAchievements.json"),
+                Path.Combine(serverDir, "ModData", "AchievementUnlocked", "AccountPoolBonus.json"),
+                Path.Combine(serverDir, "ModData", "AchievementUnlocked", "AccountMilestoneBonus.json"),
+                Path.Combine(serverDir, "ModData", "AchievementUnlocked", "AccountTierProgress.json"),
+                Path.Combine(serverDir, "ModData", "Loremaster", "AccountQuestFlags.json"),
                 Path.Combine(parentDir, "AchievementUnlocked", "AccountAchievements.json"),
                 Path.Combine(parentDir, "AchievementUnlocked", "AccountPoolBonus.json"),
                 Path.Combine(parentDir, "AchievementUnlocked", "AccountMilestoneBonus.json"),
                 Path.Combine(parentDir, "AchievementUnlocked", "AccountTierProgress.json"),
                 Path.Combine(parentDir, "Loremaster", "AccountQuestFlags.json"),
-                // ModData equivalents
-                Path.Combine(modDataRoot, "AchievementUnlocked", "AccountAchievements.json"),
-                Path.Combine(modDataRoot, "AchievementUnlocked", "AccountPoolBonus.json"),
-                Path.Combine(modDataRoot, "AchievementUnlocked", "AccountMilestoneBonus.json"),
-                Path.Combine(modDataRoot, "AchievementUnlocked", "AccountTierProgress.json"),
-                Path.Combine(modDataRoot, "Loremaster", "AccountQuestFlags.json"),
             };
 
             foreach (var path in filesToWipe)

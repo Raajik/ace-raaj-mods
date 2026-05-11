@@ -1,6 +1,7 @@
 namespace ChallengeModes;
 
-// Persisted per character (ChallengeModes/Data/PlayerData/{guid}.json).
+// Persisted per character under Server/ModData/ChallengeModes/PlayerData/{guid}.json
+// with legacy fallback from the old mod-folder path.
 public class ChallengeModesPlayerPrefs
 {
     // Aptitude (legacy JSON keys preserved).

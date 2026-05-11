@@ -23,6 +23,7 @@ internal sealed class PendingEventClaimsFile
 internal static class PendingEventClaimsStore
 {
     internal static readonly string BasePath = WorldEventsDataPaths.InModData("PendingClaims");
+    internal static readonly string LegacyBasePath = WorldEventsDataPaths.InLegacyModRoot("PendingClaims");
     private static readonly ConcurrentDictionary<string, object> FileLocks = new(StringComparer.Ordinal);
 
     internal static void Enqueue(uint characterGuidFull, PendingEventLootEntry entry)
@@ -31,11 +32,12 @@ internal static class PendingEventClaimsStore
         var lockObj = FileLocks.GetOrAdd(key, _ => new object());
         lock (lockObj)
         {
-            var path = PathFor(key);
+            var path = NewPathFor(key);
             Directory.CreateDirectory(BasePath);
-            var file = LoadFile(path);
+            var file = LoadFile(ResolveReadPath(key));
             file.Pending.Add(entry);
             SaveFile(path, file);
+            DeleteLegacyFileIfPresent(key);
         }
 
         ModManager.Log($"[WorldEvents] Queued pending loot {entry.Source} ({entry.Label}) WCID {entry.Wcid} for character {key}.", ModManager.LogLevel.Info);
@@ -52,17 +54,18 @@ internal static class PendingEventClaimsStore
         List<PendingEventLootEntry> toGrant;
         lock (lockObj)
         {
-            var path = PathFor(key);
-            if (!File.Exists(path))
+            var readPath = ResolveReadPath(key);
+            if (!File.Exists(readPath))
                 return 0;
 
-            var file = LoadFile(path);
+            var file = LoadFile(readPath);
             if (file.Pending.Count == 0)
                 return 0;
 
             toGrant = file.Pending.ToList();
             file.Pending = new List<PendingEventLootEntry>();
-            SaveFile(path, file);
+            SaveFile(NewPathFor(key), file);
+            DeleteLegacyFileIfPresent(key);
         }
 
         var granted = 0;
@@ -84,11 +87,12 @@ internal static class PendingEventClaimsStore
         {
             lock (lockObj)
             {
-                var path = PathFor(key);
+                var path = NewPathFor(key);
                 Directory.CreateDirectory(BasePath);
                 var file = LoadFile(path);
                 file.Pending.AddRange(requeue);
                 SaveFile(path, file);
+                DeleteLegacyFileIfPresent(key);
             }
         }
 
@@ -98,7 +102,7 @@ internal static class PendingEventClaimsStore
     internal static int PeekCount(uint characterGuidFull)
     {
         var key = characterGuidFull.ToString("X8");
-        var path = PathFor(key);
+        var path = ResolveReadPath(key);
         if (!File.Exists(path))
             return 0;
         try
@@ -118,7 +122,7 @@ internal static class PendingEventClaimsStore
         var lockObj = FileLocks.GetOrAdd(key, _ => new object());
         lock (lockObj)
         {
-            var path = PathFor(key);
+            var path = ResolveReadPath(key);
             if (!File.Exists(path))
                 return new List<PendingEventLootEntry>();
 
@@ -133,7 +137,19 @@ internal static class PendingEventClaimsStore
         }
     }
 
-    static string PathFor(string hexKey) => Path.Combine(BasePath, $"{hexKey}.json");
+    static string NewPathFor(string hexKey) => Path.Combine(BasePath, $"{hexKey}.json");
+
+    static string LegacyPathFor(string hexKey) => Path.Combine(LegacyBasePath, $"{hexKey}.json");
+
+    static string ResolveReadPath(string hexKey)
+    {
+        var newPath = NewPathFor(hexKey);
+        if (File.Exists(newPath))
+            return newPath;
+
+        var legacyPath = LegacyPathFor(hexKey);
+        return File.Exists(legacyPath) ? legacyPath : newPath;
+    }
 
     static PendingEventClaimsFile LoadFile(string path)
     {
@@ -154,6 +170,22 @@ internal static class PendingEventClaimsStore
     static void SaveFile(string path, PendingEventClaimsFile file)
     {
         var opts = new JsonSerializerOptions { WriteIndented = true };
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, JsonSerializer.Serialize(file, opts));
+    }
+
+    static void DeleteLegacyFileIfPresent(string hexKey)
+    {
+        var legacyPath = LegacyPathFor(hexKey);
+        if (!File.Exists(legacyPath))
+            return;
+
+        try
+        {
+            File.Delete(legacyPath);
+        }
+        catch
+        {
+        }
     }
 }

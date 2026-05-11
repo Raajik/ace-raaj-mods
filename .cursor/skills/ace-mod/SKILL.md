@@ -61,8 +61,9 @@ Copy an existing gameplay mod in this repo (e.g. **Swarmed**, **Loremaster**). I
 
 ## Mod paths
 
-- `ModManager.ModPath` = parent `C:\ACE\Mods` — append `YourMod` for data under Mods.
-- Or `Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)` for files next to the DLL.
+- `ModManager.ModPath` = parent `C:\ACE\Mods` — good for resolving deployed mod folders and bundled read-only assets.
+- `Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)` = folder beside the DLL — good for bundled assets and settings, **not** runtime persistence.
+- For writable runtime state, prefer `Path.Combine(<ACE.Server dir>, "ModData", "<ModName>", ...)` with legacy read fallback from old mod-folder paths.
 
 ## Harmony quick reference
 

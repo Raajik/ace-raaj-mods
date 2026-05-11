@@ -30,8 +30,8 @@ internal static class PublicExchange
 
     public static Settings Settings => PatchClass.Settings;
 
-    static string PoolPath => LeyLineLedgerDataPaths.InModData(
-        Settings.PublicExchange.PoolJsonPath);
+    static string PoolPath => LeyLineLedgerDataPaths.ResolveConfiguredPath(Settings.PublicExchange.PoolJsonPath);
+    static string LegacyPoolPath => LeyLineLedgerDataPaths.ResolveLegacyConfiguredPath(Settings.PublicExchange.PoolJsonPath);
 
     public static void TryApply()
     {
@@ -94,7 +94,7 @@ internal static class PublicExchange
     {
         try
         {
-            var path = PoolPath;
+            var path = ResolveLoadPath();
             if (File.Exists(path))
             {
                 var json = File.ReadAllText(path);
@@ -103,6 +103,9 @@ internal static class PublicExchange
                 {
                     lock (_poolLock)
                         _pool = entries.ToDictionary(e => e.Wcid);
+
+                    if (!string.Equals(path, PoolPath, StringComparison.OrdinalIgnoreCase))
+                        SavePool();
                 }
             }
         }
@@ -127,10 +130,36 @@ internal static class PublicExchange
 
             var json = JsonSerializer.Serialize(snapshot, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(path, json);
+            TryDeleteLegacyPool();
         }
         catch (Exception ex)
         {
             ModManager.Log($"[LeyLineLedger] Failed to save exchange pool: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    static string ResolveLoadPath()
+    {
+        if (File.Exists(PoolPath))
+            return PoolPath;
+
+        if (File.Exists(LegacyPoolPath))
+            return LegacyPoolPath;
+
+        return PoolPath;
+    }
+
+    static void TryDeleteLegacyPool()
+    {
+        if (!File.Exists(LegacyPoolPath) || string.Equals(LegacyPoolPath, PoolPath, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        try
+        {
+            File.Delete(LegacyPoolPath);
+        }
+        catch
+        {
         }
     }
 

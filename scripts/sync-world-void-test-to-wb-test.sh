@@ -26,6 +26,14 @@
 #     bash scripts/sync-world-void-test-to-wb-test.sh
 #   (comma-separated, no spaces required; trims spaces around names.)
 #
+# Character / housing safety backups (before world import; skipped when SYNC_WORLD_DRY_RUN=1):
+#   WB_TEST_SHARD_DATABASE or SYNC_WORLD_SHARD_DATABASE — full mysqldump of that DB when it
+#     differs from the dest world DB (typical split World vs Shard on wb_test).
+#   Default: also dumps biota/character/house* tables that exist in the dest world DB alone
+#     into *-player-housing-tables-pre-sync-*.sql (handy surgical restore on combined-DB installs).
+#   SYNC_WORLD_SKIP_PLAYER_BACKUP=1 — skip 1b/1c entirely.
+#   SYNC_WORLD_BACKUP_DEST_PLAYER_TABLES=0 — skip only the dest-table subset (1c); shard dump (1b) still runs if set.
+#
 # See AGENTS.md §5.
 # World schema only: if ACE uses a separate shard database, clone that schema with the same
 # pattern (different script/env names) — this script does not touch shard.
@@ -103,6 +111,47 @@ echo "=== Step 1: Backup destination world ($DEST_DB) ==="
   --databases "$DEST_DB" >"$BACKUP_FILE"
 echo "  Done."
 echo ""
+
+if [ "${SYNC_WORLD_DRY_RUN:-0}" != "1" ] && [ "${SYNC_WORLD_SKIP_PLAYER_BACKUP:-0}" != "1" ]; then
+  SHARD_DB="${SYNC_WORLD_SHARD_DATABASE:-${WB_TEST_SHARD_DATABASE:-}}"
+  if [ -n "$SHARD_DB" ] && [ "$SHARD_DB" != "$DEST_DB" ]; then
+    SHARD_BACKUP="$BACKUP_ROOT/${SHARD_DB}-shard-pre-sync-${STAMP}.sql"
+    echo "=== Step 1b: Backup wb_test shard ($SHARD_DB) ==="
+    "$MYSQL_EXE" --defaults-extra-file="$cnf" --default-character-set=utf8mb4 \
+      --single-transaction --set-gtid-purged=OFF --routines --triggers --events \
+      --databases "$SHARD_DB" >"$SHARD_BACKUP"
+    echo "  Wrote $SHARD_BACKUP"
+    echo ""
+  elif [ -n "$SHARD_DB" ] && [ "$SHARD_DB" = "$DEST_DB" ]; then
+    echo "=== Step 1b: Skipping shard-only dump ($SHARD_DB equals dest world; Step 1 is already a full backup) ==="
+    echo ""
+  fi
+
+  if [ "${SYNC_WORLD_BACKUP_DEST_PLAYER_TABLES:-1}" != "0" ]; then
+    echo "=== Step 1c: Backup character / biota / housing tables in $DEST_DB (if present) ==="
+    PLAYER_TABS=()
+    _q="SELECT table_name FROM information_schema.tables WHERE table_schema='${DEST_DB}' AND (table_name IN ('biota','character','house') OR table_name LIKE 'biota\\_%' OR table_name LIKE 'character\\_%' OR table_name LIKE 'house\\_%') ORDER BY table_name;"
+    while IFS= read -r _tab; do
+      [ -n "$_tab" ] && PLAYER_TABS+=("$_tab")
+    done < <("$MYSQL_EXE" --defaults-extra-file="$cnf" -N -B --default-character-set=utf8mb4 -e "$_q")
+    if [ "${#PLAYER_TABS[@]}" -eq 0 ]; then
+      echo "  (no matching tables in $DEST_DB — normal if shard holds players; set WB_TEST_SHARD_DATABASE for a full shard snapshot)"
+    else
+      PLAYER_BACKUP="$BACKUP_ROOT/${DEST_DB}-player-housing-tables-pre-sync-${STAMP}.sql"
+      "$MYSQL_EXE" --defaults-extra-file="$cnf" --default-character-set=utf8mb4 \
+        --single-transaction --set-gtid-purged=OFF --triggers \
+        "$DEST_DB" "${PLAYER_TABS[@]}" >"$PLAYER_BACKUP"
+      echo "  Wrote $PLAYER_BACKUP (${#PLAYER_TABS[@]} tables)"
+    fi
+    echo ""
+  fi
+elif [ "${SYNC_WORLD_SKIP_PLAYER_BACKUP:-0}" = "1" ]; then
+  echo "=== Step 1b/1c: Skipped (SYNC_WORLD_SKIP_PLAYER_BACKUP=1) ==="
+  echo ""
+elif [ "${SYNC_WORLD_DRY_RUN:-0}" = "1" ]; then
+  echo "=== Step 1b/1c: Skipped (SYNC_WORLD_DRY_RUN=1; no import) ==="
+  echo ""
+fi
 
 echo "=== Step 2: Dump $SOURCE_DB → rewrite DB name → import into $DEST_DB ==="
 

@@ -2,6 +2,16 @@
 
 ## 2026-05-10
 
+### BetterLootControl — vendor rotation cooldown survives landblock reload
+
+**Problem:** Vendor loot rotation keyed cooldown + rotated-item tracking by **vendor instance `Guid.Full`**. Landblock reload / weenie cache respawn creates a **new** vendor object → new guid → cooldown never hit → **`RotateVendorInventory` ran every `LoadInventory`**, stripping SQL/default jewelry stock and regenerating (often looked like a “nuked” jeweler).
+
+**Fix:** Use stable key **`(Location.LandblockId, WeenieClassId)`** (`VendorRotationStableKey`) for `_vendorLastRotation` and `_vendorRotatedItems`. `ClearVendorCooldown` now takes `(LandblockId, uint weenieClassId)`.
+
+**File:** `BetterLootControl/VendorLootRotation.cs`.
+
+**Commit:** `79a0a676`.
+
 ### SpellSiphon — vendor stacks 250, `TargetType` widen, apply vs extraction guard
 
 **Problem:** (1) Tool max stack / vendor purchase size stuck at 100. (2) After WCID / weenie work, many spell targets failed vanilla use validation (`TargetType` too narrow). (3) Vendor or DB “prefilled” Spellsiphons with spellbook rows but no charged flag hijacked `RecipeManager.GetRecipe` extraction and **stripped the real target** instead of applying stored spells.

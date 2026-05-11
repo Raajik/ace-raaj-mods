@@ -29,10 +29,30 @@ public static class VendorLootRotation
     private static List<TreasureDeath>? _cachedTreasureProfiles = null;
     private static DateTime _lastProfileCache = DateTime.MinValue;
 
-    // -- Per-vendor cooldown tracking -------------------------------------
-    static readonly ConcurrentDictionary<uint, DateTime> _vendorLastRotation = new();
+    // Stable identity for rotation/cooldown: instance ObjectGuid changes on landblock reload,
+    // which used to bypass cooldown and re-strip SQL stock every spawn.
+    readonly record struct VendorRotationStableKey(LandblockId LandblockId, uint WeenieClassId);
+
+    static VendorRotationStableKey StableRotationKey(Vendor vendor)
+    {
+        LandblockId lb = default;
+        try
+        {
+            if (vendor?.Location != null)
+                lb = vendor.Location.LandblockId;
+        }
+        catch
+        {
+            // ignored
+        }
+
+        return new VendorRotationStableKey(lb, vendor?.WeenieClassId ?? 0u);
+    }
+
+    // -- Per-vendor cooldown tracking (landblock + WCID, not instance guid) ------------
+    static readonly ConcurrentDictionary<VendorRotationStableKey, DateTime> _vendorLastRotation = new();
     // Track which items were added by rotation so we can clear them next cycle
-    static readonly ConcurrentDictionary<uint, HashSet<ObjectGuid>> _vendorRotatedItems = new();
+    static readonly ConcurrentDictionary<VendorRotationStableKey, HashSet<ObjectGuid>> _vendorRotatedItems = new();
     // Track original values for repricing
     static readonly ConcurrentDictionary<ObjectGuid, int> _originalValues = new();
 
@@ -818,12 +838,12 @@ public static class VendorLootRotation
             return;
         }
 
-        var vendorGuid = __instance.Guid.Full;
+        var rotationKey = StableRotationKey(__instance);
         var now = DateTime.UtcNow;
         var cooldown = TimeSpan.FromMinutes(EffectiveRotationIntervalMinutes(_settings));
 
         // Check per-vendor cooldown
-        if (_vendorLastRotation.TryGetValue(vendorGuid, out var lastRotation))
+        if (_vendorLastRotation.TryGetValue(rotationKey, out var lastRotation))
         {
             if (now - lastRotation < cooldown)
                 return; // Still on cooldown
@@ -833,14 +853,14 @@ public static class VendorLootRotation
         var profiles = GetTreasureProfiles();
         if (profiles.Count == 0)
         {
-            ModManager.Log($"[BetterLoot] VendorLoot: No treasure profiles available for vendor {__instance.Name} ({vendorGuid}), skipping.", ModManager.LogLevel.Warn);
+            ModManager.Log($"[BetterLoot] VendorLoot: No treasure profiles available for vendor {__instance.Name} ({rotationKey.LandblockId}, WCID {rotationKey.WeenieClassId}), skipping.", ModManager.LogLevel.Warn);
             return;
         }
 
         if (!RotateVendorInventory(__instance))
             return;
 
-        _vendorLastRotation[vendorGuid] = now;
+        _vendorLastRotation[rotationKey] = now;
     }
 
     // Batch-generate items; optional merch bit restricts to vendor tabs (MerchandiseItemTypes).
@@ -873,7 +893,7 @@ public static class VendorLootRotation
         if (_settings is null)
             return false;
 
-        var vendorGuid = vendor.Guid.Full;
+        var rotationKey = StableRotationKey(vendor);
         var vendorTier = GetVendorTier(vendor);
         var profiles = GetTreasureProfiles();
         var equipmentAllowed = GetStrictMerchMask(vendor);
@@ -888,7 +908,7 @@ public static class VendorLootRotation
         ModManager.Log($"[BetterLoot] VendorLoot: Rotating vendor {vendor.Name} ({vendor.WeenieClassId}) tier {vendorTier}, equipment merch mask {equipmentAllowed}...", ModManager.LogLevel.Info);
 
         var rotatedSet = new HashSet<ObjectGuid>();
-        if (_vendorRotatedItems.TryGetValue(vendorGuid, out var oldRotated))
+        if (_vendorRotatedItems.TryGetValue(rotationKey, out var oldRotated))
         {
             foreach (var guid in oldRotated)
             {
@@ -898,7 +918,7 @@ public static class VendorLootRotation
             }
         }
 
-        _vendorRotatedItems[vendorGuid] = rotatedSet;
+        _vendorRotatedItems[rotationKey] = rotatedSet;
 
         // Determine vendor class early so robe-preservation logic can use it.
         var vendorClass = ClassifyVendor(vendor);
@@ -2612,11 +2632,12 @@ public static class VendorLootRotation
         ModManager.Log("[BetterLoot] VendorLootRotation cooldowns cleared by command.", ModManager.LogLevel.Info);
     }
 
-    public static void ClearVendorCooldown(uint vendorGuid)
+    public static void ClearVendorCooldown(LandblockId landblockId, uint weenieClassId)
     {
-        if (_vendorLastRotation.TryRemove(vendorGuid, out var _))
+        var key = new VendorRotationStableKey(landblockId, weenieClassId);
+        if (_vendorLastRotation.TryRemove(key, out var _))
         {
-            ModManager.Log($"[BetterLoot] VendorLootRotation: Cooldown cleared for vendor {vendorGuid}", ModManager.LogLevel.Info);
+            ModManager.Log($"[BetterLoot] VendorLootRotation: Cooldown cleared for vendor {landblockId} WCID {weenieClassId}", ModManager.LogLevel.Info);
         }
     }
 

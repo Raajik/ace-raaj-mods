@@ -47,6 +47,15 @@ if [ -f "$REPO_ROOT/scripts/.deploy-mysql.env" ]; then
   set -u
 fi
 
+trim_cr() {
+  local value="${1-}"
+  printf '%s' "${value%$'\r'}"
+}
+
+VOID_SQL_DATABASE="$(trim_cr "${VOID_SQL_DATABASE:-}")"
+VOID_SHARD_DATABASE="$(trim_cr "${VOID_SHARD_DATABASE:-}")"
+WB_TEST_SHARD_DATABASE="$(trim_cr "${WB_TEST_SHARD_DATABASE:-}")"
+
 echo "=== deploy-void-test.sh ==="
 echo "Repo: $REPO_ROOT"
 echo "Target: $VOID_MODS"

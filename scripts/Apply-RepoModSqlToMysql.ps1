@@ -46,6 +46,22 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Normalize-EnvValue {
+    param([AllowNull()][string] $Value)
+
+    if ($null -eq $Value) {
+        return ''
+    }
+
+    return $Value.Trim(" `t`r`n")
+}
+
+$Database = Normalize-EnvValue $Database
+$ShardDatabase = Normalize-EnvValue $ShardDatabase
+$MysqlExe = Normalize-EnvValue $MysqlExe
+$MysqlUser = Normalize-EnvValue $MysqlUser
+$MysqlPassword = Normalize-EnvValue $MysqlPassword
+
 if (-not (Test-Path -LiteralPath $RepoRoot)) { throw "RepoRoot not found: $RepoRoot" }
 if (-not (Test-Path -LiteralPath $MysqlExe)) { throw "mysql.exe not found: $MysqlExe (set MYSQL_EXE)" }
 
@@ -62,7 +78,7 @@ if ((Test-Path -LiteralPath $deployMysqlEnv) -and
         $eq = $line.IndexOf('=')
         if ($eq -lt 1) { return }
         $k = $line.Substring(0, $eq).Trim()
-        $v = $line.Substring($eq + 1).Trim()
+        $v = Normalize-EnvValue ($line.Substring($eq + 1).Trim())
         if (($v.Length -ge 2) -and (($v.StartsWith('"') -and $v.EndsWith('"')) -or ($v.StartsWith("'") -and $v.EndsWith("'")))) {
             $v = $v.Substring(1, $v.Length - 2)
         }
@@ -82,17 +98,17 @@ if ((Test-Path -LiteralPath $deployMysqlEnv) -and
             Set-Item -Path Env:VOID_SHARD_DATABASE -Value $v
         }
     }
-    if ([string]::IsNullOrWhiteSpace($MysqlUser)) { $MysqlUser = $env:ACE_MYSQL_USER }
-    if ([string]::IsNullOrWhiteSpace($MysqlPassword)) { $MysqlPassword = $env:ACE_MYSQL_PASSWORD }
+    if ([string]::IsNullOrWhiteSpace($MysqlUser)) { $MysqlUser = Normalize-EnvValue $env:ACE_MYSQL_USER }
+    if ([string]::IsNullOrWhiteSpace($MysqlPassword)) { $MysqlPassword = Normalize-EnvValue $env:ACE_MYSQL_PASSWORD }
     if ([string]::IsNullOrWhiteSpace($ShardDatabase)) {
         if (-not [string]::IsNullOrWhiteSpace($env:SHARD_DATABASE)) {
-            $ShardDatabase = $env:SHARD_DATABASE
+            $ShardDatabase = Normalize-EnvValue $env:SHARD_DATABASE
         }
         elseif (-not [string]::IsNullOrWhiteSpace($env:WB_TEST_SHARD_DATABASE)) {
-            $ShardDatabase = $env:WB_TEST_SHARD_DATABASE
+            $ShardDatabase = Normalize-EnvValue $env:WB_TEST_SHARD_DATABASE
         }
         elseif (-not [string]::IsNullOrWhiteSpace($env:VOID_SHARD_DATABASE)) {
-            $ShardDatabase = $env:VOID_SHARD_DATABASE
+            $ShardDatabase = Normalize-EnvValue $env:VOID_SHARD_DATABASE
         }
     }
 }

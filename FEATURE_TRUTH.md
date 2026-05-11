@@ -36,7 +36,7 @@ This file is the canonical reference for which mod owns which gameplay feature a
 | Swarmed (creature type tagging) | Swarmed | `Settings.json`, `Content/` | `Swarmed/Readme.md` | `C:\ACE\Mods\Swarmed\Settings.json` | `C:\ACE-WB\Mods\Swarmed\Settings.json` |
 | Numbersmith (numerics, rounding) | Numbersmith | `Settings.json` | `Numbersmith/Readme.md` | `C:\ACE\Mods\Numbersmith\Settings.json` | `C:\ACE-WB\Mods\Numbersmith\Settings.json` |
 | Gemcrafter (gem behavior) | Gemcrafter | `Settings.json`, `Content/` | `Gemcrafter/Readme.md` | `C:\ACE\Mods\Gemcrafter\Settings.json` | `C:\ACE-WB\Mods\Gemcrafter\Settings.json` |
-| Windblown trophies & custom turn-ins | WindblownContent | `Content/SQL/`, `docs/` | `WindblownContent/docs/` | `C:\ACE-WB\Mods\Windblown\Settings.json` | `C:\ACE-WB\Mods\Windblown\Settings.json` |
+| Windblown trophies & custom turn-ins | Windblown | `Content/SQL/`, `docs/` | `Windblown/docs/` | `C:\ACE\Mods\Windblown\Settings.json` | `C:\ACE-WB\Mods\Windblown\Settings.json` |
 | EasyServerSettings (server config UI/defaults) | EasyServerSettings | `Settings.json` | `EasyServerSettings/Readme.md` | `C:\ACE\Mods\EasyServerSettings\Settings.json` | `C:\ACE-WB\Mods\EasyServerSettings\Settings.json` |
 
 ## Mod Interaction Rules

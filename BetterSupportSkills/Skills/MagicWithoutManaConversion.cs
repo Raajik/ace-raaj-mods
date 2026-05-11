@@ -24,7 +24,8 @@ internal static class MagicWithoutManaConversion
         if (PatchClass.Settings is not { EnableMagicWithoutManaConversion: true } s)
             return;
 
-        if (player.GetCreatureSkill(Skill.ManaConversion).AdvancementClass >= SkillAdvancementClass.Trained)
+        var manaConversion = player.GetCreatureSkill(Skill.ManaConversion);
+        if (manaConversion != null && manaConversion.AdvancementClass >= SkillAdvancementClass.Trained)
             return;
 
         MagicWithoutManaConversionSettings m = s.MagicWithoutManaConversion;
@@ -32,7 +33,9 @@ internal static class MagicWithoutManaConversion
 
         var ce = player.GetCreatureSkill(Skill.CreatureEnchantment);
         var ie = player.GetCreatureSkill(Skill.ItemEnchantment);
-        if (ce.AdvancementClass < SkillAdvancementClass.Trained || ie.AdvancementClass < SkillAdvancementClass.Trained)
+        if (ce == null || ie == null ||
+            ce.AdvancementClass < SkillAdvancementClass.Trained ||
+            ie.AdvancementClass < SkillAdvancementClass.Trained)
             return;
 
         for (int i = 0; i < stacks; i++)

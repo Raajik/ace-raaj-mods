@@ -43,7 +43,7 @@ REQUIRED_README_MODS=(
     "BetterLootControl" "BetterSupportSkills" "ChallengeModes" "CommonGoals"
     "CustomSpells" "EasyServerSettings" "EmpyreanAlteration" "LeyLineLedger"
     "Lockboxes" "Loremaster" "Numbersmith" "Overtinked" "QOL"
-    "SpellSiphon" "Swarmed" "Windblown" "WindblownContent" "WorldEvents"
+    "SpellSiphon" "Swarmed" "Windblown" "WorldEvents"
 )
 
 for mod in "${REQUIRED_README_MODS[@]}"; do
@@ -63,7 +63,7 @@ REQUIRED_SETTINGS_MODS=(
     "BetterLootControl" "BetterSupportSkills" "ChallengeModes" "CommonGoals"
     "CustomSpells" "EasyServerSettings" "EmpyreanAlteration" "LeyLineLedger"
     "Lockboxes" "Loremaster" "Numbersmith" "Overtinked" "QOL"
-    "SpellSiphon" "Swarmed" "ValheelContent" "Windblown" "WindblownContent"
+    "SpellSiphon" "Swarmed" "ValheelContent" "Windblown"
     "WorldEvents"
 )
 
@@ -105,28 +105,12 @@ fi
 
 echo ""
 
-# ─── Check 4: Empty / Stale Mods ───
-echo "--- 4. Stale / Empty Mods ---"
-if ls Gemcrafter/*.cs &>/dev/null 2>&1; then
-    check_pass "Gemcrafter has source files"
+# ─── Check 4: Backup Directory Exists ───
+echo "--- 4. SQL Backup Directory ---"
+if [ -d "sql-backups" ]; then
+    check_pass "sql-backups/ exists"
 else
-    check_warn "Gemcrafter appears empty (no .cs files)"
-fi
-
-if ls Work-In-Progress/*.cs &>/dev/null 2>&1; then
-    check_pass "Work-In-Progress has source files"
-else
-    check_warn "Work-In-Progress appears empty (no .cs files)"
-fi
-
-echo ""
-
-# ─── Check 5: Backup Directory Exists ───
-echo "--- 5. SQL Backup Directory ---"
-if [ -d "WindblownContent/sql-backups" ]; then
-    check_pass "WindblownContent/sql-backups/ exists"
-else
-    check_warn "WindblownContent/sql-backups/ missing (create if SQL work planned)"
+    check_warn "sql-backups/ missing (create if SQL work planned)"
 fi
 
 echo ""

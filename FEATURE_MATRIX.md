@@ -157,15 +157,12 @@ Single-owner rule: if Feature X is owned by Mod A, no other mod re-implements X.
 | CustomSpells | ❌ | ✅ | ⚠️ | Needs README |
 | Data | ❌ | ❌ | 🔴 | Shared data mod, needs docs |
 | EmpyreanAlteration | ❌ | ✅ | ⚠️ | Needs README |
-| Gemcrafter | ❌ | ❌ | 🔴 | Empty mod (obj/ only) |
 | Lockboxes | ❌ | ✅ | ⚠️ | Needs README |
 | Shared | ❌ | ❌ | 🔴 | Shared library, needs docs |
 | Swarmed | ❌ | ✅ | ⚠️ | Needs README |
 | ValheelContent | ❌ | ✅ | ⚠️ | Needs README (blocked per AGENTS.md) |
-| WindblownContent | ✅ | ❌ | ⚠️ | Docs present, missing Settings.json |
-| Work-In-Progress | ❌ | ❌ | 🔴 | Detritus, needs evaluation |
 | WorldEvents | ❌ | ✅ | ⚠️ | Needs README |
-| Windblown | ✅ | ✅ | ✅ | Good shape |
+| Windblown | ✅ | ✅ | ✅ | Good shape; absorbed legacy WindblownContent trophy/content ownership |
 
 ## Gaps & Duplicates
 
@@ -174,10 +171,7 @@ Single-owner rule: if Feature X is owned by Mod A, no other mod re-implements X.
 | EmpyreanAlteration lacks README | HIGH | Create README documenting all mutators, features, and cross-mod integration |
 | Swarmed lacks README | HIGH | Create README documenting CreatureEx, call-for-help, dungeon population |
 | WorldEvents lacks README | HIGH | Document all event types, scheduler, and claim system |
-| Gemcrafter appears empty | MEDIUM | Remove or scaffold if planned for future |
-| Work-In-Progress appears detritus | MEDIUM | Remove or commit to a plan |
 | Data mod has no Settings.json or README | MEDIUM | Document as shared data dependency |
-| WindblownContent missing Settings.json | MEDIUM | Create template Settings.json |
 | AceModQa no docs/settings | LOW | QA tool, document minimally |
 | Shared mod no docs/settings | LOW | Shared library, document interface contracts |
 | Defense imbue hang on armor | HIGH | Known bug in Overtinked, needs investigation |

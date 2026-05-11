@@ -7,23 +7,23 @@
 #   1. Builds every mod in the repo that has a .csproj
 #   2. Stops only ACE.Server/dotnet processes whose command line is under C:\ACE\
 #      (excludes C:\ACE-WB live, A:\void-test, etc.)
-#   3. Runs scripts/sync-world-void-test-to-wb-test.sh (void-test_world → wb_test world DB) by default
-#      after ACE stop — backups under sql-backups/world-sync/. See that script for shard/player options.
-#   4. WIPES C:\ACE\Mods\ entirely (clean slate, no stale DLLs)
-#   5. Copies each mod's DLL + Meta.json + Settings.json from build/ output (same as void-test)
-#   6. Applies every mod's repo Content/SQL/**/*.sql to MySQL (default database: ace_world), sorted by path
-#   7. Excludes ValheelContent (permanently), Shared/ (no csproj), build/ (output dir)
-#   8. Prints a restart reminder
+#   3. WIPES C:\ACE\Mods\ entirely, then copies DLL + Meta.json + Settings.json (+ Content/) — always runs
+#      after ACE stop so filesystem deploy is not blocked by MySQL/world sync.
+#   4. Runs scripts/sync-world-void-test-to-wb-test.sh (void-test_world → wb_test world DB) by default —
+#      backups under sql-backups/world-sync/. Skip: DEPLOY_WB_TEST_SKIP_WORLD_SYNC=1
+#   5. Applies every mod's repo Content/SQL/**/*.sql to MySQL (default database: ace_world), sorted by path
+#   6. Excludes ValheelContent (permanently), Shared/ (no csproj), build/ (output dir)
+#   7. Prints a restart reminder
 #
 # ⚠️  Wipe replaces ALL files under C:\ACE\Mods\<Mod>\ including operator-tuned Settings.json.
 #    Back up C:\ACE\Mods first if you rely on local JSON edits; then merge keys back as needed.
 #
-# World sync (Step 3): On by default. Skip: DEPLOY_WB_TEST_SKIP_WORLD_SYNC=1
+# World sync (Step 4): On by default. Skip: DEPLOY_WB_TEST_SKIP_WORLD_SYNC=1
 #   Uses VOID_SQL_DATABASE (default void-test_world) → WB_TEST_SQL_DATABASE (default ace_world).
 #   Requires ACE_MYSQL_USER / ACE_MYSQL_PASSWORD unless WB_TEST_SKIP_SQL=1 (then sync is skipped too
 #   if creds missing — DLL-only deploy).
 #
-# SQL (Step 6): Requires ACE_MYSQL_USER and ACE_MYSQL_PASSWORD exported before run.
+# SQL (Step 5): Requires ACE_MYSQL_USER and ACE_MYSQL_PASSWORD exported before run.
 #   Optional: MYSQL_EXE, WB_TEST_SQL_DATABASE (default ace_world).
 #   Skip: WB_TEST_SKIP_SQL=1
 #   Applies repo source ModName/Content/SQL/**/*.sql (not build/). See scripts/Apply-RepoModSqlToMysql.ps1.
@@ -157,39 +157,14 @@ rm -f "$(dirname "$WB_TEST_MODS")/Server/wb_test_watchdog_state.json"
 echo "  Done."
 echo ""
 
-# ── Step 3: Clone void-test world → wb_test world DB (same as sync-world-void-test-to-wb-test.sh) ─
-SYNC_SCRIPT="$SCRIPT_DIR/sync-world-void-test-to-wb-test.sh"
-if [ "${DEPLOY_WB_TEST_SKIP_WORLD_SYNC:-0}" = "1" ]; then
-  echo "=== Step 3: World DB sync skipped (DEPLOY_WB_TEST_SKIP_WORLD_SYNC=1) ==="
-  echo ""
-elif [ -z "${ACE_MYSQL_USER:-}" ] || [ -z "${ACE_MYSQL_PASSWORD+x}" ]; then
-  if [ "${WB_TEST_SKIP_SQL:-0}" = "1" ]; then
-    echo "=== Step 3: World DB sync skipped (no ACE_MYSQL_* creds; WB_TEST_SKIP_SQL=1 DLL-only) ==="
-    echo ""
-  else
-    echo "ERROR: Step 3 world sync requires ACE_MYSQL_USER and ACE_MYSQL_PASSWORD (same as repo SQL step)." >&2
-    echo "       Export them, or set DEPLOY_WB_TEST_SKIP_WORLD_SYNC=1 to skip cloning void-test_world → dest." >&2
-    exit 1
-  fi
-else
-  echo "=== Step 3: World DB sync (void-test → wb_test world DB) ==="
-  echo "  Script: $SYNC_SCRIPT"
-  if [ ! -f "$SYNC_SCRIPT" ]; then
-    echo "ERROR: Missing $SYNC_SCRIPT" >&2
-    exit 1
-  fi
-  bash "$SYNC_SCRIPT" || exit 1
-  echo ""
-fi
-
-# ── Step 4: Wipe wb_test Mods/ ────────────────────────────────────────────
-echo "=== Step 4: Wiping $WB_TEST_MODS ==="
+# ── Step 3: Wipe wb_test Mods/ (before MySQL so DLL deploy always runs) ────
+echo "=== Step 3: Wiping $WB_TEST_MODS ==="
 rm -rf "$WB_TEST_MODS"/*
 echo "  Done."
 echo ""
 
-# ── Step 5: Copy build output ─────────────────────────────────────────────
-echo "=== Step 5: Copying mods ==="
+# ── Step 4: Copy build output ─────────────────────────────────────────────
+echo "=== Step 4: Copying mods ==="
 for mod_dir in */; do
   name="${mod_dir%/}"
   csproj="$name/$name.csproj"
@@ -246,6 +221,31 @@ for mod_dir in */; do
   fi
 done
 echo ""
+
+# ── Step 5: Clone void-test world → wb_test world DB (after mods on disk) ─
+SYNC_SCRIPT="$SCRIPT_DIR/sync-world-void-test-to-wb-test.sh"
+if [ "${DEPLOY_WB_TEST_SKIP_WORLD_SYNC:-0}" = "1" ]; then
+  echo "=== Step 5: World DB sync skipped (DEPLOY_WB_TEST_SKIP_WORLD_SYNC=1) ==="
+  echo ""
+elif [ -z "${ACE_MYSQL_USER:-}" ] || [ -z "${ACE_MYSQL_PASSWORD+x}" ]; then
+  if [ "${WB_TEST_SKIP_SQL:-0}" = "1" ]; then
+    echo "=== Step 5: World DB sync skipped (no ACE_MYSQL_* creds; WB_TEST_SKIP_SQL=1 DLL-only) ==="
+    echo ""
+  else
+    echo "ERROR: Step 5 world sync requires ACE_MYSQL_USER and ACE_MYSQL_PASSWORD (mods already copied to $WB_TEST_MODS)." >&2
+    echo "       Add scripts/.deploy-mysql.env, export vars, or set DEPLOY_WB_TEST_SKIP_WORLD_SYNC=1." >&2
+    exit 1
+  fi
+else
+  echo "=== Step 5: World DB sync (void-test → wb_test world DB) ==="
+  echo "  Script: $SYNC_SCRIPT"
+  if [ ! -f "$SYNC_SCRIPT" ]; then
+    echo "ERROR: Missing $SYNC_SCRIPT" >&2
+    exit 1
+  fi
+  bash "$SYNC_SCRIPT" || exit 1
+  echo ""
+fi
 
 # ── Step 6: Apply repo Content/SQL to wb_test world DB ─────────────────────
 echo "=== Step 6: Applying repo Content/SQL to MySQL ==="

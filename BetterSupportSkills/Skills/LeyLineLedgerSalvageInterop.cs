@@ -4,11 +4,14 @@ using AceRaajMods.Shared;
 
 namespace BetterSupportSkills.Skills;
 
-// Bridge to LeyLineLedger /bank salvage PropertyInt64 slots for stack salvage WCIDs 20980–21089.
+// Bridge to LeyLineLedger /bank salvage PropertyInt64 slots for ACE salvage bag WCIDs.
 // Property id must match LeyLineLedger.BankSalvage.ResolveMaterialBankProperty (DepositRules order + optional BankProperty),
-// not WCID − 20981 row index — see Shared/LeyLineLedgerSalvageBankInterop.cs.
+// not a guessed contiguous WCID offset — see Shared/LeyLineLedgerSalvageBankInterop.cs.
 public static class LeyLineLedgerSalvageInterop
 {
+    const uint MinSalvageWcid = 20980;
+    const uint MaxSalvageWcid = 21089;
+
     public static int GetSalvagePropertyId(uint salvageWcid)
     {
         return LeyLineLedgerSalvageBankInterop.GetSalvageMaterialBankPropertyId(salvageWcid);
@@ -24,9 +27,9 @@ public static class LeyLineLedgerSalvageInterop
 
     public static bool TryIncSalvage(Player player, uint salvageWcid, int units)
     {
-        if (!LeyLineLedgerSalvageBankInterop.IsValidSalvageWcid(salvageWcid))
+        if (salvageWcid < MinSalvageWcid || salvageWcid > MaxSalvageWcid)
         {
-            ModManager.Log($"[BSS->LLL Salvage] WCID {salvageWcid} is not a valid salvage material; skipping {units} units.", ModManager.LogLevel.Debug);
+            ModManager.Log($"[BSS->LLL Salvage] WCID {salvageWcid} out of salvage range ({MinSalvageWcid}-{MaxSalvageWcid})", ModManager.LogLevel.Warn);
             return false;
         }
 
@@ -40,13 +43,6 @@ public static class LeyLineLedgerSalvageInterop
         }
 
         LeyLineLedgerBankInterop.IncBanked(player, prop, units);
-
-        // Debug-level logging for suspect WCIDs (21072-21089, indices 53-71) to debug zero-balance issue
-        if (salvageWcid >= 21072 && salvageWcid <= 21089)
-        {
-            ModManager.Log($"[BSS->LLL Salvage-DIAG] WCID {salvageWcid} -> DepositRules prop {prop}: credited {units} units (total after: {LeyLineLedgerBankInterop.GetBanked(player, prop)}).", ModManager.LogLevel.Debug);
-        }
-
         ModManager.Log($"[BSS->LLL Salvage] Credited {units} units of WCID {salvageWcid} to property {prop}.", ModManager.LogLevel.Debug);
         return true;
     }

@@ -20,7 +20,7 @@
 #   Windblown SQL layout: Windblown/Content/SQL/ — see Windblown/docs/CustomTrophyNPC-Deployment-Standard.md
 #
 # Trigger phrase for agents:  "push void" or "deploy void"
-# wb_test (C:\ACE): see scripts/deploy-wb-test.sh
+# wb_test (C:\ACE): see scripts/deploy-wb-test.sh (use DEPLOY_TEST_MATCH_VOID_WORLD_DB=1 there for same MySQL DB name as this script)
 # See AGENTS.md §5.
 
 set -euo pipefail

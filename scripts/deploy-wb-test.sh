@@ -23,6 +23,12 @@
 #
 # Trigger phrase for agents:  "push wb test" / "deploy wb test" / "deploy test" (same tree as void)
 # See AGENTS.md §5.
+#
+# World DB parity with void-test (same MySQL database name + same repo SQL result):
+#   export DEPLOY_TEST_MATCH_VOID_WORLD_DB=1
+# before running. That forces WB_TEST_SQL_DATABASE to VOID_SQL_DATABASE (default void-test_world).
+# You must also point the C:\ACE ACE.Server world config at that same database name, or only
+# filesystem parity holds. Do not run void-test and wb_test writers against one DB concurrently.
 
 set -euo pipefail
 
@@ -43,10 +49,18 @@ BUILD_DIR="$REPO_ROOT/build"
 
 cd "$REPO_ROOT"
 
+if [ "${DEPLOY_TEST_MATCH_VOID_WORLD_DB:-0}" = "1" ]; then
+  export WB_TEST_SQL_DATABASE="${VOID_SQL_DATABASE:-void-test_world}"
+fi
+
 echo "=== deploy-wb-test.sh (wb_test / C:\\ACE) ==="
 echo "Repo: $REPO_ROOT"
 echo "Target: $WB_TEST_MODS"
-echo "SQL DB: ${WB_TEST_SQL_DATABASE:-ace_world} (WB_TEST_SKIP_SQL=1 to skip)"
+if [ "${DEPLOY_TEST_MATCH_VOID_WORLD_DB:-0}" = "1" ]; then
+  echo "SQL DB: $WB_TEST_SQL_DATABASE (DEPLOY_TEST_MATCH_VOID_WORLD_DB=1 — same default DB name as void-test deploy)"
+else
+  echo "SQL DB: ${WB_TEST_SQL_DATABASE:-ace_world} (WB_TEST_SKIP_SQL=1 to skip; set DEPLOY_TEST_MATCH_VOID_WORLD_DB=1 to match void-test DB)"
+fi
 echo ""
 
 # ── Step 1: Build all mods ────────────────────────────────────────────────

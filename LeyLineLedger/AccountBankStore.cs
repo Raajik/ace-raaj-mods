@@ -15,10 +15,11 @@ internal static class AccountBankStore
     {
         get
         {
-            var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-            return Path.Combine(dir, "Data", "AccountBanks");
+            return LeyLineLedgerDataPaths.InModData("AccountBanks");
         }
     }
+
+    static string LegacyModDataDir => LeyLineLedgerDataPaths.InLegacyModRoot("Data", "AccountBanks");
 
     static object Gate(string storageKey) => Locks.GetOrAdd(storageKey, _ => new object());
 
@@ -40,6 +41,9 @@ internal static class AccountBankStore
 
     static string FilePath(string storageKey) =>
         Path.Combine(ModDataDir, $"{storageKey.Replace(':', '_')}.json");
+
+    static string LegacyFilePath(string storageKey) =>
+        Path.Combine(LegacyModDataDir, $"{storageKey.Replace(':', '_')}.json");
 
     internal static IEnumerable<int> EnumerateBankProps(Settings s)
     {
@@ -272,7 +276,7 @@ internal static class AccountBankStore
     static AccountBankData ReadOrCreate(string storageKey)
     {
         Directory.CreateDirectory(ModDataDir);
-        var path = FilePath(storageKey);
+        var path = ResolveReadPath(storageKey);
         if (!File.Exists(path))
             return new AccountBankData();
 
@@ -295,6 +299,35 @@ internal static class AccountBankStore
         var path = FilePath(storageKey);
         var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(path, json);
+        TryDeleteLegacyFile(storageKey);
+    }
+
+    static string ResolveReadPath(string storageKey)
+    {
+        var currentPath = FilePath(storageKey);
+        if (File.Exists(currentPath))
+            return currentPath;
+
+        var legacyPath = LegacyFilePath(storageKey);
+        if (File.Exists(legacyPath))
+            return legacyPath;
+
+        return currentPath;
+    }
+
+    static void TryDeleteLegacyFile(string storageKey)
+    {
+        var legacyPath = LegacyFilePath(storageKey);
+        if (!File.Exists(legacyPath))
+            return;
+
+        try
+        {
+            File.Delete(legacyPath);
+        }
+        catch
+        {
+        }
     }
 
     static string Normalize(string name) => name.Trim().ToLowerInvariant();

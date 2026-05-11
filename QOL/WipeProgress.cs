@@ -61,8 +61,25 @@ internal static class WipeProgress
             if (string.IsNullOrWhiteSpace(parentDir))
                 parentDir = modDir;
 
+            var serverDir = AppDomain.CurrentDomain.BaseDirectory;
+            try
+            {
+                var serverAssemblyPath = typeof(ModManager).Assembly.Location;
+                var resolvedServerDir = Path.GetDirectoryName(serverAssemblyPath);
+                if (!string.IsNullOrWhiteSpace(resolvedServerDir))
+                    serverDir = resolvedServerDir;
+            }
+            catch
+            {
+            }
+
             var filesToWipe = new[]
             {
+                Path.Combine(serverDir, "ModData", "AchievementUnlocked", "AccountAchievements.json"),
+                Path.Combine(serverDir, "ModData", "AchievementUnlocked", "AccountPoolBonus.json"),
+                Path.Combine(serverDir, "ModData", "AchievementUnlocked", "AccountMilestoneBonus.json"),
+                Path.Combine(serverDir, "ModData", "AchievementUnlocked", "AccountTierProgress.json"),
+                Path.Combine(serverDir, "ModData", "Loremaster", "AccountQuestFlags.json"),
                 Path.Combine(parentDir, "AchievementUnlocked", "AccountAchievements.json"),
                 Path.Combine(parentDir, "AchievementUnlocked", "AccountPoolBonus.json"),
                 Path.Combine(parentDir, "AchievementUnlocked", "AccountMilestoneBonus.json"),

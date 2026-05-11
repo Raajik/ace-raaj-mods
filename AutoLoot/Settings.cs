@@ -18,7 +18,7 @@ public class Settings
     public int BankCashProperty { get; set; } = 39999;
 
     [JsonPropertyName("// LootProfilePath")]
-    public string LootProfilePathDoc { get; init; } = "Folder for .utl loot profiles. Default empty: PatchClass sets Path.Combine(ModPath, \"LootProfiles\"). Override to any server path; /autoloot creates the folder if missing.";
+    public string LootProfilePathDoc { get; init; } = "Folder for .utl loot profiles only. Default empty: PatchClass sets Path.Combine(ModPath, \"LootProfiles\"). Override to any server path; /autoloot creates the folder if missing. Player prefs now persist separately under Server/ModData/AutoLoot/PlayerData.";
     public string LootProfilePath { get; set; } = "";
 
     [JsonPropertyName("// DefaultActiveProfiles")]

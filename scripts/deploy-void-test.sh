@@ -17,6 +17,7 @@
 #   Optional: MYSQL_EXE, VOID_SQL_DATABASE (default void-test_world).
 #   Skip: VOID_TEST_SKIP_SQL=1
 #   Scoped backups before risky weenie work: see wiki operations/SQL Procedures.
+#   Optional shard SQL target: VOID_SHARD_DATABASE (preferred), WB_TEST_SHARD_DATABASE (legacy fallback).
 #   Windblown SQL layout: Windblown/Content/SQL/ — see Windblown/docs/CustomTrophyNPC-Deployment-Standard.md
 #
 # Trigger phrase for agents:  "push void" or "deploy void"
@@ -219,11 +220,13 @@ else
   export ACE_MYSQL_USER
   export ACE_MYSQL_PASSWORD
   export MYSQL_EXE
+  SHARD_SQL_DB="${VOID_SHARD_DATABASE:-${WB_TEST_SHARD_DATABASE:-}}"
+  export VOID_SHARD_DATABASE
   export WB_TEST_SHARD_DATABASE
   PS_APPLY="${SCRIPT_PS}\\Apply-RepoModSqlToMysql.ps1"
   PS_CMD=(powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PS_APPLY" -RepoRoot "$REPO_PS" -Database "$SQL_DB")
-  if [ -n "${WB_TEST_SHARD_DATABASE:-}" ]; then
-    PS_CMD+=(-ShardDatabase "$WB_TEST_SHARD_DATABASE")
+  if [ -n "$SHARD_SQL_DB" ]; then
+    PS_CMD+=(-ShardDatabase "$SHARD_SQL_DB")
   fi
   if ! "${PS_CMD[@]}"; then
     echo "ERROR: Apply-RepoModSqlToMysql.ps1 failed." >&2

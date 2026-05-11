@@ -6,7 +6,8 @@ namespace WorldEvents;
 
 public static class ParticipationLedger
 {
-    internal static readonly string BasePath = Path.Combine(ModManager.ModPath, "WorldEvents", "Participation");
+    internal static readonly string BasePath = WorldEventsDataPaths.InModData("Participation");
+    internal static readonly string LegacyBasePath = WorldEventsDataPaths.InLegacyModRoot("Participation");
     private static readonly ConcurrentDictionary<uint, object> FileLocks = new();
 
     public static void RecordCompletion(uint accountId, string eventType, string questName)
@@ -51,21 +52,30 @@ public static class ParticipationLedger
     public static List<AccountParticipationSummary> GetLeaderboard()
     {
         var results = new List<AccountParticipationSummary>();
-        if (!Directory.Exists(BasePath)) return results;
+        var accountIds = new HashSet<uint>();
 
-        foreach (var file in Directory.GetFiles(BasePath, "*.json"))
+        foreach (var root in new[] { BasePath, LegacyBasePath })
         {
-            try
+            if (!Directory.Exists(root))
+                continue;
+
+            foreach (var file in Directory.GetFiles(root, "*.json"))
             {
-                var fileName = Path.GetFileNameWithoutExtension(file);
-                if (uint.TryParse(fileName, out var accountId))
+                try
                 {
-                    var summary = Load(accountId);
-                    if (summary.TotalEventCompletions > 0)
-                        results.Add(summary);
+                    var fileName = Path.GetFileNameWithoutExtension(file);
+                    if (uint.TryParse(fileName, out var accountId))
+                        accountIds.Add(accountId);
                 }
+                catch { }
             }
-            catch { }
+        }
+
+        foreach (var accountId in accountIds)
+        {
+            var summary = Load(accountId);
+            if (summary.TotalEventCompletions > 0)
+                results.Add(summary);
         }
 
         results.Sort((a, b) => b.TotalEventCompletions.CompareTo(a.TotalEventCompletions));
@@ -74,8 +84,9 @@ public static class ParticipationLedger
 
     public static AccountParticipationSummary Load(uint accountId)
     {
-        var path = Path.Combine(BasePath, $"{accountId}.json");
-        if (!File.Exists(path)) return new AccountParticipationSummary { AccountId = accountId };
+        var path = ResolveReadPath(accountId);
+        if (!File.Exists(path))
+            return new AccountParticipationSummary { AccountId = accountId };
         try
         {
             var json = File.ReadAllText(path);
@@ -92,5 +103,31 @@ public static class ParticipationLedger
         Directory.CreateDirectory(BasePath);
         var path = Path.Combine(BasePath, $"{accountId}.json");
         File.WriteAllText(path, JsonSerializer.Serialize(summary, new JsonSerializerOptions { WriteIndented = true }));
+        DeleteLegacyFileIfPresent(accountId);
+    }
+
+    static string ResolveReadPath(uint accountId)
+    {
+        var newPath = Path.Combine(BasePath, $"{accountId}.json");
+        if (File.Exists(newPath))
+            return newPath;
+
+        var legacyPath = Path.Combine(LegacyBasePath, $"{accountId}.json");
+        return File.Exists(legacyPath) ? legacyPath : newPath;
+    }
+
+    static void DeleteLegacyFileIfPresent(uint accountId)
+    {
+        var legacyPath = Path.Combine(LegacyBasePath, $"{accountId}.json");
+        if (!File.Exists(legacyPath))
+            return;
+
+        try
+        {
+            File.Delete(legacyPath);
+        }
+        catch
+        {
+        }
     }
 }

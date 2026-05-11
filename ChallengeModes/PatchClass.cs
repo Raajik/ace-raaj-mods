@@ -241,10 +241,44 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
     static string GetPlayerDataPath(Player player)
     {
-        var modDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "";
-        var dir = Path.Combine(modDir, "Data", "PlayerData");
-        Directory.CreateDirectory(dir);
-        return Path.Combine(dir, $"{player.Guid.Full}.json");
+        var path = ChallengeModesDataPaths.CurrentPlayerDataPath(player.Guid.Full);
+        var dir = Path.GetDirectoryName(path);
+        if (!string.IsNullOrWhiteSpace(dir))
+            Directory.CreateDirectory(dir);
+        return path;
+    }
+
+    static string GetLegacyPlayerDataPath(uint guid)
+    {
+        return ChallengeModesDataPaths.LegacyPlayerDataPath(guid);
+    }
+
+    static string ResolvePlayerDataReadPath(uint guid)
+    {
+        var currentPath = ChallengeModesDataPaths.CurrentPlayerDataPath(guid);
+        if (File.Exists(currentPath))
+            return currentPath;
+
+        var legacyPath = GetLegacyPlayerDataPath(guid);
+        if (File.Exists(legacyPath))
+            return legacyPath;
+
+        return currentPath;
+    }
+
+    static void TryDeleteLegacyPlayerData(uint guid)
+    {
+        var legacyPath = GetLegacyPlayerDataPath(guid);
+        if (!File.Exists(legacyPath))
+            return;
+
+        try
+        {
+            File.Delete(legacyPath);
+        }
+        catch
+        {
+        }
     }
 
     static void EnsureLoaded(Player player)
@@ -253,7 +287,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             return;
 
         var g = player.Guid.Full;
-        var path = GetPlayerDataPath(player);
+        var path = ResolvePlayerDataReadPath(g);
 
         if (!File.Exists(path))
         {
@@ -295,6 +329,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             ChaosEnabledByGuid[g] = prefs.ChaosEnabled;
             ChaosDeclinedByGuid[g] = prefs.ChaosPermanentlyDeclined;
             PrefsLoadedFromFileTicks[g] = writeTicks;
+
+            if (!string.Equals(path, GetPlayerDataPath(player), StringComparison.OrdinalIgnoreCase))
+                SavePrefs(player);
         }
         catch (Exception ex)
         {
@@ -329,6 +366,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             try
             {
                 PrefsLoadedFromFileTicks[g] = File.GetLastWriteTimeUtc(path).Ticks;
+                TryDeleteLegacyPlayerData(g);
             }
             catch
             {
@@ -502,8 +540,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         try
         {
             // Player prefs use the same id as shard Biota.Id / player.Guid.Full (ACE instance id).
-            var modDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-            var path = Path.Combine(modDir, "Data", "PlayerData", $"{biotaId}.json");
+            var path = ResolvePlayerDataReadPath(biotaId);
             if (!File.Exists(path))
                 return false;
 

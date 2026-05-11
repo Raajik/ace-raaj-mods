@@ -4,9 +4,10 @@ namespace WorldEvents;
 
 internal static class InvasionPersistence
 {
-    static readonly string DataDir = Path.Combine(ModManager.ModPath, "WorldEvents", "Data", "Invasion");
+    static readonly string DataDir = WorldEventsDataPaths.InModData("Invasion");
     static readonly string ActiveFile = Path.Combine(DataDir, "ActiveInvasion.json");
-    static readonly string LegacyCwdFile = Path.Combine(Environment.CurrentDirectory, "Data", "Invasion", "ActiveInvasion.json");
+    static readonly string LegacyModFile = WorldEventsDataPaths.InLegacyData("Invasion", "ActiveInvasion.json");
+    static readonly string LegacyServerDataFile = WorldEventsDataPaths.InLegacyServerData("Invasion", "ActiveInvasion.json");
 
     static readonly JsonSerializerOptions _json = new() { WriteIndented = true };
 
@@ -23,15 +24,16 @@ internal static class InvasionPersistence
                 return JsonSerializer.Deserialize<ActiveInvasionData>(text, _json);
             }
 
-            if (File.Exists(LegacyCwdFile))
+            var legacyPath = File.Exists(LegacyModFile) ? LegacyModFile : LegacyServerDataFile;
+            if (File.Exists(legacyPath))
             {
-                var text = File.ReadAllText(LegacyCwdFile);
+                var text = File.ReadAllText(legacyPath);
                 var data = JsonSerializer.Deserialize<ActiveInvasionData>(text, _json);
                 if (data != null)
                     SaveActiveInvasion(data);
                 try
                 {
-                    File.Delete(LegacyCwdFile);
+                    File.Delete(legacyPath);
                 }
                 catch
                 {

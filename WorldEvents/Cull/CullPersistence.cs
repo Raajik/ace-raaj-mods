@@ -4,9 +4,10 @@ namespace WorldEvents;
 
 internal static class CullPersistence
 {
-    static string DataDir => Path.Combine(ModManager.ModPath, "WorldEvents", "Data", "Cull");
+    static string DataDir => WorldEventsDataPaths.InModData("Cull");
     static string ActiveCullPath => Path.Combine(DataDir, "ActiveCull.json");
-    static string LegacyActiveCullPath => Path.Combine(ModManager.ModPath, "Data", "Cull", "ActiveCull.json");
+    static string LegacyWorldEventsActiveCullPath => WorldEventsDataPaths.InLegacyData("Cull", "ActiveCull.json");
+    static string LegacyGlobalActiveCullPath => Path.Combine(ModManager.ModPath, "Data", "Cull", "ActiveCull.json");
 
     internal static void EnsureDirectories() => Directory.CreateDirectory(DataDir);
 
@@ -18,14 +19,15 @@ internal static class CullPersistence
             if (File.Exists(ActiveCullPath))
                 return JsonSerializer.Deserialize<ActiveCullData>(File.ReadAllText(ActiveCullPath));
 
-            if (File.Exists(LegacyActiveCullPath))
+            var legacyPath = ResolveLegacyPath();
+            if (legacyPath != null)
             {
-                var data = JsonSerializer.Deserialize<ActiveCullData>(File.ReadAllText(LegacyActiveCullPath));
+                var data = JsonSerializer.Deserialize<ActiveCullData>(File.ReadAllText(legacyPath));
                 if (data != null)
                     SaveActiveCull(data);
                 try
                 {
-                    File.Delete(LegacyActiveCullPath);
+                    File.Delete(legacyPath);
                 }
                 catch
                 {
@@ -61,5 +63,16 @@ internal static class CullPersistence
     {
         try { if (File.Exists(ActiveCullPath)) File.Delete(ActiveCullPath); }
         catch { }
+    }
+
+    static string? ResolveLegacyPath()
+    {
+        if (File.Exists(LegacyWorldEventsActiveCullPath))
+            return LegacyWorldEventsActiveCullPath;
+
+        if (File.Exists(LegacyGlobalActiveCullPath))
+            return LegacyGlobalActiveCullPath;
+
+        return null;
     }
 }

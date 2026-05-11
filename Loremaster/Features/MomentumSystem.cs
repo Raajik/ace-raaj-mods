@@ -47,13 +47,9 @@ internal static class MomentumSystem
 
     internal static void Initialize()
     {
-        var modDir = PatchClass.GetModDirectory();
-        if (!string.IsNullOrEmpty(modDir))
-        {
-            _filePath = Path.Combine(modDir, "Data", "MomentumState.json");
-            Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
-            Load();
-        }
+        _filePath = LoremasterDataPaths.InModData("MomentumState.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
+        Load();
     }
 
     // ── Public hooks called from PatchClass ──────────────────────────────
@@ -294,18 +290,32 @@ internal static class MomentumSystem
 
     static void Load()
     {
-        if (_filePath == null || !File.Exists(_filePath)) return;
+        if (_filePath == null)
+            return;
+
         try
         {
-            var json = File.ReadAllText(_filePath);
+            var path = ResolveLoadPath();
+            if (path == null)
+                return;
+
+            var json = File.ReadAllText(path);
             var raw = JsonSerializer.Deserialize<Dictionary<string, MomentumAccountState>>(json);
             if (raw == null) return;
+
             lock (_cache)
             {
                 _cache.Clear();
                 foreach (var (key, val) in raw)
                     if (uint.TryParse(key, out uint accountId))
                         _cache[accountId] = val;
+            }
+
+            if (path != _filePath)
+            {
+                WriteSnapshot();
+                TryDeleteLegacyFile(path);
+                ModManager.Log("[Loremaster] Migrated MomentumState.json to Server/ModData/Loremaster", ModManager.LogLevel.Info);
             }
         }
         catch (Exception ex)
@@ -324,17 +334,55 @@ internal static class MomentumSystem
         {
             try
             {
-                var data = new Dictionary<string, MomentumAccountState>();
-                lock (_cache)
-                    foreach (var (k, v) in _cache)
-                        data[k.ToString()] = v;
-                var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(_filePath, json);
+                WriteSnapshot();
             }
             catch (Exception ex)
             {
                 ModManager.Log($"[Loremaster] MomentumState save failed: {ex.Message}", ModManager.LogLevel.Warn);
             }
+        }
+    }
+
+    static string? ResolveLoadPath()
+    {
+        if (_filePath != null && File.Exists(_filePath))
+            return _filePath;
+
+        var legacyPath = LoremasterDataPaths.InLegacyData("MomentumState.json");
+        if (File.Exists(legacyPath))
+            return legacyPath;
+
+        return null;
+    }
+
+    static void WriteSnapshot()
+    {
+        if (_filePath == null)
+            return;
+
+        Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
+
+        var data = new Dictionary<string, MomentumAccountState>();
+        lock (_cache)
+            foreach (var (k, v) in _cache)
+                data[k.ToString()] = v;
+
+        var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
+        File.WriteAllText(_filePath, json);
+        TryDeleteLegacyFile(LoremasterDataPaths.InLegacyData("MomentumState.json"));
+    }
+
+    static void TryDeleteLegacyFile(string path)
+    {
+        if (!File.Exists(path))
+            return;
+
+        try
+        {
+            File.Delete(path);
+        }
+        catch
+        {
         }
     }
 }

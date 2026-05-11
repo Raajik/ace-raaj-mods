@@ -7,9 +7,8 @@ namespace Loremaster;
 // (portal restrictions, NPC dialogue, etc.). Repeat completions are still allowed.
 public static class AccountQuestFlags
 {
-    static readonly string DataPath = Path.Combine(
-        Path.GetDirectoryName(typeof(AccountQuestFlags).Assembly.Location) ?? "",
-        "AccountQuestFlags.json");
+    static readonly string DataPath = LoremasterDataPaths.InModData("AccountQuestFlags.json");
+    static readonly string LegacyDataPath = LoremasterDataPaths.InLegacyModRoot("AccountQuestFlags.json");
 
     static readonly Dictionary<uint, HashSet<string>> _flags = new();
     static bool _loaded;
@@ -19,15 +18,23 @@ public static class AccountQuestFlags
         if (_loaded) return;
         try
         {
-            if (File.Exists(DataPath))
+            Directory.CreateDirectory(Path.GetDirectoryName(DataPath)!);
+            var path = File.Exists(DataPath) ? DataPath : LegacyDataPath;
+            if (File.Exists(path))
             {
-                var json = File.ReadAllText(DataPath);
+                var json = File.ReadAllText(path);
                 var data = JsonSerializer.Deserialize<Dictionary<uint, List<string>>>(json);
                 if (data is not null)
                 {
                     _flags.Clear();
                     foreach (var kvp in data)
                         _flags[kvp.Key] = new HashSet<string>(kvp.Value, StringComparer.OrdinalIgnoreCase);
+
+                    if (path == LegacyDataPath)
+                    {
+                        Save();
+                        TryDeleteLegacyDataPath();
+                    }
                 }
             }
         }
@@ -42,11 +49,13 @@ public static class AccountQuestFlags
     {
         try
         {
+            Directory.CreateDirectory(Path.GetDirectoryName(DataPath)!);
             var data = new Dictionary<uint, List<string>>();
             foreach (var kvp in _flags)
                 data[kvp.Key] = new List<string>(kvp.Value);
             var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(DataPath, json);
+            TryDeleteLegacyDataPath();
         }
         catch (Exception ex)
         {
@@ -79,5 +88,19 @@ public static class AccountQuestFlags
         return _flags.TryGetValue(accountId, out var set)
             ? set.ToList().AsReadOnly()
             : Array.Empty<string>();
+    }
+
+    static void TryDeleteLegacyDataPath()
+    {
+        if (!File.Exists(LegacyDataPath))
+            return;
+
+        try
+        {
+            File.Delete(LegacyDataPath);
+        }
+        catch
+        {
+        }
     }
 }

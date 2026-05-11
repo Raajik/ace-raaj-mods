@@ -1,6 +1,5 @@
 namespace WorldEvents;
 
-using System.Reflection;
 using System.Text.Json;
 using ACE.Entity;
 using ACE.Entity.Enum;
@@ -18,7 +17,12 @@ internal static class PathwardenVendorManager
     
     // Purchase log file path
     static string PurchaseLogPath => Path.Combine(
-        Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? ".",
+        WorldEventsDataPaths.InModData("PathwardenVendor"),
+        "PathwardenVendor_Purchases.json"
+    );
+
+    static string LegacyPurchaseLogPath => Path.Combine(
+        Path.GetDirectoryName(typeof(PathwardenVendorManager).Assembly.Location) ?? ".",
         "PathwardenVendor_Purchases.json"
     );
     
@@ -181,7 +185,9 @@ internal static class PathwardenVendorManager
                     PropertyNamingPolicy = JsonNamingPolicy.CamelCase
                 };
                 var json = JsonSerializer.Serialize(_purchaseLog, options);
+                Directory.CreateDirectory(Path.GetDirectoryName(PurchaseLogPath)!);
                 File.WriteAllText(PurchaseLogPath, json);
+                DeleteLegacyPurchaseLogIfPresent();
             }
             catch (Exception ex)
             {
@@ -200,9 +206,10 @@ internal static class PathwardenVendorManager
         {
             try
             {
-                if (File.Exists(PurchaseLogPath))
+                var path = File.Exists(PurchaseLogPath) ? PurchaseLogPath : LegacyPurchaseLogPath;
+                if (File.Exists(path))
                 {
-                    var json = File.ReadAllText(PurchaseLogPath);
+                    var json = File.ReadAllText(path);
                     _purchaseLog = JsonSerializer.Deserialize<List<VendorPurchaseRecord>>(json) ?? new List<VendorPurchaseRecord>();
                     ModManager.Log($"[PathwardenVendor] Loaded {_purchaseLog.Count} historical purchase records.", 
                         ModManager.LogLevel.Info);
@@ -214,6 +221,20 @@ internal static class PathwardenVendorManager
                     ModManager.LogLevel.Warn);
                 _purchaseLog = new List<VendorPurchaseRecord>();
             }
+        }
+    }
+
+    static void DeleteLegacyPurchaseLogIfPresent()
+    {
+        if (!File.Exists(LegacyPurchaseLogPath))
+            return;
+
+        try
+        {
+            File.Delete(LegacyPurchaseLogPath);
+        }
+        catch
+        {
         }
     }
     

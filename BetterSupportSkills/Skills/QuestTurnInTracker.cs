@@ -7,9 +7,8 @@ namespace BetterSupportSkills.Skills;
 /// </summary>
 public static class QuestTurnInTracker
 {
-    static readonly string DataPath = Path.Combine(
-        Path.GetDirectoryName(typeof(QuestTurnInTracker).Assembly.Location) ?? "",
-        "QuestTurnInTracker.json");
+    static readonly string DataPath = BetterSupportSkillsDataPaths.InModData("QuestTurnInTracker.json");
+    static readonly string LegacyDataPath = BetterSupportSkillsDataPaths.InLegacyModRoot("QuestTurnInTracker.json");
 
     static readonly Dictionary<uint, Dictionary<uint, TurnInRecord>> _data = new();
     static bool _loaded;
@@ -29,15 +28,19 @@ public static class QuestTurnInTracker
         if (_loaded) return;
         try
         {
-            if (File.Exists(DataPath))
+            var loadPath = ResolveLoadPath();
+            if (loadPath != null)
             {
-                var json = File.ReadAllText(DataPath);
+                var json = File.ReadAllText(loadPath);
                 var data = JsonSerializer.Deserialize<Dictionary<uint, Dictionary<uint, TurnInRecord>>>(json);
                 if (data is not null)
                 {
                     _data.Clear();
                     foreach (var kvp in data)
                         _data[kvp.Key] = new Dictionary<uint, TurnInRecord>(kvp.Value);
+
+                    if (!string.Equals(loadPath, DataPath, StringComparison.OrdinalIgnoreCase))
+                        Save();
                 }
             }
         }
@@ -54,14 +57,32 @@ public static class QuestTurnInTracker
         {
             try
             {
+                var directory = Path.GetDirectoryName(DataPath);
+                if (!string.IsNullOrWhiteSpace(directory))
+                    Directory.CreateDirectory(directory);
+
                 var json = JsonSerializer.Serialize(_data, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(DataPath, json);
+
+                if (File.Exists(LegacyDataPath))
+                    File.Delete(LegacyDataPath);
             }
             catch (Exception ex)
             {
                 ModManager.Log($"[BSS QuestTurnIn] Failed to save tracker: {ex.Message}", ModManager.LogLevel.Warn);
             }
         }
+    }
+
+    static string? ResolveLoadPath()
+    {
+        if (File.Exists(DataPath))
+            return DataPath;
+
+        if (File.Exists(LegacyDataPath))
+            return LegacyDataPath;
+
+        return null;
     }
 
     /// <summary>

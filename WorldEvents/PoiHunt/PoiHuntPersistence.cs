@@ -13,10 +13,13 @@ internal static class PoiHuntPersistence
     };
 
     internal static string DataDirectory =>
-        Path.Combine(ModManager.ModPath, "WorldEvents", "Data", "PoiHunt");
+        WorldEventsDataPaths.InModData("PoiHunt");
 
     internal static string ActiveEventFile =>
         Path.Combine(DataDirectory, "ActiveEvent.json");
+
+    internal static string LegacyActiveEventFile =>
+        WorldEventsDataPaths.InLegacyData("PoiHunt", "ActiveEvent.json");
 
     internal static void EnsureDirectories()
     {
@@ -27,10 +30,11 @@ internal static class PoiHuntPersistence
     {
         try
         {
-            if (!File.Exists(ActiveEventFile))
+            var path = File.Exists(ActiveEventFile) ? ActiveEventFile : LegacyActiveEventFile;
+            if (!File.Exists(path))
                 return null;
 
-            var json = File.ReadAllText(ActiveEventFile);
+            var json = File.ReadAllText(path);
             return JsonSerializer.Deserialize<ActivePoiHuntData>(json, JsonOptions);
         }
         catch (Exception ex)
@@ -47,6 +51,7 @@ internal static class PoiHuntPersistence
             EnsureDirectories();
             var json = JsonSerializer.Serialize(data, JsonOptions);
             File.WriteAllText(ActiveEventFile, json);
+            DeleteLegacyIfPresent();
         }
         catch (Exception ex)
         {
@@ -60,10 +65,25 @@ internal static class PoiHuntPersistence
         {
             if (File.Exists(ActiveEventFile))
                 File.Delete(ActiveEventFile);
+            DeleteLegacyIfPresent();
         }
         catch (Exception ex)
         {
             ModManager.Log($"[PoiHunt] Clear failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    static void DeleteLegacyIfPresent()
+    {
+        if (!File.Exists(LegacyActiveEventFile))
+            return;
+
+        try
+        {
+            File.Delete(LegacyActiveEventFile);
+        }
+        catch
+        {
         }
     }
 }

@@ -71,8 +71,9 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
             Settings = new Settings();
         }
         
-        var modDir = Path.GetDirectoryName(typeof(PatchClass).Assembly.Location) ?? "";
-        PlayerProfileStore.Initialize(modDir);
+        PlayerProfileStore.Initialize(
+            BetterSupportSkillsDataPaths.InModData("PlayerProfiles.json"),
+            BetterSupportSkillsDataPaths.InLegacyModRoot("PlayerProfiles.json"));
         Skills.QuestTurnInTracker.Load();
 
         ModManager.Log($"[BSS] Start() - EnableTrophyDrops={Settings.EnableTrophyDrops}, EnableAssessCreature={Settings.EnableAssessCreature}", ModManager.LogLevel.Info);

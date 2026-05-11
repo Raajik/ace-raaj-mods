@@ -10,10 +10,13 @@ internal static class ScavengerPersistence
     };
 
     internal static string DataDirectory =>
-        Path.Combine(ModManager.ModPath, "WorldEvents", "Data", "ScavengerHunt");
+        WorldEventsDataPaths.InModData("ScavengerHunt");
 
     internal static string ActiveEventFile =>
         Path.Combine(DataDirectory, "ActiveEvent.json");
+
+    internal static string LegacyActiveEventFile =>
+        WorldEventsDataPaths.InLegacyData("ScavengerHunt", "ActiveEvent.json");
 
     internal static void EnsureDirectories()
     {
@@ -24,10 +27,11 @@ internal static class ScavengerPersistence
     {
         try
         {
-            if (!File.Exists(ActiveEventFile))
+            var path = File.Exists(ActiveEventFile) ? ActiveEventFile : LegacyActiveEventFile;
+            if (!File.Exists(path))
                 return null;
 
-            var json = File.ReadAllText(ActiveEventFile);
+            var json = File.ReadAllText(path);
             return JsonSerializer.Deserialize<ActiveScavengerHuntData>(json, JsonOptions);
         }
         catch (Exception ex)
@@ -44,6 +48,7 @@ internal static class ScavengerPersistence
             EnsureDirectories();
             var json = JsonSerializer.Serialize(data, JsonOptions);
             File.WriteAllText(ActiveEventFile, json);
+            DeleteLegacyIfPresent();
         }
         catch (Exception ex)
         {
@@ -57,10 +62,25 @@ internal static class ScavengerPersistence
         {
             if (File.Exists(ActiveEventFile))
                 File.Delete(ActiveEventFile);
+            DeleteLegacyIfPresent();
         }
         catch (Exception ex)
         {
             ModManager.Log($"[ScavengerHunt] Clear failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    static void DeleteLegacyIfPresent()
+    {
+        if (!File.Exists(LegacyActiveEventFile))
+            return;
+
+        try
+        {
+            File.Delete(LegacyActiveEventFile);
+        }
+        catch
+        {
         }
     }
 }

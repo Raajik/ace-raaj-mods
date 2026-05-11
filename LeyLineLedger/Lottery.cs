@@ -262,7 +262,10 @@ public static class Lottery
 
             if (totalTickets <= 0)
             {
-                ModManager.Log("[LeyLineLedger] Lottery draw: no tickets sold.", ModManager.LogLevel.Info);
+                ModManager.Log(
+                    $"[LeyLineLedger] Lottery draw: no tickets — pyreal pool {pool:N0}p + QB {qbPool:0.#} retained for next draw (entries required to win).",
+                    ModManager.LogLevel.Info);
+                BumpNextDrawUtc();
                 return;
             }
 
@@ -324,7 +327,8 @@ public static class Lottery
 
             if (winners.Count == 0)
             {
-                ModManager.Log("[LeyLineLedger] Lottery draw: failed to select any winner.", ModManager.LogLevel.Warn);
+                ModManager.Log("[LeyLineLedger] Lottery draw: no winner selected — pools retained; scheduling next window.", ModManager.LogLevel.Warn);
+                BumpNextDrawUtc();
                 return;
             }
 
@@ -366,10 +370,7 @@ public static class Lottery
             lock (_qbPoolLock)
                 _qbPool = 0;
 
-            // Reset next draw time
-            _nextDrawUtc = DateTime.UtcNow.AddMinutes(Settings.Lottery.DrawIntervalMinutes);
-
-            SavePersistedState();
+            BumpNextDrawUtc();
 
             // Broadcast
             var winnerLines = string.Join(", ", winners.Select(w =>
@@ -473,6 +474,12 @@ public static class Lottery
         }
 
         return false;
+    }
+
+    static void BumpNextDrawUtc()
+    {
+        _nextDrawUtc = DateTime.UtcNow.AddMinutes(Settings.Lottery.DrawIntervalMinutes);
+        SavePersistedState();
     }
 
     static void DrainQpContributions()

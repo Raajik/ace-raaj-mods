@@ -218,7 +218,7 @@ public class Settings
     public SkeletonKeyAppraisalSettings SkeletonKeyAppraisal { get; set; } = new();
 
     [JsonPropertyName("// Lottery")]
-    public string LotteryDoc { get; init; } = "Auto-draw lottery: pyreal + QB pools; tickets from bank. Winnings credit online/offline players to LeyLineLedger /bank (account-wide JSON or character biota when isolated). Offline QB writes QuestPointsExtra (11011) on shard biota. WorldEvents /claim inbox is not wired for lottery payouts.";
+    public string LotteryDoc { get; init; } = "Auto-draw lottery: pyreal + QB pools; tickets from bank. If a draw window has zero ticket entries, pools are not paid out—they roll to the next window until someone wins. Winnings credit online/offline players to LeyLineLedger /bank (account-wide JSON or character biota when isolated). Offline QB writes QuestPointsExtra (11011) on shard biota. WorldEvents /claim inbox is not wired for lottery payouts.";
     public LotterySettings Lottery { get; set; } = new();
 }
 
@@ -664,7 +664,7 @@ public class LotterySettings
     public double TicketPricePoolPercent { get; set; } = 0.0001;
 
     [JsonPropertyName("// DrawIntervalMinutes")]
-    public string DrawIntervalMinutesDoc { get; init; } = "How often the lottery auto-draws (default 4320 = 3 days).";
+    public string DrawIntervalMinutesDoc { get; init; } = "How often the lottery attempts a draw and advances the persisted next-draw UTC (default 4320 = 3 days). Empty draws still bump this schedule; pools only reset after a successful payout.";
     public int DrawIntervalMinutes { get; set; } = 4320;
 
     [JsonPropertyName("// PersistenceFileName")]

@@ -5,13 +5,16 @@ using ACE.Server.Mods;
 
 namespace AceRaajMods.Shared;
 
-// Resolves LeyLineLedger /bank salvage PropertyInt64 ids for stack salvage WCIDs 20981–21089.
+// Resolves LeyLineLedger /bank salvage PropertyInt64 ids for ACE salvage bag WCIDs.
 // Must match LeyLineLedger.BankSalvage.ResolveMaterialBankProperty + deposit source WCIDs (weenie, output bag, additional ids).
+// ACE source truth: Player.MaterialSalvage includes Alabaster at 20980, so callers must not assume 20981 is the first salvage WCID.
 // BetterSupportSkills credits this slot via LeyLineLedgerBankInterop.IncBanked — wrong id desyncs bag-fill messages from /bank salvage status.
 public static class LeyLineLedgerSalvageBankInterop
 {
-    const uint MinSalvageWcid = 20981;
-    const uint MaxSalvageWcid = 21089;
+    const uint MinAceSalvageWcid = 20980;
+    const uint MaxAceSalvageWcid = 21089;
+    const uint LegacyMinSalvageWcid = 20981;
+    const uint LegacyMaxSalvageWcid = 21089;
     const int LegacyFirstMaterialBankPropertyId = 40201;
 
     static bool _loggedResolveFailure;
@@ -19,13 +22,15 @@ public static class LeyLineLedgerSalvageBankInterop
 
     public static int GetSalvageMaterialBankPropertyId(uint salvageWcid)
     {
-        if (salvageWcid < MinSalvageWcid || salvageWcid > MaxSalvageWcid)
+        if (salvageWcid < MinAceSalvageWcid || salvageWcid > MaxAceSalvageWcid)
             return -1;
 
         if (TryResolveFromLeyLineLedger(salvageWcid, out int prop, out bool lllPresent) && prop > 0)
             return prop;
 
-        if (!lllPresent)
+        // Legacy WCID-offset fallback only existed for the old 20981-21089 assumption.
+        // Alabaster (20980) never had a valid legacy offset slot.
+        if (!lllPresent && salvageWcid >= LegacyMinSalvageWcid && salvageWcid <= LegacyMaxSalvageWcid)
         {
             if (!_loggedAssemblyMissing)
             {
@@ -35,7 +40,7 @@ public static class LeyLineLedgerSalvageBankInterop
                     ModManager.LogLevel.Info);
             }
 
-            return LegacyFirstMaterialBankPropertyId + (int)(salvageWcid - MinSalvageWcid);
+            return LegacyFirstMaterialBankPropertyId + (int)(salvageWcid - LegacyMinSalvageWcid);
         }
 
         return -1;
@@ -44,7 +49,7 @@ public static class LeyLineLedgerSalvageBankInterop
     public static bool TryGetSalvageMaterialBankPropertyId(uint salvageWcid, out int propertyId)
     {
         propertyId = -1;
-        if (salvageWcid < MinSalvageWcid || salvageWcid > MaxSalvageWcid)
+        if (salvageWcid < MinAceSalvageWcid || salvageWcid > MaxAceSalvageWcid)
             return false;
 
         if (TryResolveFromLeyLineLedger(salvageWcid, out int prop, out _) && prop > 0)

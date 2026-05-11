@@ -12,8 +12,23 @@ namespace BetterSupportSkills.Skills;
 [HarmonyPatchCategory(nameof(Features.SalvageSkill))]
 public static class SalvageAutoDeposit
 {
+    const uint FirstSalvageWcid = 20980;
+    const uint LastSalvageWcid = 21089;
+    const int MaxMaterialIndex = (int)(LastSalvageWcid - FirstSalvageWcid);
+
     // Per-player explicit toggle. Missing key → use SalvageSettings.DefaultAutoSalvageEnabled.
     static readonly ConcurrentDictionary<uint, bool> AutoSalvageEnabled = new();
+
+    // ACE source of truth for salvage bag WCIDs.
+    static readonly HashSet<uint> SalvageWcids = Player.MaterialSalvage.Values
+        .Where(wcid => wcid > 0)
+        .Select(wcid => (uint)wcid)
+        .ToHashSet();
+
+    static readonly Dictionary<uint, MaterialType> MaterialTypeBySalvageWcid = Player.MaterialSalvage
+        .Where(kvp => kvp.Value > 0)
+        .GroupBy(kvp => (uint)kvp.Value)
+        .ToDictionary(g => g.Key, g => (MaterialType)g.First().Key);
 
     // ── Cross-mod suppression API (LeyLineLedger redeem/withdraw, etc.) ──────
     // Other mods that legitimately create salvage stacks for the player (e.g.
@@ -117,10 +132,13 @@ public static class SalvageAutoDeposit
             return false;
 
         // Try material-type salvage first (armor/weapons with MaterialType)
-        if (TryGetMaterialSalvage(player, item, salvageSettings, out var materialIndex, out var rawUnits))
+        if (TryGetMaterialSalvage(player, item, salvageSettings, out var salvageWcid, out var rawUnits))
         {
+            int materialIndex = GetMaterialIndex(salvageWcid);
+            if (materialIndex < 0)
+                return false;
+
             double depositUnits = rawUnits * rate;
-            uint salvageWcid = (uint)(20981 + materialIndex);
             int depositInt = Math.Max(1, (int)depositUnits);
             bool ok = LeyLineLedgerSalvageInterop.TryIncSalvage(player, salvageWcid, depositInt);
             if (!ok) return false;
@@ -129,10 +147,10 @@ public static class SalvageAutoDeposit
             return true;
         }
 
-        // Raw salvage bags (WCID 20981–21089)
+        // Raw salvage bags (ACE source includes Alabaster at 20980)
         if (IsSalvageStack(item.WeenieClassId))
         {
-            materialIndex = GetMaterialIndex(item.WeenieClassId);
+            int materialIndex = GetMaterialIndex(item.WeenieClassId);
             if (materialIndex < 0) return false;
 
             rawUnits = GetSalvageUnits(item, salvageSettings.UnitsPerItem);
@@ -242,9 +260,9 @@ public static class SalvageAutoDeposit
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    static bool TryGetMaterialSalvage(Player player, WorldObject item, SalvageSettings settings, out int materialIndex, out int rawUnits)
+    static bool TryGetMaterialSalvage(Player player, WorldObject item, SalvageSettings settings, out uint salvageWcid, out int rawUnits)
     {
-        materialIndex = -1;
+        salvageWcid = 0;
         rawUnits = 0;
 
         var materialType = item.GetProperty(PropertyInt.MaterialType);
@@ -252,7 +270,7 @@ public static class SalvageAutoDeposit
 
         int matType = (int)materialType.Value;
 
-        if (!Player.MaterialSalvage.TryGetValue(matType, out var salvageWcid) || salvageWcid <= 0)
+        if (!Player.MaterialSalvage.TryGetValue(matType, out int mappedWcid) || mappedWcid <= 0)
         {
             // Category fallback: pick randomly from player's least-banked materials in the category
             if (!MaterialTypeCategories.TryGetValue(matType, out var categoryMembers))
@@ -262,11 +280,12 @@ public static class SalvageAutoDeposit
             if (!selectedWcid.HasValue)
                 return false;
 
-            salvageWcid = selectedWcid.Value;
+            mappedWcid = selectedWcid.Value;
         }
 
-        materialIndex = salvageWcid - 20981;
-        if (materialIndex < 0 || materialIndex > 108) return false;
+        salvageWcid = (uint)mappedWcid;
+        if (GetMaterialIndex(salvageWcid) < 0)
+            return false;
 
         int work = item.ItemWorkmanship ?? 0;
         if (work > 0)
@@ -290,8 +309,7 @@ public static class SalvageAutoDeposit
             if (!Player.MaterialSalvage.TryGetValue(mt, out var wcid) || wcid <= 0)
                 continue;
 
-            int matIndex = wcid - 20981;
-            if (matIndex < 0 || matIndex > 108)
+            if (GetMaterialIndex((uint)wcid) < 0)
                 continue;
 
             int bankProp = LeyLineLedgerSalvageInterop.GetSalvagePropertyId((uint)wcid);
@@ -314,17 +332,20 @@ public static class SalvageAutoDeposit
 
     public static int GetMaterialBankProperty(int materialIndex)
     {
-        if (materialIndex < 0 || materialIndex > 108)
+        if (materialIndex < 0 || materialIndex > MaxMaterialIndex)
             return -1;
-        return LeyLineLedgerSalvageInterop.GetSalvagePropertyId((uint)(20981 + materialIndex));
+        return LeyLineLedgerSalvageInterop.GetSalvagePropertyId(FirstSalvageWcid + (uint)materialIndex);
     }
 
-    static bool IsSalvageStack(uint wcid) => wcid >= 20981 && wcid <= 21089;
+    static bool IsSalvageStack(uint wcid) => SalvageWcids.Contains(wcid);
 
     static int GetMaterialIndex(uint wcid)
     {
-        int index = (int)wcid - 20981;
-        return (index >= 0 && index <= 108) ? index : -1;
+        if (wcid < FirstSalvageWcid || wcid > LastSalvageWcid)
+            return -1;
+
+        int index = (int)(wcid - FirstSalvageWcid);
+        return index <= MaxMaterialIndex ? index : -1;
     }
 
     static int GetSalvageUnits(WorldObject item, int unitsPerItem)
@@ -368,7 +389,7 @@ public static class SalvageAutoDeposit
         if (!SalvageMessagingMuted.GetOrAdd(playerId, false))
         {
             // Check for whole-bag completion: read actual LLL balance, compare to last known count
-            uint salvageWcid = (uint)(20981 + materialIndex);
+            uint salvageWcid = FirstSalvageWcid + (uint)materialIndex;
             int prop = LeyLineLedgerSalvageInterop.GetSalvagePropertyId(salvageWcid);
             if (prop > 0)
             {
@@ -632,94 +653,35 @@ public static class SalvageAutoDeposit
 
     static string GetMaterialNameByWcid(uint wcid)
     {
-        int matIndex = GetMaterialIndex(wcid);
-        if (matIndex >= 0 && matIndex <= 108)
-            return GetMaterialName(matIndex);
+        if (MaterialTypeBySalvageWcid.TryGetValue(wcid, out var materialType))
+            return FormatMaterialTypeName(materialType);
+
         return $"WCID {wcid}";
     }
 
     public static string GetMaterialName(int index)
     {
-        if (index < 0 || index > 108) return "Unknown";
-        string[] names =
+        if (index < 0 || index > MaxMaterialIndex)
+            return "Unknown";
+
+        return GetMaterialNameByWcid(FirstSalvageWcid + (uint)index);
+    }
+
+    static string FormatMaterialTypeName(MaterialType materialType)
+    {
+        string raw = materialType.ToString();
+        if (string.IsNullOrEmpty(raw))
+            return "Unknown";
+
+        var chars = new List<char>(raw.Length + 8);
+        for (int i = 0; i < raw.Length; i++)
         {
-            /* 20981 */ "Armoredillo Hide",
-            /* 20982 */ "Bronze",
-            /* 20983 */ "Ceramic",
-            /* 20984 */ "Gold",
-            /* 20985 */ "Granite",
-            /* 20986 */ "Iron",
-            /* 20987 */ "Linen",
-            /* 20988 */ "Mahogany",
-            /* 20989 */ "Oak",
-            /* 20990 */ "Pine",
-            /* 20991 */ "Reedshark Hide",
-            /* 20992 */ "Satin",
-            /* 20993 */ "Steel",
-            /* 20994 */ "Velvet",
-            /* 20995 */ "Wool",
-            /* 20996 */ "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
-            /* 21004 */ "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
-            /* 21012 */ "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
-            /* 21020 */ "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
-            /* 21028 */ "Unknown", "Unknown", "Unknown", "Unknown", "Unknown", "Unknown",
-            /* 21034 */ "Agate",
-            /* 21035 */ "Amber",
-            /* 21036 */ "Amethyst",
-            /* 21037 */ "Aquamarine",
-            /* 21038 */ "Azurite",
-            /* 21039 */ "Black Garnet",
-            /* 21040 */ "Black Opal",
-            /* 21041 */ "Bloodstone",
-            /* 21042 */ "Brass",
-            /* 21043 */ "Carnelian",
-            /* 21044 */ "Citrine",
-            /* 21045 */ "Copper",
-            /* 21046 */ "Diamond",
-            /* 21047 */ "Ebony",
-            /* 21048 */ "Emerald",
-            /* 21049 */ "Fire Opal",
-            /* 21050 */ "Green Garnet",
-            /* 21051 */ "Green Jade",
-            /* 21052 */ "Gromnie Hide",
-            /* 21053 */ "Hematite",
-            /* 21054 */ "Imperial Topaz",
-            /* 21055 */ "Ivory",
-            /* 21056 */ "Jet",
-            /* 21057 */ "Lapis Lazuli",
-            /* 21058 */ "Lavender Jade",
-            /* 21059 */ "Leather",
-            /* 21060 */ "Malachite",
-            /* 21061 */ "Marble",
-            /* 21062 */ "Moonstone",
-            /* 21063 */ "Obsidian",
-            /* 21064 */ "Onyx",
-            /* 21065 */ "Opal",
-            /* 21066 */ "Peridot",
-            /* 21067 */ "Porcelain",
-            /* 21068 */ "Pyreal",
-            /* 21069 */ "Red Garnet",
-            /* 21070 */ "Red Jade",
-            /* 21071 */ "Rose Quartz",
-            /* 21072 */ "Ruby",
-            /* 21073 */ "Sandstone",
-            /* 21074 */ "Sapphire",
-            /* 21075 */ "Serpentine",
-            /* 21076 */ "Silk",
-            /* 21077 */ "Silver",
-            /* 21078 */ "Smokey Quartz",
-            /* 21079 */ "Sunstone",
-            /* 21080 */ "Teak",
-            /* 21081 */ "Tiger Eye",
-            /* 21082 */ "Tourmaline",
-            /* 21083 */ "Turquoise",
-            /* 21084 */ "White Jade",
-            /* 21085 */ "White Quartz",
-            /* 21086 */ "White Sapphire",
-            /* 21087 */ "Yellow Garnet",
-            /* 21088 */ "Yellow Topaz",
-            /* 21089 */ "Zircon"
-        };
-        return names[index];
+            char c = raw[i];
+            if (i > 0 && char.IsUpper(c) && !char.IsUpper(raw[i - 1]))
+                chars.Add(' ');
+            chars.Add(c);
+        }
+
+        return new string(chars.ToArray());
     }
 }

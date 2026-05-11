@@ -545,22 +545,27 @@ public class AutoLoot
     }
 
     /// <summary>
-    /// Snapshots current LLL salvage property values for standard salvage WCIDs (20981-21089).
-    /// Property = 40201 + (wcid - 20981), matching default LLL config.
+    /// Snapshots current LLL salvage property values for ACE salvage bag WCIDs.
+    /// Uses ACE Player.MaterialSalvage WCIDs + shared LLL interop instead of guessing a contiguous range or property offset.
     /// Returns a list of (materialName, bankProp, beforeValue).
     /// </summary>
     static List<(string name, int prop, long before)> SnapshotLLLSalvageTotals(Player player)
     {
         var results = new List<(string, int, long)>();
-        const int firstProp = 40201;
-        const uint firstWcid = 20981;
-        const int count = 109;
+        var seenProps = new HashSet<int>();
 
-        for (int i = 0; i < count; i++)
+        foreach (uint wcid in Player.MaterialSalvage.Values
+            .Where(wcid => wcid > 0)
+            .Select(wcid => (uint)wcid)
+            .Distinct()
+            .OrderBy(wcid => wcid))
         {
-            uint wcid = firstWcid + (uint)i;
-            int bankProp = firstProp + i;
-            string name = BetterSupportSkillsBridge.GetCompactSalvageName((uint)i, wcid);
+            int bankProp = AceRaajMods.Shared.LeyLineLedgerSalvageBankInterop.GetSalvageMaterialBankPropertyId(wcid);
+            if (bankProp <= 0 || !seenProps.Add(bankProp))
+                continue;
+
+            uint materialIndex = wcid - 20980;
+            string name = BetterSupportSkillsBridge.GetCompactSalvageName(materialIndex, wcid);
             long before = LeyLineLedgerBankInterop.GetBanked(player, bankProp);
             results.Add((name, bankProp, before));
         }

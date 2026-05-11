@@ -4,12 +4,12 @@ using AceRaajMods.Shared;
 
 namespace BetterSupportSkills.Skills;
 
-// Bridge to LeyLineLedger /bank salvage PropertyInt64 slots for stack salvage WCIDs 20981–21089.
+// Bridge to LeyLineLedger /bank salvage PropertyInt64 slots for ACE salvage bag WCIDs.
 // Property id must match LeyLineLedger.BankSalvage.ResolveMaterialBankProperty (DepositRules order + optional BankProperty),
-// not WCID − 20981 row index — see Shared/LeyLineLedgerSalvageBankInterop.cs.
+// not a guessed contiguous WCID offset — see Shared/LeyLineLedgerSalvageBankInterop.cs.
 public static class LeyLineLedgerSalvageInterop
 {
-    const uint MinSalvageWcid = 20981;
+    const uint MinSalvageWcid = 20980;
     const uint MaxSalvageWcid = 21089;
 
     public static int GetSalvagePropertyId(uint salvageWcid)

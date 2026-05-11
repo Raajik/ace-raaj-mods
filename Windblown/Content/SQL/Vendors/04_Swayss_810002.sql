@@ -200,3 +200,19 @@ INSERT IGNORE INTO weenie_properties_emote_action (emote_Id, `order`, type, dela
 INSERT IGNORE INTO weenie_properties_emote (id, object_Id, category, probability, quest) VALUES (93159, 810002, 23, 1, 'FreeRedistribute');
 INSERT IGNORE INTO weenie_properties_emote_action (emote_Id, `order`, type, delay, extent, message)
     VALUES (93159, 0, 10, 1, 1, 'Let me know if you change your mind.');
+
+-- Repair InqYesNo (75): message = popup, test_String = routing key. Swapped or empty message shows
+-- "FreeRedistribute" in the client. INSERT IGNORE never fixes rows already wrong — force canonical text.
+UPDATE weenie_properties_emote_action a
+INNER JOIN weenie_properties_emote e ON e.id = a.emote_Id
+SET a.message = 'Would you like to redistribute your skills?', a.test_String = 'FreeRedistribute'
+WHERE e.object_Id = 810002
+  AND a.emote_Id = 93157
+  AND a.`order` = 0
+  AND a.type = 75
+  AND (
+    LOWER(TRIM(COALESCE(a.message, ''))) = 'freeredistribute'
+    OR a.message = 'FreeRedistribute'
+    OR a.test_String = 'Would you like to redistribute your skills?'
+    OR (TRIM(COALESCE(a.message, '')) = '' AND TRIM(COALESCE(a.test_String, '')) <> '')
+  );

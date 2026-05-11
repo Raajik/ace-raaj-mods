@@ -1,0 +1,2 @@
+# Bash deploy/sync scripts must stay LF or Git Bash breaks on `set -euo pipefail` (CRLF → `$'\r': command not found`).
+scripts/*.sh text eol=lf

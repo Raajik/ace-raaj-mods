@@ -9,22 +9,24 @@ UPDATE weenie SET type = 8 WHERE class_Id IN (45875, 45876);
 -- Remove stackable-related int properties that don't exist on Book weenies
 DELETE FROM weenie_properties_int WHERE object_Id IN (45875, 45876) AND type IN (11, 12, 13, 14, 15);
 
--- Restore Book int properties
+-- Restore Book int properties (one INSERT; MySQL allows a single ON DUPLICATE clause per statement)
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES
-(45875, 5, 10) ON DUPLICATE KEY UPDATE value = 10,
-(45875, 8, 200) ON DUPLICATE KEY UPDATE value = 200,
-(45875, 16, 8) ON DUPLICATE KEY UPDATE value = 8,
-(45875, 19, 0) ON DUPLICATE KEY UPDATE value = 0,
-(45875, 33, 0) ON DUPLICATE KEY UPDATE value = 0,
-(45875, 93, 1044) ON DUPLICATE KEY UPDATE value = 1044;
+(45875, 5, 10),
+(45875, 8, 200),
+(45875, 16, 8),
+(45875, 19, 0),
+(45875, 33, 0),
+(45875, 93, 1044)
+ON DUPLICATE KEY UPDATE value = VALUES(value);
 
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES
-(45876, 5, 10) ON DUPLICATE KEY UPDATE value = 10,
-(45876, 8, 200) ON DUPLICATE KEY UPDATE value = 200,
-(45876, 16, 8) ON DUPLICATE KEY UPDATE value = 8,
-(45876, 19, 0) ON DUPLICATE KEY UPDATE value = 0,
-(45876, 33, 0) ON DUPLICATE KEY UPDATE value = 0,
-(45876, 93, 1044) ON DUPLICATE KEY UPDATE value = 1044;
+(45876, 5, 10),
+(45876, 8, 200),
+(45876, 16, 8),
+(45876, 19, 0),
+(45876, 33, 0),
+(45876, 93, 1044)
+ON DUPLICATE KEY UPDATE value = VALUES(value);
 
 -- Restore book pages
 INSERT IGNORE INTO weenie_properties_book (object_Id, max_Num_Pages, max_Num_Chars_Per_Page)

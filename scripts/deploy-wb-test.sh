@@ -273,8 +273,13 @@ else
   export ACE_MYSQL_USER
   export ACE_MYSQL_PASSWORD
   export MYSQL_EXE
+  export WB_TEST_SHARD_DATABASE
   PS_APPLY="${SCRIPT_PS}\\Apply-RepoModSqlToMysql.ps1"
-  if ! powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PS_APPLY" -RepoRoot "$REPO_PS" -Database "$SQL_DB"; then
+  PS_CMD=(powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PS_APPLY" -RepoRoot "$REPO_PS" -Database "$SQL_DB")
+  if [ -n "${WB_TEST_SHARD_DATABASE:-}" ]; then
+    PS_CMD+=(-ShardDatabase "$WB_TEST_SHARD_DATABASE")
+  fi
+  if ! "${PS_CMD[@]}"; then
     echo "ERROR: Apply-RepoModSqlToMysql.ps1 failed." >&2
     exit 1
   fi

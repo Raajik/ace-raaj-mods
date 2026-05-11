@@ -1,5 +1,15 @@
 # Completed Features & Fixes
 
+## 2026-05-11
+
+### SpellSiphon — rare crystal crafting dialog shows true compound extraction chance
+
+**Problem:** Rare crystals used a **secondary roll** after primary recipe success in `PostHandleRecipe`, but `PostGetRecipeChance` only returned the **primary** MIT-based rate — crafting confirmation showed ~33%+ instead of ~1% overall.
+
+**Fix:** For targets in `RareCrystalWcids`, **`GetRecipeChance` postfix multiplies primary probability by `RareCrystalSecondarySuccessChance`** (default `0.03`, configurable). Same setting drives the secondary roll so UI matches mechanics.
+
+**Files:** `SpellSiphon/Features/RecipeHooks.cs`, `SpellSiphon/Settings.cs`, `SpellSiphon/Settings.json`.
+
 ## 2026-05-10
 
 ### SpellSiphon — vendor blank tools as trade-note stacks (quantity × unit price)

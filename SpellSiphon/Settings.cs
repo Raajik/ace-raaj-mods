@@ -43,6 +43,10 @@ public class Settings
 	public string MaxSuccessRateDoc { get; init; } = "Maximum possible success rate for extraction (hard cap).";
 	public float MaxSuccessRate { get; set; } = 80f;
 
+	[JsonPropertyName("// RareCrystalSecondarySuccessChance")]
+	public string RareCrystalSecondarySuccessChanceDoc { get; init; } = "Rare crystal WCIDs (RecipeHooks list): after primary extraction succeeds, roll this probability (0–1) for full success. Crafting UI chance = primary × this value (~0.03 × ~33% ≈ 1%).";
+	public float RareCrystalSecondarySuccessChance { get; set; } = 0.03f;
+
 	// Extraction behavior
 	[JsonPropertyName("// EnableAnyItemExtraction")]
 	public string EnableAnyItemExtractionDoc { get; init; } = "Allow extracting spells from any spell-bearing item (not just gems).";

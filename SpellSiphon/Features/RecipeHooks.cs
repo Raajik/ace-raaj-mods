@@ -17,7 +17,7 @@ internal static class RecipeHooks
 {
 	private const uint SpellsiphonRecipeId = 900001;
 
-	// Rare crystals: ~1% extraction success (secondary roll after primary success)
+	// Rare crystals: secondary roll after primary success; UI chance = primary × RareCrystalSecondarySuccessChance
 	private static readonly HashSet<uint> RareCrystalWcids = new()
 	{
 		30183, 30184, 30186, 30187, 30188, 30189, 30194, 30195,
@@ -105,7 +105,16 @@ internal static class RecipeHooks
 		if (recipe?.Id != SpellsiphonRecipeId)
 			return;
 
-		__result = CalculateSuccessRate(player, s);
+		double primary = CalculateSuccessRate(player, s);
+
+		// Match PostHandleRecipe: rare crystals need primary success then secondary roll — show compound chance in crafting dialog.
+		if (target != null && RareCrystalWcids.Contains(target.WeenieClassId))
+		{
+			float secondary = Math.Clamp(s.RareCrystalSecondarySuccessChance, 0f, 1f);
+			primary *= secondary;
+		}
+
+		__result = primary;
 	}
 
 	// ==================== PATCH: HandleRecipe (Prefix) ====================
@@ -167,10 +176,10 @@ internal static class RecipeHooks
 			return;
 		}
 
-		// Rare crystal secondary roll (~3% = ~1% overall with 33% base)
 		if (state.IsRareCrystal)
 		{
-			if (ThreadSafeRandom.Next(0.0f, 1.0f) > 0.03f)
+			float secondary = Math.Clamp(s.RareCrystalSecondarySuccessChance, 0f, 1f);
+			if (ThreadSafeRandom.Next(0.0f, 1.0f) > secondary)
 			{
 				player.SendMessage("[SpellSiphon] The crystal's ancient magic resists your attempt.");
 				return;

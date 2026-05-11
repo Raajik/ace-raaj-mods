@@ -1,5 +1,5 @@
 {
-  "Description": "Wasp Wing tier line — four custom WCIDs (850308-850311). Tiers[0] is Regular custom; ReplaceSiblingWcids includes vanilla base 7603 and colored wing WCIDs. MirrorEmoteFromWcid 7603. Retired 850283-850285.",
+  "Description": "Wasp Wing tier line — four custom WCIDs (850308-850311). Tiers[0] is Regular custom; ReplaceSiblingWcids includes vanilla base 7603 and colored wing WCIDs (not 13089 Carpenter Wasp Wing — training academy quest item). MirrorEmoteFromWcid 7603. Retired 850283-850285.",
   "Lines": [
     {
       "Name": "WaspWing",
@@ -36,7 +36,7 @@
           "BankCredit": 250000
         }
       ],
-      "ReplaceSiblingWcids": [7603, 3699, 3700, 3701, 3702, 3703, 8426, 13089],
+      "ReplaceSiblingWcids": [7603, 3699, 3700, 3701, 3702, 3703, 8426],
       "BankCashProperty": 39999,
       "EnableBulkTurnIn": true
     }

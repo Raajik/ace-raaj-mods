@@ -1,7 +1,7 @@
--- Swayss (810002) - Undead skill reset NPC
+-- Swayss (810002) - Undead skill reset NPC (Creature + Use emotes; not a vendor)
 -- No cost, no timer — identical functionality to Fianhe minus the MMD/luminance requirements and 30-day cooldown.
 
-INSERT INTO weenie (class_Id, class_Name, type, last_Modified) VALUES (810002, 'swayss_undead_skill_reset', 12, NOW())
+INSERT INTO weenie (class_Id, class_Name, type, last_Modified) VALUES (810002, 'swayss_undead_skill_reset', 10, NOW())
 ON DUPLICATE KEY UPDATE class_Name = VALUES(class_Name), type = VALUES(type), last_Modified = NOW();
 
 -- Ints: NPC / Creature properties
@@ -30,8 +30,6 @@ INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810002, 16,
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810002, 17, 0.4) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810002, 18, 1) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810002, 19, 0.6) ON DUPLICATE KEY UPDATE value = VALUES(value);
-INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810002, 37, 0.9) ON DUPLICATE KEY UPDATE value = VALUES(value);
-INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810002, 38, 1.35) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810002, 54, 3) ON DUPLICATE KEY UPDATE value = VALUES(value);
 INSERT INTO weenie_properties_float (object_Id, type, value) VALUES (810002, 125, 1) ON DUPLICATE KEY UPDATE value = VALUES(value);
 
@@ -201,18 +199,14 @@ INSERT IGNORE INTO weenie_properties_emote (id, object_Id, category, probability
 INSERT IGNORE INTO weenie_properties_emote_action (emote_Id, `order`, type, delay, extent, message)
     VALUES (93159, 0, 10, 1, 1, 'Let me know if you change your mind.');
 
--- Repair InqYesNo (75): message = popup, test_String = routing key. Swapped or empty message shows
--- "FreeRedistribute" in the client. INSERT IGNORE never fixes rows already wrong — force canonical text.
+-- InqYesNo (75): message = popup, test_String = quest routing key. Always normalize so bad syncs cannot leave swapped columns.
 UPDATE weenie_properties_emote_action a
 INNER JOIN weenie_properties_emote e ON e.id = a.emote_Id
 SET a.message = 'Would you like to redistribute your skills?', a.test_String = 'FreeRedistribute'
 WHERE e.object_Id = 810002
   AND a.emote_Id = 93157
   AND a.`order` = 0
-  AND a.type = 75
-  AND (
-    LOWER(TRIM(COALESCE(a.message, ''))) = 'freeredistribute'
-    OR a.message = 'FreeRedistribute'
-    OR a.test_String = 'Would you like to redistribute your skills?'
-    OR (TRIM(COALESCE(a.message, '')) = '' AND TRIM(COALESCE(a.test_String, '')) <> '')
-  );
+  AND a.type = 75;
+
+-- Vendor-only floats (BuyPrice/SellPrice) must not exist on this Creature weenie.
+DELETE FROM weenie_properties_float WHERE object_Id = 810002 AND `type` IN (37, 38);

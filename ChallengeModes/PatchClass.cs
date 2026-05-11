@@ -616,9 +616,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             if (permanentlyOptedOut)
                 player.SendMessage("Aptitude is permanently disabled on this character (you previously used /cm off aptitude).");
             else if (enabled)
-                player.SendMessage("Aptitude is ON: XP auto-spend is locked on (no manual /xp spend). Use /cm off aptitude to disable permanently, or /cm quit to leave all challenges.");
+                player.SendMessage("Aptitude ON — forced auto XP (no manual); ×3 QB (×9 with Chaos). /cm off aptitude (permanent) or /cm quit.");
             else
-                player.SendMessage("Aptitude is OFF. Use /cm aptitude on at level 1 to enable.");
+                player.SendMessage("Aptitude OFF — /cm aptitude on at level 1: forced auto XP; ×3 QB (×9 with Chaos).");
             return;
         }
 
@@ -660,7 +660,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             SavePrefs(player);
             OnChallengeStarted(player);
             QolXpAptitudeInterop.SetAptitudeForcedAutoSpend(player, true);
-            player.SendMessage("Aptitude is now ON: /xp spend auto is forced, manual XP spend is blocked, and auto-spend runs to true caps.");
+            player.SendMessage("Aptitude ON — forced auto XP (no manual); ×3 QB (×9 with Chaos).");
             return;
         }
 

@@ -50,7 +50,7 @@ public static class LoremasterXpDetail
         sb.AppendLine(
             "Skill credits at ChallengeAchievementLevels are per active Chaos / Aptitude track, once each; the % above is from segment progress only.");
         sb.AppendLine(
-            "Chaos sets FakeFloat 11013 (ChaosQuestBonusMultiplier) for Swarmed / Loremaster integrations; Loremaster QB stacking uses a separate ×3 per track bridge (see /cm chaos message).");
+            "Chaos: FakeFloat 11013 for Swarmed/Loremaster XP hooks; QB uses separate ×3 per track (×9 both) — see /cm help.");
         sb.AppendLine(
             $"Challenge active now: {(PatchClass.PlayerHasActiveChallenge(player) ? "yes" : "no")} (furthest grows while leveling with a /cm mode).");
     }

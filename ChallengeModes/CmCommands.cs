@@ -10,15 +10,15 @@ public static class CmCommands
 {
     const string HelpText = "=== CHALLENGE MODES ===\n"
         + "/cm                         - your challenge status\n"
-        + "/cm chaos                   - Chaos (level 1 only)\n"
-        + "/cm aptitude [on|off]       - Aptitude (level 1 on; auto XP spend locked)\n"
+        + "/cm chaos                   - Chaos: 500% mob awareness; 90% pyreal tax; ×3 QB\n"
+        + "/cm aptitude [on|off]       - Aptitude: forced auto XP; ×3 QB (×9 with Chaos)\n"
         + "/cm quit                    - reset to level 1 and leave all challenge modes\n"
         + "/cm who                     - Chaos / Aptitude players currently online\n"
         + "/cm admin ssf clear <name>  - admin: clear SSF flag on online target (legacy)\n"
         + "/cm debug ...               - admin aptitude debug";
 
     [CommandHandler("cm", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
-        "Challenge modes hub. /cm for status, /cm help for commands.")]
+        "Chaos + Aptitude challenges. /cm for status, /cm help for commands.")]
     public static void HandleCm(Session session, params string[] parameters)
     {
         if (session?.Player is not Player player)
@@ -127,6 +127,9 @@ public static class CmCommands
         lines.AppendLine("=== Your Challenge Status ===");
         lines.AppendLine($"Aptitude: {(apt ? "ON" : "off")}");
         lines.AppendLine($"Chaos:    {(chaos ? "ON" : "off")}");
+        lines.AppendLine("When ON —");
+        lines.AppendLine("· Chaos: 500% mob awareness; 90% pyreal tax; ×3 QB.");
+        lines.AppendLine("· Aptitude: forced auto XP; ×3 QB (×9 with Chaos).");
         lines.Append("Type /cm help for commands.");
 
         player.SendMessage(lines.ToString());

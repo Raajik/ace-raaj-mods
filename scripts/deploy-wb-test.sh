@@ -1,47 +1,47 @@
 #!/usr/bin/env bash
-# deploy-void-test.sh — Full clean deploy of ALL buildable mods to void-test
+# deploy-wb-test.sh — Full clean deploy of ALL buildable mods to wb_test (C:\ACE test server)
 #
-# Usage:  bash scripts/deploy-void-test.sh
+# Usage:  bash scripts/deploy-wb-test.sh
 #
 # What it does:
 #   1. Builds every mod in the repo that has a .csproj
-#   2. Stops only ACE.Server processes whose command line includes the void-test install path
-#      (does not kill C:\ACE or other ACE instances)
-#   3. WIPES A:\void-test\Mods\ entirely (clean slate, no stale DLLs)
-#   4. Copies each mod's DLL + Meta.json + Settings.json from build/ output
+#   2. Stops only ACE.Server/dotnet processes whose command line is under C:\ACE\
+#      (excludes C:\ACE-WB live, A:\void-test, etc.)
+#   3. WIPES C:\ACE\Mods\ entirely (clean slate, no stale DLLs)
+#   4. Copies each mod's DLL + Meta.json + Settings.json from build/ output (same as void-test)
 #   5. Excludes ValheelContent (permanently), Shared/ (no csproj), build/ (output dir)
 #   6. Prints a restart reminder
 #
-# ⚠️  SQL DOES NOT AUTO-DEPLOY (push void = DLL + Settings + YOU apply SQL to void-test_world).
-#    PowerShell pipe pattern (wiki: operations/SQL Procedures, operations/Deploy Procedures):
-#      Get-Content "A:\ai\projects\ace-raaj-mods\SpellSiphon\Content\SQL\Spellsiphon_Tool_Create.sql" | & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' -u jeremy -pandersine11 "void-test_world"
-#    Scoped backup before mutating weenies (example):
-#      & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe' -u jeremy -pandersine11 --single-transaction --skip-lock-tables "void-test_world" weenie --where="class_Id=850200" > WindblownContent/sql-backups/YYYY-MM-DD/pre-850200.sql
-#    Windblown SQL: Windblown/Content/SQL/ — see Windblown/docs/CustomTrophyNPC-Deployment-Standard.md
+# ⚠️  Wipe replaces ALL files under C:\ACE\Mods\<Mod>\ including operator-tuned Settings.json.
+#    Back up C:\ACE\Mods first if you rely on local JSON edits; then merge keys back as needed.
 #
-# Trigger phrase for agents:  "push void" or "deploy void"
-# wb_test (C:\ACE): see scripts/deploy-wb-test.sh
+# ⚠️  SQL DOES NOT AUTO-DEPLOY — apply SQL to ace_world (test) per wiki operations/SQL Procedures.
+#
+# Trigger phrase for agents:  "push wb test" / "deploy wb test" / "deploy test" (same tree as void)
 # See AGENTS.md §5.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-# Git Bash (MSYS): /a/void-test/Mods  WSL: /mnt/a/void-test/Mods  Override: VOID_MODS=/path/to/Mods
-if [ -z "${VOID_MODS:-}" ]; then
-  if [ -d "/a/void-test" ]; then
-    VOID_MODS="/a/void-test/Mods"
+# Git Bash (MSYS): /c/ACE/Mods   WSL: /mnt/c/ACE/Mods   Override: WB_TEST_MODS=/path/to/Mods
+if [ -z "${WB_TEST_MODS:-}" ]; then
+  if [ -d "/c/ACE/Mods" ]; then
+    WB_TEST_MODS="/c/ACE/Mods"
+  elif [ -d "/mnt/c/ACE/Mods" ]; then
+    WB_TEST_MODS="/mnt/c/ACE/Mods"
   else
-    VOID_MODS="/mnt/a/void-test/Mods"
+    echo "ERROR: C:\\ACE\\Mods not found (Git Bash: /c/ACE/Mods, WSL: /mnt/c/ACE/Mods). Set WB_TEST_MODS." >&2
+    exit 1
   fi
 fi
 BUILD_DIR="$REPO_ROOT/build"
 
 cd "$REPO_ROOT"
 
-echo "=== deploy-void-test.sh ==="
+echo "=== deploy-wb-test.sh (wb_test / C:\\ACE) ==="
 echo "Repo: $REPO_ROOT"
-echo "Target: $VOID_MODS"
+echo "Target: $WB_TEST_MODS"
 echo ""
 
 # ── Step 1: Build all mods ────────────────────────────────────────────────
@@ -73,30 +73,31 @@ if [ "$BUILD_FAILED" -ne 0 ]; then
 fi
 echo ""
 
-# ── Step 2: Kill void-test ACE only (do not stop C:\\ACE or other instances) ─
-echo "=== Step 2: Killing void-test ACE.Server only ==="
-VOID_ROOT="$(dirname "$VOID_MODS")"
-VOID_PS_ROOT=""
+# ── Step 2: Kill wb_test ACE only (C:\ACE\, not C:\ACE-WB, not void-test) ─
+echo "=== Step 2: Killing wb_test ACE.Server only (C:\\ACE) ==="
+WB_ROOT="$(dirname "$WB_TEST_MODS")"
+WB_PS_ROOT=""
 if command -v cygpath &>/dev/null; then
-  VOID_PS_ROOT="$(cygpath -w "$VOID_ROOT" 2>/dev/null || true)"
+  WB_PS_ROOT="$(cygpath -w "$WB_ROOT" 2>/dev/null || true)"
 elif command -v wslpath &>/dev/null; then
-  VOID_PS_ROOT="$(wslpath -w "$VOID_ROOT" 2>/dev/null || true)"
+  WB_PS_ROOT="$(wslpath -w "$WB_ROOT" 2>/dev/null || true)"
 fi
-if [ -z "$VOID_PS_ROOT" ]; then
-  # Last resort: dirname as-is (PowerShell may still match if path appears in command line)
-  VOID_PS_ROOT="$VOID_ROOT"
+if [ -z "$WB_PS_ROOT" ]; then
+  WB_PS_ROOT="$WB_ROOT"
 fi
 
-if command -v powershell.exe &>/dev/null && [ -n "$VOID_PS_ROOT" ]; then
-  export DEPLOY_VOID_ROOT="$VOID_PS_ROOT"
+if command -v powershell.exe &>/dev/null && [ -n "$WB_PS_ROOT" ]; then
+  export DEPLOY_WB_ROOT="$WB_PS_ROOT"
   powershell.exe -NoProfile -ExecutionPolicy Bypass -Command '
-    $voidRoot = $env:DEPLOY_VOID_ROOT
-    if ([string]::IsNullOrWhiteSpace($voidRoot)) { exit 0 }
-    $like = "*" + $voidRoot + "*"
+    $wbRoot = $env:DEPLOY_WB_ROOT
+    if ([string]::IsNullOrWhiteSpace($wbRoot)) { exit 0 }
+    $like = "*" + $wbRoot + "\*"
     $procs = @(Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
       $cl = $_.CommandLine
       if ([string]::IsNullOrEmpty($cl)) { return $false }
       if ($cl -notlike $like) { return $false }
+      if ($cl -like "*C:\ACE-WB*" -or $cl -like "*C:/ACE-WB*") { return $false }
+      if ($cl -like "*void-test*" -or $cl -like "*\void-test*") { return $false }
       $n = $_.Name
       if ($n -eq "ACE.Server.exe" -or $n -like "ACE.Server*.exe") { return $true }
       if (($n -eq "dotnet.exe" -or $n -eq "dotnet") -and ($cl -match "ACE[\\/]Server")) { return $true }
@@ -105,21 +106,21 @@ if command -v powershell.exe &>/dev/null && [ -n "$VOID_PS_ROOT" ]; then
     foreach ($p in $procs) {
       Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue
     }
-    Write-Host ("  Stopped void-test ACE process(es): " + $procs.Count)
+    Write-Host ("  Stopped wb_test ACE process(es): " + $procs.Count)
   ' 2>/dev/null || true
-  unset DEPLOY_VOID_ROOT || true
+  unset DEPLOY_WB_ROOT || true
 else
-  echo "  (skipped: powershell.exe or void root path unavailable — stop void-test ACE manually if needed)"
+  echo "  (skipped: powershell.exe or wb root path unavailable — stop C:\ACE ACE manually if needed)"
 fi
 # Clear watchdog block so next poll will restart clean
-rm -f "$(dirname "$VOID_MODS")/Server/void-test_watchdog_BLOCKED.txt"
-rm -f "$(dirname "$VOID_MODS")/Server/void-test_watchdog_state.json"
+rm -f "$(dirname "$WB_TEST_MODS")/Server/wb_test_watchdog_BLOCKED.txt"
+rm -f "$(dirname "$WB_TEST_MODS")/Server/wb_test_watchdog_state.json"
 echo "  Done."
 echo ""
 
-# ── Step 3: Wipe void-test Mods/ ──────────────────────────────────────────
-echo "=== Step 3: Wiping $VOID_MODS ==="
-rm -rf "$VOID_MODS"/*
+# ── Step 3: Wipe wb_test Mods/ ────────────────────────────────────────────
+echo "=== Step 3: Wiping $WB_TEST_MODS ==="
+rm -rf "$WB_TEST_MODS"/*
 echo "  Done."
 echo ""
 
@@ -140,7 +141,7 @@ for mod_dir in */; do
   fi
 
   src="$BUILD_DIR/$name"
-  dst="$VOID_MODS/$name"
+  dst="$WB_TEST_MODS/$name"
 
   # Skip if build output doesn't exist
   [ -d "$src" ] || continue
@@ -148,9 +149,6 @@ for mod_dir in */; do
   mkdir -p "$dst"
 
   # Copy all DLLs from build output (mod + ProjectReference + NuGet deps)
-  # McMaster PluginLoader's per-mod ALC must resolve ALL dependencies locally,
-  # including transitive ProjectReferences (BetterLootControl, AceModQa) and
-  # NuGet packages (AngouriMath, ACE.Shared), otherwise JIT will crash at runtime.
   count=0
   for dll in "$src"/*.dll; do
     [ -f "$dll" ] || continue
@@ -174,7 +172,7 @@ for mod_dir in */; do
     echo "    Meta.json (from source)"
   fi
 
-  # Copy Settings.json (prefer build output, fall back to source)
+  # Copy Settings.json (prefer build output, fall back to source) — same as void-test
   if [ -f "$src/Settings.json" ]; then
     cp "$src/Settings.json" "$dst/Settings.json"
     echo "    Settings.json"
@@ -186,7 +184,7 @@ done
 echo ""
 
 echo "=== Deploy complete ==="
-echo "Mods deployed to: $VOID_MODS"
+echo "Mods deployed to: $WB_TEST_MODS"
 echo ""
-echo "Next: Restart the void-test ACE server to load new DLLs."
-echo "  (e.g., restart the ACE.Server service on Windows)"
+echo "Next: Restart the wb_test ACE server (C:\\ACE) to load new DLLs."
+echo "  (e.g., restart ACE.Server under C:\\ACE\\Server or the wb_test watchdog)"

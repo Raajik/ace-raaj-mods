@@ -2,6 +2,10 @@
 
 ## 2026-05-11
 
+### Docs — README + wiki deploy procedures (void-test + wb_test)
+
+**Change:** `README.md` § Build & Deploy documents local `build/` output, **`deploy-void-test.sh`** vs **`deploy-wb-test.sh`** (paths, wipe behavior, env overrides, SQL reminder, live caveat). Wiki **`operations/Deploy Procedures`** — trigger table distinguishes ad-hoc `"push test"` vs full-tree `deploy-wb-test.sh`; new section **Full-tree mod deploy**; index link from **ace-raaj-mods Patterns** to Deploy Procedures.
+
 ### SpellSiphon — rare crystal crafting dialog shows true compound extraction chance
 
 **Problem:** Rare crystals used a **secondary roll** after primary recipe success in `PostHandleRecipe`, but `PostGetRecipeChance` only returned the **primary** MIT-based rate — crafting confirmation showed ~33%+ instead of ~1% overall.

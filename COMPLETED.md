@@ -22,6 +22,14 @@
 
 ## 2026-05-10
 
+### Windblown — Swayss skill-reset NPC is Creature, not Vendor
+
+**Problem:** Weenie `type` **12 (Vendor)** without merchandise int props caused ACE `Vendor.ValidateVendorRequirements` warnings and vendor-disable behavior. Floats **37 / 38** are vendor BuyPrice / SellPrice semantics, not needed for a Use-emote NPC.
+
+**Fix:** Weenie `type` **10 (Creature)**. Dropped float inserts for 37/38 and added `DELETE` for legacy rows. InqYesNo (emote **93157**): unconditional `UPDATE` so `message` / `test_String` stay canonical after bad syncs.
+
+**Files:** `Windblown/Content/SQL/Vendors/04_Swayss_810002.sql`. **Commit:** `7dbbb8db`.
+
 ### SpellSiphon — vendor blank tools as trade-note stacks (quantity × unit price)
 
 **Problem:** Injected blank Spellsiphon lived in **`UniqueItemsForSale`** with **`StackSize` 250**. ACE unique buys hand over the **whole** `WorldObject`; quantity UI does not scale cost like trade notes. Buying “2” could still grant a full vendor stack / wrong pricing.

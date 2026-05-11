@@ -10,11 +10,12 @@
 #   4. Excludes ValheelContent (permanently), Shared/ (no csproj), build/ (output dir)
 #   5. Prints a restart reminder
 #
-# ⚠️  SQL DOES NOT AUTO-DEPLOY. After running this script, you MUST apply any
-#    new/changed SQL files in Windblown/Content/SQL/ manually:
-#    Get-Content "A:\path\to\script.sql" | & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' -u jeremy -pandersine11 void-test_world
-#
-#    See Windblown/docs/CustomTrophyNPC-Deployment-Standard.md for the full SOP.
+# ⚠️  SQL DOES NOT AUTO-DEPLOY (push void = DLL + Settings + YOU apply SQL to void-test_world).
+#    PowerShell pipe pattern (wiki: operations/SQL Procedures, operations/Deploy Procedures):
+#      Get-Content "A:\ai\projects\ace-raaj-mods\SpellSiphon\Content\SQL\Spellsiphon_Tool_Create.sql" | & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' -u jeremy -pandersine11 "void-test_world"
+#    Scoped backup before mutating weenies (example):
+#      & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe' -u jeremy -pandersine11 --single-transaction --skip-lock-tables "void-test_world" weenie --where="class_Id=850200" > WindblownContent/sql-backups/YYYY-MM-DD/pre-850200.sql
+#    Windblown SQL: Windblown/Content/SQL/ — see Windblown/docs/CustomTrophyNPC-Deployment-Standard.md
 #
 # Trigger phrase for agents:  "push void" or "deploy void"
 # See AGENTS.md §5.

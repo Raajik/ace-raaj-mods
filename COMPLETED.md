@@ -2,6 +2,22 @@
 
 ## 2026-05-10
 
+### SpellSiphon — vendor stacks 250, `TargetType` widen, apply vs extraction guard
+
+**Problem:** (1) Tool max stack / vendor purchase size stuck at 100. (2) After WCID / weenie work, many spell targets failed vanilla use validation (`TargetType` too narrow). (3) Vendor or DB “prefilled” Spellsiphons with spellbook rows but no charged flag hijacked `RecipeManager.GetRecipe` extraction and **stripped the real target** instead of applying stored spells.
+
+**Fix:**
+- **`Spellsiphon_Tool_Create.sql`** — `MaxStackSize` **250**; `TargetType` **560015** (`ItemEnchantableTarget`: includes **ManaStone**, **Container**, **Misc**, etc.).
+- **`VendorIntegration`** — on inject for `SpellsiphonToolWcid`, set `MaxStackSize` + `StackSize` from **`VendorSpellsiphonStackSize`** (default 250).
+- **`Settings` / `Settings.json`** — `VendorSpellsiphonStackSize`; `CoalescedManaWcids` template aligned to **42516 / 42517 / 42518**.
+- **`ItemPayload.IsSpellsiphonApplyReady`** — charged bool, JSON payload, **or** non-empty spellbook on the tool.
+- **`RecipeHooks.PostGetRecipe`** — skip injection when apply-ready (no bogus extraction on prefilled tools).
+- **`UseOnTargetHooks`** — apply branch uses same test; spell list = payload then **spellbook** fallback.
+
+**Wiki:** `A:/obsidian/jeremy/wiki/SpellSiphon.md` (vendor + apply vs extraction).
+
+**Commit:** `f523e954`.
+
 ### LeyLineLedger / BetterSupportSkills — Salvage bank `PropertyInt64` alignment + legacy auto-merge
 
 **Problem:** BetterSupportSkills auto-salvage credited stack salvage WCIDs **20981–21089** using **`FirstMaterialBankPropertyId + (WCID − 20981)`** (WCID order). LeyLineLedger’s `/bank salvage` material bank uses **`FirstMaterialBankPropertyId + DepositRules row index`** (or per-rule **`BankProperty`**). After `DepositRules` gained non-sequential rows (e.g. gems after **20995**), bag-fill messaging and credits could hit the **wrong** `PropertyInt64` while status read the **correct** slot (e.g. Brass **21042**).

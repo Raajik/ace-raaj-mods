@@ -79,4 +79,27 @@ internal static class ItemPayload
 		{
 		}
 	}
+
+	// True when this WCID is the Spellsiphon tool and it already holds spells to apply (charged flag, JSON payload, or spellbook-only vendor/loot rolls).
+	internal static bool IsSpellsiphonApplyReady(WorldObject? tool, uint spellsiphonToolWcid)
+	{
+		if (tool == null || tool.WeenieClassId != spellsiphonToolWcid)
+			return false;
+
+		if (tool.GetProperty((PropertyBool)IsChargedSpellsiphonProp) == true)
+			return true;
+
+		if (ReadSpellPayload(tool).Count > 0)
+			return true;
+
+		try
+		{
+			var book = tool.Biota?.PropertiesSpellBook;
+			return book != null && book.Count > 0;
+		}
+		catch
+		{
+			return false;
+		}
+	}
 }

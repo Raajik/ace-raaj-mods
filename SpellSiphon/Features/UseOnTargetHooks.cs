@@ -137,8 +137,8 @@ internal static class UseOnTargetHooks
 		Player playerNonNull = player!;
 		WorldObject targetNonNull = target!;
 
-		// === Charged Spellsiphon + Equipment/Gem/ManaLattice = Apply ===
-		if (IsChargedSpellsiphon(instanceNonNull) && IsValidApplyTarget(targetNonNull, s))
+		// === Apply-ready Spellsiphon (charged / payload / spellbook) + equipment/gem/ManaLattice ===
+		if (ItemPayload.IsSpellsiphonApplyReady(instanceNonNull, s.SpellsiphonToolWcid) && IsValidApplyTarget(targetNonNull, s))
 		{
 			return HandleApplyStep(playerNonNull, instanceNonNull, targetNonNull, s);
 		}
@@ -165,6 +165,9 @@ internal static class UseOnTargetHooks
 		}
 
 		List<int> spellIds = ItemPayload.ReadSpellPayload(chargedSpellsiphon);
+		if (spellIds.Count == 0)
+			spellIds = ReadItemSpellIds(chargedSpellsiphon);
+
 		if (spellIds.Count == 0)
 		{
 			player.SendMessage("[SpellSiphon] That Spellsiphon holds no extracted spells.");
@@ -275,11 +278,6 @@ internal static class UseOnTargetHooks
 			try { charged.Destroy(); }
 			catch { }
 		}
-	}
-
-	private static bool IsChargedSpellsiphon(WorldObject item)
-	{
-		return item.GetProperty((PropertyBool)ItemPayload.IsChargedSpellsiphonProp) ?? false;
 	}
 
 	private static bool IsValidApplyTarget(WorldObject item, Settings s)

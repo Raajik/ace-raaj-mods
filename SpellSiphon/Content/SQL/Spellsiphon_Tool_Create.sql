@@ -1,5 +1,6 @@
 -- SpellSiphon Tool Creation v2.0
--- WCID 850200 — stacks to 100, burden 1, value 1.
+-- WCID 850200 — MaxStackSize 250 (vendor may inject same stack count), burden 1, value 1.
+-- TargetType ItemEnchantableTarget (560015): ManaStone/Misc/etc. so crystals and odd spell items validate.
 -- Use directly on spell-bearing items to attempt extraction.
 
 DELETE FROM `weenie_properties_create_list` WHERE `object_Id` = 850200;
@@ -24,7 +25,7 @@ VALUES (850200,   1,        128) /* ItemType - Misc */
      , (850200,   5,          1) /* EncumbranceVal */
      , (850200,   8,          1) /* Mass */
      , (850200,   9,          0) /* ValidLocations - None */
-     , (850200,  11,        100) /* MaxStackSize */
+     , (850200,  11,        250) /* MaxStackSize */
      , (850200,  12,          1) /* StackSize */
      , (850200,  13,          1) /* StackUnitEncumbrance */
      , (850200,  14,          1) /* StackUnitMass */
@@ -33,7 +34,7 @@ VALUES (850200,   1,        128) /* ItemType - Misc */
      , (850200,  19,      10000) /* Value */
      , (850200,  33,          0) /* Bonded - Normal */
      , (850200,  93,       1044) /* PhysicsState - Ethereal, IgnoreCollisions, Gravity */
-     , (850200,  94,      35215) /* TargetType - Misc | Gem | Jewelry | Armor | Clothing | MeleeWeapon | MissileWeapon | Caster */
+     , (850200,  94,     560015) /* TargetType = ItemEnchantableTarget (ACE.Entity.Enum.ItemType): melee/armor/clothing/jewelry/misc/missile/container/gem/caster/mana stone */
      , (850200, 114,          0) /* Attuned - Normal */;
 
 INSERT INTO `weenie_properties_bool` (`object_Id`, `type`, `value`)

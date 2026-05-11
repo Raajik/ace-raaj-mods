@@ -71,6 +71,15 @@ internal static class VendorIntegration
 
 		tool.Value = price;
 		tool.ContainerId = vendor.Guid.Full;
+
+		uint spellsiphonWcid = PatchClass.Settings?.SpellsiphonToolWcid ?? 850200;
+		if (toolWcid == spellsiphonWcid)
+		{
+			int stack = Math.Clamp(PatchClass.Settings?.VendorSpellsiphonStackSize ?? 250, 1, 250);
+			tool.SetProperty(PropertyInt.MaxStackSize, stack);
+			tool.SetProperty(PropertyInt.StackSize, stack);
+		}
+
 		tool.CalculateObjDesc();
 
 		if (vendor.DefaultItemsForSale != null && !vendor.DefaultItemsForSale.ContainsKey(tool.Guid)

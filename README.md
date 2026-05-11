@@ -104,7 +104,7 @@ Extract spells from any spell-bearing item and infuse them into equipment.
 - **Skill-based success rate** — Magic Item Tinkering skill improves crush success (`20% + skill × 0.05%`).
 - **Level penalty** — higher-level spells reduce success rate (configurable).
 - **Attuned/bonded support** — can be allowed or blocked via `AllowAttunedAndBonded`.
-- **Vendor sales** — SpellSiphon tool sold at spell component vendors (mages/scriveners) for 50,000 pyreals. Toggle: `EnableVendorSales`; price: `VendorPrice`.
+- **Vendor sales** — SpellSiphon tool injected at mage (spell components) and jeweler vendors. `VendorPrice`, `VendorSpellsiphonStackSize` (default **250** stacks), `EnableVendorSales`. Weenie `MaxStackSize` / `TargetType` ship in `SpellSiphon/Content/SQL/Spellsiphon_Tool_Create.sql` (apply `void-test` → test → live per ops).
 - `/spellsiphon` or `/ss` commands to list crushable items in your pack.
 - **Mana Lattice (850201)** — `OnCastSpell` prefix applies every spell in the lattice spellbook to the activator for both Endless and BLC-pre-rolled lattices (see `Content/SQL/ManaLattice_Create.sql`).
 

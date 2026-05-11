@@ -19,7 +19,7 @@ public class Settings
 
 	// Tool WCIDs
 	[JsonPropertyName("// SpellsiphonToolWcid")]
-	public string SpellsiphonToolWcidDoc { get; init; } = "WCID of the Spellsiphon extraction tool (stacks to 100).";
+	public string SpellsiphonToolWcidDoc { get; init; } = "WCID of the Spellsiphon extraction tool (see MaxStackSize in weenie SQL / vendor stack setting).";
 	public uint SpellsiphonToolWcid { get; set; } = 850200;
 
 	[JsonPropertyName("// ManaLatticeWcid")]
@@ -120,4 +120,8 @@ public class Settings
 	[JsonPropertyName("// VendorPrice")]
 	public string VendorPriceDoc { get; init; } = "Price in pyreals for the SpellSiphon tool at vendors.";
 	public int VendorPrice { get; set; } = 10000;
+
+	[JsonPropertyName("// VendorSpellsiphonStackSize")]
+	public string VendorSpellsiphonStackSizeDoc { get; init; } = "Stack size for uncharged Spellsiphon tools injected at mage/jeweler vendors (must be <= weenie MaxStackSize).";
+	public int VendorSpellsiphonStackSize { get; set; } = 250;
 }

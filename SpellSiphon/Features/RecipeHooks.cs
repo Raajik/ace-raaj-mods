@@ -83,6 +83,10 @@ internal static class RecipeHooks
 		if (source?.WeenieClassId != s.SpellsiphonToolWcid)
 			return;
 
+		// Charged, JSON payload, or spellbook-only tools are apply-ready — do not hijack GetRecipe into extraction (would strip the real target).
+		if (ItemPayload.IsSpellsiphonApplyReady(source, s.SpellsiphonToolWcid))
+			return;
+
 		if (!IsValidSourceItem(target, s))
 			return;
 

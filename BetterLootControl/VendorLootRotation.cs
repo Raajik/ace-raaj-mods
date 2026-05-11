@@ -2098,6 +2098,8 @@ public static class VendorLootRotation
         ApplyEnhancedItemTreatment(item, GetVendorTier(vendor), ClassifyVendor(vendor));
 
         item.ContainerId = vendor.Guid.Full;
+        // ACE Vendor warns and can mishandle unique stock if SoldTimestamp is unset
+        item.SoldTimestamp = Time.GetUnixTime();
         item.CalculateObjDesc();
         vendor.UniqueItemsForSale.Add(item.Guid, item);
         rotatedSet.Add(item.Guid);

@@ -30,9 +30,6 @@ internal static class VendorIntegration
 		2437, 2438, 2439, 2440, 2441, 2442, 2443,
 	};
 
-	// Track which (vendorWcid, itemWcid) pairs we've injected
-	static readonly HashSet<(uint vendorWcid, uint itemWcid)> InjectedPairs = new();
-
 	public static void OnVendorApproachPrefix(Player player, VendorType action, uint altCurrencySpent, Vendor __instance)
 	{
 		if (PatchClass.Settings?.EnableVendorSales != true)
@@ -52,10 +49,32 @@ internal static class VendorIntegration
 		InjectTool(__instance, vendorWcid, PatchClass.Settings?.ManaLatticeWcid ?? 850201, 5000);
 	}
 
+	static bool VendorAlreadySellsWcid(Vendor vendor, uint wcid)
+	{
+		if (vendor.DefaultItemsForSale != null)
+		{
+			foreach (WorldObject? wo in vendor.DefaultItemsForSale.Values)
+			{
+				if (wo != null && wo.WeenieClassId == wcid)
+					return true;
+			}
+		}
+
+		if (vendor.UniqueItemsForSale != null)
+		{
+			foreach (WorldObject? wo in vendor.UniqueItemsForSale.Values)
+			{
+				if (wo != null && wo.WeenieClassId == wcid)
+					return true;
+			}
+		}
+
+		return false;
+	}
+
 	static void InjectTool(Vendor vendor, uint vendorWcid, uint toolWcid, int price)
 	{
-		var key = (vendorWcid, toolWcid);
-		if (InjectedPairs.Contains(key))
+		if (VendorAlreadySellsWcid(vendor, toolWcid))
 			return;
 
 		var weenie = ACE.Database.DatabaseManager.World.GetCachedWeenie(toolWcid);
@@ -85,8 +104,8 @@ internal static class VendorIntegration
 		if (vendor.DefaultItemsForSale != null && !vendor.DefaultItemsForSale.ContainsKey(tool.Guid)
 			&& vendor.UniqueItemsForSale != null && !vendor.UniqueItemsForSale.ContainsKey(tool.Guid))
 		{
+			tool.SoldTimestamp = Time.GetUnixTime();
 			vendor.UniqueItemsForSale[tool.Guid] = tool;
-			InjectedPairs.Add(key);
 			ModManager.Log($"[SpellSiphon] Added {tool.Name} to vendor {vendor.Name} (WCID {vendorWcid}) for {price:N0} pyreals.", ModManager.LogLevel.Info);
 		}
 	}

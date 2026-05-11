@@ -1,7 +1,8 @@
 -- ==========================================================================
 -- Coalesced Mana tiers — 800000 (Lesser), 800001 (Greater), 800002 (Aetheric)
--- Use on equipment to Awaken it, enabling item leveling via LivingEquipment.
--- Lesser = Awakening I (max level 25), Greater = Awakening II (max 50), Aetheric = Awakening III (max 75).
+-- Behavior is server-side (EmpyreanAlteration LivingItemAwakener): each tier adds +5 / +10 / +15
+-- to PropertyInt.ItemMaxLevel (awakens if needed), stacking up to ItemLevelingCap (default 100).
+-- String rows use ON DUPLICATE KEY UPDATE so redeploy fixes stale DB copy-paste from old tier-cap design.
 -- ==========================================================================
 
 -- ========================
@@ -34,11 +35,12 @@ INSERT IGNORE INTO weenie_properties_bool (object_Id, type, value) VALUES
 INSERT IGNORE INTO weenie_properties_float (object_Id, type, value) VALUES
 (800000, 39, 0.3); /* DefaultScale */
 
-INSERT IGNORE INTO weenie_properties_string (object_Id, type, value) VALUES
+INSERT INTO weenie_properties_string (object_Id, type, value) VALUES
 (800000,  1, 'Lesser Coalesced Mana')
-,(800000, 15, 'Use on equipment to Awaken it to tier I. Awakened items gain item XP and can level up to a maximum of 25.')
-,(800000, 16, 'A mote of lesser coalesced mana. When used on eligible equipment, it Awakens the item, allowing it to gain experience and grow in power.')
-,(800000, 20, 'Lesser Coalesced Mana');
+,(800000, 15, 'Use on eligible equipment to awaken it or raise its maximum item level by +5. Further uses of coalesced mana stack the cap up to your server item leveling limit.')
+,(800000, 16, 'A mote of lesser coalesced mana. Channels into eligible gear to awaken living potential or deepen an awakened item''s maximum level by five.')
+,(800000, 20, 'Lesser Coalesced Mana')
+ON DUPLICATE KEY UPDATE value = VALUES(value);
 
 INSERT IGNORE INTO weenie_properties_d_i_d (object_Id, type, value) VALUES
 (800000,  1, 33557506)  /* Setup */
@@ -74,11 +76,12 @@ INSERT IGNORE INTO weenie_properties_bool (object_Id, type, value) VALUES
 INSERT IGNORE INTO weenie_properties_float (object_Id, type, value) VALUES
 (800001, 39, 0.3);
 
-INSERT IGNORE INTO weenie_properties_string (object_Id, type, value) VALUES
+INSERT INTO weenie_properties_string (object_Id, type, value) VALUES
 (800001,  1, 'Greater Coalesced Mana')
-,(800001, 15, 'Use on equipment to Awaken it to tier II. Awakened items gain item XP and can level up to a maximum of 50.')
-,(800001, 16, 'A mote of greater coalesced mana. When used on eligible equipment, it Awakens the item to tier II, allowing it to gain experience and grow in power.')
-,(800001, 20, 'Greater Coalesced Mana');
+,(800001, 15, 'Use on eligible equipment to awaken it or raise its maximum item level by +10. Further uses of coalesced mana stack the cap up to your server item leveling limit.')
+,(800001, 16, 'A mote of greater coalesced mana. Channels into eligible gear to awaken living potential or deepen an awakened item''s maximum level by ten.')
+,(800001, 20, 'Greater Coalesced Mana')
+ON DUPLICATE KEY UPDATE value = VALUES(value);
 
 INSERT IGNORE INTO weenie_properties_d_i_d (object_Id, type, value) VALUES
 (800001,  1, 33557506)  ,(800001,  3, 536870932)
@@ -112,11 +115,12 @@ INSERT IGNORE INTO weenie_properties_bool (object_Id, type, value) VALUES
 INSERT IGNORE INTO weenie_properties_float (object_Id, type, value) VALUES
 (800002, 39, 0.3);
 
-INSERT IGNORE INTO weenie_properties_string (object_Id, type, value) VALUES
+INSERT INTO weenie_properties_string (object_Id, type, value) VALUES
 (800002,  1, 'Aetheric Coalesced Mana')
-,(800002, 15, 'Use on equipment to Awaken it to tier III. Awakened items gain item XP and can level up to a maximum of 75.')
-,(800002, 16, 'A mote of aetheric coalesced mana. When used on eligible equipment, it Awakens the item to tier III, allowing it to gain experience and grow in power.')
-,(800002, 20, 'Aetheric Coalesced Mana');
+,(800002, 15, 'Use on eligible equipment to awaken it or raise its maximum item level by +15. Further uses of coalesced mana stack the cap up to your server item leveling limit.')
+,(800002, 16, 'A mote of aetheric coalesced mana. Channels into eligible gear to awaken living potential or deepen an awakened item''s maximum level by fifteen.')
+,(800002, 20, 'Aetheric Coalesced Mana')
+ON DUPLICATE KEY UPDATE value = VALUES(value);
 
 INSERT IGNORE INTO weenie_properties_d_i_d (object_Id, type, value) VALUES
 (800002,  1, 33557506)  ,(800002,  3, 536870932)

@@ -15,6 +15,20 @@ public class Settings
     [JsonPropertyName("// MaxImbueEffects")]
     public string MaxImbueEffectsDoc { get; init; } = "Max imbue effects allowed on an item (checked via bit count of ImbuedEffect).";
 
+    [JsonPropertyName("// EnableWorkmanshipImbueFallback")]
+    public string EnableWorkmanshipImbueFallbackDoc { get; init; } =
+        "When GetRecipe returns null but target has workmanship (ItemWorkmanship or Workmanship float) and source is Overtinked imbue/salvage/buffed-jewelry material, inject a tinkering shell recipe so MIT can run. Standard imbues resolve a cached recipe by mutation DataId (scan range below); numeric SalvageRules use ShellRecipeId only. If VerifyRequirements still fails, widen cookbook or relax recipe reqs in DB.";
+
+    [JsonPropertyName("// WorkmanshipSalvageFallbackShellRecipeId")]
+    public string WorkmanshipSalvageFallbackShellRecipeIdDoc { get; init; } =
+        "World recipe id used as fallback shell when mutation lookup misses or source has no mapped imbue DataId (Cleaving/Nether/etc.). Default 4452 matches Hemorrhage/Shatter template (Red Garnet imbue). 0 = disable shell fallback for those paths.";
+
+    [JsonPropertyName("// WorkmanshipImbueMutationRecipeScanMinId")]
+    public string WorkmanshipImbueMutationRecipeScanMinIdDoc { get; init; } = "Inclusive lower bound when indexing tinkering recipes by Recipe.DataId for standard imbue salvages.";
+
+    [JsonPropertyName("// WorkmanshipImbueMutationRecipeScanMaxId")]
+    public string WorkmanshipImbueMutationRecipeScanMaxIdDoc { get; init; } = "Inclusive upper bound for mutation scan (first recipe per DataId wins).";
+
     [JsonPropertyName("// EnableRecipeManagerPatch")]
     public string EnableRecipeManagerPatchDoc { get; init; } = "When true, patches RecipeManager.UseObjectOnTarget (and related) for tinkering flow.";
 
@@ -117,6 +131,15 @@ public class Settings
 
     // Jewelry cleave bonus combat patch category.
     public const string JewelryCleaveCategory = "OvertinkedJewelryCleave";
+
+    // Cookbook gap-fill: workmanship-bearing targets + Overtinked salvage/imbue sources (see // doc keys above).
+    public bool EnableWorkmanshipImbueFallback { get; set; } = true;
+
+    public uint WorkmanshipSalvageFallbackShellRecipeId { get; set; } = 4452;
+
+    public uint WorkmanshipImbueMutationRecipeScanMinId { get; set; } = 4200;
+
+    public uint WorkmanshipImbueMutationRecipeScanMaxId { get; set; } = 4700;
 
     // When true, patches RecipeManager.UseObjectOnTarget (and related) for tinkering flow.
     public bool EnableRecipeManagerPatch { get; set; } = true;

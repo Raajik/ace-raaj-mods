@@ -3,6 +3,10 @@
   "// MaxTries": "Max number of tinkers allowed per item (recipe check uses MaxTries - 1).",
   "// Scale": "Difficulty step between each extra tinker tier.",
   "// MaxImbueEffects": "Max imbue effects allowed on an item (checked via bit count of ImbuedEffect).",
+  "// EnableWorkmanshipImbueFallback": "If GetRecipe is null but target has workmanship and source is Overtinked imbue/salvage/buffed jewelry, inject tinkering shell or mutation-matched recipe. EA awakening uses ItemWorkmanship — Hemorrhage/Shatter gates now honor that too.",
+  "// WorkmanshipSalvageFallbackShellRecipeId": "Fallback world recipe id when mutation scan misses or source has no DataId map (Cleaving/Nether/etc.). 0 = skip shell; default 4452 (same family as Hemorrhage template).",
+  "// WorkmanshipImbueMutationRecipeScanMinId": "Inclusive min recipe id when building DataId → recipe index for standard imbue salvages.",
+  "// WorkmanshipImbueMutationRecipeScanMaxId": "Inclusive max recipe id for that scan.",
   "// EnableRecipeManagerPatch": "When true, patches RecipeManager.UseObjectOnTarget (and related) for tinkering flow.",
   "// SalvageRules": "Per-salvage rules: FixedValue/Min/Max + EffectKind = server math (no SQL). Optional EffectSummaryFormat, BankEffectFormat, BankDescriptionFormat on each entry — string.Format InvariantCulture: {0}=magnitude, {1}=signed, {2}=Name, {3}=EffectKind. /bank hints by material name use Name match (e.g. Steel).",
   "// EnableFailureRedesign": "When true, failed tinkers apply chaotic positive effects instead of destroying the item.",
@@ -29,6 +33,10 @@
   "MaxTries": 10,
   "Scale": 0.5,
   "MaxImbueEffects": 5,
+  "EnableWorkmanshipImbueFallback": true,
+  "WorkmanshipSalvageFallbackShellRecipeId": 4452,
+  "WorkmanshipImbueMutationRecipeScanMinId": 4200,
+  "WorkmanshipImbueMutationRecipeScanMaxId": 4700,
   "EnableRecipeManagerPatch": true,
   "SalvageRules": [
     {

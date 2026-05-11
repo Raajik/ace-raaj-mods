@@ -134,7 +134,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (!hem.SalvageWcids.Contains(source.WeenieClassId))
             return;
 
-        if (target.Workmanship == null)
+        if (!WorkmanshipTargets.HasQualifyingWorkmanship(target))
             return;
 
         if (target.WeenieType != WeenieType.MeleeWeapon && target.WeenieType != WeenieType.MissileLauncher)
@@ -169,7 +169,7 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (!sh.SalvageWcids.Contains(source.WeenieClassId))
             return;
 
-        if (target.Workmanship == null)
+        if (!WorkmanshipTargets.HasQualifyingWorkmanship(target))
             return;
 
         if (target.WeenieType != WeenieType.MeleeWeapon && target.WeenieType != WeenieType.MissileLauncher)
@@ -187,6 +187,15 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         }
 
         __result = cooked;
+    }
+
+    // Postfix (last): if cookbook still has no row for custom WCID targets with workmanship, inject shell / mutation-matched tinkering recipe for Overtinked salvage and imbues.
+    [HarmonyPostfix]
+    [HarmonyPriority(Priority.Last)]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.GetRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject) })]
+    public static void PostGetRecipeWorkmanshipImbueFallback(Player player, WorldObject source, WorldObject target, ref Recipe __result)
+    {
+        WorkmanshipImbueFallback.TryApply(ref __result, player, source, target, CurrentSettings);
     }
 
     // Prefix: replaces RecipeManager.VerifyRequirements. Uses Settings.MaxTries for NumTimesTinkered and Settings.MaxImbueEffects for ImbuedEffect; delegates other requirement types to RecipeManager.

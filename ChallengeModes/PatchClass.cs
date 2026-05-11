@@ -40,6 +40,34 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
     public static bool IsInProficiencyAward => _proficiencyAwardDepth > 0;
 
+    // QOL XpTracker auto-spend calls HandleActionRaiseSkill; allow through same as proficiency awards.
+    // Per-guid nest count (not ThreadStatic): ActionChain callbacks may run off the GrantXP thread.
+    internal static readonly ConcurrentDictionary<uint, int> AptitudeAutoSpendNestByGuid = new();
+
+    internal static bool IsInAptitudeAutoSpend(Player? player) =>
+        player?.Guid != null
+        && AptitudeAutoSpendNestByGuid.TryGetValue(player.Guid.Full, out var n)
+        && n > 0;
+
+    public static void EnterAptitudeAutoSpendContext(Player? player)
+    {
+        if (player?.Guid == null)
+            return;
+
+        AptitudeAutoSpendNestByGuid.AddOrUpdate(player.Guid.Full, 1, (_, v) => v + 1);
+    }
+
+    public static void ExitAptitudeAutoSpendContext(Player? player)
+    {
+        if (player?.Guid == null)
+            return;
+
+        AptitudeAutoSpendNestByGuid.AddOrUpdate(
+            player.Guid.Full,
+            0,
+            (_, v) => v > 0 ? v - 1 : 0);
+    }
+
     public override void Start()
     {
         base.Start();
@@ -84,6 +112,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         ManaConversionManaRemainderByGuid.Clear();
         LastEquippedItemManaByPlayerGuid.Clear();
         EquippedItemManaMonitorRunningByGuid.Clear();
+        AptitudeAutoSpendNestByGuid.Clear();
 
         SsfMode.ClearPoiCache();
         _proficiencyMethodMissingLogged = false;

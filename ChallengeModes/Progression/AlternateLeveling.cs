@@ -9,7 +9,7 @@ public class AlternateLeveling
     {
         if (ChallengeModes.PatchClass.IsAptitudeEnabled(__instance))
         {
-            if (ChallengeModes.PatchClass.IsInProficiencyAward)
+            if (ChallengeModes.PatchClass.IsInProficiencyAward || ChallengeModes.PatchClass.IsInAptitudeAutoSpend(__instance))
                 return true;
 
             __result = false;

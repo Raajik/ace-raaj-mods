@@ -97,7 +97,17 @@ internal static class XpTracker
             var chain = new ActionChain();
             chain.AddAction(player, () =>
             {
-                var results = SpendForPlayer(player);
+                List<SpendResult> results;
+                try
+                {
+                    ChallengeModesAptitudeAutoSpendInterop.Enter(player);
+                    results = SpendForPlayer(player);
+                }
+                finally
+                {
+                    ChallengeModesAptitudeAutoSpendInterop.Exit(player);
+                }
+
                 var meaningful = results.Where(r => r.RanksGained > 0).ToList();
                 if (meaningful.Count == 0)
                     return;

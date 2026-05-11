@@ -124,8 +124,8 @@ public class Settings
     // -- Global Rare Drops (SpellSiphon / Mana Lattice / Coalesced Mana) --
     public bool EnableGlobalRareDrops { get; init; } = true;
     public double RareDropChance { get; init; } = 0.005; // 0.5%
-    public uint SpellsiphonToolWcid { get; init; } = 800003;
-    public uint ManaLatticeWcid { get; init; } = 800004;
+    public uint SpellsiphonToolWcid { get; init; } = 850200;
+    public uint ManaLatticeWcid { get; init; } = 850201;
 
     // Pre-rolled spells on Mana Lattice drops (SpellSiphon gem pool when that mod is loaded).
     public int ManaLatticeSpellCountMin { get; init; } = 3;

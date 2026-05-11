@@ -14,8 +14,8 @@
 
   "EnableGlobalRareDrops": true,
   "RareDropChance": 0.007,
-  "SpellsiphonToolWcid": 800003,
-  "ManaLatticeWcid": 800004,
+  "SpellsiphonToolWcid": 850200,
+  "ManaLatticeWcid": 850201,
   "ManaLatticeSpellCountMin": 3,
   "ManaLatticeSpellCountMax": 7,
 

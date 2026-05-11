@@ -48,8 +48,8 @@ internal static class VendorIntegration
 		if (!isMage && !isJeweler)
 			return;
 
-		InjectTool(__instance, vendorWcid, PatchClass.Settings?.SpellsiphonToolWcid ?? 800003, PatchClass.Settings?.VendorPrice ?? 10000);
-		InjectTool(__instance, vendorWcid, PatchClass.Settings?.ManaLatticeWcid ?? 800004, 5000);
+		InjectTool(__instance, vendorWcid, PatchClass.Settings?.SpellsiphonToolWcid ?? 850200, PatchClass.Settings?.VendorPrice ?? 10000);
+		InjectTool(__instance, vendorWcid, PatchClass.Settings?.ManaLatticeWcid ?? 850201, 5000);
 	}
 
 	static void InjectTool(Vendor vendor, uint vendorWcid, uint toolWcid, int price)

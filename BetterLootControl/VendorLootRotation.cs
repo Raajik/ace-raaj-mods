@@ -216,9 +216,9 @@ public static class VendorLootRotation
         4694, // khayyabanarchmage (Najmima the Archmage - uses "Sage" template)
     };
 
-    // Spellsiphon tool and Mana Lattice WCIDs
-    const uint SpellsiphonToolWcid = 800003;
-    const uint ManaLatticeWcid = 800004;
+    // Spellsiphon tool and Mana Lattice WCIDs — use from _settings (loaded from Settings.json)
+    static uint SpellsiphonToolWcid => _settings?.SpellsiphonToolWcid ?? 850200;
+    static uint ManaLatticeWcid => _settings?.ManaLatticeWcid ?? 850201;
 
     public static void Initialize(Settings settings)
     {

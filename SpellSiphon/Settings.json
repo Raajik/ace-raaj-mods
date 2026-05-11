@@ -7,7 +7,7 @@
   "// EnableImmersiveUseHooks": "Immersive item-on-item UX via generic use handler.",
   "EnableImmersiveUseHooks": true,
   "// SpellsiphonToolWcid": "WCID of the base Spellsiphon extraction tool.",
-  "SpellsiphonToolWcid": 800003,
+  "SpellsiphonToolWcid": 850200,
   "// CoalescedManaWcids": "WCIDs of the three Coalesced Mana tiers: Lesser, Greater, Aetheric.",
   "CoalescedManaWcids": [800000, 800001, 800002],
   "// LesserBaseSuccessRate": "Base success rate (percent) for Lesser Coalesced Mana extraction.",
@@ -57,7 +57,7 @@
   "// EnableVendorSales": "When true, SpellSiphon tools are sold at jewelers (vendors selling jewelry/gems).",
   "EnableVendorSales": true,
   "// ManaLatticeWcid": "WCID of the Mana Lattice — dedicated base for reusable buff gems.",
-  "ManaLatticeWcid": 800004,
+  "ManaLatticeWcid": 850201,
   "// VendorPrice": "Price in pyreals for the SpellSiphon tool at vendors.",
   "VendorPrice": 10000
 }

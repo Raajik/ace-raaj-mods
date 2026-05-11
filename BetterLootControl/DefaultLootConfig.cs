@@ -53,7 +53,7 @@ internal static class DefaultLootConfig
                     new() { wcid = 6623, name = "Crystal Fragment", stackSize = 1 },
                     new() { wcid = 6622, name = "Sparkling Gem", stackSize = 1 },
                     new() { wcid = 6354, name = "Pyreal Nugget", stackSize = 1 },
-                    new() { wcid = 800003, name = "Spellsiphon", stackSizeMin = 1, stackSizeMax = 10 },
+                    new() { wcid = 850200, name = "Spellsiphon", stackSizeMin = 1, stackSizeMax = 10 },
                     // Custom Coalesced Mana (replaces vanilla ACE drops; controlled by BLC)
                     new() { wcid = 800000, name = "Lesser Coalesced Mana", stackSize = 1 },
                     new() { wcid = 800001, name = "Greater Coalesced Mana", stackSize = 1 },

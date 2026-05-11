@@ -20,11 +20,11 @@ public class Settings
 	// Tool WCIDs
 	[JsonPropertyName("// SpellsiphonToolWcid")]
 	public string SpellsiphonToolWcidDoc { get; init; } = "WCID of the Spellsiphon extraction tool (stacks to 100).";
-	public uint SpellsiphonToolWcid { get; set; } = 800003;
+	public uint SpellsiphonToolWcid { get; set; } = 850200;
 
 	[JsonPropertyName("// ManaLatticeWcid")]
 	public string ManaLatticeWcidDoc { get; init; } = "WCID of the Mana Lattice — dedicated base for reusable buff gems.";
-	public uint ManaLatticeWcid { get; set; } = 800004;
+	public uint ManaLatticeWcid { get; set; } = 850201;
 
 	// Success formula
 	[JsonPropertyName("// BaseExtractionSuccessRate")]

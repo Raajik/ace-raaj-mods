@@ -15,6 +15,13 @@ Before any work, load applicable skills:
 ## 2. Starting Workflow
 **Git (each new chat, before substantive work):** From repo root `A:/ai/projects/ace-raaj-mods`, run `git status -sb`. If dirty, note `M` / `??` paths briefly so unstaged and untracked work is not forgotten. Repeat before handoff when edits were made.
 
+**Git branch discipline:** Keep `main` stable. If the task will involve edits, commits, or a push, update local `main`, then create a **short-lived task branch before making new changes**. Preferred pattern:
+- `git checkout main`
+- `git pull --ff-only`
+- `git checkout -b <user>/<type>/<short-description>`
+
+Use one branch per task. Do not stack unrelated work on one branch. For the branch/PR mental model (`commit` vs `push` vs `PR` vs `merge`), see `A:\obsidian\jeremy\wiki\operations\Git Workflow.md`.
+
 Always check in this order:
 0. **🧠 Wiki first, always** — Before ANY investigation or implementation, search `A:\obsidian\jeremy\wiki\index.md` and relevant topic pages. We have already solved problems and researched mechanics that would take hours to re-derive. The wiki is the primary source of retained knowledge — **read it before you start, write to it before you finish.**
 1. **`PLAN.md`** - Active work only: bug tracker, immediate reworks, implementation order, greenfield backlog, short `## Progress (recent)` pointers. **Do not** let PLAN grow into a duplicate shipped-history log.
@@ -168,7 +175,8 @@ Always check in this order:
 ### 8.5 Workflows & Agent Behavior
 
 - **`PLAN.md` vs `COMPLETED.md`** — PLAN is forward-looking; COMPLETED is the archive. Append to COMPLETED after verified commit, then trim PLAN.
-- **Commit and push after EVERY bug fix** — Never leave working tree dirty with solved problems.
+- **Branch-first git flow** — default sequence is: update `main` → create task branch → implement → verify (`void-test` first for gameplay/server changes) → commit on branch → push with upstream → open PR into `main` → merge → return local `main` to latest remote state.
+- **Commit and push after EVERY bug fix** — meaning: once the bug is actually solved and verified, commit it on the task branch and push it. Do not let solved work sit only in a dirty working tree, and do not default to direct commits on `main`.
 - **Pushing from WSL:** Use Windows Git binary: `"/mnt/c/Program Files/Git/bin/git.exe" -C "$(wslpath -w /mnt/a/ai/projects/ace-raaj-mods)" push`
 - **Run `graphify update .` after any session that touched code:** `graphify update . --out-dir="A:/obsidian/jeremy/raw/graphify-out"`
 - **Wiki is the primary investigation source** — Check it before any rabbit hole. Read first, investigate second.

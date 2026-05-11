@@ -33,3 +33,22 @@
   - reapplies the **same original stack count**
 - `Windblown/ItemsRemovalPatches.cs` blocked only `31352/31354/31355`; it did **not** block vanilla `24835`.
 - Therefore any still-active vanilla source for `24835` (likely ACE treasure/create-list path) gets remapped into a custom stack with the same size. That explains the observed stack-40 drudge charms.
+
+## Repo git workflow guidance
+
+- This repo works best with **short-lived task branches off `main`**, not classic long-lived Git Flow (`develop` / `release` / `hotfix`).
+- The stable sequence is:
+  - update local `main`
+  - create one branch per task
+  - implement + verify (void-test first for gameplay/server changes)
+  - commit on the branch
+  - push with upstream
+  - open PR into `main`
+  - merge
+  - return local `main` to latest remote state
+- Biggest operator confusion points worth documenting explicitly:
+  - **commit** = local snapshot only
+  - **push** = send local branch/commits to GitHub
+  - **PR** = request to merge branch into `main`
+  - **merge** = branch changes actually land on `main`
+- For this repo, "commit after every bug fix" should mean **commit on a task branch after verification**, not "keep stacking direct commits on `main`."

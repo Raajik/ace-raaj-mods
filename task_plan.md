@@ -1,6 +1,6 @@
 # Task Plan: BSS MagicWithoutMC + LLL Salvage Debug
 
-**Status**: in_progress
+**Status**: complete
 
 ## Goal
 
@@ -32,6 +32,12 @@ Stop two live log issues on void-test:
 - [x] Block vanilla WCID 24835 creation so stack-40 vanilla drops cannot remap into custom stacks
 - [x] Build + deploy Windblown fix to void-test
 - [x] Verify startup + document root cause
+
+### Phase 5 — Document repo git workflow
+- [x] Read current AGENTS.md + wiki operations docs
+- [x] Add dedicated wiki page for recommended branch / commit / PR flow
+- [x] Update `AGENTS.md` to require branch-first workflow for edit sessions
+- [x] Link the new workflow from the wiki index and related operations docs
 
 ## Root Cause Hypotheses
 

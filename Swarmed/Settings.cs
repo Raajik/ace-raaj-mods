@@ -199,7 +199,7 @@ public class Settings
     };
 
     [JsonPropertyName("// ChaosModeReinforcementChanceScale")]
-    public string ChaosModeReinforcementChanceScaleDoc { get; init; } = "When effective chaos (killer or shard mean FakeFloat 11013) > 1, multiply reinforcement chance by this × (chaosFactor ÷ 3), capped at 1. Set 0 to disable.";
+    public string ChaosModeReinforcementChanceScaleDoc { get; init; } = "When effective chaos (killer or shard mean FakeFloat 11013) > 1, multiply reinforcement chance by this × (chaosFactor ÷ 3). Default ChallengeModes ChaosQuestBonusMultiplier is 3 so chaosFactor÷3 ≈ 1 at baseline. Capped at 1. Set 0 to disable.";
     public float ChaosModeReinforcementChanceScale { get; set; } = 1.5f;
 
     [JsonPropertyName("// ReinforcementChaosBlendOnlineMean")]

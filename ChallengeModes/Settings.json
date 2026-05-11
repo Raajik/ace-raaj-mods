@@ -15,7 +15,7 @@
   "// HardcoreSecondsBetweenDeathAllowed": "Minimum seconds between deaths counted for hardcore rules.",
   "// HardcoreStartingLives": "Starting life count for hardcore mode.",
   "// ChallengeAchievementRewardsEnabled": "Challenge achievement skill credits + permanent XP/lum %.",
-  "// ChallengeAchievementLevels": "Skill credits: +1 per active mode (SSF/HC/alt/apt) per level, each mode once forever.",
+  "// ChallengeAchievementLevels": "Skill credits: +1 per active Chaos/Aptitude track per level, each track once forever.",
   "// ChallengeAchievementPercentEach": "Skill credit grants only (display); XP/lum % uses ChallengeBonusPercentPerLevel.",
   "// ChallengeBonusPercentPerLevel": "Percent per level toward current segment (0.01 = 0.01% per level; 60 levels => 0.6%).",
   "// ChallengeBonusSegmentCapLevel": "Completing this level banks one segment and resets in-run progress (default 300).",
@@ -28,8 +28,8 @@
   "// CmQuitRemoveLuminance": "When true, Enlightenment.RemoveLuminance on quit.",
   "// CmQuitRemoveSociety": "When true, Enlightenment.RemoveSociety on quit.",
   "// CmQuitRemoveAetheria": "When true, Enlightenment.RemoveAetheria on quit.",
-  "// QuestPointsMultiplierWhileChallengeActive": "Loremaster: base factor m for QB; with QuestPointsMultiplyPerActiveChallengeTrack true, scale is m^n where n = CountActiveChallengeTracks (SSF, HC, aptitude-or-alternate).",
-  "// QuestPointsMultiplyPerActiveChallengeTrack": "When true (default), m^n per active tracks (e.g. m=2, SSF+HC => 4×). When false, m once if any challenge (legacy 2×).",
+  "// QuestPointsMultiplierWhileChallengeActive": "DEPRECATED — Loremaster uses LoremasterQuestPointsBridge (×3 Chaos × ×3 Aptitude).",
+  "// QuestPointsMultiplyPerActiveChallengeTrack": "DEPRECATED — kept for JSON compatibility.",
 
   "Enabled": true,
   "EnableArcaneLore": true,
@@ -166,7 +166,7 @@
   "CmQuitRemoveLuminance": false,
   "CmQuitRemoveSociety": false,
   "CmQuitRemoveAetheria": false,
-  "ChaosQuestBonusMultiplier": 4.0,
+  "ChaosQuestBonusMultiplier": 3.0,
   "QuestPointsMultiplierWhileChallengeActive": 2.0,
   "QuestPointsMultiplyPerActiveChallengeTrack": true
 }

@@ -36,7 +36,7 @@ internal static class CmChaos
         PatchClass.SetChaosEnabled(player, true);
         PatchClass.OnChallengeStarted(player);
         CmCommands.RefreshChallengeRadar(player);
-        player.SendMessage($"Chaos is ON -- Loremaster quest-point multiplier ×{mult:0.##}, Swarmed reinforcements escalate up to 5×, and aggro radius is tripled.");
+        player.SendMessage($"Chaos is ON — Loremaster quest-point track ×3 (stacks with Aptitude for ×9), Swarmed scaling uses property 11013 (×{mult:0.##}), monster pickup range for Chaos targeting is 5× awareness, and autoloot pyreals bank at 10% (90% to lottery pool).");
     }
 
     internal static void Leave(Player player)

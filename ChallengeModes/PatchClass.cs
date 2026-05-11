@@ -455,39 +455,23 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         EnsureLoaded(player);
         int n = 0;
-        if (player.GetProperty(FakeBool.Ironman) == true)
-            n++;
-        if (player.GetProperty(FakeBool.Hardcore) == true)
-            n++;
-
-        // Aptitude and alternate leveling are mutually exclusive; count at most one progression slot.
-        if (IsAptitudeEnabled(player) || IsAlternateLevelingEnabled(player))
-            n++;
-
         if (IsChaosEnabled(player))
+            n++;
+        if (IsAptitudeEnabled(player))
             n++;
         return n;
     }
 
     public static bool PlayerHasActiveChallenge(Player? player)
     {
-        return player != null && CountActiveChallengeTracks(player) > 0;
+        return player != null && (IsChaosEnabled(player) || IsAptitudeEnabled(player));
     }
 
-    // Used by LeyLineLedger bank transfer gate (offline targets): SSF/HC from shard biota bools; aptitude / alternate leveling from ChallengeModes prefs JSON.
+    // Used by LeyLineLedger bank transfer gate (offline targets): Chaos / Aptitude from ChallengeModes prefs JSON.
     public static bool OfflineBiotaHasActiveChallenge(uint biotaId)
     {
         try
         {
-            using var context = new ShardDbContext();
-            ushort ironT = (ushort)FakeBool.Ironman;
-            ushort hcT = (ushort)FakeBool.Hardcore;
-
-            if (context.BiotaPropertiesBool.AsNoTracking().Any(p => p.ObjectId == biotaId && p.Type == ironT && p.Value == true))
-                return true;
-            if (context.BiotaPropertiesBool.AsNoTracking().Any(p => p.ObjectId == biotaId && p.Type == hcT && p.Value == true))
-                return true;
-
             // Player prefs use the same id as shard Biota.Id / player.Guid.Full (ACE instance id).
             var modDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
             var path = Path.Combine(modDir, "Data", "PlayerData", $"{biotaId}.json");
@@ -510,13 +494,10 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
     static bool OfflinePrefsIndicateActiveChallenge(ChallengeModesPlayerPrefs prefs)
     {
-        if (prefs.Enabled)
-            return true;
-
         if (Settings is null || !Settings.Enabled)
             return false;
 
-        if (Settings.AlternateLeveling.Enabled && !prefs.AlternateLevelingPermanentlyDeclined && prefs.AlternateLevelingEnabled)
+        if (prefs.Enabled)
             return true;
 
         if (prefs.ChaosEnabled)
@@ -571,17 +552,19 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             AlternateLevelingDeclinedByGuid[g] = true;
         }
 
-        if (EnabledByGuid.GetOrAdd(g, false))
+        var hadAptitude = EnabledByGuid.GetOrAdd(g, false);
+        if (hadAptitude)
         {
             EnabledByGuid[g] = false;
-            PermanentlyOptedOutByGuid[g] = true;
+            PermanentlyOptedOutByGuid[g] = false;
+            QolXpAptitudeInterop.SetAptitudeForcedAutoSpend(player, false);
         }
 
         var hadChaos = ChaosEnabledByGuid.GetOrAdd(g, false);
         if (hadChaos)
         {
             ChaosEnabledByGuid[g] = false;
-            ChaosDeclinedByGuid[g] = true;
+            ChaosDeclinedByGuid[g] = false;
             player.SetProperty(CmFloat.ChaosQuestBonusMultiplier, 1f);
         }
 
@@ -633,9 +616,9 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             if (permanentlyOptedOut)
                 player.SendMessage("Aptitude is permanently disabled on this character (you previously used /cm off aptitude).");
             else if (enabled)
-                player.SendMessage("Aptitude is ON. Skills via usage; spend XP on attributes/vitals. Use /cm off aptitude to disable (permanent).");
+                player.SendMessage("Aptitude is ON: XP auto-spend is locked on (no manual /xp spend). Use /cm off aptitude to disable permanently, or /cm quit to leave all challenges.");
             else
-                player.SendMessage("Aptitude is OFF. Use /cm aptitude on at level 1 to enable (once off, you cannot turn it back on).");
+                player.SendMessage("Aptitude is OFF. Use /cm aptitude on at level 1 to enable.");
             return;
         }
 
@@ -651,6 +634,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             EnabledByGuid[guid] = false;
             PermanentlyOptedOutByGuid[guid] = true;
             SavePrefs(player);
+            QolXpAptitudeInterop.SetAptitudeForcedAutoSpend(player, false);
             player.SendMessage("Aptitude has been disabled. You cannot reactivate it on this character.");
             return;
         }
@@ -669,13 +653,14 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             }
             if (AlternateLevelingEnabledByGuid.GetOrAdd(guid, false))
             {
-                player.SendMessage("Aptitude cannot be combined with alternate leveling. Use /cm off alternateleveling first (requires /cm refund if you spent alternate levels; that opt-out is permanent).");
+                player.SendMessage("Aptitude cannot be combined with alternate leveling data on this character. Use /cm quit to reset, or clear alternate leveling prefs if applicable.");
                 return;
             }
             EnabledByGuid[guid] = true;
             SavePrefs(player);
             OnChallengeStarted(player);
-            player.SendMessage("Aptitude is now ON. Skills only through usage; use XP on attributes and vitals.");
+            QolXpAptitudeInterop.SetAptitudeForcedAutoSpend(player, true);
+            player.SendMessage("Aptitude is now ON: /xp spend auto is forced, manual XP spend is blocked, and auto-spend runs to true caps.");
             return;
         }
 
@@ -1111,7 +1096,14 @@ public static class AptitudePatches
             return;
 
         if (!PatchClass.EquippedItemManaMonitorRunningByGuid.TryAdd(player.Guid.Full, true))
+        {
+            if (PatchClass.IsAptitudeEnabled(player))
+                QolXpAptitudeInterop.SetAptitudeForcedAutoSpend(player, true);
             return;
+        }
+
+        if (PatchClass.IsAptitudeEnabled(player))
+            QolXpAptitudeInterop.SetAptitudeForcedAutoSpend(player, true);
 
         ScheduleEquippedItemManaTick(player, 5.0);
     }

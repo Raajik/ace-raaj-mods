@@ -48,9 +48,9 @@ public static class LoremasterXpDetail
         double mult = 1.0 + b.TotalPercent / 100.0;
         sb.AppendLine($"GrantXP / EarnLuminance multiplier from achievement: ×{mult:0.######} (= 1 + total%/100).");
         sb.AppendLine(
-            "Skill credits at ChallengeAchievementLevels are per challenge track (SSF / Hardcore / alternate / aptitude), once each; the % above is from segment progress only.");
+            "Skill credits at ChallengeAchievementLevels are per active Chaos / Aptitude track, once each; the % above is from segment progress only.");
         sb.AppendLine(
-            "Chaos mode multiplies the Loremaster Quest Points factor (FakeFloat 11013), not this achievement %.");
+            "Chaos sets FakeFloat 11013 (ChaosQuestBonusMultiplier) for Swarmed / Loremaster integrations; Loremaster QB stacking uses a separate ×3 per track bridge (see /cm chaos message).");
         sb.AppendLine(
             $"Challenge active now: {(PatchClass.PlayerHasActiveChallenge(player) ? "yes" : "no")} (furthest grows while leveling with a /cm mode).");
     }

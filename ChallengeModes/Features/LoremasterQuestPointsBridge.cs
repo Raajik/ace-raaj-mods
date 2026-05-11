@@ -1,33 +1,26 @@
-using System;
 using ACE.Server.WorldObjects;
 
 namespace ChallengeModes.Features;
 
-// Loremaster reflects this type to read quest-point scaling while a /cm challenge is active.
+// Loremaster reflects this type to read quest-point scaling while Chaos and/or Aptitude are active.
 public static class LoremasterQuestPointsBridge
 {
+    const float PerTrackMultiplier = 3f;
+
     public static float GetMultiplierWhileChallengeActive(Player player)
     {
         if (player is null || PatchClass.Settings is null)
             return 1f;
-        if (!PatchClass.PlayerHasActiveChallenge(player))
+
+        float factor = 1f;
+        if (PatchClass.IsChaosEnabled(player))
+            factor *= PerTrackMultiplier;
+        if (PatchClass.IsAptitudeEnabled(player))
+            factor *= PerTrackMultiplier;
+
+        if (factor <= 1f)
             return 1f;
 
-        var m = PatchClass.Settings.QuestPointsMultiplierWhileChallengeActive;
-        if (m <= 0f)
-            return 1f;
-
-        var n = PatchClass.CountActiveChallengeTracks(player);
-        if (n <= 0)
-            return 1f;
-
-        if (!PatchClass.Settings.QuestPointsMultiplyPerActiveChallengeTrack)
-            return m;
-
-        // Per active track: m^n (SSF + hardcore + aptitude|alternate at most once each slot).
-        var stacked = Math.Pow(m, n);
-        if (double.IsNaN(stacked) || double.IsInfinity(stacked) || stacked > float.MaxValue)
-            return float.MaxValue;
-        return (float)stacked;
+        return factor;
     }
 }

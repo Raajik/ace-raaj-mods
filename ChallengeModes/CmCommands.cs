@@ -2,7 +2,7 @@ using ACE.Entity.Enum;
 using ACE.Server.Managers;
 using ACE.Server.WorldObjects;
 using ChallengeModes.Features;
-using ChallengeModes.Progression;
+using static ACE.Server.WorldObjects.Player;
 
 namespace ChallengeModes;
 
@@ -10,12 +10,12 @@ public static class CmCommands
 {
     const string HelpText = "=== CHALLENGE MODES ===\n"
         + "/cm                         - your challenge status\n"
-        + "/cm ssf hc chaos            - activate any combination (level 1 only)\n"
-        + "/cm alt                     - Alternate Leveling (level 1 only)\n"
-        + "/cm levels                  - view alternate leveling spend\n"
-        + "/cm refund                  - refund unspent alt levels\n"
+        + "/cm chaos                   - Chaos (level 1 only)\n"
+        + "/cm aptitude [on|off]       - Aptitude (level 1 on; auto XP spend locked)\n"
         + "/cm quit                    - reset to level 1 and leave all challenge modes\n"
-        + "/cm who                     - challenge players currently online";
+        + "/cm who                     - Chaos / Aptitude players currently online\n"
+        + "/cm admin ssf clear <name>  - admin: clear SSF flag on online target (legacy)\n"
+        + "/cm debug ...               - admin aptitude debug";
 
     [CommandHandler("cm", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, -1,
         "Challenge modes hub. /cm for status, /cm help for commands.")]
@@ -52,13 +52,9 @@ public static class CmCommands
             case "leave":
                 CmQuit.TryEnqueue(player);
                 return;
-            case "levels":
-            case "refund":
-                HandleAltLevelingSub(player, head, parameters.Skip(1).ToArray());
-                return;
             case "who":
             case "list":
-                SsfMode.ListOnlineSsfPlayers(player);
+                ListOnlineChallengePlayers(player);
                 return;
             case "admin":
                 HandleAdmin(session, parameters.Skip(1).ToArray());
@@ -75,23 +71,8 @@ public static class CmCommands
         {
             switch (arg)
             {
-                case "ssf":
-                    TryActivateSsf(player);
-                    activatedAny = true;
-                    break;
-                case "hc":
-                case "hardcore":
-                    TryActivateHardcore(player, combo: false);
-                    activatedAny = true;
-                    break;
                 case "chaos":
                     CmChaos.TryActivate(player);
-                    activatedAny = true;
-                    break;
-                case "alt":
-                case "altlevel":
-                case "alternateleveling":
-                    HandleAlternateLeveling(player);
                     activatedAny = true;
                     break;
                 case "aptitude":
@@ -106,149 +87,58 @@ public static class CmCommands
             player.SendMessage($"Unknown command '{head}'. Type /cm help for commands.");
     }
 
+    static void ListOnlineChallengePlayers(Player viewer)
+    {
+        var list = PlayerManager.GetAllOnline()
+            .Where(p => PatchClass.IsChaosEnabled(p) || PatchClass.IsAptitudeEnabled(p))
+            .OrderByDescending(p => p.Level)
+            .ToList();
+
+        if (list.Count == 0)
+        {
+            viewer.SendMessage("No online players are currently in Chaos or Aptitude.");
+            return;
+        }
+
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"Chaos / Aptitude players online ({list.Count}):");
+        foreach (var p in list)
+        {
+            var parts = new List<string>();
+            if (PatchClass.IsChaosEnabled(p))
+                parts.Add("Chaos");
+            if (PatchClass.IsAptitudeEnabled(p))
+                parts.Add("Aptitude");
+            var tag = parts.Count > 0 ? string.Join("+", parts) : "(none)";
+            sb.AppendLine($"{p.Name} (Lv {p.Level ?? 1}) — {tag}");
+        }
+
+        viewer.SendMessage(sb.ToString().TrimEnd());
+    }
+
     static void SendStatus(Player player)
     {
         PatchClass.EnsurePrefsLoaded(player);
 
-        var ssf = player.GetProperty(FakeBool.Ironman) == true;
-        var hc  = player.GetProperty(FakeBool.Hardcore) == true;
-        var alt = PatchClass.IsAlternateLevelingEnabled(player);
         var apt = PatchClass.IsAptitudeEnabled(player);
         var chaos = PatchClass.IsChaosEnabled(player);
-        var altRaw = PatchClass.GetAlternateLevelingEnabledRaw(player);
-        var altNote = altRaw && apt ? " (inactive while Aptitude is on)" : "";
 
         var lines = new System.Text.StringBuilder();
         lines.AppendLine("=== Your Challenge Status ===");
-        lines.AppendLine($"Solo Self-Found:    {(ssf ? "ON" : "off")}");
-        lines.Append($"Hardcore:           {(hc  ? "ON" : "off")}");
-        if (hc)
-        {
-            var lives = player.GetProperty(FakeInt.HardcoreLives) ?? 0;
-            lines.Append($"  (lives: {lives})");
-        }
-        lines.AppendLine();
-        lines.AppendLine($"Alternate Leveling: {(alt ? "ON" : "off")}{altNote}");
-        lines.AppendLine($"Aptitude:           {(apt ? "ON" : "off")}");
-        lines.AppendLine($"Chaos:              {(chaos ? "ON" : "off")}");
+        lines.AppendLine($"Aptitude: {(apt ? "ON" : "off")}");
+        lines.AppendLine($"Chaos:    {(chaos ? "ON" : "off")}");
         lines.Append("Type /cm help for commands.");
 
         player.SendMessage(lines.ToString());
     }
 
-    static void TryActivateSsf(Player player)
-    {
-        if (player.GetProperty(FakeBool.Ironman) == true)
-        {
-            player.SendMessage("SSF is already active on this character.");
-            return;
-        }
-
-        if (PatchClass.IsSsfDeclined(player))
-        {
-            player.SendMessage("SSF cannot be re-enabled on this character (you previously left SSF).");
-            return;
-        }
-
-        if (player.Level != 1)
-        {
-            player.SendMessage("SSF can only be activated at level 1.");
-            return;
-        }
-
-        player.SetProperty(FakeBool.Ironman, true);
-        player.SetProperty(FakeBool.Hardcore, false);
-        PatchClass.OnChallengeStarted(player);
-        RefreshChallengeRadar(player);
-        player.SendMessage("SSF is now ON.");
-    }
-
-    static void TryActivateHardcore(Player player, bool combo)
-    {
-        if (player.GetProperty(FakeBool.Hardcore) == true && !combo)
-        {
-            player.SendMessage("Hardcore is already active on this character.");
-            return;
-        }
-
-        if (PatchClass.IsHardcoreDeclined(player))
-        {
-            player.SendMessage("Hardcore cannot be re-enabled on this character (you previously left Hardcore).");
-            return;
-        }
-
-        if (player.Level != 1 && player.GetProperty(FakeBool.Hardcore) != true)
-        {
-            player.SendMessage("Hardcore can only be activated at level 1.");
-            return;
-        }
-
-        var s = PatchClass.Settings!;
-        player.SetProperty(FakeInt.HardcoreLives, s.HardcoreStartingLives);
-        player.SetProperty(FakeFloat.TimestampLastPlayerDeath, Time.GetUnixTime());
-        player.SetProperty(FakeBool.Hardcore, true);
-        PatchClass.OnChallengeStarted(player);
-        RefreshChallengeRadar(player);
-        if (!combo)
-            player.SendMessage($"Hardcore is ON - {s.HardcoreStartingLives} lives.");
-    }
-
-    static void HandleAlternateLeveling(Player player)
-    {
-        if (!PatchClass.Settings!.AlternateLeveling.Enabled)
-        {
-            player.SendMessage("Alternate Leveling is not available on this server.");
-            return;
-        }
-
-        if (PatchClass.IsAlternateLevelingEnabled(player))
-        {
-            player.SendMessage("Alternate Leveling is already active. Use /cm levels to see your spend.");
-            return;
-        }
-
-        if (PatchClass.IsAlternateLevelingDeclined(player))
-        {
-            player.SendMessage("Alternate Leveling cannot be re-enabled on this character.");
-            return;
-        }
-
-        if (player.Level != 1)
-        {
-            player.SendMessage("Alternate Leveling can only be activated at level 1.");
-            return;
-        }
-
-        if (PatchClass.IsAptitudeEnabled(player))
-        {
-            player.SendMessage("Alternate Leveling cannot be combined with Aptitude. Disable Aptitude first (/cm leave).");
-            return;
-        }
-
-        PatchClass.SetAlternateLevelingEnabled(player, true);
-        PatchClass.OnChallengeStarted(player);
-        player.SendMessage("Alternate Leveling is ON. Use /cm levels to track spend, /cm refund to recover unspent levels.");
-    }
-
-    static void HandleAltLevelingSub(Player player, string subcmd, string[] tail)
-    {
-        if (!PatchClass.IsAlternateLevelingEnabled(player))
-        {
-            player.SendMessage("You are not enrolled in Alternate Leveling. Use /cm alt at level 1 to join.");
-            return;
-        }
-
-        if (subcmd == "levels")
-            AlternateLevelingCommands.HandleLevels(player.Session, tail);
-        else
-            AlternateLevelingCommands.HandleRefund(player.Session, tail);
-    }
-
     internal static void RefreshChallengeRadar(Player player)
     {
+        var chaos = PatchClass.IsChaosEnabled(player);
+        var apt = PatchClass.IsAptitudeEnabled(player);
         var ssf = player.GetProperty(FakeBool.Ironman) == true;
-        var hc  = player.GetProperty(FakeBool.Hardcore) == true;
-        player.RadarColor = ssf || hc ? RadarColor.Sentinel : RadarColor.Default;
+        var hc = player.GetProperty(FakeBool.Hardcore) == true;
+        player.RadarColor = ssf || hc || chaos || apt ? RadarColor.Sentinel : RadarColor.Default;
     }
 
     static void HandleAdmin(Session session, string[] tail)
@@ -278,7 +168,7 @@ public static class CmCommands
             return;
         }
 
-        var sub  = tail[0].Trim().ToLowerInvariant();
+        var sub = tail[0].Trim().ToLowerInvariant();
         var rest = tail.Length > 1 ? tail.Skip(1).ToArray() : Array.Empty<string>();
         switch (sub)
         {

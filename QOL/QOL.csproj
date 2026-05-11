@@ -33,6 +33,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<Compile Include="..\Shared\ChallengeModesPatchClassBridge.cs" Link="Shared\ChallengeModesPatchClassBridge.cs" />
 		<Compile Include="..\Shared\LeyLineLedgerBankInterop.cs" Link="Shared\LeyLineLedgerBankInterop.cs" />
 	</ItemGroup>
 

@@ -1,5 +1,6 @@
 namespace LeyLineLedger;
 
+using System.Text.Json;
 using System.Timers;
 
 public static class Lottery
@@ -10,26 +11,107 @@ public static class Lottery
     private static double _qbPool = 0;
     private static readonly object _qbPoolLock = new();
     private static DateTime _nextDrawUtc = DateTime.MinValue;
+    private static string? _persistPath;
 
     public static Settings Settings => PatchClass.Settings;
+
+    sealed class LotteryPersistDto
+    {
+        public long PyrealPool { get; set; }
+        public double QbPool { get; set; }
+        public DateTime NextDrawUtc { get; set; }
+    }
+
+    public static void InitializePersistence(string persistenceFilePath)
+    {
+        _persistPath = persistenceFilePath;
+    }
+
+    static void LoadPersistedState()
+    {
+        if (string.IsNullOrWhiteSpace(_persistPath) || !File.Exists(_persistPath))
+            return;
+
+        try
+        {
+            var text = File.ReadAllText(_persistPath);
+            var dto = JsonSerializer.Deserialize<LotteryPersistDto>(text);
+            if (dto is null)
+                return;
+
+            lock (_poolLock)
+                _pool = Math.Max(0, dto.PyrealPool);
+            lock (_qbPoolLock)
+                _qbPool = Math.Max(0, dto.QbPool);
+            if (dto.NextDrawUtc != DateTime.MinValue)
+                _nextDrawUtc = dto.NextDrawUtc;
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger] Lottery persistence load failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    static void SavePersistedState()
+    {
+        if (string.IsNullOrWhiteSpace(_persistPath))
+            return;
+
+        try
+        {
+            long pool;
+            double qb;
+            DateTime next;
+            lock (_poolLock)
+                pool = _pool;
+            lock (_qbPoolLock)
+                qb = _qbPool;
+            next = _nextDrawUtc;
+
+            var dto = new LotteryPersistDto
+            {
+                PyrealPool = pool,
+                QbPool = qb,
+                NextDrawUtc = next,
+            };
+
+            var dir = Path.GetDirectoryName(_persistPath);
+            if (!string.IsNullOrEmpty(dir))
+                Directory.CreateDirectory(dir);
+
+            File.WriteAllText(_persistPath, JsonSerializer.Serialize(dto, new JsonSerializerOptions { WriteIndented = true }));
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger] Lottery persistence save failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
 
     public static void TryApply()
     {
         if (!Settings.Lottery.Enabled)
             return;
 
+        LoadPersistedState();
+
         _drawTimer?.Stop();
         _drawTimer?.Dispose();
+
+        if (_nextDrawUtc == DateTime.MinValue || _nextDrawUtc < DateTime.UtcNow)
+            _nextDrawUtc = DateTime.UtcNow.AddMinutes(Settings.Lottery.DrawIntervalMinutes);
+
         _drawTimer = new System.Timers.Timer(Settings.Lottery.DrawIntervalMinutes * 60 * 1000);
         _drawTimer.Elapsed += (s, e) => TryAutoDraw();
         _drawTimer.Start();
-        _nextDrawUtc = DateTime.UtcNow.AddMinutes(Settings.Lottery.DrawIntervalMinutes);
 
-        ModManager.Log($"[LeyLineLedger] Lottery enabled. Draw interval: {Settings.Lottery.DrawIntervalMinutes}min. Pyreal pool: {GetPool():N0}, QB pool: {GetQbPool():0.#}", ModManager.LogLevel.Info);
+        ModManager.Log($"[LeyLineLedger] Lottery enabled. Draw interval: {Settings.Lottery.DrawIntervalMinutes}min. Next draw (UTC): {_nextDrawUtc:O}. Pyreal pool: {GetPool():N0}, QB pool: {GetQbPool():0.#}", ModManager.LogLevel.Info);
+
+        SavePersistedState();
     }
 
     public static void Stop()
     {
+        SavePersistedState();
         _drawTimer?.Stop();
         _drawTimer?.Dispose();
         _drawTimer = null;
@@ -56,6 +138,7 @@ public static class Lottery
         lock (_poolLock)
             _pool += amount;
         ModManager.Log($"[LeyLineLedger] Lottery pyreal pool +{amount:N0} = {GetPool():N0}", ModManager.LogLevel.Info);
+        SavePersistedState();
     }
 
     public static void AddToQbPool(double amount)
@@ -64,6 +147,7 @@ public static class Lottery
         lock (_qbPoolLock)
             _qbPool += amount;
         ModManager.Log($"[LeyLineLedger] Lottery QB pool +{amount:0.#} = {GetQbPool():0.#}", ModManager.LogLevel.Info);
+        SavePersistedState();
     }
 
     public static long GetTicketPrice()
@@ -98,6 +182,7 @@ public static class Lottery
             _pool += toPool;
 
         ModManager.Log($"[LeyLineLedger] Lottery: tax {taxAmount:N0} -> destroyed {destroyed:N0} ({destructionRate:P0}), pyreal pool +{toPool:N0} = {GetPool():N0}", ModManager.LogLevel.Info);
+        SavePersistedState();
     }
 
     public static void BuyTickets(Session session, long count)
@@ -292,6 +377,8 @@ public static class Lottery
 
             // Reset next draw time
             _nextDrawUtc = DateTime.UtcNow.AddMinutes(Settings.Lottery.DrawIntervalMinutes);
+
+            SavePersistedState();
 
             // Broadcast
             var winnerLines = string.Join(", ", winners.Select(w =>

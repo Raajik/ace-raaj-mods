@@ -422,6 +422,29 @@ public class AutoLoot
         }
     }
 
+    // Chaos: 10% banked to player, 90% to LeyLineLedger lottery pool (AddToPool). No hard reference to ChallengeModes / LeyLineLedger assemblies.
+    static void BankAutolootPyrealsWithChaosLotterySplit(Player player, long totalValue)
+    {
+        if (totalValue <= 0)
+            return;
+
+        int bankProp = PatchClass.Settings.BankCashProperty;
+
+        if (ChallengeModesPatchClassBridge.IsChaosEnabled(player))
+        {
+            long toPool = totalValue * 90L / 100L;
+            long toPlayer = totalValue - toPool;
+            if (toPlayer > 0)
+                LeyLineLedgerBankInterop.IncBanked(player, bankProp, toPlayer);
+            if (toPool > 0)
+                LeyLineLedgerLotteryBridge.AddPyrealToPool(toPool);
+        }
+        else
+        {
+            LeyLineLedgerBankInterop.IncBanked(player, bankProp, totalValue);
+        }
+    }
+
     static bool TryBankCurrency(Player player, WorldObject item)
     {
         if (PatchClass.Settings is not { DepositLootedCurrencyToBank: true })
@@ -441,8 +464,7 @@ public class AutoLoot
             long trophyValue = (long)(item.Value ?? 0) * (item.StackSize ?? 1);
             if (trophyValue > 0)
             {
-                int cashProp = PatchClass.Settings.BankCashProperty;
-                LeyLineLedgerBankInterop.IncBanked(player, cashProp, trophyValue);
+                BankAutolootPyrealsWithChaosLotterySplit(player, trophyValue);
                 player.UpdateCoinValue();
                 return true;
             }
@@ -467,8 +489,7 @@ public class AutoLoot
         if (totalValue <= 0)
             return false;
 
-        var bankProp = PatchClass.Settings.BankCashProperty;
-        LeyLineLedgerBankInterop.IncBanked(player, bankProp, totalValue);
+        BankAutolootPyrealsWithChaosLotterySplit(player, totalValue);
         player.UpdateCoinValue();
 
         return true;

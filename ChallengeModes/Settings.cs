@@ -51,7 +51,7 @@ public class Settings
     public string ChallengeAchievementRewardsEnabledDoc { get; init; } = "One-time skill credits + permanent XP/lum % at ChallengeAchievementLevels while a challenge is active at level-up; after Loremaster QP multiplier.";
 
     [JsonPropertyName("// ChallengeAchievementLevels")]
-    public string ChallengeAchievementLevelsDoc { get; init; } = "Character levels for skill-credit achievements; one credit per active mode (SSF, hardcore, alternate, aptitude) per level, each mode once forever.";
+    public string ChallengeAchievementLevelsDoc { get; init; } = "Character levels for skill-credit achievements; one credit per active Chaos / Aptitude track per level, each track once forever.";
 
     [JsonPropertyName("// ChallengeAchievementPercentEach")]
     public string ChallengeAchievementPercentEachDoc { get; init; } = "Skill-credit message / bookkeeping; achievement XP/lum % uses ChallengeBonusPercentPerLevel × furthest level per segment.";
@@ -90,13 +90,13 @@ public class Settings
     public string CmQuitRemoveAetheriaDoc { get; init; } = "When true, /cm quit calls Enlightenment.RemoveAetheria.";
 
     [JsonPropertyName("// ChaosQuestBonusMultiplier")]
-    public string ChaosQuestBonusMultiplierDoc { get; init; } = "FakeFloat 11013 factor applied to Loremaster QuestBonus() when /cm chaos is active (e.g. 4 = 4× QP factor contribution). Chaos is now a standalone challenge track; this still controls the multiplier.";
+    public string ChaosQuestBonusMultiplierDoc { get; init; } = "FakeFloat 11013 applied when /cm chaos is active (Swarmed / legacy Loremaster QuestBonus paths). Default 3 matches per-track QB scaling; keep separate from LoremasterQuestPointsBridge (also ×3 per track).";
 
     [JsonPropertyName("// QuestPointsMultiplierWhileChallengeActive")]
-    public string QuestPointsMultiplierWhileChallengeActiveDoc { get; init; } = "Loremaster: per active /cm track (SSF, hardcore, aptitude-or-alternate) this factor is applied once per track when QuestPointsMultiplyPerActiveChallengeTrack is true (m^n). When false, a single m applies if any challenge is active (legacy). 1 = no CM-driven boost.";
+    public string QuestPointsMultiplierWhileChallengeActiveDoc { get; init; } = "DEPRECATED — Loremaster uses ChallengeModes.Features.LoremasterQuestPointsBridge (×3 Chaos × ×3 Aptitude). Kept for Settings.json compatibility.";
 
     [JsonPropertyName("// QuestPointsMultiplyPerActiveChallengeTrack")]
-    public string QuestPointsMultiplyPerActiveChallengeTrackDoc { get; init; } = "When true, stored QB scale is QuestPointsMultiplierWhileChallengeActive raised to CountActiveChallengeTracks (e.g. SSF+HC with m=2 => 4×). When false, any active challenge uses m once (2×).";
+    public string QuestPointsMultiplyPerActiveChallengeTrackDoc { get; init; } = "DEPRECATED — same as QuestPointsMultiplierWhileChallengeActive. Kept for Settings.json compatibility.";
 
     public bool Enabled { get; set; } = false;
 
@@ -154,7 +154,7 @@ public class Settings
 
     public bool CmQuitRemoveAetheria { get; set; } = false;
 
-    public float ChaosQuestBonusMultiplier { get; set; } = 4f;
+    public float ChaosQuestBonusMultiplier { get; set; } = 3f;
 
     public float QuestPointsMultiplierWhileChallengeActive { get; set; } = 2f;
 

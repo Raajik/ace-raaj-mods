@@ -142,6 +142,16 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         EconomyBalancer.TryApply();
         LootTracker.TryApply();
         PublicExchange.TryApply();
+
+        var ledgerModDir = Path.GetDirectoryName(typeof(PatchClass).Assembly.Location);
+        if (string.IsNullOrEmpty(ledgerModDir))
+            ledgerModDir = Path.Combine(ModManager.ModPath, "LeyLineLedger");
+
+        var lotteryFile = Settings.Lottery.PersistenceFileName;
+        if (string.IsNullOrWhiteSpace(lotteryFile))
+            lotteryFile = "LotteryState.json";
+
+        Lottery.InitializePersistence(Path.Combine(ledgerModDir, lotteryFile));
         Lottery.TryApply();
     }
 

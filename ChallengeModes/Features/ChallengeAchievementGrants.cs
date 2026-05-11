@@ -6,28 +6,24 @@ using HarmonyLib;
 namespace ChallengeModes.Features;
 
 // Level-up: furthest progress (ChallengeRunMaxLevel) only increases while a challenge is active; segment completion at cap * (completions+1) resets m to 0.
-// Skill credits: one per achievement level per challenge mode (SSF / hardcore / alternate / aptitude), each once forever; not reset on segment.
-// Milestone bonuses: 0.1% account-wide XP per milestone level per active track (Regular / SSF / Hardcore / Alternate / Aptitude / Chaos).
+// Skill credits: one per achievement level per active Chaos / Aptitude track, each once forever; not reset on segment.
+// Milestone bonuses: 0.1% account-wide XP per milestone level per active track (Regular / Aptitude / Chaos).
 // Furthest progress never decreases on death or level loss — only segment completion at the segment cap resets the in-segment counter.
 [HarmonyPatchCategory(nameof(ChallengeRewards))]
 public static class ChallengeAchievementGrants
 {
     enum SkillCreditTrack
     {
-        Ssf,
-        Hardcore,
-        Alternate,
         Aptitude,
+        Chaos,
     }
 
     static bool TrackActive(Player player, SkillCreditTrack track)
     {
         return track switch
         {
-            SkillCreditTrack.Ssf => player.GetProperty(FakeBool.Ironman) == true,
-            SkillCreditTrack.Hardcore => player.GetProperty(FakeBool.Hardcore) == true,
-            SkillCreditTrack.Alternate => PatchClass.IsAlternateLevelingEnabled(player),
             SkillCreditTrack.Aptitude => PatchClass.IsAptitudeEnabled(player),
+            SkillCreditTrack.Chaos => PatchClass.IsChaosEnabled(player),
             _ => false,
         };
     }
@@ -36,10 +32,8 @@ public static class ChallengeAchievementGrants
     {
         return track switch
         {
-            SkillCreditTrack.Ssf => "SSF",
-            SkillCreditTrack.Hardcore => "Hardcore",
-            SkillCreditTrack.Alternate => "Alternate leveling",
             SkillCreditTrack.Aptitude => "Aptitude",
+            SkillCreditTrack.Chaos => "Chaos",
             _ => "?",
         };
     }
@@ -47,9 +41,6 @@ public static class ChallengeAchievementGrants
     enum MilestoneTrack
     {
         Regular,
-        Ssf,
-        Hardcore,
-        Alternate,
         Aptitude,
         Chaos,
     }
@@ -59,9 +50,6 @@ public static class ChallengeAchievementGrants
         return track switch
         {
             MilestoneTrack.Regular => true,
-            MilestoneTrack.Ssf => player.GetProperty(FakeBool.Ironman) == true,
-            MilestoneTrack.Hardcore => player.GetProperty(FakeBool.Hardcore) == true,
-            MilestoneTrack.Alternate => PatchClass.IsAlternateLevelingEnabled(player),
             MilestoneTrack.Aptitude => PatchClass.IsAptitudeEnabled(player),
             MilestoneTrack.Chaos => PatchClass.IsChaosEnabled(player),
             _ => false,
@@ -73,9 +61,6 @@ public static class ChallengeAchievementGrants
         return track switch
         {
             MilestoneTrack.Regular => "Regular",
-            MilestoneTrack.Ssf => "SSF",
-            MilestoneTrack.Hardcore => "Hardcore",
-            MilestoneTrack.Alternate => "Alternate leveling",
             MilestoneTrack.Aptitude => "Aptitude",
             MilestoneTrack.Chaos => "Chaos",
             _ => "?",

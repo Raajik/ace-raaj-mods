@@ -13,6 +13,7 @@ internal static class XpTracker
 
     static readonly ConcurrentDictionary<uint, PlayerXpSession> _sessions = new();
     internal static readonly ConcurrentDictionary<uint, bool> SpendAutoPrefs = new();
+    static readonly ConcurrentDictionary<uint, bool> _aptitudeForcedAutoSpendByGuid = new();
     static readonly ConcurrentDictionary<uint, DateTime> _lastAutoSpendMsgUtc = new();
     static string _dataDir = "";
     static readonly object _saveLock = new();
@@ -24,6 +25,29 @@ internal static class XpTracker
         _dataDir = Path.Combine(modDirectory, "xp-tracker");
         Directory.CreateDirectory(_dataDir);
     }
+
+    // Called via reflection from ChallengeModes (QolXpAptitudeInterop) when Aptitude is toggled or /cm quit clears modes.
+    public static void SetAptitudeForcedAutoSpend(Player player, bool forced)
+    {
+        if (player?.Guid == null)
+            return;
+
+        uint g = player.Guid.Full;
+        if (forced)
+        {
+            _aptitudeForcedAutoSpendByGuid[g] = true;
+            SpendAutoPrefs[g] = true;
+        }
+        else
+        {
+            _aptitudeForcedAutoSpendByGuid.TryRemove(g, out _);
+            var profile = PlayerProfileStore.GetOrCreate(g);
+            SpendAutoPrefs[g] = profile.XpSpendAuto;
+        }
+    }
+
+    internal static bool IsAptitudeForcedAutoSpend(uint guid) =>
+        _aptitudeForcedAutoSpendByGuid.ContainsKey(guid);
 
     // ── Harmony patches ───────────────────────────────────────────────────────
 
@@ -62,7 +86,12 @@ internal static class XpTracker
         s.AddXp(new XpEvent(DateTime.UtcNow, xpType, amount, tag));
         s.ScheduleSave(__instance.Guid.Full);
 
-        if (SpendAutoPrefs.TryGetValue(__instance.Guid.Full, out bool auto) && auto)
+        uint gx = __instance.Guid.Full;
+        bool auto = SpendAutoPrefs.TryGetValue(gx, out bool v) && v;
+        if (!auto && IsAptitudeForcedAutoSpend(gx))
+            auto = true;
+
+        if (auto)
         {
             var player = __instance;
             var chain = new ActionChain();
@@ -409,6 +438,12 @@ internal static class XpTracker
 
     static void HandleSpend(Player player)
     {
+        if (IsAptitudeForcedAutoSpend(player.Guid.Full))
+        {
+            player.SendMessage("Manual XP spend is disabled while Aptitude is active (auto-spend is forced).", ChatMessageType.System);
+            return;
+        }
+
         if ((player.AvailableExperience ?? 0) <= 0)
         {
             player.SendMessage("No available XP to spend.", ChatMessageType.System);
@@ -431,7 +466,13 @@ internal static class XpTracker
 
     static void HandleSpendAutoToggle(Player player)
     {
-        uint guid    = player.Guid.Full;
+        uint guid = player.Guid.Full;
+        if (IsAptitudeForcedAutoSpend(guid))
+        {
+            player.SendMessage("Auto-spend cannot be turned off while Aptitude is active (use /cm off aptitude or /cm quit).", ChatMessageType.System);
+            return;
+        }
+
         bool current = SpendAutoPrefs.TryGetValue(guid, out var v) && v;
         bool next    = !current;
 
@@ -462,7 +503,9 @@ internal static class XpTracker
     // capped at what it needs to reach (maxRank - stop). Leftover from caps naturally flows down.
     static List<SpendResult> SpendForPlayer(Player player)
     {
-        int stop = PatchClass.Settings?.XpSpendStopBeforeMaxRanks ?? 3;
+        int stop = IsAptitudeForcedAutoSpend(player.Guid.Full)
+            ? 0
+            : (PatchClass.Settings?.XpSpendStopBeforeMaxRanks ?? 3);
         var cfg  = PatchClass.Settings?.XpSpend ?? new();
         int avw  = cfg.AttributeVitalWeight;
 

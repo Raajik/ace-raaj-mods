@@ -5,7 +5,7 @@ namespace ChallengeModes.Features;
 
 internal static class ChaosAggro
 {
-    // Postfix on FindNextTarget: if no target was found, check for chaos players at 3x visual range.
+    // Postfix on FindNextTarget: if no target was found, check for chaos players at 5x visual range.
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Creature), "FindNextTarget")]
     public static void PostFindNextTarget(Creature __instance, ref bool __result)
@@ -20,7 +20,7 @@ internal static class ChaosAggro
         if (awareness <= 0)
             return;
 
-        float chaosRange = awareness * 3.0f;
+        float chaosRange = awareness * 5.0f;
 
         WorldObject? bestTarget = null;
         float bestDist = float.MaxValue;

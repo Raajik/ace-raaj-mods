@@ -29,7 +29,7 @@ public class AlternateLevelingSettings
     [JsonPropertyName("// Specialized")]
     public string SpecializedSectionDoc { get; init; } = "XP cost curve for specialized skill progression. Inside: // lines first, then values (same order).";
 
-    public bool Enabled { get; set; } = true;
+    public bool Enabled { get; set; } = false;
 
     public int LevelPropertyStart { get; set; } = 20_800;
     public int SpentPropertyStart { get; set; } = 20_800;

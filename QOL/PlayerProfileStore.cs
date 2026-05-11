@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using AceRaajMods.Shared;
 
 namespace QOL;
 
@@ -61,6 +62,10 @@ internal static class PlayerProfileStore
         uint guid = __instance.Guid.Full;
         var profile = GetOrCreate(guid);
         KillXpMessage.PlayerPrefs[guid] = profile.KillXpMode;
-        XpTracker.SpendAutoPrefs[guid]  = profile.XpSpendAuto;
+
+        if (ChallengeModesPatchClassBridge.IsAptitudeEnabled(__instance))
+            XpTracker.SetAptitudeForcedAutoSpend(__instance, true);
+        else
+            XpTracker.SpendAutoPrefs[guid] = profile.XpSpendAuto;
     }
 }

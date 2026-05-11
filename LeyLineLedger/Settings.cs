@@ -664,8 +664,12 @@ public class LotterySettings
     public double TicketPricePoolPercent { get; set; } = 0.0001;
 
     [JsonPropertyName("// DrawIntervalMinutes")]
-    public string DrawIntervalMinutesDoc { get; init; } = "How often the lottery auto-draws (default 10080 = 7 days).";
-    public int DrawIntervalMinutes { get; set; } = 10080;
+    public string DrawIntervalMinutesDoc { get; init; } = "How often the lottery auto-draws (default 4320 = 3 days).";
+    public int DrawIntervalMinutes { get; set; } = 4320;
+
+    [JsonPropertyName("// PersistenceFileName")]
+    public string PersistenceFileNameDoc { get; init; } = "JSON file under the LeyLineLedger mod folder storing pyreal pool, QB pool, and next draw UTC across ACE restarts.";
+    public string PersistenceFileName { get; set; } = "LotteryState.json";
 
     [JsonPropertyName("// TicketPropertyId")]
     public string TicketPropertyIdDoc { get; init; } = "PropertyInt64 for storing virtual ticket count per character.";

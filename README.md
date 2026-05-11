@@ -244,14 +244,14 @@ From repo root **`A:\ai\projects\ace-raaj-mods`** (Git Bash paths: `/a/ai/projec
 
 | Script | Target | What it does |
 |--------|--------|----------------|
-| **`bash scripts/deploy-void-test.sh`** | **`A:\void-test\Mods\`** | Builds all mods (skips failures), stops only ACE processes tied to that install, **wipes** `Mods\`, copies **all DLLs** per mod + optional `Content/` + `Meta.json` + `Settings.json`. Env override: `VOID_MODS=/path/to/Mods`. |
-| **`bash scripts/deploy-wb-test.sh`** | **`C:\ACE\Mods\`** (wb_test) | Same as void-test for the **test** ACE tree under `C:\ACE\` only — does **not** stop `C:\ACE-WB` or void-test. Clears `C:\ACE\Server\wb_test_watchdog_*` block/state files. Env override: `WB_TEST_MODS=/path/to/Mods` (Git Bash: `/c/ACE/Mods`). |
+| **`bash scripts/deploy-void-test.sh`** | **`A:\void-test\Mods\`** | Builds all mods (skips failures), stops only ACE processes tied to that install, **wipes** `Mods\`, copies **all DLLs** per mod + optional `Content/` + `Meta.json` + `Settings.json`, then applies **`ModName/Content/SQL/**/*.sql`** to **`void-test_world`** via `scripts/Apply-RepoModSqlToMysql.ps1` (sorted path order). Env: `VOID_MODS`, `VOID_SQL_DATABASE`, `VOID_TEST_SKIP_SQL=1` to skip SQL. MySQL: `ACE_MYSQL_USER` / `ACE_MYSQL_PASSWORD` (required unless SQL skipped), optional `MYSQL_EXE`, `ACE_SQL_INCLUDE_ROLLBACK=1`. |
+| **`bash scripts/deploy-wb-test.sh`** | **`C:\ACE\Mods\`** (wb_test) | Same as void-test for **`C:\ACE\`** only (not `C:\ACE-WB`, not void-test). Clears `wb_test_watchdog_*`. SQL defaults to **`ace_world`** (`WB_TEST_SQL_DATABASE`, `WB_TEST_SKIP_SQL=1`). Same MySQL env vars as void. Env: `WB_TEST_MODS=/path/to/Mods` (Git Bash: `/c/ACE/Mods`). |
 
 **After either script:** restart that instance’s **ACE.Server** so plugins reload.
 
-**Settings.json:** Both scripts copy template/settings from `build/` or the mod folder after a **full wipe** of `Mods/`. If you maintain hand-edited JSON on the server, **back up** that server’s `Mods/` (or merge new keys from repo) before running `deploy-wb-test.sh` on `C:\ACE`.
+**Settings.json:** Both scripts copy template/settings from `build/` or the mod folder after a **full wipe** of `Mods/`. If you maintain hand-edited JSON on the server, **back up** that server’s `Mods/` (or merge new keys from repo) before a full-tree deploy.
 
-**SQL / world data** are not deployed by these scripts. Apply mod SQL to the right database in order: **void-test_world** → **ace_world** (wb_test) → **wb_ace_world** (live) per internal ops docs and `AGENTS.md`.
+**SQL:** Full-tree deploys **apply repo `Content/SQL` in path order** (see `Apply-RepoModSqlToMysql.ps1`). Files named `*-rollback.sql` are **skipped** unless `ACE_SQL_INCLUDE_ROLLBACK=1`. This does **not** replace scoped **`mysqldump`** backups for risky world edits — follow wiki **operations/SQL Procedures**. Chain for manual work when not using deploy: **void-test_world** → **ace_world** (wb_test) → **wb_ace_world** (live); live stays manual after verification.
 
 **Live (`C:\ACE-WB\`):** no automated wipe script in-repo; deploy only with explicit operator approval.
 

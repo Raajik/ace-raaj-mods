@@ -2,6 +2,12 @@
 
 ## 2026-05-11
 
+### Deploy — full-tree void-test + wb_test apply all repo mod SQL
+
+**Change:** New **`scripts/Apply-RepoModSqlToMysql.ps1`** walks each mod with a `.csproj`, collects **`Content/SQL/**/*.sql`**, applies in **sorted path order** via `mysql` + temp credentials file (excludes ValheelContent; skips `*-rollback.sql` unless `ACE_SQL_INCLUDE_ROLLBACK=1`). **`deploy-void-test.sh`** / **`deploy-wb-test.sh`** run it after mod copy unless `VOID_TEST_SKIP_SQL=1` / `WB_TEST_SKIP_SQL=1`; targets **`void-test_world`** / **`ace_world`** (`VOID_SQL_DATABASE`, `WB_TEST_SQL_DATABASE` overrides). Requires **`ACE_MYSQL_USER`** + **`ACE_MYSQL_PASSWORD`** in the shell.
+
+**Docs:** `AGENTS.md` §5, `README.md` deploy table. Wiki **`operations/Deploy Procedures`** — trigger + full-tree tables, applier notes, scoped backup reminder; example `mysql` line uses placeholders (removed hardcoded password).
+
 ### Docs — README + wiki deploy procedures (void-test + wb_test)
 
 **Change:** `README.md` § Build & Deploy documents local `build/` output, **`deploy-void-test.sh`** vs **`deploy-wb-test.sh`** (paths, wipe behavior, env overrides, SQL reminder, live caveat). Wiki **`operations/Deploy Procedures`** — trigger table distinguishes ad-hoc `"push test"` vs full-tree `deploy-wb-test.sh`; new section **Full-tree mod deploy**; index link from **ace-raaj-mods Patterns** to Deploy Procedures.

@@ -9,13 +9,17 @@
 #      (excludes C:\ACE-WB live, A:\void-test, etc.)
 #   3. WIPES C:\ACE\Mods\ entirely (clean slate, no stale DLLs)
 #   4. Copies each mod's DLL + Meta.json + Settings.json from build/ output (same as void-test)
-#   5. Excludes ValheelContent (permanently), Shared/ (no csproj), build/ (output dir)
-#   6. Prints a restart reminder
+#   5. Applies every mod's repo Content/SQL/**/*.sql to MySQL (default database: ace_world), sorted by path
+#   6. Excludes ValheelContent (permanently), Shared/ (no csproj), build/ (output dir)
+#   7. Prints a restart reminder
 #
 # ⚠️  Wipe replaces ALL files under C:\ACE\Mods\<Mod>\ including operator-tuned Settings.json.
 #    Back up C:\ACE\Mods first if you rely on local JSON edits; then merge keys back as needed.
 #
-# ⚠️  SQL DOES NOT AUTO-DEPLOY — apply SQL to ace_world (test) per wiki operations/SQL Procedures.
+# SQL (Step 5): Requires ACE_MYSQL_USER and ACE_MYSQL_PASSWORD exported before run.
+#   Optional: MYSQL_EXE, WB_TEST_SQL_DATABASE (default ace_world).
+#   Skip: WB_TEST_SKIP_SQL=1
+#   Applies repo source ModName/Content/SQL/**/*.sql (not build/). See scripts/Apply-RepoModSqlToMysql.ps1.
 #
 # Trigger phrase for agents:  "push wb test" / "deploy wb test" / "deploy test" (same tree as void)
 # See AGENTS.md §5.
@@ -42,6 +46,7 @@ cd "$REPO_ROOT"
 echo "=== deploy-wb-test.sh (wb_test / C:\\ACE) ==="
 echo "Repo: $REPO_ROOT"
 echo "Target: $WB_TEST_MODS"
+echo "SQL DB: ${WB_TEST_SQL_DATABASE:-ace_world} (WB_TEST_SKIP_SQL=1 to skip)"
 echo ""
 
 # ── Step 1: Build all mods ────────────────────────────────────────────────
@@ -181,6 +186,40 @@ for mod_dir in */; do
     echo "    Settings.json (from source)"
   fi
 done
+echo ""
+
+# ── Step 5: Apply repo Content/SQL to wb_test world DB ─────────────────────
+echo "=== Step 5: Applying repo Content/SQL to MySQL ==="
+if [ "${WB_TEST_SKIP_SQL:-0}" = "1" ]; then
+  echo "  Skipped (WB_TEST_SKIP_SQL=1)"
+else
+  if [ -z "${ACE_MYSQL_USER:-}" ] || [ -z "${ACE_MYSQL_PASSWORD+x}" ]; then
+    echo "ERROR: Export ACE_MYSQL_USER and ACE_MYSQL_PASSWORD before deploy (mysql credentials)." >&2
+    echo "       Or set WB_TEST_SKIP_SQL=1 to deploy DLLs only." >&2
+    exit 1
+  fi
+  REPO_PS=""
+  SCRIPT_PS=""
+  if command -v cygpath &>/dev/null; then
+    REPO_PS="$(cygpath -w "$REPO_ROOT")"
+    SCRIPT_PS="$(cygpath -w "$SCRIPT_DIR")"
+  elif command -v wslpath &>/dev/null; then
+    REPO_PS="$(wslpath -w "$REPO_ROOT")"
+    SCRIPT_PS="$(wslpath -w "$SCRIPT_DIR")"
+  else
+    REPO_PS="$REPO_ROOT"
+    SCRIPT_PS="$SCRIPT_DIR"
+  fi
+  SQL_DB="${WB_TEST_SQL_DATABASE:-ace_world}"
+  export ACE_MYSQL_USER
+  export ACE_MYSQL_PASSWORD
+  export MYSQL_EXE
+  PS_APPLY="${SCRIPT_PS}\\Apply-RepoModSqlToMysql.ps1"
+  if ! powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PS_APPLY" -RepoRoot "$REPO_PS" -Database "$SQL_DB"; then
+    echo "ERROR: Apply-RepoModSqlToMysql.ps1 failed." >&2
+    exit 1
+  fi
+fi
 echo ""
 
 echo "=== Deploy complete ==="

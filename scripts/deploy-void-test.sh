@@ -9,15 +9,15 @@
 #      (does not kill C:\ACE or other ACE instances)
 #   3. WIPES A:\void-test\Mods\ entirely (clean slate, no stale DLLs)
 #   4. Copies each mod's DLL + Meta.json + Settings.json from build/ output
-#   5. Excludes ValheelContent (permanently), Shared/ (no csproj), build/ (output dir)
-#   6. Prints a restart reminder
+#   5. Applies every mod's repo Content/SQL/**/*.sql to MySQL (default database: void-test_world), sorted by path
+#   6. Excludes ValheelContent (permanently), Shared/ (no csproj), build/ (output dir)
+#   7. Prints a restart reminder
 #
-# ⚠️  SQL DOES NOT AUTO-DEPLOY (push void = DLL + Settings + YOU apply SQL to void-test_world).
-#    PowerShell pipe pattern (wiki: operations/SQL Procedures, operations/Deploy Procedures):
-#      Get-Content "A:\ai\projects\ace-raaj-mods\SpellSiphon\Content\SQL\Spellsiphon_Tool_Create.sql" | & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' -u jeremy -pandersine11 "void-test_world"
-#    Scoped backup before mutating weenies (example):
-#      & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysqldump.exe' -u jeremy -pandersine11 --single-transaction --skip-lock-tables "void-test_world" weenie --where="class_Id=850200" > WindblownContent/sql-backups/YYYY-MM-DD/pre-850200.sql
-#    Windblown SQL: Windblown/Content/SQL/ — see Windblown/docs/CustomTrophyNPC-Deployment-Standard.md
+# SQL (Step 5): Requires ACE_MYSQL_USER and ACE_MYSQL_PASSWORD exported before run.
+#   Optional: MYSQL_EXE, VOID_SQL_DATABASE (default void-test_world).
+#   Skip: VOID_TEST_SKIP_SQL=1
+#   Scoped backups before risky weenie work: see wiki operations/SQL Procedures.
+#   Windblown SQL layout: Windblown/Content/SQL/ — see Windblown/docs/CustomTrophyNPC-Deployment-Standard.md
 #
 # Trigger phrase for agents:  "push void" or "deploy void"
 # wb_test (C:\ACE): see scripts/deploy-wb-test.sh
@@ -42,6 +42,7 @@ cd "$REPO_ROOT"
 echo "=== deploy-void-test.sh ==="
 echo "Repo: $REPO_ROOT"
 echo "Target: $VOID_MODS"
+echo "SQL DB: ${VOID_SQL_DATABASE:-void-test_world} (VOID_TEST_SKIP_SQL=1 to skip)"
 echo ""
 
 # ── Step 1: Build all mods ────────────────────────────────────────────────
@@ -183,6 +184,40 @@ for mod_dir in */; do
     echo "    Settings.json (from source)"
   fi
 done
+echo ""
+
+# ── Step 5: Apply repo Content/SQL to void-test world DB ──────────────────
+echo "=== Step 5: Applying repo Content/SQL to MySQL ==="
+if [ "${VOID_TEST_SKIP_SQL:-0}" = "1" ]; then
+  echo "  Skipped (VOID_TEST_SKIP_SQL=1)"
+else
+  if [ -z "${ACE_MYSQL_USER:-}" ] || [ -z "${ACE_MYSQL_PASSWORD+x}" ]; then
+    echo "ERROR: Export ACE_MYSQL_USER and ACE_MYSQL_PASSWORD before deploy (mysql credentials)." >&2
+    echo "       Or set VOID_TEST_SKIP_SQL=1 to deploy DLLs only." >&2
+    exit 1
+  fi
+  REPO_PS=""
+  SCRIPT_PS=""
+  if command -v cygpath &>/dev/null; then
+    REPO_PS="$(cygpath -w "$REPO_ROOT")"
+    SCRIPT_PS="$(cygpath -w "$SCRIPT_DIR")"
+  elif command -v wslpath &>/dev/null; then
+    REPO_PS="$(wslpath -w "$REPO_ROOT")"
+    SCRIPT_PS="$(wslpath -w "$SCRIPT_DIR")"
+  else
+    REPO_PS="$REPO_ROOT"
+    SCRIPT_PS="$SCRIPT_DIR"
+  fi
+  SQL_DB="${VOID_SQL_DATABASE:-void-test_world}"
+  export ACE_MYSQL_USER
+  export ACE_MYSQL_PASSWORD
+  export MYSQL_EXE
+  PS_APPLY="${SCRIPT_PS}\\Apply-RepoModSqlToMysql.ps1"
+  if ! powershell.exe -NoProfile -ExecutionPolicy Bypass -File "$PS_APPLY" -RepoRoot "$REPO_PS" -Database "$SQL_DB"; then
+    echo "ERROR: Apply-RepoModSqlToMysql.ps1 failed." >&2
+    exit 1
+  fi
+fi
 echo ""
 
 echo "=== Deploy complete ==="

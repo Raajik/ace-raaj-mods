@@ -1,24 +1,46 @@
-# Task Plan: Olthoi Ichor Clone + Remove Old Drops + Timewalker Kaleb
+# Task Plan: BSS MagicWithoutMC + LLL Salvage Debug
 
-**Status**: ✅ Complete
+**Status**: in_progress
 
-## Summary of Changes
+## Goal
 
-### Completed
+Stop two live log issues on void-test:
 
-- ✅ **Custom weenie 850339** (`Windblown/Content/Weenies/olthoi-ichor.json`): Stackable clone of 10864 (Olthoi Ichor), blue underlay, MirrorEmoteFromWcid 3680
-- ✅ **Trophy line** (`Windblown/Content/TrophyLines/olthoi-ichor.json`): Single tier, Olthoi gate, 1.5% chance, ReplaceSiblingWcids [10864], bank credit 100k
-- ✅ **SQL registration** (`Windblown/Content/SQL/Items/07_OlthoiIchorTrophy_850339.sql`): Weenie + cook_book recipe redirect
-- ✅ **Harmony patch** (`Windblown/ItemsRemovalPatches.cs`): Prefix on `WorldObjectFactory.CreateNewWorldObject(uint)` blocking 31352, 31354, 31355
-- ✅ **Timewalker Kaleb (810001)**: Vendor in Town Network, AltCurrency=20630 (MMD), sells vanilla 10864 + other replaced trophy originals
-- ✅ **Spawn placement**: Cell `0x00070155`, `[80.5, -60.0, 0.005]`, GUID 0x70130051
-- ✅ **Config**: AutoLoot + QOL StackableQuestWcids updated with 850339
-- ✅ **Docs**: TrophyLineRegistry, TownNetwork-Positions, CustomTrophyNPC-Deployment-Standard.md
+1. `"[BSS MagicWithoutMC] PostHandleCastSpellEcho error: Object reference not set..."`
+2. `"[BSS->LLL Salvage] Could not resolve bank PropertyInt64 for salvage WCID ..."`
 
-### Notes
+## Phases
 
-- Vanilla 10864 still sold by Kaleb (recipe failsafe) — keeps working with recipe 2450
-- 850339 also works with recipe 2450 (separate cook_book entry)
-- 31352/31354/31355 completely blocked from ALL creation (loot + gambling + admin)
-- Used **Prefix** (not Postfix) — more reliable than filtering after creation
-- JSON weenie properties loaded at runtime by WeenieLoader mod system
+### Phase 1 — Evidence and root cause
+- [x] Read wiki + repo conventions + relevant skills
+- [x] Inspect void-test `ACE_Log.txt` around failing timestamps
+- [x] Inspect `MagicWithoutManaConversion`, `BssPlayerPaidSpellCast`, `LeyLineLedgerSalvageInterop`, and shared LLL salvage resolver
+- [x] Confirm likely root causes from source
+
+### Phase 2 — Minimal fixes
+- [ ] Patch shared LLL salvage reflection to see inherited static `Settings`
+- [ ] Patch BSS paid-cast path so MagicWithoutMC works for players without Mana Conversion trained
+
+### Phase 3 — Verify
+- [x] Build affected mods
+- [x] Check lints on edited files
+- [x] Run `graphify update . --out-dir=\"A:/obsidian/jeremy/raw/graphify-out\"`
+- [x] Summarize expected log changes and any remaining risk
+
+### Phase 4 — Drudge charm regression
+- [x] Reproduce likely source path from current code/config
+- [x] Block vanilla WCID 24835 creation so stack-40 vanilla drops cannot remap into custom stacks
+- [x] Build + deploy Windblown fix to void-test
+- [x] Verify startup + document root cause
+
+## Root Cause Hypotheses
+
+1. **Salvage resolver bug**: `Shared/LeyLineLedgerSalvageBankInterop.cs` reflects `PatchClass.Settings` with `BindingFlags.Public | BindingFlags.Static`, but `Settings` is inherited from `BasicPatch<Settings>`. Source test confirms inherited static property lookup needs `BindingFlags.FlattenHierarchy`, otherwise every salvage WCID fails while LLL is loaded.
+2. **MagicWithoutMC bug**: `BssPlayerPaidSpellCast.TryCastWithPlayerMana()` calls ACE `CalculateManaUsage()`, which unconditionally calls `Proficiency.OnSuccessUse(this, GetCreatureSkill(Skill.ManaConversion), ...)`. For the exact users targeted by MagicWithoutMC, Mana Conversion can be null/untrained, causing the NRE.
+
+## Errors Encountered
+
+| Error | Attempt | Resolution |
+|---|---|---|
+| `rg` / `Glob` tooling path failures (`c:\\ACE-REALMS`) | 1 | Switched to direct `ReadFile` + PowerShell `Select-String` |
+| `rg` command unavailable in PowerShell shell | 1 | Switched shell searches to `Select-String` |

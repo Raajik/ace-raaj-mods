@@ -15,6 +15,7 @@ public partial class PatchClass
     /// </summary>
     private static readonly HashSet<uint> BlockedCreationWcids = new()
     {
+        24835, // Vanilla Drudge Charm -- custom TrophyLines drops use 850300-850303 instead
         31352, // Olthoi Slayer Carapace
         31354, // Olthoi Ripper Spine
         31355, // Olthoi Slasher Carapace
@@ -26,7 +27,7 @@ public partial class PatchClass
     {
         if (BlockedCreationWcids.Contains(weenieClassId))
         {
-            __result = null;
+            __result = null!;
             return false;
         }
         return true;

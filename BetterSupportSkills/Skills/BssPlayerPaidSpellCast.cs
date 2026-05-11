@@ -1,6 +1,8 @@
 using System.Linq;
 using ACE.Entity;
 using ACE.Entity.Enum;
+using ACE.Server.Entity;
+using ACE.Server.Network.GameEvent.Events;
 using ACE.Server.WorldObjects;
 
 namespace BetterSupportSkills.Skills;
@@ -33,8 +35,22 @@ internal static class BssPlayerPaidSpellCast
             uint magicSkill = magicSkillRow.Current;
             Player.CastingPreCheckStatus status = player.GetCastingPreCheckStatus(spell, magicSkill, isWeaponSpell: false);
 
-            if (!player.CalculateManaUsage(status, spell, target, casterItem: null, out uint manaUsed))
+            uint manaUsed = 0;
+            if (status == Player.CastingPreCheckStatus.Success)
+                manaUsed = player.CalculateManaUsage(player, spell, target);
+            else if (status == Player.CastingPreCheckStatus.CastFailed)
+                manaUsed = 5;
+
+            if (manaUsed > player.Mana.Current)
+            {
+                player.SendUseDoneEvent(WeenieError.YouDontHaveEnoughManaToCast);
                 return false;
+            }
+
+            // ACE CalculateManaUsage() always reports Mana Conversion proficiency use, but
+            // MagicWithoutMC intentionally supports players with no trained MC row.
+            if (player.GetCreatureSkill(Skill.ManaConversion) is CreatureSkill manaConversionSkill)
+                Proficiency.OnSuccessUse(player, manaConversionSkill, spell.PowerMod);
 
             player.DoCastSpell_Inner(spell, casterItem: null, manaUsed, target, status, finishCast);
             return true;

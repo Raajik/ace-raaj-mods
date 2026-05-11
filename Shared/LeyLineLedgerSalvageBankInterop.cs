@@ -73,7 +73,8 @@ public static class LeyLineLedgerSalvageBankInterop
         if (patchType is null)
             return false;
 
-        PropertyInfo? settingsProp = patchType.GetProperty("Settings", BindingFlags.Public | BindingFlags.Static);
+        PropertyInfo? settingsProp = patchType.GetProperty("Settings",
+            BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
         object? settings = settingsProp?.GetValue(null);
         if (settings is null)
             return false;

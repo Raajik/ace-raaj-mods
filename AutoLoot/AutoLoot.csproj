@@ -52,6 +52,7 @@
 		<Compile Include="..\Shared\LeyLineLedgerQuestSalvageInterop.cs" Link="Shared\LeyLineLedgerQuestSalvageInterop.cs" />
 		<Compile Include="..\Shared\PeaPyrealWcids.cs" Link="Shared\PeaPyrealWcids.cs" />
 		<Compile Include="..\Shared\SsfAutolootPickupContext.cs" Link="Shared\SsfAutolootPickupContext.cs" />
+		<Compile Include="..\Shared\ReflectionBridge.cs" Link="Shared\ReflectionBridge.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

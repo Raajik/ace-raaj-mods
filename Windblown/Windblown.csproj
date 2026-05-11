@@ -83,6 +83,7 @@
 
 	<ItemGroup>
 		<Compile Include="..\Shared\LeyLineLedgerBankInterop.cs" Link="Shared\LeyLineLedgerBankInterop.cs" />
+		<Compile Include="..\Shared\ReflectionBridge.cs" Link="Shared\ReflectionBridge.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

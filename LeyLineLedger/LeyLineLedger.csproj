@@ -32,6 +32,7 @@
 
 	<ItemGroup>
 		<Compile Include="..\Shared\PeaPyrealWcids.cs" Link="Shared\PeaPyrealWcids.cs" />
+		<Compile Include="..\Shared\ReflectionBridge.cs" Link="Shared\ReflectionBridge.cs" />
 	</ItemGroup>
 
 	<ItemGroup>

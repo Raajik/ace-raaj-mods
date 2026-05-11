@@ -15,12 +15,22 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
     // Debit/DirectDeposit must patch from Start() as well as OnWorldOpen(): if the mod loads after the world
     // is already up, OnWorldOpen never runs and vendors still use vanilla CoinValue (inventory only) while
     // /bank reads the banked PropertyInt64 directly.
+    //
+    // Do not call ApplyConditionalHarmonyCategories from Start() immediately after base.Start(): BasicPatch.Start
+    // is async void and returns before LoadOrCreateAsync finishes. SettingsContainer.Settings would still be null,
+    // so Settings = new Settings() would bind empty SalvageBank.DepositRules and cross-mod salvage interop would
+    // fail for stack WCIDs (e.g. 20987) until a later reload.
     public override void Start()
     {
         Harmony = ModC.Harmony;
         base.Start();
+    }
+
+    public override async Task OnStartSuccess()
+    {
         ApplyConditionalHarmonyCategories();
         ValidateConfiguredWeenies();
+        await Task.CompletedTask;
     }
 
     public override async Task OnWorldOpen()

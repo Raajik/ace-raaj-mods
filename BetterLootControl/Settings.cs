@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace BetterLootControl;
 
 // Settings for BetterLootControl (consolidated chest drops + global rare drops + vendor loot rotation).
-// Tier chances and WCID pools live in Loremaster/LootConfig.json by default.
+// Tier chances and WCID pools live in BetterLootControl/LootConfig.json by default.
 
 public class Settings
 {
@@ -145,7 +145,7 @@ public class Settings
     public uint ManaForgeKeyWcid { get; init; } = 38456;
     public uint LegendaryKeyWcid { get; init; } = 48746;
 
-    // Optional override for LootConfig.json. Empty = Mods/Loremaster/LootConfig.json.
+    // Optional override for LootConfig.json. Empty = Mods/BetterLootControl/LootConfig.json.
     public string LootConfigPath { get; init; } = "";
 
     public int MinChestTier { get; init; } = 1;

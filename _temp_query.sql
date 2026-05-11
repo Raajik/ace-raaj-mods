@@ -1,1 +1,0 @@
-SELECT * FROM config_properties_boolean WHERE `key` LIKE '%loot%';

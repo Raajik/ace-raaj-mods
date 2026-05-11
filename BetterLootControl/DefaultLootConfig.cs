@@ -32,6 +32,7 @@ internal static class DefaultLootConfig
                     new() { wcid = 6057, name = "Tiny Shard", stackSize = 1 },
                     new() { wcid = 6353, name = "Pyreal Mote", stackSize = 1 },
                     new() { wcid = 6355, name = "Pyreal Sliver", stackSize = 1 },
+                    new() { wcid = 36509, name = "Greater Gem of Knowledge", stackSize = 1 },
                     // Windblown custom stackable letters (vanilla 45875/45876 are WeenieType.Book)
                     new() { wcid = 800006, name = "Scarlet Red Letter", stackSizeMin = 3, stackSizeMax = 10 },
                     new() { wcid = 800005, name = "Lucky Gold Letter", stackSizeMin = 3, stackSizeMax = 10 },

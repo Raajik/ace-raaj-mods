@@ -13,8 +13,10 @@ Expert ACE + **ACE.BaseMod** + **Harmony** mods: separate class libraries hot-lo
 
 ## Layout
 
-- **Output:** `C:\ACE\Mods\YourMod\` — DLL, `ACE.Shared.dll`, `Meta.json`, `Settings.json` (ship a template in this repo).
-- **Source:** own folder; `OutputPath` → `C:\ACE\Mods\$(AssemblyName)`; never put `.cs` in the output folder.
+- **Build output:** `A:\ai\projects\ace-raaj-mods\build\$(AssemblyName)\` — DLL, `ACE.Shared.dll`, `Meta.json`, `Settings.json`.
+- **Deploy:** `scripts/deploy-void-test.sh` or `scripts/deploy-wb-test.sh` copy from `build/` to target server `Mods/`.
+- **Source:** own folder; `OutputPath` → `build\$(AssemblyName)` in every `.csproj`; never put `.cs` in the output folder.
+- **Server target (for reference):** `C:\ACE\Mods\YourMod\` after deployment.
 
 ## Mod entry
 
@@ -44,7 +46,7 @@ public class Mod : BasicMod
 
 Copy an existing gameplay mod in this repo (e.g. **Swarmed**, **Loremaster**). Invariants:
 
-- `net10.0`, `OutputPath` → `C:\ACE\Mods\$(AssemblyName)`, `CopyLocalLockFileAssemblies` true.
+- `net10.0`, `OutputPath` → `build\$(AssemblyName)`, `CopyLocalLockFileAssemblies` true.
 - **`ACEmulator.ACE.Shared`** — **no** `ExcludeAssets="runtime"` (each mod bundles `ACE.Shared.dll`).
 - **`Lib.Harmony`** — **with** `ExcludeAssets="runtime"` (server provides Harmony).
 - ACE server DLLs: `Reference` + `Private=False`.
@@ -126,20 +128,75 @@ Copy an existing gameplay mod in this repo (e.g. **Swarmed**, **Loremaster**). I
 
 **Particle on humanoids:** **`DefaultScriptId`** does not loop visibly on humanoid setups; use **beacon** static (e.g. WCID **36577**) + **`ActionChain`** delay after **`GenerateWieldList`** — details in ACE wiki / mod examples.
 
-## Production safety (condensed)
+## Antipatterns & Gotchas
+
+| Issue | Symptom | Fix |
+|-------|---------|-----|
+| **JIT inlining defeats Harmony prefix** | Prefix fires for some callers but not others (e.g. `ExecuteEmoteSet` vs `EmoteManager.Enqueue`) | Patch one level deeper — the inner method that the JIT can't inline |
+| **`[ThreadStatic]` prefix→postfix state** | Stale state from previous call pollutes next invocation | Reset at **start** of prefix before any logic |
+| **Static `HashSet<T>` not thread-safe** | Concurrent access races, crashes, or silent corruption | Use `ConcurrentDictionary<T, byte>` with `TryAdd`/`TryRemove`/`ContainsKey` |
+| **`nameof(Mod)` → `"Mod"`** | `Setup(nameof(Mod), ...)` sets `ModPath` to nonexistent `C:\ACE\Mods\Mod\` | Always pass **assembly/folder name**: `nameof(YourMod)` matching `$(AssemblyName)` |
+| **Cross-file partial PatchClass** | Orphan Harmony types never auto-attach (silent) | Every partial must share the **same root namespace** as the type in `Mod.cs` |
+| **Primary constructors on PatchClass** | `Settings` not assigned before patches fire | Assign `Settings = SettingsContainer.Settings ?? new Settings()` in ctor or `Start()` — not only `OnWorldOpen()` |
+| **`ACE.Common.ThreadSafeRandom.Next(min, max)`** | `IndexOutOfRangeException` using `array.Length` as max | Always use `Length - 1` (bounds are **inclusive** on both ends) |
+| **`Assembly.Location` empty string** | Server loads DLLs from `C:\ACE\Server\` working dir | Fallback: `Path.Combine(ModManager.ModPath, "ModName")` |
+| **Patch `base virtual`, not `override`** | Patch silently does nothing (e.g. `Creature.Heartbeat` is override) | Patch `WorldObject.Heartbeat` (base virtual) instead |
+| **New Harmony patches on existing PatchClass** | Added after initial compilation — `PatchAllUncategorized()` silently ignores them | Use **manual `Harmony.Patch()`** for patches added post-compile, or add them before the first `PatchAllUncategorized()` call |
+
+## Cross-Mod Shared Properties
+
+| Property | Meaning | Used By |
+|----------|---------|---------|
+| `FakeFloat 11012` | EnlightenmentPoolBonus | AureatePath / Loremaster / ChallengeModes |
+| `FakeInt 40113` | BuddySpawn tag | Swarmed |
+| `FakeInt 10029` | CreatureExType | Swarmed |
+| `FakeBool 40100` | GrowthItem | EmpyreanAlteration |
+| `FakeBool 40130` | IsAwakened | EmpyreanAlteration |
+| `FakeInt 40131` | AwakenedTier | EmpyreanAlteration |
+| `FakeInt 40132` | PreImbuedCount | EmpyreanAlteration |
+| `FakeInt 40133` | Overtinked custom imbue bitmask | Overtinked |
+| `FakeInt 40134` | Shatter debuff stack count on creature | Overtinked |
+| `FakeInt 40135` | Shatter broken (max stacks) on creature | Overtinked |
+| `FakeString 11033` | OriginalName | EmpyreanAlteration |
+| `FakeString 11034` | ProfileName | EmpyreanAlteration |
+| `FakeBool 12001` | Event announcement opt-out | WorldEvents |
+
+## Monetary Rewards → LLL Bank Interop (per AGENTS.md §8.7)
+
+Whenever a Harmony patch grants a monetary/pyreal reward, **must** use `LeyLineLedgerBankInterop.DepositToBank`. Do **not** give trade notes or physical pyreal items — they clutter inventory and bypass LLL's banking system. Works whether LLL is loaded or not (falls back to PropertyInt64 biota write).
+
+## Salvage Bank PropertyInt64 slots (per AGENTS.md §8.7a)
+
+Material bank slots for stack salvage WCIDs **20981–21089** are **`SalvageBank.FirstMaterialBankPropertyId + DepositRules row index`** unless the row sets **`BankProperty`** — see `LeyLineLedger.BankSalvage.ResolveMaterialBankProperty`. **Do not** assume **`FirstMaterialBankPropertyId + (WCID − 20981)`** unless every rule row stays strictly WCID-sequential.
+
+BetterSupportSkills credits units via **`Shared/LeyLineLedgerSalvageBankInterop`** + **`LeyLineLedgerBankInterop.IncBanked`**. LeyLineLedger runs **`MaybeMergeLegacyWcidOffsetSalvageBank`** on login and at `/bank salvage` to fold any pre-fix stray legacy-slot balance into the resolved slot.
+
+## Deploy Workflow (see AGENTS.md §5 for full details)
+
+| Step | Command | Target |
+|------|---------|--------|
+| Build all | `dotnet build ModName/ModName.csproj` | `A:\ai\projects\ace-raaj-mods\build\$(AssemblyName)\` |
+| Deploy to void-test | `bash scripts/deploy-void-test.sh` | `A:\void-test\Mods\` + `void-test_world` SQL |
+| Deploy to wb test | `bash scripts/deploy-wb-test.sh` | `C:\ACE\Mods\` + `ace_world` SQL |
+| World clone (void→wb) | `bash scripts/sync-world-void-test-to-wb-test.sh` | backs up shard, replaces world DB |
+| Push live | Manual (requires explicit user permission) | `C:\ACE-WB\` |
+
+**Never deploy ValheelContent.** See AGENTS.md §3.
 
 Null-coalesce collections before LINQ; guard **`FirstOrDefault`** on empty sequences; **`ToHashSet()`** ambiguity → `new HashSet<T>(source)`; reflection → log **`InnerException`**; empty **`RecipeManager`** lists before **`Last()`**; safe divide with **`Math.Max(1, divisor)`**.
 
 ## SQL Content Deployment
 
-- **SQL does NOT auto-deploy on build.** The `.csproj` copies only DLL + JSON to `C:\ACE\Mods\`. SQL files in `Content/SQL/` must be **manually executed** against the live MySQL `ace_world` database.
-- **ACE caches weenies at startup.** Changes to `weenie_properties_int`, `weenie_properties_string`, or any weenie table require a **server restart** to take effect. There is no hot-reload for weenie data.
+- **SQL does NOT auto-deploy on build.** The `.csproj` copies only DLL + JSON to `build/`. SQL files in `Content/SQL/` are applied by deploy scripts.
+- **Automated deploy (preferred):** `bash scripts/deploy-void-test.sh` (→ `void-test_world`) or `bash scripts/deploy-wb-test.sh` (→ `ace_world`). These run `Apply-RepoModSqlToMysql.ps1` to apply all `Content/SQL/*.sql` files sorted by path. See AGENTS.md §5 for env vars and flags.
+- **Manual SQL (ad-hoc):** Execute against target MySQL database directly. Requires server restart for weenie cache reload.
+- **ACE caches weenies at startup.** Changes to any weenie table require a **server restart**. No hot-reload for weenie data.
 - **Use `INSERT ... ON DUPLICATE KEY UPDATE` for idempotent SQL.** `weenie_properties_int` has a `UNIQUE KEY` on `(object_Id, type)`. A plain `UPDATE` silently does nothing if the row is absent. Prefer:
   ```sql
   INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (42516, 94, 128)
   ON DUPLICATE KEY UPDATE value = 128;
   ```
-- **Verify DB state after applying SQL.** Query the database to confirm changes took effect before concluding "nothing changed":
+- **Verify DB state after applying SQL.** Query the database to confirm changes took effect:
   ```sql
   SELECT type, value FROM weenie_properties_int WHERE object_Id = 850200 AND type = 94;
   ```
@@ -151,16 +208,51 @@ Null-coalesce collections before LINQ; guard **`FirstOrDefault`** on empty seque
 3. Hook ACE method with exact signature.  
 4. Settings in ctor + `Start()` + `OnWorldOpen()`.  
 5. Ship `Settings.json` two-band template.  
-6. Apply SQL to live `ace_world` database if the mod includes weenie changes.  
+6. Apply SQL via deploy script (`scripts/deploy-void-test.sh` or `scripts/deploy-wb-test.sh`) if the mod includes weenie changes. For ad-hoc SQL, run against target database manually (see AGENTS.md §5).  
 7. Restart the server for weenie changes to take effect.  
 8. Hot-reload: `/mod f [name]` after rebuild (C# changes only; not weenie data).
 9. **Verify with `/ci <wcid>` (in-inventory spawn), not `/create <wcid>`** — operators use `/ci`, and `/ci` calls `WorldObjectFactory.CreateNewWorldObject` which respects `PropertyInt.StackSize` (default-spawn count) on the weenie. A weenie cloning from a base with `StackSize=40` will make `/ci` produce 40-stacks. Override `"StackSize": 1` in the override block when you want admin-spawned singletons.
+
+## Investigation Order (per AGENTS.md §7.2)
+
+Before guessing ACE behavior:
+1. **Wiki first** — `A:\obsidian\jeremy\wiki\index.md` and topic pages. We have already solved problems and researched mechanics.
+2. **`.references/`** — Pinned ACE source snapshots for stable line citations.
+3. **`graphify query` / `rg`** — For this repo's mods. Read `A:/obsidian/jeremy/raw/graphify-out/GRAPH_REPORT.md` first.
+4. **ACE source enums** — Read `ACE.Entity.Enum.*.cs` in `.references/` for exact values (WeenieType, PropertyInt, EmoteCategory, etc.). **Never guess enum values.**
 
 ## Links
 
 - [ACE.BaseMod wiki](https://github.com/aquafir/ACE.BaseMod/wiki/Getting-Started)  
 - [Harmony](https://harmony.pardeike.net/articles/intro.html)  
-- [ACE wiki](https://github.com/ACEmulator/ACE/wiki)
+- [ACE wiki](https://github.com/ACEmulator/ACE/wiki)  
+- [Wiki index](file:///mnt/a/obsidian/jeremy/wiki/index.md)  
+- [AGENTS.md](file:///mnt/a/ai/projects/ace-raaj-mods/AGENTS.md) — full project conventions and deploy procedures
+- [ace-raaj-mods Patterns](file:///mnt/a/obsidian/jeremy/wiki/ace-raaj-mods%20Patterns.md) — reflection bridges, cross-platform build, verbose results, bidirectional UX
+- [ace-raaj-mods Conventions](file:///mnt/a/obsidian/jeremy/wiki/ace-raaj-mods%20Conventions.md) — ThreadSafeRandom bounds, property-getter patches, Assembly.Location gotcha, push-live weenie SQL
+
+## Cross-Mod Bridges — Canonical Pattern
+
+**For NEW bridges, use `Shared/ReflectionBridge.cs` + `Shared/BridgeTemplate.cs`.**
+
+Existing bridges (`LeyLineLedgerBankInterop`, etc.) were written before the helper existed and use raw reflection inline. Don't rewrite them — but don't write new ones that way either.
+
+### How to add a new bridge
+
+1. **Copy `Shared/BridgeTemplate.cs`** into your mod's project (or into a new file in `Shared/`).
+2. **Fill in the three `ReflectionBridge` constructor args:** target assembly name, target type FullName, method name, parameter types.
+3. **Write public API methods** that call `_bridge.TryInvoke(...)` or `_bridge.TryInvokeVoid(...)` with a fallback when the bridge returns false.
+4. **Add the compile include** to your mod's `.csproj` if it doesn't already have it:
+   ```xml
+   <Compile Include="..\Shared\ReflectionBridge.cs" Link="Shared\ReflectionBridge.cs" />
+   ```
+5. **Log prefix** is automatic: `[CallerMod→TargetMod]` via `Assembly.GetCallingAssembly()`.
+
+### Why not public APIs / interfaces?
+
+`Shared/` files are compiled into each consuming mod's assembly via `<Compile Include>`. This means static fields on Shared types are **per-assembly** — QOL's `AceRaajMods.Shared.X` and Windblown's `AceRaajMods.Shared.X` are different CLR types. Delegate-registration patterns fail because LLL sets the delegate on its own copy, and consumers read from theirs.
+
+Reflection bridges are the correct solution for this architecture: they scan loaded assemblies by name string, bypassing CLR type identity entirely, and they gracefully degrade when the target mod isn't deployed.
 
 ## /doc
 

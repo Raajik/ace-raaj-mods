@@ -61,7 +61,7 @@ Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot`
 - **Gear ratings** — all gear tiers can spawn with ratings (Damage Rating, Crit Damage Rating, Resist Rating, etc.). Higher tiers = higher values and better odds.
 - **Gear equipment sets** — all gear tiers can roll as part of an equipment set (Carraidas, Noble Relic, Ancient Relic, etc.).
 - **Rating level-up scaling** — ratings on gear grow as the item levels up via EmpyreanAlteration's awakening system (every N levels, existing ratings increase).
-- **Runtime config** — `LootConfig.json` (shared with Loremaster) controls all pools without recompiling.
+- **Runtime config** — `BetterLootControl/LootConfig.json` is the shared runtime override for chest/repeat loot without recompiling; Loremaster consumes the same pool.
 
 See `BetterLootControl/Readme.md` for full vendor documentation.
 

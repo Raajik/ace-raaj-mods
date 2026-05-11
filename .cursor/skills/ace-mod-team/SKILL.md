@@ -3,9 +3,13 @@ name: ace-mod-team
 description: Coordinate a team of parallel subagents specialized in ACE.BaseMod and Harmony mod development. Use when the user invokes /ace-mod and requests multiple tasks, faster iteration, or parallel work across design, code changes, builds, and log analysis.
 ---
 
-## Co-active skill: mcp2cli
+## Co-active skills
 
-Whenever this work involves **MCP servers**, **OpenAPI/REST** specs, **GraphQL** endpoints, or **CLI or skill generation for external APIs**, read and follow `.cursor/skills/mcp2cli/SKILL.md` in addition to this skill (same scope as `/mcp2cli`). Prefer `uvx mcp2cli` for discovery and execution per that file.
+- **mcp2cli** — When work involves **MCP servers**, **OpenAPI/REST**, **GraphQL**, or **CLI/skill generation**, read `.cursor/skills/mcp2cli/SKILL.md`.
+- **ace-build** — For full rebuild workflow.
+- **ace-log** — For ACE server log troubleshooting (`Ace_Log.txt`, startup crashes).
+- **AGENTS.md** (repo root) — Full project conventions, deploy procedures, cross-mod properties.
+- **ace-raaj-mods Patterns / Conventions** (wiki) — `A:\obsidian\jeremy\wiki\ace-raaj-mods Patterns.md` and `Conventions.md`.
 
 # ACE Mod Parallel Team
 
@@ -32,9 +36,13 @@ If the `/ace-mod` request is a genuinely tiny, single focused change (for exampl
 - **Project context**: This skill is for the `ace-raaj-mods` repo and assumes:
   - Mods follow the `ACE.BaseMod` + Harmony patterns
   - The `ace-mod` skill is available and should be applied for domain-specific decisions
-- **Parallelism**: Use the `Task` tool to launch **multiple subagents in parallel** when:
-  - You need to explore code while also editing or building
-  - You can safely run independent workstreams at the same time
+### Parallelism Note
+
+Subagent spawning (via `Task` tool, subagent types, `fast`/`sonnet` models) is **tool-dependent**:
+- **Claude Code** supports `Task` tool for parallel subagents directly.
+- **pi / Cursor / other agents** may not support parallel subagentry. In those environments, decompose the work into sequential focused phases instead.
+
+When parallelism is available, use the `Task` tool to launch **multiple subagents** for independent workstreams. At most 4 concurrently.
 - **Safety**:
   - Never modify ACE core DLLs; always patch via mods
   - Never run destructive git commands
@@ -65,7 +73,7 @@ When appropriate, use these roles via the `Task` tool:
     - Run `dotnet build` for specific mod projects
     - Use the `/ace-build` skill pattern when the user wants to build all mods
   - Notes:
-    - Only run builds in this repo’s workspace root (e.g. `c:\Users\jeremy\source\repos\ace-raaj-mods` on Windows)
+    - Only run builds in this repo's workspace root (`A:\ai\projects\ace-raaj-mods`)
     - Avoid long-running watchers; builds should terminate promptly
 
 - **Log Analyst (subagent_type: generalPurpose or explore, model: fast)**
@@ -152,22 +160,23 @@ You should:
     - `Missing IHarmonyMod Type`
   - Use the log analyst role and apply the `ace-log` patterns to interpret and fix issues.
 
-## SQL Content Deployment (Team Responsibility)
+## SQL Content Deployment
 
 When a mod includes weenie changes (new items, NPCs, or updated properties):
 
-- **SQL files do NOT auto-deploy on build.** The `.csproj` copies only DLL + JSON to `C:\ACE\Mods\`. SQL files in `Content/SQL/` must be **manually executed** against the live MySQL `ace_world` database.
-- **ACE caches weenies at startup.** Changes to `weenie_properties_int`, `weenie_properties_string`, or any weenie table require a **server restart** to take effect. There is no hot-reload for weenie data.
-- **Use `INSERT ... ON DUPLICATE KEY UPDATE` for idempotent SQL.** `weenie_properties_int` has a `UNIQUE KEY` on `(object_Id, type)`. A plain `UPDATE` silently does nothing if the row is absent. Prefer:
+- **Build output goes to `build/`, not the server directly.** The `.csproj` copies only DLL + JSON to `A:\ai\projects\ace-raaj-mods\build\$(AssemblyName)\`. SQL files in `Content/SQL/` are applied by deploy scripts.
+- **Automated deploy (preferred):** `bash scripts/deploy-void-test.sh` (→ `void-test_world`) or `bash scripts/deploy-wb-test.sh` (→ `ace_world`). These run `Apply-RepoModSqlToMysql.ps1` to apply all `Content/SQL/*.sql` files. See AGENTS.md §5 for env vars, flags, and excludes.
+- **ACE caches weenies at startup.** Changes to any weenie table require a **server restart**. No hot-reload for weenie data.
+- **Use `INSERT ... ON DUPLICATE KEY UPDATE` for idempotent SQL.** `weenie_properties_int` has a `UNIQUE KEY` on `(object_Id, type)`. A plain `UPDATE` silently does nothing if the row is absent.
   ```sql
   INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (42516, 94, 128)
   ON DUPLICATE KEY UPDATE value = 128;
   ```
-- **Verify DB state after applying SQL.** Query the database to confirm changes took effect before concluding "nothing changed":
+- **Verify DB state after applying SQL.**
   ```sql
   SELECT type, value FROM weenie_properties_int WHERE object_Id = 850200 AND type = 94;
   ```
-- **Workflow:** Build mod → run SQL against `ace_world` → restart server → verify in-game.
+- **Workflow:** Build mod → deploy script (or manual SQL against target DB) → restart server → verify in-game.
 
 ## Notes and Limits
 

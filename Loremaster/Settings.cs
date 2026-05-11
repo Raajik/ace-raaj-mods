@@ -104,7 +104,7 @@ public class Settings
     };
 
     [JsonPropertyName("// EnableRepeatSolveLoot")]
-    public string EnableRepeatSolveLootDoc { get; init; } = "When true, award loot on repeat solves (2nd+) from LootConfig.json (same default pool as BetterLootControl chest/repeat loot).";
+    public string EnableRepeatSolveLootDoc { get; init; } = "When true, award loot on repeat solves (2nd+) from LootConfig.json (same shared pool BetterLootControl owns for chest/repeat loot).";
     public bool EnableRepeatSolveLoot { get; set; } = true;
 
     [JsonPropertyName("// EnableRepeatRewardOnceOnly")]
@@ -112,7 +112,7 @@ public class Settings
     public bool EnableRepeatRewardOnceOnly { get; set; } = true;
 
     [JsonPropertyName("// LootConfigPath")]
-    public string LootConfigPathDoc { get; init; } = "Optional path to LootConfig.json. Empty = Mods/Loremaster/LootConfig.json.";
+    public string LootConfigPathDoc { get; init; } = "Optional path to LootConfig.json. Empty = Mods/BetterLootControl/LootConfig.json.";
     public string LootConfigPath { get; set; } = "";
 
     [JsonPropertyName("// EnableAchievementBroadcasts")]
@@ -385,7 +385,7 @@ public class ParchmentTemplateSettings
     public string Kind { get; set; } = "Kill";
 
     [JsonPropertyName("// Tier")]
-    public string TierDoc { get; init; } = "Easy, Average, or Challenging — XP band; parchment loot uses LootConfig.json (default: beside Loremaster).";
+    public string TierDoc { get; init; } = "Easy, Average, or Challenging — XP band; parchment loot uses LootConfig.json (default: BetterLootControl-owned shared pool).";
     public string Tier { get; set; } = "Easy";
 
     [JsonPropertyName("// TargetCreatureWcid")]

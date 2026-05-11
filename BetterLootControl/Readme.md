@@ -204,6 +204,11 @@ Shopkeepers, grocers, barkeeps, and peddlers sell a mixed inventory:
 
 ### Configurable Settings
 
+Loot pool ownership:
+- `DefaultLootConfig.cs` = compiled baseline / immutable fallback
+- `LootConfig.json` = runtime override at `Mods/BetterLootControl/LootConfig.json`
+- Loremaster repeat loot reads the same shared `LootConfig.json`
+
 All values in `Settings.json`:
 
 ```json

@@ -1,6 +1,42 @@
 # Completed Features & Fixes
 
-## 2026-05-11
+## 2026-05-12
+
+### SpellSiphon — pivot to negative-spell cleanser + Mana Lattice activation fix
+
+Branch: `jeremy/feature/spellsiphon-and-mana-lattice` | Commit: `aaf7e09c`
+
+#### 1. Spellsiphon — remove negative spells from items
+**Problem:** EmpyreanAlteration awakening rolls random spells from the SpellSiphon gem pool onto items. Some of these spells are harmful/debuffs (e.g., Vulnerability, Imperil, Yield). Players had no way to cleanse them.
+**Fix:** Pivot the blank Spellsiphon + item recipe from "extract spells" to "remove negative spells."
+- `RecipeHooks.PostHandleRecipe` now scans `PropertiesSpellBook`, filters by `ACE.Server.Entity.Spell.IsHarmful` (non-beneficial spells), and removes matching spells.
+- Added `NegativeSpellNameContains` setting for configurable name-based detection beyond ACE's flag.
+- Target item survives on both success and failure (`SuccessDestroyTargetChance = 0`, `FailDestroyTargetChance = 0`).
+- Spellsiphon is consumed on use (`SuccessDestroySourceChance = 1.0`).
+- Removed dead extraction/charged-Spellsiphon creation code (`RareCrystalWcids`, `ExtractionStates`, `CreateChargedSpellsiphon`, etc.).
+- Success message: "Cleansed N negative spell(s) from {item}: {names}."
+- If no negative spells found: "{item} has no negative spells to cleanse."
+**Files:** `SpellSiphon/Features/RecipeHooks.cs`, `SpellSiphon/Settings.cs`, `SpellSiphon/Settings.json`
+
+#### 2. Mana Lattice — fix double-click activation
+**Problem:** Mana Lattices (WCID 850201) "never functioned properly." Root cause: `Gem.UseGem()` only casts `SpellDID` (single spell). The Mana Lattice weenie has NO `SpellDID`; spells are stored in `PropertiesSpellBook`. Since `Gem.UseGem` never iterates the spellbook, double-clicking did nothing. The existing `PrefixOnCastSpell` hook on `WorldObject.OnCastSpell` never fired because gems don't call `OnCastSpell`.
+**Fix:** Added `ManaLatticeGemHooks.PostUseGem` — a Harmony postfix on `Gem.UseGem(Player player)` that:
+- Detects Mana Lattice WCID (`850201`).
+- Reads ALL spells from `PropertiesSpellBook` + `SpellDID`.
+- Casts each spell using the same logic as vanilla gems (`TryCastItemEnchantment_WithRedirects` for ImpenBaneType, else `TryCastSpell`).
+- Sends player message with cast count (distinguishes "Endless Mana Lattice" vs plain).
+- Registered via `PatchClass.TryPatchManaLatticeGemHooks()`.
+**Files:** `SpellSiphon/Features/ManaLatticeGemHooks.cs`, `SpellSiphon/PatchClass.cs`
+
+#### 3. BetterLootControl — ManaLattice bootstrap diagnostics
+**Fix:** Replaced silent catch-all with explicit per-step diagnostic logging in `ManaLatticeSpellBootstrap.TryRollSpellsOntoLattice`. Now logs: assembly not loaded, settings load failure, type/method not found, empty spell pool, and successful spell additions.
+**File:** `BetterLootControl/ManaLatticeSpellBootstrap.cs`
+
+#### Deploy
+- Built and deployed to void-test (`bash scripts/deploy-void-test.sh`).
+- Restarted void-test ACE server via watchdog (PID 10120 running new DLLs).
+
+###
 
 ### Deploy — full-tree void-test + wb_test apply all repo mod SQL
 

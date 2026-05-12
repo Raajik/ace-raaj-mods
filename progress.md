@@ -1,38 +1,22 @@
-# Progress Log: Skill Pruning
+# Progress: Nether Rend + Cleaving Refactor
 
-## Session: 2026-05-11
+## 2026-05-11
+- Created task_plan.md, findings.md, progress.md
+- Analyzed current Nether Rend implementation; confirmed `ImbuedEffectType.NetherRending` is native to ACE
+- Researched spell damage paths: `SpellProjectile.DamageTarget` is the hook point for war/void/life magic
 
-### Phase 1: Audit & Select
-- **Status:** complete
-- **Started:** 2026-05-11
-- **Actions:**
-  - Read `.pi/settings.json`
-  - Counted local skills (7) and global skills (1,321)
-  - Reviewed available_skills list and local skill contents
-  - Selected 18 global keepers based on repo workflow
-- **Files created:**
-  - `task_plan.md`
-  - `findings.md`
+### Changes Made
+1. **`OvertinkedImbueFlags.cs`** — Removed `NetherRending = 4` from enum, `AllowedBits`, `CustomTierMask`, and the `ImbuedEffect.NetherRending` fallback in `Get()`
+2. **`PatchClass.cs`** — Removed `OvertinkedImbueStore.Add/ClearFlags` for Nether; now sets only vanilla `ImbuedEffect |= NetherRending` + `DamageType = Nether`
+3. **`CustomImbueAppraise.cs`** — Removed custom Nether appraisal section (vanilla handles it now)
+4. **`ChaosFailureEffects.cs`** — Removed redundant `isCustomImbue` check for Nether (already covered by `isImbue` via `ImbueSalvageWcids.Build`)
+5. **`NewImbueConfig.cs`** — Changed default `SplashRadiusMeters` from `5f` to `9.144f` (10 yards)
+6. **`CleavingNetherImbueCombat.cs`** — Major refactor:
+   - Extracted `TryApplyNetherBonus()` and `TryApplyCleave()` as shared internal methods
+   - Nether now checked via `damageSource.HasImbuedEffect(ImbuedEffectType.NetherRending)` (vanilla)
+   - Added `PostSpellDamageTarget` postfix on `SpellProjectile.DamageTarget` for spell cleave/Nether
+   - Stamina/mana drain spells are excluded from cleave/Nether
+   - `_inOvertinkedCleaveChain` recursion guard covers all three paths
 
-### Phase 2: Backup & Apply
-- **Status:** complete
-- **Actions:**
-  - Backed up `.pi/settings.json` → `.pi/settings.full.json.bak`
-  - Wrote curated `.pi/settings.json` with 18 global + 7 local skills
-- **Files modified:**
-  - `.pi/settings.json`
-  - `.pi/settings.full.json.bak` (created)
-
-## Test Results
-| Test | Input | Expected | Actual | Status |
-|------|-------|----------|--------|--------|
-| Verify skill dirs exist | bash test -d | All 18 global dirs exist | 18/18 exist | ✓ |
-
-## 5-Question Reboot Check
-| Question | Answer |
-|----------|--------|
-| Where am I? | Phase 2 — Backup & Apply |
-| Where am I going? | Phase 3 — Document; Phase 4 — Verify |
-| What's the goal? | Trim Pi skill list from ~1,328 to ~25 |
-| What have I learned? | No usage telemetry; pruning by workflow heuristics |
-| What have I done? | Audited skills, selected keepers, created plan/findings |
+### Build
+- `dotnet build Overtinked/Overtinked.csproj` — **0 warnings, 0 errors**

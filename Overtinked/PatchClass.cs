@@ -506,10 +506,6 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (RendingDamageTypes.ContainsKey(imbueEffect))
         {
             target.ImbuedEffect &= ~AllRendingFlags;
-            // Also strip NetherRending from the custom 40133 bitmask. OvertinkedImbueStore.Get()
-            // checks EITHER the 40133 bit OR ImbuedEffect.NetherRending, so clearing only
-            // ImbuedEffect is not enough — Nether combat effects would still fire.
-            OvertinkedImbueStore.ClearFlags(target, OvertinkedImbueFlags.NetherRending);
         }
 
         target.ImbuedEffect |= imbueEffect;
@@ -595,7 +591,6 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (s.NetherRendingImbue?.Enabled == true && s.NetherRendingImbue.SalvageWcids != null && s.NetherRendingImbue.SalvageWcids.Contains(wcid))
         {
             target.ImbuedEffect &= ~AllRendingFlags;
-            OvertinkedImbueStore.Add(target, OvertinkedImbueFlags.NetherRending);
             target.ImbuedEffect |= ImbuedEffectType.NetherRending;
             target.SetProperty(PropertyInt.DamageType, (int)DamageType.Nether);
             return true;

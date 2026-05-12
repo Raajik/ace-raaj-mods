@@ -1,6 +1,7 @@
 namespace Overtinked;
 
-// Cleaving: splash Health damage to nearby creatures/players from the primary target. Nether Rending: extra Nether damage on the primary target only.
+// Cleaving: splash Health damage to nearby creatures/players from the primary target (melee, missile, and spells).
+// Nether Rending: extra Nether-type damage on the primary target only. Now uses vanilla ImbuedEffectType.NetherRending.
 [HarmonyPatchCategory(Settings.RecipeManagerCategory)]
 public static class CleavingNetherImbueCombat
 {
@@ -9,6 +10,7 @@ public static class CleavingNetherImbueCombat
 
     internal static bool IsInOvertinkedCleaveChain => _inOvertinkedCleaveChain;
 
+    // ── Melee + Missile ────────────────────────────────────────────────
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Player), nameof(Player.DamageTarget), new Type[] { typeof(Creature), typeof(WorldObject) })]
     public static void PostDamageTarget(Creature target, WorldObject damageSource, ref Player __instance, ref DamageEvent __result)
@@ -23,34 +25,88 @@ public static class CleavingNetherImbueCombat
         if (s == null)
             return;
 
-        OvertinkedImbueFlags flags = OvertinkedImbueStore.Get(damageSource);
         float baseDamage = __result.Damage;
         if (baseDamage <= 0)
             return;
 
-        if ((flags & OvertinkedImbueFlags.NetherRending) != 0 && s.NetherRendingImbue?.Enabled == true)
-        {
-            NetherRendingImbueCombatConfig nc = s.NetherRendingImbue;
-            float frac = Math.Clamp(nc.NetherDamageFraction, 0f, 2f);
-            if (frac > 0)
-            {
-                float bonus = baseDamage * frac;
-                if (nc.MaxNetherBonusDamage > 0)
-                    bonus = Math.Min(bonus, nc.MaxNetherBonusDamage);
+        TryApplyNetherBonus(__instance, target, damageSource, baseDamage, s);
+        TryApplyCleave(__instance, target, damageSource, baseDamage, s);
+    }
 
-                float pMul = Math.Clamp(nc.NetherBonusVsPlayersMultiplier, 0f, 10f);
-                float cMul = Math.Clamp(nc.NetherBonusVsCreaturesMultiplier, 0f, 10f);
-                bonus *= target is Player ? pMul : cMul;
+    // ── Spells (War / Void / Life projectiles) ─────────────────────────
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(SpellProjectile), nameof(SpellProjectile.DamageTarget))]
+    public static void PostSpellDamageTarget(Creature target, float damage, bool critical, bool critDefended, bool overpower, SpellProjectile __instance)
+    {
+        if (_inOvertinkedCleaveChain)
+            return;
 
-                if (nc.NetherBonusSoftCap > 0f)
-                    bonus = Math.Min(bonus, nc.NetherBonusSoftCap);
+        if (damage <= 0 || target == null || __instance == null)
+            return;
 
-                if (bonus >= 1f)
-                    target.TakeDamage(__instance, DamageType.Nether, bonus, false);
-            }
-        }
+        // Skip stamina/mana drain spells — only cleave/nether on health damage
+        var spell = __instance.Spell;
+        if (spell != null && (spell.Category == SpellCategory.StaminaLowering || spell.Category == SpellCategory.ManaLowering))
+            return;
 
-        if ((flags & OvertinkedImbueFlags.Cleaving) == 0 || s.CleavingImbue?.Enabled != true)
+        var player = __instance.ProjectileSource as Player;
+        if (player == null)
+            return;
+
+        Settings? s = PatchClass.CurrentSettings;
+        if (s == null)
+            return;
+
+        WorldObject launcher = __instance.ProjectileLauncher;
+        if (launcher == null)
+            return;
+
+        TryApplyNetherBonus(player, target, launcher, damage, s);
+        TryApplyCleave(player, target, launcher, damage, s);
+    }
+
+    // ── Nether Bonus (primary target only) ─────────────────────────────
+    internal static void TryApplyNetherBonus(Player attacker, Creature target, WorldObject damageSource, float baseDamage, Settings s)
+    {
+        if (baseDamage <= 0)
+            return;
+
+        if (!damageSource.HasImbuedEffect(ImbuedEffectType.NetherRending))
+            return;
+
+        if (s.NetherRendingImbue?.Enabled != true)
+            return;
+
+        NetherRendingImbueCombatConfig nc = s.NetherRendingImbue;
+        float frac = Math.Clamp(nc.NetherDamageFraction, 0f, 2f);
+        if (frac <= 0)
+            return;
+
+        float bonus = baseDamage * frac;
+        if (nc.MaxNetherBonusDamage > 0)
+            bonus = Math.Min(bonus, nc.MaxNetherBonusDamage);
+
+        float pMul = Math.Clamp(nc.NetherBonusVsPlayersMultiplier, 0f, 10f);
+        float cMul = Math.Clamp(nc.NetherBonusVsCreaturesMultiplier, 0f, 10f);
+        bonus *= target is Player ? pMul : cMul;
+
+        if (nc.NetherBonusSoftCap > 0f)
+            bonus = Math.Min(bonus, nc.NetherBonusSoftCap);
+
+        if (bonus >= 1f)
+            target.TakeDamage(attacker, DamageType.Nether, bonus, false);
+    }
+
+    // ── Cleaving Splash (nearby targets) ───────────────────────────────
+    internal static void TryApplyCleave(Player attacker, Creature primaryTarget, WorldObject damageSource, float baseDamage, Settings s)
+    {
+        if (_inOvertinkedCleaveChain)
+            return;
+
+        if ((OvertinkedImbueStore.Get(damageSource) & OvertinkedImbueFlags.Cleaving) == 0)
+            return;
+
+        if (s.CleavingImbue?.Enabled != true)
             return;
 
         CleavingImbueCombatConfig cc = s.CleavingImbue;
@@ -60,7 +116,7 @@ public static class CleavingNetherImbueCombat
         if (splashFrac <= 0 || maxTargets == 0)
             return;
 
-        Landblock? lb = target.CurrentLandblock;
+        Landblock? lb = primaryTarget.CurrentLandblock;
         if (lb == null)
             return;
 
@@ -84,13 +140,13 @@ public static class CleavingNetherImbueCombat
                 if (applied >= maxTargets)
                     break;
 
-                if (o is not Creature victim || victim == target || victim == __instance)
+                if (o is not Creature victim || victim == primaryTarget || victim == attacker)
                     continue;
 
                 if (victim.IsDead || !victim.Attackable)
                     continue;
 
-                if (victim.GetDistance(target) > radius)
+                if (victim.GetDistance(primaryTarget) > radius)
                     continue;
 
                 if (victim is Player pVictim && !pVictim.Attackable)
@@ -99,10 +155,10 @@ public static class CleavingNetherImbueCombat
                 if (!cc.SplashDamagePlayerVictims && victim is Player)
                     continue;
 
-                if (cc.SplashRespectCanDamageGate && !__instance.CanDamage(victim))
+                if (cc.SplashRespectCanDamageGate && !attacker.CanDamage(victim))
                     continue;
 
-                victim.TakeDamage(__instance, DamageType.Health, splashAmount, false);
+                victim.TakeDamage(attacker, DamageType.Health, splashAmount, false);
                 applied++;
             }
         }

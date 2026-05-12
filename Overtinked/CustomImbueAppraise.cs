@@ -113,14 +113,6 @@ internal static class CustomImbueAppraise
             parts.Add($"{label}: {pct}% splash, {splashYd:0.#} yd radius, up to {c.MaxSplashTargets} extra targets");
         }
 
-        if ((flags & OvertinkedImbueFlags.NetherRending) != 0 && s.NetherRendingImbue?.Enabled == true)
-        {
-            NetherRendingImbueCombatConfig n = s.NetherRendingImbue;
-            string label = string.IsNullOrWhiteSpace(n.Name) ? "Nether Rending" : n.Name.Trim();
-            int pct = (int)Math.Round(100f * n.NetherDamageFraction);
-            parts.Add($"{label}: +{pct}% Nether from primary hit");
-        }
-
         if ((flags & OvertinkedImbueFlags.Shatter) != 0 && s.ShatterImbue?.Enabled == true)
         {
             ShatterImbueConfig sh = s.ShatterImbue;

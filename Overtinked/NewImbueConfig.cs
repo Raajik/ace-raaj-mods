@@ -83,7 +83,7 @@ public class CleavingImbueCombatConfig : NewImbueConfig
     [JsonPropertyName("// SplashDamageCapPerTarget")]
     public string SplashDamageCapPerTargetDoc { get; init; } = "When greater than 0, caps raw splash damage per target per swing (after fraction, before TakeDamage). 0 = no cap.";
 
-    public float SplashRadiusMeters { get; set; } = 5f;
+    public float SplashRadiusMeters { get; set; } = 9.144f;
 
     public float SplashDamageFraction { get; set; } = 0.35f;
 

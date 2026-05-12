@@ -7,7 +7,6 @@ public enum OvertinkedImbueFlags : byte
     None = 0,
     Hemorrhage = 8,
     Cleaving = 2,
-    NetherRending = 4,
     Shatter = 16,
 }
 
@@ -18,7 +17,7 @@ public static class OvertinkedImbueStore
 
     private static readonly PropertyInt CustomProp = (PropertyInt)CustomImbuePropertyInt;
 
-    private const int AllowedBits = (int)(OvertinkedImbueFlags.Hemorrhage | OvertinkedImbueFlags.Cleaving | OvertinkedImbueFlags.NetherRending | OvertinkedImbueFlags.Shatter);
+    private const int AllowedBits = (int)(OvertinkedImbueFlags.Hemorrhage | OvertinkedImbueFlags.Cleaving | OvertinkedImbueFlags.Shatter);
 
     // Tier 3 (Custom tier): ONE from {Hemorrhage, Shatter, Cleaving}.
     private const int CustomTierMask = (int)(OvertinkedImbueFlags.Hemorrhage | OvertinkedImbueFlags.Cleaving | OvertinkedImbueFlags.Shatter);
@@ -29,12 +28,7 @@ public static class OvertinkedImbueStore
             return OvertinkedImbueFlags.None;
 
         int raw = wo.GetProperty(CustomProp) ?? 0;
-        OvertinkedImbueFlags f = (OvertinkedImbueFlags)(raw & AllowedBits);
-        // Nether also sets ImbuedEffect; older items may lack 40133 until re-tinkered.
-        if (wo.ImbuedEffect.HasFlag(ImbuedEffectType.NetherRending))
-            f |= OvertinkedImbueFlags.NetherRending;
-
-        return f;
+        return (OvertinkedImbueFlags)(raw & AllowedBits);
     }
 
     public static void Add(WorldObject target, OvertinkedImbueFlags flags)
@@ -87,7 +81,7 @@ public static class OvertinkedImbueStore
     }
 
     /// <summary>
-    /// Clears specific flag bits without touching others (e.g. preserve Cleaving when stripping NetherRending).
+    /// Clears specific flag bits without touching others (e.g. preserve Cleaving when stripping Hemorrhage).
     /// </summary>
     public static void ClearFlags(WorldObject target, OvertinkedImbueFlags flags)
     {

@@ -190,7 +190,6 @@ public static class ChaosFailureEffects
             bool isCustomImbue = false;
             if (!isImbue && settings.HemorrhageImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
             if (!isImbue && settings.CleavingImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
-            if (!isImbue && settings.NetherRendingImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
             if (!isImbue && settings.ShatterImbue?.SalvageWcids?.Contains(wcid) == true) isCustomImbue = true;
 
             string effectKind = rule?.EffectKind ?? "";

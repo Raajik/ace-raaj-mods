@@ -316,7 +316,7 @@
       { "// Name": "Salvaged Tiger Eye", "Category": "Useless", "WeenieClassId": 21081, "UnitsPerItem": 1, "Description": "No Apparent Use" },
       { "// Name": "Salvaged Tourmaline", "Category": "Useless", "WeenieClassId": 21082, "UnitsPerItem": 1, "Description": "No Apparent Use" },
       { "// Name": "Salvaged Turquoise", "Category": "Useless", "WeenieClassId": 21083, "UnitsPerItem": 1, "Description": "No Apparent Use" },
-      { "// Name": "Salvaged White Jade", "Category": "Useless", "WeenieClassId": 21084, "UnitsPerItem": 1, "Description": "No Apparent Use" },
+      { "// Name": "Salvaged White Jade", "Category": "WeaponTinkering", "WeenieClassId": 21084, "UnitsPerItem": 1, "Description": "Imbues Shatter (Overtinked)" },
       { "// Name": "Salvaged White Quartz", "Category": "Useless", "WeenieClassId": 21085, "UnitsPerItem": 1, "Description": "No Apparent Use" },
       { "// Name": "Salvaged White Sapphire", "Category": "WeaponTinkering", "WeenieClassId": 21086, "UnitsPerItem": 1, "Description": "Imbues Bludgeon Rending" },
       { "// Name": "Salvaged Yellow Garnet", "Category": "WeaponTinkering", "WeenieClassId": 21087, "UnitsPerItem": 1, "Description": "Imbues Hemorrhage (Overtinked)" },

@@ -171,6 +171,8 @@ internal static class InvasionRuntime
                 InvasionBroadcast.AnnounceIdleFade(ended);
             else
                 InvasionBroadcast.AnnounceWaveEnd(s, ended);
+
+            ResetInvasionLandblocks(s, ended);
         }
     }
 
@@ -571,6 +573,58 @@ internal static class InvasionRuntime
         }
     }
 
+    /// <summary>
+    /// Resets all landblocks affected by an invasion wave.
+    /// Destroys all non-player objects, clears the world DB cache, and reinitializes
+    /// the landblock so generators and spawns return to baseline.
+    /// Covers the town center landblock plus a ±2 radius (5×5 grid).
+    /// </summary>
+    internal static void ResetInvasionLandblocks(Settings s, ActiveInvasionData wave)
+    {
+        var resetIds = new HashSet<ushort>();
+
+        foreach (var entry in wave.Towns)
+        {
+            var town = s.InvasionTowns.FirstOrDefault(t => t.TownName == entry.TownName);
+            if (town == null || town.TownCenterObjCellId == 0) continue;
+
+            uint centerLb = town.TownCenterObjCellId >> 16;
+            byte centerX = (byte)(centerLb >> 8);
+            byte centerY = (byte)(centerLb & 0xFF);
+
+            for (int dx = -2; dx <= 2; dx++)
+            {
+                for (int dy = -2; dy <= 2; dy++)
+                {
+                    byte x = (byte)((centerX + dx + 256) % 256);
+                    byte y = (byte)((centerY + dy + 256) % 256);
+                    resetIds.Add((ushort)((x << 8) | y));
+                }
+            }
+        }
+
+        foreach (ushort lb in resetIds)
+        {
+            uint raw = ((uint)(lb >> 8) << 24) | ((uint)(lb & 0xFF) << 16) | 0xFFFFu;
+            var lbId = new LandblockId(raw);
+            try
+            {
+                var landblock = LandblockManager.GetLandblock(lbId, false);
+                if (landblock != null)
+                {
+                    landblock.DestroyAllNonPlayerObjects();
+                    DatabaseManager.World.ClearCachedInstancesByLandblock(lb);
+                    landblock.Init(true);
+                    ModManager.Log($"[Invasion] Reset landblock 0x{lb:X4} after wave end.", ModManager.LogLevel.Info);
+                }
+            }
+            catch (Exception ex)
+            {
+                ModManager.Log($"[Invasion] Landblock reset failed for 0x{lb:X4}: {ex.Message}", ModManager.LogLevel.Warn);
+            }
+        }
+    }
+
     internal static void ForceStart(Settings s, string? townName = null)
     {
         var now = DateTime.UtcNow;
@@ -686,7 +740,10 @@ internal static class InvasionRuntime
             InvasionPersistence.ClearActiveInvasion();
         }
         if (stopped != null)
+        {
             InvasionBroadcast.AnnounceWaveEnd(s, stopped);
+            ResetInvasionLandblocks(s, stopped);
+        }
     }
 
     // ── Dynamic spawning ─────────────────────────────────────────────────

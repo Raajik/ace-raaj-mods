@@ -317,15 +317,19 @@ internal static class EventScheduler
 
     static void EndInvasion(Settings s)
     {
+        var wave = InvasionRuntime.ActiveInvasion;
         lock (InvasionRuntime.InvasionLock)
         {
             if (InvasionRuntime.ActiveInvasion != null)
             {
-                InvasionRuntime.StopWaveInternal(InvasionRuntime.ActiveInvasion);
+                wave = InvasionRuntime.ActiveInvasion;
+                InvasionRuntime.StopWaveInternal(wave);
                 InvasionRuntime.ActiveInvasion = null;
                 InvasionPersistence.ClearActiveInvasion();
             }
         }
+        if (wave != null)
+            InvasionRuntime.ResetInvasionLandblocks(s, wave);
     }
 
     static void EndCull(Settings s)

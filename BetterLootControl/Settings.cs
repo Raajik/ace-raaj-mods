@@ -130,6 +130,7 @@ public class Settings
     // Pre-rolled spells on Mana Lattice drops (SpellSiphon gem pool when that mod is loaded).
     public int ManaLatticeSpellCountMin { get; init; } = 3;
     public int ManaLatticeSpellCountMax { get; init; } = 7;
+    public uint GlyphExtractionBaseWcid { get; init; } = 850210;
 
     // -- Coalesced Mana Drops (replaces ACE vanilla TryRollMundaneAddon) --
     public double CoalescedManaDropChance { get; init; } = 0.015; // 1.5% per corpse with DeathTreasure

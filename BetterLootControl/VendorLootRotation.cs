@@ -1160,30 +1160,7 @@ public static class VendorLootRotation
             // 2. Plain Mana Lattice (blank) - infinite supply, goes to DefaultItemsForSale
             AddPlainManaLatticeToVendor(vendor);
 
-            // 3. Magical Spellsiphons (with spells) - limited supply (8-20), goes to UniqueItemsForSale
-            // These get spells from the loot generation system (same as monster loot)
-            int magicalSpellsiphonCount = _rng.Next(8, 21); // 8 to 20 inclusive
-            for (int i = 0; i < magicalSpellsiphonCount; i++)
-            {
-                var magicalSpellsiphon = GenerateMagicalSpellsiphon(profiles, vendorTier);
-                if (magicalSpellsiphon != null)
-                {
-                    AddItemToVendorAsUnique(vendor, magicalSpellsiphon, rotatedSet);
-                }
-            }
-
-            // 4. Magical Mana Lattices (with spells) - limited supply (8-20), goes to UniqueItemsForSale
-            int magicalLatticeCount = _rng.Next(8, 21); // 8 to 20 inclusive
-            for (int i = 0; i < magicalLatticeCount; i++)
-            {
-                var magicalLattice = GenerateMagicalManaLattice(profiles, vendorTier);
-                if (magicalLattice != null)
-                {
-                    AddItemToVendorAsUnique(vendor, magicalLattice, rotatedSet);
-                }
-            }
-
-            ModManager.Log($"[BetterLoot] VendorLoot: Added to {vendor.Name}: 1 plain Spellsiphon, 1 plain Mana Lattice, {magicalSpellsiphonCount} magical Spellsiphons, {magicalLatticeCount} magical Mana Lattices", ModManager.LogLevel.Info);
+            ModManager.Log($"[BetterLoot] VendorLoot: Added to {vendor.Name}: 1 plain Spellsiphon, 1 plain Mana Lattice", ModManager.LogLevel.Info);
         }
 
         var taxMult = GetLuxuryTaxMultiplier();

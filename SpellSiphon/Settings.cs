@@ -141,7 +141,7 @@ public class Settings
 
 	[JsonPropertyName("// VendorPrice")]
 	public string VendorPriceDoc { get; init; } = "Price in pyreals for the SpellSiphon tool at vendors.";
-	public int VendorPrice { get; set; } = 10000;
+	public int VendorPrice { get; set; } = 500000;
 
 	[JsonPropertyName("// VendorSpellsiphonStackSize")]
 	public string VendorSpellsiphonStackSizeDoc { get; init; } = "Max units per purchase for blank Spellsiphon at vendors (trade-note style; unit price = VendorPrice). Clamped to weenie MaxStackSize.";

@@ -54,8 +54,8 @@ internal static class VendorIntegration
 		InjectTool(__instance, vendorWcid, spellsiphonWcid, siphonUnit, siphonMaxBuy);
 		InjectTool(__instance, vendorWcid, latticeWcid, latticeUnit, latticeMaxBuy);
 
-		// Only jewelers get Glyph of Extraction
-		if (isJeweler)
+		// Glyphs sold at both jewelers and mages
+		if (isJeweler || isMage)
 		{
 			InjectGlyphs(__instance, vendorWcid, st);
 		}

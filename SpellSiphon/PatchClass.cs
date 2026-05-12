@@ -40,6 +40,7 @@ public class PatchClass : BasicPatch<Settings>
 			try
 			{
 				ModC.Harmony.UnpatchAll(ModC.Harmony.Id);
+				ManaLatticeAutoBuff.Stop();
 			}
 			catch (Exception ex)
 			{
@@ -105,6 +106,9 @@ public class PatchClass : BasicPatch<Settings>
 
 				// 5. Mana Lattice Gem hook (Gem.UseGem postfix — casts all spells in spellbook)
 				TryPatchManaLatticeGemHooks();
+
+				// 6. Mana Lattice auto-buff timer
+				ManaLatticeAutoBuff.TryApply();
 
 				// 6. Vendor integration (sell tools at mage/jeweler vendors)
 				if (s.EnableVendorSales)
@@ -215,14 +219,14 @@ public class PatchClass : BasicPatch<Settings>
 	{
 		try
 		{
-			MethodInfo? gemUseMethod = AccessTools.Method(typeof(WorldObject), "UseGem");
+			MethodInfo? gemUseMethod = AccessTools.Method(typeof(Gem), nameof(Gem.UseGem), new Type[] { typeof(Player) });
 			if (gemUseMethod != null)
 			{
-				MethodInfo? postfix = AccessTools.Method(typeof(InfiniteGemHooks), nameof(InfiniteGemHooks.PostUseGem));
-				if (postfix != null)
+				MethodInfo? prefix = AccessTools.Method(typeof(InfiniteGemHooks), nameof(InfiniteGemHooks.PreUseGem));
+				if (prefix != null)
 				{
-					ModC.Harmony.Patch(gemUseMethod, postfix: new HarmonyMethod(postfix));
-					ModManager.Log("[SpellSiphon] Infinite gem hook applied (Gem.UseGem postfix).", ModManager.LogLevel.Info);
+					ModC.Harmony.Patch(gemUseMethod, prefix: new HarmonyMethod(prefix));
+					ModManager.Log("[SpellSiphon] Infinite gem hook applied (Gem.UseGem prefix).", ModManager.LogLevel.Info);
 				}
 			}
 		}

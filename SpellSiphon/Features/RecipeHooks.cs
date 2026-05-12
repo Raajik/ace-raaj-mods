@@ -248,6 +248,13 @@ internal static class RecipeHooks
 		if (recipe?.Id != SpellsiphonRecipeId && recipe?.Id != SpellsiphonCleanseRecipeId)
 			return;
 
+		// Spellsiphon cleansing is always 100% success
+		if (recipe.Id == SpellsiphonCleanseRecipeId)
+		{
+			__result = 1.0;
+			return;
+		}
+
 		double primary = CalculateSuccessRate(player, s);
 
 		// Rare crystals need primary success then secondary roll.

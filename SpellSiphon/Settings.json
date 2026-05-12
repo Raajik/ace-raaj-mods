@@ -68,7 +68,7 @@
   "// EnableVendorSales": "When true, SpellSiphon tools and Glyphs are sold at jewelers (vendors selling jewelry/gems).",
   "EnableVendorSales": true,
   "// VendorPrice": "Price in pyreals for the SpellSiphon tool at vendors.",
-  "VendorPrice": 10000,
+  "VendorPrice": 500000,
   "// VendorSpellsiphonStackSize": "Max units per purchase for blank Spellsiphon at vendors (trade-note style; unit price = VendorPrice). Clamped to weenie MaxStackSize.",
   "VendorSpellsiphonStackSize": 250,
   "// VendorManaLatticePrice": "Pyreal value per blank Mana Lattice at vendors (stackable sale uses StackUnitValue).",

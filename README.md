@@ -163,10 +163,11 @@ Player-driven item awakening system using Coalesced Mana consumables.
 Extended tinkering system.
 - **Extra tries and imbues** — beyond vanilla tinkering limits.
 - **Custom salvage rules** — define which materials map to which bonuses.
-- **Item XP curves** — tinkering can contribute to item growth.
-- **Quest/loot init for equippables** — special handling for quest-reward and loot-drop items.
-- **Level-up growth hooks** — items can improve when the player levels.
-- **Custom imbue examine text** — Hemorrhage / Cleaving / Nether Rending use a full appraisal `LongDesc` replace (and strip `AppraisalLongDescDecoration`) so the client does not splice workmanship/material lines into custom imbue stats.
+- **Custom imbues** — Hemorrhage (Yellow Garnet 21087), Cleaving (Tiger Eye 21081), Nether Rending (Onyx 21064), Shatter (White Jade 21084), Jewelry Cleave (Obsidian 21063).
+- **Cleaving expansion** — splash damage applies to **melee, missile, and spell damage** (war/void/life magic projectiles; stamina/mana drains excluded).
+- **Nether Rending** — uses **vanilla** `ImbuedEffectType.NetherRending`; ACE handles resistance rending natively. Custom bonus damage (fraction of primary hit) still applies.
+- **Failure redesign** — failed imbues add +1 Workmanship (cap 10) or trigger chaotic positive effects; failed numeric salvages apply opposite effects.
+- **Custom imbue examine text** — Hemorrhage / Cleaving / Shatter use a full appraisal `LongDesc` replace (and strip `AppraisalLongDescDecoration`) so the client does not splice workmanship/material lines into custom imbue stats. **Nether Rending** is excluded — vanilla `ImbuedEffect` displays natively.
 - **World SQL for custom imbue bags** — yellow garnet / tiger eye / onyx need `Content/SQL/` on **each** database (`ace_world` and live `wb_ace_world`); JSON + DLL alone do not set `ItemUseable` / `TargetType` on those WCIDs (see `Overtinked/Readme.md` § Push live).
 
 ### QOL

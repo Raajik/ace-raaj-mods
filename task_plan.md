@@ -7,36 +7,36 @@
 ## Phases
 
 ### Phase 1: Research — ACE Spell Damage Paths
-- [ ] Find where war magic / life magic damage hits targets in ACE source
-- [ ] Identify the cleanest hook point for cleave-on-spell-damage
-- [ ] Document findings
+- [x] Find where war magic / life magic damage hits targets in ACE source
+- [x] Identify the cleanest hook point for cleave-on-spell-damage
+- [x] Document findings
 
 ### Phase 2: Refactor — Remove Nether Rend from 40133 System
-- [ ] Remove `NetherRending` from `OvertinkedImbueFlags` enum
-- [ ] Update `OvertinkedImbueStore.Get()` — stop checking `ImbuedEffect.NetherRending`
-- [ ] Update `OvertinkedImbueStore.TryAddCustomTier()` — remove Nether from custom tier mask
-- [ ] Update `TryApplyNewImbue()` — set vanilla properties only, no 40133 bit
-- [ ] Update `PreVerifyRequirements` / imbue replacement logic — handle Nether as standard rend
-- [ ] Update `CleavingNetherImbueCombat.cs` — check `HasImbuedEffect(NetherRending)` directly
-- [ ] Update `CustomImbueAppraise.cs` — remove Nether from custom appraisal
-- [ ] Update `ChaosAppearance.cs` — remove Nether from chaos pool / appearance logic
-- [ ] Update `ChaosFailureEffects.cs` — handle Nether as standard imbue
-- [ ] Update `ImbueSalvageWcids.cs` — verify still needed or simplify
+- [x] Remove `NetherRending` from `OvertinkedImbueFlags` enum
+- [x] Update `OvertinkedImbueStore.Get()` — stop checking `ImbuedEffect.NetherRending`
+- [x] Update `OvertinkedImbueStore.TryAddCustomTier()` — remove Nether from custom tier mask
+- [x] Update `TryApplyNewImbue()` — set vanilla properties only, no 40133 bit
+- [x] Update `PreVerifyRequirements` / imbue replacement logic — handle Nether as standard rend
+- [x] Update `CleavingNetherImbueCombat.cs` — check `HasImbuedEffect(NetherRending)` directly
+- [x] Update `CustomImbueAppraise.cs` — remove Nether from custom appraisal
+- [x] Update `ChaosAppearance.cs` — remove Nether from chaos pool / appearance logic
+- [x] Update `ChaosFailureEffects.cs` — handle Nether as standard imbue
+- [x] Update `ImbueSalvageWcids.cs` — verify still needed or simplify
 
 ### Phase 3: Expand — Cleaving for All Damage Types
-- [ ] Add spell damage hook for cleave splash
-- [ ] Ensure recursion protection works across melee/missile/spell paths
-- [ ] Update config: default radius to ~9.144m (10 yards) or document
-- [ ] Test that cleave doesn't double-fire on missile (already goes through DamageTarget)
+- [x] Add spell damage hook for cleave splash
+- [x] Ensure recursion protection works across melee/missile/spell paths
+- [x] Update config: default radius to ~9.144m (10 yards) or document
+- [x] Test that cleave doesn't double-fire on missile (already goes through DamageTarget)
 
 ### Phase 4: Build & Verify
-- [ ] `dotnet build Overtinked/Overtinked.csproj`
-- [ ] Fix any compile errors
-- [ ] Review all references to `NetherRending` in the mod
+- [x] `dotnet build Overtinked/Overtinked.csproj`
+- [x] Fix any compile errors
+- [x] Review all references to `NetherRending` in the mod
 
 ### Phase 5: Update Docs
-- [ ] Update `PLAN.md` / `COMPLETED.md` if needed
-- [ ] Commit and push
+- [x] Update `PLAN.md` / `COMPLETED.md` if needed
+- [x] Commit and push
 
 ## Errors Encountered
 | Error | Attempt | Resolution |

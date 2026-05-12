@@ -30,6 +30,9 @@ internal static class EventScheduler
     static readonly List<ActiveScheduledEvent> _activeEvents = new();
     static readonly object _schedulerLock = new();
 
+    static DateTime AlignToNextHour(DateTime dt) =>
+        new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, 0, 0, DateTimeKind.Utc).AddHours(1);
+
     // Tracks whether a 5-minute warning was sent for each active event
     static readonly HashSet<int> _warningSent = new(); // hash of ActiveScheduledEvent
 
@@ -59,8 +62,8 @@ internal static class EventScheduler
             EventStartIntervalMinutes = settings.EventStartIntervalMinutes > 0 ? settings.EventStartIntervalMinutes : 45.0;
             FiveMinuteWarningEnabled = settings.EventFiveMinuteWarning;
 
-            // First event starts in 5 minutes (grace period for server startup)
-            _nextStartUtc = DateTime.UtcNow.AddMinutes(5);
+            // First event starts at the next whole hour
+            _nextStartUtc = AlignToNextHour(DateTime.UtcNow);
             _lastEventType = null;
 
             ModManager.Log($"[EventScheduler] Initialized with {_rotation.Count} event types. Next event at {_nextStartUtc:u} UTC.", ModManager.LogLevel.Info);
@@ -98,7 +101,7 @@ internal static class EventScheduler
             if (now >= _nextStartUtc && _rotation.Count > 0)
             {
                 StartNextEvent(settings);
-                _nextStartUtc = now.AddMinutes(EventStartIntervalMinutes);
+                _nextStartUtc = AlignToNextHour(now);
             }
         }
     }

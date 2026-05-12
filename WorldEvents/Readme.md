@@ -118,22 +118,26 @@ Item-finding scavenger hunt events with configurable item lists.
 
 ## Scheduling
 
-### Unified Scheduler (default: disabled)
+### Unified Scheduler (default: enabled)
 
-When `UseUnifiedScheduler` is `true`, all events are managed centrally:
+When `UseUnifiedScheduler` is `true`, all events are managed centrally by the `EventScheduler`:
 
 | Setting | Default | Purpose |
 |---------|---------|---------|
-| `UseUnifiedScheduler` | `false` | Enable centralized scheduler |
-| `EventDurationMinutes` | `60.0` | Duration per event |
-| `EventStartIntervalMinutes` | `45.0` | Gap between event starts |
+| `UseUnifiedScheduler` | `true` | Enable centralized scheduler |
+| `EventDurationMinutes` | `75.0` | Duration per event |
+| `EventStartIntervalMinutes` | `60.0` | Gap between event starts |
 | `EventFiveMinuteWarning` | `true` | Warning before event end |
 
-### Hunt-Specific Clock Schedule (default: enabled)
+**Alignment:** The scheduler aligns all event starts to the next whole hour (`XX:00` UTC). After each event starts, the next is scheduled for the following hour boundary. With a 75-minute duration and 60-minute interval, consecutive events overlap by **15 minutes** at each handoff.
 
-When `HuntUseClockSchedule` is `true`, hunts use fixed UTC slots:
-- `HuntSlotStartMinutes` (default: `[0, 20, 40]`) — starts at :00, :20, :40
-- `HuntSlotDurationMinutes` (default: `15`)
+### Hunt under Unified Scheduler
+
+When `UseUnifiedScheduler` is `true`, hunts are managed by the central scheduler rather than the clock-schedule system:
+- `HuntUseClockSchedule` defaults to `false`
+- Hunts rotate through the unified event queue like any other event type
+- Each hunt window lasts `EventDurationMinutes` (default 60 min)
+- Independent hunt timers (`HuntIntervalHours`, `HuntSlotStartMinutes`) are ignored
 
 ## Cross-Mod Integration
 

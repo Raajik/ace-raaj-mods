@@ -1,6 +1,22 @@
 {
   "skills": [
     ".cursor/skills",
-    "/mnt/c/Users/jeremy/.cursor/skills"
+    "/mnt/c/Users/jeremy/.cursor/skills/using-superpowers",
+    "/mnt/c/Users/jeremy/.cursor/skills/planning-with-files",
+    "/mnt/c/Users/jeremy/.cursor/skills/bash-scripting",
+    "/mnt/c/Users/jeremy/.cursor/skills/bash-linux",
+    "/mnt/c/Users/jeremy/.cursor/skills/git-advanced-workflows",
+    "/mnt/c/Users/jeremy/.cursor/skills/create-branch",
+    "/mnt/c/Users/jeremy/.cursor/skills/commit",
+    "/mnt/c/Users/jeremy/.cursor/skills/git-pushing",
+    "/mnt/c/Users/jeremy/.cursor/skills/github",
+    "/mnt/c/Users/jeremy/.cursor/skills/jq",
+    "/mnt/c/Users/jeremy/.cursor/skills/debugging-strategies",
+    "/mnt/c/Users/jeremy/.cursor/skills/code-simplifier",
+    "/mnt/c/Users/jeremy/.cursor/skills/readme",
+    "/mnt/c/Users/jeremy/.cursor/skills/obsidian-markdown",
+    "/mnt/c/Users/jeremy/.cursor/skills/wiki-page-writer",
+    "/mnt/c/Users/jeremy/.cursor/skills/windows-shell-reliability",
+    "/mnt/c/Users/jeremy/.cursor/skills/powershell-windows"
   ]
 }

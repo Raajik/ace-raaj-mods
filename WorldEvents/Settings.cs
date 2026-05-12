@@ -18,15 +18,15 @@ public sealed class Settings
 
     [JsonPropertyName("// UseUnifiedScheduler")]
     public string UseUnifiedSchedulerDoc { get; init; } = "When true, all world events are managed by the central scheduler (EventScheduler). When false, each event uses its own independent cooldown timer.";
-    public bool UseUnifiedScheduler { get; set; } = false;
+    public bool UseUnifiedScheduler { get; set; } = true;
 
     [JsonPropertyName("// EventDurationMinutes")]
     public string EventDurationMinutesDoc { get; init; } = "How long each scheduled event lasts in minutes.";
-    public double EventDurationMinutes { get; set; } = 60.0;
+    public double EventDurationMinutes { get; set; } = 75.0;
 
     [JsonPropertyName("// EventStartIntervalMinutes")]
     public string EventStartIntervalMinutesDoc { get; init; } = "Minutes between event starts. With a 60m duration and 45m interval, events overlap by 15 minutes.";
-    public double EventStartIntervalMinutes { get; set; } = 45.0;
+    public double EventStartIntervalMinutes { get; set; } = 60.0;
 
     [JsonPropertyName("// EventFiveMinuteWarning")]
     public string EventFiveMinuteWarningDoc { get; init; } = "When true, broadcast a warning 5 minutes before each scheduled event ends.";
@@ -57,7 +57,7 @@ public sealed class Settings
 
     [JsonPropertyName("// HuntUseClockSchedule")]
     public string HuntUseClockScheduleDoc { get; init; } = "When true, hunts use fixed UTC slots (HuntSlotStartMinutes + HuntSlotDurationMinutes), three windows per hour with gaps. When false, HuntIntervalHours rotates from server start.";
-    public bool HuntUseClockSchedule { get; set; } = true;
+    public bool HuntUseClockSchedule { get; set; } = false;
 
     [JsonPropertyName("// HuntSlotStartMinutes")]
     public string HuntSlotStartMinutesDoc { get; init; } = "UTC minute-of-hour when each hunt window begins (e.g. 0, 20, 40 for :00, :20, :40).";

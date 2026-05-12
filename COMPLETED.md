@@ -36,6 +36,39 @@ Branch: `jeremy/feature/spellsiphon-and-mana-lattice` | Commit: `aaf7e09c`
 - Built and deployed to void-test (`bash scripts/deploy-void-test.sh`).
 - Restarted void-test ACE server via watchdog (PID 10120 running new DLLs).
 
+### SpellSiphon — merge glyph extraction + cleanser + Mana Lattice fix
+
+Branch: `jeremy/feature/spellsiphon-and-mana-lattice` | Commit: `feea1763`
+
+Merged the `jeremy/feature/glyph-extraction` branch (Glyph of Extraction tiered items) into the current branch while preserving the negative-spell cleanser and Mana Lattice fixes.
+
+#### 1. Glyph of Extraction (tiers 0–9) — restored
+- Tier 0 (WCID 850210) extracts cantrips and unique non-tiered spells only.
+- Tiers 1–9 (850211–850219) extract spells matching that exact level.
+- Sold by jewelers with tiered pricing (`GlyphPrice` + `GlyphPricePerTier` per tier).
+- Charged glyphs gain `UiEffects.Acid` (green) + icon overlay `0x06006C33 + tier`.
+- Target item is destroyed on both success and failure (extraction mechanic).
+- New payload properties: `40106 IsChargedGlyph`, `40107 GlyphTier`, `40108 GlyphSpellCount`.
+- New SQL: `GlyphExtraction_Tools_Create.sql` with all 10 weenie templates.
+- New file: `VendorStackUnitPricePostfix.cs`.
+
+#### 2. Spellsiphon — negative spell cleanser (preserved, separate recipe)
+- Uses **recipe ID 900002** (vs 900001 for extraction) so target survives on success/fail.
+- `PostHandleRecipe` branches by source WCID: Spellsiphon → cleanse; Glyph → extract.
+
+#### 3. Mana Lattice — Gem.UseGem postfix (preserved)
+- `ManaLatticeGemHooks.PostUseGem` remains the working activation path.
+- Removed dead `PrefixOnCastSpell` hook (never fired for gems).
+
+#### 4. Settings resync
+- `Settings.json` was out of sync with `Settings.cs` (had old property names). Rewritten to match.
+- Added `GlyphExtractionBaseWcid`, `GlyphPrice`, `GlyphPricePerTier`, `VendorGlyphStackSize`.
+
+**Files:** `RecipeHooks.cs`, `UseOnTargetHooks.cs`, `ItemPayload.cs`, `VendorIntegration.cs`, `VendorStackUnitPricePostfix.cs`, `PatchClass.cs`, `Settings.cs`, `Settings.json`, `WCID_REGISTRY.md`, `GlyphExtraction_Tools_Create.sql`
+
+#### Deploy
+- Built and deployed to void-test. Server restarted via watchdog (PID 34176).
+
 ###
 
 ### Deploy — full-tree void-test + wb_test apply all repo mod SQL

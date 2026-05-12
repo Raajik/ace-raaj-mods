@@ -1,5 +1,23 @@
 # Completed Features & Fixes
 
+### Overtinked — Nether Rend vanilla-ization + Cleaving spell expansion
+
+**Nether Rending:** Moved from custom `PropertyInt 40133` bitmask to **vanilla** `ImbuedEffectType.NetherRending`.
+- ACE handles Nether resistance rending natively via `GetWeaponResistanceModifier` — no custom storage needed.
+- Custom bonus-damage combat patch remains: `TryApplyNetherBonus()` on `Player.DamageTarget` and `SpellProjectile.DamageTarget`.
+- `CustomImbueAppraise` no longer covers Nether (vanilla client displays it via `ImbuedEffect`).
+- Removed `NetherRending` from `OvertinkedImbueFlags` enum and all `OvertinkedImbueStore` manipulation.
+
+**Cleaving:** Expanded from melee+missile to also cover **spell damage**.
+- New `PostSpellDamageTarget` postfix on `SpellProjectile.DamageTarget` — checks caster (`ProjectileLauncher`) for Cleaving imbue.
+- Stamina/Mana drain spells excluded (only health damage cleaves).
+- Default `SplashRadiusMeters` changed from `5f` to `9.144f` (~10 yards).
+- Shared `_inOvertinkedCleaveChain` ThreadStatic guard prevents recursive splash across all damage paths.
+
+**Files:** `Overtinked/OvertinkedImbueFlags.cs`, `Overtinked/PatchClass.cs`, `Overtinked/CleavingNetherImbueCombat.cs`, `Overtinked/CustomImbueAppraise.cs`, `Overtinked/ChaosFailureEffects.cs`, `Overtinked/NewImbueConfig.cs`.
+
+**Wiki:** Created [[Overtinked]] — mod architecture, imbue storage table, chaos failure paths, spell cleaving docs.
+
 ## 2026-05-11
 
 ### Deploy — full-tree void-test + wb_test apply all repo mod SQL

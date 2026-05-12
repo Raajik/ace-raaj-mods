@@ -1,58 +1,51 @@
-# Task Plan: BSS MagicWithoutMC + LLL Salvage Debug
+# Plan: Spellsiphon Negative-Spell Cleanser + Mana Lattice Fix
 
-**Status**: complete
+## Branch: `jeremy/feature/spellsiphon-and-mana-lattice`
 
-## Goal
+## Task 1: Spellsiphon → Negative Spell Remover
 
-Stop two live log issues on void-test:
+**Problem:** EmpyreanAlteration awakening rolls random spells from the SpellSiphon gem pool onto items. Some of these spells are harmful/debuffs (`Spell.IsHarmful`). Players need a way to cleanse them.
 
-1. `"[BSS MagicWithoutMC] PostHandleCastSpellEcho error: Object reference not set..."`
-2. `"[BSS->LLL Salvage] Could not resolve bank PropertyInt64 for salvage WCID ..."`
+**Solution:** Pivot the blank Spellsiphon + item recipe from "extract spells" to "remove negative spells."
 
-## Phases
+**Files:**
+- `SpellSiphon/Settings.cs` — Add `NegativeSpellNameContains` setting
+- `SpellSiphon/Features/RecipeHooks.cs` — Rewrite `PostHandleRecipe` to cleanse instead of extract
+- `SpellSiphon/PatchClass.cs` — No structural changes needed
 
-### Phase 1 — Evidence and root cause
-- [x] Read wiki + repo conventions + relevant skills
-- [x] Inspect void-test `ACE_Log.txt` around failing timestamps
-- [x] Inspect `MagicWithoutManaConversion`, `BssPlayerPaidSpellCast`, `LeyLineLedgerSalvageInterop`, and shared LLL salvage resolver
-- [x] Confirm likely root causes from source
+**Details:**
+- Recipe: `SuccessDestroyTargetChance = 0`, `FailDestroyTargetChance = 0` (target survives)
+- On success: scan target `PropertiesSpellBook`, filter by `Spell.IsHarmful` + optional name denylist, remove matching spells, broadcast update
+- On success with no negative spells: message "No negative spells found"
+- On failure: existing fail message, Spellsiphon consumed
+- Remove rare-crystal secondary roll logic (no longer relevant)
+- Remove charged-Spellsiphon creation logic
 
-### Phase 2 — Minimal fixes
-- [ ] Patch shared LLL salvage reflection to see inherited static `Settings`
-- [ ] Patch BSS paid-cast path so MagicWithoutMC works for players without Mana Conversion trained
+## Task 2: Mana Lattice Activation Fix
 
-### Phase 3 — Verify
-- [x] Build affected mods
-- [x] Check lints on edited files
-- [x] Run `graphify update . --out-dir=\"A:/obsidian/jeremy/raw/graphify-out\"`
-- [x] Summarize expected log changes and any remaining risk
+**Problem:** `Gem.UseGem()` checks `SpellDID.HasValue` and casts ONLY that single spell. Mana Lattice weenie (850201) has NO `SpellDID` set. It stores spells in `PropertiesSpellBook`. `Gem.UseGem` never iterates the spellbook, so double-clicking a Mana Lattice does nothing. The `PrefixOnCastSpell` hook on `WorldObject.OnCastSpell` never fires because gems don't call `OnCastSpell`.
 
-### Phase 4 — Drudge charm regression
-- [x] Reproduce likely source path from current code/config
-- [x] Block vanilla WCID 24835 creation so stack-40 vanilla drops cannot remap into custom stacks
-- [x] Build + deploy Windblown fix to void-test
-- [x] Verify startup + document root cause
+**Solution:** Add a Harmony postfix on `Gem.UseGem` that detects Mana Lattice WCID and casts all spells from `PropertiesSpellBook` (plus `SpellDID` if present).
 
-### Phase 5 — Document repo git workflow
-- [x] Read current AGENTS.md + wiki operations docs
-- [x] Add dedicated wiki page for recommended branch / commit / PR flow
-- [x] Update `AGENTS.md` to require branch-first workflow for edit sessions
-- [x] Link the new workflow from the wiki index and related operations docs
+**Files:**
+- `SpellSiphon/Features/ManaLatticeGemHooks.cs` — New file with `PostUseGem`
+- `SpellSiphon/PatchClass.cs` — Register `TryPatchManaLatticeGemHooks()`
+- `BetterLootControl/ManaLatticeSpellBootstrap.cs` — Add diagnostic logging
 
-### Phase 6 — Align CI source-of-truth checks
-- [x] Inspect `validate_sot.sh` failure and determine whether `WindblownContent` is still intended as a live mod
-- [x] Update validator to treat `Windblown` as the active owner for trophy/content work
-- [x] Update source-of-truth docs/templates that still point to `WindblownContent`
-- [x] Run validator locally and confirm fail/warn set matches current architecture
+**Details:**
+- Postfix on `Gem.UseGem(Player player)`
+- Check `__instance.WeenieClassId == ManaLatticeWcid`
+- Read `PropertiesSpellBook` + `SpellDID`
+- Cast each spell using `player.TryCastSpell` (with `ImpenBaneType` redirect like stock `Gem.UseGem`)
+- Message player with cast count
+- Handle both plain vendor/dropped lattices and "Endless Mana Lattice" transformed lattices
 
-## Root Cause Hypotheses
+## Build & Deploy
+- `dotnet build SpellSiphon/SpellSiphon.csproj`
+- `dotnet build BetterLootControl/BetterLootControl.csproj`
+- Deploy to void-test
+- Verify: `/spellsiphonqa status`, test cleansing on an item with harmful spells, test Mana Lattice double-click
 
-1. **Salvage resolver bug**: `Shared/LeyLineLedgerSalvageBankInterop.cs` reflects `PatchClass.Settings` with `BindingFlags.Public | BindingFlags.Static`, but `Settings` is inherited from `BasicPatch<Settings>`. Source test confirms inherited static property lookup needs `BindingFlags.FlattenHierarchy`, otherwise every salvage WCID fails while LLL is loaded.
-2. **MagicWithoutMC bug**: `BssPlayerPaidSpellCast.TryCastWithPlayerMana()` calls ACE `CalculateManaUsage()`, which unconditionally calls `Proficiency.OnSuccessUse(this, GetCreatureSkill(Skill.ManaConversion), ...)`. For the exact users targeted by MagicWithoutMC, Mana Conversion can be null/untrained, causing the NRE.
-
-## Errors Encountered
-
-| Error | Attempt | Resolution |
-|---|---|---|
-| `rg` / `Glob` tooling path failures (`c:\\ACE-REALMS`) | 1 | Switched to direct `ReadFile` + PowerShell `Select-String` |
-| `rg` command unavailable in PowerShell shell | 1 | Switched shell searches to `Select-String` |
+## Post-implementation
+- Update `COMPLETED.md`
+- Commit and push branch

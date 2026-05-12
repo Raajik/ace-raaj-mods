@@ -19,23 +19,29 @@ internal static class ManaLatticeSpellBootstrap
                 .FirstOrDefault(a => string.Equals(a.GetName().Name, "SpellSiphon", StringComparison.OrdinalIgnoreCase));
             if (asm == null)
             {
-                ModManager.Log($"[BetterLootControl] Mana lattice spell bootstrap skipped: SpellSiphon assembly not loaded (lattice {lattice.Name} WCID {lattice.WeenieClassId}).", ModManager.LogLevel.Warn);
+                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: SpellSiphon assembly not loaded.", ModManager.LogLevel.Warn);
                 return;
             }
 
             object? spellSettings = LoadSpellSiphonSettings(asm);
             if (spellSettings == null)
             {
-                ModManager.Log($"[BetterLootControl] Mana lattice spell bootstrap skipped: could not load SpellSiphon settings (lattice {lattice.Name} WCID {lattice.WeenieClassId}).", ModManager.LogLevel.Warn);
+                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: Could not load SpellSiphon settings (tried {asm.Location}/Settings.json and Activator.CreateInstance).", ModManager.LogLevel.Warn);
                 return;
             }
 
             Type? lootMutator = asm.GetType("SpellSiphon.Features.LootMutator");
-            MethodInfo? pick = lootMutator?.GetMethod("PickRandomSpellIds", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
-            MethodInfo? addSpell = lootMutator?.GetMethod("TryAddSpellId", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            if (lootMutator == null)
+            {
+                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: SpellSiphon.Features.LootMutator type not found via reflection.", ModManager.LogLevel.Warn);
+                return;
+            }
+
+            MethodInfo? pick = lootMutator.GetMethod("PickRandomSpellIds", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+            MethodInfo? addSpell = lootMutator.GetMethod("TryAddSpellId", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             if (pick == null || addSpell == null)
             {
-                ModManager.Log("[BetterLootControl] Mana lattice spell bootstrap skipped: SpellSiphon LootMutator PickRandomSpellIds/TryAddSpellId not found.", ModManager.LogLevel.Warn);
+                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: LootMutator methods not found. Pick={pick != null}, AddSpell={addSpell != null}.", ModManager.LogLevel.Warn);
                 return;
             }
 
@@ -45,7 +51,7 @@ internal static class ManaLatticeSpellBootstrap
             object? idsObj = pick.Invoke(null, new[] { spellSettings, lattice, lo, hi });
             if (idsObj is not List<int> ids || ids.Count == 0)
             {
-                ModManager.Log($"[BetterLootControl] Mana lattice spell pool empty after PickRandomSpellIds (lattice {lattice.Name} WCID {lattice.WeenieClassId}, count {lo}-{hi}). Check SpellSiphon Settings.json spell lists.", ModManager.LogLevel.Warn);
+                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: Spell pool empty (lattice {lattice.Name} WCID {lattice.WeenieClassId}, count {lo}-{hi}). Check SpellSiphon Settings.json spell lists.", ModManager.LogLevel.Warn);
                 return;
             }
 
@@ -61,7 +67,11 @@ internal static class ManaLatticeSpellBootstrap
 
             if (!any)
             {
-                ModManager.Log($"[BetterLootControl] Mana lattice bootstrap picked {ids.Count} spell id(s) but TryAddSpellId added none (lattice {lattice.Name} WCID {lattice.WeenieClassId}).", ModManager.LogLevel.Warn);
+                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: Picked {ids.Count} spell id(s) but TryAddSpellId added none (lattice {lattice.Name} WCID {lattice.WeenieClassId}).", ModManager.LogLevel.Warn);
+            }
+            else
+            {
+                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: Added spells to lattice {lattice.Name} (WCID {lattice.WeenieClassId}).", ModManager.LogLevel.Info);
             }
 
             if (any)
@@ -76,9 +86,9 @@ internal static class ManaLatticeSpellBootstrap
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Optional SpellSiphon integration.
+            ModManager.Log($"[BetterLootControl] ManaLattice bootstrap exception: {ex.Message}", ModManager.LogLevel.Warn);
         }
     }
 

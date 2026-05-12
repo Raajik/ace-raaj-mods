@@ -17,19 +17,7 @@ internal static class RecipeHooks
 {
 	private const uint SpellsiphonRecipeId = 900001;
 
-	// Rare crystals: secondary roll after primary success; UI chance = primary × RareCrystalSecondarySuccessChance
-	private static readonly HashSet<uint> RareCrystalWcids = new()
-	{
-		30183, 30184, 30186, 30187, 30188, 30189, 30194, 30195,
-		30197, 30198, 30199, 30205, 30209, 30214, 30215, 30216,
-		30217, 30218, 30221, 30222, 30224, 30225, 30226, 30228,
-		30229, 30233, 30242, 30245, 30246
-	};
-
-	private readonly record struct ExtractionState(List<int> SpellIds, bool IsRareCrystal);
-
-	// Cross-thread state for extraction (ActionChain may run on different threads)
-	private static readonly ConcurrentDictionary<uint, ExtractionState> ExtractionStates = new();
+	// Cross-thread state for success tracking (ActionChain may run on different threads)
 	private static readonly ConcurrentDictionary<uint, bool> ExtractionSuccess = new();
 
 	// Static recipe instance (created once, reused)
@@ -49,15 +37,15 @@ internal static class RecipeHooks
 			SuccessAmount = 0,
 			FailWCID = 0,
 			FailAmount = 0,
-			SuccessMessage = "[SpellSiphon] The spells are successfully extracted!",
+			SuccessMessage = "[SpellSiphon] Negative spells have been cleansed from the item!",
 			FailMessage = "",  // Custom message sent in PostHandleRecipe postfix.
 			SuccessDestroySourceChance = 1.0,
 			SuccessDestroySourceAmount = 1,
-			SuccessDestroyTargetChance = 1.0,
-			SuccessDestroyTargetAmount = 1,
+			SuccessDestroyTargetChance = 0.0,   // Target item survives on success.
+			SuccessDestroyTargetAmount = 0,
 			FailDestroySourceChance = 1.0,   // Spellsiphon is consumed on failure.
 			FailDestroySourceAmount = 1,
-			FailDestroyTargetChance = 1.0,   // Target item ALSO destroyed on failure.
+			FailDestroyTargetChance = 0.0,   // Target item survives on failure.
 			FailDestroyTargetAmount = 0,
 			DataId = 0,
 			LastModified = DateTime.UtcNow
@@ -112,16 +100,7 @@ internal static class RecipeHooks
 		if (recipe?.Id != SpellsiphonRecipeId)
 			return;
 
-		double primary = CalculateSuccessRate(player, s);
-
-		// Match PostHandleRecipe: rare crystals need primary success then secondary roll — show compound chance in crafting dialog.
-		if (target != null && RareCrystalWcids.Contains(target.WeenieClassId))
-		{
-			float secondary = Math.Clamp(s.RareCrystalSecondarySuccessChance, 0f, 1f);
-			primary *= secondary;
-		}
-
-		__result = primary;
+		__result = CalculateSuccessRate(player, s);
 	}
 
 	// ==================== PATCH: HandleRecipe (Prefix) ====================
@@ -136,9 +115,7 @@ internal static class RecipeHooks
 		if (recipe?.Id != SpellsiphonRecipeId)
 			return;
 
-		var spellIds = ReadItemSpellIds(target);
-		bool isRare = target != null && RareCrystalWcids.Contains(target.WeenieClassId);
-		ExtractionStates[player.Guid.Full] = new ExtractionState(spellIds, isRare);
+		// No pre-capture needed for cleansing; target survives and is inspected in PostHandleRecipe.
 	}
 
 	// ==================== PATCH: CreateDestroyItems (Postfix) ====================
@@ -157,7 +134,7 @@ internal static class RecipeHooks
 	}
 
 	// ==================== PATCH: HandleRecipe (Postfix) ====================
-	// Creates charged Spellsiphon on success.
+	// On success: removes negative/harmful spells from the target item.
 
 	internal static void PostHandleRecipe(Player player, WorldObject source, WorldObject target, Recipe recipe, double successChance)
 	{
@@ -168,77 +145,100 @@ internal static class RecipeHooks
 		if (recipe?.Id != SpellsiphonRecipeId)
 			return;
 
-		if (!ExtractionStates.TryRemove(player.Guid.Full, out var state))
-			return;
-
 		if (!ExtractionSuccess.TryRemove(player.Guid.Full, out bool success))
 			return;
 
-		if (!success || state.SpellIds == null || state.SpellIds.Count == 0)
+		if (!success)
 		{
-			if (!success)
-				player.SendMessage(
-					"The item's latent magic overwhelms your Spellsiphon, destroying it!",
-					ChatMessageType.Magic);
+			player.SendMessage(
+				"The item's latent magic overwhelms your Spellsiphon, destroying it!",
+				ChatMessageType.Magic);
 			return;
 		}
 
-		if (state.IsRareCrystal)
-		{
-			float secondary = Math.Clamp(s.RareCrystalSecondarySuccessChance, 0f, 1f);
-			if (ThreadSafeRandom.Next(0.0f, 1.0f) > secondary)
-			{
-				player.SendMessage("[SpellSiphon] The crystal's ancient magic resists your attempt.");
-				return;
-			}
-		}
-
-		var spellIds = state.SpellIds;
-
-		// Extract 1-3 spells, prioritizing cantrips and unique spells over ranked ones
-		int extractCount = Math.Min(spellIds.Count, ThreadSafeRandom.Next(1, 4)); // 1 to 3 inclusive
-
-		// Sort by priority: cantrips > unique (no Roman numeral) > ranked
-		var sorted = spellIds
-			.OrderByDescending(id => IsCantrip(id))
-			.ThenByDescending(id => !HasRomanNumeralSuffix(id))
-			.ThenBy(_ => ThreadSafeRandom.Next(0, 1000000))
-			.ToList();
-
-		var extracted = sorted.Take(extractCount).ToList();
-
-		// Deduplicate: keep highest level per spell name prefix
-		extracted = DeduplicateByHighestLevel(extracted);
-		extracted = DeduplicateByHighestLevel(extracted);
-
-		// Create charged Spellsiphon
-		var charged = CreateChargedSpellsiphon(player, extracted, s);
-		if (charged == null)
-		{
-			player.SendMessage("[SpellSiphon] ERROR: Failed to create charged Spellsiphon. Report this.");
+		if (target == null)
 			return;
-		}
 
-		// Add to player inventory
-		bool addedToInventory = player.TryCreateInInventoryWithNetworking(charged);
-		if (!addedToInventory)
+		// Remove negative/harmful spells from the target item
+		var removed = RemoveNegativeSpells(target, s);
+
+		if (removed.Count > 0)
 		{
-			charged.Location = player.Location;
-			charged.EnterWorld();
-			player.SendMessage("[SpellSiphon] Your inventory is full. The charged Spellsiphon drops at your feet.");
+			// Broadcast update so client sees the change
+			try { target.EnqueueBroadcastUpdateObject(); }
+			catch { }
+
+			var names = removed.Select(id => LootMutator.TryGetSpellName(id)).Where(n => !string.IsNullOrEmpty(n)).ToList();
+			player.SendMessage($"[SpellSiphon] Cleansed {removed.Count} negative spell(s) from {target.Name}: {string.Join(", ", names)}.");
 		}
 		else
 		{
-			try
-			{
-				player.EnqueueBroadcast(new GameMessageUpdateObject(charged));
-				player.MoveItemToFirstContainerSlot(charged);
-			}
-			catch { }
+			player.SendMessage($"[SpellSiphon] {target.Name} has no negative spells to cleanse.");
 		}
+	}
 
-		var spellNames = extracted.Select(id => LootMutator.TryGetSpellName(id)).Where(n => !string.IsNullOrEmpty(n)).ToList();
-		player.SendMessage($"[SpellSiphon] Extracted {extracted.Count} spell(s): {string.Join(", ", spellNames)}.");
+	// ==================== NEGATIVE SPELL CLEANSING ====================
+
+	private static List<int> RemoveNegativeSpells(WorldObject item, Settings s)
+	{
+		var removed = new List<int>();
+		try
+		{
+			var book = item.Biota?.PropertiesSpellBook;
+			if (book == null || book.Count == 0)
+				return removed;
+
+			var toRemove = new List<int>();
+			foreach (int id in book.Keys)
+			{
+				if (id <= 0)
+					continue;
+
+				try
+				{
+					var spell = new ACE.Server.Entity.Spell(id);
+					if (spell == null || spell.Id == 0)
+						continue;
+
+					// Primary filter: ACE flags non-beneficial spells as harmful
+					bool isHarmful = !spell.IsBeneficial;
+
+					// Secondary filter: configurable name denylist
+					if (!isHarmful && s.NegativeSpellNameContains != null && s.NegativeSpellNameContains.Count > 0)
+					{
+						string name = spell.Name ?? "";
+						isHarmful = ContainsAny(name, s.NegativeSpellNameContains);
+					}
+
+					if (isHarmful)
+						toRemove.Add(id);
+				}
+				catch
+				{
+					// If we can't inspect the spell, leave it alone
+				}
+			}
+
+			foreach (int id in toRemove)
+			{
+				if (book.Remove(id))
+					removed.Add(id);
+			}
+
+			// If spellbook is now empty, clear the magical UI effect
+			if (book.Count == 0)
+			{
+				try
+				{
+					item.UiEffects = (item.UiEffects ?? 0) & ~UiEffects.Magical;
+					item.CalculateObjDesc();
+				}
+				catch { }
+			}
+		}
+		catch { }
+
+		return removed;
 	}
 
 	// ==================== HELPERS ====================
@@ -272,6 +272,21 @@ internal static class RecipeHooks
 		return Math.Clamp(baseRate + augmentBonus + mitBonus, 0f, s.MaxSuccessRate) / 100.0;
 	}
 
+	private static bool ContainsAny(string name, List<string>? frags)
+	{
+		if (frags == null || frags.Count == 0)
+			return false;
+
+		foreach (string frag in frags)
+		{
+			if (string.IsNullOrWhiteSpace(frag))
+				continue;
+			if (name.Contains(frag, StringComparison.OrdinalIgnoreCase))
+				return true;
+		}
+		return false;
+	}
+
 	private static List<int> ReadItemSpellIds(WorldObject item)
 	{
 		HashSet<int> ids = new();
@@ -296,132 +311,6 @@ internal static class RecipeHooks
 		catch { }
 
 		return ids.ToList();
-	}
-
-	private static List<int> DeduplicateByHighestLevel(List<int> spellIds)
-	{
-		var result = new List<int>();
-		var nameMap = new Dictionary<string, (int id, int level)>();
-
-		foreach (int id in spellIds)
-		{
-			try
-			{
-				var spell = new ACE.Server.Entity.Spell(id);
-				string name = spell.Name ?? "";
-				string prefix = StripRomanNumerals(name);
-				int level = (int)spell.Level;
-
-				if (!nameMap.ContainsKey(prefix) || level > nameMap[prefix].level)
-					nameMap[prefix] = (id, level);
-			}
-			catch
-			{
-				if (!result.Contains(id)) result.Add(id);
-			}
-		}
-
-		foreach (var kvp in nameMap)
-			if (!result.Contains(kvp.Value.id)) result.Add(kvp.Value.id);
-
-		return result;
-	}
-
-	private static string StripRomanNumerals(string name)
-	{
-		if (string.IsNullOrWhiteSpace(name)) return name;
-		var parts = name.Trim().Split(' ');
-		if (parts.Length > 1 && IsRomanNumeral(parts[^1]))
-			return string.Join(" ", parts[..^1]);
-		return name;
-	}
-
-	private static bool IsRomanNumeral(string text)
-	{
-		if (string.IsNullOrWhiteSpace(text)) return false;
-		string[] romans = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII" };
-		return romans.Contains(text.Trim().ToUpper());
-	}
-
-	private static bool IsCantrip(int spellId)
-	{
-		try
-		{
-			var spell = new ACE.Server.Entity.Spell(spellId);
-			string name = spell.Name ?? "";
-			if (name.Contains("Cantrip", StringComparison.OrdinalIgnoreCase)) return true;
-			// Also treat level 1-2 spells with short duration as cantrip-tier
-			if (spell.Level <= 2 && spell.Duration <= 120) return true;
-		}
-		catch { }
-		return false;
-	}
-
-	private static bool HasRomanNumeralSuffix(int spellId)
-	{
-		try
-		{
-			var spell = new ACE.Server.Entity.Spell(spellId);
-			string name = spell.Name ?? "";
-			var parts = name.Trim().Split(' ');
-			if (parts.Length > 1 && IsRomanNumeral(parts[^1])) return true;
-		}
-		catch { }
-		return false;
-	}
-
-	private static WorldObject? CreateChargedSpellsiphon(Player player, List<int> spellIds, Settings s)
-	{
-		try
-		{
-			var weenie = DatabaseManager.World.GetCachedWeenie(s.SpellsiphonToolWcid);
-			if (weenie == null)
-				return null;
-
-			var charged = WorldObjectFactory.CreateNewWorldObject(weenie);
-			if (charged == null)
-				return null;
-
-			// Mark as charged
-			charged.SetProperty((PropertyBool)ItemPayload.IsChargedSpellsiphonProp, true);
-			charged.SetProperty((PropertyInt)ItemPayload.SpellsiphonSpellCountProp, spellIds.Count);
-			ItemPayload.TryWriteSpellPayload(charged, spellIds);
-
-			// Add spells to spellbook so they show in item info panel
-			if (charged.Biota != null)
-			{
-				charged.Biota.PropertiesSpellBook ??= new Dictionary<int, float>();
-				foreach (int id in spellIds)
-				{
-					if (!charged.Biota.PropertiesSpellBook.ContainsKey(id))
-						charged.Biota.PropertiesSpellBook[id] = 1.0f;
-				}
-			}
-
-			// Make unstackable; Bonded differs from base tool so stacks never merge with uncharged 800003.
-			charged.SetProperty(PropertyInt.MaxStackSize, 1);
-			charged.SetProperty(PropertyInt.StackSize, 1);
-			charged.SetProperty(PropertyInt.Bonded, (int)BondedStatus.Bonded);
-
-			// Visuals: magical overlay
-			try
-			{
-				charged.UiEffects = (charged.UiEffects ?? 0) | UiEffects.Magical;
-				charged.CalculateObjDesc();
-			}
-			catch { }
-
-			// Name: count only
-			try { charged.Name = $"Charged Spellsiphon ({spellIds.Count})"; }
-			catch { }
-
-			return charged;
-		}
-		catch (Exception ex)
-		{
-			ModManager.Log($"[SpellSiphon] CreateChargedSpellsiphon failed: {ex}");
-			return null;
-		}
 	}
 
 	// ==================== PATCH: OnCastSpell ====================

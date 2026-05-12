@@ -106,6 +106,9 @@ public class PatchClass : BasicPatch<Settings>
 				// 4. Infinite gem hooks (all gems reusable)
 				TryPatchInfiniteGems();
 
+				// 5. Mana Lattice Gem hook (Gem.UseGem postfix — casts all spells in spellbook)
+				TryPatchManaLatticeGemHooks();
+
 				// 4. Vendor integration (sell tool at mage/jeweler vendors)
 				if (s.EnableVendorSales)
 				{
@@ -194,14 +197,14 @@ public class PatchClass : BasicPatch<Settings>
 				}
 			}
 
-			// Patch HandleRecipe postfix to create charged Spellsiphon
+			// Patch HandleRecipe postfix to cleanse negative spells
 			if (handleRecipe != null)
 			{
 				var postfix = AccessTools.Method(typeof(RecipeHooks), nameof(RecipeHooks.PostHandleRecipe));
 				if (postfix != null)
 				{
 					ModC.Harmony.Patch(handleRecipe, postfix: new HarmonyMethod(postfix));
-					ModManager.Log("[SpellSiphon] Recipe hook applied (HandleRecipe postfix).", ModManager.LogLevel.Info);
+					ModManager.Log("[SpellSiphon] Recipe hook applied (HandleRecipe postfix — negative spell cleanse).", ModManager.LogLevel.Info);
 				}
 			}
 		}
@@ -250,6 +253,27 @@ public class PatchClass : BasicPatch<Settings>
 		catch (Exception ex)
 		{
 			ModManager.Log($"[SpellSiphon] Infinite gem hook failed: {ex.Message}", ModManager.LogLevel.Warn);
+		}
+	}
+
+	private void TryPatchManaLatticeGemHooks()
+	{
+		try
+		{
+			MethodInfo? gemUseMethod = AccessTools.Method(typeof(Gem), nameof(Gem.UseGem));
+			if (gemUseMethod != null)
+			{
+				MethodInfo? postfix = AccessTools.Method(typeof(ManaLatticeGemHooks), nameof(ManaLatticeGemHooks.PostUseGem));
+				if (postfix != null)
+				{
+					ModC.Harmony.Patch(gemUseMethod, postfix: new HarmonyMethod(postfix));
+					ModManager.Log("[SpellSiphon] Mana Lattice Gem hook applied (Gem.UseGem postfix).", ModManager.LogLevel.Info);
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			ModManager.Log($"[SpellSiphon] Mana Lattice Gem hook failed: {ex.Message}", ModManager.LogLevel.Warn);
 		}
 	}
 }

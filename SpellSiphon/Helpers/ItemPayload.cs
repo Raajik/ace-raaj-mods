@@ -8,6 +8,9 @@ internal static class ItemPayload
 	internal const int SpellsiphonTierProp = 40103;
 	internal const int SpellsiphonSpellCountProp = 40104;
 	internal const int IsEndlessManaLatticeProp = 40105;
+	internal const int IsChargedGlyphProp = 40106;
+	internal const int GlyphExtractionTierProp = 40107;
+	internal const int GlyphSpellCountProp = 40108;
 
 	internal static bool TryWriteSpellPayload(WorldObject item, List<int> spellIds)
 	{
@@ -80,7 +83,34 @@ internal static class ItemPayload
 		}
 	}
 
-	// True when this WCID is the Spellsiphon tool and it already holds spells to apply (charged flag, JSON payload, or spellbook-only vendor/loot rolls).
+	// True when this WCID is in the Glyph range (850210-850219) and it holds extracted spells to apply.
+	internal static bool IsGlyphApplyReady(WorldObject? tool)
+	{
+		if (tool == null)
+			return false;
+
+		uint wcid = tool.WeenieClassId;
+		if (wcid < 850210 || wcid > 850219)
+			return false;
+
+		if (tool.GetProperty((PropertyBool)IsChargedGlyphProp) == true)
+			return true;
+
+		if (ReadSpellPayload(tool).Count > 0)
+			return true;
+
+		try
+		{
+			var book = tool.Biota?.PropertiesSpellBook;
+			return book != null && book.Count > 0;
+		}
+		catch
+		{
+			return false;
+		}
+	}
+
+	// Kept for backward compat — Spellsiphon-specific apply-ready check.
 	internal static bool IsSpellsiphonApplyReady(WorldObject? tool, uint spellsiphonToolWcid)
 	{
 		if (tool == null || tool.WeenieClassId != spellsiphonToolWcid)

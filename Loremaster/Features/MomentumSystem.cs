@@ -51,7 +51,10 @@ internal static class MomentumSystem
         if (!string.IsNullOrEmpty(modDir))
         {
             _filePath = Path.Combine(modDir, "Data", "MomentumState.json");
-            Directory.CreateDirectory(Path.GetDirectoryName(_filePath)!);
+            // Belt-and-suspenders: explicitly create the Data subdirectory
+            var dataDir = Path.Combine(modDir, "Data");
+            if (!Directory.Exists(dataDir))
+                Directory.CreateDirectory(dataDir);
             Load();
         }
     }

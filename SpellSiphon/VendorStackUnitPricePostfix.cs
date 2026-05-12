@@ -32,6 +32,11 @@ internal static class VendorStackUnitPricePostfix
 				unit = s.VendorManaLatticePrice;
 				maxBuy = System.Math.Clamp(s.VendorManaLatticeMaxBuy, 1, 250);
 			}
+			else if (IsGlyphWcid(wo.WeenieClassId, out int glyphTier))
+			{
+				unit = s.GlyphPrice + glyphTier * s.GlyphPricePerTier;
+				maxBuy = System.Math.Clamp(s.VendorGlyphStackSize, 1, 250);
+			}
 			else
 			{
 				continue;
@@ -40,6 +45,19 @@ internal static class VendorStackUnitPricePostfix
 			wo.SetProperty(PropertyInt.StackUnitValue, unit);
 			int sz = wo.StackSize ?? 1;
 			wo.SetStackSize(sz);
+			wo.VendorShopCreateListStackSize = maxBuy;
 		}
+	}
+
+	private static bool IsGlyphWcid(uint wcid, out int tier)
+	{
+		uint baseWcid = PatchClass.Settings?.GlyphExtractionBaseWcid ?? 850210;
+		if (wcid >= baseWcid && wcid <= baseWcid + 9)
+		{
+			tier = (int)(wcid - baseWcid);
+			return true;
+		}
+		tier = -1;
+		return false;
 	}
 }

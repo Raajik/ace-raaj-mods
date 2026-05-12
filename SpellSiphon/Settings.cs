@@ -154,4 +154,21 @@ public class Settings
 	[JsonPropertyName("// VendorManaLatticeMaxBuy")]
 	public string VendorManaLatticeMaxBuyDoc { get; init; } = "Max units per purchase for blank Mana Lattice at vendors (trade-note style).";
 	public int VendorManaLatticeMaxBuy { get; set; } = 250;
+
+	// Glyph of Extraction settings
+	[JsonPropertyName("// GlyphExtractionBaseWcid")]
+	public string GlyphExtractionBaseWcidDoc { get; init; } = "Base WCID for Glyph of Extraction tier 0 (I). Tiers 1-9 occupy +1 through +9. Range: 850210-850219.";
+	public uint GlyphExtractionBaseWcid { get; set; } = 850210;
+
+	[JsonPropertyName("// GlyphPrice")]
+	public string GlyphPriceDoc { get; init; } = "Base price in pyreals for tier 0 Glyph of Extraction at vendors.";
+	public int GlyphPrice { get; set; } = 5000;
+
+	[JsonPropertyName("// GlyphPricePerTier")]
+	public string GlyphPricePerTierDoc { get; init; } = "Additional pyreal cost per tier above 0. Tier N price = GlyphPrice + N * GlyphPricePerTier.";
+	public int GlyphPricePerTier { get; set; } = 5000;
+
+	[JsonPropertyName("// VendorGlyphStackSize")]
+	public string VendorGlyphStackSizeDoc { get; init; } = "Max units per purchase for blank Glyph of Extraction at vendors (trade-note style). Clamped to weenie MaxStackSize.";
+	public int VendorGlyphStackSize { get; set; } = 250;
 }

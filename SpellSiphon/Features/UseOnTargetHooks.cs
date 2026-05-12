@@ -140,7 +140,13 @@ internal static class UseOnTargetHooks
 		// === Apply-ready Spellsiphon (charged / payload / spellbook) + equipment/gem/ManaLattice ===
 		if (ItemPayload.IsSpellsiphonApplyReady(instanceNonNull, s.SpellsiphonToolWcid) && IsValidApplyTarget(targetNonNull, s))
 		{
-			return HandleApplyStep(playerNonNull, instanceNonNull, targetNonNull, s);
+			return HandleApplyStep(playerNonNull, instanceNonNull, targetNonNull, s, isGlyph: false);
+		}
+
+		// === Apply-ready Glyph of Extraction (charged / payload / spellbook) + equipment/gem/ManaLattice ===
+		if (ItemPayload.IsGlyphApplyReady(instanceNonNull) && IsValidApplyTarget(targetNonNull, s))
+		{
+			return HandleApplyStep(playerNonNull, instanceNonNull, targetNonNull, s, isGlyph: true);
 		}
 
 		return true;
@@ -148,7 +154,7 @@ internal static class UseOnTargetHooks
 
 	// ==================== APPLY ====================
 
-	private static bool HandleApplyStep(Player player, WorldObject chargedSpellsiphon, WorldObject targetItem, Settings s)
+	private static bool HandleApplyStep(Player player, WorldObject chargedTool, WorldObject targetItem, Settings s, bool isGlyph)
 	{
 		// Arcane Lore skill check (difficulty 1 — always passes, triggers skill animation)
 		var arcaneLore = player.GetCreatureSkill(Skill.ArcaneLore);
@@ -164,13 +170,14 @@ internal static class UseOnTargetHooks
 			return true; // Should never happen with difficulty 1, but silent fallback
 		}
 
-		List<int> spellIds = ItemPayload.ReadSpellPayload(chargedSpellsiphon);
+		List<int> spellIds = ItemPayload.ReadSpellPayload(chargedTool);
 		if (spellIds.Count == 0)
-			spellIds = ReadItemSpellIds(chargedSpellsiphon);
+			spellIds = ReadItemSpellIds(chargedTool);
 
 		if (spellIds.Count == 0)
 		{
-			player.SendMessage("[SpellSiphon] That Spellsiphon holds no extracted spells.");
+			string label = isGlyph ? "That Glyph" : "That Spellsiphon";
+			player.SendMessage($"[SpellSiphon] {label} holds no extracted spells.");
 			player.SendUseDoneEvent();
 			return false;
 		}
@@ -219,6 +226,8 @@ internal static class UseOnTargetHooks
 
 		TryMoveInventoryItemToFirstSlot(player, targetItem);
 
+		string toolLabel = isGlyph ? $"Glyph of Extraction" : "Spellsiphon";
+
 		if (isManaLattice)
 		{
 			// Transform Mana Lattice into reusable buff gem
@@ -234,7 +243,7 @@ internal static class UseOnTargetHooks
 			player.SendMessage($"[SpellSiphon] {targetItem.Name} gains: {string.Join(", ", addedNames.Distinct())}");
 		}
 
-		TryConsumeChargedSpellsiphonFromPlayer(player, chargedSpellsiphon);
+		TryConsumeChargedToolFromPlayer(player, chargedTool, isGlyph);
 
 		player.SendUseDoneEvent();
 		return false;
@@ -258,7 +267,7 @@ internal static class UseOnTargetHooks
 		catch { }
 	}
 
-	private static void TryConsumeChargedSpellsiphonFromPlayer(Player player, WorldObject charged)
+	private static void TryConsumeChargedToolFromPlayer(Player player, WorldObject charged, bool isGlyph)
 	{
 		if (charged == null)
 			return;

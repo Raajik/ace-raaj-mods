@@ -53,6 +53,31 @@ internal static class VendorIntegration
 
 		InjectTool(__instance, vendorWcid, spellsiphonWcid, siphonUnit, siphonMaxBuy);
 		InjectTool(__instance, vendorWcid, latticeWcid, latticeUnit, latticeMaxBuy);
+
+		// Only jewelers get Glyph of Extraction
+		if (isJeweler)
+		{
+			InjectGlyphs(__instance, vendorWcid, st);
+		}
+	}
+
+	static void InjectGlyphs(Vendor vendor, uint vendorWcid, Settings? st)
+	{
+		if (st == null)
+			return;
+
+		uint baseWcid = st.GlyphExtractionBaseWcid;
+		int basePrice = st.GlyphPrice;
+		int pricePerTier = st.GlyphPricePerTier;
+		int maxBuy = System.Math.Clamp(st.VendorGlyphStackSize, 1, 250);
+
+		for (int tier = 0; tier <= 8; tier++)
+		{
+			uint wcid = baseWcid + (uint)tier;
+			int price = basePrice + tier * pricePerTier;
+			InjectTool(vendor, vendorWcid, wcid, price, maxBuy);
+		}
+		// Tier 9 (X) is reserved but hidden from vendors until level 9 spells are implemented.
 	}
 
 	static bool VendorAlreadySellsWcid(Vendor vendor, uint wcid)

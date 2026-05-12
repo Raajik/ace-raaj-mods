@@ -100,16 +100,13 @@ public class PatchClass : BasicPatch<Settings>
 				// 2. Native recipe hooks (extraction dialog + skill check)
 				TryPatchRecipeHooks();
 
-				// 3. OnCastSpell hook (Mana Lattice WCID: spellbook self-cast, Endless or BLC-pre-rolled)
-				TryPatchOnCastSpell();
-
-				// 4. Infinite gem hooks (all gems reusable)
+				// 3. Infinite gem hooks (all gems reusable)
 				TryPatchInfiniteGems();
 
 				// 5. Mana Lattice Gem hook (Gem.UseGem postfix — casts all spells in spellbook)
 				TryPatchManaLatticeGemHooks();
 
-				// 4. Vendor integration (sell tool at mage/jeweler vendors)
+				// 6. Vendor integration (sell tools at mage/jeweler vendors)
 				if (s.EnableVendorSales)
 				{
 					var approachVendor = AccessTools.Method(typeof(Vendor), nameof(Vendor.ApproachVendor),
@@ -197,41 +194,20 @@ public class PatchClass : BasicPatch<Settings>
 				}
 			}
 
-			// Patch HandleRecipe postfix to cleanse negative spells
+			// Patch HandleRecipe postfix (cleansing + extraction)
 			if (handleRecipe != null)
 			{
 				var postfix = AccessTools.Method(typeof(RecipeHooks), nameof(RecipeHooks.PostHandleRecipe));
 				if (postfix != null)
 				{
 					ModC.Harmony.Patch(handleRecipe, postfix: new HarmonyMethod(postfix));
-					ModManager.Log("[SpellSiphon] Recipe hook applied (HandleRecipe postfix — negative spell cleanse).", ModManager.LogLevel.Info);
+					ModManager.Log("[SpellSiphon] Recipe hook applied (HandleRecipe postfix).", ModManager.LogLevel.Info);
 				}
 			}
 		}
 		catch (Exception ex)
 		{
 			ModManager.Log($"[SpellSiphon] Recipe hooks failed: {ex.Message}", ModManager.LogLevel.Warn);
-		}
-	}
-
-	private void TryPatchOnCastSpell()
-	{
-		try
-		{
-			var onCastSpell = AccessTools.Method(typeof(WorldObject), nameof(WorldObject.OnCastSpell));
-			if (onCastSpell != null)
-			{
-				var prefix = AccessTools.Method(typeof(RecipeHooks), nameof(RecipeHooks.PrefixOnCastSpell));
-				if (prefix != null)
-				{
-					ModC.Harmony.Patch(onCastSpell, prefix: new HarmonyMethod(prefix));
-					ModManager.Log("[SpellSiphon] OnCastSpell hook applied (Mana Lattice self-cast).", ModManager.LogLevel.Info);
-				}
-			}
-		}
-		catch (Exception ex)
-		{
-			ModManager.Log($"[SpellSiphon] OnCastSpell hook failed: {ex.Message}", ModManager.LogLevel.Warn);
 		}
 	}
 

@@ -37,7 +37,7 @@ public class Settings
 
     [JsonPropertyName("// WindblownCollectorTrophyPass1WeenieClassIds")]
     public string WindblownCollectorTrophyPass1WeenieClassIdsDoc { get; init; } =
-        "Windblown collector trophy WCIDs (850300-850365 + 800000-800002): Pass 1 pulls these from corpse/chest into the pack only when /autoloot trophies is ON. Tiered lines + mob heads + scalp + claw + sinew + stone + mnemosyne + tusk + tumerok + coalesced mana. See Windblown/docs/TrophyLineRegistry.md.";
+        "Windblown collector trophy WCIDs (850300-850361): Pass 1 pulls these from corpse/chest into the pack only when /autoloot trophies is ON. Tiered lines + mob heads + scalp + claw + sinew + stone + mnemosyne + tusk + tumerok. See Windblown/docs/TrophyLineRegistry.md.";
     public List<uint> WindblownCollectorTrophyPass1WeenieClassIds { get; set; } =
     [
         850300u, 850301u, 850302u, 850303u,
@@ -45,8 +45,7 @@ public class Settings
         850308u, 850309u, 850310u, 850311u,
         850312u, 850313u, 850314u, 850315u,
         850316u, 850317u, 850318u, 850319u, 850320u, 850321u, 850322u, 850323u, 850324u, 850325u, 850326u, 850327u,
-        850328u, 850329u, 850330u, 850331u, 850332u, 850333u, 850334u, 850335u, 850336u,
-        850339u,
+        850328u, 850329u, 850330u, 850331u, 850332u, 850333u, 850334u, 850335u, 850336u, 850337u, 850338u,
         850340u, 850341u, 850342u, 850343u,
         850344u, 850345u, 850346u, 850347u,
         850348u, 850349u, 850350u, 850351u,
@@ -54,7 +53,6 @@ public class Settings
         850355u, 850356u, 850357u,
         850358u, 850359u, 850360u, 850361u,
         850362u, 850363u, 850364u, 850365u,
-        800000u, 800001u, 800002u,
     ];
 
     [JsonPropertyName("// OtherPhysicalPass1WeenieClassIds")]
@@ -76,8 +74,6 @@ public class Settings
         27591u,
         51211u,
         51214u,
-        850337u,
-        850338u,
     ];
 
     [JsonPropertyName("// KeysUnlockThreshold")]
@@ -107,8 +103,8 @@ public class Settings
     public int LockpickBankProperty { get; set; } = 40130;
 
     [JsonPropertyName("// LockpickLootBankPercent")]
-    public string LockpickLootBankPercentDoc { get; init; } = "Fraction of lockpick structure banked when looted from corpses/chests (0.0 = disabled; 0.50 = 50%). Must match LeyLineLedger LockpickLootBankRatio to keep banking consistent."; (feat: lockpick banking at 50%, add to /b list; remove VoidTestWatchdog)
-    public float LockpickLootBankPercent { get; set; } = 0.50f;
+    public string LockpickLootBankPercentDoc { get; init; } = "Percent of lockpick structure banked when looted from corpses (0.10 = 10%).";
+    public float LockpickLootBankPercent { get; set; } = 0.10f;
 
     [JsonPropertyName("// EnableChestAutoLoot")]
     public string EnableChestAutoLootDoc { get; init; } = "When true, opening a non-house chest runs profile autoloot immediately; closing runs the same banking/profile passes so leftovers credit LLL before ACE clears the chest (then EnableDelayedSalvageSweep controls material salvage). House chests (HouseOwner) are never touched.";

@@ -1,281 +1,52 @@
 {
-  "EnableAutoCastReagentCosts": true,
-  "EnableAlchemy": true,
-  "Alchemy": {
-    "EchoIntervalTrained": 15.0,
-    "EchoIntervalSpecialized": 10.0,
-    "EchoDuration": 360.0,
-    "PotionDropChance": 0.20,
-    "ExtraPotionRollsTrained": 2,
-    "ExtraPotionRollsSpecialized": 3,
-    "ShowEchoMessages": true
+  "// AutoLoot": "Reading order: every // key is documentation; real settings follow in the same order.",
+  "// DebugLogging": "When true, logs PostGenerateTreasure entry and early-return reasons to Ace_Log.",
+  "DebugLogging": false,
+  "// DepositLootedCurrencyToBank": "When true, looted pyreal stacks and trade notes are credited to banked pyreals.",
+  "DepositLootedCurrencyToBank": true,
+  "// BankCashProperty": "Must match LeyLineLedger Settings.CashProperty when using that mod (default 39999).",
+  "BankCashProperty": 39999,
+  "// LootProfilePath": "Folder for .utl loot profiles. Default empty: PatchClass sets Path.Combine(ModPath, \"LootProfiles\").",
+  "LootProfilePath": "",
+  "// DefaultActiveProfiles": "Archived. .utl profiles are no longer used; all banking is handled by C# code (currencies, trophies, keys, lockpicks, salvage).",
+  "DefaultActiveProfiles": [],
+  "// DefaultProfile": "Legacy single file; leave empty.",
+  "DefaultProfile": "",
+  "// NoDuplicateNames": "Name substrings (case-insensitive): skip loot if player already owns same WCID.",
+  "NoDuplicateNames": [
+    "Pincer",
+    "Tusk",
+    "Matron"
+  ],
+  "// WindblownCollectorTrophyPass1WeenieClassIds": "Pass 1: pocket these Windblown collector trophy WCIDs when /autoloot trophies is ON (850300-850365). See Windblown/docs/TrophyLineRegistry.md.",
+  "WindblownCollectorTrophyPass1WeenieClassIds": [850300, 850301, 850302, 850303, 850304, 850305, 850306, 850307, 850308, 850309, 850310, 850311, 850312, 850313, 850314, 850315, 850316, 850317, 850318, 850319, 850320, 850321, 850322, 850323, 850324, 850325, 850326, 850327, 850328, 850329, 850330, 850331, 850332, 850333, 850334, 850335, 850336, 850337, 850338, 850339, 850340, 850341, 850342, 850343, 850344, 850345, 850346, 850347, 850348, 850349, 850350, 850351, 850352, 850353, 850354, 850355, 850356, 850357, 850358, 850359, 850360, 850361, 850362, 850363, 850364, 850365],
+  "// OtherPhysicalPass1WeenieClassIds": "Pass 1: always pocket these physical quest items (letters, olthoi pincers) regardless of /autoloot trophies.",
+  "OtherPhysicalPass1WeenieClassIds": [8701, 8702, 800005, 800006, 10843, 10844, 10845, 10846, 10847, 27589, 27590, 27591, 51211, 51214, 22419, 22420, 22421, 22422, 22423, 22424, 22425, 22426, 22427, 22428, 22429, 22430, 22431, 22432, 51351, 28718, 28719, 28725, 28726, 28727, 42104],
+  "// KeysUnlockThreshold": "Objects unlocked with keys to unlock BetterKeys.utl and key banking.",
+  "KeysUnlockThreshold": 10,
+  "// LockpickUnlockThreshold": "Objects unlocked with lockpicks to unlock lockpick corpse-loot banking.",
+  "LockpickUnlockThreshold": 10,
+  "// SalvageUnlockThreshold": "Items manually salvaged to unlock AutoSalvage.utl.",
+  "SalvageUnlockThreshold": 50,
+  "// KeyBankProperties": "WCID to PropertyInt64 for key banking (must match LeyLineLedger).",
+  "KeyBankProperties": {
+    "6876": 40250,
+    "24477": 40500,
+    "38456": 40750,
+    "48746": 41000
   },
-  "EnableArcaneLore": true,
-  "ArcaneLore": {
-    "EchoSpellCasts": true,
-    "EchoDebuffSpells": true,
-    "EchoImperilSpellId": 4312,
-    "EchoFesterSpellId": 4489
-  },
-  "EnableAssessCreature": true,
-  "EnableSalvage": true,
-  "EnableCooking": true,
-  "EnableDeception": true,
-  "EnableDirtyFighting": true,
-  "DirtyFighting": {
-    "DebuffDurationSeconds": 180,
-    "AttackDebuffTrained": -20,
-    "AttackDebuffSpecialized": -40,
-    "DefenseDebuffTrained": -20,
-    "DefenseDebuffSpecialized": -40,
-    "HealDebuffTrained": -30,
-    "HealDebuffSpecialized": -60,
-    "BleedPercentTrained": 0.01,
-    "BleedPercentSpecialized": 0.02
-  },
-  "EnableDualWield": true,
-  "DualWield": {
-    "DamageResistanceTrained": 10,
-    "DamageResistanceSpecialized": 20
-  },
-  "EnableFletching": false,
-  "EnableHealing": true,
-  "EnableLeadership": true,
-  "Leadership": {
-    "ExtraCombatPetSlotsTrained": 1,
-    "ExtraCombatPetSlotsSpecialized": 2
-  },
-  "EnableLockpick": true,
-  "// LockpickLootBankPercent": "Percent of lockpick structure banked when looted from corpses (0.50 = 50%).",
-  "LockpickLootBankPercent": 0.50,
-  "EnableLoyalty": true,
-  "Loyalty": {
-    "CorruptionSpellIds": [],
-    "SummoningSkillPerTier": 50,
-    "CooldownSeconds": 4.0,
-    "EnableHealingAura": true,
-    "AuraRange": 13.716,
-    "PercentMaxHealthPerSecondTrained": 0.005,
-    "PercentMaxHealthPerSecondSpecialized": 0.01
-  },
-  "EnableManaConversion": true,
-  "EnableMagicWithoutManaConversion": true,
-  "MagicWithoutManaConversion": {
-    "EchoWarVoidHarmful": true,
-    "TripleLifeHarmful": true,
-    "CreatureEnchantmentWeaveSpellId": 5622,
-    "ItemEnchantmentWeaveSpellId": 5652,
-    "WeaveStacksForPlus50": 1
-  },
-  "EnableMeleeLifeSpellProc": true,
-  "MeleeLifeSpellProc": {
-    "SpellId": 0,
-    "ProcChance": 0.12,
-    "CooldownSeconds": 4.0
-  },
-  "EnableMissileDefense": true,
-  "EnableRecklessness": true,
-  "RecklessnessCleave": {
-    "CleaveTargetsTrained": 1,
-    "CleaveTargetsSpecialized": 2,
-    "CleaveRangeMeters": 15.0,
-    "SplashDamageFraction": 0.65,
-    "CooldownSeconds": 0.35,
-    "MaxTotalExtraTargetsCap": 6,
-    "SplashPlayerVictims": false
-  },
-  "EnableShield": true,
-  "EnableSneakAttack": true,
-  "SneakAttack": {
-    "ExtraWeaponFollowUpsTrained": 1,
-    "ExtraWeaponFollowUpsSpecialized": 2,
-    "FollowUpDamageFraction": 0.32,
-    "ExtraHarmfulSpellCastsTrained": 1,
-    "ExtraHarmfulSpellCastsSpecialized": 2,
-    "AllowPlayerSpellVictims": false,
-    "AllowPlayerWeaponVictims": false
-  },
-  "EnableTrophyDrops": true,
-  "TrophyDrops": {
-    "ExtraRollsTrained": 3,
-    "ExtraRollsSpecialized": 5,
-    "MaxExtraRolls": 10,
-    "BonusTreasureChance": 0.5
-  },
-  "EnableTinkeringLootGating": false,
-  "TinkeringLootGating": {
-    "MaxLevelBonusTrained": 10,
-    "MaxLevelBonusSpecialized": 20
-  },
-  "Cooking": {
-    "CookingUseLegacySpellBuffs": false,
-    "// CookingRegenPercentPerTickTrained": "5% max vital per 5-second tick when healthy (trained)",
-    "CookingRegenPercentPerTickTrained": 0.01,
-    "// CookingRegenPercentPerTickSpecialized": "10% max vital per 5-second tick when healthy (specialized), or per 1-second when low",
-    "CookingRegenPercentPerTickSpecialized": 0.02,
-    "// CookingFastRegenVitalThreshold": "Below 30% HP/stamina/mana = 1-second ticks, above = 5-second ticks",
-    "CookingFastRegenVitalThreshold": 0.30,
-    "LegendaryHealthSpell": 6077,
-    "LegendaryStaminaSpell": 6076,
-    "LegendaryManaSpell": 6078,
-    "ProdigalHealthSpell": 3731,
-    "ProdigalStaminaSpell": 3732,
-    "ProdigalManaSpell": 3725
-  },
-  "Recuperation": {
-    "HotDurationSeconds": 15.0,
-    "HotTickSeconds": 1.0,
-    "BaseSkillPercentPerTick": 0.025,
-    "SpecializedMultiplier": 2.0,
-    "EnableHealthKits": true,
-    "EnableStaminaKits": true,
-    "EnableManaKits": true,
-    "EnableDebugMessages": false
-  },
-  "ManaConversion": {
-    "CleaveTargetsTrained": 1,
-    "CleaveTargetsSpecialized": 2,
-    "CleaveRange": 15.0,
-    "EquipmentManaEfficiencyTrained": 0.25,
-    "EquipmentManaEfficiencySpecialized": 0.50
-  },
-  "Salvage": {
-    "UnitsPerItem": 1,
-    "AutoDepositPercent": 0.001,
-    "AutoDepositPercentUnlocked": 0.0005,
-    "RequireQuestsForUnlock": 100,
-    "DefaultAutoSalvageEnabled": true
-  },
-  "EnableSummoningClasses": true,
-  "SummoningClasses": {
-    "SummonDurationSeconds": 30,
-    "AutoSummonObjScaleMultiplier": 0.5,
-    "AutoSummonMoveSpeedMultiplier": 10,
-    "MasteryDamageRatingBonus": 10,
-    "PetAwarenessRange": 5.0,
-    "FollowDistanceThreshold": 15.0,
-    "FollowWhileOwnerMoving": true,
-    "MoveFollowDistanceThreshold": 6.0,
-    "FollowMaxDistanceBeforeDestroy": 250.0,
-    "BlockPetWarVoidRingWallSpells": false,
-    "BlockPetProjectileDamageToOwner": true,
-    "ArtificerWispMeleeMinCycleSeconds": 0.5,
-    "ArtificerWispImperilDrainProcChance": 1.0,
-    "ArtificerWispProcMaxSpellTier": 8,
-    "ArtificerWispProcAoERadiusMeters": 10.0,
-    "EnableCantripBonusPets": true,
-    "CantripBonusPetsLegendarySpellId": 0,
-    "Druid": {
-      "Enabled": true,
-      "TotalCap": 4,
-      "PetTypes": {
-        "Wasps": { "Enabled": true, "Count": 4 },
-        "Grievvers": { "Enabled": false, "Count": 4 },
-        "Moars": { "Enabled": false, "Count": 4 },
-        "Custom1": { "Enabled": false, "Count": 4 },
-        "Custom2": { "Enabled": false, "Count": 4 },
-        "Custom3": { "Enabled": false, "Count": 4 }
-      }
-    },
-    "Elementalist": {
-      "Enabled": true,
-      "TotalCap": 4,
-      "PetTypes": {
-        "Elementals": { "Enabled": true, "Count": 4 },
-        "K'naths": { "Enabled": false, "Count": 4 },
-        "Wisps": { "Enabled": false, "Count": 4 },
-        "Golems": { "Enabled": false, "Count": 4 },
-        "Grievvers": { "Enabled": false, "Count": 4 },
-        "Moars": { "Enabled": false, "Count": 4 },
-        "Custom1": { "Enabled": false, "Count": 4 },
-        "Custom2": { "Enabled": false, "Count": 4 },
-        "Custom3": { "Enabled": false, "Count": 4 }
-      }
-    },
-    "Necromancer": {
-      "Enabled": true,
-      "TotalCap": 10,
-      "PetTypes": {
-        "Skeletons": { "Enabled": true, "Count": 4 },
-        "Spectres": { "Enabled": true, "Count": 4 },
-        "Zombies": { "Enabled": true, "Count": 4 },
-        "Custom1": { "Enabled": false, "Count": 4 },
-        "Custom2": { "Enabled": false, "Count": 4 },
-        "Custom3": { "Enabled": false, "Count": 4 }
-      }
-    },
-    "Enchanter": {
-      "Enabled": true,
-      "TotalCap": 10,
-      "PetTypes": {
-        "Golems": { "Enabled": true, "Count": 4 },
-        "Custom1": { "Enabled": false, "Count": 4 },
-        "Custom2": { "Enabled": false, "Count": 4 },
-        "Custom3": { "Enabled": false, "Count": 4 }
-      }
-    },
-    "Artificer": {
-      "Enabled": true,
-      "TotalCap": 1,
-      "PetTypes": {
-        "Wisps": { "Enabled": true, "Count": 1 },
-        "Custom1": { "Enabled": false, "Count": 4 },
-        "Custom2": { "Enabled": false, "Count": 4 },
-        "Custom3": { "Enabled": false, "Count": 4 }
-      }
-    }
-  },
-  "EnableDruidPetThorns": true,
-  "DruidPetThorns": {
-    "Enabled": true,
-    "AoERadius": 5.0,
-    "DamageMultiplier": 1.0
-  },
-  "EnableCombatClasses": true,
-  "CombatClasses": {
-    "Rogue": {
-      "BleedPercentPerHit": 0.005,
-      "BleedTicks": 10,
-      "BleedIntervalSeconds": 1.0,
-      "DebuffMultiplier": 2.0
-    },
-    "Berserker": {
-      "LifeStealPercent": 0.08,
-      "LifeStealMaxPerHit": 50
-    },
-    "Crusader": {
-      "PassiveHealPercentPerSecond": 0.01,
-      "CritDamageMultiplier": 1.5,
-      "ThornsMultiplier": 2.0,
-      "ThornsOnAllHits": true
-    },
-    "Windwalker": {
-      "SkillPerTier": 150,
-      "StreakRangeMeters": 15.0,
-      "EchoEnabled": true,
-      "ManaCostMultiplier": 0.5
-    },
-    "Battlemage": {
-      "EchoEnabled": true,
-      "ManaCostMultiplier": 0.5
-    },
-    "DeathKnight": {
-      "AuraRangeMeters": 15.0,
-      "AuraDamagePerTick": 5,
-      "AuraTickSeconds": 1.0,
-      "SkillPerTier": 150,
-      "MaxVoidSpellTier": 2,
-      "EchoEnabled": true,
-      "ManaCostMultiplier": 0
-    },
-    "Bloodmage": {
-      "EchoCount": 5,
-      "EchoTierDrop": 1,
-      "DrainSpellRangeMeters": 15.0,
-      "AuraRangeMeters": 15.0,
-      "AuraDrainPerTick": 1,
-      "AuraTickSeconds": 1.0,
-      "ManaCostMultiplier": 0.5
-    }
-  }
+  "// LockpickBankProperty": "PropertyInt64 for banked lockpick durability.",
+  "LockpickBankProperty": 40130,
+  "// LockpickLootBankPercent": "Percent of lockpick structure banked from corpse loot (0.10 = 10%).",
+  "LockpickLootBankPercent": 0.10,
+  "// EnableChestAutoLoot": "When true, non-house chests: autoloot on open; on close, bank leftovers + profile loot before ACE clears the chest, then material salvage if EnableDelayedSalvageSweep. House (HouseOwner) never touched.",
+  "EnableChestAutoLoot": true,
+  "// EnableLootStackConsolidation": "When true, duplicate same-WCID stackable items in a corpse merge into one stack (e.g. multiple drudge charm entries).",
+  "EnableLootStackConsolidation": true,
+  "// EnableDelayedSalvageSweep": "When true, on corpse/chest close (non-house), BSS material salvage on leftovers. When false, skips that sweep only.",
+  "EnableDelayedSalvageSweep": true,
+  "// EnableLevel8CompsConversion": "When true, level 8 spellcraft comps are auto-looted as pyreal value.",
+  "EnableLevel8CompsConversion": true,
+  "// DefaultAutolootSalvageBundleApplied": "When true: new chars and old prefs without AutolootSalvageDefaultsApplied get full /autoloot on + AutoSalvage once.",
+  "DefaultAutolootSalvageBundleApplied": true
 }

@@ -91,6 +91,7 @@ public static class SalvageAutoDeposit
 
     // Intended units banked: 50% if Salvaging trained, 100% if specialized, 0% if untrained.
     // TrainedPercent/SpecializedPercent in SalvageSettings are deprecated for this path (kept for JSON compatibility only).
+    // Windblown: trained salvaging is baseline (100%), specialized is bonus (150%).
     public static double GetSalvageRate(Player player)
     {
         if (PatchClass.Settings?.Salvage == null)
@@ -102,8 +103,8 @@ public static class SalvageAutoDeposit
 
         return cs.AdvancementClass switch
         {
-            SkillAdvancementClass.Specialized => 1.0,
-            SkillAdvancementClass.Trained => 0.5,
+            SkillAdvancementClass.Specialized => 1.5,
+            SkillAdvancementClass.Trained => 1.0,
             _ => 0.0,
         };
     }

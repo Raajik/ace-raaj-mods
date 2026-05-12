@@ -12,6 +12,61 @@
 
 **Change:** `README.md` § Build & Deploy documents local `build/` output, **`deploy-void-test.sh`** vs **`deploy-wb-test.sh`** (paths, wipe behavior, env overrides, SQL reminder, live caveat). Wiki **`operations/Deploy Procedures`** — trigger table distinguishes ad-hoc `"push test"` vs full-tree `deploy-wb-test.sh`; new section **Full-tree mod deploy**; index link from **ace-raaj-mods Patterns** to Deploy Procedures.
 
+### Bug Fix Batch — SpellSiphon crystal destruction, cloak rating persistence, pet kill spam, Mnemosyne icons
+
+Branch: `jeremy/bugfix/may11-issues` | Commit: `f75d4c48`
+
+#### 1. SpellSiphon — crystal destroyed on recipe failure
+**Problem:** When Spellsiphon extraction failed (e.g., "not trained in that tradeskill"), the Spellsiphon tool was consumed but the target crystal survived. Player expected both to be destroyed.
+**Fix:** Changed `FailDestroyTargetChance` from `0.0` → `1.0` in `GetSpellsiphonRecipe()`. Now the crystal is also destroyed on failure, matching the custom tradeskill design.
+**File:** `SpellSiphon/Features/RecipeHooks.cs`
+
+#### 2. QOL/PetEx — respect EnablePetKillSummary setting
+**Problem:** `PetEx.PostTakeDamage` sent `"Your {pet} has slain {mob}"` **unconditionally** on every pet kill, completely bypassing the `PetKillSummary` batching system. This created massive chat spam even with `EnablePetKillSummary=true`.
+**Fix:** Added the missing `EnablePetKillSummary` guard — when the batch summary is active, individual kill messages are suppressed (same pattern as `PetMessageDamage`).
+**File:** `QOL/PetEx.cs`
+
+#### 3. EmpyreanAlteration — Awakened cloak ratings vanish on relog
+**Problem:** CritDamageResistRating, HealingBoostRating, and GearMaxHealth (Vitality) granted by level-up growth disappeared after relog. ArmorLevel (+20) persisted fine.
+**Root cause:** ACE marks these three `PropertyInt` values as `[Ephemeral]`. `WorldObject.SetProperty` stores ephemeral values in a **memory-only** dictionary (`ephemeralPropertyInts`) that is never saved to the shard database. The level-up code was writing phantom values that looked real in-chat but were lost on logout.
+**Fix:**
+- New `BiotaPropertyHelper.cs` with `SetBiotaPropertyInt` and `GetBiotaPropertyIntRaw`
+- `SetBiotaPropertyInt` bypasses the ephemeral check and writes directly to `Biota.PropertiesInt` with the database lock, setting `ChangesDetected = true`
+- `TryScaleExistingRatings` now **only scales values actually stored in the biota** (prevents phantom scaling on weenie defaults)
+- `ArmorJewelryRatingGrowth` methods (CritDamageResistRating, HealingBoostRating, GearMaxHealth) now use `BiotaPropertyHelper` for writes
+**Files:** `EmpyreanAlteration/BiotaPropertyHelper.cs` (new), `EmpyreanAlteration/ArmorJewelryRatingGrowth.cs`, `EmpyreanAlteration/QuestItemGrowthLevelEngine.cs`
+
+#### 4. EmpyreanAlteration — Unicode arrow "?" in player chat
+**Problem:** Level-up messages used Unicode `\u2192` (→) which the AC client renders as `?`.
+**Fix:** Replaced `\u2192` with `->` in all player-facing `SendMessage` strings across:
+- `QuestItemGrowthLevelEngine.cs` (steel AL, damage, armor, value messages)
+- `ArmorJewelryRatingGrowth.cs` (all 6 rating messages)
+- `WeaponQuestGrowth.cs` (cleaving, surge, variance messages)
+
+#### 5. EmpyreanAlteration — steel AL delta respects Overtinked
+**Problem:** Quest-growth steel-style Armor Level bonus was hardcoded to `+20` regardless of server Overtinked settings. User's server has `3×` salvage effects (steel = +60 AL).
+**Fix:** `TryGetOvertinkedSteelDelta()` in `BiotaPropertyHelper` uses cross-mod reflection to read Overtinked's `SalvageRules` at runtime, finds the steel rule by `EffectKind="ArmorLevel"` or `Name.Contains("Steel")`, and returns its `FixedValue`/`MinValue`/`MaxValue`. Falls back to `SteelArmorLevelDelta` (20) when Overtinked is not loaded.
+**File:** `EmpyreanAlteration/BiotaPropertyHelper.cs`
+
+#### 6. Windblown — Mnemosyne trophy icons wrong size
+**Problem:** All 6 custom Mnemosyne variants (Tiny, Small, Large, Unlocked Tiny/Small/Large) cloned from the same vanilla base WCID `9310` (Large Mnemosyne). The `Icon` DID inherited was the large icon for all sizes, making Tiny/Small look identical to Large.
+**Fix:** Changed `BaseWcid` per size to clone from the matching vanilla Mnemosyne:
+| Custom WCID | Size | New BaseWcid | Vanilla Source |
+|-------------|------|--------------|----------------|
+| 850352 | Tiny | 9314 | Tiny Mnemosyne |
+| 850353 | Small | 9312 | Small Mnemosyne |
+| 850354 | Large | 9310 | Large Mnemosyne (unchanged) |
+| 850355 | Unlocked Tiny | 9315 | Unlocked Tiny Mnemosyne |
+| 850356 | Unlocked Small | 9313 | Unlocked Small Mnemosyne |
+| 850357 | Unlocked Large | 9311 | Unlocked Large Mnemosyne |
+All entries keep `MirrorEmoteFromWcid: 9310` for consistent collector turn-in behavior, and the custom JSON overrides (Value=1, EncumbranceVal=1, IconUnderlay, IconOverlay, UiEffects) are still applied on top.
+**File:** `Windblown/Content/Weenies/mnemosyne.json`
+
+### Deploy — void-test full-tree apply (bugfix round)
+**Change:** Deployed all 4 affected mods (SpellSiphon, QOL, EmpyreanAlteration, Windblown) plus all repo SQL to `void-test` (port 9010). 41 world SQL files applied successfully. Server restart required to load new DLLs.
+
+---
+
 ### SpellSiphon — rare crystal crafting dialog shows true compound extraction chance
 
 **Problem:** Rare crystals used a **secondary roll** after primary recipe success in `PostHandleRecipe`, but `PostGetRecipeChance` only returned the **primary** MIT-based rate — crafting confirmation showed ~33%+ instead of ~1% overall.

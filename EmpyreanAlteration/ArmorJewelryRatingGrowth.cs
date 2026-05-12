@@ -127,7 +127,7 @@ internal static class ArmorJewelryRatingGrowth
             summary.GearDamageRatingSteps += 1;
         if (emitMessages)
             player.SendMessage(
-                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage Rating ({before} \u2192 {before + 1}).");
+                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage Rating ({before} -> {before + 1}).");
         return true;
     }
 
@@ -144,7 +144,7 @@ internal static class ArmorJewelryRatingGrowth
             summary.GearCritDamageRatingSteps += 1;
         if (emitMessages)
             player.SendMessage(
-                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Crit Damage Rating ({before} \u2192 {before + 1}).");
+                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Crit Damage Rating ({before} -> {before + 1}).");
         return true;
     }
 
@@ -161,7 +161,7 @@ internal static class ArmorJewelryRatingGrowth
             summary.GearDamageResistRatingSteps += 1;
         if (emitMessages)
             player.SendMessage(
-                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage Resistance Rating ({before} \u2192 {before + 1}).");
+                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage Resistance Rating ({before} -> {before + 1}).");
         return true;
     }
 
@@ -173,12 +173,12 @@ internal static class ArmorJewelryRatingGrowth
         QuestItemGrowthLevelEngine.GrowthSummary? summary)
     {
         int before = item.CritDamageResistRating ?? 0;
-        item.CritDamageResistRating = before + 1;
+        BiotaPropertyHelper.SetBiotaPropertyInt(item, PropertyInt.CritDamageResistRating, before + 1);
         if (summary != null)
             summary.GearCritDamageResistRatingSteps += 1;
         if (emitMessages)
             player.SendMessage(
-                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Crit Damage Resistance Rating ({before} \u2192 {before + 1}).");
+                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Crit Damage Resistance Rating ({before} -> {before + 1}).");
         return true;
     }
 
@@ -197,12 +197,12 @@ internal static class ArmorJewelryRatingGrowth
 
         int delta = minV == maxV ? minV : Random.Shared.Next(minV, maxV + 1);
         int before = item.HealingBoostRating ?? 0;
-        item.HealingBoostRating = before + delta;
+        BiotaPropertyHelper.SetBiotaPropertyInt(item, PropertyInt.HealingBoostRating, before + delta);
         if (summary != null)
             summary.GearHealingBoostRatingGained += delta;
         if (emitMessages)
             player.SendMessage(
-                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{delta} Healing Boost Rating ({before} \u2192 {before + delta}).");
+                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{delta} Healing Boost Rating ({before} -> {before + delta}).");
         return true;
     }
 
@@ -221,12 +221,12 @@ internal static class ArmorJewelryRatingGrowth
 
         int delta = minV == maxV ? minV : Random.Shared.Next(minV, maxV + 1);
         int before = item.GearMaxHealth ?? 0;
-        item.GearMaxHealth = before + delta;
+        BiotaPropertyHelper.SetBiotaPropertyInt(item, PropertyInt.GearMaxHealth, before + delta);
         if (summary != null)
             summary.GearVitalityRatingGained += delta;
         if (emitMessages)
             player.SendMessage(
-                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{delta} Vitality Rating ({before} \u2192 {before + delta}).");
+                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{delta} Vitality Rating ({before} -> {before + delta}).");
         return true;
     }
 }

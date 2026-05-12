@@ -47,7 +47,7 @@ public static class PetEx
     {
         if (source is Pet target && target.P_PetOwner is { Session: not null } owner)
         {
-            if (!__instance.IsAlive)
+            if (!__instance.IsAlive && !(PatchClass.Settings?.EnablePetKillSummary == true))
                 owner.SendMessage($"Your {source.Name} has slain {__instance.Name}.");
             else
                 owner.SendMessage($"Your {source.Name} has {(crit ? "critically " : "")}hit {__instance.Name} for {(int)amount} {damageType} damage.", ChatMessageType.CombatSelf);

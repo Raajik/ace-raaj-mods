@@ -302,14 +302,14 @@ internal static class QuestItemGrowthLevelEngine
         {
             int delta = ag.SteelArmorLevelDelta;
             if (delta == 0)
-                delta = 20;
+                delta = BiotaPropertyHelper.TryGetOvertinkedSteelDelta() ?? 20;
 
             int before = item.ArmorLevel ?? 0;
             item.ArmorLevel = before + delta;
             summary?.ArmorLevelGained += delta;
             if (emitMessages)
                 player.SendMessage(
-                    $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{delta} Armor Level ({before} \u2192 {before + delta}) (steel-like).");
+                    $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{delta} Armor Level ({before} -> {before + delta}) (steel-like).");
             return true;
         }
 
@@ -494,7 +494,7 @@ internal static class QuestItemGrowthLevelEngine
             item.ArmorLevel = afterS;
             summary?.ArmorLevelGained += 1;
             if (emitMessages)
-                player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Armor Level ({beforeS} \u2192 {afterS}).");
+                player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Armor Level ({beforeS} -> {afterS}).");
             return;
         }
 
@@ -505,7 +505,7 @@ internal static class QuestItemGrowthLevelEngine
             item.Damage = after;
             summary?.DamageGained += 1;
             if (emitMessages)
-                player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage ({before} \u2192 {after}).");
+                player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage ({before} -> {after}).");
             return;
         }
 
@@ -532,7 +532,7 @@ internal static class QuestItemGrowthLevelEngine
                         if (summary != null)
                             summary.ValueReductions += 1;
                         if (emitMessages)
-                            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and becomes less valuable (Value {beforeValue} \u2192 {afterValue}).");
+                            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and becomes less valuable (Value {beforeValue} -> {afterValue}).");
                         return;
                     }
                 }
@@ -552,7 +552,7 @@ internal static class QuestItemGrowthLevelEngine
             item.ArmorLevel = after;
             summary?.ArmorLevelGained += 1;
             if (emitMessages)
-                player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Armor Level ({before} \u2192 {after}).");
+                player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Armor Level ({before} -> {after}).");
         }
     }
 
@@ -838,11 +838,15 @@ internal static class QuestItemGrowthLevelEngine
 
         foreach (var (prop, name, track) in ratingProps)
         {
-            int current = item.GetProperty(prop) ?? 0;
+            // Only scale values that are ACTUALLY stored in the biota (not weenie defaults,
+            // not ephemeral defaults, not patched getters). This prevents scaling phantom values.
+            int? raw = BiotaPropertyHelper.GetBiotaPropertyIntRaw(item, prop);
+            int current = raw ?? 0;
             if (current > 0)
             {
                 int next = current + amount;
-                item.SetProperty(prop, next);
+                // Write directly to biota to bypass any ephemeral-property check in WorldObject.SetProperty
+                BiotaPropertyHelper.SetBiotaPropertyInt(item, prop, next);
                 track?.Invoke(amount);
                 anyScaled = true;
 

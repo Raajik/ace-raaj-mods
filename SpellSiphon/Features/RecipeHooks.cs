@@ -57,7 +57,7 @@ internal static class RecipeHooks
 			SuccessDestroyTargetAmount = 1,
 			FailDestroySourceChance = 1.0,   // Spellsiphon is consumed on failure.
 			FailDestroySourceAmount = 1,
-			FailDestroyTargetChance = 0.0,   // Target item SURVIVES — the item's magic resisted.
+			FailDestroyTargetChance = 1.0,   // Target item ALSO destroyed on failure.
 			FailDestroyTargetAmount = 0,
 			DataId = 0,
 			LastModified = DateTime.UtcNow

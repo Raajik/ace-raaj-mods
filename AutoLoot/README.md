@@ -10,7 +10,7 @@ When a player kills a creature or opens a chest, AutoLoot processes the contents
 
 1. **Immediate banking (silent, unconditional)** — currency/pyreal peas, coalesced mana, keys, lockpicks, level-8 spellcrafting components, and any LeyLineLedger-bankable items are credited to the bank and removed from the container without chat output.
 
-2. **Physical trophy pass** — WCIDs in `Settings.UpgradedTrophyWeenieClassIds` (drudge charms, rat tails, wasp wings, mob heads, quest letters, olthoi pincers) are moved into the player's pack as real items (not bank entries).
+2. **Physical trophy pass** — WCIDs in `Settings.WindblownCollectorTrophyPass1WeenieClassIds` (drudge charms, rat tails, wasp wings, mob heads, olthoi trophies, and custom quest letters) are moved into the player's pack as real items (not bank entries).
 
 3. **Unknown scrolls** — readable scrolls the player can learn are auto-learned and destroyed.
 
@@ -79,7 +79,8 @@ Items matching names in the `NoDuplicateNames` list (default: `Pincer`, `Tusk`, 
 |---|---|---|
 | `DepositLootedCurrencyToBank` | `true` | Bank pyreals/peas/trade notes instead of putting in inventory |
 | `BankCashProperty` | `39999` | PropertyInt64 for banked pyreals (must match LeyLineLedger) |
-| `UpgradedTrophyWeenieClassIds` | ~50 WCIDs | Physical trophy items autolooted to pack |
+| `WindblownCollectorTrophyPass1WeenieClassIds` | 64 WCIDs | Physical trophy items autolooted to pack (includes tiered trophies + custom quest letters) |
+| `OtherPhysicalPass1WeenieClassIds` | ~30 WCIDs | Physical quest items autolooted to pack regardless of `/autoloot trophies` (pincers, quest letters) |
 | `KeyBankProperties` | SIK/SSK/MFK/Legendary | WCID → PropertyInt64 for key banking |
 | `EnableChestAutoLoot` | `true` | Auto-loot world chests on open |
 | `EnableDelayedSalvageSweep` | `true` | Salvage remaining items on container close |

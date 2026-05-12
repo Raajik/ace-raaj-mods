@@ -47,6 +47,13 @@ Timed invasion events with wave-based creature spawns. Two modes:
 - 50 retry attempts per position for better placement success rate.
 - 1.0f Z offset safety margin (matches Swarmed pattern).
 
+**Cleanup on event end (2026-05-11):**
+When an invasion ends (natural timeout, idle fade, or `/event force end`), all affected landblocks are reset:
+- Destroys all non-player objects (invasion mobs, bosses, portals)
+- Clears the world DB instance cache
+- Reinitializes each landblock so vanilla generators respawn
+- Covers each town's center landblock plus a **±2 radius (5×5 grid)** to catch stragglers
+
 | File | Purpose |
 |------|---------|
 | `InvasionRuntime.cs` | Invasion lifecycle |

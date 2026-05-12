@@ -366,8 +366,8 @@ If a ring/wall projectile still appears from another source, `SpellProjectile.On
 
 When a player creates salvage (via the `TryCreateInInventoryWithNetworking` path), BSS intercepts it and deposits the result directly into the player's **LeyLineLedger bank** instead of their inventory.
 
-- **Trained Salvaging:** 50% of the generated salvage is banked  
-- **Specialized Salvaging:** 100% of the generated salvage is banked  
+- **Trained Salvaging:** 100% of the generated salvage is banked  
+- **Specialized Salvaging:** 150% of the generated salvage is banked  
 - The item disappears from the salvage creation result; a chat message confirms the deposit
 
 #### Message Accuracy

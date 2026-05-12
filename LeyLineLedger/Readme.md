@@ -92,7 +92,7 @@ When `SalvageBank.DirectDepositOnSalvage` is true, items created by salvage reci
 
 **Legacy WCID-offset stray balances:** If BetterSupportSkills (pre-fix) or another path credited **`FirstMaterialBankPropertyId + (WCID − 20981)`** while the rule index differed, units could sit on the wrong property. **`BankSalvage.MaybeMergeLegacyWcidOffsetSalvageBank`** runs on **player enter world** and when **`/bank salvage`** runs (after `MaybePurgeLegacyPooledSalvage`): for each stack salvage WCID **20981–21089** with a matching rule, if legacy ≠ resolved and legacy **> 0**, merge into resolved and zero legacy. Players get one summary line when anything moved.
 
-**DepositRules metadata (Windblown):** Nether Rending is credited on **Salvaged Onyx (WCID 21064)** under weapon tinkering; **Salvaged Obsidian (21063)** is **`Useless`** / no apparent use (matches Overtinked + vanilla Obsidian). Inserting or reordering rows changes which `PropertyInt64` each material uses — coordinate with any SQL/biota tooling and run the merge once after fixing clients.
+**DepositRules metadata (Windblown):** Nether Rending is credited on **Salvaged Onyx (WCID 21064)** under weapon tinkering; **Salvaged Obsidian (21063)** is **`Useless`** / no apparent use (matches Overtinked + vanilla Obsidian). **Salvaged White Jade (21084)** is the Shatter imbue material and is categorized under **`WeaponTinkering`**. Inserting or reordering rows changes which `PropertyInt64` each material uses — coordinate with any SQL/biota tooling and run the merge once after fixing clients.
 
 ### Skeleton key appraisal (`SkeletonKeyAppraisal`)
 

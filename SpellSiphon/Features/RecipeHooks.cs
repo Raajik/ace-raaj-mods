@@ -10,13 +10,12 @@ using HarmonyLib;
 namespace SpellSiphon.Features;
 
 /// <summary>
-/// Native ACE RecipeManager integration for Spellsiphon (cleansing) and Glyph of Extraction (extraction).
-/// Uses separate recipe IDs so target-destruction behavior differs between the two tools.
+/// Native ACE RecipeManager integration for Spellsiphon and Glyph of Extraction.
+/// Provides skill-based confirmation dialog and proper item consumption.
 /// </summary>
 internal static class RecipeHooks
 {
-	private const uint SpellsiphonRecipeId = 900001;        // Extraction: target destroyed
-	private const uint SpellsiphonCleanseRecipeId = 900002; // Cleansing: target survives
+	private const uint SpellsiphonRecipeId = 900001;
 
 	// Rare crystals: secondary roll after primary success; UI chance = primary × RareCrystalSecondarySuccessChance
 	private static readonly HashSet<uint> RareCrystalWcids = new()
@@ -33,89 +32,8 @@ internal static class RecipeHooks
 	private static readonly ConcurrentDictionary<uint, ExtractionState> ExtractionStates = new();
 	private static readonly ConcurrentDictionary<uint, bool> ExtractionSuccess = new();
 
-	// Static recipe instances (created once, reused)
+	// Static recipe instance (created once, reused)
 	private static Recipe? _spellsiphonRecipe;
-	private static Recipe? _spellsiphonCleanseRecipe;
-
-	// ==================== RECIPE FACTORIES ====================
-
-	private static Recipe GetSpellsiphonRecipe()
-	{
-		if (_spellsiphonRecipe != null)
-			return _spellsiphonRecipe;
-
-		_spellsiphonRecipe = new Recipe
-		{
-			Id = SpellsiphonRecipeId,
-			Skill = (uint)Skill.MagicItemTinkering,
-			Difficulty = 250,
-			SuccessWCID = 0,
-			SuccessAmount = 0,
-			FailWCID = 0,
-			FailAmount = 0,
-			SuccessMessage = "[SpellSiphon] The spells are successfully extracted!",
-			FailMessage = "",
-			SuccessDestroySourceChance = 1.0,
-			SuccessDestroySourceAmount = 1,
-			SuccessDestroyTargetChance = 1.0,
-			SuccessDestroyTargetAmount = 1,
-			FailDestroySourceChance = 1.0,
-			FailDestroySourceAmount = 1,
-			FailDestroyTargetChance = 1.0,
-			FailDestroyTargetAmount = 1,
-			DataId = 0,
-			LastModified = DateTime.UtcNow
-		};
-
-		ModManager.Log($"[SpellSiphon] Created extraction recipe {SpellsiphonRecipeId}: target destroyed on success/fail.");
-		return _spellsiphonRecipe;
-	}
-
-	private static Recipe GetSpellsiphonCleanseRecipe()
-	{
-		if (_spellsiphonCleanseRecipe != null)
-			return _spellsiphonCleanseRecipe;
-
-		_spellsiphonCleanseRecipe = new Recipe
-		{
-			Id = SpellsiphonCleanseRecipeId,
-			Skill = (uint)Skill.MagicItemTinkering,
-			Difficulty = 250,
-			SuccessWCID = 0,
-			SuccessAmount = 0,
-			FailWCID = 0,
-			FailAmount = 0,
-			SuccessMessage = "[SpellSiphon] Negative spells have been cleansed from the item!",
-			FailMessage = "",
-			SuccessDestroySourceChance = 1.0,
-			SuccessDestroySourceAmount = 1,
-			SuccessDestroyTargetChance = 0.0, // Target survives on success
-			SuccessDestroyTargetAmount = 0,
-			FailDestroySourceChance = 1.0,    // Spellsiphon consumed on failure
-			FailDestroySourceAmount = 1,
-			FailDestroyTargetChance = 0.0,    // Target survives on failure
-			FailDestroyTargetAmount = 0,
-			DataId = 0,
-			LastModified = DateTime.UtcNow
-		};
-
-		ModManager.Log($"[SpellSiphon] Created cleanse recipe {SpellsiphonCleanseRecipeId}: target survives on success/fail.");
-		return _spellsiphonCleanseRecipe;
-	}
-
-	// ==================== GLYPH WCID HELPERS ====================
-
-	private static bool IsGlyphWcid(uint wcid, out int tier)
-	{
-		uint baseWcid = PatchClass.Settings?.GlyphExtractionBaseWcid ?? 850210;
-		if (wcid >= baseWcid && wcid <= baseWcid + 9)
-		{
-			tier = (int)(wcid - baseWcid);
-			return true;
-		}
-		tier = -1;
-		return false;
-	}
 
 	// ==================== PATCH: UseObjectOnTarget (Prefix) ====================
 	// Blocks our tools on invalid targets BEFORE the generic "cannot be used on" message.
@@ -149,13 +67,13 @@ internal static class RecipeHooks
 		{
 			if (spellIds.Count == 0)
 			{
-				player.SendMessage("[SpellSiphon] The Spellsiphon finds no spells on this item.", ChatMessageType.Magic);
+				player.SendMessage("[SpellSiphon] The Spellsiphon finds no spells to extract on this item.", ChatMessageType.Magic);
 				player.SendUseDoneEvent();
 				return false;
 			}
 			if (!s.EnableAnyItemExtraction && target.WeenieType != WeenieType.Gem && (target.ItemType & ItemType.Gem) == 0)
 			{
-				player.SendMessage("[SpellSiphon] The Spellsiphon can only be used on gems.", ChatMessageType.Magic);
+				player.SendMessage("[SpellSiphon] The Spellsiphon can only extract spells from gems.", ChatMessageType.Magic);
 				player.SendUseDoneEvent();
 				return false;
 			}
@@ -177,8 +95,55 @@ internal static class RecipeHooks
 		return true;
 	}
 
+	private static Recipe GetSpellsiphonRecipe()
+	{
+		if (_spellsiphonRecipe != null)
+			return _spellsiphonRecipe;
+
+		_spellsiphonRecipe = new Recipe
+		{
+			Id = SpellsiphonRecipeId,
+			Skill = (uint)Skill.MagicItemTinkering,
+			Difficulty = 250, // Tuned for ~33% base success
+			SuccessWCID = 0,
+			SuccessAmount = 0,
+			FailWCID = 0,
+			FailAmount = 0,
+			SuccessMessage = "[SpellSiphon] The spells are successfully extracted!",
+			FailMessage = "",  // Custom message sent in PostHandleRecipe postfix.
+			SuccessDestroySourceChance = 1.0,
+			SuccessDestroySourceAmount = 1,
+			SuccessDestroyTargetChance = 1.0,
+			SuccessDestroyTargetAmount = 1,
+			FailDestroySourceChance = 1.0,   // Tool is consumed on failure.
+			FailDestroySourceAmount = 1,
+			FailDestroyTargetChance = 1.0,   // Target item ALSO destroyed on failure.
+			FailDestroyTargetAmount = 1,
+			DataId = 0,
+			LastModified = DateTime.UtcNow
+		};
+
+		ModManager.Log($"[SpellSiphon] Created recipe {SpellsiphonRecipeId}: FailDestroyTargetAmount={_spellsiphonRecipe.FailDestroyTargetAmount}, FailDestroyTargetChance={_spellsiphonRecipe.FailDestroyTargetChance}");
+
+		return _spellsiphonRecipe;
+	}
+
+	// ==================== GLYPH WCID HELPERS ====================
+
+	private static bool IsGlyphWcid(uint wcid, out int tier)
+	{
+		uint baseWcid = PatchClass.Settings?.GlyphExtractionBaseWcid ?? 850210;
+		if (wcid >= baseWcid && wcid <= baseWcid + 9)
+		{
+			tier = (int)(wcid - baseWcid);
+			return true;
+		}
+		tier = -1;
+		return false;
+	}
+
 	// ==================== PATCH: GetRecipe ====================
-	// Injects the appropriate recipe based on tool type.
+	// Injects our recipe when Spellsiphon OR Glyph is used on a spell-bearing item.
 
 	internal static void PostGetRecipe(Player player, WorldObject source, WorldObject target, ref Recipe __result)
 	{
@@ -195,9 +160,10 @@ internal static class RecipeHooks
 		if (!isSpellsiphon && !isGlyph)
 			return;
 
-		// Charged tools are apply-ready — do not hijack GetRecipe.
+		// Charged tools are apply-ready — do not hijack GetRecipe into extraction.
 		if (isSpellsiphon && ItemPayload.IsSpellsiphonApplyReady(source, s.SpellsiphonToolWcid))
 			return;
+
 		if (isGlyph && ItemPayload.IsGlyphApplyReady(source))
 			return;
 
@@ -205,6 +171,7 @@ internal static class RecipeHooks
 			return;
 
 		// For Glyph tools: check tier eligibility BEFORE injecting the recipe.
+		// If no eligible spells, send message and bail so the tool is NOT consumed.
 		if (isGlyph)
 		{
 			var allSpellIds = ReadItemSpellIds(target);
@@ -216,24 +183,22 @@ internal static class RecipeHooks
 					? "cantrips or unique non-tiered spells"
 					: $"Level {glyphTier} spells";
 				player.SendMessage($"[SpellSiphon] {tierName} has no valid extraction targets on this item. Try it on an item that carries {expected}.", ChatMessageType.Magic);
-				return;
+				return; // Do NOT inject recipe — tool stays intact
 			}
 		}
 
-		Recipe recipe = isSpellsiphon ? GetSpellsiphonCleanseRecipe() : GetSpellsiphonRecipe();
-
-		// Gem-only mode: only inject when ACE matched no recipe.
+		// Gem-only mode: only inject when ACE matched no recipe (avoid stealing unrelated combos).
 		if (!s.EnableAnyItemExtraction)
 		{
 			if (__result != null)
 				return;
 
-			__result = recipe;
+			__result = GetSpellsiphonRecipe();
 			return;
 		}
 
-		// Any spell-bearing item: our recipe wins over vanilla item-on-item matches.
-		__result = recipe;
+		// Any spell-bearing item: extraction must win over vanilla item-on-item matches
+		__result = GetSpellsiphonRecipe();
 	}
 
 	// ==================== PATCH: GetRecipeChance ====================
@@ -245,19 +210,12 @@ internal static class RecipeHooks
 		if (s == null || !s.Enabled)
 			return;
 
-		if (recipe?.Id != SpellsiphonRecipeId && recipe?.Id != SpellsiphonCleanseRecipeId)
+		if (recipe?.Id != SpellsiphonRecipeId)
 			return;
-
-		// Spellsiphon cleansing is always 100% success
-		if (recipe.Id == SpellsiphonCleanseRecipeId)
-		{
-			__result = 1.0;
-			return;
-		}
 
 		double primary = CalculateSuccessRate(player, s);
 
-		// Rare crystals need primary success then secondary roll.
+		// Match PostHandleRecipe: rare crystals need primary success then secondary roll — show compound chance in crafting dialog.
 		if (target != null && RareCrystalWcids.Contains(target.WeenieClassId))
 		{
 			float secondary = Math.Clamp(s.RareCrystalSecondarySuccessChance, 0f, 1f);
@@ -268,7 +226,7 @@ internal static class RecipeHooks
 	}
 
 	// ==================== PATCH: HandleRecipe (Prefix) ====================
-	// Captures spell IDs from target BEFORE destruction (extraction path only).
+	// Captures spell IDs from target BEFORE destruction.
 
 	internal static void PreHandleRecipe(Player player, WorldObject source, WorldObject target, Recipe recipe, double successChance)
 	{
@@ -276,26 +234,33 @@ internal static class RecipeHooks
 		if (s == null || !s.Enabled)
 			return;
 
-		if (recipe?.Id != SpellsiphonRecipeId && recipe?.Id != SpellsiphonCleanseRecipeId)
+		if (recipe?.Id != SpellsiphonRecipeId)
 			return;
 
-		// Spellsiphon cleansing: no pre-capture needed; target survives and is inspected in PostHandleRecipe.
-		if (source != null && source.WeenieClassId == s?.SpellsiphonToolWcid)
+		if (source == null)
 			return;
 
-		// Glyph extraction: filter spells by tier eligibility and capture state.
 		bool isGlyph = IsGlyphWcid(source.WeenieClassId, out int glyphTier);
-		List<int> spellIds = ReadItemSpellIds(target);
+		List<int> spellIds;
 
 		if (isGlyph)
 		{
+			// Glyph extraction: filter spells by tier eligibility
+			spellIds = ReadItemSpellIds(target);
 			var eligible = FilterSpellsForGlyphTier(spellIds, glyphTier);
+
 			if (eligible.Count == 0)
 			{
+				// Store empty state — PostHandleRecipe will emit the "no valid targets" message
 				ExtractionStates[player.Guid.Full] = new ExtractionState(new List<int>(), false, true, source.WeenieClassId, glyphTier);
 				return;
 			}
+
 			spellIds = eligible;
+		}
+		else
+		{
+			spellIds = ReadItemSpellIds(target);
 		}
 
 		bool isRare = target != null && RareCrystalWcids.Contains(target.WeenieClassId);
@@ -303,7 +268,7 @@ internal static class RecipeHooks
 	}
 
 	// ==================== PATCH: CreateDestroyItems (Postfix) ====================
-	// Captures success/fail result for both recipes.
+	// Captures success/fail result.
 
 	internal static void PostCreateDestroyItems(Player player, Recipe recipe, WorldObject source, WorldObject target, double successChance, bool success)
 	{
@@ -311,14 +276,14 @@ internal static class RecipeHooks
 		if (s == null || !s.Enabled)
 			return;
 
-		if (recipe?.Id != SpellsiphonRecipeId && recipe?.Id != SpellsiphonCleanseRecipeId)
+		if (recipe?.Id != SpellsiphonRecipeId)
 			return;
 
 		ExtractionSuccess[player.Guid.Full] = success;
 	}
 
 	// ==================== PATCH: HandleRecipe (Postfix) ====================
-	// Branches: Spellsiphon → cleanse negative spells; Glyph → extract spells.
+	// Creates charged tool on success.
 
 	internal static void PostHandleRecipe(Player player, WorldObject source, WorldObject target, Recipe recipe, double successChance)
 	{
@@ -326,49 +291,13 @@ internal static class RecipeHooks
 		if (s == null || !s.Enabled)
 			return;
 
-		if (recipe?.Id != SpellsiphonRecipeId && recipe?.Id != SpellsiphonCleanseRecipeId)
+		if (recipe?.Id != SpellsiphonRecipeId)
+			return;
+
+		if (!ExtractionStates.TryRemove(player.Guid.Full, out var state))
 			return;
 
 		if (!ExtractionSuccess.TryRemove(player.Guid.Full, out bool success))
-			return;
-
-		bool isSpellsiphon = source?.WeenieClassId == s?.SpellsiphonToolWcid;
-
-		// ======== SPELLSIPHON CLEANSING PATH ========
-		if (isSpellsiphon)
-		{
-			if (!success)
-			{
-				player.SendMessage(
-					"The item's latent magic overwhelms your Spellsiphon, destroying it!",
-					ChatMessageType.Magic);
-				return;
-			}
-
-			if (target == null)
-				return;
-
-			var removed = RemoveNegativeSpells(target, s);
-
-			if (removed.Count > 0)
-			{
-				// Broadcast update so client sees the change
-				try { target.EnqueueBroadcastUpdateObject(); }
-				catch { }
-
-				var names = removed.Select(id => LootMutator.TryGetSpellName(id)).Where(n => !string.IsNullOrEmpty(n)).ToList();
-				string namesJoined = string.Join(", ", names);
-				player.SendMessage($"[SpellSiphon] Cleansed {removed.Count} negative spell(s) from {target.Name}: {namesJoined}.");
-			}
-			else
-			{
-				player.SendMessage($"[SpellSiphon] {target.Name} has no negative spells to cleanse.");
-			}
-			return;
-		}
-
-		// ======== GLYPH EXTRACTION PATH ========
-		if (!ExtractionStates.TryRemove(player.Guid.Full, out var state))
 			return;
 
 		// Glyph with no eligible spells: early message about no valid targets
@@ -391,7 +320,9 @@ internal static class RecipeHooks
 					$"The item's latent magic overwhelms your {toolLabel}, destroying it!",
 					ChatMessageType.Magic);
 
-				// Belt-and-suspenders: ensure target is destroyed on extraction failure.
+				// Belt-and-suspenders: ensure target is destroyed on extraction failure
+				// (recipe FailDestroyTargetAmount=1 should already do this, but some quest
+				// items may silently survive the recipe consumption path).
 				if (target != null && !target.IsDestroyed)
 				{
 					try { target.Destroy(); }
@@ -417,8 +348,9 @@ internal static class RecipeHooks
 		var spellIds = state.SpellIds;
 
 		// Extract 1-3 spells, prioritizing cantrips and unique spells over ranked ones
-		int extractCount = Math.Min(spellIds.Count, ThreadSafeRandom.Next(1, 4));
+		int extractCount = Math.Min(spellIds.Count, ThreadSafeRandom.Next(1, 4)); // 1 to 3 inclusive
 
+		// Sort by priority: cantrips > unique (no Roman numeral) > ranked
 		var sorted = spellIds
 			.OrderByDescending(id => IsCantrip(id))
 			.ThenByDescending(id => !HasRomanNumeralSuffix(id))
@@ -426,6 +358,8 @@ internal static class RecipeHooks
 			.ToList();
 
 		var extracted = sorted.Take(extractCount).ToList();
+
+		// Deduplicate: keep highest level per spell name prefix
 		extracted = DeduplicateByHighestLevel(extracted);
 		extracted = DeduplicateByHighestLevel(extracted);
 
@@ -449,6 +383,7 @@ internal static class RecipeHooks
 			return;
 		}
 
+		// Add to player inventory
 		bool addedToInventory = player.TryCreateInInventoryWithNetworking(charged);
 		if (!addedToInventory)
 		{
@@ -467,90 +402,7 @@ internal static class RecipeHooks
 		}
 
 		var spellNames = extracted.Select(id => LootMutator.TryGetSpellName(id)).Where(n => !string.IsNullOrEmpty(n)).ToList();
-		string spellNamesJoined = string.Join(", ", spellNames);
-		player.SendMessage($"[SpellSiphon] Extracted {extracted.Count} spell(s): {spellNamesJoined}.");
-	}
-
-	// ==================== NEGATIVE SPELL CLEANSING ====================
-
-	private static List<int> RemoveNegativeSpells(WorldObject item, Settings? s)
-	{
-		var removed = new List<int>();
-		if (s == null)
-			return removed;
-
-		try
-		{
-			var book = item.Biota?.PropertiesSpellBook;
-			if (book == null || book.Count == 0)
-				return removed;
-
-			var toRemove = new List<int>();
-			foreach (int id in book.Keys)
-			{
-				if (id <= 0)
-					continue;
-
-				try
-				{
-					var spell = new ACE.Server.Entity.Spell(id);
-					if (spell == null || spell.Id == 0)
-						continue;
-
-					// Primary filter: ACE flags non-beneficial spells as harmful
-					bool isHarmful = !spell.IsBeneficial;
-
-					// Secondary filter: configurable name denylist
-					if (!isHarmful && s.NegativeSpellNameContains != null && s.NegativeSpellNameContains.Count > 0)
-					{
-						string name = spell.Name ?? "";
-						isHarmful = ContainsAny(name, s.NegativeSpellNameContains);
-					}
-
-					if (isHarmful)
-						toRemove.Add(id);
-				}
-				catch
-				{
-					// If we can't inspect the spell, leave it alone
-				}
-			}
-
-			foreach (int id in toRemove)
-			{
-				if (book.Remove(id))
-					removed.Add(id);
-			}
-
-			// If spellbook is now empty, clear the magical UI effect
-			if (book.Count == 0)
-			{
-				try
-				{
-					item.UiEffects = (item.UiEffects ?? 0) & ~UiEffects.Magical;
-					item.CalculateObjDesc();
-				}
-				catch { }
-			}
-		}
-		catch { }
-
-		return removed;
-	}
-
-	private static bool ContainsAny(string name, List<string>? frags)
-	{
-		if (frags == null || frags.Count == 0)
-			return false;
-
-		foreach (string frag in frags)
-		{
-			if (string.IsNullOrWhiteSpace(frag))
-				continue;
-			if (name.Contains(frag, StringComparison.OrdinalIgnoreCase))
-				return true;
-		}
-		return false;
+		player.SendMessage($"[SpellSiphon] Extracted {extracted.Count} spell(s): {string.Join(", ", spellNames)}.");
 	}
 
 	// ==================== GLYPH TIER FILTERING ====================
@@ -562,11 +414,13 @@ internal static class RecipeHooks
 		{
 			if (tier == 0)
 			{
+				// Tier 0: Cantrips and unique (non-Roman-numeral) spells only
 				if (IsCantrip(id) || !HasRomanNumeralSuffix(id))
 					result.Add(id);
 			}
 			else
 			{
+				// Tier N (N >= 1): exact spell level N
 				try
 				{
 					var spell = new ACE.Server.Entity.Spell(id);
@@ -581,6 +435,7 @@ internal static class RecipeHooks
 
 	private static string GetGlyphTierName(int tier)
 	{
+		// All tiers share the same base name; icon overlay distinguishes them.
 		return "Glyph of Extraction";
 	}
 
@@ -591,12 +446,15 @@ internal static class RecipeHooks
 		if (!s.EnableAnyItemExtraction)
 			return (item.ItemType & ItemType.Gem) != 0 || item.WeenieType == WeenieType.Gem;
 
+		// Same sources as PreHandleRecipe / ReadItemSpellIds (SpellDID + PropertyDataId.Spell, not only spellbook).
 		return ReadItemSpellIds(item).Count > 0;
 	}
 
 	private static double CalculateSuccessRate(Player player, Settings s)
 	{
-		float baseRate = s.BaseExtractionSuccessRate;
+		float baseRate = s.BaseExtractionSuccessRate; // 33%
+
+		// Charmed Smith augment (29273 / AugmentationBonusSalvage) = +5%
 		float augmentBonus = 0f;
 		try
 		{
@@ -605,6 +463,7 @@ internal static class RecipeHooks
 		}
 		catch { }
 
+		// Magic Item Tinkering skill bonus
 		float mit = player.GetCreatureSkill(Skill.MagicItemTinkering).Current;
 		float mitBonus = mit * s.MitBonusPerPoint;
 
@@ -614,6 +473,7 @@ internal static class RecipeHooks
 	private static List<int> ReadItemSpellIds(WorldObject item)
 	{
 		HashSet<int> ids = new();
+
 		try
 		{
 			var book = item.Biota?.PropertiesSpellBook;
@@ -688,6 +548,7 @@ internal static class RecipeHooks
 			var spell = new ACE.Server.Entity.Spell(spellId);
 			string name = spell.Name ?? "";
 			if (name.Contains("Cantrip", StringComparison.OrdinalIgnoreCase)) return true;
+			// Also treat level 1-2 spells with short duration as cantrip-tier
 			if (spell.Level <= 2 && spell.Duration <= 120) return true;
 		}
 		catch { }
@@ -707,13 +568,8 @@ internal static class RecipeHooks
 		return false;
 	}
 
-	// ==================== CHARGED SPELLSIPHON CREATION ====================
-
-	private static WorldObject? CreateChargedSpellsiphon(Player player, List<int> spellIds, Settings? s)
+	private static WorldObject? CreateChargedSpellsiphon(Player player, List<int> spellIds, Settings s)
 	{
-		if (s == null)
-			return null;
-
 		try
 		{
 			var weenie = DatabaseManager.World.GetCachedWeenie(s.SpellsiphonToolWcid);
@@ -724,10 +580,12 @@ internal static class RecipeHooks
 			if (charged == null)
 				return null;
 
+			// Mark as charged
 			charged.SetProperty((PropertyBool)ItemPayload.IsChargedSpellsiphonProp, true);
 			charged.SetProperty((PropertyInt)ItemPayload.SpellsiphonSpellCountProp, spellIds.Count);
 			ItemPayload.TryWriteSpellPayload(charged, spellIds);
 
+			// Add spells to spellbook so they show in item info panel
 			if (charged.Biota != null)
 			{
 				charged.Biota.PropertiesSpellBook ??= new Dictionary<int, float>();
@@ -738,10 +596,12 @@ internal static class RecipeHooks
 				}
 			}
 
+			// Make unstackable; Bonded differs from base tool so stacks never merge with uncharged.
 			charged.SetProperty(PropertyInt.MaxStackSize, 1);
 			charged.SetProperty(PropertyInt.StackSize, 1);
 			charged.SetProperty(PropertyInt.Bonded, (int)BondedStatus.Bonded);
 
+			// Visuals: magical overlay
 			try
 			{
 				charged.UiEffects = (charged.UiEffects ?? 0) | UiEffects.Magical;
@@ -749,6 +609,7 @@ internal static class RecipeHooks
 			}
 			catch { }
 
+			// Name: count only
 			try { charged.Name = $"Charged Spellsiphon ({spellIds.Count})"; }
 			catch { }
 
@@ -775,11 +636,13 @@ internal static class RecipeHooks
 			if (charged == null)
 				return null;
 
+			// Mark as charged
 			charged.SetProperty((PropertyBool)ItemPayload.IsChargedGlyphProp, true);
 			charged.SetProperty((PropertyInt)ItemPayload.GlyphExtractionTierProp, tier);
 			charged.SetProperty((PropertyInt)ItemPayload.GlyphSpellCountProp, spellIds.Count);
 			ItemPayload.TryWriteSpellPayload(charged, spellIds);
 
+			// Add spells to spellbook so they show in item info panel
 			if (charged.Biota != null)
 			{
 				charged.Biota.PropertiesSpellBook ??= new Dictionary<int, float>();
@@ -790,19 +653,22 @@ internal static class RecipeHooks
 				}
 			}
 
+			// Make unstackable; Bonded so stacks don't merge with blanks.
 			charged.SetProperty(PropertyInt.MaxStackSize, 1);
 			charged.SetProperty(PropertyInt.StackSize, 1);
 			charged.SetProperty(PropertyInt.Bonded, (int)BondedStatus.Bonded);
 
+			// Visuals: Acid (green) outline = charged glyph look + tiered number overlay
 			try
 			{
 				charged.UiEffects = (charged.UiEffects ?? 0) | UiEffects.Acid;
-				uint overlayDid = 0x06006C33 + (uint)tier;
+				uint overlayDid = 0x06006C33 + (uint)tier; // 6C33 + tier → 6C33..6C3C
 				charged.SetProperty(PropertyDataId.IconOverlay, overlayDid);
 				charged.CalculateObjDesc();
 			}
 			catch { }
 
+			// Name: count only
 			string tierName = GetGlyphTierName(tier);
 			try { charged.Name = $"{tierName} ({spellIds.Count})"; }
 			catch { }
@@ -814,5 +680,86 @@ internal static class RecipeHooks
 			ModManager.Log($"[SpellSiphon] CreateChargedGlyph failed: {ex}");
 			return null;
 		}
+	}
+
+	// ==================== PATCH: OnCastSpell ====================
+	// Handles Endless Mana Lattice activation (double-click with ActivationResponse.CastSpell).
+	// Casts all spells from the item's spellbook instead of just SpellDID.
+
+	internal static bool PrefixOnCastSpell(WorldObject __instance, WorldObject activator)
+	{
+		Settings? s = PatchClass.Settings;
+		if (s == null || !s.Enabled)
+			return true;
+
+		if (activator is not Player player)
+			return true;
+
+		if (__instance.WeenieClassId != s.ManaLatticeWcid)
+			return true;
+
+		bool isEndless = (__instance.GetProperty((PropertyBool)ItemPayload.IsEndlessManaLatticeProp) ?? false)
+			|| __instance.Name?.Contains("Endless Mana Lattice", StringComparison.OrdinalIgnoreCase) == true;
+
+		List<int> spellIds = ReadItemSpellIdsForCast(__instance);
+		if (spellIds.Count == 0)
+		{
+			if (isEndless)
+				player.SendMessage("[SpellSiphon] The Endless Mana Lattice holds no spells.");
+			else
+				player.SendMessage("[SpellSiphon] This Mana Lattice has no spells. Infuse it with a charged Spellsiphon, or ensure BetterLootControl can pre-roll spells (SpellSiphon loaded with a non-empty spell pool in Settings.json).");
+			return false;
+		}
+
+		int castCount = 0;
+		foreach (int spellId in spellIds)
+		{
+			try
+			{
+				var spell = new ACE.Server.Entity.Spell(spellId);
+				if (spell == null || spell.Id == 0)
+					continue;
+
+				player.TryCastSpell(spell, player, __instance, tryResist: false);
+				castCount++;
+			}
+			catch (Exception ex)
+			{
+				ModManager.Log($"[SpellSiphon] ManaLattice cast error for spell {spellId}: {ex.Message}", ModManager.LogLevel.Warn);
+			}
+		}
+
+		if (castCount > 0)
+		{
+			string label = isEndless ? "Endless Mana Lattice" : "Mana Lattice";
+			player.SendMessage($"[SpellSiphon] The {label} pulses with {castCount} spell(s).");
+		}
+
+		return false;
+	}
+
+	private static List<int> ReadItemSpellIdsForCast(WorldObject item)
+	{
+		List<int> result = new();
+		try
+		{
+			var book = item.Biota?.PropertiesSpellBook;
+			if (book != null && book.Count > 0)
+				foreach (int id in book.Keys)
+					if (id > 0) result.Add(id);
+		}
+		catch { }
+
+		try
+		{
+			uint? did = item.SpellDID;
+			if (!did.HasValue)
+				did = item.GetProperty(PropertyDataId.Spell);
+			if (did.HasValue && did.Value > 0)
+				result.Add((int)did.Value);
+		}
+		catch { }
+
+		return result;
 	}
 }

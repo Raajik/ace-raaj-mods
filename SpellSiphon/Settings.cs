@@ -69,18 +69,6 @@ public class Settings
 	public string ExcludeTransferSpellNameContainsDoc { get; init; } = "Spells whose names match these substrings are not transferred to equipment. Leave empty to allow all spells.";
 	public List<string> ExcludeTransferSpellNameContains { get; set; } = new();
 
-	[JsonPropertyName("// NegativeSpellNameContains")]
-	public string NegativeSpellNameContainsDoc { get; init; } = "Spell names containing any of these substrings are treated as negative/debuff spells and removed by Spellsiphon cleansing. Leave empty to rely solely on ACE Spell.IsHarmful.";
-	public List<string> NegativeSpellNameContains { get; set; } = new()
-	{
-		"Vulnerability",
-		"Imperil",
-		"Yield",
-		"Bane",
-		"Fester",
-		"Decay",
-	};
-
 	// Mana pool for newly spelled items
 	[JsonPropertyName("// DefaultItemMaxMana")]
 	public string DefaultItemMaxManaDoc { get; init; } = "Default maximum mana pool given to items that receive spells but previously had no mana pool.";
@@ -130,12 +118,12 @@ public class Settings
 
 	// Vendor integration
 	[JsonPropertyName("// EnableVendorSales")]
-	public string EnableVendorSalesDoc { get; init; } = "When true, SpellSiphon tools are sold at jewelers (vendors selling jewelry/gems).";
+	public string EnableVendorSalesDoc { get; init; } = "When true, SpellSiphon tools and Glyphs are sold at jewelers (vendors selling jewelry/gems).";
 	public bool EnableVendorSales { get; set; } = true;
 
 	[JsonPropertyName("// VendorPrice")]
 	public string VendorPriceDoc { get; init; } = "Price in pyreals for the SpellSiphon tool at vendors.";
-	public int VendorPrice { get; set; } = 500000;
+	public int VendorPrice { get; set; } = 10000;
 
 	[JsonPropertyName("// VendorSpellsiphonStackSize")]
 	public string VendorSpellsiphonStackSizeDoc { get; init; } = "Max units per purchase for blank Spellsiphon at vendors (trade-note style; unit price = VendorPrice). Clamped to weenie MaxStackSize.";

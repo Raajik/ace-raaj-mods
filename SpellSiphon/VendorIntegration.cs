@@ -54,8 +54,8 @@ internal static class VendorIntegration
 		InjectTool(__instance, vendorWcid, spellsiphonWcid, siphonUnit, siphonMaxBuy);
 		InjectTool(__instance, vendorWcid, latticeWcid, latticeUnit, latticeMaxBuy);
 
-		// Glyphs sold at both jewelers and mages
-		if (isJeweler || isMage)
+		// Only jewelers get Glyph of Extraction
+		if (isJeweler)
 		{
 			InjectGlyphs(__instance, vendorWcid, st);
 		}
@@ -121,12 +121,7 @@ internal static class VendorIntegration
 	static void InjectTool(Vendor vendor, uint vendorWcid, uint toolWcid, int unitPricePyr, int maxBuyPerTransaction)
 	{
 		if (VendorAlreadySellsWcid(vendor, toolWcid))
-		{
-			ModManager.Log($"[SpellSiphon] InjectTool SKIP: vendor {vendor.Name} (WCID {vendorWcid}) already sells WCID {toolWcid}", ModManager.LogLevel.Info);
 			return;
-		}
-
-		ModManager.Log($"[SpellSiphon] InjectTool INJECT: vendor {vendor.Name} (WCID {vendorWcid}) adding WCID {toolWcid} unit={unitPricePyr}", ModManager.LogLevel.Info);
 
 		var weenie = ACE.Database.DatabaseManager.World.GetCachedWeenie(toolWcid);
 		if (weenie == null)
@@ -148,12 +143,7 @@ internal static class VendorIntegration
 		if (vendor.DefaultItemsForSale != null && !vendor.DefaultItemsForSale.ContainsKey(tool.Guid))
 		{
 			vendor.DefaultItemsForSale.Add(tool.Guid, tool);
-			ModManager.Log($"[SpellSiphon] Added {tool.Name} (Guid={tool.Guid.Full}) to vendor {vendor.Name} (WCID {vendorWcid}) default shop: unit {unitPricePyr:N0} pyreals, max buy {maxBuyPerTransaction}.", ModManager.LogLevel.Info);
-		}
-		else
-		{
-			ModManager.Log($"[SpellSiphon] InjectTool COLLISION: vendor {vendor.Name} already has Guid {tool.Guid.Full} in DefaultItemsForSale. Destroying tool.", ModManager.LogLevel.Warn);
-			tool.Destroy();
+			ModManager.Log($"[SpellSiphon] Added {tool.Name} to vendor {vendor.Name} (WCID {vendorWcid}) default shop: unit {unitPricePyr:N0} pyreals, max buy {maxBuyPerTransaction}.", ModManager.LogLevel.Info);
 		}
 	}
 

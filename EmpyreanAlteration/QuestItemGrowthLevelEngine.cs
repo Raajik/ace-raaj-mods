@@ -846,7 +846,7 @@ internal static class QuestItemGrowthLevelEngine
             {
                 int next = current + amount;
                 // Write directly to biota to bypass any ephemeral-property check in WorldObject.SetProperty
-                BiotaPropertyHelper.SetBiotaPropertyInt(item, prop, next);
+                BiotaPropertyHelper.SetPersistentPropertyInt(item, prop, next);
                 track?.Invoke(amount);
                 anyScaled = true;
 

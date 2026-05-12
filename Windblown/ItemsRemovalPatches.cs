@@ -15,7 +15,7 @@ public partial class PatchClass
     /// </summary>
     private static readonly HashSet<uint> BlockedCreationWcids = new()
     {
-        24835, // Vanilla Drudge Charm -- custom TrophyLines drops use 850300-850303 instead
+        3669,  // Low-level vanilla Drudge Charm — replaced by custom 850300 tier trophies
         31352, // Olthoi Slayer Carapace
         31354, // Olthoi Ripper Spine
         31355, // Olthoi Slasher Carapace

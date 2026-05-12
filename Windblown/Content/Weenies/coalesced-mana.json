@@ -1,0 +1,104 @@
+{
+  "Description": "Coalesced Mana tier line — custom WCIDs 850366-850368. Clones from 24835; MirrorEmoteFromWcid 24835 for Collector Give emotes. Blue IconUnderlay 100676435 + black number overlays 1-3.",
+  "Weenies": [
+    {
+      "ClassId": 850366,
+      "ClassName": "coalescedmana_lesser_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 24835,
+      "MirrorEmoteFromWcid": 24835,
+      "Notes": "Lesser tier. Frost (128) glow. Overlay '1' top-right black (100690976).",
+      "PropertiesString": {
+        "Name": "Coalesced Mana (Lesser)",
+        "PluralName": "Coalesced Mana (Lesser)",
+        "LongDesc": "A faintly shimmering crystal of condensed mana. Collectors will reward a great deal of experience and pyreals for turning in these crystals to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850367,
+      "ClassName": "coalescedmana_greater_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 24835,
+      "MirrorEmoteFromWcid": 24835,
+      "Notes": "Greater tier. Acid (256) glow. Overlay '2' top-right black (100690977).",
+      "PropertiesString": {
+        "Name": "Coalesced Mana (Greater)",
+        "PluralName": "Coalesced Mana (Greater)",
+        "LongDesc": "A brightly shimmering crystal of condensed mana. Collectors will reward a great deal of experience and pyreals for turning in these crystals to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850368,
+      "ClassName": "coalescedmana_aetheric_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 24835,
+      "MirrorEmoteFromWcid": 24835,
+      "Notes": "Aetheric tier. Magical (1) glow. Overlay '3' top-right black (100690978).",
+      "PropertiesString": {
+        "Name": "Coalesced Mana (Aetheric)",
+        "PluralName": "Coalesced Mana (Aetheric)",
+        "LongDesc": "A brilliantly shimmering crystal of pure condensed mana. Collectors will reward a great deal of experience and pyreals for turning in these crystals to Collector Vaetha in the Town Network."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    }
+  ]
+}

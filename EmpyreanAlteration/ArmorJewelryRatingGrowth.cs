@@ -122,7 +122,7 @@ internal static class ArmorJewelryRatingGrowth
         QuestItemGrowthLevelEngine.GrowthSummary? summary)
     {
         int before = item.DamageRating ?? 0;
-        item.DamageRating = before + 1;
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.DamageRating, before + 1);
         if (summary != null)
             summary.GearDamageRatingSteps += 1;
         if (emitMessages)
@@ -139,7 +139,7 @@ internal static class ArmorJewelryRatingGrowth
         QuestItemGrowthLevelEngine.GrowthSummary? summary)
     {
         int before = item.CritDamageRating ?? 0;
-        item.CritDamageRating = before + 1;
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.CritDamageRating, before + 1);
         if (summary != null)
             summary.GearCritDamageRatingSteps += 1;
         if (emitMessages)
@@ -156,7 +156,7 @@ internal static class ArmorJewelryRatingGrowth
         QuestItemGrowthLevelEngine.GrowthSummary? summary)
     {
         int before = item.DamageResistRating ?? 0;
-        item.DamageResistRating = before + 1;
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.DamageResistRating, before + 1);
         if (summary != null)
             summary.GearDamageResistRatingSteps += 1;
         if (emitMessages)
@@ -173,7 +173,7 @@ internal static class ArmorJewelryRatingGrowth
         QuestItemGrowthLevelEngine.GrowthSummary? summary)
     {
         int before = item.CritDamageResistRating ?? 0;
-        BiotaPropertyHelper.SetBiotaPropertyInt(item, PropertyInt.CritDamageResistRating, before + 1);
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.CritDamageResistRating, before + 1);
         if (summary != null)
             summary.GearCritDamageResistRatingSteps += 1;
         if (emitMessages)
@@ -197,7 +197,7 @@ internal static class ArmorJewelryRatingGrowth
 
         int delta = minV == maxV ? minV : Random.Shared.Next(minV, maxV + 1);
         int before = item.HealingBoostRating ?? 0;
-        BiotaPropertyHelper.SetBiotaPropertyInt(item, PropertyInt.HealingBoostRating, before + delta);
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.HealingBoostRating, before + delta);
         if (summary != null)
             summary.GearHealingBoostRatingGained += delta;
         if (emitMessages)
@@ -221,7 +221,7 @@ internal static class ArmorJewelryRatingGrowth
 
         int delta = minV == maxV ? minV : Random.Shared.Next(minV, maxV + 1);
         int before = item.GearMaxHealth ?? 0;
-        BiotaPropertyHelper.SetBiotaPropertyInt(item, PropertyInt.GearMaxHealth, before + delta);
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.GearMaxHealth, before + delta);
         if (summary != null)
             summary.GearVitalityRatingGained += delta;
         if (emitMessages)

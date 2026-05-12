@@ -104,7 +104,7 @@ internal static class TrophyLineRegistry
         if (!line.Enabled) return;
 
         if (string.IsNullOrWhiteSpace(line.CreatureTypeGate)
-            || !Enum.TryParse<CreatureType>(line.CreatureTypeGate, ignoreCase: true, out var creatureType))
+            || (!Enum.TryParse<CreatureType>(line.CreatureTypeGate, ignoreCase: true, out var creatureType) && !line.CreatureTypeGate.Equals("Universal", StringComparison.OrdinalIgnoreCase)))
         {
             ModManager.Log($"[Windblown] Trophy line '{line.Name}' has missing/invalid CreatureTypeGate '{line.CreatureTypeGate}'; skipping.", ModManager.LogLevel.Warn);
             return;
@@ -118,12 +118,27 @@ internal static class TrophyLineRegistry
 
         _lines.Add(line);
 
-        if (!_byCreatureType.TryGetValue(creatureType, out var bucket))
+        if (line.CreatureTypeGate.Equals("Universal", StringComparison.OrdinalIgnoreCase))
         {
-            bucket = new List<TrophyLineConfig>();
-            _byCreatureType[creatureType] = bucket;
+            foreach (var ct in Enum.GetValues<CreatureType>())
+            {
+                if (!_byCreatureType.TryGetValue(ct, out var bucket))
+                {
+                    bucket = new List<TrophyLineConfig>();
+                    _byCreatureType[ct] = bucket;
+                }
+                bucket.Add(line);
+            }
         }
-        bucket.Add(line);
+        else if (Enum.TryParse<CreatureType>(line.CreatureTypeGate, ignoreCase: true, out creatureType))
+        {
+            if (!_byCreatureType.TryGetValue(creatureType, out var bucket))
+            {
+                bucket = new List<TrophyLineConfig>();
+                _byCreatureType[creatureType] = bucket;
+            }
+            bucket.Add(line);
+        }
 
         foreach (var tier in line.Tiers)
         {

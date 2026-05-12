@@ -58,7 +58,18 @@ internal static class BiotaPropertyHelper
         return item.Biota.GetProperty(prop, item.BiotaDatabaseLock);
     }
 
-    // ── Overtinked cross-mod reflection ──────────────────────────────────────
+    internal static void SetPersistentPropertyInt(WorldObject item, PropertyInt prop, int value)
+    {
+        if (item == null)
+            return;
+
+        // Update ACE's in-memory property cache so the value is visible immediately
+        // ( ephemeral properties live in WorldObject memory dictionaries; biota write alone won't refresh them )
+        item.SetProperty(prop, value);
+
+        // Also write directly to biota so the value persists across relogs
+        SetBiotaPropertyInt(item, prop, value);
+    }
 
     private static bool _triedResolveOvertinked;
     private static Type? _overtinkedPatchClass;

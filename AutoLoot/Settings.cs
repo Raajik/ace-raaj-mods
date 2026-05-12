@@ -53,6 +53,7 @@ public class Settings
         850355u, 850356u, 850357u,
         850358u, 850359u, 850360u, 850361u,
         850362u, 850363u, 850364u, 850365u,
+        850366u, 850367u, 850368u,
     ];
 
     [JsonPropertyName("// OtherPhysicalPass1WeenieClassIds")]

@@ -1,32 +1,33 @@
-# Task Plan: Spellsiphon + Mana Lattice Tuning Batch
+# Task Plan: EA Quest Reward Fix + Coalesced Mana Trophies + Drudge Charms + SpellSiphon Verify
 
-## Phase 1 — Infinite Gems (no mana cost, no consumption)
-- [x] Rewrite `InfiniteGemHooks.cs` to patch `Player.TryConsumeFromInventoryWithNetworking` — skip consumption for ANY gem with spells.
-- [x] Fix `PatchClass.cs` `TryPatchInfiniteGems` to patch the correct method.
+## Bug 1: Quest Reward Items (Pathwarden/Awakened Seasoned Explorer)
+**Status**: Rating persistence fix implemented. Level display is expected behavior (point-based curve).
+- **Root cause**: `ArmorJewelryRatingGrowth` and `QuestItemGrowthLevelEngine.TryScaleExistingRatings` used `SetBiotaPropertyInt` which writes biota but does NOT update ACE's ephemeral property cache. Ratings appeared in messages but were invisible on re-examine/relog.
+- **Fix applied**:
+  - Added `BiotaPropertyHelper.SetPersistentPropertyInt` helper that writes BOTH biota AND calls `item.SetProperty` for immediate cache update.
+  - Updated ALL six rating setters in `ArmorJewelryRatingGrowth.cs` to use `SetPersistentPropertyInt`.
+  - Updated `TryScaleExistingRatings` in `QuestItemGrowthLevelEngine.cs` to use `SetPersistentPropertyInt`.
+- **Files changed**: `EmpyreanAlteration/BiotaPropertyHelper.cs`, `EmpyreanAlteration/ArmorJewelryRatingGrowth.cs`, `EmpyreanAlteration/QuestItemGrowthLevelEngine.cs`
 
-## Phase 2 — Vendor sales: plain only
-- [x] `BetterLootControl/VendorLootRotation.cs`: Remove magical Spellsiphon + Mana Lattice from `UniqueItemsForSale`. Keep plain in `DefaultItemsForSale`.
+## Bug 2: Drudge Charms (regular, not Bloodletter)
+**Status**: Fixed
+- **Root cause**: Vanilla WCID 3669 (low-level drudge charm) was NOT in `ReplaceSiblingWcids` or `BlockedCreationWcids`, so it dropped alongside (or instead of) custom trophies.
+- **Fix applied**:
+  - Added 3669 to `ReplaceSiblingWcids` in `Windblown/Content/TrophyLines/drudge-charm.json`
+  - Added 3669 to `BlockedCreationWcids` in `Windblown/ItemsRemovalPatches.cs`
+  - **Preserved** WCID 24835 (bloodletter drudge charm) — user confirmed these should still drop for equipment turn-ins. Removed 24835 from the block/replace lists.
+- **Files changed**: `Windblown/Content/TrophyLines/drudge-charm.json`, `Windblown/ItemsRemovalPatches.cs`
 
-## Phase 3 — Spellsiphon cleanse tuning
-- [x] `RecipeHooks.cs`: Cleanse recipe (900002) → 100% success, destroy Spellsiphon on success, target survives.
-- [x] `Settings.cs` + `Settings.json`: Raise `VendorPrice` for Spellsiphon to 500,000.
+## Feature: Coalesced Mana as Tiered Trophies
+**Status**: Implemented
+- **Design**: 3 tiers (Lesser/Greater/Aetheric), WCIDs 850366-850368, universal drop from all creatures via new `CreatureTypeGate: "Universal"` support.
+- **Files created**:
+  - `Windblown/Content/TrophyLines/coalesced-mana.json` — drop chances 0.005 each, XP/bank rewards
+  - `Windblown/Content/Weenies/coalesced-mana.json` — blue underlay + overlays 1/2/3
+- **Files changed**:
+  - `Windblown/TrophyLines/TrophyLineRegistry.cs` — added `Universal` creature type gate support (registers line to ALL creature types)
+  - `AutoLoot/Settings.cs` — added 850366-850368 to `WindblownCollectorTrophyPass1WeenieClassIds`
 
-## Phase 4 — Glyph loot drops (tier-matched, 1-3 spells)
-- [x] `BetterLootControl/GlobalRareDrops.cs`: Remove plain Spellsiphon drops. Add glyph drops per tier with 1-3 tier-appropriate spells.
-- [x] `BetterLootControl/Settings.cs`: Added `GlyphExtractionBaseWcid`.
-- [x] Keep magical Mana Lattice drops (already working).
-
-## Phase 5 — Glyph vendor sales (jewelers + mages)
-- [x] `VendorIntegration.cs`: Sell Glyphs at both jeweler AND mage vendors.
-
-## Phase 6 — Mana Lattice /buffs auto integration
-- [x] Create `ManaLatticeAutoBuff.cs`: Timer checks player buffs from Mana Lattice, auto-reuses when expiring.
-- [x] `PatchClass.cs`: Wire up timer start/stop.
-- [x] `SpellSiphonQaCommands.cs`: Added `/spellsiphonqa manalattice auto [off]` command.
-
-## Phase 7 — Build & Deploy
-- [x] Build SpellSiphon (0 errors, 2 warnings).
-- [x] Build BetterLootControl (0 errors, 4 warnings).
-- [ ] Deploy to void-test.
-- [ ] Restart server.
-- [ ] Test in-game.
+## SpellSiphon: Verify Glyph Deduplication
+**Status**: Verified working — no code changes needed
+- `TryMergeSpell` in `UseOnTargetHooks.cs:312` already implements line-based dedup: if target already has a higher-tier spell in the same line, the lower-tier spell from the glyph is rejected.

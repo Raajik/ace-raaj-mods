@@ -1,0 +1,30 @@
+#!/bin/sh
+# Pre-commit safety net: show what's being committed and warn about leftover changes
+
+echo ""
+echo "=== Pre-commit check ==="
+
+# Show what's in this commit
+STAGED=$(git diff --cached --name-only)
+if [ -n "$STAGED" ]; then
+    echo "Files in this commit:"
+    echo "$STAGED" | sed 's/^/  /'
+fi
+
+# Warn about any uncommitted changes that are NOT staged
+UNSTAGED=$(git diff --name-only)
+UNTRACKED=$(git ls-files --others --exclude-standard)
+
+if [ -n "$UNSTAGED" ] || [ -n "$UNTRACKED" ]; then
+    echo ""
+    echo "⚠️  WARNING: Uncommitted changes remain outside this commit:"
+    [ -n "$UNSTAGED" ] && echo "$UNSTAGED" | sed 's/^/  Modified:   /'
+    [ -n "$UNTRACKED" ] && echo "$UNTRACKED" | sed 's/^/  Untracked:  /'
+    echo ""
+    echo "These will NOT be included in the current commit."
+    echo "Run 'git add' and commit again, or 'git stash' to save for later."
+    echo ""
+fi
+
+echo "========================"
+echo ""

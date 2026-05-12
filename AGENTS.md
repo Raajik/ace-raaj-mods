@@ -13,7 +13,9 @@ Before any work, load applicable skills:
   These are discovered by pi at startup. Load skills via `/skill:name` or via `read` in prompts as needed.
 
 ## 2. Starting Workflow
-**Git (each new chat, before substantive work):** From repo root `A:/ai/projects/ace-raaj-mods`, run `git status -sb`. If dirty, note `M` / `??` paths briefly so unstaged and untracked work is not forgotten. Repeat before handoff when edits were made.
+**Git (each new chat, before substantive work):** From repo root `A:/ai/projects/ace-raaj-mods`, run `git status -sb`. **This is mandatory — do not skip.** If dirty, note `M` / `??` paths immediately and decide: commit, stash, or discard. Repeat before handoff when edits were made. Uncommitted work must never be left behind across sessions.
+
+> **Safety net:** `.git/hooks/post-checkout` and `.git/hooks/pre-commit` hooks warn about uncommitted changes after branch switches and before commits.
 
 **Git branch discipline:** Keep `main` stable. If the task will involve edits, commits, or a push, update local `main`, then create a **short-lived task branch before making new changes**. Preferred pattern:
 - `git checkout main`

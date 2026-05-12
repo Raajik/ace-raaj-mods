@@ -1,0 +1,27 @@
+#!/bin/sh
+# Safety net: warn about uncommitted changes after checkout / at session start
+# Install: chmod +x .git/hooks/post-checkout
+
+# Only warn when switching branches (not file checkouts)
+OLD_HEAD=$1
+NEW_HEAD=$2
+FLAG=$3
+
+# Skip if it's a file checkout, not a branch switch
+[ "$FLAG" = "0" ] && exit 0
+
+UNTRACKED=$(git ls-files --others --exclude-standard 2>/dev/null)
+MODIFIED=$(git diff --name-only 2>/dev/null)
+STAGED=$(git diff --cached --name-only 2>/dev/null)
+
+if [ -n "$UNTRACKED" ] || [ -n "$MODIFIED" ] || [ -n "$STAGED" ]; then
+    echo ""
+    echo "⚠️  WARNING: Uncommitted work detected on this branch!"
+    echo ""
+    [ -n "$STAGED" ] && echo "  Staged:     $STAGED"
+    [ -n "$MODIFIED" ] && echo "  Modified:   $MODIFIED"
+    [ -n "$UNTRACKED" ] && echo "  Untracked:  $UNTRACKED"
+    echo ""
+    echo "Run 'git status' and commit or stash before starting new work."
+    echo ""
+fi

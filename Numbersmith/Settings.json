@@ -1,11 +1,8 @@
 {
   "// Numbersmith": "Reading order: every // key is documentation; real settings follow in the same order. MaxLevel, Formulas (each entry: // PatchType, // Enabled, // Formula then values), Verbose, optional EmpyreanEchoes-style toggles.",
-  "// MaxLevel": "Maximum character level Numbersmith uses when overriding ACE's XP curve. Does not change other mods' caps.",
-  "// Formulas": "Per-patch AngouriMath overrides. Each object: // keys first, then PatchType, Enabled, Formula. Variable names are documented in each patch class.",
-  "// Verbose": "When true, logs which patches loaded and which formulas are active.",
-  "// EnableLifeMagicElementalMod": "Originally EmpyreanEchoes; Harmony categories still use these class names.",
-  "// EnableDamageOverTimeConversion": "EmpyreanEchoes-style DoT conversion behavior when supported by patches.",
+  "// MaxLevel": "Maximum character level Numbersmith uses when overriding ACE\u0027s XP curve. Does not change other mods\u0027 caps.",
   "MaxLevel": 275,
+  "// Formulas": "Per-patch AngouriMath overrides. Each object: // keys first, then PatchType, Enabled, Formula. Variable names are documented in each patch class.",
   "Formulas": [
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
@@ -13,7 +10,7 @@
       "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
       "PatchType": "ArmorMod",
       "Enabled": true,
-      "Formula": "P(200/3 / (x + 200/3) if x > 0, (1-x)/(200/3x) if x < 0, 1)"
+      "Formula": "P(200/3 / (x \u002B 200/3) if x \u003E 0, (1-x)/(200/3x) if x \u003C 0, 1)"
     },
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
@@ -29,7 +26,7 @@
       "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
       "PatchType": "CriticalStrikeImbueMod",
       "Enabled": true,
-      "Formula": "P((x-100)/600 if t=1, (x-60)/600 if t>1, 0)"
+      "Formula": "P((x-100)/600 if t=1, (x-60)/600 if t\u003E1, 0)"
     },
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
@@ -38,14 +35,6 @@
       "PatchType": "ElementalRendingImbue",
       "Enabled": true,
       "Formula": "P(x/160 if t=1, x/144)"
-    },
-    {
-      "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
-      "// Enabled": "When false, this formula patch is not registered at startup.",
-      "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
-      "PatchType": "GrantExperience",
-      "Enabled": false,
-      "Formula": "P(0 if t = 0, x * 3/n)"
     },
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
@@ -69,7 +58,7 @@
       "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
       "PatchType": "MagicWeaponCriticalChance",
       "Enabled": true,
-      "Formula": "x + .01r"
+      "Formula": "x \u002B .01r"
     },
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
@@ -77,7 +66,7 @@
       "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
       "PatchType": "MeleeArmorRending",
       "Enabled": true,
-      "Formula": "P(.6 if (x-160)/400 > .6, (x-160)/400)"
+      "Formula": "P(.6 if (x-160)/400 \u003E .6, (x-160)/400)"
     },
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
@@ -85,7 +74,7 @@
       "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
       "PatchType": "MeleeAttributeDamage",
       "Enabled": true,
-      "Formula": "P(1 if x < 55, 1+.011(x-55))"
+      "Formula": "P(1 if x \u003C 55, 1\u002B.011(x-55))"
     },
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
@@ -93,7 +82,7 @@
       "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
       "PatchType": "MissileArmorRending",
       "Enabled": true,
-      "Formula": "P(.6 if (x-160)/400 > .6, (x-160)/400)"
+      "Formula": "P(.6 if (x-160)/400 \u003E .6, (x-160)/400)"
     },
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
@@ -101,7 +90,7 @@
       "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
       "PatchType": "MissileAttributeDamage",
       "Enabled": false,
-      "Formula": "P(1 if x < 55, 1+.008(x-55))"
+      "Formula": "P(1 if x \u003C 55, 1\u002B.008(x-55))"
     },
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
@@ -109,7 +98,7 @@
       "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
       "PatchType": "NetherRating",
       "Enabled": false,
-      "Formula": "P(60 if x > 60, x)"
+      "Formula": "P(60 if x \u003E 60, x)"
     },
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
@@ -117,7 +106,7 @@
       "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
       "PatchType": "PlayerAccuracyMod",
       "Enabled": true,
-      "Formula": ".6 + x"
+      "Formula": ".6 \u002B x"
     },
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
@@ -125,7 +114,7 @@
       "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
       "PatchType": "PlayerPowerMod",
       "Enabled": true,
-      "Formula": "x + .5"
+      "Formula": "x \u002B .5"
     },
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
@@ -133,7 +122,7 @@
       "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
       "PatchType": "WeaponCriticalChance",
       "Enabled": true,
-      "Formula": "x + .01r"
+      "Formula": "x \u002B .01r"
     },
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",
@@ -141,7 +130,7 @@
       "// Formula": "AngouriMath expression; empty string uses the patch class default Formula after load.",
       "PatchType": "SkillChance",
       "Enabled": true,
-      "Formula": "1 - 1/(1+e^(f(x-d)))"
+      "Formula": "1 - 1/(1\u002Be^(f(x-d)))"
     },
     {
       "// PatchType": "Harmony patch class name under Numbersmith.Patches (e.g. ArmorMod). Must match a real AngouriMathPatch subclass.",

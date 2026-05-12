@@ -37,6 +37,7 @@ Always check in this order:
 - **ValheelContent is PERMANENTLY EXCLUDED from all deployments** — never copy `build/ValheelContent/` to any server (`C:\ACE\`, `C:\ACE-WB\`, `A:\void-test\`) unless the user explicitly asks to deploy it.
 - **Mod structure:** Each folder = deployable mod containing `Meta.json`, `Settings.cs`, `Settings.json` (repo template), `*.csproj`.
 - **Test ACE `Settings.json`** (`C:\ACE\Mods\<AssemblyName>\Settings.json`) is the **operator source of truth** — do not overwrite on deploy unless explicitly requested. When adding **new** JSON keys: update `Settings.cs` + repo `Settings.json`, and merge keys into the test file. `push test`: deploy DLL/Meta; **preserve** test `Settings.json`.
+- **Repo `Settings.json` must match void-test defaults.** Void-test is the balancing environment. Before shipping, compare repo `Settings.json` against `A:\void-test\Mods\*\Settings.json` for every mod. If they differ, update the repo version to match void-test (the operator-tuned values), commit, and push. This check is mandatory.
 - **Harmony patches:** Prefer `nameof` targeting. Prefix patch methods with `Pre`/`Post`/`Transpiler`. Use `PatchCategory` for grouped unpatch.
 - **Cross-mod properties:** Check shared IDs before inventing new ones (see table below).
 

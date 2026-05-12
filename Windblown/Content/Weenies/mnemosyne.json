@@ -5,7 +5,7 @@
       "ClassId": 850352,
       "ClassName": "mnemosyne_regular_wb",
       "WeenieType": "Stackable",
-      "BaseWcid": 9310,
+      "BaseWcid": 9314,
       "MirrorEmoteFromWcid": 9310,
       "Notes": "Regular Mnemosyne (line 1) — Regular tier. Frost (128) glow. Overlay '1' black (100690976). Replaces vanilla Tiny Mnemosyne (9314, t1).",
       "PropertiesString": {
@@ -33,7 +33,7 @@
       "ClassId": 850353,
       "ClassName": "mnemosyne_quality_wb",
       "WeenieType": "Stackable",
-      "BaseWcid": 9310,
+      "BaseWcid": 9312,
       "MirrorEmoteFromWcid": 9310,
       "Notes": "Regular Mnemosyne (line 1) — Quality tier. Acid (256) glow. Overlay '2' black (100690977). Replaces vanilla Small Mnemosyne (9312, t2).",
       "PropertiesString": {
@@ -89,7 +89,7 @@
       "ClassId": 850355,
       "ClassName": "mnemosyne_unlocked_tiny_wb",
       "WeenieType": "Stackable",
-      "BaseWcid": 9310,
+      "BaseWcid": 9315,
       "MirrorEmoteFromWcid": 9310,
       "Notes": "Unlocked Mnemosyne (line 2) — Regular tier. Frost (128) glow. Overlay '1' black (100690976). Replaces vanilla Unlocked Tiny Mnemosyne (9315, t2).",
       "PropertiesString": {
@@ -117,7 +117,7 @@
       "ClassId": 850356,
       "ClassName": "mnemosyne_unlocked_small_wb",
       "WeenieType": "Stackable",
-      "BaseWcid": 9310,
+      "BaseWcid": 9313,
       "MirrorEmoteFromWcid": 9310,
       "Notes": "Unlocked Mnemosyne (line 2) — Quality tier. Acid (256) glow. Overlay '2' black (100690977). Replaces vanilla Unlocked Small Mnemosyne (9313, t3).",
       "PropertiesString": {
@@ -145,7 +145,7 @@
       "ClassId": 850357,
       "ClassName": "mnemosyne_unlocked_large_wb",
       "WeenieType": "Stackable",
-      "BaseWcid": 9310,
+      "BaseWcid": 9311,
       "MirrorEmoteFromWcid": 9310,
       "Notes": "Unlocked Mnemosyne (line 2) — Perfect tier. Lightning (64) glow. Overlay '4' black (100690979). Replaces vanilla Unlocked Large Mnemosyne (9311, t4).",
       "PropertiesString": {

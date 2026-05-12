@@ -36,7 +36,7 @@ internal static class WeaponQuestGrowth
                 if (summary != null)
                     summary.RareWeaponCleavingSteps++;
                 any = true;
-                parts.Add($"+1 Cleaving ({cur} → {cur + 1})");
+                parts.Add($"+1 Cleaving ({cur} -> {cur + 1})");
             }
         }
 
@@ -48,7 +48,7 @@ internal static class WeaponQuestGrowth
             if (summary != null)
                 summary.RareWeaponSurgeSteps++;
             any = true;
-            parts.Add($"+1 surge rating (0 → 1)");
+            parts.Add($"+1 surge rating (0 -> 1)");
         }
 
         if (!any)
@@ -183,7 +183,7 @@ internal static class WeaponQuestGrowth
                 appliedDescription = $"damage variance tightened ({p}%, Granite-like)";
                 if (emitMessages)
                     player.SendMessage(
-                        $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and tightens damage variance by {p}% (variance {beforeVar:0.###} → {item.DamageVariance:0.###}), raising typical rolls.");
+                        $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and tightens damage variance by {p}% (variance {beforeVar:0.###} -> {item.DamageVariance:0.###}), raising typical rolls.");
                 return true;
             }
             default:

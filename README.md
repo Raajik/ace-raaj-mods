@@ -97,15 +97,25 @@ Applies shard-wide `PropertyManager` presets from a single configuration file.
 - Safe to leave enabled; idempotent on repeated applies.
 
 ### SpellSiphon
-Extract spells from any spell-bearing item and infuse them into equipment.
-- **Crush gems** (or any item, if `EnableAnyItemCrushing` is on) with a mortar to capture their spells.
-- **Infuse equipment** by using the charged mortar on armor, weapons, or jewelry.
-- **Skill-based success rate** — Magic Item Tinkering skill improves crush success (`20% + skill × 0.05%`).
-- **Level penalty** — higher-level spells reduce success rate (configurable).
-- **Attuned/bonded support** — can be allowed or blocked via `AllowAttunedAndBonded`.
-- **Vendor sales** — SpellSiphon tool injected at mage (spell components) and jeweler vendors. `VendorPrice`, `VendorSpellsiphonStackSize` (default **250** stacks), `EnableVendorSales`. Weenie `MaxStackSize` / `TargetType` ship in `SpellSiphon/Content/SQL/Spellsiphon_Tool_Create.sql` (apply `void-test` → test → live per ops).
-- `/spellsiphon` or `/ss` commands to list crushable items in your pack.
-- **Mana Lattice (850201)** — `OnCastSpell` prefix applies every spell in the lattice spellbook to the activator for both Endless and BLC-pre-rolled lattices (see `Content/SQL/ManaLattice_Create.sql`).
+Extract, cleanse, and transfer spells on items.
+
+**Spellsiphon (WCID 850200)** — a single-use **negative spell cleanser**. Use it on any spell-bearing item to remove harmful debuffs (e.g., Vulnerability, Imperil, Bane). Target item survives; Spellsiphon is consumed. Success rate scales with Magic Item Tinkering skill and Charmed Smith augment.
+
+**Glyph of Extraction (WCIDs 850210–850219)** — tiered spell extraction tools sold by jewelers:
+- Tier 0 extracts cantrips + unique non-tiered spells
+- Tiers 1–9 extract spells matching that exact level
+- Target item is destroyed on use (true extraction mechanic)
+- Charged glyphs get green `UiEffects.Acid` glow + tiered icon overlay
+
+**Apply charged tools to equipment** — both charged Spellsiphons and charged Glyphs can transfer their held spells onto armor, weapons, jewelry, or Mana Lattices via the immersive use-on-target handler.
+
+**Mana Lattice (WCID 850201)** — a dedicated reusable buff gem base. Double-clicking casts **all spells** from its `PropertiesSpellBook` (not just `SpellDID`). Works for Endless Mana Lattice (after infusion) and BetterLootControl pre-rolled lattices.
+
+**Vendor sales** — Spellsiphon, Mana Lattice, and Glyphs are injected into **jeweler** (jewelry/gem sellers) and **mage** (spell component sellers) vendors. Tiered glyph pricing: `GlyphPrice + tier × GlyphPricePerTier`.
+
+**Infinite Gems** (optional) — all gem spells reusable without consumption.
+
+See `SpellSiphon/Readme.md` for full documentation, SQL file order, and settings reference.
 
 > **Status:** Disabled by default. Enable in `Meta.json` when ready to deploy.
 

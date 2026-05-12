@@ -100,7 +100,10 @@ Always check in this order:
 
 ## 6. Releases & Changelogs
 - **Every push** to GitHub must include a clear changelog.
-- Update `README.md` feature list when adding/changing significant functionality.
+- **Update docs in this priority order:**
+  1. **Wiki first** — `A:\obsidian\jeremy\wiki\` is the primary retained knowledge base. Write new mechanics, behavior notes, and troubleshooting to the wiki before anything else.
+  2. **`README.md`** — Update the top-level feature list when adding/changing significant functionality.
+  3. **Mod-specific `Readme.md`** — Per-mod docs and configuration notes.
 - Hand-written summaries for user-facing changes are strongly preferred.
 
 ## 7. External Paths & Game Mechanics

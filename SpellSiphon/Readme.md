@@ -1,83 +1,152 @@
 # SpellSiphon
 
-An ACE (Asheron's Call Emulator) server mod for extracting spells from items and infusing them into equipment.
+An ACE (Asheron's Call Emulator) server mod for extracting, cleansing, and transferring spells on items.
 
 ## Features
 
-### Spell Extraction
+### 1. Spellsiphon — Negative Spell Cleanser (WCID 850200)
 
-Use the **SpellSiphon tool** (WCID 850200) on **Coalesced Mana** to prepare it for extraction. Then use the charged tool on any spell-bearing item (gems, equipment, etc.) to extract its spells.
+The blank Spellsiphon is a **single-use debuff remover**. Use it on any spell-bearing item (gems, equipment, jewelry, etc.) to attempt cleansing:
 
-- **Skill-based success rate** — Magic Item Tinkering skill improves extraction success.
-- **Three tiers of Coalesced Mana** — Lesser, Greater, and Aetheric, with increasing success rates and risks.
-- **Any-item extraction** — When enabled, spells can be extracted from any spell-bearing item, not just gems.
-- **Attuned/bonded support** — Can be allowed or blocked via settings.
-- **Bidirectional charging** — You can use the Spellsiphon on Coalesced Mana, *or* use Coalesced Mana on the Spellsiphon. Both directions work.
+- **Removes harmful spells** from the target item's `PropertiesSpellBook`.
+- **Filter logic:** Primary check is `ACE.Server.Entity.Spell.IsHarmful` (non-beneficial spells). Secondary check is `NegativeSpellNameContains` in `Settings.json` for configurable name-based detection.
+- **Target survives** on both success and failure — only the Spellsiphon is consumed.
+- **Skill-based success rate** — `BaseExtractionSuccessRate` (default 33%) + `CharmedSmithBonus` (+5% if augment 29273) + `MitBonusPerPoint` (0.05% per Magic Item Tinkering skill point), capped at `MaxSuccessRate` (80%).
+- **Messages:**
+  - Success: *"Cleansed N negative spell(s) from {item}: {names}."*
+  - No debuffs: *"{item} has no negative spells to cleanse."*
+  - Failure: *"The item's latent magic overwhelms your Spellsiphon, destroying it!"*
 
-### Vendor Integration
+### 2. Glyph of Extraction — Tiered Spell Extraction (WCIDs 850210–850219)
 
-The SpellSiphon tool is automatically added to **spell component vendors** (mages and scriveners) when players approach them.
+Glyphs extract spells from items into **charged glyphs** that can be applied to equipment.
 
-- **Price:** 50,000 pyreals by default.
-- **Filtered vendors:** Only vendors that sell spell components (tapers, scarabs, powdered gems) receive the tool.
-- **Settings:**
-  - `EnableVendorSales` — Toggle vendor integration on/off.
-  - `VendorPrice` — Adjust the price in pyreals.
+| Tier | WCID | Extracts |
+|------|------|----------|
+| 0 | 850210 | Cantrips + unique non-tiered spells only |
+| 1–9 | 850211–850219 | Spells matching that exact level |
 
-### Infinite Gems
+- **Target item is destroyed** on both success and failure (extraction mechanic).
+- Extracts 1–3 spells, prioritizing cantrips > unique > ranked. Deduplicates by highest level per spell name prefix.
+- Charged glyphs gain `UiEffects.Acid` (green glow) + tiered icon overlay (`0x06006C33 + tier`).
+- Payload properties: `40106 IsChargedGlyph`, `40107 GlyphTier`, `40108 GlyphSpellCount`.
+
+### 3. Apply Charged Tools to Equipment
+
+Both charged Spellsiphons and charged Glyphs can be applied to equipment, gems, or Mana Lattices:
+
+- **Charged Spellsiphon** — holds extracted spells; apply to equipment to transfer them.
+- **Charged Glyph** — holds extracted spells filtered by tier; apply to equipment to transfer them.
+- **Mana Lattice** — a charged tool can infuse spells into a Mana Lattice, transforming it into a reusable buff gem.
+- Arcane Lore skill check (difficulty 1) triggers the skill animation.
+
+### 4. Mana Lattice (WCID 850201)
+
+A dedicated base item for reusable buff gems.
+
+- **Double-click activation** casts **all spells** from the item's `PropertiesSpellBook` (not just `SpellDID`).
+- Works for both **Endless Mana Lattice** (after Spellsiphon infusion) and **BetterLootControl** pre-rolled lattices.
+- Apply `Content/SQL/ManaLattice_Create.sql` to the world database.
+
+### 5. Vendor Integration
+
+Both tools are automatically added to **jeweler vendors** (vendors selling jewelry/gems):
+
+| Item | Price | Max Stack |
+|------|-------|-----------|
+| Spellsiphon (blank) | `VendorPrice` (default 10,000) | `VendorSpellsiphonStackSize` (250) |
+| Mana Lattice (blank) | `VendorManaLatticePrice` (default 5,000) | `VendorManaLatticeMaxBuy` (250) |
+| Glyph of Extraction (tier 0) | `GlyphPrice` (default 5,000) | `VendorGlyphStackSize` (250) |
+| Glyph of Extraction (tier N) | `GlyphPrice + N × GlyphPricePerTier` | `VendorGlyphStackSize` (250) |
+
+Also injected at **mage vendors** (spell component sellers) for Spellsiphon + Mana Lattice.
+
+### 6. Infinite Gems (optional)
 
 When enabled, all gem spells are reusable and do not consume the gem on use.
-
-### Mana Lattice (WCID 850201)
-
-Template is a **Gem** with **Contained** use and **Creature** target (same pattern as stock buff gems such as Asheron's Benediction). **SpellSiphon** `OnCastSpell` prefix casts every spell in the item **spellbook** on the activator — works for **Endless Mana Lattice** after Spellsiphon infusion and for **BetterLootControl** loot that pre-rolls spells onto a lattice. Apply `Content/SQL/ManaLattice_Create.sql` to `ace_world` and restart the server after weenie changes.
 
 ## Settings Reference
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `Enabled` | bool | `true` | Master switch for SpellSiphon patches and behavior. |
-| `EnableImmersiveUseHooks` | bool | `true` | Immersive item-on-item UX via generic use handler. |
-| `SpellsiphonToolWcid` | uint | `850200` | WCID of the base SpellSiphon extraction tool. |
-| `CoalescedManaWcids` | List<uint> | `[42516, 42517, 42518]` | WCIDs of the three Coalesced Mana tiers. |
-| `EnableVendorSales` | bool | `true` | Sell SpellSiphon tools at spell component vendors. |
-| `VendorPrice` | int | `50000` | Price in pyreals for the SpellSiphon tool at vendors. |
-| `LesserBaseSuccessRate` | float | `20` | Base success rate (%) for Lesser Coalesced Mana extraction. |
-| `GreaterBaseSuccessRate` | float | `30` | Base success rate (%) for Greater Coalesced Mana extraction. |
-| `AethericBaseSuccessRate` | float | `40` | Base success rate (%) for Aetheric Coalesced Mana extraction. |
-| `ArcaneLoreBonusPerPoint` | float | `0.1` | Additional success rate per point of buffed Arcane Lore. |
-| `MitTrainedBonus` | float | `5` | Flat bonus if Magic Item Tinkering is trained. |
-| `MitSpecializedBonus` | float | `10` | Flat bonus if Magic Item Tinkering is specialized. |
-| `MaxSuccessRate` | float | `95` | Maximum possible success rate (hard cap). |
-| `EnableAnyItemExtraction` | bool | `true` | Allow extracting spells from any spell-bearing item. |
-| `AllowAttunedAndBonded` | bool | `true` | Allow extracting from attuned and bonded items. |
-| `LesserGreaterSafeOnFail` | bool | `true` | Lesser/Greater extractions do NOT destroy source item on failure. |
-| `AethericDestroysSourceOnFail` | bool | `true` | Aetheric extraction destroys source item on failure. |
-| `DefaultItemMaxMana` | int | `2000` | Default mana pool for items that receive spells but had no mana pool. |
-| `DefaultItemManaRegen` | float | `0.0333` | Mana regen rate for items that receive a default mana pool. |
+| `Enabled` | bool | `true` | Master switch for all SpellSiphon patches. |
+| `EnableImmersiveUseHooks` | bool | `true` | Immersive item-on-item UX (use tool on target). |
+| `SpellsiphonToolWcid` | uint | `850200` | WCID of the blank Spellsiphon tool. |
+| `ManaLatticeWcid` | uint | `850201` | WCID of the Mana Lattice. |
+| `GlyphExtractionBaseWcid` | uint | `850210` | Base WCID for Glyph tier 0. Tiers 1–9 occupy +1 through +9. |
+| `BaseExtractionSuccessRate` | float | `33` | Base success rate (%) for extraction/cleansing. |
+| `CharmedSmithBonus` | float | `5` | Bonus (%) if player has Charmed Smith augment. |
+| `MitBonusPerPoint` | float | `0.05` | Additional success rate per point of Magic Item Tinkering. |
+| `MaxSuccessRate` | float | `80` | Hard cap on success rate. |
+| `RareCrystalSecondarySuccessChance` | float | `0.03` | Secondary roll for rare crystals (see `RecipeHooks.cs` list). |
+| `EnableAnyItemExtraction` | bool | `true` | Allow using tools on any spell-bearing item (not just gems). |
+| `AllowAttunedAndBonded` | bool | `true` | Allow using tools on attuned/bonded items. |
+| `SuccessSourceSurviveChance` | float | `75` | Chance source survives on successful extraction. |
+| `FailureStripChance` | float | `40` | Chance source is stripped but survives on failed extraction. |
+| `ExcludeTransferSpellNameContains` | List<string> | `[]` | Spells matching these are NOT transferred to equipment. |
+| `NegativeSpellNameContains` | List<string> | See below | Name substrings treated as negative/debuff spells. |
+| `DefaultItemMaxMana` | int | `2000` | Default mana pool for items receiving spells. |
+| `DefaultItemManaRegen` | float | `0.0333` | Mana regen for items receiving a default mana pool. |
 | `EnableLootgenGemMagic` | bool | `true` | Roll spells onto qualifying lootgen gems. |
+| `EnableVendorSales` | bool | `true` | Sell tools at mage/jeweler vendors. |
+| `VendorPrice` | int | `10000` | Price per blank Spellsiphon at vendors. |
+| `VendorSpellsiphonStackSize` | int | `250` | Max buy per transaction for Spellsiphon. |
+| `VendorManaLatticePrice` | int | `5000` | Price per blank Mana Lattice at vendors. |
+| `VendorManaLatticeMaxBuy` | int | `250` | Max buy per transaction for Mana Lattice. |
+| `GlyphPrice` | int | `5000` | Base price for tier 0 Glyph at vendors. |
+| `GlyphPricePerTier` | int | `5000` | Additional cost per tier above 0. |
+| `VendorGlyphStackSize` | int | `250` | Max buy per transaction for Glyph. |
 
-## Installation
+**`NegativeSpellNameContains` default:**
+```json
+["Vulnerability", "Imperil", "Yield", "Bane", "Fester", "Decay",
+ "Bludgeon", "Piercing", "Flame", "Frost", "Acid", "Electric"]
+```
 
-1. Build: `dotnet build SpellSiphon/SpellSiphon.csproj`
-2. Output goes to `C:\ACE\Mods\SpellSiphon\` by default.
-3. Enable in `Meta.json` (`Enabled: true`).
-4. **Run the SQL** in `Content/SQL/` against the target database (follow the deployment chain: `void-test_world` → `ace_world` → `wb_ace_world`):
-   ```powershell
-   Get-Content "Content/SQL/Spellsiphon_Tool_Create.sql" | & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' -u jeremy -pandersine11 ace_world
-   Get-Content "Content/SQL/CoalescedMana_Update.sql" | & 'C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe' -u jeremy -pandersine11 ace_world
-   ```
-   Replace `ace_world` with the appropriate database for your target server.
-5. **Restart the server** — ACE caches weenies at startup; weenie changes require a restart.
-6. Tune `Settings.json` to taste.
+## SQL Files
+
+Apply these in order to your world database (`void-test_world` → `ace_world` → `wb_ace_world`):
+
+1. **`Content/SQL/Spellsiphon_Tool_Create.sql`** — Creates the Spellsiphon tool weenie (850200).
+2. **`Content/SQL/ManaLattice_Create.sql`** — Creates the Mana Lattice weenie (850201).
+3. **`Content/SQL/GlyphExtraction_Tools_Create.sql`** — Creates all 10 Glyph of Extraction weenies (850210–850219).
+4. **`Content/SQL/CoalescedMana_Update.sql`** — Updates Coalesced Mana for bidirectional charging (if still using Coalesced Mana features).
+
+## Architecture
+
+### Recipe IDs
+
+| ID | Tool | Behavior |
+|----|------|----------|
+| `900001` | Glyph of Extraction | **Extraction** — target destroyed, charged glyph created on success |
+| `900002` | Spellsiphon | **Cleansing** — target survives, negative spells removed |
+
+`PostGetRecipe` injects the appropriate recipe based on the source WCID. `PostHandleRecipe` branches by tool type to execute the correct logic.
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `Features/RecipeHooks.cs` | Recipe injection, success calculation, extraction + cleansing logic |
+| `Features/UseOnTargetHooks.cs` | Apply charged tools to equipment/gems/Mana Lattice |
+| `Features/ManaLatticeGemHooks.cs` | `Gem.UseGem` postfix for Mana Lattice spellbook casting |
+| `Features/InfiniteGemHooks.cs` | Reusable gem behavior |
+| `Helpers/ItemPayload.cs` | Spell payload read/write + charged-tool detection |
+| `VendorIntegration.cs` | Injects tools into vendor `DefaultItemsForSale` |
+| `VendorStackUnitPricePostfix.cs` | Ensures vendor stack pricing displays correctly |
 
 ## Troubleshooting
 
-**"Cannot use the Spellsiphon with the Lesser Coalesced Mana"**
-- Make sure the SQL in `Content/SQL/` has been applied to your world database. The Spellsiphon tool needs `TargetType = 35215` and Coalesced Mana needs `TargetType = 128 (Misc)` for bidirectional charging to work.
+**"Cannot use the Spellsiphon with the item"**
+- Check `EnableAnyItemExtraction` — when `false`, only gems are valid targets.
+- Ensure the target item actually has spells in its `PropertiesSpellBook` or `SpellDID`.
 
-**Garbled text in item descriptions**
-- The AC client uses Windows-1252 encoding. Ensure `weenie_properties_string` values do not contain Unicode em-dashes or smart quotes. The provided SQL uses ASCII `-` and `"` only.
+**"The Mana Lattice pulses with 0 spell(s)"**
+- The lattice has no spells in its spellbook. Infuse it with a charged Spellsiphon/Glyph first, or enable `BetterLootControl` loot pre-rolling.
+
+**Vendor not selling tools**
+- Verify `EnableVendorSales` is `true`.
+- Check that the vendor sells jewelry/gems (jeweler) or spell components (mage). The tool is only injected at matching vendor types.
 
 ## Credits
 

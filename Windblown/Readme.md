@@ -8,11 +8,16 @@ Windblown server custom-content mod. Inject custom weenies into ACE's runtime we
 |---|---|---|
 | 1 | Runtime weenie injection (`WeenieRegistry` + Harmony prefix). Windblown collector trophy band **850300–850336** (drudge/rat/wasp/scalp/mob heads; retired **850271–850285**). | **Shipped** |
 | 2 | Generic trophy-line system (drop rolls + bulk turn-in). | **Shipped** — `Content/TrophyLines/*.json` |
-| 3 | SQL bootstrap for DB-needed content (vendors, landblock_instance, items that need world persistence). Organized under `Content/SQL/` by category: Items (800000-809999), Vendors (810000-819999), Pathwarden, VanillaTweaks. | **Shipped (2026-05-08)** |
+| 3 | SQL bootstrap for DB-needed content (vendors, landblock_instance, items that need world persistence). Organized under `Content/SQL/` by category: Items (800000-809999), Vendors (810000-819999), Pathwarden, VanillaTweaks, QuestImprovements. | **Shipped (2026-05-08)** |
 
 ### WCID ranges (SQL content)
 
 See `AGENTS.md §8.16` for the full allocation.
+
+## SQL gameplay overrides
+
+- `Content/SQL/QuestImprovements/01_BestowersGuild_PuzzlePiece_QoL.sql` patches vanilla Bestowers' Guild vendors **9615 / 9616 / 9617** to also sell **`9594 Skill Puzzle Base Piece`**.
+- This patch stays SQL-only. Those vendors use **Misc / Writable / PromissoryNote** merchandise types, so BetterLootControl's equipment-vendor rotation does not target them.
 
 ## Architecture: runtime weenie injection
 

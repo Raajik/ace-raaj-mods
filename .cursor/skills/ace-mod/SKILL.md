@@ -191,6 +191,7 @@ Null-coalesce collections before LINQ; guard **`FirstOrDefault`** on empty seque
 - **Automated deploy (preferred):** `bash scripts/deploy-void-test.sh` (→ `void-test_world`) or `bash scripts/deploy-wb-test.sh` (→ `ace_world`). These run `Apply-RepoModSqlToMysql.ps1` to apply all `Content/SQL/*.sql` files sorted by path. See AGENTS.md §5 for env vars and flags.
 - **Manual SQL (ad-hoc):** Execute against target MySQL database directly. Requires server restart for weenie cache reload.
 - **ACE caches weenies at startup.** Changes to any weenie table require a **server restart**. No hot-reload for weenie data.
+- **Vanilla vendor stock fix heuristic:** Before changing BetterLootControl for a vendor, inspect `MerchandiseItemTypes`. If the vendor is **not** an equipment vendor (for example **Misc / Writable / PromissoryNote** like Bestowers' Guild reps `9615 / 9616 / 9617`), stock additions can usually stay a narrow SQL `weenie_properties_create_list` patch with **no** rotation-code change.
 - **Use `INSERT ... ON DUPLICATE KEY UPDATE` for idempotent SQL.** `weenie_properties_int` has a `UNIQUE KEY` on `(object_Id, type)`. A plain `UPDATE` silently does nothing if the row is absent. Prefer:
   ```sql
   INSERT INTO weenie_properties_int (object_Id, type, value) VALUES (42516, 94, 128)

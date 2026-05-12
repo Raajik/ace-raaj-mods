@@ -24,6 +24,14 @@
 
 **Change:** `Windblown/Content/SQL/Vendors/01_Radi_810000.sql` → **`01_Jochi_810000.sql`**. Header + `weenie.class_Name` **`radi_tn_gem_vendor`** → **`jochi_tn_gem_vendor`**. Spawn comment in `03_TownNetworkSpawns.sql` updated. Removed stray **`01_Radi_810000.sql.tmp`**.
 
+### Windblown — Bestowers' Guild puzzle base-piece vendor QoL
+
+**Problem:** Vanilla Bestowers' Guild reps **Caranis (9615)**, **Nerezi (9616)**, and **Naba (9617)** already sold the skill / advanced skill puzzle pieces but did **not** sell **`9594 Skill Puzzle Base Piece`**, turning title cleanup into a vendor-wait grind.
+
+**Fix:** Added **`Windblown/Content/SQL/QuestImprovements/01_BestowersGuild_PuzzlePiece_QoL.sql`** to insert `9594` into each vendor's `weenie_properties_create_list` shop rows. Verified on `void-test_world` after deploy. No BetterLootControl change was needed because these vendors advertise **Misc / Writable / PromissoryNote** merchandise types, so equipment-vendor rotation already skips them.
+
+**Commit:** `3e9afdc4`.
+
 ## 2026-05-10
 
 ### Windblown — Swayss skill-reset NPC is Creature, not Vendor

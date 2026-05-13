@@ -15,8 +15,9 @@ internal static class AccountBankStore
     {
         get
         {
-            var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-            return Path.Combine(dir, "Data", "AccountBanks");
+            var assemblyDir = Path.GetDirectoryName(typeof(AccountBankStore).Assembly.Location) ?? "";
+            var serverRoot = Path.GetDirectoryName(Path.GetDirectoryName(assemblyDir)) ?? "";
+            return Path.Combine(serverRoot, "Server", "ModData", "LeyLineLedger", "AccountBanks");
         }
     }
 

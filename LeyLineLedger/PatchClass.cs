@@ -157,11 +157,18 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         if (string.IsNullOrEmpty(ledgerModDir))
             ledgerModDir = Path.Combine(ModManager.ModPath, "LeyLineLedger");
 
+        // Persist lottery state in Server/ModData so it survives wipe-and-redeploy.
+        var assemblyDir = Path.GetDirectoryName(typeof(PatchClass).Assembly.Location) ?? "";
+        var serverRoot = Path.GetDirectoryName(Path.GetDirectoryName(assemblyDir)) ?? "";
+        var dataDir = Path.Combine(serverRoot, "Server", "ModData", "LeyLineLedger");
+        if (!Directory.Exists(dataDir))
+            Directory.CreateDirectory(dataDir);
+
         var lotteryFile = Settings.Lottery.PersistenceFileName;
         if (string.IsNullOrWhiteSpace(lotteryFile))
             lotteryFile = "LotteryState.json";
 
-        Lottery.InitializePersistence(Path.Combine(ledgerModDir, lotteryFile));
+        Lottery.InitializePersistence(Path.Combine(dataDir, lotteryFile));
         Lottery.TryApply();
     }
 

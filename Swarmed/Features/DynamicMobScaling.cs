@@ -26,16 +26,16 @@ internal static class DynamicMobScaling
         DatManager.PortalDat?.XpTable?.CharacterLevelXPList?.Count ?? 275);
 
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(WorldObjectFactory), nameof(WorldObjectFactory.CreateWorldObject), new Type[] { typeof(Weenie), typeof(ObjectGuid) })]
-    public static void PostCreateWorldObject(Weenie weenie, ObjectGuid guid, ref WorldObject __result)
+    [HarmonyPatch(typeof(WorldObjectFactory), nameof(WorldObjectFactory.CreateWorldObject), new Type[] { typeof(ACE.Entity.Models.Weenie), typeof(ObjectGuid) })]
+    public static void PostCreateWorldObject(ACE.Entity.Models.Weenie weenie, ObjectGuid guid, ref WorldObject __result)
     {
         ScheduleScaling(__result);
     }
 
 #if REALM
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(WorldObjectFactory), nameof(WorldObjectFactory.CreateWorldObject), new Type[] { typeof(Weenie), typeof(ObjectGuid), typeof(AppliedRuleset) })]
-    public static void PostCreateWorldObjectRealm(Weenie weenie, ObjectGuid guid, AppliedRuleset ruleset, ref WorldObject __result)
+    [HarmonyPatch(typeof(WorldObjectFactory), nameof(WorldObjectFactory.CreateWorldObject), new Type[] { typeof(ACE.Entity.Models.Weenie), typeof(ObjectGuid), typeof(AppliedRuleset) })]
+    public static void PostCreateWorldObjectRealm(ACE.Entity.Models.Weenie weenie, ObjectGuid guid, AppliedRuleset ruleset, ref WorldObject __result)
     {
         ScheduleScaling(__result);
     }

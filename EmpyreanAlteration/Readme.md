@@ -105,7 +105,7 @@ Mutators are applied at item drop creation. Each mutator adds prefixes, suffixes
 | Mutator | File | Effect |
 |---------|------|--------|
 | AutoScale | `Mutators/AutoScale.cs` | Auto-scales item properties |
-| CloakLootUpgrade | `Mutators/CloakLootUpgrade.cs` | Upgrades cloak properties |
+| CloakLootUpgrade | `Mutators/CloakLootUpgrade.cs` | Upgrades cloak properties (awaken, cantrips, ratings, equipment set). **Bans bane/impenetrability cantrips** from cloak rolls. |
 | Enlightened | `Mutators/Enlightened.cs` | Enlightenment-tier enhancement |
 | GrowthItem | `Mutators/GrowthItem.cs` | Growth item base properties |
 | IronmanLocked | `Mutators/IronmanLocked.cs` | Ironman lock restriction |
@@ -120,6 +120,14 @@ Mutators are applied at item drop creation. Each mutator adds prefixes, suffixes
 | Slayer | `Mutators/Slayer.cs` | Slayer property assignment |
 | TowerLocked | `Mutators/TowerLocked.cs` | Tower lock restriction |
 | SampleMutator | `Mutators/SampleMutator.cs` | Reference template only |
+
+### Quest Item Growth (Pathwarden / Seasoned Explorer Gear)
+
+Quest reward items (e.g., Pathwarden "Seasoned Explorer" gear) are **not Living Items** — they use a dedicated quest-growth pipeline (`QuestItemGrowthCatchUp`, `QuestItemGrowthLevelEngine`). The system:
+
+- Grants phantom tiers at reward time so organic level-ups match quest-earned quality.
+- Uses point-based curves (`baseXp=15`, `divisor=8.0`, `power=3.2`) — ~400 cumulative quest points = display level 7; this is expected, not a bug.
+- **Rating persistence**: `ArmorJewelryRatingGrowth` and `QuestItemGrowthLevelEngine` write ratings via `BiotaPropertyHelper.SetPersistentPropertyInt`, which updates **both** biota and ACE's ephemeral property cache so ratings survive relogs and are visible immediately.
 
 ## Cross-Mod Integration
 

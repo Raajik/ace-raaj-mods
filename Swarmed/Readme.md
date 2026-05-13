@@ -109,10 +109,25 @@ Dynamically adjusts creature density and composition within dungeons.
 
 ### 5. Dynamic Mob Scaling
 
-Adjusts creature difficulty based on player count/density in the landblock.
+Scales creature level/difficulty/XP/loot to nearby players within the same landblock.
+
+**Solo**: `targetLevel = playerLevel × SoloScalePercent / 100`  
+**Group**: `targetLevel = averageGroupLevel × GroupScalePercent / 100`
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `SoloScalePercent` | `110` | Percent of player level to scale toward |
+| `GroupScalePercent` | `110` | Percent of average group level |
+| `LevelVariancePercent` | `20` | ±this% of target level (e.g., 20 = ±20%) |
+| `HealthScaleExponent` | `0.4` | Exponent for health scaling (`ratio^0.4`); gentler than sqrt |
+| `HealthScaleMaxMultiplier` | `2.0` | Hard cap on health multiplier |
+| `LandscapeSoftCap` | `true` | Cap open-world mobs by landscape tier |
+| `LandscapeTierMaxLevels` | `{1:50, 2:75, ..., 7:275}` | Tier caps |
+
+**Loot tier matching:** When a mob is scaled above its original `DeathTreasure.Tier`, a Harmony prefix on `Creature.GenerateTreasure` temporarily swaps `DeathTreasureType` to a higher-tier `TreasureDeath` profile so loot rolls match the monster's actual scaled level. The original profile is restored after generation.
 
 - File: `Features/DynamicMobScaling.cs`
-- Uses `OnlinePlayerDensity.cs` measurements
+- Uses `FakeInt 40150` (base level), `40152` (scaled level), `40153` (loot multiplier), `40154` (scaled loot tier)
 
 ### 6. Creature Variation
 

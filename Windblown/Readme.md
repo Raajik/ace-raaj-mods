@@ -91,6 +91,19 @@ Property keys use the **enum name** (e.g. `Name`, `MaxStackSize`, `IconUnderlay`
 - **`PopulateWeenieSpecificCaches`**: ACE snapshots `weenieCache.Values` into a per-`WeenieType` bucket used by `GetRandomWeeniesOfType` (treasure rolls). Our weenies aren't auto-included in that bucket. Phase 2 will add a one-shot inject if/when we ship custom weenies that need to participate in random treasure rolls.
 - **Biota persistence**: If you disable the mod *and* the legacy SQL rows in `ace_world` have also been deleted, existing items in player inventories (biota referencing custom WCIDs) cannot reconstruct. Recommended: keep the SQL rows or run a player-side cleanup before turning anything off permanently.
 
+## Trophy System
+
+Windblown includes a generic trophy-line system for custom collector items.
+
+**Drudge Charms**: Vanilla WCID **3669** (low-level drudge charm) is replaced by custom tiered trophies via `ReplaceSiblingWcids` and `BlockedCreationWcids`. WCID **24835** (bloodletter drudge charm) is preserved for equipment turn-ins.
+
+**Coalesced Mana**: 3-tier trophies (Lesser WCID 850366, Greater 850367, Aetheric 850368) drop from all creatures at 0.5% per tier via the `"Universal"` creature-type gate. Features blue underlay + numbered overlays, autoloots to pack, and bulk turn-in to collector NPCs.
+
+- Registry: `TrophyLines/TrophyLineRegistry.cs`
+- Drop patches: `TrophyLines/TrophyDropPatches.cs`
+- Turn-in patches: `TrophyLines/TrophyTurnInPatches.cs`
+- Letter patches: `TrophyLines/LetterTurnInPatches.cs`
+
 ## Files
 
 | File | Purpose |
@@ -104,3 +117,6 @@ Property keys use the **enum name** (e.g. `Name`, `MaxStackSize`, `IconUnderlay`
 | `Weenies/WeenieRegistry.cs` | Loads JSON, deep-clones base, applies overrides/deletes, exposes `TryGet`. |
 | `Weenies/WeenieCachePatches.cs` | Harmony prefix on `GetCachedWeenie(uint)` and `(string)`. Partial `PatchClass`. |
 | `Content/Weenies/drudge-charms.json` | Phase 1 deliverable: 4 Bloodletter tier weenies. |
+| `Content/Weenies/coalesced-mana.json` | 3-tier Coalesced Mana trophies (Lesser/Greater/Aetheric) with blue underlay + overlays. |
+| `Content/TrophyLines/drudge-charm.json` | Trophy drop/turn-in config for drudge charms. |
+| `Content/TrophyLines/coalesced-mana.json` | Trophy drop config for Coalesced Mana (0.5% each tier, universal creature gate). |

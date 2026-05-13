@@ -367,6 +367,9 @@ When a player creates salvage (via the `TryCreateInInventoryWithNetworking` path
 - **Specialized Salvaging:** 100% of the generated salvage is banked  
 - The item disappears from the salvage creation result; a chat message confirms the deposit
 
+#### Message Accuracy
+Salvage deposit messages report the **actual integer units banked** (after `Math.Max(1, (int)deposit)` rounding), not the raw fractional value. This ensures trained salvagers see correct totals (e.g., "+5 Bronze" rather than "+2.5 Bronze").
+
 #### Imbue Salvage Bonus
 On top of the base salvage, weapons carrying imbues grant **bonus salvage matching the imbue type** at deposit time. This applies to all retail ACE imbues and all custom Overtinked imbues:
 

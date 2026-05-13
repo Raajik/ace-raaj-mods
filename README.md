@@ -75,7 +75,7 @@ Use `/cm` in-game for chaos, aptitude, and quit. See `ChallengeModes/Readme.md` 
 ### EmpyreanAlteration
 A mutator pipeline for loot, corpses, generators, and player-driven item awakening.
 - **Point-based item leveling** — ALL creature kills grant +1 leveling point; QB-eligible quest completions grant +100. Items level up via discrete points instead of raw XP, decoupling from billion-XP/hour endgame player XP.
-- **Coalesced Mana awakening + upgrading** — All three tiers (Lesser 42516, Greater 42517, Aetheric 42518) can both awaken new items AND upgrade existing awakened items. QuickStart is the single configurable default profile.
+- **Coalesced Mana awakening + upgrading** — All three tiers (Lesser `800000`, Greater `800001`, Aetheric `800002`) can both awaken new items AND upgrade existing awakened items. These items also serve as trophy turn-ins to Collector Vaetha (Windblown). QuickStart is the single configurable default profile.
 - **Loot-time item XP** (`LootGrowthItem`) — items can drop with XP progress already applied.
 - **Pre-awakened drops** (~0.2%) — Awakened-style tiered awakening with XP profiles (QuickStart/Steady/Brutal/Casual), "Awakened" rename, and visual glow.
 - **Quest equipment guaranteed pre-awaken** — all NPC-given gear gets auto-awakened + workmanship + imbue.

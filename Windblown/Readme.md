@@ -97,7 +97,20 @@ Windblown includes a generic trophy-line system for custom collector items.
 
 **Drudge Charms**: Vanilla WCID **3669** (low-level drudge charm) is replaced by custom tiered trophies via `ReplaceSiblingWcids` and `BlockedCreationWcids`. WCID **24835** (bloodletter drudge charm) is preserved for equipment turn-ins.
 
-**Coalesced Mana**: 3-tier trophies (Lesser WCID 850366, Greater 850367, Aetheric 850368) drop from all creatures at 0.5% per tier via the `"Universal"` creature-type gate. Features blue underlay + numbered overlays, autoloots to pack, and bulk turn-in to collector NPCs.
+**Coalesced Mana**: Consolidated into the vanilla ACE WCID range **800000–800002** (Lesser, Greater, Aetheric). These items:
+- Drop from **BetterLootControl** `GlobalRareDrops` (vanilla-style tier distribution; Windblown trophy drop rolls are disabled for these).
+- **Awaken items** via EmpyreanAlteration — use on any equippable to awaken it and grant bonus max levels.
+- **Turn in to Collector Vaetha** as trophy items for rewards (bulk turn-in supported).
+- Autoloot to pack via AutoLoot (`UpgradedTrophyWeenieClassIds`).
+- Spawn with correct vanilla ACE icons: yellow Lesser, red Greater, blue Aetheric, plus a blue `IconUnderlay` + black tier number overlay applied by Windblown runtime weenie injection.
+
+| Tier | WCID | Awaken Effect | Icon Color |
+|------|------|---------------|------------|
+| Lesser | `800000` | Awaken +5 max levels | Yellow |
+| Greater | `800001` | Awaken +10 max levels | Red |
+| Aetheric | `800002` | Awaken +15 max levels | Blue |
+
+SQL-defined weenies live in `Content/SQL/Items/01_CoalescedMana_800000-800002.sql`; Windblown JSON overlays live in `Content/Weenies/coalesced-mana.json` (handles underlay/overlays + description). Trophy turn-in config: `Content/TrophyLines/coalesced-mana.json` (DropChance = 0; BLC owns drops).
 
 - Registry: `TrophyLines/TrophyLineRegistry.cs`
 - Drop patches: `TrophyLines/TrophyDropPatches.cs`

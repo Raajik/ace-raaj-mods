@@ -722,4 +722,12 @@ public class LotterySettings
     [JsonPropertyName("// DonateLuminanceRate")]
     public string DonateLuminanceRateDoc { get; init; } = "How many pyreals of lottery pool value each donated luminance point contributes. 1.0 = 1 luminance = 1 pyreal.";
     public double DonateLuminanceRate { get; set; } = 1.0;
+
+    [JsonPropertyName("// ChaosPassupToLotteryRate")]
+    public string ChaosPassupToLotteryRateDoc { get; init; } = "When > 0, challenge-mode passup XP absorbed by Chaos is also added to the lottery pyreal pool at this rate. 1.0 = 1 XP = 1 pyreal pool value. 0 = disabled.";
+    public double ChaosPassupToLotteryRate { get; set; } = 0;
+
+    [JsonPropertyName("// LuminancePrizeConversionRate")]
+    public string LuminancePrizeConversionRateDoc { get; init; } = "When > 0, each winner receives bonus luminance equal to pyrealPrize / rate. Default 10000 means 100,000 pyreal prize = 10 luminance. 0 = disabled.";
+    public double LuminancePrizeConversionRate { get; set; } = 10000.0;
 }

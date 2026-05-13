@@ -16,9 +16,11 @@
 | Overtinked ImbueSalvageWcids mapping | ✅ | Added `NetherRending` (21064) mapping |
 | All affected mods build | ✅ | BetterKeys, BLC, BSS, EA, Overtinked |
 | Commit batch 1 | ✅ | `488ebcc7` — EA/BLC/BetterKeys/BSS fixes |
-| Commit batch 2 | 🔄 | Overtinked + BLC loot sub + BSS PetDevice charges |
+| Commit batch 2 | ✅ | `488c1d4c` — Overtinked + BLC loot sub + BSS PetDevice charges |
+| Lottery persistence path | ✅ | `cf743ad9` — now uses `Server/ModData/LeyLineLedger/` |
+| Chaos passup → lottery | ✅ | `ChallengePassupAbsorb.cs` reflection bridge to `Lottery.AddToPool`, configurable rate |
+| Luminance lottery prize | ✅ | `Lottery.cs` — `LuminancePrizeConversionRate` (default 10000) bonus luminance for winners |
+| Pre-unlock luminance Nalicana | ✅ | `PostGetPropertyInt64` makes banked lum visible to `InqInt64Stat`; `PreSpendLuminance` auto-withdraws; `/bank activate luminance` command |
 
-## Remaining (not in this commit)
-- Sho Pathwarden chest Lesser Coalesced Mana — fixed-create-list chests, may need SQL or AllowedChestWCIDs
-- Chaos passup XP → lottery luminance — requires `worldevents-expansion` worktree code
-- Lottery draw time persistence — requires `worldevents-expansion` worktree code
+## Still Remaining
+- Sho Pathwarden chest Lesser Coalesced Mana — SQL exists at `Windblown/Content/SQL/Pathwarden/01_ChestAddLesserMana.sql`; needs apply/verify on void-test and wb_test DBs

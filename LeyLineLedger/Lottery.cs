@@ -2,6 +2,9 @@ namespace LeyLineLedger;
 
 using System.Text.Json;
 using System.Timers;
+using ACE.Entity.Enum;
+using ACE.Entity.Enum.Properties;
+using ACE.Database.Models.Shard;
 
 public static class Lottery
 {
@@ -356,6 +359,38 @@ public static class Lottery
                         LoremasterBridge.GrantLotteryQbPrize(onlinePlayer, (float)qbPrize);
                     else
                         LoremasterBridge.GrantLotteryQbPrizeOffline(charId, (float)qbPrize);
+                }
+
+                // Bonus luminance prize
+                if (s.Lottery.LuminancePrizeConversionRate > 0)
+                {
+                    var lumPrize = (long)(pyrealPrize / s.Lottery.LuminancePrizeConversionRate);
+                    if (lumPrize > 0)
+                    {
+                        if (onlinePlayer != null)
+                        {
+                            onlinePlayer.GrantLuminance(lumPrize, XpType.Quest);
+                            onlinePlayer.SendMessage($"[Lottery] You also received {lumPrize:N0} luminance!");
+                        }
+                        else
+                        {
+                            // For offline winners, store luminance in biota directly
+                            try
+                            {
+                                using var lumCtx = new ShardDbContext();
+                                var lumBiota = lumCtx.BiotaPropertiesInt64.FirstOrDefault(b => b.ObjectId == charId && b.Type == (ushort)PropertyInt64.AvailableLuminance);
+                                if (lumBiota != null)
+                                    lumBiota.Value = Math.Min(long.MaxValue, lumBiota.Value + lumPrize);
+                                else
+                                    lumCtx.BiotaPropertiesInt64.Add(new ACE.Database.Models.Shard.BiotaPropertiesInt64 { ObjectId = charId, Type = (ushort)PropertyInt64.AvailableLuminance, Value = lumPrize });
+                                lumCtx.SaveChanges();
+                            }
+                            catch (Exception lumEx)
+                            {
+                                ModManager.Log($"[LeyLineLedger] Failed to credit offline luminance prize to {name}: {lumEx.Message}", ModManager.LogLevel.Warn);
+                            }
+                        }
+                    }
                 }
             }
 

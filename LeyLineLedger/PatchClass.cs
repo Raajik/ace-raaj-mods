@@ -473,6 +473,47 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             return;
         }
 
+        // Activate: /bank activate luminance  -> transfers banked luminance to AvailableLuminance (for Nalicana purchases)
+        if (verbToken.Equals("activate", StringComparison.OrdinalIgnoreCase) ||
+            verbToken.Equals("a", StringComparison.OrdinalIgnoreCase))
+        {
+            if (parameters.Length < 2 || !parameters[1].Equals("luminance", StringComparison.OrdinalIgnoreCase))
+            {
+                player.SendMessage("Usage: /bank activate luminance  — moves banked luminance into your available pool for spending.");
+                return;
+            }
+
+            var banked = player.GetBanked(Settings.LuminanceProperty);
+            if (banked <= 0)
+            {
+                player.SendMessage("You have no banked luminance to activate.");
+                return;
+            }
+
+            var maxLum = player.MaximumLuminance ?? 0;
+            if (maxLum <= 0)
+            {
+                // Pre-unlock: luminance is already visible to Nalicana via GetProperty patch.
+                // Just let the player know.
+                player.SendMessage("Luminance is not yet unlocked, but any banked luminance is already visible to Nalicana for augmentation purchases.");
+                return;
+            }
+
+            var available = player.AvailableLuminance ?? 0;
+            var remaining = maxLum - available;
+            if (remaining <= 0)
+            {
+                player.SendMessage("Your available luminance is already at maximum. No activation needed.");
+                return;
+            }
+
+            var toActivate = Math.Min(banked, remaining);
+            player.IncBanked(Settings.LuminanceProperty, -toActivate);
+            player.AvailableLuminance = available + toActivate;
+            player.SendMessage($"Activated {toActivate:N0} banked luminance. Available: {player.AvailableLuminance:N0} / {maxLum:N0}. Banked: {player.GetBanked(Settings.LuminanceProperty):N0}.");
+            return;
+        }
+
         //Withdraw shorthand: /bank withdraw pyreals <amount> or /b w p <amount>; luminance gem: withdraw luminance <amount> or w l <amount>
         // Salvage bags: /bank withdraw salvage <material> [bags]  |  /b w s <material> [bags]  -> same as /bank salvage redeem ...
         if (verbToken.Equals("withdraw", StringComparison.OrdinalIgnoreCase) ||
@@ -2114,5 +2155,106 @@ internal static class PreAddLuminanceRedirect
             __instance.SendMessage($"[LeyLineLedger] You earned {amount:N0} luminance, but luminance is not yet unlocked. It has been banked for later withdrawal.");
 
         return false; // Skip original AddLuminance
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Auto-withdraw banked luminance when SpendLuminance is called and
+// AvailableLuminance is insufficient.
+// ─────────────────────────────────────────────────────────────────────────
+
+[HarmonyPatch]
+internal static class PreSpendLuminance
+{
+    static MethodBase? TargetMethod()
+    {
+        return AccessTools.Method(typeof(Player), nameof(Player.SpendLuminance));
+    }
+
+    static bool Prepare()
+    {
+        return TargetMethod() != null;
+    }
+
+    [HarmonyPrefix]
+    public static bool Prefix(long amount, Player __instance, ref bool __result)
+    {
+        if (amount <= 0)
+            return true;
+
+        var available = __instance.AvailableLuminance ?? 0;
+        if (available >= amount)
+            return true; // Let vanilla handle it
+
+        var settings = PatchClass.Settings;
+        if (settings?.EnablePreUnlockLuminanceBanking != true)
+            return true;
+
+        var banked = __instance.GetBanked(settings.LuminanceProperty);
+        var total = available + banked;
+        if (total < amount)
+            return true; // Not enough even with bank; let vanilla return false
+
+        var needed = amount - available;
+        var maxLum = __instance.MaximumLuminance ?? 0;
+
+        if (maxLum > 0)
+        {
+            // Luminance unlocked: transfer from bank to AvailableLuminance
+            __instance.IncBanked(settings.LuminanceProperty, -needed);
+            __instance.AvailableLuminance = available + needed;
+            // Let vanilla deduct `amount` from AvailableLuminance
+            return true;
+        }
+        else
+        {
+            // Pre-unlock: cannot add to AvailableLuminance. Deduct from bank directly.
+            __instance.IncBanked(settings.LuminanceProperty, -amount);
+            __result = true;
+            return false; // Skip vanilla
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Make banked luminance visible to NPC InqInt64Stat checks for
+// AvailableLuminance when luminance is NOT yet unlocked (pre-unlock only).
+// Safe because AddLuminance is already bypassed by PreAddLuminanceRedirect.
+// ─────────────────────────────────────────────────────────────────────────
+
+[HarmonyPatch]
+internal static class PostGetPropertyInt64
+{
+    static MethodBase? TargetMethod()
+    {
+        return AccessTools.Method(typeof(WorldObject), nameof(WorldObject.GetProperty), new[] { typeof(PropertyInt64) });
+    }
+
+    static bool Prepare()
+    {
+        return TargetMethod() != null;
+    }
+
+    [HarmonyPostfix]
+    public static void Postfix(PropertyInt64 property, ref long? __result, WorldObject __instance)
+    {
+        if (property != PropertyInt64.AvailableLuminance)
+            return;
+
+        if (__instance is not Player player)
+            return;
+
+        var settings = PatchClass.Settings;
+        if (settings?.EnablePreUnlockLuminanceBanking != true)
+            return;
+
+        // Only apply pre-unlock: MaximumLuminance == 0 means luminance not unlocked.
+        // Post-unlock players should use /bank activate luminance.
+        if ((player.MaximumLuminance ?? 0) > 0)
+            return;
+
+        var banked = player.GetBanked(settings.LuminanceProperty);
+        if (banked > 0)
+            __result = (__result ?? 0) + banked;
     }
 }

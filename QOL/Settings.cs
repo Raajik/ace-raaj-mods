@@ -127,7 +127,7 @@ public class Settings
     public List<uint> CollectorWcids { get; set; } = new()
     {
         3917, 3918, 3919, 3920, 3921, 3922, 3923,
-        10842, 11343, 11345, 11346, 11347, 11348,
+        11343, 11345, 11346, 11347, 11348,
         21338, 24215, 24573,
         8402, 8403, 8404,
         8155, 8266, 24859,
@@ -295,8 +295,12 @@ public class Settings
     public string EnableFacilityHubDoc { get; init; } = "Facility Hub Portal Gem (WCID 49563) achievement progress hook and /fac recall after Facility Frequenter unlock (requires AchievementUnlocked mod loaded).";
     public bool EnableFacilityHub { get; set; } = true;
 
+    [JsonPropertyName("// EnableCloakSpellActivation")]
+    public string EnableCloakSpellActivationDoc { get; init; } = "When true, spells (cantrips, minors) on cloaks activate properly on equip. Fixes vanilla ACE MutateCloak omitting AssignMagic.";
+    public bool EnableCloakSpellActivation { get; set; } = true;
+
     [JsonPropertyName("// FacilityHub")]
-    public string FacilityHubSectionDoc { get; init; } = "FallbackCell and origin/rotation: used by /fac on stock ACE when the linked portal Destination is not a Position (set to 0 to disable fallback). Defaults: Windblown facility hub cell 0x8A020212. Realms builds resolve from portal weenie when possible.";
+    public string FacilityHubSectionDoc { get; init; } = "FallbackCell and origin/rotation: used by /fac on stock ACE when the linked portal Destination is not a Position (set to 0 to disable fallback). Defaults: Windblown facility hub Steward cell 0x8A020210, near the quest-giving NPCs. Original 0x8A020212 had no landblock instances = teleport disconnects. Realms builds resolve from portal weenie when possible.";
     public FacilityHubSettings FacilityHub { get; set; } = new();
 
     [JsonPropertyName("// AutoBuff")]
@@ -480,20 +484,20 @@ public class BypassPortalRestrictionsSettings
 public class FacilityHubSettings
 {
     [JsonPropertyName("// FallbackCell")]
-    public string FallbackCellDoc { get; init; } = "obj_Cell_Id for /fac when gem-linked portal destination cannot be read as ACE.Entity.Position (0 = no fallback). Default: Windblown facility hub landblock 0x8A02 cell 0x212.";
-    public uint FallbackCell { get; set; } = 0x8A020212u;
+    public string FallbackCellDoc { get; init; } = "obj_Cell_Id for /fac when gem-linked portal destination cannot be read as ACE.Entity.Position (0 = no fallback). Default: Windblown facility hub Steward cell 0x8A020210. Original was 0x8A020212 which has zero landblock instances = teleport disconnects.";
+    public uint FallbackCell { get; set; } = 0x8A020210u;
 
     [JsonPropertyName("// FallbackOriginX")]
     public string FallbackOriginXDoc { get; init; } = "Facility hub fallback spawn X.";
-    public float FallbackOriginX { get; set; } = 58.639099f;
+    public float FallbackOriginX { get; set; } = 59.0f;
 
     [JsonPropertyName("// FallbackOriginY")]
     public string FallbackOriginYDoc { get; init; } = "Facility hub fallback spawn Y.";
-    public float FallbackOriginY { get; set; } = -89.923103f;
+    public float FallbackOriginY { get; set; } = -66.0f;
 
     [JsonPropertyName("// FallbackOriginZ")]
     public string FallbackOriginZDoc { get; init; } = "Facility hub fallback spawn Z.";
-    public float FallbackOriginZ { get; set; } = 6.005f;
+    public float FallbackOriginZ { get; set; } = 0.005f;
 
     [JsonPropertyName("// FallbackRotationW")]
     public string FallbackRotationWDoc { get; init; } = "Quaternion W for fallback facing.";

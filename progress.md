@@ -24,3 +24,12 @@
 
 ## Still Remaining
 - Sho Pathwarden chest Lesser Coalesced Mana — SQL exists at `Windblown/Content/SQL/Pathwarden/01_ChestAddLesserMana.sql`; needs apply/verify on void-test and wb_test DBs
+
+## Evening Bugs (2026-05-13)
+| Step | Status | Notes |
+|------|--------|-------|
+| Issue 1: Lockpick bank ratio | 🟡 Implemented (uncommitted) | AutoLoot→0%, LLL→50% |
+| Issue 2: Cloak spell activation | 🟡 Implemented (uncommitted) | New CloakSpellActivation.cs + settings wiring |
+| Issue 3: Coalesced mana rates | 🟡 Implemented (uncommitted) | 0.4% drop, universal tier dist (60/30/10) |
+| Issue 4: /fac teleport | ✅ **Resolved** | Bad cell 0x8A020212 (no instances) → 0x8A020210 (Steward cell) |
+| Issue 5: Behdo Yii collector msg | 🟡 Implemented (uncommitted) | Removed 10842 from CollectorWcids |

@@ -263,6 +263,8 @@ No configuration required — enabling the feature is sufficient.
 | `/xp spend` | Player | Distribute available XP across attributes, vitals, and skills proportionally |
 | `/xp spend auto` | Player | Toggle automatic XP spending whenever XP is earned |
 | `/tn` | Player | Instant teleport to Town Network (unlocked after donating 1 billion pyreals in TN tolls) |
+| `/fac` | Player | Teleport to Facility Hub (unlocked after 10 Facility Hub Portal Gem uses) |
+| `/fh` | Player | Alias for `/fac` |
 
 > Example: `runas alttest faction ch 5`
 

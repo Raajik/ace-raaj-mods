@@ -60,7 +60,7 @@ internal static class GlobalRareDrops
             }
         }
 
-        // Roll for Coalesced Mana (tier-appropriate: T1-2 Aetheric, T3 Aetheric/Greater, T4 all three)
+        // Roll for Coalesced Mana (universal drop, tier distribution: Lesser common, Greater uncommon, Aetheric rare)
         if (ThreadSafeRandom.Next(0.0f, 1.0f) < s.CoalescedManaDropChance)
         {
             var wcid = RollCoalescedManaWcid(tier);
@@ -210,32 +210,21 @@ internal static class GlobalRareDrops
     }
 
     /// <summary>
-    /// Rolls the Coalesced Mana tier based on the loot tier, matching vanilla ACE distribution.
-    /// T1-T2: Aetheric only. T3: Aetheric 75%, Greater 25%. T4: Aetheric 25%, Greater 50%, Lesser 25%.
-    /// T5+: No drop (return 0).
+    /// Rolls the Coalesced Mana tier. Universal drop across all monster tiers:
+    /// Lesser = ~60% (most common), Greater = ~30%, Aetheric = ~10% (rarest).
+    /// This matches the tier trophy system philosophy (T1 most common, T3 rarest).
     /// </summary>
     static uint RollCoalescedManaWcid(int tier)
     {
-        if (tier <= 0) return 0;
-        if (tier <= 2)
-            return PatchClass.Settings.AethericCoalescedManaWcid;   // 800002
-        if (tier == 3)
-        {
-            var roll = ThreadSafeRandom.Next(0.0f, 1.0f);
-            return roll < 0.75f
-                ? PatchClass.Settings.AethericCoalescedManaWcid     // 800002
-                : PatchClass.Settings.GreaterCoalescedManaWcid;     // 800001
-        }
-        if (tier == 4)
-        {
-            var roll = ThreadSafeRandom.Next(0.0f, 1.0f);
-            if (roll < 0.25f)
-                return PatchClass.Settings.AethericCoalescedManaWcid;   // 800002
-            if (roll < 0.75f)
-                return PatchClass.Settings.GreaterCoalescedManaWcid;    // 800001
-            return PatchClass.Settings.LesserCoalescedManaWcid;           // 800000
-        }
-        // T5+: no Coalesced Mana drop (matches vanilla)
-        return 0;
+        var roll = ThreadSafeRandom.Next(0.0f, 1.0f);
+        Settings s = PatchClass.Settings;
+        if (s == null) return 0;
+
+        // Universal tier distribution regardless of monster tier
+        if (roll < 0.60f)
+            return s.LesserCoalescedManaWcid;   // 800000 — 60%
+        if (roll < 0.90f)
+            return s.GreaterCoalescedManaWcid;    // 800001 — 30%
+        return s.AethericCoalescedManaWcid;         // 800002 — 10%
     }
 }

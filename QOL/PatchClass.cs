@@ -34,6 +34,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
             if (Settings?.EnableFacilityHub == true)
                 FacilityHubPortal.ApplyHarmony(harmony);
+
+            CloakSpellActivation.CachedSettings = Settings;
         }
         catch (Exception ex)
         {
@@ -46,6 +48,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         base.Start();
         Settings = SettingsContainer.Settings ?? new Settings();
         FacilityHubPortal.CachedSettings = Settings;
+        CloakSpellActivation.CachedSettings = Settings;
 
         var modDir = Path.GetDirectoryName(typeof(PatchClass).Assembly.Location);
         if (string.IsNullOrEmpty(modDir))
@@ -64,6 +67,7 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     {
         Settings = SettingsContainer.Settings ?? new Settings();
         FacilityHubPortal.CachedSettings = Settings;
+        CloakSpellActivation.CachedSettings = Settings;
         ApplyWorldOpenSideEffects();
     }
 

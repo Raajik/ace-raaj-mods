@@ -282,4 +282,11 @@ internal static class FacilityHubCommands
 #endif
         player.SendMessage("You recall to the Facility Hub.");
     }
+
+    [CommandHandler("fh", AccessLevel.Player, CommandHandlerFlag.RequiresWorld, 0,
+        "Teleport to the Facility Hub if you have unlocked the Facility Frequenter achievement (alias for /fac).")]
+    public static void HandleFh(Session session, params string[] parameters)
+    {
+        HandleFac(session, parameters);
+    }
 }

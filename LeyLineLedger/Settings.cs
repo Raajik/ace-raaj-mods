@@ -20,6 +20,10 @@ public class Settings
     public string LockpickBankingAchievementIdDoc { get; init; } = "If non-empty, players who have earned this AchievementUnlocked achievement ID also qualify for lockpick auto-banking, even without the Lockpick skill trained. E.g. \"LockpickMastery\". Empty string = skill-only gate.";
     public string LockpickBankingAchievementId { get; set; } = "";
 
+    [JsonPropertyName("// LockpickLootBankRatio")]
+    public string LockpickLootBankRatioDoc { get; init; } = "Fraction of lockpick charges banked on pickup (0.50 = 50%). LeyLineLedger is the sole lockpick banking source.";
+    public float LockpickLootBankRatio { get; set; } = 0.50f;
+
     [JsonPropertyName("// EnablePathwardenAutoBank")]
     public string EnablePathwardenAutoBankDoc { get; init; } = "DEPRECATED — use EnableQuestSalvageAutoBank instead. Kept for backward compatibility. When true, Pathwarden NPC rewards (Sturdy Iron Keys) are deposited directly to bank. Granite/Steel bags have moved to the unified quest salvage system.";
     public bool EnablePathwardenAutoBank { get; set; } = true;

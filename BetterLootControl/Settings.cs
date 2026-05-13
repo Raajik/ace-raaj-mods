@@ -133,7 +133,7 @@ public class Settings
     public uint GlyphExtractionBaseWcid { get; init; } = 850210;
 
     // -- Coalesced Mana Drops (replaces ACE vanilla TryRollMundaneAddon) --
-    public double CoalescedManaDropChance { get; init; } = 0.015; // 1.5% per corpse with DeathTreasure
+    public double CoalescedManaDropChance { get; init; } = 0.004; // 0.4% per corpse (matching trophy system rates)
     public uint LesserCoalescedManaWcid { get; init; } = 800000;
     public uint GreaterCoalescedManaWcid { get; init; } = 800001;
     public uint AethericCoalescedManaWcid { get; init; } = 800002;

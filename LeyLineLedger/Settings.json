@@ -2,6 +2,8 @@
   "// LeyLineLedgerSettings": "Reading order: below this line, every // key is documentation; the next block lists real settings in the same order. LeyLineLedger routes vendor trade and pyreals through bank-style PropertyInt64 storage, optional luminance gem withdrawal, death bank tax, and currency denomination tables. Items and Currencies arrays: each element is an object with // lines first, then Name/Id/Prop or Name/Id/Value (same order).",
   "// EnableLockpickAutoBank": "When true, lockpick items picked up by characters with Lockpick trained/spec'd are auto-converted to banked Lockpick Durability.",
   "EnableLockpickAutoBank": true,
+  "// LockpickLootBankRatio": "Fraction of lockpick charges banked on pickup (0.50 = 50%). LeyLineLedger is the sole lockpick banking source.",
+  "LockpickLootBankRatio": 0.50,
   "// EnableQuestSalvageAutoBank": "When true, quest salvage bags (Clutch of Kings, Pathwarden, and similar reward bags) are automatically converted to banked material units on acquisition.",
   "EnableQuestSalvageAutoBank": true,
   "// EnablePathwardenAutoBank": "DEPRECATED — use EnableQuestSalvageAutoBank instead. Kept for backward compatibility.",

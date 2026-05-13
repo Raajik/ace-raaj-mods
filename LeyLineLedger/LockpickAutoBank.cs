@@ -59,8 +59,12 @@ public static class LockpickAutoBank
         var charges = (long)(item.Structure ?? item.MaxStructure ?? 1);
         if (charges <= 0) charges = 1;
 
+        // Bank a fraction of lockpick charges (per LockpickLootBankRatio, e.g. 0.50 = 50%)
+        long bankAmount = (long)(charges * PatchClass.Settings.LockpickLootBankRatio);
+        if (bankAmount <= 0) return true; // ratio is 0 or disabled — let vanilla handle normally
+
         var current = player.GetProperty((PropertyInt64)PropDurability) ?? 0L;
-        var newTotal = current + charges;
+        var newTotal = current + bankAmount;
         player.SetProperty((PropertyInt64)PropDurability, newTotal);
 
         // Keep one placeholder in inventory so the client has an item to target.

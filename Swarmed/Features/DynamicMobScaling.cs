@@ -112,14 +112,37 @@ internal static class DynamicMobScaling
             return level;
         }
 
+        // Detect CreatureEx and ChallengeModes chaos scaling
+        bool isCreatureEx = creature.GetProperty((PropertyInt)10029) is int exTypeVal && exTypeVal != 0;
+        bool isChaos = players.Count > 0 && ChallengeModesBridge.IsChaosEnabled(players[0]);
+
+        float scalePercent;
         if (players.Count == 1)
         {
-            targetLevel = (int)(GetEffectiveLevel(players[0]) * settings.SoloScalePercent / 100f);
+            if (isChaos && isCreatureEx)
+                scalePercent = settings.ChaosCreatureExSoloScalePercent;
+            else if (isChaos)
+                scalePercent = settings.ChaosSoloScalePercent;
+            else if (isCreatureEx)
+                scalePercent = settings.CreatureExSoloScalePercent;
+            else
+                scalePercent = settings.SoloScalePercent;
+
+            targetLevel = (int)(GetEffectiveLevel(players[0]) * scalePercent / 100f);
         }
         else
         {
+            if (isChaos && isCreatureEx)
+                scalePercent = settings.ChaosCreatureExGroupScalePercent;
+            else if (isChaos)
+                scalePercent = settings.ChaosGroupScalePercent;
+            else if (isCreatureEx)
+                scalePercent = settings.CreatureExGroupScalePercent;
+            else
+                scalePercent = settings.GroupScalePercent;
+
             double avgLevel = players.Average(p => GetEffectiveLevel(p));
-            targetLevel = (int)(avgLevel * settings.GroupScalePercent / 100f);
+            targetLevel = (int)(avgLevel * scalePercent / 100f);
         }
 
         // Add flavor variance so mobs aren't all identical.

@@ -930,6 +930,10 @@ public class HealerSettings
 
 public class AdventurerSettings
 {
+    [JsonPropertyName("// Enabled")]
+    public string EnabledDoc { get; init; } = "When false, the Adventurer class is completely disabled and its bonuses do not apply.";
+    public bool Enabled { get; set; } = false;
+
     [JsonPropertyName("// AttributeBonus")]
     public string AttributeBonusDoc { get; init; } = "Bonus to all attributes (Strength, Endurance, Coordination, Quickness, Focus, Self).";
     public int AttributeBonus { get; set; } = 50;

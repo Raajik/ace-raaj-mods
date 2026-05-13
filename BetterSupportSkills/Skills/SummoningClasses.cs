@@ -681,7 +681,8 @@ public static class SummoningClasses
         {
             combatResult = "Healer";
         }
-        else if (AchievementUnlockedApi.HasClassUnlocked(player, "Adventurer") &&
+        else if (PatchClass.Settings?.CombatClasses?.Adventurer?.Enabled == true &&
+            AchievementUnlockedApi.HasClassUnlocked(player, "Adventurer") &&
             IsAdventurer(player))
         {
             combatResult = "Adventurer";

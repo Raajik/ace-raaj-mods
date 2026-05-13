@@ -274,6 +274,14 @@
       "AuraDrainPerTick": 1,
       "AuraTickSeconds": 1.0,
       "ManaCostMultiplier": 0.5
+    },
+    "Adventurer": {
+      "Enabled": false,
+      "AttributeBonus": 50,
+      "SkillBonus": 50,
+      "VitalPercentBonus": 0.20,
+      "ResistanceBonus": 10,
+      "BurdenLimitBonusRanks": 2
     }
   }
 }

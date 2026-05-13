@@ -442,6 +442,30 @@ public class DynamicMobScalingSettings
     public string GroupScalePercentDoc { get; init; } = "Percent of average group level to scale to (100 = exact match).";
     public float GroupScalePercent { get; set; } = 110f;
 
+    [JsonPropertyName("// CreatureExSoloScalePercent")]
+    public string CreatureExSoloScalePercentDoc { get; init; } = "Percent of player level for CreatureEx special mobs when solo.";
+    public float CreatureExSoloScalePercent { get; set; } = 130f;
+
+    [JsonPropertyName("// CreatureExGroupScalePercent")]
+    public string CreatureExGroupScalePercentDoc { get; init; } = "Percent of average group level for CreatureEx special mobs.";
+    public float CreatureExGroupScalePercent { get; set; } = 130f;
+
+    [JsonPropertyName("// ChaosSoloScalePercent")]
+    public string ChaosSoloScalePercentDoc { get; init; } = "Percent of player level when ChallengeModes chaos mode is active (solo).";
+    public float ChaosSoloScalePercent { get; set; } = 130f;
+
+    [JsonPropertyName("// ChaosGroupScalePercent")]
+    public string ChaosGroupScalePercentDoc { get; init; } = "Percent of average group level when ChallengeModes chaos mode is active.";
+    public float ChaosGroupScalePercent { get; set; } = 130f;
+
+    [JsonPropertyName("// ChaosCreatureExSoloScalePercent")]
+    public string ChaosCreatureExSoloScalePercentDoc { get; init; } = "Percent of player level for CreatureEx special mobs in chaos mode (solo).";
+    public float ChaosCreatureExSoloScalePercent { get; set; } = 160f;
+
+    [JsonPropertyName("// ChaosCreatureExGroupScalePercent")]
+    public string ChaosCreatureExGroupScalePercentDoc { get; init; } = "Percent of average group level for CreatureEx special mobs in chaos mode.";
+    public float ChaosCreatureExGroupScalePercent { get; set; } = 160f;
+
     [JsonPropertyName("// MinScaleLevel")]
     public string MinScaleLevelDoc { get; init; } = "Minimum level a mob can be scaled to.";
     public int MinScaleLevel { get; set; } = 1;

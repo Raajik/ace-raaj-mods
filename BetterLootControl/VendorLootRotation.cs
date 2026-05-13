@@ -554,13 +554,11 @@ public static class VendorLootRotation
             return VendorTypeClassification.Bowyer;
         if (_tailorWcids.Contains(wcid))
             return VendorTypeClassification.Tailor;
-        if (_shopkeeperWcids.Contains(wcid))
-            return VendorTypeClassification.Shopkeeper;
 
         // Fall back to MerchandiseItemTypes heuristic
         var merch = vendor.MerchandiseItemTypes;
         if (!merch.HasValue)
-            return VendorTypeClassification.General;
+            return VendorTypeClassification.Unknown;
 
         int merchMask = merch.Value;
         bool hasJewelry = (merchMask & (int)ItemType.Jewelry) != 0;
@@ -583,7 +581,7 @@ public static class VendorLootRotation
         if (hasCaster || (hasJewelry && hasGem))
             return VendorTypeClassification.Mage;
 
-        return VendorTypeClassification.General;
+        return VendorTypeClassification.Unknown;
     }
 
     static ItemType GetStrictMerchMask(Vendor vendor)
@@ -599,7 +597,7 @@ public static class VendorLootRotation
             VendorTypeClassification.Armorer => ItemType.Armor | ItemType.MeleeWeapon | ItemType.MissileWeapon | ItemType.Clothing,
             VendorTypeClassification.Mage => ItemType.Caster | ItemType.Jewelry | ItemType.Gem | ItemType.Clothing | ItemType.Armor, // Include Armor for robes (robes are Armor type in ACE, not Clothing)
             VendorTypeClassification.Bowyer => ItemType.MissileWeapon,
-            VendorTypeClassification.General => GetMerchandiseEquipmentMask(vendor),
+            VendorTypeClassification.Unknown => ItemType.None,
             _ => GetMerchandiseEquipmentMask(vendor)
         };
     }
@@ -1070,33 +1068,6 @@ public static class VendorLootRotation
                 itemCount++;
             }
 
-        }
-        else if (vendorClass == VendorTypeClassification.Shopkeeper)
-        {
-            // Generate a mix of weapons, armor, and clothing
-            int weaponTarget = _rng.Next(perCatMin, perCatMax + 1);
-            var weaponBatch = GenerateMeleeWeaponBatch(vendor, vendorTier, weaponTarget);
-            foreach (var wo in weaponBatch)
-            {
-                AddItemToVendor(vendor, wo, rotatedSet);
-                itemCount++;
-            }
-
-            int armorTarget = _rng.Next(perCatMin, perCatMax + 1);
-            var armorBatch = GenerateArmorBatch(vendor, vendorTier, armorTarget);
-            foreach (var wo in armorBatch)
-            {
-                AddItemToVendor(vendor, wo, rotatedSet);
-                itemCount++;
-            }
-
-            int clothingTarget = _rng.Next(8, 16); // 8-15 clothing items
-            var clothingBatch = GenerateClothingBatch(vendor, vendorTier, clothingTarget);
-            foreach (var wo in clothingBatch)
-            {
-                AddItemToVendor(vendor, wo, rotatedSet);
-                itemCount++;
-            }
         }
         else
         {
@@ -2132,7 +2103,6 @@ public static class VendorLootRotation
         bool isBowyer = vendorClass == VendorTypeClassification.Bowyer;
         bool isArmorer = vendorClass == VendorTypeClassification.Armorer;
         bool isTailor = vendorClass == VendorTypeClassification.Tailor;
-        bool isShopkeeper = vendorClass == VendorTypeClassification.Shopkeeper;
 
         // Determine imbue chance (higher for specialized vendors)
         double imbueChance = _settings.VendorLootImbueChance;
@@ -2146,8 +2116,6 @@ public static class VendorLootRotation
             imbueChance = _settings.VendorLootArmorerImbueChance;
         else if (isTailor)
             imbueChance = _settings.VendorLootTailorImbueChance;
-        else if (isShopkeeper)
-            imbueChance = _settings.VendorLootShopkeeperImbueChance;
         
         // Roll for imbue
         if (!hasImbue && _rng.NextDouble() < imbueChance)
@@ -2172,8 +2140,6 @@ public static class VendorLootRotation
             awakenChance = _settings.VendorLootArmorerAwakenChance;
         else if (isTailor)
             awakenChance = _settings.VendorLootTailorAwakenChance;
-        else if (isShopkeeper)
-            awakenChance = _settings.VendorLootShopkeeperAwakenChance;
         
         // Roll for awakening on high-tier items (tier 6+)
         if (vendorTier >= 6 && !hasAwakened && _rng.NextDouble() < awakenChance)
@@ -2238,12 +2204,6 @@ public static class VendorLootRotation
             tinkerChance = _settings.VendorLootTailorTinkerChance;
             minTinkers = _settings.VendorLootTailorMinTinkers;
             maxTinkers = _settings.VendorLootTailorMaxTinkers;
-        }
-        else if (isShopkeeper)
-        {
-            tinkerChance = _settings.VendorLootShopkeeperTinkerChance;
-            minTinkers = _settings.VendorLootShopkeeperMinTinkers;
-            maxTinkers = _settings.VendorLootShopkeeperMaxTinkers;
         }
 
         if (tinkerChance > 0 && _rng.NextDouble() < tinkerChance)
@@ -2576,6 +2536,11 @@ public static class VendorLootRotation
             return false;
 
         if (!IsEquipmentVendor(vendor))
+            return false;
+
+        // Only rotate explicitly categorized equipment vendors (not general stores, barkeeps, etc.)
+        var classification = ClassifyVendor(vendor);
+        if (classification is VendorTypeClassification.Unknown or VendorTypeClassification.Shopkeeper or VendorTypeClassification.General)
             return false;
 
         if (_settings.VendorLootWcids == null || _settings.VendorLootWcids.Count == 0)

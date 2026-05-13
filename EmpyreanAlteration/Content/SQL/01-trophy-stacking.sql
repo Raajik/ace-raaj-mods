@@ -5,11 +5,15 @@
 
 -- Coalesced Mana: remove Attuned so they can be traded/sold
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES
-(42516, 33, 0), (42517, 33, 0), (42518, 33, 0)
+(800000, 33, 0), (800001, 33, 0), (800002, 33, 0)
 ON DUPLICATE KEY UPDATE value = 0;
 
 -- Trophy items: set MaxStackSize = 100 (type 11)
 INSERT INTO weenie_properties_int (object_Id, type, value) VALUES
+-- Coalesced Mana tiers (consolidated to 800000-800002)
+(800000, 11, 100),   -- Lesser Coalesced Mana
+(800001, 11, 100),   -- Greater Coalesced Mana
+(800002, 11, 100),   -- Aetheric Coalesced Mana
 -- Original batch (hides, heads, wings)
 (36359, 11, 100),   -- Cow Head
 (3699, 11, 100),    -- Blue Phyntos Wasp Wing

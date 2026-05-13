@@ -218,22 +218,22 @@ internal static class GlobalRareDrops
     {
         if (tier <= 0) return 0;
         if (tier <= 2)
-            return PatchClass.Settings.AethericCoalescedManaWcid;   // 42518
+            return PatchClass.Settings.AethericCoalescedManaWcid;   // 800002
         if (tier == 3)
         {
             var roll = ThreadSafeRandom.Next(0.0f, 1.0f);
             return roll < 0.75f
-                ? PatchClass.Settings.AethericCoalescedManaWcid     // 42518
-                : PatchClass.Settings.GreaterCoalescedManaWcid;     // 42517
+                ? PatchClass.Settings.AethericCoalescedManaWcid     // 800002
+                : PatchClass.Settings.GreaterCoalescedManaWcid;     // 800001
         }
         if (tier == 4)
         {
             var roll = ThreadSafeRandom.Next(0.0f, 1.0f);
             if (roll < 0.25f)
-                return PatchClass.Settings.AethericCoalescedManaWcid;   // 42518
+                return PatchClass.Settings.AethericCoalescedManaWcid;   // 800002
             if (roll < 0.75f)
-                return PatchClass.Settings.GreaterCoalescedManaWcid;    // 42517
-            return PatchClass.Settings.LesserCoalescedManaWcid;           // 42516
+                return PatchClass.Settings.GreaterCoalescedManaWcid;    // 800001
+            return PatchClass.Settings.LesserCoalescedManaWcid;           // 800000
         }
         // T5+: no Coalesced Mana drop (matches vanilla)
         return 0;

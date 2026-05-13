@@ -1,103 +1,61 @@
 {
-  "Description": "Coalesced Mana tier line — custom WCIDs 850366-850368. Clones from 24835; MirrorEmoteFromWcid 24835 for Collector Give emotes. Blue IconUnderlay 100676435 + black number overlays 1-3.",
+  "Description": "Coalesced Mana tier line — custom WCIDs 800000-800002. Based on SQL weenies with blue IconUnderlay 100676435 + black number overlays 1-3 layered on top. Consolidated: trophies + awakening both route through this single range.",
   "Weenies": [
     {
-      "ClassId": 850366,
-      "ClassName": "coalescedmana_lesser_wb",
+      "ClassId": 800000,
+      "ClassName": "coalescedmana_lesser",
       "WeenieType": "Stackable",
-      "BaseWcid": 24835,
-      "MirrorEmoteFromWcid": 24835,
-      "Notes": "Lesser tier. Frost (128) glow. Overlay '1' top-right black (100690976).",
+      "BaseWcid": 800000,
+      "Notes": "Lesser tier. Frost (128) glow. Overlay '1' top-right black (100690976). Awakens gear to +5 max level; also accepted by Collector Vaetha for XP/bank credit.",
       "PropertiesString": {
-        "Name": "Coalesced Mana (Lesser)",
-        "PluralName": "Coalesced Mana (Lesser)",
-        "LongDesc": "A faintly shimmering crystal of condensed mana. Collectors will reward a great deal of experience and pyreals for turning in these crystals to Collector Vaetha in the Town Network."
+        "Name": "Lesser Coalesced Mana",
+        "ShortDesc": "Use on eligible equipment to awaken it or raise its maximum item level by +5. Collector Vaetha will also reward experience and pyreals for turning these in.",
+        "LongDesc": "A faintly shimmering crystal of condensed mana. Channels into eligible gear to awaken living potential or deepen an awakened item's maximum level by five. Collectors will reward a great deal of experience and pyreals for turning in these crystals to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
-        "MaxStackSize": 999,
-        "StackSize": 1,
-        "Value": 1,
-        "EncumbranceVal": 1,
         "UiEffects": 128
       },
       "PropertiesDID": {
         "IconUnderlay": 100676435,
         "IconOverlay": 100690976
-      },
-      "Delete": {
-        "PropertiesString": [
-          "Use",
-          "ShortDesc"
-        ],
-        "PropertiesInt": [
-          "ImbuedEffect"
-        ]
       }
     },
     {
-      "ClassId": 850367,
-      "ClassName": "coalescedmana_greater_wb",
+      "ClassId": 800001,
+      "ClassName": "coalescedmana_greater",
       "WeenieType": "Stackable",
-      "BaseWcid": 24835,
-      "MirrorEmoteFromWcid": 24835,
-      "Notes": "Greater tier. Acid (256) glow. Overlay '2' top-right black (100690977).",
+      "BaseWcid": 800001,
+      "Notes": "Greater tier. Acid (256) glow. Overlay '2' top-right black (100690977). Awakens gear to +10 max level; also accepted by Collector Vaetha for XP/bank credit.",
       "PropertiesString": {
-        "Name": "Coalesced Mana (Greater)",
-        "PluralName": "Coalesced Mana (Greater)",
-        "LongDesc": "A brightly shimmering crystal of condensed mana. Collectors will reward a great deal of experience and pyreals for turning in these crystals to Collector Vaetha in the Town Network."
+        "Name": "Greater Coalesced Mana",
+        "ShortDesc": "Use on eligible equipment to awaken it or raise its maximum item level by +10. Collector Vaetha will also reward experience and pyreals for turning these in.",
+        "LongDesc": "A brightly shimmering crystal of condensed mana. Channels into eligible gear to awaken living potential or deepen an awakened item's maximum level by ten. Collectors will reward a great deal of experience and pyreals for turning in these crystals to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
-        "MaxStackSize": 999,
-        "StackSize": 1,
-        "Value": 1,
-        "EncumbranceVal": 1,
         "UiEffects": 256
       },
       "PropertiesDID": {
         "IconUnderlay": 100676435,
         "IconOverlay": 100690977
-      },
-      "Delete": {
-        "PropertiesString": [
-          "Use",
-          "ShortDesc"
-        ],
-        "PropertiesInt": [
-          "ImbuedEffect"
-        ]
       }
     },
     {
-      "ClassId": 850368,
-      "ClassName": "coalescedmana_aetheric_wb",
+      "ClassId": 800002,
+      "ClassName": "coalescedmana_aetheric",
       "WeenieType": "Stackable",
-      "BaseWcid": 24835,
-      "MirrorEmoteFromWcid": 24835,
-      "Notes": "Aetheric tier. Magical (1) glow. Overlay '3' top-right black (100690978).",
+      "BaseWcid": 800002,
+      "Notes": "Aetheric tier. Magical (1) glow. Overlay '3' top-right black (100690978). Awakens gear to +15 max level; also accepted by Collector Vaetha for XP/bank credit.",
       "PropertiesString": {
-        "Name": "Coalesced Mana (Aetheric)",
-        "PluralName": "Coalesced Mana (Aetheric)",
-        "LongDesc": "A brilliantly shimmering crystal of pure condensed mana. Collectors will reward a great deal of experience and pyreals for turning in these crystals to Collector Vaetha in the Town Network."
+        "Name": "Aetheric Coalesced Mana",
+        "ShortDesc": "Use on eligible equipment to awaken it or raise its maximum item level by +15. Collector Vaetha will also reward experience and pyreals for turning these in.",
+        "LongDesc": "A brilliantly shimmering crystal of pure condensed mana. Channels into eligible gear to awaken living potential or deepen an awakened item's maximum level by fifteen. Collectors will reward a great deal of experience and pyreals for turning in these crystals to Collector Vaetha in the Town Network."
       },
       "PropertiesInt": {
-        "MaxStackSize": 999,
-        "StackSize": 1,
-        "Value": 1,
-        "EncumbranceVal": 1,
         "UiEffects": 1
       },
       "PropertiesDID": {
         "IconUnderlay": 100676435,
         "IconOverlay": 100690978
-      },
-      "Delete": {
-        "PropertiesString": [
-          "Use",
-          "ShortDesc"
-        ],
-        "PropertiesInt": [
-          "ImbuedEffect"
-        ]
       }
     }
   ]

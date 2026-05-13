@@ -176,6 +176,40 @@ When **`EnableVendorSellRateReduction`** is `true` (default), the amount vendors
 
 ---
 
+## Lottery
+
+Auto-draw lottery with **pyreal** and **Quest Builder (QB)** pools. Tickets are bought with `/lottery buy <count>` using banked pyreals. Draws run automatically on a timer (default every **4320 minutes = 3 days**). Pools and the next draw timestamp **persist across server restarts** to `{ServerRoot}/Server/ModData/LeyLineLedger/LotteryState.json`.
+
+### Prize conversion to luminance
+
+When `Lottery.LuminancePrizeConversionRate` is > 0 (default **10000**), winners receive **bonus luminance** in addition to their pyreal prize:
+- `luminanceBonus = pyrealPrize / LuminancePrizeConversionRate`
+- E.g. 100,000p prize at rate 10000 → **10 bonus luminance**
+- Online winners: credited immediately via `GrantLuminance`
+- Offline winners: written directly to `AvailableLuminance` biota
+
+### Chaos passup XP → lottery
+
+When `Lottery.ChaosPassupToLotteryRate` is > 0, any **ChallengeModes Chaos absorbed passup XP** is also contributed to the lottery pyreal pool. E.g. rate `1.0` means 1000 absorbed XP = 1000 pyreals added to the pool. Set to `0` to disable.
+
+## Pre-unlock luminance banking
+
+When `EnablePreUnlockLuminanceBanking` is true (default), luminance earned **before unlocking the luminance quest** (`MaximumLuminance == 0`) is **banked instead of discarded**.
+
+### Spending banked luminance before unlock
+
+A Harmony postfix on `WorldObject.GetProperty(PropertyInt64.AvailableLuminance)` makes **banked luminance visible to NPC `InqInt64Stat` emote checks** — including Nalicana (WCID 43398). This means you can **purchase luminance augmentations** even before formally unlocking the quest, as long as you have banked luminance.
+
+A Harmony prefix on `Player.SpendLuminance` **auto-withdraws** from the bank when `AvailableLuminance < amount`:
+- If unlocked (`MaximumLuminance > 0`): transfers from bank into `AvailableLuminance`, then lets vanilla deduct.
+- If pre-unlock: deducts directly from the bank and returns `true` without touching `AvailableLuminance`.
+
+### Post-unlock activation
+
+After unlocking luminance, use **`/bank activate luminance`** (or `/b a l`) to transfer banked luminance into your spendable `AvailableLuminance` pool (up to `MaximumLuminance`).
+
+---
+
 ## Settings (high level)
 
 See **`Settings.json`** / **`Settings.cs`** for full lists. Commonly tuned:

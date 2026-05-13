@@ -1137,6 +1137,90 @@ Spells: **5622** = Weave of the Creature Enchantment V (+50 CE), **5652** = Weav
 
 **Remaining:** Pre-existing build errors in `SummoningClasses.cs` (missing usings) need fixing for clean BSS deploy.
 
+## 2026-05-13 (Evening Session)
+
+Branch: `jeremy/bugfix/may13-evening-bugs`
+
+### 1. EmpyreanAlteration — Awakened item ratings vanish on relog (weapon + jewelry/clothing)
+**Problem:** DamageRating, CritDamageRating on weapons, and CritDamageResistRating, HealingBoostRating, GearMaxHealth on jewelry/clothing granted by awakening level-up growth disappeared after relog. Same root cause as prior session: ACE `[Ephemeral]` `PropertyInt` values are memory-only.
+**Fix:**
+- `WeaponQuestGrowth.cs` — `SetPersistentPropertyInt` writes to `Biota.PropertiesInt` directly (both DamageRating and CritDamageRating).
+- `BiotaPropertyHelper.cs` — `SetBiotaPropertyInt` / `GetBiotaPropertyIntRaw` cast `PropertyInt` enum to `(int)` before indexing `Biota.PropertiesInt` (dictionary key type mismatch fix).
+- `ArmorJewelryRatingGrowth.cs` — same persistent write path for CritDamageResistRating, HealingBoostRating, GearMaxHealth.
+**Files:** `EmpyreanAlteration/WeaponQuestGrowth.cs`, `BiotaPropertyHelper.cs`, `ArmorJewelryRatingGrowth.cs`
+
+### 2. BetterLootControl — Chest loot never respawns
+**Problem:** `PostChestReset` used `ThreadSafeRandom.Next(1, 3)` → 1–3 seconds. Chest regenerated and re-locked before player could even see the loot window.
+**Fix:** Changed to `ThreadSafeRandom.Next(300, 480)` (5–8 minutes) in both `PostChestReset` and the close-reset path.
+**File:** `BetterLootControl/PatchClass.cs`
+
+### 3. BetterKeys — Chest auto-unlock eats charges, invisibly opens, re-locks
+**Problem:** `ApplyBankedSkeletonUnlock` registered `PendingSkeletonChestOpenSuppress` which caused the immediate follow-up `Chest.Open` to return `false`, leaving the chest in an unlocked-but-invisible state.
+**Fix:** Removed `RegisterSuppressFirstChestOpenAfterSkeletonUnlock` from the banked unlock path. Banked skeleton keys now unlock chests normally; player clicks again to open.
+**File:** `BetterKeys/PatchClass.cs`
+
+### 4. BetterSupportSkills — Minor Summoning cantrip missed on mutated loot
+**Problem:** `GetSummoningCantripBonus` only checked `equipped.Weenie.PropertiesSpellBook`. Loot-generated random cantrips are stored in `Biota.PropertiesSpellBook`, so Minor Summoning Prowess (6136) was invisible.
+**Fix:** Check both Weenie and Biota spellbooks; iterate using `IDictionary<int, float>` (ACE type, not `List<PropertiesSpellBook>`).
+**File:** `BetterSupportSkills/SummoningClasses.cs`
+
+### 5. BetterSupportSkills — Pet device unlimited charges
+**Problem:** `PreCheckUseRequirements` already bypassed cooldown, but `PetDevice.ActOnUse` still decremented `Structure` (charge consumption).
+**Fix:** Added `PrePetDeviceActOnUse` Harmony Prefix — calls `SummonCreature` directly and returns `false` to skip original `ActOnUse` entirely.
+**File:** `BetterSupportSkills/SummoningClasses.cs`
+
+### 6. BetterLootControl — Mana stones → Mana charges in lootgen
+**Problem:** Mana stones ( Lesser 2434, Mana 2435, Greater 2436, Major 27328, Moderate 27330, Minor 27331 ) dropped instead of charges.
+**Fix:** `ApplyLootWcidSubstitutionPatches` + `PostRollWcidSubstitution` manually patches `LootGenerationFactory.RollWcid` (private static, `AccessTools.DeclaredMethod`). Six tier-ordered mappings replace stone WCIDs with charge WCIDs (4612/4613/4614/4615/4616/9060).
+**File:** `BetterLootControl/PatchClass.cs`
+
+### 7. BetterLootControl — Remove Encapsulated Spirit from loot
+**Fix:** Same `PostRollWcidSubstitution` sets `ace49485_encapsulatedspirit` → `WeenieClassName.undef` (0), causing `CreateAndMutateWcid` to return null.
+**File:** `BetterLootControl/PatchClass.cs`
+
+### 8. Overtinked — Nether Rending / Cleaving / JewelryCleave shell recipes
+**Problem:** `NetherRendingImbueCombatConfig` and `CleavingImbueCombatConfig` lack `BaseRecipeId`, so `GetRecipe` returned null and the craft pipeline failed.
+**Fix:** Added three `PostGetRecipe*` postfixes using `WorkmanshipSalvageFallbackShellRecipeId` (default 4452) as shell recipe. Nether Rending allows `MeleeWeapon`/`MissileLauncher`/`ItemType.Caster`; Cleaving allows weapons only; JewelryCleave allows `ItemType.Jewelry`.
+**File:** `Overtinked/PatchClass.cs`
+
+### 9. Overtinked — Nether Rending salvage WCID mapping
+**Fix:** Added `NetherRending` → `21064` (Onyx) to `ImbueSalvageWcids.WcidToImbue`. Removed invalid `Hemorrhage`, `Cleaving`, `Shatter`, `JewelryCleave` entries (those `ImbuedEffectType` values do not exist in ACE's enum).
+**File:** `Overtinked/ImbueSalvageWcids.cs` / `PatchClass.cs`
+
+### 10. LeyLineLedger — Lottery persistence survives mod wipe
+**Problem:** `Lottery.InitializePersistence` used `ledgerModDir` (mod assembly path `Mods/LeyLineLedger/`), which is wiped on every deploy.
+**Fix:** Changed to `Path.Combine(Directory.GetCurrentDirectory(), "Server", "ModData", "LeyLineLedger", "LotteryState.json")` — matches existing server convention. Also updated `AccountBankStore.ModDataDir` to same root.
+**Files:** `LeyLineLedger/PatchClass.cs`, `AccountBankStore.cs`
+
+### 11. ChallengeModes — Chaos passup XP → LeyLineLedger lottery
+**Fix:** `ChallengePassupAbsorb.PrefixAddAllegianceXP` now calls `TryContributeToLottery(cached)` after passing XP to grandpatron. Reflectively reads `LeyLineLedger.Lottery.Settings.Lottery.ChaosPassupToLotteryRate`; if > 0, calls `Lottery.AddToPool((long)(cached * rate))`.
+**File:** `ChallengeModes/Features/ChallengePassupAbsorb.cs`
+
+### 12. LeyLineLedger — Lottery winners receive bonus luminance
+**Fix:** `Lottery.DrawWinner` applies `LuminancePrizeConversionRate` (default **10000**) — `pyrealPrize / rate` bonus luminance per winner. Online: `GrantLuminance`; offline: direct `BiotaPropertiesInt64` write to `AvailableLuminance`.
+**File:** `LeyLineLedger/Lottery.cs`
+
+### 13. LeyLineLedger — Pre-unlock luminance visible to Nalicana, auto-spend from bank
+**Problem:** Banked luminance earned before unlocking the luminance quest was invisible to NPC `InqInt64Stat` checks (Nalicana WCID 43398), so augmentation purchases failed.
+**Fix:**
+- `PostGetPropertyInt64` Harmony postfix on `WorldObject.GetProperty(PropertyInt64.AvailableLuminance)`: when `MaximumLuminance == 0`, adds banked luminance to the returned value — Nalicana's emote check sees it.
+- `PreSpendLuminance` Harmony prefix: when `AvailableLuminance < amount` but bank has enough, auto-withdraws from bank to `AvailableLuminance` (post-unlock) or deducts bank directly (pre-unlock).
+- `/bank activate luminance` command: transfers banked luminance into `AvailableLuminance` up to `MaximumLuminance`.
+**File:** `LeyLineLedger/PatchClass.cs`
+
+### 14. Settings additions
+- `LotterySettings.ChaosPassupToLotteryRate` — default 0 (disabled until configured)
+- `LotterySettings.LuminancePrizeConversionRate` — default 10000 (1 luminance per 10k pyreal prize)
+
+### Docs
+- `LeyLineLedger/Readme.md` — added Lottery and Pre-unlock luminance sections
+- `COMPLETED.md` — this section
+- `scripts/verify-pathwarden-chests.bat` — Windows batch to verify Sho chest SQL is applied
+
+**Commits:** `488ebcc7`, `488c1d4c`, `cf743ad9`, `bf21759a`, `3fe32321`
+
+---
+
 ## Earlier Features
 
 

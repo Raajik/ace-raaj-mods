@@ -861,16 +861,23 @@ public static class SummoningClasses
             }
         }
 
-        // Check the item's weenie for spell book entries (multi-spell items like jewelry, casters)
+        // Check the item's spell book entries (multi-spell items like jewelry, casters).
+        // Must check BOTH weenie (template defaults) and biota (mutated/random cantrips).
         try
         {
             foreach (var equipped in player.EquippedObjects.Values)
             {
-                if (equipped == null || equipped.Weenie == null) continue;
+                if (equipped == null) continue;
 
-                if (equipped.Weenie.PropertiesSpellBook is { Count: > 0 })
+                var spellBooks = new System.Collections.Generic.List<ACE.Entity.Models.PropertiesSpellBook>();
+                if (equipped.Weenie?.PropertiesSpellBook is { Count: > 0 })
+                    spellBooks.Add(equipped.Weenie.PropertiesSpellBook);
+                if (equipped.Biota?.PropertiesSpellBook is { Count: > 0 })
+                    spellBooks.Add(equipped.Biota.PropertiesSpellBook);
+
+                foreach (var book in spellBooks)
                 {
-                    foreach (var kvp in equipped.Weenie.PropertiesSpellBook)
+                    foreach (var kvp in book)
                     {
                         int tier = GetCantripTier((uint)kvp.Key, s.CantripBonusPetsLegendarySpellId);
                         if (tier > highestTier)
@@ -879,7 +886,7 @@ public static class SummoningClasses
                 }
             }
         }
-        catch { /* weenie spell book may not be populated in all contexts */ }
+        catch { /* spell book may not be populated in all contexts */ }
 
         if (highestTier < 0 || highestTier >= CantripBonusByTier.Length)
             return 0;

@@ -254,8 +254,8 @@ public partial class PatchClass : BasicPatch<Settings>
             if (treasureProfile.CurrentCreate > 0)
                 return;
 
-            // Set a random reset interval (hardcoded 1-3 seconds for testing)
-            double newResetInterval = ThreadSafeRandom.Next(1, 3);
+            // Set a random reset interval (default: 5-8 minutes for reasonable chest respawn)
+            double newResetInterval = ThreadSafeRandom.Next(300, 480);
             __instance.ResetInterval = newResetInterval;
         }
         catch (Exception ex)
@@ -289,8 +289,8 @@ public partial class PatchClass : BasicPatch<Settings>
             if (treasureProfile == null)
                 return;
 
-            // On close, set a random next reset interval
-            double newResetInterval = ThreadSafeRandom.Next(1, 3);
+            // On close, set a random next reset interval (default: 5-8 minutes)
+            double newResetInterval = ThreadSafeRandom.Next(300, 480);
             __instance.ResetInterval = newResetInterval;
         }
         catch (Exception ex)

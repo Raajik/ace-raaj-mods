@@ -32,7 +32,8 @@ internal static class BiotaPropertyHelper
                 var dictProp = item.Biota.GetType().GetProperty("PropertiesInt");
                 if (dictProp?.GetValue(item.Biota) is System.Collections.IDictionary dict)
                 {
-                    dict[prop] = value;
+                    int intKey = (int)prop;
+                    dict[intKey] = value;
                     item.ChangesDetected = true;
                 }
             }
@@ -49,8 +50,12 @@ internal static class BiotaPropertyHelper
         {
             // Try the dictionary path first (newer ACE)
             var dictProp = item.Biota.GetType().GetProperty("PropertiesInt");
-            if (dictProp?.GetValue(item.Biota) is System.Collections.IDictionary dict && dict.Contains(prop))
-                return (int?)dict[prop];
+            if (dictProp?.GetValue(item.Biota) is System.Collections.IDictionary dict)
+            {
+                int intKey = (int)prop;
+                if (dict.Contains(intKey))
+                    return (int?)dict[intKey];
+            }
         }
         catch { }
 

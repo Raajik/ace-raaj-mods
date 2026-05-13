@@ -814,8 +814,6 @@ public partial class PatchClass : BasicPatch<Settings>
 
         string resistPart = resistForLog.HasValue ? $", resist {resistForLog.Value}" : ", resist n/a";
         ModManager.Log($"[BetterKeys] Bank skeleton charge used: player {player.Name}, chest {chest.Name}{resistPart}, tier {tierMax}, prop {bankProp}.", ModManager.LogLevel.Info);
-
-        RegisterSuppressFirstChestOpenAfterSkeletonUnlock(player, chest);
     }
 
     // When normal TryPickBankTierForResist did not apply: unpickable/null resist, or no bank line covers the resist with balance — still allow this tier for listed WCIDs.

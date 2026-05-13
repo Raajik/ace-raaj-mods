@@ -118,11 +118,21 @@ Scales creature level/difficulty/XP/loot to nearby players within the same landb
 |---------|---------|-------------|
 | `SoloScalePercent` | `110` | Percent of player level to scale toward |
 | `GroupScalePercent` | `110` | Percent of average group level |
+| `CreatureExSoloScalePercent` | `130` | CreatureEx special mobs (solo) |
+| `CreatureExGroupScalePercent` | `130` | CreatureEx special mobs (group) |
+| `ChaosSoloScalePercent` | `130` | ChallengeModes chaos mode (solo) |
+| `ChaosGroupScalePercent` | `130` | ChallengeModes chaos mode (group) |
+| `ChaosCreatureExSoloScalePercent` | `160` | Chaos + CreatureEx (solo) |
+| `ChaosCreatureExGroupScalePercent` | `160` | Chaos + CreatureEx (group) |
 | `LevelVariancePercent` | `20` | ±this% of target level (e.g., 20 = ±20%) |
 | `HealthScaleExponent` | `0.4` | Exponent for health scaling (`ratio^0.4`); gentler than sqrt |
 | `HealthScaleMaxMultiplier` | `2.0` | Hard cap on health multiplier |
 | `LandscapeSoftCap` | `true` | Cap open-world mobs by landscape tier |
 | `LandscapeTierMaxLevels` | `{1:50, 2:75, ..., 7:275}` | Tier caps |
+
+**CreatureEx detection:** Mobs with `FakeInt 10029` (CreatureExType) use the higher `CreatureEx*ScalePercent` values.
+
+**Chaos mode detection:** When `ChallengeModes.IsChaosEnabled` returns true for any player on the landblock, the higher `Chaos*ScalePercent` values apply. If both chaos and CreatureEx are present, the `ChaosCreatureEx*` values are used.
 
 **Loot tier matching:** When a mob is scaled above its original `DeathTreasure.Tier`, a Harmony prefix on `Creature.GenerateTreasure` temporarily swaps `DeathTreasureType` to a higher-tier `TreasureDeath` profile so loot rolls match the monster's actual scaled level. The original profile is restored after generation.
 

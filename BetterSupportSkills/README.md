@@ -269,8 +269,10 @@ BetterSupportSkills includes a **class system** that activates when you speciali
 ```
 
 #### Adventurer
+**Status:** Disabled by default (requires `Enabled: true` in `CombatClasses.Adventurer`)  
 **Requirements:** No magic schools trained (except Mana Conversion)
 
+When enabled via `CombatClasses.Adventurer.Enabled`, grants:
 - **+50 to all attributes** (Strength, Endurance, Coordination, Quickness, Focus, Self)
 - **+50 to all skills**
 - **+20% max vitals** (Health, Stamina, Mana)
@@ -283,6 +285,7 @@ All bonuses are **virtual** — they don't persist to the database and disappear
 ```json
 "CombatClasses": {
   "Adventurer": {
+    "Enabled": false,
     "AttributeBonus": 50,
     "SkillBonus": 50,
     "VitalPercentBonus": 0.20,

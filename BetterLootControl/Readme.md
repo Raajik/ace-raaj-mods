@@ -24,6 +24,8 @@ When an item rolls multiple imbues, compatibility is enforced by tier (at most *
 
 ### Vendor Loot Rotation
 
+Only **explicitly categorized equipment vendors** are rotated: jewelers, armorers/blacksmiths, archmages, bowyers, and tailors. General shopkeepers, grocers, barkeeps, peddlers, and skill-puzzle vendors are excluded from rotation.
+
 Vendors automatically rotate their equipment inventory on a schedule.
 
 #### Dynamic Economy-Linked Pricing
@@ -180,28 +182,6 @@ Tailors specialize in clothing and robes:
 - Same multiplier formula as other vendors
 - Masterwork awakened imbued robes = 6-7 figures!
 
-##### Shopkeeper Specialization (General Stores)
-Shopkeepers, grocers, barkeeps, and peddlers sell a mixed inventory:
-
-**Item Generation:**
-- 15-30 melee weapons with spells
-- 15-30 armor pieces with spells
-- 8-15 clothing items with spells
-- True general store experience!
-
-**Enhancement Rates (Mixed Inventory):**
-- 50% imbue chance (moderate - between specialized and generic)
-- 18% awaken chance at tier 6+ (moderate)
-- 40% chance for 1-3 tinkers (moderate)
-
-**Visual Indicators:**
-- Same as other vendors (blue glow for spells, imbue overlays, etc.)
-- Overtinked custom imbues can roll on weapons
-
-**Premium Pricing:**
-- Same multiplier formula as other vendors
-- More affordable than specialized vendors but still premium!
-
 ### Configurable Settings
 
 All values in `Settings.json`:
@@ -233,11 +213,6 @@ All values in `Settings.json`:
   "VendorLootTailorTinkerChance": 0.45,      // 45% tinker rate
   "VendorLootTailorMinTinkers": 1,
   "VendorLootTailorMaxTinkers": 3,
-  "VendorLootShopkeeperImbueChance": 0.50,   // 50% imbue rate
-  "VendorLootShopkeeperAwakenChance": 0.18,  // 18% awaken rate
-  "VendorLootShopkeeperTinkerChance": 0.40,  // 40% tinker rate
-  "VendorLootShopkeeperMinTinkers": 1,
-  "VendorLootShopkeeperMaxTinkers": 3,
   "VendorLootTinkerValueMultiplier": 2.0,    // 2x per tinker
   "VendorLootImbueChance": 0.40,             // Other vendors
   "VendorLootAwakenChance": 0.15,            // Other vendors
@@ -316,17 +291,4 @@ All values in `Settings.json`:
 4686, 703, 2260, 2233, 658, 1080, 738, 870, 719, 4703, 4445, 1145, 4556,
 2502, 1058, 11399, 667, 983, 30034, 2301, 843, 30069, 1823, 1834, 821,
 822, 1047, 994
-```
-
-**Shopkeepers/Grocers/Barkeeps (115+ total):**
-```
-31224, 32054, 38688, 38692, 5835, 31295, 32299, 40521, 40946, 40952, 40958,
-40964, 40970, 40974, 40981, 40987, 42799-42810, 11377, 4678, 4681, 693, 694,
-696, 1079, 6856, 6858, 9206, 9208, 2252, 2253, 2255, 5832, 11384, 11385, 24590,
-24592, 669, 670, 672, 2221, 2222, 2228, 657, 648, 652, 1082, 8493, 731, 732,
-734, 11390, 404, 859, 860, 861, 865, 866, 710, 714, 4696, 4698, 8434, 4541,
-5877, 4436, 4440, 796, 797, 799, 4548, 4551, 5861, 22724, 405, 1390, 1391,
-1392, 1050, 1051, 1053, 11395, 659, 663, 973, 978, 30035, 30446, 30036, 2291,
-2292, 2296, 832, 834, 837, 11402, 5438, 1813, 1814, 1818, 968, 1826, 1827,
-1829, 24217, 8225, 8230, 810, 815, 5640, 1034, 1040, 985, 986, 989
 ```

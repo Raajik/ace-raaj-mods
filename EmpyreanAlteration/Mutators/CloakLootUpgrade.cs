@@ -203,6 +203,18 @@ internal class CloakLootUpgrade : Mutator
         }
     }
 
+    static readonly HashSet<SpellId> BannedCloakCantrips = new()
+    {
+        SpellId.CANTRIPIMPENETRABILITY1,
+        SpellId.CANTRIPACIDBANE1,
+        SpellId.CANTRIPBLUDGEONINGBANE1,
+        SpellId.CANTRIPFLAMEBANE1,
+        SpellId.CANTRIPFROSTBANE1,
+        SpellId.CANTRIPPIERCINGBANE1,
+        SpellId.CANTRIPSLASHINGBANE1,
+        SpellId.CANTRIPSTORMBANE1,
+    };
+
     static void ApplyRandomCantrips(WorldObject item, TreasureDeath profile, Settings s)
     {
         int minC = Math.Max(1, s.CloakLootCantripCountMin);
@@ -218,6 +230,9 @@ internal class CloakLootUpgrade : Mutator
             attempts++;
             SpellId baseCantrip = ArmorCantrips.Roll();
             if (baseCantrip == SpellId.Undef)
+                continue;
+
+            if (BannedCloakCantrips.Contains(baseCantrip))
                 continue;
 
             if (!chosen.Add(baseCantrip))

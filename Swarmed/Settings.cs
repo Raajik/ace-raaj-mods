@@ -436,11 +436,11 @@ public class DynamicMobScalingSettings
 
     [JsonPropertyName("// SoloScalePercent")]
     public string SoloScalePercentDoc { get; init; } = "Percent of player level to scale to when solo (100 = exact match).";
-    public float SoloScalePercent { get; set; } = 100f;
+    public float SoloScalePercent { get; set; } = 110f;
 
     [JsonPropertyName("// GroupScalePercent")]
     public string GroupScalePercentDoc { get; init; } = "Percent of average group level to scale to (100 = exact match).";
-    public float GroupScalePercent { get; set; } = 100f;
+    public float GroupScalePercent { get; set; } = 110f;
 
     [JsonPropertyName("// MinScaleLevel")]
     public string MinScaleLevelDoc { get; init; } = "Minimum level a mob can be scaled to.";
@@ -451,8 +451,20 @@ public class DynamicMobScalingSettings
     public int MaxScaleLevel { get; set; } = 0;
 
     [JsonPropertyName("// LevelVariance")]
-    public string LevelVarianceDoc { get; init; } = "Random level deviation applied after target level is computed (±this value). Adds flavor variation so not every mob in an area has identical stats. Applied before min/max caps.";
-    public int LevelVariance { get; set; } = 15;
+    public string LevelVarianceDoc { get; init; } = "Absolute random level deviation applied after target level is computed. Acts as a ceiling when LevelVariancePercent is also set.";
+    public int LevelVariance { get; set; } = 100;
+
+    [JsonPropertyName("// LevelVariancePercent")]
+    public string LevelVariancePercentDoc { get; init; } = "Relative random level deviation as a percent of target level (e.g. 20 = ±20% of target). Applied before min/max caps.";
+    public int LevelVariancePercent { get; set; } = 20;
+
+    [JsonPropertyName("// HealthScaleExponent")]
+    public string HealthScaleExponentDoc { get; init; } = "Exponent for health scaling curve (0.5 = sqrt, 1.0 = linear). Lower = gentler scaling.";
+    public float HealthScaleExponent { get; set; } = 0.4f;
+
+    [JsonPropertyName("// HealthScaleMaxMultiplier")]
+    public string HealthScaleMaxMultiplierDoc { get; init; } = "Hard cap on health multiplier regardless of level ratio (e.g. 2.0 = never more than double health).";
+    public float HealthScaleMaxMultiplier { get; set; } = 2.0f;
 
     [JsonPropertyName("// LandscapeSoftCap")]
     public string LandscapeSoftCapDoc { get; init; } = "When true, landscape mobs have soft level caps based on world area tiers.";

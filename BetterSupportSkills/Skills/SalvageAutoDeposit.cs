@@ -125,7 +125,7 @@ public static class SalvageAutoDeposit
             bool ok = LeyLineLedgerSalvageInterop.TryIncSalvage(player, salvageWcid, depositInt);
             if (!ok) return false;
             TryGrantImbueSalvage(player, item);
-            AccumulateForMessage(player, materialIndex, depositUnits);
+            AccumulateForMessage(player, materialIndex, depositInt);
             return true;
         }
 
@@ -142,7 +142,7 @@ public static class SalvageAutoDeposit
             int depositInt = Math.Max(1, (int)depositUnits);
             bool ok = LeyLineLedgerSalvageInterop.TryIncSalvage(player, item.WeenieClassId, depositInt);
             if (!ok) return false;
-            AccumulateForMessage(player, materialIndex, depositUnits);
+            AccumulateForMessage(player, materialIndex, depositInt);
             return true;
         }
 

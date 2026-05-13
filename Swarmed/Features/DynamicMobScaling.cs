@@ -1,5 +1,6 @@
 namespace Swarmed.Features;
 
+using ACE.Database.Models.World;
 using ACE.DatLoader;
 using ACE.Server.Entity.Actions;
 using ACE.Server.Entity;
@@ -19,6 +20,7 @@ internal static class DynamicMobScaling
     const int BaseLevelPropertyId = 40150;       // PropertyInt: original level before scaling
     const int ScaledLevelPropertyId = 40152;     // PropertyInt: level after scaling
     const int LootTierMultiplierPropertyId = 40153; // PropertyFloat: loot value multiplier
+    const int ScaledLootTierPropertyId = 40154;    // PropertyInt: loot tier after scaling
 
     static int ServerMaxLevel => Math.Max(275,
         DatManager.PortalDat?.XpTable?.CharacterLevelXPList?.Count ?? 275);
@@ -121,12 +123,11 @@ internal static class DynamicMobScaling
         }
 
         // Add flavor variance so mobs aren't all identical.
-        // At low target levels the absolute variance is clamped so a level-1 mob
-        // doesn't accidentally jump to level 16 (16× health multiplier).
+        // Relative cap is based on LevelVariancePercent of target level.
         int effectiveVariance = settings.LevelVariance;
         if (targetLevel > 0)
         {
-            int relativeCap = Math.Max(1, targetLevel / 4); // ±25% of target level, min 1
+            int relativeCap = Math.Max(1, targetLevel * settings.LevelVariancePercent / 100);
             effectiveVariance = Math.Min(settings.LevelVariance, relativeCap);
         }
         if (effectiveVariance > 0)
@@ -171,7 +172,7 @@ internal static class DynamicMobScaling
         creature.SetProperty((PropertyInt)ScaledLevelPropertyId, targetLevel);
 
         // Scale vitals
-        ScaleVitals(creature, levelRatio, baseLevel, targetLevel);
+        ScaleVitals(creature, levelRatio, baseLevel, targetLevel, settings);
 
         // Scale attributes
         ScaleAttributes(creature, levelRatio);
@@ -185,11 +186,13 @@ internal static class DynamicMobScaling
         // Update displayed level
         creature.SetProperty(PropertyInt.Level, targetLevel);
 
-        // Store loot multiplier for GenerateTreasure postfix
+        // Store loot tier and multiplier for GenerateTreasure patches
+        int scaledTier = LevelToTier(targetLevel);
+        creature.SetProperty((PropertyInt)ScaledLootTierPropertyId, scaledTier);
         creature.SetProperty((PropertyFloat)LootTierMultiplierPropertyId, levelRatio);
     }
 
-    static void ScaleVitals(Creature creature, float ratio, int baseLevel, int targetLevel)
+    static void ScaleVitals(Creature creature, float ratio, int baseLevel, int targetLevel, DynamicMobScalingSettings settings)
     {
         int levelDiff = targetLevel - baseLevel;
 
@@ -206,10 +209,11 @@ internal static class DynamicMobScaling
             }
             else
             {
-                // Higher-level mobs: scale only base Ranks with sqrt curve.
+                // Higher-level mobs: scale only base Ranks with configurable exponent.
                 // MaxValue = Ranks + StartingValue + attr_bonus; by scaling only
                 // Ranks we avoid double-counting StartingValue.
-                float vitalRatio = (float)Math.Pow(ratio, 0.5);
+                float vitalRatio = (float)Math.Pow(ratio, settings.HealthScaleExponent);
+                vitalRatio = Math.Min(vitalRatio, settings.HealthScaleMaxMultiplier);
                 newRanks = (uint)Math.Max(1, vital.Ranks * vitalRatio);
             }
             vital.Ranks = newRanks;
@@ -290,7 +294,131 @@ internal static class DynamicMobScaling
         catch { return 3; }
     }
 
-    // ── XP Scaling ─────────────────────────────────────────────────────────
+    static int LevelToTier(int level) => level switch
+    {
+        <= 30 => 1,
+        <= 60 => 2,
+        <= 80 => 3,
+        <= 100 => 4,
+        <= 125 => 5,
+        <= 150 => 6,
+        <= 200 => 7,
+        _ => 8,
+    };
+
+    // ── TreasureDeath cache for loot tier bumping ──────────────────────────
+
+    static List<TreasureDeath>? _cachedTreasureProfiles = null;
+    static DateTime _lastProfileCache = DateTime.MinValue;
+
+    static List<TreasureDeath> GetTreasureProfiles()
+    {
+        if (_cachedTreasureProfiles != null && DateTime.UtcNow - _lastProfileCache < TimeSpan.FromMinutes(5))
+            return _cachedTreasureProfiles;
+
+        try
+        {
+            var dict = DatabaseManager.World.GetAllTreasureDeath();
+            _cachedTreasureProfiles = dict.Values.Where(r => r != null).ToList();
+            _lastProfileCache = DateTime.UtcNow;
+            return _cachedTreasureProfiles;
+        }
+        catch
+        {
+            return new List<TreasureDeath>();
+        }
+    }
+
+    static TreasureDeath? FindTreasureDeathForTier(int desiredTier)
+    {
+        var profiles = GetTreasureProfiles();
+        if (profiles.Count == 0) return null;
+
+        var exact = profiles.FirstOrDefault(p => p.Tier == desiredTier);
+        if (exact != null) return exact;
+
+        return profiles
+            .Where(p => p.Tier <= desiredTier)
+            .OrderByDescending(p => p.Tier)
+            .FirstOrDefault();
+    }
+
+    // ── Loot Tier Replacement ───────────────────────────────────────────────
+
+    /// <summary>
+    /// Prefix: if the creature was scaled to a higher loot tier, temporarily swap
+    /// DeathTreasureType so the original GenerateTreasure uses the correct profile.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Creature), nameof(Creature.GenerateTreasure))]
+    public static void PreGenerateTreasure(Creature __instance, ref uint? __state)
+    {
+        var settings = PatchClass.CurrentSettings?.DynamicMobScaling;
+        if (settings == null || !settings.Enabled)
+            return;
+
+        int? scaledTier = __instance.GetProperty((PropertyInt)ScaledLootTierPropertyId);
+        if (!scaledTier.HasValue)
+            return;
+
+        var originalTreasure = __instance.DeathTreasure;
+        if (originalTreasure == null)
+            return;
+
+        if (scaledTier.Value <= originalTreasure.Tier)
+            return;
+
+        var profile = FindTreasureDeathForTier(scaledTier.Value);
+        if (profile == null)
+            return;
+
+        __state = __instance.DeathTreasureType;
+        __instance.DeathTreasureType = profile.TreasureType;
+    }
+
+    /// <summary>
+    /// Postfix: restore original DeathTreasureType and skip numerical scaling when
+    /// loot was already regenerated from a bumped tier profile.
+    /// </summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(Creature), nameof(Creature.GenerateTreasure))]
+    public static void PostGenerateTreasure(DamageHistoryInfo killer, Corpse corpse, Creature __instance, ref List<WorldObject> __result, uint? __state)
+    {
+        // Restore DeathTreasureType if prefix bumped it
+        if (__state.HasValue)
+        {
+            __instance.DeathTreasureType = __state.Value;
+            // Items were generated from the correct tier profile — skip raw numerical scaling
+            return;
+        }
+
+        var settings = PatchClass.CurrentSettings?.DynamicMobScaling;
+        if (settings == null || !settings.Enabled)
+            return;
+
+        float? multiplier = (float?)__instance.GetProperty((PropertyFloat)LootTierMultiplierPropertyId);
+        if (!multiplier.HasValue || multiplier.Value <= 1.0f)
+            return;
+
+        float mult = multiplier.Value;
+        foreach (var item in __result)
+        {
+            if (item == null) continue;
+
+            // Scale item value
+            if (item.Value.HasValue)
+                item.Value = (int)(item.Value.Value * mult);
+
+            // Scale weapon damage modifiers
+            if (item.DamageMod.HasValue)
+                item.DamageMod = Math.Min(item.DamageMod.Value * mult, 3.0f); // cap at 3x
+
+            // Scale armor level
+            int? armorLevel = item.GetProperty(PropertyInt.ArmorLevel);
+            if (armorLevel.HasValue)
+                item.SetProperty(PropertyInt.ArmorLevel, (int)(armorLevel.Value * mult));
+        }
+    }
 
     /// <summary>
     /// Patched into Creature.OnDeath_GrantXP to scale XP based on level difference.
@@ -355,41 +483,6 @@ internal static class DynamicMobScaling
         }
         catch { return 100000; }
     }
-
-    // ── Loot Scaling ───────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Applies loot value multiplier to items generated by scaled creatures.
-    /// </summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Creature), nameof(Creature.GenerateTreasure))]
-    public static void PostGenerateTreasure(DamageHistoryInfo killer, Corpse corpse, Creature __instance, ref List<WorldObject> __result)
-    {
-        var settings = PatchClass.CurrentSettings?.DynamicMobScaling;
-        if (settings == null || !settings.Enabled)
-            return;
-
-        float? multiplier = (float?)__instance.GetProperty((PropertyFloat)LootTierMultiplierPropertyId);
-        if (!multiplier.HasValue || multiplier.Value <= 1.0f)
-            return;
-
-        float mult = multiplier.Value;
-        foreach (var item in __result)
-        {
-            if (item == null) continue;
-
-            // Scale item value
-            if (item.Value.HasValue)
-                item.Value = (int)(item.Value.Value * mult);
-
-            // Scale weapon damage modifiers
-            if (item.DamageMod.HasValue)
-                item.DamageMod = Math.Min(item.DamageMod.Value * mult, 3.0f); // cap at 3x
-
-            // Scale armor level
-            int? armorLevel = item.GetProperty(PropertyInt.ArmorLevel);
-            if (armorLevel.HasValue)
-                item.SetProperty(PropertyInt.ArmorLevel, (int)(armorLevel.Value * mult));
-        }
-    }
 }
+
+

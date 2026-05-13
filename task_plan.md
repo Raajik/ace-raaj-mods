@@ -31,3 +31,29 @@
 ## SpellSiphon: Verify Glyph Deduplication
 **Status**: Verified working — no code changes needed
 - `TryMergeSpell` in `UseOnTargetHooks.cs:312` already implements line-based dedup: if target already has a higher-tier spell in the same line, the lower-tier spell from the glyph is rejected.
+
+## Bug 3: Salvage Auto-Deposit Fractional Messages
+**Status**: Fixed
+- **Root cause**: `AccumulateForMessage` was receiving `depositUnits` (raw fractional, e.g., 0.5 for trained salvaging) instead of `depositInt` (the actual integer units banked via `Math.Max(1, (int)depositUnits)`). Messages showed roughly half the actual deposit for trained players.
+- **Fix applied**: Changed both `AccumulateForMessage` calls in `SalvageAutoDeposit.cs` to pass `depositInt`.
+- **Files changed**: `BetterSupportSkills/Skills/SalvageAutoDeposit.cs`
+
+## Bug 4: Cloak Minor Banes / Minor Impenetrability
+**Status**: Fixed
+- **Root cause**: `ApplyRandomCantrips` in `CloakLootUpgrade.cs` used `ArmorCantrips.Roll()` which includes `CANTRIPIMPENETRABILITY1` and all `CANTRIP*BANE1` cantrips. These became Minor Impenetrability / Minor Bane spells on cloaks.
+- **Fix applied**: Added `BannedCloakCantrips` HashSet containing all 8 bane/impenetrability base cantrips. `ApplyRandomCantrips` now skips any roll that matches the banned set.
+- **Files changed**: `EmpyreanAlteration/Mutators/CloakLootUpgrade.cs`
+
+## Feature/Balance: DynamicMobScaling Rebalance + Loot Tier Matching
+**Status**: Implemented
+- **Problem**: Mobs scaled too aggressively in health; level variance was too narrow; loot tier did not match scaled monster level.
+- **Fix applied**:
+  - `SoloScalePercent` / `GroupScalePercent` → 110 (center scaling at 110% of player level)
+  - `LevelVariancePercent` → 20 (±20% of target level, replacing old hardcoded ±25% cap)
+  - `HealthScaleExponent` → 0.4 (gentler than sqrt(0.5); e.g., 4× level ratio → ~1.74× health instead of 2×)
+  - `HealthScaleMaxMultiplier` → 2.0 (hard cap on health scaling)
+  - **Loot tier matching**: `PreGenerateTreasure` prefix on `Creature.GenerateTreasure` reads `ScaledLootTierPropertyId` (computed from target level via `LevelToTier`). If scaled tier > original `DeathTreasure.Tier`, it temporarily swaps `DeathTreasureType` to a `TreasureDeath` profile of the correct tier before ACE generates loot. `PostGenerateTreasure` restores the original `DeathTreasureType` and skips numerical scaling for tier-bumped mobs.
+- **Files changed**:
+  - `Swarmed/Features/DynamicMobScaling.cs`
+  - `Swarmed/Settings.cs`
+  - `Swarmed/Settings.json`

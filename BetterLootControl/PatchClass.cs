@@ -4,11 +4,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using ACE.Common;
+using ACE.Database.Models.World;
 using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Server.Entity;
 using ACE.Server.Entity.Actions;
 using ACE.Server.Factories;
+using ACE.Server.Factories.Entity;
+using ACE.Server.Factories.Enum;
 using ACE.Server.Managers;
 using ACE.Server.Network;
 using ACE.Server.Network.GameEvent.Events;
@@ -48,7 +51,10 @@ public partial class PatchClass : BasicPatch<Settings>
         // Auto-discovery of new Harmony patches in this assembly silently fails
         // (BLC_VENDOR_DEBUG_DIARY.md), so we patch explicitly here.
         if (Settings?.EnableVendorLootRotation == true)
-            VendorApproachPatches.Apply(ModC.Harmony);    }
+            VendorApproachPatches.Apply(ModC.Harmony);
+
+        // Apply loot WCID substitution patches (mana stones → charges; Encapsulated Spirit removal)
+        ApplyLootWcidSubstitutionPatches(ModC.Harmony);    }
 
     public override async Task OnStartSuccess()
     {
@@ -82,6 +88,58 @@ public partial class PatchClass : BasicPatch<Settings>
             ModManager.Log("[BetterLoot] VendorLootRotation is disabled in settings", ModManager.LogLevel.Info);
         }
     }
+
+    // Remove Encapsulated Spirit (49485) from loot and replace mana stones with mana charges.
+    private static void ApplyLootWcidSubstitutionPatches(Harmony harmony)
+    {
+        try
+        {
+            var rollWcidMethod = AccessTools.DeclaredMethod(typeof(LootGenerationFactory), "RollWcid", new[] { typeof(TreasureDeath), typeof(TreasureItemCategory), typeof(TreasureItemType) });
+            if (rollWcidMethod != null)
+            {
+                var postfix = new HarmonyMethod(typeof(PatchClass), nameof(PostRollWcidSubstitution));
+                harmony.Patch(rollWcidMethod, postfix: postfix);
+                ModManager.Log("[BetterLootControl] Loot WCID substitution patch applied.", ModManager.LogLevel.Info);
+            }
+            else
+            {
+                ModManager.Log("[BetterLootControl] Could not find LootGenerationFactory.RollWcid for patching.", ModManager.LogLevel.Warn);
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BetterLootControl] Failed to apply loot WCID substitution patch: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    public static void PostRollWcidSubstitution(TreasureDeath treasureDeath, TreasureItemCategory category, TreasureItemType treasureItemType, TreasureRoll __result)
+    {
+        if (__result == null)
+            return;
+
+        // 1) Remove Encapsulated Spirit (49485) from loot
+        if (__result.Wcid == ACE.Server.Factories.Enum.WeenieClassName.ace49485_encapsulatedspirit)
+        {
+            __result.Wcid = ACE.Server.Factories.Enum.WeenieClassName.undef; // Causes CreateAndMutateWcid to return null (no item created)
+            return;
+        }
+
+        // 2) Replace mana stones with mana charges
+        if (ManaStoneToChargeMap.TryGetValue(__result.Wcid, out var chargeWcid))
+        {
+            __result.Wcid = chargeWcid;
+        }
+    }
+
+    private static readonly Dictionary<ACE.Server.Factories.Enum.WeenieClassName, ACE.Server.Factories.Enum.WeenieClassName> ManaStoneToChargeMap = new()
+    {
+        [ACE.Server.Factories.Enum.WeenieClassName.manastoneminor] = ACE.Server.Factories.Enum.WeenieClassName.manastonetiny,       // 27331 → 4612
+        [ACE.Server.Factories.Enum.WeenieClassName.manastonelesser] = ACE.Server.Factories.Enum.WeenieClassName.manastonesmall,      // 2434 → 4613
+        [ACE.Server.Factories.Enum.WeenieClassName.manastone] = ACE.Server.Factories.Enum.WeenieClassName.manastonemoderate,         // 2435 → 4614
+        [ACE.Server.Factories.Enum.WeenieClassName.manastonemedium] = ACE.Server.Factories.Enum.WeenieClassName.manastonehigh,       // 27330 → 4615
+        [ACE.Server.Factories.Enum.WeenieClassName.manastonegreater] = ACE.Server.Factories.Enum.WeenieClassName.manastonegreat,     // 2436 → 4616
+        [ACE.Server.Factories.Enum.WeenieClassName.manastonemajor] = ACE.Server.Factories.Enum.WeenieClassName.manachargetitan,      // 27328 → 9060
+    };
 
     private void LoadLootConfig()
     {

@@ -154,6 +154,113 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
         __result = cooked;
     }
 
+    // Postfix: same cookbook gap for Nether Rending (Onyx 21064) — supply shell recipe so GetRecipe succeeds.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.GetRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject) })]
+    public static void PostGetRecipeNetherRending(Player player, WorldObject source, WorldObject target, ref Recipe __result)
+    {
+        if (__result != null || player == null || source == null || target == null)
+            return;
+
+        NetherRendingImbueCombatConfig? nr = CurrentSettings?.NetherRendingImbue;
+        if (nr?.Enabled != true || nr.SalvageWcids == null || nr.SalvageWcids.Length == 0)
+            return;
+
+        if (!nr.SalvageWcids.Contains(source.WeenieClassId))
+            return;
+
+        if (!WorkmanshipTargets.HasQualifyingWorkmanship(target))
+            return;
+
+        bool isWeapon = target.WeenieType == WeenieType.MeleeWeapon || target.WeenieType == WeenieType.MissileLauncher;
+        bool isCaster = (target.ItemType & ItemType.Caster) != 0;
+        if (!isWeapon && !isCaster)
+            return;
+
+        uint rid = CurrentSettings?.WorkmanshipSalvageFallbackShellRecipeId ?? 4452;
+        if (rid == 0)
+            return;
+
+        Recipe? cooked = DatabaseManager.World.GetCachedRecipe(rid);
+        if (cooked == null)
+        {
+            ModManager.Log($"[Overtinked] Nether Rending GetRecipe: shell recipe {rid} not in world cache; cannot synthesize recipe.", ModManager.LogLevel.Warn);
+            return;
+        }
+
+        __result = cooked;
+    }
+
+    // Postfix: same cookbook gap for Cleaving (Tiger Eye 21081) — supply shell recipe so GetRecipe succeeds.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.GetRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject) })]
+    public static void PostGetRecipeCleaving(Player player, WorldObject source, WorldObject target, ref Recipe __result)
+    {
+        if (__result != null || player == null || source == null || target == null)
+            return;
+
+        CleavingImbueCombatConfig? cl = CurrentSettings?.CleavingImbue;
+        if (cl?.Enabled != true || cl.SalvageWcids == null || cl.SalvageWcids.Length == 0)
+            return;
+
+        if (!cl.SalvageWcids.Contains(source.WeenieClassId))
+            return;
+
+        if (!WorkmanshipTargets.HasQualifyingWorkmanship(target))
+            return;
+
+        if (target.WeenieType != WeenieType.MeleeWeapon && target.WeenieType != WeenieType.MissileLauncher)
+            return;
+
+        uint rid = CurrentSettings?.WorkmanshipSalvageFallbackShellRecipeId ?? 4452;
+        if (rid == 0)
+            return;
+
+        Recipe? cooked = DatabaseManager.World.GetCachedRecipe(rid);
+        if (cooked == null)
+        {
+            ModManager.Log($"[Overtinked] Cleaving GetRecipe: shell recipe {rid} not in world cache; cannot synthesize recipe.", ModManager.LogLevel.Warn);
+            return;
+        }
+
+        __result = cooked;
+    }
+
+    // Postfix: same cookbook gap for Jewelry Cleave (Obsidian 21063) — supply shell recipe so GetRecipe succeeds.
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.GetRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject) })]
+    public static void PostGetRecipeJewelryCleave(Player player, WorldObject source, WorldObject target, ref Recipe __result)
+    {
+        if (__result != null || player == null || source == null || target == null)
+            return;
+
+        JewelryCleaveImbueConfig? jc = CurrentSettings?.JewelryCleaveImbue;
+        if (jc?.Enabled != true || jc.SalvageWcids == null || jc.SalvageWcids.Length == 0)
+            return;
+
+        if (!jc.SalvageWcids.Contains(source.WeenieClassId))
+            return;
+
+        if (!WorkmanshipTargets.HasQualifyingWorkmanship(target))
+            return;
+
+        if ((target.ItemType & ItemType.Jewelry) == 0)
+            return;
+
+        uint rid = CurrentSettings?.WorkmanshipSalvageFallbackShellRecipeId ?? 4452;
+        if (rid == 0)
+            return;
+
+        Recipe? cooked = DatabaseManager.World.GetCachedRecipe(rid);
+        if (cooked == null)
+        {
+            ModManager.Log($"[Overtinked] Jewelry Cleave GetRecipe: shell recipe {rid} not in world cache; cannot synthesize recipe.", ModManager.LogLevel.Warn);
+            return;
+        }
+
+        __result = cooked;
+    }
+
     // Postfix: same cookbook gap as Hemorrhage — supply template recipe when Shatter salvage has no GetRecipe match.
     [HarmonyPostfix]
     [HarmonyPatch(typeof(RecipeManager), nameof(RecipeManager.GetRecipe), new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject) })]

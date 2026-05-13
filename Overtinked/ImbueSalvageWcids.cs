@@ -44,6 +44,8 @@ public static class ImbueSalvageWcids
         [21066] = ImbuedEffectType.MeleeDefense,
         [21088] = ImbuedEffectType.MissileDefense,
         [21089] = ImbuedEffectType.MagicDefense,
+        // Overtinked custom imbues (only those with matching ACE ImbuedEffectType values)
+        [21064] = ImbuedEffectType.NetherRending,    // Onyx
     };
 
     public static HashSet<uint> Build(Settings s)

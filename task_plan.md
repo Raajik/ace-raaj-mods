@@ -7,18 +7,18 @@
 
 | # | Bug | Mod | Priority | Status |
 |---|-----|-----|----------|--------|
-| 1 | Lottery drawing time resets on server restart | ChallengeModes | 🔴 High | Investigating |
-| 2 | Lesser Coalesced Mana not in Sho Pathwarden chest | Windblown/SQL | 🟡 Medium | Investigating |
-| 3 | Replace mana stones in lootgen with mana CHARGES | BetterLootControl | 🟡 Medium | Request |
-| 4 | Passup XP from chaos mode → lottery pool → luminance | ChallengeModes | 🟡 Medium | Request |
-| 5 | Pet summon devices: remove cooldown, unlimited charges, remove 49485 from loot | BetterSupportSkills/Swarmed | 🟢 Low | Request |
-| 6 | Awakened cloak level-up rating gains don't apply | EmpyreanAlteration | 🔴 High | Investigating |
-| 7 | Improved chest loot never respawns in chests | BetterLootControl | 🔴 High | Investigating |
-| 8 | Jewelry leveled up but gained nothing | EmpyreanAlteration | 🔴 High | Investigating |
-| 9 | Chest auto-unlock eats charges, invisible open, re-locks on close | QOL/BetterKeys | 🟡 Medium | Investigating |
-| 10 | Awakened clothing/ring/jewelry level-up gains don't apply | EmpyreanAlteration | 🔴 High | Investigating |
-| 11 | Onyx salvage not applicable to weapons/jewelry | Overtinked | 🟡 Medium | Investigating |
-| 12 | Minor Summoning aug not adding extra pet for Artificer | BetterSupportSkills | 🟡 Medium | Investigating |
+| 1 | Lottery drawing time resets on server restart | ChallengeModes | 🔴 High | **Blocked** — code in `worldevents-expansion` worktree |
+| 2 | Lesser Coalesced Mana not in Sho Pathwarden chest | Windblown/SQL | 🟡 Medium | **Open** — fixed-create-list chests, need SQL or AllowedChestWCIDs |
+| 3 | Replace mana stones in lootgen with mana CHARGES | BetterLootControl | 🟡 Medium | **Fixed** — `PostRollWcidSubstitution` in `PatchClass.cs` |
+| 4 | Passup XP from chaos mode → lottery pool → luminance | ChallengeModes | 🟡 Medium | **Blocked** — code in `worldevents-expansion` worktree |
+| 5 | Pet summon devices: remove cooldown, unlimited charges, remove 49485 from loot | BetterSupportSkills/Swarmed | 🟢 Low | **Fixed** — `PreCheckUseRequirements` (cooldown), `PrePetDeviceActOnUse` (charges), BLC loot filter (49485) |
+| 6 | Awakened cloak level-up rating gains don't apply | EmpyreanAlteration | 🔴 High | **Fixed** — `SetPersistentPropertyInt` for `DamageRating`/`CritDamageRating` |
+| 7 | Improved chest loot never respawns in chests | BetterLootControl | 🔴 High | **Fixed** — reset interval 1-3s → 300-480s |
+| 8 | Jewelry leveled up but gained nothing | EmpyreanAlteration | 🔴 High | **Fixed** — `SetPersistentPropertyInt` + BiotaPropertyHelper key cast |
+| 9 | Chest auto-unlock eats charges, invisible open, re-locks on close | QOL/BetterKeys | 🟡 Medium | **Fixed** — removed `RegisterSuppressFirstChestOpenAfterSkeletonUnlock` from banked unlocks |
+| 10 | Awakened clothing/ring/jewelry level-up gains don't apply | EmpyreanAlteration | 🔴 High | **Fixed** — same as #6/#8 |
+| 11 | Onyx salvage not applicable to weapons/jewelry | Overtinked | 🟡 Medium | **Fixed** — `PostGetRecipeNetherRending`, `PostGetRecipeCleaving`, `PostGetRecipeJewelryCleave` |
+| 12 | Minor Summoning aug not adding extra pet for Artificer | BetterSupportSkills | 🟡 Medium | **Fixed** — check both `Weenie` and `Biota` `PropertiesSpellBook` for cantrips; `PrePetDeviceActOnUse` for unlimited charges |
 
 ## Suspected Root Causes
 

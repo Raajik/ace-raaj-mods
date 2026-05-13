@@ -869,13 +869,13 @@ public static class SummoningClasses
             {
                 if (equipped == null) continue;
 
-                var spellBooks = new System.Collections.Generic.List<ACE.Entity.Models.PropertiesSpellBook>();
+                var books = new System.Collections.Generic.List<System.Collections.Generic.IDictionary<int, float>>();
                 if (equipped.Weenie?.PropertiesSpellBook is { Count: > 0 })
-                    spellBooks.Add(equipped.Weenie.PropertiesSpellBook);
+                    books.Add(equipped.Weenie.PropertiesSpellBook);
                 if (equipped.Biota?.PropertiesSpellBook is { Count: > 0 })
-                    spellBooks.Add(equipped.Biota.PropertiesSpellBook);
+                    books.Add(equipped.Biota.PropertiesSpellBook);
 
-                foreach (var book in spellBooks)
+                foreach (var book in books)
                 {
                     foreach (var kvp in book)
                     {
@@ -1185,6 +1185,26 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         }
 
         __result = new ActivationResult(true);
+        return false;
+    }
+
+    // -- Pet Device: Unlimited Charges -------------------------------------
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(PetDevice), nameof(PetDevice.ActOnUse))]
+    public static bool PrePetDeviceActOnUse(WorldObject activator, PetDevice __instance)
+    {
+        // Only intercept player usage; let original handle everything else
+        if (activator is not Player player)
+            return true;
+
+        if (__instance.PetClass == null)
+            return true;
+
+        uint wcid = (uint)__instance.PetClass;
+        __instance.SummonCreature(player, wcid);
+
+        // Skip original to prevent Structure-- charge consumption
         return false;
     }
 

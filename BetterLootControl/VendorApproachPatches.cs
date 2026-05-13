@@ -25,8 +25,9 @@ public static class VendorApproachPatches
                 return;
             }
 
+            var prefix = new HarmonyMethod(typeof(VendorApproachPatches), nameof(PreVendorLoadInventory));
             var postfix = new HarmonyMethod(typeof(VendorApproachPatches), nameof(PostVendorLoadInventory));
-            harmony.Patch(target, postfix: postfix);
+            harmony.Patch(target, prefix: prefix, postfix: postfix);
 
             ModManager.Log("[BLC] VendorApproachPatches: Patched Vendor.LoadInventory with postfix", ModManager.LogLevel.Info);
             File.AppendAllText("BLC_VENDOR.txt", DateTime.Now + " [BLC] Patched Vendor.LoadInventory" + Environment.NewLine);
@@ -37,6 +38,26 @@ public static class VendorApproachPatches
         }
     }
 
+    public static void PreVendorLoadInventory(Vendor __instance)
+    {
+        if (__instance == null) return;
+        try
+        {
+            bool isLoaded = false;
+            try
+            {
+                var prop = AccessTools.Property(typeof(Vendor), "inventoryloaded");
+                if (prop != null)
+                    isLoaded = (bool)prop.GetValue(__instance);
+            }
+            catch { }
+
+            string msg = $"{DateTime.Now:HH:mm:ss.fff} [VENDEBUG] PreLoadInventory: {__instance.Name} WCID={__instance.WeenieClassId} Guid={__instance.Guid.Full} inventoryloaded={isLoaded} Default={__instance.DefaultItemsForSale?.Count} Unique={__instance.UniqueItemsForSale?.Count}{Environment.NewLine}";
+            File.AppendAllText("BLC_VENDOR.txt", msg);
+        }
+        catch { }
+    }
+
     public static void PostVendorLoadInventory(Vendor __instance)
     {
         try
@@ -44,7 +65,8 @@ public static class VendorApproachPatches
             if (__instance == null)
                 return;
 
-            File.AppendAllText("BLC_VENDOR.txt", DateTime.Now.ToString("HH:mm:ss.fff") + " [BLC] PostVendorLoadInventory FIRED vendor=" + __instance.Name + " (WCID=" + __instance.WeenieClassId + ")" + Environment.NewLine);
+            string msg = $"{DateTime.Now:HH:mm:ss.fff} [VENDEBUG] PostLoadInventory: {__instance.Name} WCID={__instance.WeenieClassId} Guid={__instance.Guid.Full} Default={__instance.DefaultItemsForSale?.Count} Unique={__instance.UniqueItemsForSale?.Count}{Environment.NewLine}";
+            File.AppendAllText("BLC_VENDOR.txt", msg);
 
             VendorLootRotation.OnVendorApproachPrefix(null, VendorType.Open, 0, __instance);
         }

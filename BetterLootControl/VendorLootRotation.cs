@@ -810,7 +810,13 @@ public static class VendorLootRotation
 
     public static void OnVendorApproachPrefix(Player player, VendorType action, uint altCurrencySpent, Vendor __instance)
     {
-        try { File.AppendAllText("BLC_DEBUG.txt", DateTime.Now + " [BLC] OnVendorApproachPrefix called for " + __instance.Name + " (WCID " + __instance.WeenieClassId + ")" + Environment.NewLine); } catch { }
+        try
+        {
+            string dbg = $"{DateTime.Now:HH:mm:ss.fff} [VENDEBUG] OnVendorApproachPrefix: {__instance.Name} WCID={__instance.WeenieClassId} Guid={__instance.Guid.Full} Default={__instance.DefaultItemsForSale?.Count} Unique={__instance.UniqueItemsForSale?.Count}{Environment.NewLine}";
+            File.AppendAllText("BLC_DEBUG.txt", dbg);
+            File.AppendAllText("BLC_VENDOR.txt", dbg);
+        }
+        catch { }
 
         // Ensure _settings is set — fall back to PatchClass.CurrentSettings
         // (Initialize() sets _settings but may not survive ALC reload cycles)
@@ -825,7 +831,7 @@ public static class VendorLootRotation
 
         if (_protectedVendorWcids.Contains(__instance.WeenieClassId))
         {
-            ModManager.Log($"[BetterLoot] VendorLoot: {__instance.Name} is protected, running awaken only", ModManager.LogLevel.Info);
+            ModManager.Log($"[BetterLoot] VendorLoot: {__instance.Name} is protected, running awaken only (Default={__instance.DefaultItemsForSale?.Count}, Unique={__instance.UniqueItemsForSale?.Count})", ModManager.LogLevel.Info);
             AwakenVendorItems(__instance);
             return;
         }

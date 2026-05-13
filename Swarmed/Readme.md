@@ -161,6 +161,14 @@ Loot table modifications for CreatureEx champions.
 | `BetterLootControl` | Reference | Loot tier coordination for special drops |
 | `ChallengeModes` | Bridge | `ChallengeModesBridge.cs` for difficulty scaling |
 
+## Known Gotchas
+
+**Weenie type namespace shadowing:** `Swarmed/Features/DynamicMobScaling.cs` patches `WorldObjectFactory.CreateWorldObject(Weenie, ObjectGuid)`. The global `using Weenie = ACE.Entity.Models.Weenie` alias in `GlobalUsings.cs` is shadowed if any file adds a local `using ACE.Database.Models.World;` (which also contains a `Weenie` type). Harmony resolves `typeof(Weenie)` in the `[HarmonyPatch]` attribute to the wrong type, producing `ArgumentException: Undefined target method` at runtime and crash-looping the server. Always fully qualify the parameter type in the patch attribute:
+```csharp
+[HarmonyPatch(typeof(WorldObjectFactory), nameof(WorldObjectFactory.CreateWorldObject),
+    new Type[] { typeof(ACE.Entity.Models.Weenie), typeof(ObjectGuid) })]
+```
+
 ## Configuration
 
 All settings in `Settings.json` (test) / `Settings.json` (repo template).

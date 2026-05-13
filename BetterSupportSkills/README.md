@@ -471,6 +471,10 @@ All features can be toggled in `Settings.json`:
 
 ## Changelog
 
+### 2026-05-12
+- **Adventurer class disabled by default:** Added `Enabled` bool to `CombatClasses.Adventurer` settings (default `false`). `SummoningClasses.GetPlayerClass()` only returns `"Adventurer"` when explicitly enabled by the operator. Existing achievement unlocks remain but are ignored until toggled on.
+- **Salvage message accuracy:** `SalvageAutoDeposit` now passes `depositInt` (actual integer units banked after `Math.Max(1, (int)deposit)`) to `AccumulateForMessage` instead of the raw fractional `depositUnits`. Trained salvagers now see correct totals (e.g., "+5 Bronze" rather than "+2.5 Bronze").
+
 ### 2026-05-10
 - **Salvage ↔ LeyLineLedger bank slot alignment:** Stack salvage **20981–21089** now credits the same **`PropertyInt64`** as `/bank salvage` (`DepositRules` index / `BankProperty`), not **`FirstMaterialBankPropertyId + (WCID − 20981)`**. Shared resolver: **`../Shared/LeyLineLedgerSalvageBankInterop.cs`** (linked from `BetterSupportSkills.csproj`). Fixes desync between bag-fill totals and **`/bank salvage status`** when rules are not WCID-sorted (e.g. Brass **21042**).
 - **Category “least banked” gem picks** (`PickLeastBankedMaterial`) read balances from the **resolved** property id per WCID.

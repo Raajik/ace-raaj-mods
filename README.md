@@ -45,7 +45,6 @@ Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot`
 - **Bowyer specialization (53 vendors)** — 15-30 missile weapons + 8-20 ammo stacks with 65% imbue, 30% awaken, 55% tinker rates
 - **Armorer specialization (100+ vendors)** — 15-30 melee weapons + 15-30 armor with 60% imbue, 25% awaken, 50% tinker rates
 - **Tailor specialization (28 vendors)** — 15-30 clothing + 8-20 robes with 55% imbue, 20% awaken, 45% tinker rates
-- **Shopkeeper specialization (115+ vendors)** — 15-30 weapons + 15-30 armor + 8-15 clothing with 50% imbue, 18% awaken, 40% tinker rates
 - **Weapon imbues work on jewelry** — Harmony patches make CriticalStrike/CripplingBlow/ArmorRending apply from any equipped item
 - **Overtinked custom imbues** — Hemorrhage/Cleaving/NetherRending/Shatter can roll on vendor items (25% chance)
 - **Multi-imbue items** — 8% chance for 2 compatible imbues, 2% for 3 (ultra-rare!) — 125x price multiplier on triple-imbued gear!
@@ -192,9 +191,8 @@ CreatureEx champion variants and reinforcement spawning.
 - **Duelist** — frontal cone reduces damage taken instead of negating it entirely.
 - **Call-for-help reinforcements** — champions can summon adds on aggro or at health thresholds.
 - **Dungeon population manager** — maintains ~30 living mobs inside occupied dungeons, spawning outside player radar range.
-- **Dynamic scaling** — mobs scale to highest player level in landblock (past 275 for high-level servers) with ±15 level variance for flavor.
+- **Dynamic scaling** — mobs scale to nearby player level (solo = 110% of player, group = 110% of average) with ±20% level variance. CreatureEx specials scale to 130%; ChallengeModes chaos mode scales normal mobs to 130% and CreatureEx to 160%. Loot tier matching via `Creature.GenerateTreasure` prefix/postfix so scaled mobs drop gear matching their actual level.
 - **Landscape vs dungeon behavior** — separate tuning for open-world and dungeon spawns.
-- **Optional online-player scaling** — spawn counts or stats scale with server population.
 
 ### WorldEvents
 Rotating world events with automated scheduling, broadcast messaging, and participation tracking.

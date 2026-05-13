@@ -1217,7 +1217,57 @@ Branch: `jeremy/bugfix/may13-evening-bugs`
 - `COMPLETED.md` — this section
 - `scripts/verify-pathwarden-chests.bat` — Windows batch to verify Sho chest SQL is applied
 
-**Commits:** `488ebcc7`, `488c1d4c`, `cf743ad9`, `bf21759a`, `3fe32321`
+**Commits:** `488ebcc7`, `488c1d4c`, `cf743ad9`, `bf21759a`, `3fe32321`, `bede075b`
+
+### 15. /fac and /fh teleport — fix disconnect-to-lifestone bug
+**Branch:** `jeremy/bugfix/may13-evening-bugs` | **Commit:** `bede075b`
+
+**Problem:** `/fac` disconnects player and sends to lifestone. Fallback cell `0x8A020212` (2315387410) had **zero landblock instances** — no walkable spawn surface. Server couldn't place the player → disconnect → default to lifestone.
+
+**Fix:** Changed fallback to cell `0x8A020210` (2315387336) — where the **Facility Hub Steward** NPC is placed, a proven walkable cell.
+- FallbackCell: `0x8A020212` → `0x8A020210`
+- Origin: (58.64, -89.92, 6.01) → (59.0, -66.0, 0.005)
+**Files:** `QOL/FacilityHubPortal.cs`, `QOL/Settings.cs`, `QOL/Settings.json`
+
+### 16. /fh alias
+Added `/fh` as an alias for `/fac` — both call the same handler.
+**File:** `QOL/FacilityHubPortal.cs`
+
+### 17. Achievement tracking moved to PostGemUseGem (was dead code)
+**Problem:** The original SummonPortal postfix Harmony patch tried to hook a 5-param overload `(uint, Position, double, WorldObject, Player)` that doesn't exist in ACE's actual `SummonPortal` (3 params). Achievement **never incremented** — no player could unlock `/fac`.
+**Fix:** Moved achievement increment to `PostGemUseGem`. Removed dead SummonPortal postfix hooks.
+**File:** `QOL/FacilityHubPortal.cs`
+
+### 18. Lockpick bank fallback fix
+LockpickAutoBank.cs had `if (bankAmount <= 0) { bankAmount = charges; }` — if ratio was 0 (disabled), it'd bank **full** charges instead of zero. Fixed to `return true` (let vanilla handle normally).
+**File:** `LeyLineLedger/LockpickAutoBank.cs`
+
+### 19. Cloak spell activation (new feature)
+New `CloakSpellActivation.cs` — Harmony postfix on `TryEquipObjectWithNetworking` that forces cloak cantrip activation.
+**Files:** `QOL/CloakSpellActivation.cs`, `QOL/PatchClass.cs`
+
+### 20. Coalesced mana universal tier drop
+Changed from tier-dependent backwards distribution (T1-2 = Aetheric 100%) to universal: Lesser 60%, Greater 30%, Aetheric 10%. Drop chance: 1.5% → 0.4% (matching trophy system).
+**Files:** `BetterLootControl/GlobalRareDrops.cs`, `BetterLootControl/Settings.cs`
+
+### 21. AutoLoot lockpick disabled (LLL owns lockpick banking)
+AutoLoot `LockpickLootBankPercent` → 0.0 (disabled). LeyLineLedger new `LockpickLootBankRatio = 0.50` (50% of lockpick charges banked).
+**Files:** `AutoLoot/Settings.cs`, `LeyLineLedger/Settings.cs`, `LeyLineLedger/Settings.json`
+
+### 22. Collector Vaetha message on Behdo Yii fixed
+Removed WCID 10842 (Behdo Yii) from `CollectorWcids` list.
+**File:** `QOL/Settings.cs`, `QOL/Settings.json`
+
+### 23. Watchdog scripts — hidden launch, no focus stealing
+Both `VoidTestWatchdog.ps1` and `WbTestWatchdog.ps1` changed from Windows Terminal tab launch to `Start-Process -WindowStyle Hidden`. No console windows, no tab focus stealing.
+**Files:** `A:\void-test\Server\VoidTestWatchdog.ps1`, `C:\ACE\Server\WbTestWatchdog.ps1`
+
+### Docs
+- Wiki: `Facility Hub Teleport.md` — updated with root cause, fix details, coordinate table
+- `QOL/Readme.md` — added `/fac` and `/fh` to commands table
+- `task_plan.md` — Issue 4 marked resolved
+- `progress.md` — evening bugs tracking table
+- `COMPLETED.md` — this section
 
 ---
 

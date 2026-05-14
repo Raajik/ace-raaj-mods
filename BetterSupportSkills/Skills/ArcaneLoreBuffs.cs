@@ -3,6 +3,8 @@ using System.Collections.Concurrent;
 using ACE.Entity;
 using ACE.Entity.Enum;
 using ACE.Server.Entity;
+using ACE.Server.Entity.Actions;
+using ACE.Server.Managers;
 using ACE.Server.WorldObjects;
 
 namespace BetterSupportSkills.Skills;
@@ -151,7 +153,11 @@ internal static class ArcaneLoreBuffs
                 {
                     if (!player.IsInvalidTarget(spell, creatureTarget))
                     {
-                        TryCastSpellWithVitalSnapshot(player, spell, creatureTarget);
+                        var captureSpell = spell;
+                        var captureTarget = creatureTarget;
+                        WorldManager.EnqueueAction(new ActionEventDelegate(() =>
+                            TryCastSpellWithVitalSnapshot(player, captureSpell, captureTarget)
+                        ));
                         player.SendMessage("Your Arcane Lore echoes the spell!", ChatMessageType.Magic);
                         DebugLog($"Echoed spell {spell.Id} on {creatureTarget.Name} (chain #{_echoChainDepth})");
                     }
@@ -165,7 +171,11 @@ internal static class ArcaneLoreBuffs
                         var imperil = new Spell((SpellId)alSettings.EchoImperilSpellId);
                         if (!imperil.NotFound)
                         {
-                            player.TryCastSpell(imperil, creatureTarget);
+                            var captureImperil = imperil;
+                            var captureTarget = creatureTarget;
+                            WorldManager.EnqueueAction(new ActionEventDelegate(() =>
+                                player.TryCastSpell(captureImperil, captureTarget)
+                            ));
                             DebugLog($"Echoed Imperil {alSettings.EchoImperilSpellId} on {creatureTarget.Name}");
                         }
                     }
@@ -175,7 +185,11 @@ internal static class ArcaneLoreBuffs
                         var fester = new Spell((SpellId)alSettings.EchoFesterSpellId);
                         if (!fester.NotFound)
                         {
-                            player.TryCastSpell(fester, creatureTarget);
+                            var captureFester = fester;
+                            var captureTarget = creatureTarget;
+                            WorldManager.EnqueueAction(new ActionEventDelegate(() =>
+                                player.TryCastSpell(captureFester, captureTarget)
+                            ));
                             DebugLog($"Echoed Fester {alSettings.EchoFesterSpellId} on {creatureTarget.Name}");
                         }
                     }
@@ -189,7 +203,11 @@ internal static class ArcaneLoreBuffs
                         var vuln = new Spell((SpellId)vulnSpellId);
                         if (!vuln.NotFound)
                         {
-                            player.TryCastSpell(vuln, creatureTarget);
+                            var captureVuln = vuln;
+                            var captureTarget = creatureTarget;
+                            WorldManager.EnqueueAction(new ActionEventDelegate(() =>
+                                player.TryCastSpell(captureVuln, captureTarget)
+                            ));
                             DebugLog($"Echoed {spell.DamageType} Vulnerability {vulnSpellId} on {creatureTarget.Name}");
                         }
                     }

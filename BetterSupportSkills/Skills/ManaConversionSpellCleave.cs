@@ -72,7 +72,7 @@ internal static class ManaConversionSpellCleave
 
             if (lb != null)
             {
-                var allObjects = lb.GetWorldObjectsForPhysicsHandling();
+                var allObjects = lb.GetWorldObjectsForPhysicsHandling().ToList();
                 foreach (var obj in allObjects)
                 {
                     if (obj == null)
@@ -108,7 +108,7 @@ internal static class ManaConversionSpellCleave
         }
         catch (Exception ex)
         {
-            ModManager.Log($"[BSS ManaConversion] HandleCastSpell error: {ex.Message}", ModManager.LogLevel.Warn);
+            ModManager.Log($"[BSS ManaConversion] HandleCastSpell error: {ex}", ModManager.LogLevel.Warn);
         }
         finally
         {

@@ -1,12 +1,11 @@
-# wb_test ACE Server Watchdog (C:\ACE\)
-# Polls for ACE.Server.exe running from C:\ACE\Server\ and restarts if down.
-# Never touches void-test or live instances.
+﻿# void-test ACE Server Watchdog
+# Polls for ACE.Server.exe running from A:\void-test\Server\ and restarts if down.
 # Run via Scheduled Task at logon, or manually:
-#   powershell -NoProfile -ExecutionPolicy Bypass -File .\WbTestWatchdog.ps1
-# Disable: .\Unregister-WbTestWatchdogTask.ps1 (elevated), or create BLOCKED file.
+#   powershell -NoProfile -ExecutionPolicy Bypass -File .\VoidTestWatchdog.ps1
+# Disable: .\Unregister-VoidTestWatchdogTask.ps1 (elevated), or create BLOCKED file.
 
 param(
-    [string] $ServerDir = "C:\ACE\Server",
+    [string] $ServerDir = "A:\void-test\Server",
     [string] $AceExeName = "ACE.Server.exe",
     [int] $PollSeconds = 30,
     [int] $MaxRestartsPerHour = 10,
@@ -15,9 +14,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 $AceExePath = Join-Path $ServerDir $AceExeName
-$StatePath  = Join-Path $ServerDir "wb_test_watchdog_state.json"
-$BlockPath  = Join-Path $ServerDir "wb_test_watchdog_BLOCKED.txt"
-$LogPath    = Join-Path $ServerDir "wb_test_watchdog.log"
+$StatePath  = Join-Path $ServerDir "void-test_watchdog_state.json"
+$BlockPath  = Join-Path $ServerDir "void-test_watchdog_BLOCKED.txt"
+$LogPath    = Join-Path $ServerDir "void-test_watchdog.log"
 
 function Write-Log([string] $msg)
 {
@@ -25,29 +24,27 @@ function Write-Log([string] $msg)
     Add-Content -Path $LogPath -Value $line -Encoding utf8
 }
 
+# Try Windows Terminal tabs first, fall back to Start-Process (separate window).
 $wt = Get-Command "wt.exe" -ErrorAction SilentlyContinue
 
 function Start-AceInstance()
 {
     param([string]$ExePath, [string]$ServerDir, [string]$TabTitle)
 
-    if ($wt) {
-        Write-Log "Launching WT tab (no focus): $TabTitle"
-        try {
-            & $wt.Source -w 0 -f 0 nt -d "$ServerDir" --title "$TabTitle" "$ExePath" 2>&1 | Out-Null
-            return $true
-        } catch {
-            Write-Log "Windows Terminal failed: $($_.Exception.Message); starting hidden"
-        }
+    Write-Log "Launching tab (no-focus): $TabTitle"
+    try {
+        & $wt.Source -w 0 -f 0 nt -d "$ServerDir" --title "$TabTitle" "$ExePath" 2>&1 | Out-Null
+    } catch {
+        Write-Log "Windows Terminal failed: $($_.Exception.Message); starting hidden"
+        Start-Process -FilePath $ExePath -WorkingDirectory $ServerDir -WindowStyle Hidden
     }
-    Start-Process -FilePath $ExePath -WorkingDirectory $ServerDir -WindowStyle Hidden
     return $true
 }
 
-function Get-WbTestAceProcess()
+function Get-VoidAceProcess()
 {
     Get-CimInstance -ClassName Win32_Process -Filter "Name = '$AceExeName'" -ErrorAction SilentlyContinue |
-        Where-Object { $_.ExecutablePath -and ($_.ExecutablePath -like "*C:\\ACE\\Server*") }
+        Where-Object { $_.ExecutablePath -and ($_.ExecutablePath -like "*void-test*") }
 }
 
 function Test-RestartStormCap()
@@ -101,16 +98,16 @@ function Add-RestartRecord()
 
 if (-not (Test-Path $AceExePath))
 {
-    throw "Missing wb_test ACE executable: $AceExePath"
+    throw "Missing void-test ACE executable: $AceExePath"
 }
 
-Write-Log "WbTestWatchdog started. Poll=${PollSeconds}s cap=${MaxRestartsPerHour}/hour delay=${RestartDelaySeconds}s"
+Write-Log "VoidTestWatchdog started. Poll=${PollSeconds}s cap=${MaxRestartsPerHour}/hour delay=${RestartDelaySeconds}s"
 
 while ($true)
 {
     try
     {
-        $proc = Get-WbTestAceProcess
+        $proc = Get-VoidAceProcess
         if (-not $proc)
         {
             if (Test-Path $BlockPath)
@@ -123,12 +120,12 @@ while ($true)
             }
             else
             {
-                Write-Log "wb_test ACE process not found; starting after ${RestartDelaySeconds}s delay."
+                Write-Log "void-test ACE process not found; starting after ${RestartDelaySeconds}s delay."
                 Start-Sleep -Seconds $RestartDelaySeconds
-                $proc2 = Get-WbTestAceProcess
+                $proc2 = Get-VoidAceProcess
                 if (-not $proc2)
                 {
-                    Start-AceInstance -ExePath $AceExePath -ServerDir $ServerDir -TabTitle "wb_test"
+                    Start-AceInstance -ExePath $AceExePath -ServerDir $ServerDir -TabTitle "void-test"
                     Add-RestartRecord
                 }
                 else
@@ -144,3 +141,6 @@ while ($true)
     }
     Start-Sleep -Seconds $PollSeconds
 }
+
+
+

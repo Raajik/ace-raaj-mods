@@ -22,23 +22,22 @@ function Write-WatchdogLog([string] $msg)
     Add-Content -Path $LogPath -Value $line -Encoding utf8
 }
 
-# Try Windows Terminal tabs first, fall back to Start-Process (separate window).
 $wt = Get-Command "wt.exe" -ErrorAction SilentlyContinue
 
 function Start-AceInstance()
 {
     param([string]$ExePath, [string]$ServerDir, [string]$TabTitle)
 
-    if ($global:wt) {
-        Write-WatchdogLog "Launching via Windows Terminal tab (title: $TabTitle)"
+    if ($wt) {
+        Write-WatchdogLog "Launching WT tab (no focus): $TabTitle"
         try {
-            & $global:wt.Source -w 0 nt -d "$ServerDir" --title "$TabTitle" "$ExePath" 2>&1 | Out-Null
+            & $wt.Source -w 0 -f 0 nt -d "$ServerDir" --title "$TabTitle" "$ExePath" 2>&1 | Out-Null
             return $true
         } catch {
-            Write-WatchdogLog "Windows Terminal failed: $($_.Exception.Message); falling back to Start-Process"
+            Write-WatchdogLog "Windows Terminal failed: $($_.Exception.Message); starting hidden"
         }
     }
-    Start-Process -FilePath $ExePath -WorkingDirectory $ServerDir -WindowStyle Normal
+    Start-Process -FilePath $ExePath -WorkingDirectory $ServerDir -WindowStyle Hidden
     return $true
 }
 

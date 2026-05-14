@@ -821,13 +821,13 @@ public static class SummoningClasses
     // 3 (Major, 6133), 4 (Epic, 6134). Legendary is a custom configurable spell ID.
     static readonly uint[] SummoningProwessSpellIds = { 6136u, 6135u, 6133u, 6134u };
 
-    // Bonus pets per cantrip tier: Minor=1, Moderate=2, Major=3, Epic=4, Legendary=7
-    static readonly int[] CantripBonusByTier = { 1, 2, 3, 4, 7 };
+    // +1 auto-summon per 5 cantrip points: Minor=5pts, Moderate=10, Major=15, Epic=20, Legendary=35.
+    // Only the highest equipped cantrip tier applies (higher tiers overwrite lower ones).
+    static readonly int[] CantripPointsByTier = { 5, 10, 15, 20, 35 };
 
     /// <summary>
     /// Returns bonus pet capacity from the player's highest equipped Summoning Prowess cantrip.
-    /// Checks all equipped items for the 4 standard cantrip tiers plus optional legendary.
-    /// Only the highest tier applies.
+    /// +1 pet per 5 points of the highest tier found (Minor=+1, Moderate=+2, Major=+3, Epic=+4, Legendary=+7).
     /// </summary>
     static int GetSummoningCantripBonus(Player player)
     {
@@ -837,32 +837,6 @@ public static class SummoningClasses
 
         int highestTier = -1;
 
-        // Check all equipped items for spell book entries via SpellDID
-        foreach (var equipped in player.EquippedObjects.Values)
-        {
-            if (equipped == null) continue;
-
-            // Check primary spell
-            var spellDid = equipped.GetProperty(PropertyDataId.Spell);
-            if (spellDid.HasValue && spellDid.Value > 0)
-            {
-                int tier = GetCantripTier(spellDid.Value, s.CantripBonusPetsLegendarySpellId);
-                if (tier > highestTier)
-                    highestTier = tier;
-            }
-
-            // Check proc spell (some items have spell on proc)
-            var procSpell = equipped.GetProperty(PropertyDataId.ProcSpell);
-            if (procSpell.HasValue && procSpell.Value > 0)
-            {
-                int tier = GetCantripTier(procSpell.Value, s.CantripBonusPetsLegendarySpellId);
-                if (tier > highestTier)
-                    highestTier = tier;
-            }
-        }
-
-        // Check the item's spell book entries (multi-spell items like jewelry, casters).
-        // Must check BOTH weenie (template defaults) and biota (mutated/random cantrips).
         try
         {
             foreach (var equipped in player.EquippedObjects.Values)
@@ -886,12 +860,12 @@ public static class SummoningClasses
                 }
             }
         }
-        catch { /* spell book may not be populated in all contexts */ }
+        catch { }
 
-        if (highestTier < 0 || highestTier >= CantripBonusByTier.Length)
+        if (highestTier < 0 || highestTier >= CantripPointsByTier.Length)
             return 0;
 
-        return CantripBonusByTier[highestTier];
+        return CantripPointsByTier[highestTier] / 5;
     }
 
     /// <summary>
@@ -1208,17 +1182,15 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         return false;
     }
 
-    // -- Artificer Proc: Imperil + Drain on Wisp Melee -------------------
+    // -- Artificer Cleave: Wisp melee hits splash all enemies within radius ----
 
-    // Artificer Wisp Spells - Martyr's Hecatomb, Harm Other, and Drain Health Other
-    private static readonly int[] MartyrsHecatombSpells = new[] { 2760, 2761, 2762, 2763, 2764, 2765, 2766, 4428 }; // I-VII, Incantation
-    private static readonly int[] HarmOtherSpells = new[] { 7, 1172, 1173, 1174, 1175, 1176, 0, 0 };  // I-VI (no VII/VIII)
-    private static readonly int[] DrainHealthOtherSpells = new[] { 1237, 1238, 1239, 1240, 1241, 1242, 0, 0 }; // I-VI (no VII/VIII)
+    private static bool _inArtificerCleave;
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Creature), "TakeDamage", new Type[] { typeof(WorldObject), typeof(DamageType), typeof(float), typeof(bool) })]
     public static void PostCreatureTakeDamage(WorldObject source, DamageType damageType, float amount, bool crit, Creature __instance)
     {
+        if (_inArtificerCleave) return;
         if (source is not CombatPet pet) return;
         if (!TrackedPetGuids.ContainsKey(pet.Guid.Full)) return;
         if (pet.P_PetOwner is not Player owner) return;
@@ -1226,80 +1198,34 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
         string? className = GetPlayerClass(owner);
         if (className != "Artificer") return;
         if (!IsClassUnlocked(owner, "Artificer")) return;
-
-        float procChance = PatchClass.Settings?.SummoningClasses?.ArtificerWispImperilDrainProcChance ?? 1.0f;
-        if (procChance < 1.0f && Random.Shared.NextDouble() >= procChance)
-            return;
         if (!__instance.IsAlive) return;
 
-        int maxTier = PatchClass.Settings?.SummoningClasses?.ArtificerWispProcMaxSpellTier ?? 8;
-        if (maxTier < 0)
-            maxTier = 8;
+        float cleaveRadius = PatchClass.Settings?.SummoningClasses?.ArtificerWispProcAoERadiusMeters ?? 10.0f;
+        if (cleaveRadius <= 0f) cleaveRadius = 10.0f;
 
-        int itemEnchantmentSkill = (int)(owner.GetCreatureSkill(Skill.ItemEnchantment)?.Current ?? 0);
-        int tier = Math.Min(maxTier, Math.Min(7, itemEnchantmentSkill / 50)); // Clamp to 0-7 for array index
+        float cleaveFraction = PatchClass.Settings?.SummoningClasses?.ArtificerWispCleaveDamageFraction ?? 0.5f;
+        float cleaveAmount = amount * cleaveFraction;
+        if (cleaveAmount <= 0f) return;
 
-        float procRadius = PatchClass.Settings?.SummoningClasses?.ArtificerWispProcAoERadiusMeters ?? 10.0f;
-        if (procRadius <= 0f)
-            procRadius = 10.0f;
-
-        var aoeTargets = new List<Creature>();
-        foreach (var obj in __instance.CurrentLandblock?.GetWorldObjectsForPhysicsHandling() ?? Enumerable.Empty<WorldObject>())
-        {
-            if (obj is not Creature enemy) continue;
-            if (enemy.IsDead) continue;
-            if (enemy.GetCylinderDistance(__instance) > procRadius)
-                continue;
-            
-            // Exclude the wisp's owner and other players/pets from AoE
-            if (enemy == owner) continue;
-            if (enemy is Player) continue;
-            if (enemy is CombatPet) continue;
-            
-            // Only hit monsters
-            if (enemy.IsMonster || enemy.WeenieType == WeenieType.Creature)
-                aoeTargets.Add(enemy);
-        }
-
-        if (aoeTargets.Count == 0) return;
-
-        // Cast on the primary target that was struck
+        _inArtificerCleave = true;
         try
         {
-            // Always cast Martyr's Hecatomb (multi-projectile damage)
-            var hecatombId = MartyrsHecatombSpells[Math.Min(tier, MartyrsHecatombSpells.Length - 1)];
-            if (hecatombId > 0)
+            foreach (var obj in __instance.CurrentLandblock?.GetWorldObjectsForPhysicsHandling() ?? Enumerable.Empty<WorldObject>())
             {
-                var hecatombSpell = new ACE.Server.Entity.Spell((SpellId)hecatombId);
-                if (!hecatombSpell.NotFound)
-                    Skills.BssAutoCaster.CastSpellDirect(owner, hecatombSpell, __instance);
-            }
+                if (obj is not Creature victim) continue;
+                if (victim == __instance) continue;
+                if (victim.IsDead) continue;
+                if (victim is Player) continue;
+                if (victim is CombatPet) continue;
+                if (!victim.IsMonster && victim.WeenieType != WeenieType.Creature) continue;
+                if (victim.GetCylinderDistance(__instance) > cleaveRadius) continue;
 
-            // Always cast Harm Other (direct damage)
-            var harmId = HarmOtherSpells[Math.Min(tier, HarmOtherSpells.Length - 1)];
-            if (harmId > 0)
-            {
-                var harmSpell = new ACE.Server.Entity.Spell((SpellId)harmId);
-                if (!harmSpell.NotFound)
-                    Skills.BssAutoCaster.CastSpellDirect(owner, harmSpell, __instance);
-            }
-
-            // Cast Drain Health Other if wisp is below 75% health
-            var wispHealthPercent = (double)(pet.Health?.Current ?? 0) / Math.Max(1, pet.Health?.MaxValue ?? 1);
-            if (wispHealthPercent < 0.75)
-            {
-                var drainId = DrainHealthOtherSpells[Math.Min(tier, DrainHealthOtherSpells.Length - 1)];
-                if (drainId > 0)
-                {
-                    var drainSpell = new ACE.Server.Entity.Spell((SpellId)drainId);
-                    if (!drainSpell.NotFound)
-                        Skills.BssAutoCaster.CastSpellDirect(owner, drainSpell, __instance);
-                }
+                victim.TakeDamage(pet, damageType, cleaveAmount, false);
             }
         }
-        catch (Exception ex)
+        finally
         {
-            ModManager.Log($"[BSS Artificer] Wisp spell cast failed on {__instance.Name}: {ex.Message}", ModManager.LogLevel.Warn);
+            _inArtificerCleave = false;
         }
     }
 

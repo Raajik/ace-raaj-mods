@@ -1,7 +1,28 @@
 # Completed Features & Fixes
 
-## 2026-05-12
+## 2026-05-14
 
+### Bug fixes: Vaetha empty emote crash + ManaConversion thread-safety
+
+Branch: `raajik/fix/wb_test-crashes-2026-05-14` | Commit: `dc713cdc` | PR: #5
+
+#### 1. TrophyLineRegistry sibling-replacement fallback
+**Problem:** Step 9 of `10_CollectorVaetha_810003.sql` inserted Give emote headers for 16 vanilla head WCIDs (9097, 12215, etc.) without corresponding `emote_action` rows. Giving an old head to Collector Vaetha caused `ArgumentOutOfRangeException` in `EmoteManager.Enqueue` (`ElementAt(0)` on empty list) → server crash.
+**Fix:** `TrophyLineRegistry.TryGetTier` now falls back to `_siblingReplacement` lookup, routing old vanilla head WCIDs to their trophy line tier. Turn-in patches intercept them correctly. Removed orphan SQL emote headers.
+**Files:** `TrophyLineRegistry.cs`, `10_CollectorVaetha_810003.sql`
+
+#### 2. ManaConversion SpellCleave thread-safety
+**Problem:** `ManaConversionSpellCleave.HandleCastSpell` called `TryCastSpellWithRedirects_PlayerMana` synchronously during `HandleCastSpell`, creating spell projectiles while `LandblockManager.TickPhysics` iterated landblock groups in `Parallel.ForEach` → `Collection was modified` crash.
+**Fix:** Wrapped spell casts in `WorldManager.EnqueueAction` (same pattern ArcaneLore already uses).
+**Files:** `ManaConversionSpellCleave.cs`
+
+#### 3. Docs updated
+- AGENTS.md gotchas: empty emote actions + synchronous spell cast
+- BetterSupportSkills README changelog
+- Windblown README + TrophyLineRegistry.md sibling fallback docs
+- Wiki `ace-raaj-mods Patterns.md`: three new patterns
+
+## 2026-05-12
 ### SpellSiphon — pivot to negative-spell cleanser + Mana Lattice activation fix
 
 Branch: `jeremy/feature/spellsiphon-and-mana-lattice` | Commit: `aaf7e09c`

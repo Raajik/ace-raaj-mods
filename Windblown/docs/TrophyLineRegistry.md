@@ -88,6 +88,12 @@ Each head line: single tier, custom WCID, `ReplaceSiblingWcids` includes the van
 4. Add SQL under `Windblown/Content/SQL/Items/` for new WCIDs if the world DB must have rows without JSON.
 5. Update this registry.
 
+### Sibling-replacement turn-in (TrophyLineRegistry.TryGetTier)
+
+`TryGetTier` now falls back to the `_siblingReplacement` dictionary when a WCID isn't found in `_byTierWcid`. This means old vanilla head WCIDs (listed in `ReplaceSiblingWcids` — e.g. 9097 Ursuin Head → 850320, 12225 Zombie Head → 850323) are intercepted by the turn-in patches and grant equivalent tier XP + bank credit when given to Collector Vaetha.
+
+**Applied 2026-05-14:** Fixes server crash (`ArgumentOutOfRangeException` in `EmoteManager.Enqueue`) caused by orphan Give emote headers on Vaetha that had no corresponding `emote_action` rows. The headers were removed from `10_CollectorVaetha_810003.sql`; all handling is now code-only.
+
 ### Vanilla item removal (ItemsRemovalPatches.cs)
 
 `WorldObjectFactory.CreateNewWorldObject(uint)` Harmony prefix. Blocked WCIDs (31352, 31354, 31355) return null — never created. See `Windblown/ItemsRemovalPatches.cs`.

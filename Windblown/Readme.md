@@ -117,6 +117,12 @@ SQL-defined weenies live in `Content/SQL/Items/01_CoalescedMana_800000-800002.sq
 - Turn-in patches: `TrophyLines/TrophyTurnInPatches.cs`
 - Letter patches: `TrophyLines/LetterTurnInPatches.cs`
 
+### Vanilla head sibling-replacement turn-in
+
+Old vanilla head WCIDs (9097, 12215, 12216, etc.) listed in each trophy line's `ReplaceSiblingWcids` are resolved by `TrophyLineRegistry.TryGetTier` through a sibling-replacement fallback. When a player gives an old vanilla head to Collector Vaetha (810003), the turn-in patches intercept it the same as custom trophy items — granting tier XP + bank credit.
+
+**Previously:** The orphan Give emote headers in Step 9 of `10_CollectorVaetha_810003.sql` had no corresponding `emote_action` rows, causing `ArgumentOutOfRangeException` in `EmoteManager.Enqueue` when the item wasn't a registered tier WCID. The headers have been removed; code handles all sibling WCIDs.
+
 ## Files
 
 | File | Purpose |

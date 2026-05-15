@@ -471,6 +471,9 @@ All features can be toggled in `Settings.json`:
 
 ## Changelog
 
+### 2026-05-14
+- **ManaConversion SpellCleave thread-safety fix:** Cleave spell casts are now deferred via `WorldManager.EnqueueAction` instead of firing synchronously during `HandleCastSpell`. Prevents `Collection was modified` crashes in `LandblockManager.TickPhysics` when ArcaneLore echoes + ManaConversion cleaves create new spell projectiles during parallel landblock physics iteration.
+
 ### 2026-05-12
 - **Adventurer class disabled by default:** Added `Enabled` bool to `CombatClasses.Adventurer` settings (default `false`). `SummoningClasses.GetPlayerClass()` only returns `"Adventurer"` when explicitly enabled by the operator. Existing achievement unlocks remain but are ignored until toggled on.
 - **Salvage message accuracy:** `SalvageAutoDeposit` now passes `depositInt` (actual integer units banked after `Math.Max(1, (int)deposit)`) to `AccumulateForMessage` instead of the raw fractional `depositUnits`. Trained salvagers now see correct totals (e.g., "+5 Bronze" rather than "+2.5 Bronze").

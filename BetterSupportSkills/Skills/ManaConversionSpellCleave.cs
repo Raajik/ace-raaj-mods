@@ -102,7 +102,12 @@ internal static class ManaConversionSpellCleave
             {
                 if (!player.IsInvalidTarget(spell, cleaveTarget))
                 {
-                    BssPlayerPaidSpellCast.TryCastSpellWithRedirects_PlayerMana(player, spell, cleaveTarget);
+                    var captureSpell = spell;
+                    var captureTarget = cleaveTarget;
+                    var capturePlayer = player;
+                    WorldManager.EnqueueAction(new ActionEventDelegate(() =>
+                        BssPlayerPaidSpellCast.TryCastSpellWithRedirects_PlayerMana(capturePlayer, captureSpell, captureTarget)
+                    ));
                 }
             }
         }

@@ -176,6 +176,8 @@ Always check in this order:
 | SQL dumps contain `CREATE DATABASE` | Strip before piping; never `sed` a dump | [[operations/SQL Procedures]] |
 | `SpellId.Undef` in blast spells | Filter `Undef` from rolled lists | [[ACE Vanilla Behavior Traps]] |
 | `InqYesNo` emote type 75: `message` vs `test_String` | `message` = player-facing text, `test_String` = routing key. Swapped = routing key shown as popup | [[ACE Vanilla Behavior Traps]] |
+| Empty `PropertiesEmoteAction` in emote set | `ElementAt(0)` in `EmoteManager.Enqueue` throws `ArgumentOutOfRangeException`. Always clone emote actions alongside headers — bare headers with no actions crash the server on turn-in. | [[ace-raaj-mods Patterns]] |
+| Synchronous `TryCastSpell` during `HandleCastSpell` prefix | Creates spell projectiles while LandblockManager.TickPhysics iterates in Parallel.ForEach → `Collection was modified` crash. Defer via `WorldManager.EnqueueAction`. | [[ace-raaj-mods Patterns]] |
 | Non-sequential ACE IDs | Use hardcoded arrays, never arithmetic | [[ACE Vanilla Behavior Traps]] |
 
 ### 8.5 Workflows & Agent Behavior

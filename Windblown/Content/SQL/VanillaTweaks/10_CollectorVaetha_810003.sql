@@ -21,24 +21,26 @@ FROM weenie_properties_emote_action a
 JOIN weenie_properties_emote e ON e.id = a.emote_Id
 WHERE e.object_Id = 24215 AND e.category = 1;
 
--- Step 9: Add Give emotes for missing head base WCIDs
--- These cover heads that existing collectors (24215/3917) don't accept.
--- TrophyLines PreEnqueue_Trophy intercepts and gives t3 XP+bank.
-INSERT IGNORE INTO weenie_properties_emote (object_Id, category, probability, weenie_Class_Id)
-VALUES
-(810003, 1, 1, 9097),   -- Ursuin Head
-(810003, 1, 1, 12215),  -- Pumpkin Head
-(810003, 1, 1, 12216),  -- Sclavus Head
-(810003, 1, 1, 12225),  -- Zombie Head
-(810003, 1, 1, 4121),   -- Lich Skull
-(810003, 1, 1, 22059),  -- Eviscerator Head
-(810003, 1, 1, 24846),  -- Mutilator Head
-(810003, 1, 1, 25554),  -- Knath Head
-(810003, 1, 1, 25561),  -- Moarsman Head
-(810003, 1, 1, 28886),  -- Burun Guruk Head
-(810003, 1, 1, 28888),  -- Chittick Head
-(810003, 1, 1, 28889),  -- Mite Head
-(810003, 1, 1, 34029),  -- Shadow Head
-(810003, 1, 1, 36359),  -- Cow Head
-(810003, 1, 1, 36362),  -- Mukkir Head
-(810003, 1, 1, 10864);  -- Olthoi Ichor (vanilla) — MirrorEmoteFromWcid for 850339
+-- Step 9: Clean up orphan Give emote headers on missing-head WCIDs
+-- These were previously inserted WITHOUT corresponding emote_action rows,
+-- causing a server crash (ArgumentOutOfRangeException in EmoteManager.Enqueue)
+-- when a player gave one of these heads to Collector Vaetha.
+--
+-- Now handled at runtime by TrophyLineRegistry sibling-lookup in TryGetTier
+-- (Windblown/TrophyLines/TrophyLineRegistry.cs), which maps old vanilla head
+-- WCIDs (listed in ReplaceSiblingWcids) to their tier configs. The turn-in
+-- patches intercept these via PreGiveObjectToNPC_TurnInReward and return
+-- false, skipping vanilla GiveObjectToNPC entirely — so no DB emote needed.
+--
+-- Affected WCIDs: 9097, 12215, 12216, 12225, 4121, 22059, 24846, 25554,
+-- 25561, 28886, 28888, 28889, 34029, 36359, 36362, 10864
+--
+-- Remove any lingering orphan actions first, then the headers.
+DELETE a FROM weenie_properties_emote_action a
+INNER JOIN weenie_properties_emote e ON e.id = a.emote_Id
+WHERE e.object_Id = 810003 AND e.category = 1
+AND e.weenie_Class_Id IN (9097, 12215, 12216, 12225, 4121, 22059, 24846, 25554, 25561, 28886, 28888, 28889, 34029, 36359, 36362, 10864);
+
+DELETE FROM weenie_properties_emote
+WHERE object_Id = 810003 AND category = 1
+AND weenie_Class_Id IN (9097, 12215, 12216, 12225, 4121, 22059, 24846, 25554, 25561, 28886, 28888, 28889, 34029, 36359, 36362, 10864);

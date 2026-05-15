@@ -30,6 +30,16 @@ internal static class TrophyLineRegistry
             tier = pair.Tier;
             return true;
         }
+
+        // Fallback: if wcid is a replaced sibling (old vanilla head/body part),
+        // look up its base tier so the turn-in system can intercept it.
+        if (_siblingReplacement.TryGetValue(wcid, out var baseWcid) && _byTierWcid.TryGetValue(baseWcid, out pair))
+        {
+            line = pair.Line;
+            tier = pair.Tier;
+            return true;
+        }
+
         line = null!;
         tier = null!;
         return false;

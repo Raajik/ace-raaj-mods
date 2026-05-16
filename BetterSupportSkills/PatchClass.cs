@@ -89,7 +89,7 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
             throw;
         }
         
-        RecuperationHoT.RefreshHealerHook(ModC.Harmony, Settings.EnableHealing);
+        ModManager.Log("[BSS] About to call TryApplyCookingPatches...", ModManager.LogLevel.Info);
         TryApplyPlayerEnterWorldPatch();
         TryApplyLootPatch();
         TryApplyQuestTurnInCapPatch();
@@ -822,8 +822,6 @@ try
             enabledFeatures.Add(Features.DualWieldSkill);
         if (Settings.EnableFletching)
             enabledFeatures.Add(Features.FletchingSkill);
-        if (Settings.EnableHealing)
-            enabledFeatures.Add(Features.HealingSkill);
         if (Settings.EnableLeadership)
             enabledFeatures.Add(Features.LeadershipSkill);
         if (Settings.EnableLockpick)
@@ -863,7 +861,6 @@ try
 
     public override void Stop()
     {
-        RecuperationHoT.RemoveHealerHookOnModStop(ModC.Harmony);
         _lockpickRegenCts?.Cancel();
         _lockpickRegenCts = null;
         _commandCategoriesRegistered = false;

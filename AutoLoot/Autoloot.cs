@@ -1653,7 +1653,17 @@ public class AutoLoot
                         lootedItems[lootName] = existing + qty;
 
                         lootedSet.Add(removed);
-                        AutolootTryCreateInInventoryWithNetworking(player, removed);
+                        // Try merging into existing stacks first (for stackable items)
+                        if (!TryMergeIntoExistingStacks(player, removed))
+                        {
+                            // No existing partial stack had room — create as a new item
+                            AutolootTryCreateInInventoryWithNetworking(player, removed);
+                        }
+                        else
+                        {
+                            // Fully merged — destroy the empty placeholder
+                            removed.Destroy();
+                        }
                     }
                     break;
                 }

@@ -10,8 +10,12 @@ namespace AceRaajMods.Shared;
 // BetterSupportSkills credits this slot via LeyLineLedgerBankInterop.IncBanked — wrong id desyncs bag-fill messages from /bank salvage status.
 public static class LeyLineLedgerSalvageBankInterop
 {
-    const uint MinSalvageWcid = 20980;
-    const uint MaxSalvageWcid = 21089;
+    // Only actual salvage stack WCIDs (from ACE Player.MaterialSalvage). Gaps at 20996–21033.
+    public static bool IsValidSalvageWcid(uint wcid) =>
+        wcid == 20980 ||
+        (wcid >= 20981 && wcid <= 20995) ||
+        (wcid >= 21034 && wcid <= 21089);
+
     // Legacy fallback base (kept at 20981 to preserve existing WCID-offset property mappings for 20981–21089).
     const uint LegacySalvageBaseWcid = 20981;
     const int LegacyFirstMaterialBankPropertyId = 40201;
@@ -21,7 +25,7 @@ public static class LeyLineLedgerSalvageBankInterop
 
     public static int GetSalvageMaterialBankPropertyId(uint salvageWcid)
     {
-        if (salvageWcid < MinSalvageWcid || salvageWcid > MaxSalvageWcid)
+        if (!IsValidSalvageWcid(salvageWcid))
             return -1;
 
         if (TryResolveFromLeyLineLedger(salvageWcid, out int prop, out bool lllPresent) && prop > 0)
@@ -46,7 +50,7 @@ public static class LeyLineLedgerSalvageBankInterop
     public static bool TryGetSalvageMaterialBankPropertyId(uint salvageWcid, out int propertyId)
     {
         propertyId = -1;
-        if (salvageWcid < MinSalvageWcid || salvageWcid > MaxSalvageWcid)
+        if (!IsValidSalvageWcid(salvageWcid))
             return false;
 
         if (TryResolveFromLeyLineLedger(salvageWcid, out int prop, out _) && prop > 0)

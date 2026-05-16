@@ -54,7 +54,11 @@ public partial class PatchClass : BasicPatch<Settings>
             VendorApproachPatches.Apply(ModC.Harmony);
 
         // Apply loot WCID substitution patches (mana stones → charges; Encapsulated Spirit removal)
-        ApplyLootWcidSubstitutionPatches(ModC.Harmony);    }
+        ApplyLootWcidSubstitutionPatches(ModC.Harmony);
+
+        // Apply global rare drops (Mana Lattice, Glyph of Extraction)
+        ApplyGlobalRareDropsPatch(ModC.Harmony);
+    }
 
     public override async Task OnStartSuccess()
     {
@@ -109,6 +113,30 @@ public partial class PatchClass : BasicPatch<Settings>
         catch (Exception ex)
         {
             ModManager.Log($"[BetterLootControl] Failed to apply loot WCID substitution patch: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    // Manually apply GlobalRareDrops.PostGenerateTreasure postfix — PatchAllUncategorized
+    // does not discover patches in separate classes without HarmonyPatchCategory.
+    private static void ApplyGlobalRareDropsPatch(Harmony harmony)
+    {
+        try
+        {
+            var genTreasure = AccessTools.DeclaredMethod(typeof(Creature), "GenerateTreasure", new[] { typeof(DamageHistoryInfo), typeof(Corpse) });
+            if (genTreasure != null)
+            {
+                var postfix = new HarmonyMethod(typeof(GlobalRareDrops), nameof(GlobalRareDrops.PostGenerateTreasure));
+                harmony.Patch(genTreasure, postfix: postfix);
+                ModManager.Log("[BetterLootControl] GlobalRareDrops patch applied.", ModManager.LogLevel.Info);
+            }
+            else
+            {
+                ModManager.Log("[BetterLootControl] Could not find Creature.GenerateTreasure(DamageHistoryInfo, Corpse) for patching.", ModManager.LogLevel.Warn);
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BetterLootControl] Failed to apply GlobalRareDrops patch: {ex.Message}", ModManager.LogLevel.Warn);
         }
     }
 

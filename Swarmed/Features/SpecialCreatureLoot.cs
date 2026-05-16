@@ -368,9 +368,40 @@ internal static class SpecialCreatureLoot
 
         // Rename
         string prefix = "Awakened";
-        string newName = prefix + " " + originalName;
+        string newName = prefix + " " + StripToBaseItemType(originalName);
         item.SetProperty(PropertyString.Name, newName);
         item.CalculateObjDesc();
+    }
+
+    // Extracts the base item type name from a full item name.
+    // Strips Decal plugin text (after first comma), then for "X of Y" names takes "X",
+    // otherwise takes the last word.
+    static string StripToBaseItemType(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "Item";
+
+        int commaIdx = name.IndexOf(',');
+        string clean = commaIdx >= 0 ? name.Substring(0, commaIdx).Trim() : name.Trim();
+
+        if (string.IsNullOrWhiteSpace(clean))
+            return "Item";
+
+        int ofIdx = clean.IndexOf(" of ", StringComparison.OrdinalIgnoreCase);
+        if (ofIdx >= 0)
+        {
+            clean = clean.Substring(0, ofIdx).Trim();
+        }
+        else
+        {
+            string[] words = clean.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            clean = words.Length > 0 ? words[^1] : clean;
+        }
+
+        if (string.IsNullOrWhiteSpace(clean))
+            return "Item";
+
+        return char.ToUpperInvariant(clean[0]) + clean.Substring(1);
     }
 
     static bool IsEquippableGear(WorldObject item)

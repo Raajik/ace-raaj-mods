@@ -1022,6 +1022,23 @@ public static class VendorLootRotation
                 AddItemToVendor(vendor, wo, rotatedSet);
                 itemCount++;
             }
+
+            // Generate gems (portal gems, spell gems, etc.) — mages are the prime source
+            int gemTarget = _rng.Next(perCatMin, perCatMax + 1);
+            var gemBatch = GenerateGemBatch(vendor, vendorTier, gemTarget);
+            foreach (var wo in gemBatch)
+            {
+                AddItemToVendor(vendor, wo, rotatedSet);
+                itemCount++;
+            }
+
+            // Add Mana Lattices — alongside portal gems, not replacing them
+            var manaBatch = GenerateManaLatticeBatch(vendor, vendorTier);
+            foreach (var wo in manaBatch)
+            {
+                AddItemToVendor(vendor, wo, rotatedSet);
+                itemCount++;
+            }
         }
         else if (vendorClass == VendorTypeClassification.Bowyer)
         {
@@ -2160,7 +2177,7 @@ public static class VendorLootRotation
         {
             // Apply awakening
             string originalName = item.Name ?? "Item";
-            item.SetProperty((PropertyString)11033, originalName);   // OriginalName
+            item.SetProperty((PropertyString)11033, originalName);   // OriginalName (kept full)
             item.SetProperty((PropertyString)11034, "Premium");     // ProfileName
             item.SetProperty(PropertyInt64.ItemBaseXp, 10000);
             item.SetProperty(PropertyInt.ItemMaxLevel, Math.Max(item.ItemMaxLevel ?? 1, vendorTier * 10));
@@ -2169,7 +2186,7 @@ public static class VendorLootRotation
             item.SetProperty((PropertyBool)40130, true);               // IsAwakened
             item.SetProperty((PropertyInt)40131, vendorTier >= 7 ? 2 : 1); // AwakenedTier: 1=Lesser, 2=Greater
 
-            string newName = "Awakened " + originalName;
+            string newName = "Awakened " + StripToBaseItemType(originalName);
             item.SetProperty(PropertyString.Name, newName);
             item.SetProperty(PropertyInt.UiEffects, (int)(item.UiEffects ?? 0) | 20); // BoostHealth|BoostStamina = red outline
             item.CalculateObjDesc();
@@ -2318,6 +2335,27 @@ public static class VendorLootRotation
             ModManager.Log($"[BetterLoot] VendorLoot: Error generating Spellsiphon: {ex.Message}", ModManager.LogLevel.Warn);
             return null;
         }
+    }
+
+    static List<WorldObject> GenerateManaLatticeBatch(Vendor vendor, int vendorTier)
+    {
+        var batch = new List<WorldObject>();
+        try
+        {
+            // Add 1-2 plain Mana Lattices (no spells, stackable) to vendor
+            int count = ThreadSafeRandom.Next(1, 3);
+            for (int i = 0; i < count; i++)
+            {
+                var lattice = GenerateManaLattice();
+                if (lattice != null)
+                    batch.Add(lattice);
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BetterLoot] VendorLoot: GenerateManaLatticeBatch failed: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+        return batch;
     }
 
     static WorldObject? GenerateManaLattice()
@@ -2591,7 +2629,7 @@ public static class VendorLootRotation
             if (item.GetProperty((PropertyBool)40130) == true) continue; // Already awakened
 
             string originalName = item.Name ?? "Item";
-            item.SetProperty((PropertyString)11033, originalName);   // OriginalName
+            item.SetProperty((PropertyString)11033, originalName);   // OriginalName (kept full)
             item.SetProperty((PropertyString)11034, "Casual");        // ProfileName
             item.SetProperty(PropertyInt64.ItemBaseXp, 5000);
             item.SetProperty(PropertyInt.ItemMaxLevel, 25);
@@ -2600,7 +2638,7 @@ public static class VendorLootRotation
             item.SetProperty((PropertyBool)40130, true);               // IsAwakened
             item.SetProperty((PropertyInt)40131, 1);                    // AwakenedTier = Lesser
 
-            string newName = "Awakened " + originalName;
+            string newName = "Awakened " + StripToBaseItemType(originalName);
             item.SetProperty(PropertyString.Name, newName);
             item.SetProperty(PropertyInt.UiEffects, 20);              // BoostHealth|BoostStamina = red outline
             item.CalculateObjDesc();
@@ -2643,5 +2681,36 @@ public static class VendorLootRotation
         _vendorLastRotation.Clear();
         _vendorRotatedItems.Clear();
         _originalValues.Clear();
+    }
+
+    // Extracts the base item type name from a full item name.
+    // Strips Decal plugin text (after first comma), then for "X of Y" names takes "X",
+    // otherwise takes the last word. Matches ItemNameHelper.StripToBaseItemType in Shared.
+    static string StripToBaseItemType(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "Item";
+
+        int commaIdx = name.IndexOf(',');
+        string clean = commaIdx >= 0 ? name.Substring(0, commaIdx).Trim() : name.Trim();
+
+        if (string.IsNullOrWhiteSpace(clean))
+            return "Item";
+
+        int ofIdx = clean.IndexOf(" of ", StringComparison.OrdinalIgnoreCase);
+        if (ofIdx >= 0)
+        {
+            clean = clean.Substring(0, ofIdx).Trim();
+        }
+        else
+        {
+            string[] words = clean.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            clean = words.Length > 0 ? words[^1] : clean;
+        }
+
+        if (string.IsNullOrWhiteSpace(clean))
+            return "Item";
+
+        return char.ToUpperInvariant(clean[0]) + clean.Substring(1);
     }
 }

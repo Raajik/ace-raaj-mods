@@ -122,24 +122,24 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
 
         try
         {
-            // Postfix on LootGenerationFactory.CreateRandomLootObjects — 
-            // scans created items for Anointed kits and applies randomized stats.
-            var createLoot = AccessTools.Method(
-                typeof(LootGenerationFactory),
-                "CreateRandomLootObjects",
-                new Type[] { typeof(TreasureDeath), typeof(bool) });
+            // Postfix on LootGenerationFactory.CreateAndMutateWcid — 
+            // applies randomized stats to Anointed kits right after creation.
+            var mutateMethod = AccessTools.Method(
+                typeof(ACE.Server.Factories.LootGenerationFactory),
+                "CreateAndMutateWcid",
+                new Type[] { typeof(ACE.Database.Models.World.TreasureDeath), typeof(ACE.Server.Factories.Entity.TreasureRoll), typeof(bool) });
 
-            if (createLoot != null)
+            if (mutateMethod != null)
             {
-                var createPostfix = AccessTools.Method(typeof(PatchClass),
-                    nameof(PostCreateRandomLootObjects));
-                ModC.Harmony?.Patch(createLoot, null, new HarmonyMethod(createPostfix));
+                var postfix = AccessTools.Method(typeof(PatchClass),
+                    nameof(PostCreateAndMutateWcid));
+                ModC.Harmony?.Patch(mutateMethod, null, new HarmonyMethod(postfix));
                 _woFactoryPatchApplied = true;
-                ModManager.Log("[Empower] LootGenerationFactory.CreateRandomLootObjects postfix applied", ModManager.LogLevel.Info);
+                ModManager.Log("[Empower] LootGenerationFactory.CreateAndMutateWcid postfix applied", ModManager.LogLevel.Info);
             }
             else
             {
-                ModManager.Log("[Empower] Could not find CreateRandomLootObjects — Anointed kit stats won't be applied.", ModManager.LogLevel.Warn);
+                ModManager.Log("[Empower] Could not find CreateAndMutateWcid — trying alternate hook.", ModManager.LogLevel.Warn);
             }
         }
         catch (Exception ex)
@@ -149,22 +149,17 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
     }
 
     /// <summary>
-    /// Postfix on CreateRandomLootObjects — scans for Anointed kits and applies stats.
+    /// Postfix on CreateAndMutateWcid — applies Anointed Kit stats if the item is our template.
     /// </summary>
-    public static void PostCreateRandomLootObjects(List<WorldObject> __result)
+    public static void PostCreateAndMutateWcid(WorldObject __result)
     {
-        if (__result == null || __result.Count == 0) return;
+        if (__result == null) return;
         uint targetWcid = S.Settings?.AnointedKits?.AnointedKitWcid ?? 0;
         if (targetWcid == 0) return;
+        if (__result.WeenieClassId != targetWcid) return;
 
-        foreach (var item in __result)
-        {
-            if (item != null && item.WeenieClassId == targetWcid)
-            {
-                Healing.AnointedKitGenerator.ApplyAnointedKitStats(item);
-                ModManager.Log($"[Empower] Applied Anointed stats to {item.Name} (WCID {item.WeenieClassId})", ModManager.LogLevel.Info);
-            }
-        }
+        Healing.AnointedKitGenerator.ApplyAnointedKitStats(__result);
+        ModManager.Log($"[Empower] Applied Anointed stats to {__result.Name} (WCID {__result.WeenieClassId})", ModManager.LogLevel.Info);
     }
 
     // ======================================================================
@@ -177,20 +172,16 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
 
         try
         {
-            // Postfix on Healer.DoHealing
+            // Postfix on Healer.DoHealing — applies perk effects
             var doHealing = AccessTools.Method(typeof(Healer), nameof(Healer.DoHealing));
-            if (doHealing == null)
+            if (doHealing != null)
             {
-                ModManager.Log("[Empower] Healer.DoHealing not found", ModManager.LogLevel.Error);
-                return;
+                var postfix = AccessTools.Method(typeof(Healing.AnointedKitEffects),
+                    nameof(Healing.AnointedKitEffects.PostDoHealing));
+                ModC.Harmony?.Patch(doHealing, null, new HarmonyMethod(postfix));
             }
 
-            var postfix = AccessTools.Method(typeof(Healing.AnointedKitEffects),
-                nameof(Healing.AnointedKitEffects.PostDoHealing));
-            ModC.Harmony?.Patch(doHealing, null, new HarmonyMethod(postfix));
-            ModManager.Log("[Empower] Healer.DoHealing postfix applied (perk effects)", ModManager.LogLevel.Info);
-
-            // Postfix on Healer.GetHealAmount for Efficiency + Critical Surge
+            // Postfix on Healer.GetHealAmount — Efficiency + Critical Surge
             var getHealAmount = AccessTools.Method(typeof(Healer), nameof(Healer.GetHealAmount));
             if (getHealAmount != null)
             {
@@ -201,22 +192,20 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
                 var critPostfix = AccessTools.Method(typeof(Healing.AnointedKitEffects),
                     nameof(Healing.AnointedKitEffects.PostGetHealAmountCrit));
                 ModC.Harmony?.Patch(getHealAmount, null, new HarmonyMethod(critPostfix));
-
-                ModManager.Log("[Empower] Healer.GetHealAmount postfixes applied (efficiency + crit surge)", ModManager.LogLevel.Info);
             }
 
-            // Prefix on Player.HandleActionUseItem for Auto-Self
-            var handleUseItem = AccessTools.Method(typeof(Player), nameof(Player.HandleActionUseItem),
+            // Prefix on Food.OnActivate — Auto-Self (one-click heal, no reticle)
+            // Must patch the base virtual method on WorldObject (Food inherits it)
+            var foodActivate = AccessTools.Method(typeof(WorldObject), nameof(WorldObject.OnActivate),
                 new Type[] { typeof(WorldObject) });
-            if (handleUseItem != null)
+            if (foodActivate != null)
             {
                 var autoSelfPrefix = AccessTools.Method(typeof(Healing.AnointedKitEffects),
-                    nameof(Healing.AnointedKitEffects.PreHandleActionUseItem));
-                ModC.Harmony?.Patch(handleUseItem, new HarmonyMethod(autoSelfPrefix));
-                ModManager.Log("[Empower] Player.HandleActionUseItem prefix applied (Auto-Self)", ModManager.LogLevel.Info);
+                    nameof(Healing.AnointedKitEffects.PreFoodOnActivate));
+                ModC.Harmony?.Patch(foodActivate, new HarmonyMethod(autoSelfPrefix));
             }
 
-            // Postfix on Creature.GetDamageResistRating for Reactive Barrier
+            // Postfix on Creature.GetDamageResistRating — Reactive Barrier
             var getDRR = AccessTools.Method(typeof(Creature), nameof(Creature.GetDamageResistRating),
                 new Type[] { typeof(CombatType?), typeof(bool) });
             if (getDRR != null)
@@ -224,20 +213,19 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
                 var barrierPostfix = AccessTools.Method(typeof(Healing.AnointedKitEffects),
                     nameof(Healing.AnointedKitEffects.PostGetDamageResistRating));
                 ModC.Harmony?.Patch(getDRR, null, new HarmonyMethod(barrierPostfix));
-                ModManager.Log("[Empower] Creature.GetDamageResistRating postfix applied (Reactive Barrier)", ModManager.LogLevel.Info);
             }
 
-            // Postfix on CreatureSkill.Current getter for Boon
+            // Postfix on CreatureSkill.Current getter — Boon
             var skillCurrent = AccessTools.PropertyGetter(typeof(CreatureSkill), nameof(CreatureSkill.Current));
             if (skillCurrent != null)
             {
                 var boonPostfix = AccessTools.Method(typeof(Healing.AnointedKitEffects),
                     nameof(Healing.AnointedKitEffects.PostCreatureSkillCurrent));
                 ModC.Harmony?.Patch(skillCurrent, null, new HarmonyMethod(boonPostfix));
-                ModManager.Log("[Empower] CreatureSkill.Current getter postfix applied (Boon)", ModManager.LogLevel.Info);
             }
 
             _healingEffectsPatchApplied = true;
+            ModManager.Log("[Empower] All runtime effect patches applied.", ModManager.LogLevel.Info);
         }
         catch (Exception ex)
         {
@@ -280,6 +268,6 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
         catch (Exception ex)
         {
             ModManager.Log($"[Empower] Failed to load settings: {ex.Message}", ModManager.LogLevel.Error);
-        }
     }
+}
 }

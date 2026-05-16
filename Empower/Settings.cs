@@ -41,6 +41,10 @@ public class AnointedKitSettings
         new TierStatRange { MinSkill = 200, MaxSkill = 400,  MinRestoration = 2.5,  MaxRestoration = 5.0 },   // T8
     };
 
+    [JsonPropertyName("// DropChance")]
+    public string DropChanceDoc { get; init; } = "Chance (0-1) that a healing kit loot drop is an Anointed kit instead of a vanilla kit. 0.15 = 15%.";
+    public double DropChance { get; set; } = 0.15;
+
     // Perk count ranges per tier
     [JsonPropertyName("// PerkCountRanges")]
     public string PerkCountRangesDoc { get; init; } = "Min/max number of perks per kit by tier.";
@@ -108,10 +112,10 @@ public class PerkSettingsConfig
         }
     };
 
-    // Auto-Self: binary (values ignored)
+    // Auto-Self: binary (values ignored, now baseline on all Anointed kits)
     [JsonPropertyName("// AutoSelf")]
-    public string AutoSelfDoc { get; init; } = "Binary perk — ground-use redirects to self. Value ignored.";
-    public PerkEnabledOnly AutoSelf { get; set; } = new() { Enabled = true };
+    public string AutoSelfDoc { get; init; } = "BASELINE — all Anointed kits auto-self-target. Removed from rollable perk pool.";
+    public PerkEnabledOnly AutoSelf { get; set; } = new() { Enabled = false };
 
     // Efficiency: stamina cost reduction %
     [JsonPropertyName("// Efficiency")]

@@ -136,6 +136,8 @@ Scales creature level/difficulty/XP/loot to nearby players within the same landb
 
 **Loot tier matching:** When a mob is scaled above its original `DeathTreasure.Tier`, a Harmony prefix on `Creature.GenerateTreasure` temporarily swaps `DeathTreasureType` to a higher-tier `TreasureDeath` profile so loot rolls match the monster's actual scaled level. The original profile is restored after generation.
 
+**Upward-only level scaling:** After variance and landscape caps, `targetLevel` is clamped to at least the creature’s template `Level`. Mobs are never scaled down; weak players no longer fight undertuned high-template mobs or get mismatched loot.
+
 - File: `Features/DynamicMobScaling.cs`
 - Uses `FakeInt 40150` (base level), `40152` (scaled level), `40153` (loot multiplier), `40154` (scaled loot tier)
 

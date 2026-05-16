@@ -334,12 +334,9 @@ public static class LootRoller
 
         int tier = RollGearTier();
 
-        // Try to apply Overtinked custom imbues — only on items that already have spells
-        // (imbues are magical effects; non-magical items should not receive them)
-        if (HasAnySpell(item))
-        {
-            TryApplyOvertinkedImbue(item);
-        }
+        // Try to apply Overtinked custom imbues
+        // (items created by WCID may not have spells yet — EnsureImbuedItemHasSpells backfills)
+        TryApplyOvertinkedImbue(item);
 
         // ── Ratings ──
         if (s.EnableLootRatings)
@@ -539,10 +536,6 @@ public static class LootRoller
         if (item == null)
             return;
 
-        // Imbues are magical effects — only apply to items that already have spells
-        if (!HasAnySpell(item))
-            return;
-
         // Only apply to weapons and jewelry
         bool isWeapon = item.WeenieType is WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster;
         bool isJewelry = item.ItemType.HasFlag(ItemType.Jewelry);
@@ -586,6 +579,9 @@ public static class LootRoller
 
             // Call OvertinkedImbueStore.Add(item, flags)
             addMethod.Invoke(null, new[] { item, flagValue });
+
+            // Backfill spells — loot items created by WCID don't have spells yet
+            EnsureImbuedItemHasSpells(item);
         }
         catch
         {

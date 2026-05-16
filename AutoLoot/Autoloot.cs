@@ -556,7 +556,7 @@ public class AutoLoot
     }
 
     /// <summary>
-    /// Snapshots current LLL salvage property values for salvage WCIDs (20980-21089).
+    /// Snapshots current LLL salvage property values for salvage WCIDs.
     /// Resolves bank PropertyInt64 via LeyLineLedgerSalvageBankInterop (DepositRules-indexed),
     /// not WCID-offset arithmetic, so snapshot correctly tracks deltas for non-sequential rules.
     /// Returns a list of (materialName, bankProp, beforeValue).
@@ -564,15 +564,15 @@ public class AutoLoot
     static List<(string name, int prop, long before)> SnapshotLLLSalvageTotals(Player player)
     {
         var results = new List<(string, int, long)>();
-        const uint firstWcid = 20980;
-        const int count = 110; // WCIDs 20980-21089
 
-        for (int i = 0; i < count; i++)
+        for (uint wcid = 20980; wcid <= 21089; wcid++)
         {
-            uint wcid = firstWcid + (uint)i;
+            if (!LeyLineLedgerSalvageBankInterop.IsValidSalvageWcid(wcid))
+                continue;
             int bankProp = LeyLineLedgerSalvageBankInterop.GetSalvageMaterialBankPropertyId(wcid);
-            if (bankProp <= 0) continue; // skip WCIDs not in DepositRules
-            string name = BetterSupportSkillsBridge.GetCompactSalvageName((uint)i, wcid);
+            if (bankProp <= 0) continue;
+            uint materialIndex = wcid - 20980;
+            string name = BetterSupportSkillsBridge.GetCompactSalvageName(materialIndex, wcid);
             long before = LeyLineLedgerBankInterop.GetBanked(player, bankProp);
             results.Add((name, bankProp, before));
         }
@@ -1656,12 +1656,12 @@ public class AutoLoot
                         // Try merging into existing stacks first (for stackable items)
                         if (!TryMergeIntoExistingStacks(player, removed))
                         {
-                            // No existing partial stack had room — create as a new item
+                            // No existing partial stack had room ï¿½ create as a new item
                             AutolootTryCreateInInventoryWithNetworking(player, removed);
                         }
                         else
                         {
-                            // Fully merged — destroy the empty placeholder
+                            // Fully merged ï¿½ destroy the empty placeholder
                             removed.Destroy();
                         }
                     }

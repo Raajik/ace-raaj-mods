@@ -82,3 +82,4 @@ scripts/Restart-AceWbServer.ps1
 
 # Windows reserved device name (accidental `> nul` in repo root breaks git index)
 /nul
+*.bat

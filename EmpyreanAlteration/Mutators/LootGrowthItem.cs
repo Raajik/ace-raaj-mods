@@ -170,14 +170,17 @@ internal class LootGrowthItem : Mutator
         item.SetProperty(LivingEquipmentProperties.CurveVersion, s.ItemXpCurveVersion);
         item.SetProperty(FakeBool.GrowthItem, true);
 
-        // Rename: replace material prefix with "Living"
+        // Rename: strip material prefix and reduce to base item type
         string materialName = GetMaterialName(item);
         string prefix = s.LootItemPreAwakenPrefix;
-        string newName;
+        string cleanName;
         if (!string.IsNullOrEmpty(materialName) && originalName.StartsWith(materialName, StringComparison.OrdinalIgnoreCase))
-            newName = prefix + originalName.Substring(materialName.Length);
+            cleanName = originalName.Substring(materialName.Length).Trim();
         else
-            newName = prefix + " " + originalName;
+            cleanName = originalName.Trim();
+
+        string baseName = StripToBaseItemType(cleanName);
+        string newName = prefix + " " + baseName;
         item.SetProperty(PropertyString.Name, newName);
         item.CalculateObjDesc();
 
@@ -213,6 +216,37 @@ internal class LootGrowthItem : Mutator
             if (roll <= cumulative) return i;
         }
         return weights.Count - 1;
+    }
+
+    // Extracts the base item type name from a full item name.
+    // Strips Decal plugin text (after first comma), then for "X of Y" names takes "X",
+    // otherwise takes the last word.
+    static string StripToBaseItemType(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return "Item";
+
+        int commaIdx = name.IndexOf(',');
+        string clean = commaIdx >= 0 ? name.Substring(0, commaIdx).Trim() : name.Trim();
+
+        if (string.IsNullOrWhiteSpace(clean))
+            return "Item";
+
+        int ofIdx = clean.IndexOf(" of ", StringComparison.OrdinalIgnoreCase);
+        if (ofIdx >= 0)
+        {
+            clean = clean.Substring(0, ofIdx).Trim();
+        }
+        else
+        {
+            string[] words = clean.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            clean = words.Length > 0 ? words[^1] : clean;
+        }
+
+        if (string.IsNullOrWhiteSpace(clean))
+            return "Item";
+
+        return char.ToUpperInvariant(clean[0]) + clean.Substring(1);
     }
 
     // ── Normal loot XP init ─────────────────────────────────────────────
@@ -360,6 +394,10 @@ internal class LootGrowthItem : Mutator
         
         // Filter out imbues already on the item
         var available = pool.Where(i => item.ImbuedEffect == null || !item.ImbuedEffect.HasFlag(i)).ToArray();
+        
+        // Remove Armor Rending for caster items — useless on casting devices
+        if (item.WeenieType == WeenieType.Caster)
+            available = available.Where(i => i != ImbuedEffectType.ArmorRending).ToArray();
         
         if (available.Length == 0)
             return false; // All secondary imbues already applied

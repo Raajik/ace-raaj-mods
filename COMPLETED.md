@@ -73,6 +73,16 @@ New SuppressedDropFilter Harmony postfix strips unwanted vanilla WCIDs from ALL 
 Coalesced mana (Lesser/Greater/Aetheric) drops moved from BLC GlobalRareDrops to Windblown TrophyLines. Each tier now rolls independently at trophy rates: Lesser 2.5%, Greater 1%, Aetheric 0.4%. Drops on ALL creature types (CreatureTypeGate: Universal).
 **Files:** `Windblown/Content/TrophyLines/coalesced-mana.json`, `BetterLootControl/Settings.json`
 
+#### 4. Salvage range tightened to exclude non-salvage WCIDs
+**Problem:** The salvage WCID range was defined as a contiguous block `20980..21089`, but 38 WCIDs in the middle (20996–21033) are not salvage materials — they're creatures (Husktusker), Gaerlan invasion generators, and Isparian weapons. The broad range check allowed non-salvage items into the auto-salvage pipeline, where they'd hit the DepositRules lookup, fail, and trigger a misleading `_loggedResolveFailure` warning for WCID 20996. Only the first miss was logged; subsequent misses were silent.
+**Fix:** Replaced `MinSalvageWcid`/`MaxSalvageWcid` range constants with `IsValidSalvageWcid()` — a public helper that returns `true` only for the 72 actual salvage WCIDs (`20980`, `20981–20995`, `21034–21089`). Applied across Shared interop, BSS interop, BSS SalvageAutoDeposit, and AutoLoot snapshot. Non-salvage items in the gap bypass `TryIncSalvage` entirely — no warning, no waste.
+**Files:** `Shared/LeyLineLedgerSalvageBankInterop.cs`, `BetterSupportSkills/Skills/LeyLineLedgerSalvageInterop.cs`, `BetterSupportSkills/Skills/SalvageAutoDeposit.cs`, `AutoLoot/Autoloot.cs`
+
+#### 5. Awakened item names stripped to base type across all paths
+**Problem:** Vendor-awakened items (BetterLootControl), pre-awakened loot drops (EmpyreanAlteration), and special creature drops (Swarmed) all used `"Awakened " + originalName` — prepending the prefix to the full weenie name (e.g., "Awakened Frost Sceptre"). The LivingItemAwakener fix from an earlier commit only covered player-awakened items. Items from monster corpses and vendors still had long names.
+**Fix:** Added `StripToBaseItemType()` helper (identical logic in each mod) that strips Decal plugin text (after first comma), extracts the base item type (last word, or word before " of "), and capitalizes. Applied to all four awakening paths. Also created `Shared/ItemNameHelper.cs` as a canonical reference for mods that include Shared source files.
+**Files:** `BetterLootControl/VendorLootRotation.cs`, `EmpyreanAlteration/Mutators/LootGrowthItem.cs`, `Swarmed/Features/SpecialCreatureLoot.cs`, `Shared/ItemNameHelper.cs`
+
 #### Docs
 - Wiki: BetterChestLoot Global Rare Drops.md — updated with suppressed drop filter + coalesced mana relocation
 - Wiki: Coalesced Mana Tiers.md — updated with trophy drop rates, TrophyLines source, WCID mapping

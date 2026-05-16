@@ -9,9 +9,6 @@ namespace BetterSupportSkills.Skills;
 // not WCID − 20981 row index — see Shared/LeyLineLedgerSalvageBankInterop.cs.
 public static class LeyLineLedgerSalvageInterop
 {
-    const uint MinSalvageWcid = 20980;
-    const uint MaxSalvageWcid = 21089;
-
     public static int GetSalvagePropertyId(uint salvageWcid)
     {
         return LeyLineLedgerSalvageBankInterop.GetSalvageMaterialBankPropertyId(salvageWcid);
@@ -27,9 +24,9 @@ public static class LeyLineLedgerSalvageInterop
 
     public static bool TryIncSalvage(Player player, uint salvageWcid, int units)
     {
-        if (salvageWcid < MinSalvageWcid || salvageWcid > MaxSalvageWcid)
+        if (!LeyLineLedgerSalvageBankInterop.IsValidSalvageWcid(salvageWcid))
         {
-            ModManager.Log($"[BSS->LLL Salvage] WCID {salvageWcid} out of salvage range ({MinSalvageWcid}-{MaxSalvageWcid})", ModManager.LogLevel.Warn);
+            ModManager.Log($"[BSS->LLL Salvage] WCID {salvageWcid} is not a valid salvage material; skipping {units} units.", ModManager.LogLevel.Debug);
             return false;
         }
 

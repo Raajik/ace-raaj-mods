@@ -6,6 +6,7 @@ using ACE.Server.Mods;
 using ACE.Server.WorldObjects;
 using ACE.Server.Network;
 using ACE.Server.Network.GameMessages.Messages;
+using AceRaajMods.Shared;
 
 namespace BetterSupportSkills.Skills;
 
@@ -319,7 +320,8 @@ public static class SalvageAutoDeposit
         return LeyLineLedgerSalvageInterop.GetSalvagePropertyId((uint)(20980 + materialIndex));
     }
 
-    static bool IsSalvageStack(uint wcid) => wcid >= 20980 && wcid <= 21089;
+    static bool IsSalvageStack(uint wcid) =>
+        LeyLineLedgerSalvageBankInterop.IsValidSalvageWcid(wcid);
 
     static int GetMaterialIndex(uint wcid)
     {

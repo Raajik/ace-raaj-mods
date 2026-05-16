@@ -1,5 +1,5 @@
 {
-  "Description": "Coalesced Mana tier line — three custom WCIDs (800000-800002) shared with EmpyreanAlteration awakening + BetterLootControl drops. Blue IconUnderlay 100676435 + black number overlays 1-3. Turn in to Collector Vaetha (810003) for XP and bank credit. Drops are handled exclusively by BetterLootControl (GlobalRareDrops); Windblown trophy drops are disabled here (DropChance=0).",
+  "Description": "Coalesced Mana tier line — three custom WCIDs (800000-800002) shared with EmpyreanAlteration awakening + TrophyLines drops. Blue IconUnderlay 100676435 + black number overlays 1-3. Turn in to Collector Vaetha (810003) for XP and bank credit. Drop rates match t1-t3 trophy items (2.5%/1%/0.4%).",
   "Lines": [
     {
       "Name": "CoalescedMana",
@@ -10,21 +10,21 @@
         {
           "TierName": "Lesser",
           "Wcid": 800000,
-          "DropChance": 0.0,
+          "DropChance": 0.025,
           "XpFraction": 0.05,
           "BankCredit": 25000
         },
         {
           "TierName": "Greater",
           "Wcid": 800001,
-          "DropChance": 0.0,
+          "DropChance": 0.01,
           "XpFraction": 0.10,
           "BankCredit": 50000
         },
         {
           "TierName": "Aetheric",
           "Wcid": 800002,
-          "DropChance": 0.0,
+          "DropChance": 0.004,
           "XpFraction": 0.15,
           "BankCredit": 100000
         }

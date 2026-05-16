@@ -22,7 +22,7 @@
   "ManaLatticeSpellCountMin": 3,
   "ManaLatticeSpellCountMax": 7,
 
-  "CoalescedManaDropChance": 0.015,
+  "CoalescedManaDropChance": 0.0,
   "LesserCoalescedManaWcid": 800000,
   "GreaterCoalescedManaWcid": 800001,
   "AethericCoalescedManaWcid": 800002,

@@ -334,14 +334,11 @@ public static class LootRoller
 
         int tier = RollGearTier();
 
-        // Try to apply Overtinked custom imbues (same 25% chance as vendor loot)
-        TryApplyOvertinkedImbue(item);
-
-        // If the item now has an imbue, ensure it also has at least one spell
-        // (imbues are magical effects — non-magical items should not be imbued)
-        if (item.ImbuedEffect != 0 || (item.GetProperty((PropertyInt)40133) ?? 0) > 0)
+        // Try to apply Overtinked custom imbues — only on items that already have spells
+        // (imbues are magical effects; non-magical items should not receive them)
+        if (HasAnySpell(item))
         {
-            EnsureImbuedItemHasSpells(item);
+            TryApplyOvertinkedImbue(item);
         }
 
         // ── Ratings ──
@@ -397,14 +394,29 @@ public static class LootRoller
     /// If an imbued item has no spells, adds 1-3 random loot spells so the imbue is always
     /// on a magical item. Uses a spell list common to weapons/armor.
     /// </summary>
+    /// <summary>
+    /// Returns true if the item already has any spells (SpellDID or spell book entries).
+    /// Used to gate imbue application — only magical items should receive imbues.
+    /// </summary>
+    internal static bool HasAnySpell(WorldObject item)
+    {
+        if (item == null)
+            return false;
+
+        var spellDid = item.GetProperty(PropertyDataId.Spell);
+        if (spellDid.HasValue && spellDid.Value > 0)
+            return true;
+
+        return item.Biota?.PropertiesSpellBook?.Count > 0;
+    }
+
+    /// <summary>
+    /// If an imbued item has no spells, adds 1-3 random loot spells so the imbue is always
+    /// on a magical item. Uses a spell list common to weapons/armor.
+    /// </summary>
     internal static void EnsureImbuedItemHasSpells(WorldObject item)
     {
-        // Check if item already has spells (SpellDID or spell book)
-        var spellDid = item.GetProperty(PropertyDataId.Spell);
-        bool hasSpellDid = spellDid.HasValue && spellDid.Value > 0;
-        bool hasSpellBook = item.Biota?.PropertiesSpellBook?.Count > 0;
-
-        if (hasSpellDid || hasSpellBook)
+        if (HasAnySpell(item))
             return;
 
         // No spells found — add some. Use a compact pool of common loot spells.
@@ -525,6 +537,10 @@ public static class LootRoller
     static void TryApplyOvertinkedImbue(WorldObject item)
     {
         if (item == null)
+            return;
+
+        // Imbues are magical effects — only apply to items that already have spells
+        if (!HasAnySpell(item))
             return;
 
         // Only apply to weapons and jewelry

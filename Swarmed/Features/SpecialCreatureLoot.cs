@@ -194,6 +194,10 @@ internal static class SpecialCreatureLoot
         if (item == null)
             return;
 
+        // Imbues are magical effects — only apply to items that already have spells
+        if (!HasAnySpell(item))
+            return;
+
         WeenieType wt = item.WeenieType;
         bool isWeapon = wt is WeenieType.MeleeWeapon or WeenieType.MissileLauncher or WeenieType.Caster;
         bool isArmor = wt is WeenieType.Clothing;
@@ -479,5 +483,21 @@ internal static class SpecialCreatureLoot
         {
             // Silently fail - don't break loot generation over cosmetic effects
         }
+    }
+
+    /// <summary>
+    /// Returns true if the item already has any spells (SpellDID or spell book entries).
+    /// Used to gate imbue application — only magical items should receive imbues.
+    /// </summary>
+    static bool HasAnySpell(WorldObject item)
+    {
+        if (item == null)
+            return false;
+
+        var spellDid = item.GetProperty(PropertyDataId.Spell);
+        if (spellDid.HasValue && spellDid.Value > 0)
+            return true;
+
+        return item.Biota?.PropertiesSpellBook?.Count > 0;
     }
 }

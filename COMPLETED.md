@@ -3,6 +3,7 @@
 ## 2026-05-16
 
 ### Salvage fixes: Alabaster range bug, withdraw name matching, diagnostics
+### Swayss InqYesNo emote fix (resilient to world-sync)
 
 Branch: `raajik/feature/empower-healing-kits` | Commit: *(pending)*
 
@@ -30,6 +31,11 @@ Branch: `raajik/feature/empower-healing-kits` | Commit: *(pending)*
 
 Collect by deploying and playing normally — the server mod log captures every deposit attempt for the suspect range.
 **Files:** `Shared/LeyLineLedgerSalvageBankInterop.cs`, `BetterSupportSkills/Skills/LeyLineLedgerSalvageInterop.cs`, `LeyLineLedger/BankSalvage.cs`
+
+#### 5. Swayss InqYesNo emote fix (resilient to world-sync)
+**Problem:** Swayss (810002) kept showing "FreeRedistribute" as the popup text instead of "Would you like to redistribute your skills?" because the safety UPDATE targeted a hardcoded `emote_Id = 93157`. World-sync between databases changed Swayss's emote header ID, leaving the old broken row untouched.
+**Fix:** Changed `INSERT IGNORE` to `INSERT ... ON DUPLICATE KEY UPDATE` so existing rows with wrong values are overwritten on every SQL run. Changed the safety UPDATE to match by `object_Id + category + type` (not by emote_Id), so it catches any InqYesNo action on Swayss's Use emote regardless of ID.
+**Files:** `Windblown/Content/SQL/Vendors/04_Swayss_810002.sql`
 
 ### Bug fixes: Vaetha empty emote crash + ManaConversion thread-safety
 

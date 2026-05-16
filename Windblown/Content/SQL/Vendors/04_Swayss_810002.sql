@@ -74,9 +74,12 @@ INSERT IGNORE INTO weenie_properties_emote_action (emote_Id, `order`, type, dela
     VALUES (93156, 0, 10, 0, 1, 'The grave took all I was. You have the chance to choose again. Shall we?');
 
 -- Use → InqYesNo confirmation (like Fianhe)
-INSERT IGNORE INTO weenie_properties_emote (id, object_Id, category, probability) VALUES (93157, 810002, 7, 1);
-INSERT IGNORE INTO weenie_properties_emote_action (emote_Id, `order`, type, delay, extent, message, test_String)
-    VALUES (93157, 0, 75, 0, 1, 'Would you like to redistribute your skills?', 'FreeRedistribute');
+-- Must use INSERT ... ON DUPLICATE KEY UPDATE so old rows (with wrong column values) are corrected on re-run.
+INSERT INTO weenie_properties_emote (id, object_Id, category, probability) VALUES (93157, 810002, 7, 1)
+ON DUPLICATE KEY UPDATE object_Id = VALUES(object_Id), category = VALUES(category), probability = VALUES(probability);
+INSERT INTO weenie_properties_emote_action (emote_Id, `order`, type, delay, extent, message, test_String)
+    VALUES (93157, 0, 75, 0, 1, 'Would you like to redistribute your skills?', 'FreeRedistribute')
+    ON DUPLICATE KEY UPDATE message = VALUES(message), test_String = VALUES(test_String);
 -- Note: message=popup text, test_String=routing quest key (FreeRedistribute)
 
 -- On Yes (TestSuccess "FreeRedistribute"): untrain all skills
@@ -199,12 +202,13 @@ INSERT IGNORE INTO weenie_properties_emote (id, object_Id, category, probability
 INSERT IGNORE INTO weenie_properties_emote_action (emote_Id, `order`, type, delay, extent, message)
     VALUES (93159, 0, 10, 1, 1, 'Let me know if you change your mind.');
 
--- InqYesNo (75): message = popup, test_String = quest routing key. Always normalize so bad syncs cannot leave swapped columns.
+-- InqYesNo (75): message = popup, test_String = quest routing key.
+-- Match by object + category + type, NOT by emote_Id, because world-sync can change emote IDs.
 UPDATE weenie_properties_emote_action a
 INNER JOIN weenie_properties_emote e ON e.id = a.emote_Id
 SET a.message = 'Would you like to redistribute your skills?', a.test_String = 'FreeRedistribute'
 WHERE e.object_Id = 810002
-  AND a.emote_Id = 93157
+  AND e.category = 7
   AND a.`order` = 0
   AND a.type = 75;
 

@@ -2132,6 +2132,9 @@ public static class VendorLootRotation
 
             // Apply visual effect based on imbue type
             ApplyImbueVisualEffect(item);
+
+            // Ensure the imbued item also has spells (land-imbued items should always be magical)
+            SharedLoot.LootRoller.EnsureImbuedItemHasSpells(item);
         }
 
         // Determine awaken chance (higher for specialized vendors)

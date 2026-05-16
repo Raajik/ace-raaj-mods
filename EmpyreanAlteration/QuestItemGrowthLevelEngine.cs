@@ -850,6 +850,12 @@ internal static class QuestItemGrowthLevelEngine
                 track?.Invoke(amount);
                 anyScaled = true;
 
+                // Force client-side property refresh for this specific property
+                if (player?.Session?.Network != null)
+                {
+                    try { player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, prop, next)); } catch { }
+                }
+
                 if (emitMessages)
                     player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{amount} {name} ({current} -> {next}).");
             }

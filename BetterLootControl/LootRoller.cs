@@ -397,7 +397,7 @@ public static class LootRoller
     /// If an imbued item has no spells, adds 1-3 random loot spells so the imbue is always
     /// on a magical item. Uses a spell list common to weapons/armor.
     /// </summary>
-    static void EnsureImbuedItemHasSpells(WorldObject item)
+    internal static void EnsureImbuedItemHasSpells(WorldObject item)
     {
         // Check if item already has spells (SpellDID or spell book)
         var spellDid = item.GetProperty(PropertyDataId.Spell);

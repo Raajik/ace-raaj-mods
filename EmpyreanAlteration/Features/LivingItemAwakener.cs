@@ -173,23 +173,40 @@ internal static class LivingItemAwakener
     internal static void ApplyAwakenedName(WorldObject item, Settings s)
     {
         string prefix = s.ManualAwakenPrefix?.Trim() ?? "Awakened";
-        string newName;
 
-        if (s.UseItemTypeInAwakenedName)
+        string originalName = item.GetProperty(LivingEquipmentProperties.OriginalName) ?? item.Name ?? "Item";
+
+        // Strip everything after the first comma (removes stat/skill/craft text)
+        int commaIdx = originalName.IndexOf(',');
+        string cleanName = commaIdx >= 0 ? originalName.Substring(0, commaIdx).Trim() : originalName;
+
+        // Strip material/gem prefix
+        string materialName = GetMaterialName(item);
+        if (!string.IsNullOrEmpty(materialName) && cleanName.StartsWith(materialName, StringComparison.OrdinalIgnoreCase))
+            cleanName = cleanName.Substring(materialName.Length).Trim();
+
+        // Extract just the base item type name
+        // - If name contains " of ", the base type is the first word (e.g., "Ring of Protection" → "Ring")
+        // - Otherwise, the base type is the last word (e.g., "Nether Slashing Baton" → "Baton")
+        string baseName;
+        int ofIdx = cleanName.IndexOf(" of ", StringComparison.OrdinalIgnoreCase);
+        if (ofIdx >= 0)
         {
-            var it = item.ItemType;
-            string typeLabel = it == ItemType.None ? "Item" : it.ToString();
-            newName = prefix + " " + typeLabel;
+            baseName = cleanName.Substring(0, ofIdx).Trim();
         }
         else
         {
-            string originalName = item.GetProperty(LivingEquipmentProperties.OriginalName) ?? item.Name ?? "Item";
-            string materialName = GetMaterialName(item);
-            if (!string.IsNullOrEmpty(materialName) && originalName.StartsWith(materialName, StringComparison.OrdinalIgnoreCase))
-                newName = prefix + originalName.Substring(materialName.Length);
-            else
-                newName = prefix + " " + originalName;
+            // Common multi-word item types to preserve as-is
+            // Single words: take the last word
+            string[] words = cleanName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            baseName = words.Length > 0 ? words[^1] : cleanName;
         }
+
+        // Capitalize first letter
+        if (!string.IsNullOrEmpty(baseName))
+            baseName = char.ToUpperInvariant(baseName[0]) + baseName.Substring(1);
+
+        string newName = prefix + " " + baseName;
 
         item.SetProperty(PropertyString.Name, newName);
     }

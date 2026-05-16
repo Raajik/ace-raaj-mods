@@ -57,6 +57,32 @@ Branch: `raajik/fix/wb_test-crashes-2026-05-14` | Commit: `dc713cdc` | PR: #5
 - Windblown README + TrophyLineRegistry.md sibling fallback docs
 - Wiki `ace-raaj-mods Patterns.md`: three new patterns
 
+### Auto-stack + suppress filter + coalesced mana drops
+
+Branch: `main` | Commits: `b3e82f43` `08ef2446`
+
+#### 1. Auto-stack on loot (AutoLoot)
+All profile-based auto-loot now calls TryMergeIntoExistingStacks before creating new items. Stackable items (pincers, tusks, trophies, coalesced mana, etc.) merge into existing partial stacks in the player’s inventory, saving inventory space. Non-stackable items unaffected.
+**Files:** `AutoLoot/Autoloot.cs`
+
+#### 2. Suppressed drop filter (BetterLootControl)
+New SuppressedDropFilter Harmony postfix strips unwanted vanilla WCIDs from ALL creature corpse loot after GenerateTreasure. Configurable via SuppressedDropWcids in Settings.json. Default suppresses quarterstaff new (WCID 22168).
+**Files:** `BetterLootControl/SuppressedDropFilter.cs`, `BetterLootControl/Settings.cs`, `BetterLootControl/Settings.json`
+
+#### 3. Coalesced mana drops moved to Windblown TrophyLines
+Coalesced mana (Lesser/Greater/Aetheric) drops moved from BLC GlobalRareDrops to Windblown TrophyLines. Each tier now rolls independently at trophy rates: Lesser 2.5%, Greater 1%, Aetheric 0.4%. Drops on ALL creature types (CreatureTypeGate: Universal).
+**Files:** `Windblown/Content/TrophyLines/coalesced-mana.json`, `BetterLootControl/Settings.json`
+
+#### Docs
+- Wiki: BetterChestLoot Global Rare Drops.md — updated with suppressed drop filter + coalesced mana relocation
+- Wiki: Coalesced Mana Tiers.md — updated with trophy drop rates, TrophyLines source, WCID mapping
+- README.md — AutoLoot auto-stack feature, BetterLootControl suppressed drop filter
+- COMPLETED.md — this section
+
+---
+
+## 2026-05-14
+
 ## 2026-05-12
 ### SpellSiphon — pivot to negative-spell cleanser + Mana Lattice activation fix
 

@@ -34,6 +34,7 @@ Server-side corpse autoloot with optional `.utl` profiles (Decal UT classic comp
 - **Learned scroll summary** — after a successful learn, the mod does not echo the scroll name again in the aggregated loot line (vanilla message only).
 - `/autoloot` toggles and profile selection.
 - **Close-time material salvage** — after closing a corpse or non-house chest (house storage excluded), optional pass sends **material-type items and raw salvage bags** (WCID 20981–21089) through BetterSupportSkills auto-salvage into the material bank; other loot stays in the container. Coalesced Mana can still bank to LeyLineLedger on loot/close without a profile match.
+- **Auto-stack on loot** — stackable items (pincers, tusks, trophies, etc.) auto-looted via .utl profiles now merge into existing partial stacks in the player’s inventory before creating new items. Non-stackable items unaffected.
 - **Loot stack consolidation** — merges duplicate same-WCID stackable rows in freshly generated corpses (e.g. multiple drudge charm create-list entries). Windblown collector trophies (drudge/rat/wasp/scalp/mob heads) use custom WCIDs **850300–850365** with sibling replacement to vanilla bases; drudge tiers **850300–850303** include **24835** in replacement. Letters (850337–850338) and Olthoi Ichor (850339) are also auto-looted. SQL stub `Windblown/Content/SQL/Items/05_WindblownCollectorTrophies_850300-850336.sql`; registry `Windblown/docs/TrophyLineRegistry.md`.
 
 ### BetterLootControl
@@ -56,6 +57,7 @@ Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot`
 - **Chest guaranteed drops** — adds salvage, trade notes, healing kits, keys, crystals, and gear to treasure chests.
 - **Global rare drops** — SpellSiphon tool and Mana Lattice have a small chance to drop from any creature with a treasure profile. Mana Lattice can pre-roll bonus spells from SpellSiphon's gem pool when that mod is loaded; lattice uses gem-style self-cast when the item spellbook is non-empty (SpellSiphon hook + client refresh after bootstrap).
 - **Salvage bag shaping** — auto-shapes dropped salvage bags to 100-unit stacks.
+- **Suppressed drop filter** — strips unwanted vanilla WCIDs from ALL creature corpse loot. Add WCIDs to `SuppressedDropWcids` in Settings.json. Default: `[22168]` (quarterstaff new).
 - **Loot rolling** — pooled rarity system (common/uncommon/rare/extremely rare) with independent salvage and gear rolls.
 - **Gear ratings** — all gear tiers can spawn with ratings (Damage Rating, Crit Damage Rating, Resist Rating, etc.). Higher tiers = higher values and better odds.
 - **Gear equipment sets** — all gear tiers can roll as part of an equipment set (Carraidas, Noble Relic, Ancient Relic, etc.).

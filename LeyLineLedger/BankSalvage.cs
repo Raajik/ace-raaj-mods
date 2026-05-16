@@ -41,6 +41,12 @@ public static class BankSalvage
         string sub = NormalizeSalvageSubcommand(parameters[1]);
         if (sub.Equals("debug", StringComparison.OrdinalIgnoreCase))
         {
+            // /bank salvage debug resolve  — diagnostic mapping table
+            if (parameters.Length >= 3 && parameters[2].Equals("resolve", StringComparison.OrdinalIgnoreCase))
+            {
+                SendDebugResolve(player, settings.SalvageBank);
+                return;
+            }
             ToggleSalvageStatusWcids(player, settings.SalvageBank);
             return;
         }
@@ -195,6 +201,36 @@ public static class BankSalvage
         {
             _bssExitSuppression?.Invoke();
         }
+    }
+
+    /// <summary>Print the full DepositRules property mapping table for diagnostic use.</summary>
+    static void SendDebugResolve(Player player, SalvageBankSettings sb)
+    {
+        var rules = sb.DepositRules;
+        if (rules.Count == 0)
+        {
+            player.SendMessage("No DepositRules configured.");
+            return;
+        }
+
+        player.SendMessage($"DepositRules mapping (FirstMaterialBankPropertyId={sb.FirstMaterialBankPropertyId}):");
+        player.SendMessage($"  {"Idx",-4} {"WCID",-6} {"Prop",-6} {"Bags",-8} {"Units",-10} Name");
+        player.SendMessage($"  {"-",-4} {"----",-6} {"----",-6} {"----",-8} {"-----",-10} ----");
+
+        int unitsPerBag = sb.Redeem.UnitsPerBag;
+
+        for (int i = 0; i < rules.Count; i++)
+        {
+            var rule = rules[i];
+            int prop = ResolveMaterialBankProperty(sb, i, rule);
+            long raw = player.GetBanked(prop);
+            string bagStr = unitsPerBag > 0 ? (raw / unitsPerBag).ToString("F2") : "-";
+            string unitStr = unitsPerBag > 0 ? raw.ToString("N0") : "-";
+            string name = GetDepositRuleDisplayName(rule);
+            player.SendMessage($"  {i,-4} {rule.WeenieClassId,-6} {prop,-6} {bagStr,-8} {unitStr,-10} {name}");
+        }
+
+        player.SendMessage($"--- End: {rules.Count} rules. Use /b s db (toggle WCIDs) to check WCID-to-name alignment.");
     }
 
     static MethodInfo? _overtinkedSalvageBankInterop;
@@ -553,6 +589,15 @@ public static class BankSalvage
         string t = token.Trim();
         string tNoSpace = t.Replace(" ", "").Replace("-", "");
 
+        // Pass 1: exact match (whole label equals token, case-insensitive)
+        for (int i = 0; i < rules.Count; i++)
+        {
+            string label = GetDepositRuleDisplayName(rules[i]);
+            if (label.Length > 0 && label.Equals(t, StringComparison.OrdinalIgnoreCase))
+                return i;
+        }
+
+        // Pass 2: substring match (existing heuristic)
         for (int i = 0; i < rules.Count; i++)
         {
             string label = GetDepositRuleDisplayName(rules[i]);

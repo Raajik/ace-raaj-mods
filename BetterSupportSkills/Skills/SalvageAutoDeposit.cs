@@ -120,7 +120,7 @@ public static class SalvageAutoDeposit
         if (TryGetMaterialSalvage(player, item, salvageSettings, out var materialIndex, out var rawUnits))
         {
             double depositUnits = rawUnits * rate;
-            uint salvageWcid = (uint)(20981 + materialIndex);
+            uint salvageWcid = (uint)(20980 + materialIndex);
             int depositInt = Math.Max(1, (int)depositUnits);
             bool ok = LeyLineLedgerSalvageInterop.TryIncSalvage(player, salvageWcid, depositInt);
             if (!ok) return false;
@@ -129,7 +129,7 @@ public static class SalvageAutoDeposit
             return true;
         }
 
-        // Raw salvage bags (WCID 20981–21089)
+        // Raw salvage bags (WCID 20980–21089)
         if (IsSalvageStack(item.WeenieClassId))
         {
             materialIndex = GetMaterialIndex(item.WeenieClassId);
@@ -265,8 +265,8 @@ public static class SalvageAutoDeposit
             salvageWcid = selectedWcid.Value;
         }
 
-        materialIndex = salvageWcid - 20981;
-        if (materialIndex < 0 || materialIndex > 108) return false;
+        materialIndex = salvageWcid - 20980;
+        if (materialIndex < 0 || materialIndex > 109) return false;
 
         int work = item.ItemWorkmanship ?? 0;
         if (work > 0)
@@ -290,8 +290,8 @@ public static class SalvageAutoDeposit
             if (!Player.MaterialSalvage.TryGetValue(mt, out var wcid) || wcid <= 0)
                 continue;
 
-            int matIndex = wcid - 20981;
-            if (matIndex < 0 || matIndex > 108)
+            int matIndex = wcid - 20980;
+            if (matIndex < 0 || matIndex > 109)
                 continue;
 
             int bankProp = LeyLineLedgerSalvageInterop.GetSalvagePropertyId((uint)wcid);
@@ -314,17 +314,17 @@ public static class SalvageAutoDeposit
 
     public static int GetMaterialBankProperty(int materialIndex)
     {
-        if (materialIndex < 0 || materialIndex > 108)
+        if (materialIndex < 0 || materialIndex > 109)
             return -1;
-        return LeyLineLedgerSalvageInterop.GetSalvagePropertyId((uint)(20981 + materialIndex));
+        return LeyLineLedgerSalvageInterop.GetSalvagePropertyId((uint)(20980 + materialIndex));
     }
 
-    static bool IsSalvageStack(uint wcid) => wcid >= 20981 && wcid <= 21089;
+    static bool IsSalvageStack(uint wcid) => wcid >= 20980 && wcid <= 21089;
 
     static int GetMaterialIndex(uint wcid)
     {
-        int index = (int)wcid - 20981;
-        return (index >= 0 && index <= 108) ? index : -1;
+        int index = (int)wcid - 20980;
+        return (index >= 0 && index <= 109) ? index : -1;
     }
 
     static int GetSalvageUnits(WorldObject item, int unitsPerItem)
@@ -368,7 +368,7 @@ public static class SalvageAutoDeposit
         if (!SalvageMessagingMuted.GetOrAdd(playerId, false))
         {
             // Check for whole-bag completion: read actual LLL balance, compare to last known count
-            uint salvageWcid = (uint)(20981 + materialIndex);
+            uint salvageWcid = (uint)(20980 + materialIndex);
             int prop = LeyLineLedgerSalvageInterop.GetSalvagePropertyId(salvageWcid);
             if (prop > 0)
             {
@@ -640,9 +640,10 @@ public static class SalvageAutoDeposit
 
     public static string GetMaterialName(int index)
     {
-        if (index < 0 || index > 108) return "Unknown";
+        if (index < 0 || index > 109) return "Unknown";
         string[] names =
         {
+            /* 20980 */ "Alabaster",
             /* 20981 */ "Armoredillo Hide",
             /* 20982 */ "Bronze",
             /* 20983 */ "Ceramic",

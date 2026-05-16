@@ -471,6 +471,10 @@ All features can be toggled in `Settings.json`:
 
 ## Changelog
 
+### 2026-05-16
+- **Alabaster (20980) auto-deposit range fix:** `MinSalvageWcid` lowered from `20981` to `20980` across BSS interop and SalvageAutoDeposit. Items with MaterialType 66 (Alabaster/Stone) are now correctly banked on auto-salvage. All material index computations and range checks adjusted accordingly.
+- **Diagnostic logging for suspect-range auto-deposit:** BSS `TryIncSalvage` logs at Info level every time WCIDs 21072-21089 are credited, recording WCID, resolved property, units, and resulting total balance. Shared interop logs the resolution path (WCID → DepositRules index → property) for the same range plus 20980.
+
 ### 2026-05-14
 - **ManaConversion SpellCleave thread-safety fix:** Cleave spell casts are now deferred via `WorldManager.EnqueueAction` instead of firing synchronously during `HandleCastSpell`. Prevents `Collection was modified` crashes in `LandblockManager.TickPhysics` when ArcaneLore echoes + ManaConversion cleaves create new spell projectiles during parallel landblock physics iteration.
 

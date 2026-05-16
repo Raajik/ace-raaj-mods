@@ -3,14 +3,17 @@
 -- 
 -- This is a SINGLE template. Runtime code in AnointedKitGenerator
 -- randomizes stats (BoostValue, HealkitMod), BoosterEnum, icon,
--- and applies 2-5 perks after the item is created via loot generation.
+-- and applies 2-8 perks after the item is created via loot generation.
 --
--- The icon is overwritten at runtime per tier:
---   T1 → 0x060032EF (Handy)   T2 → 0x060032EF (Handy)
---   T3 → 0x060032F0 (Adept)   T4 → 0x060032F1 (Gifted)
---   T5 → 0x060032F2 (Excellent)  T6+ → 0x060032E5 (Treated)
+-- Icons are set at runtime by (BoosterEnum, tier) combo:
+--   Health: T1-3 Peerless (0x060032F3), T4-5 Treated (0x060032E5),
+--           T6 Medicated (0x06005B6E), T7 Eternal (0x06005B6B), T8 Gauntlet (0x0600753B)
+--   Stamina: T1-3 Lesser Stam (0x06007094), T4-5 Greater Stam (0x06007093),
+--            T6 Medicated Stam (0x06005B70), T7 Eternal Stam (0x06005B6D), T8 Gauntlet Stam (0x0600753D)
+--   Mana: T1-3 Lesser Mana (0x06007092), T4-5 Greater Mana (0x06007091),
+--         T6 Medicated Mana (0x06005B6F), T7 Eternal Mana (0x06005B6C), T8 Gauntlet Mana (0x0600753C)
 --
--- WCID: 900000 (WeenieType.Healer = 28)
+-- WCID: 900000 (WeenieType.Food = 18)
 -- ============================================================
 
 INSERT IGNORE INTO `weenie` (`class_Id`, `class_Name`, `type`, `last_Modified`)

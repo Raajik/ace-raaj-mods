@@ -2,7 +2,7 @@
   "// FeatureToggles": "Toggle switches for Empower modules.",
   "EnableAnointedHealingKits": true,
   "AnointedKits": {
-    "DropChance": 0.15,
+    "DropChance": 0.50,
     "AnointedKitWcid": 900000,
     "StatRanges": [
       { "MinSkill": 50,  "MaxSkill": 100,  "MinRestoration": 1.0,  "MaxRestoration": 1.5 },

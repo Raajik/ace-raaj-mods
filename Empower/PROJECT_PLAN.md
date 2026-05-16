@@ -40,7 +40,7 @@ Replaces all loot-generated healing kits (vanilla Crude → Treated) with **Anoi
 | **Efficiency** | Stamina cost reduction % | `FakeBool 40153` + `FakeFloat 40163` | 10–25% → 40–75% |
 | **Critical Surge** | +% crit heal chance (base 10%) | `FakeBool 40154` + `FakeFloat 40164` | +5–10% → +15–30% |
 | **Cleansing** | % chance to RemoveAllBad on heal | `FakeBool 40155` + `FakeFloat 40165` | 10–20% → 30–50% |
-| **Reactive Barrier** | +DR rating for 5s on heal | `FakeBool 40156` + `FakeFloat 40166` | +1–2 → +4–8 |
+| **Reactive Barrier** | +DR rating for 20s on heal | `FakeBool 40156` + `FakeFloat 40166` | +1–2 → +4–8 |
 | **Boon** | +% Healing skill for 10s | `FakeBool 40157` + `FakeFloat 40167` | +5–10% → +15–25% |
 
 ## Property IDs Used

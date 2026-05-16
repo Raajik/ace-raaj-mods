@@ -67,7 +67,7 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
             ModManager.Log("[Empower] HealKitWcids.Roll prefix applied — loot healing kits now use Anointed template", ModManager.LogLevel.Info);
 
             // Patch item creation to inject our randomized stats
-            ApplyWorldObjectFactoryPatch();
+            ApplyLootCreationPostfix();
 
             _lootPatchApplied = true;
         }
@@ -77,53 +77,14 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
         }
     }
 
-    void ApplyWorldObjectFactoryPatch()
+    void ApplyLootCreationPostfix()
     {
         if (_woFactoryPatchApplied) return;
 
+        // Postfix on LootGenerationFactory.CreateAndMutateWcid —
+        // applies randomized stats to Anointed kits right after creation.
         try
         {
-            var createMethod = AccessTools.Method(typeof(WorldObjectFactory),
-                nameof(WorldObjectFactory.CreateNewWorldObject),
-                new Type[] { typeof(uint) });
-
-            if (createMethod == null)
-            {
-                ModManager.Log("[Empower] WorldObjectFactory.CreateNewWorldObject(uint) not found", ModManager.LogLevel.Error);
-                return;
-            }
-
-            var postfix = AccessTools.Method(typeof(Healing.AnointedKitGenerator),
-                nameof(Healing.AnointedKitGenerator.ApplyAnointedKitStats),
-                new[] { typeof(WorldObject) });
-
-            // We can't use a real postfix here because the return type is WorldObject, not void.
-            // Instead, we need to patch with a different approach.
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[Empower] WorldObjectFactory patch failed: {ex}", ModManager.LogLevel.Error);
-        }
-
-        // Alternative approach: postfix on the loot creation loop in LootGenerationFactory
-        TryApplyLootCreationPostfix();
-    }
-
-    void TryApplyLootCreationPostfix()
-    {
-        // The LootGenerationFactory creates items in a loop. We want to detect
-        // when an Anointed kit was just created and apply our randomization.
-        // Let's use a different method — postfix on the specific item creation.
-
-        // Actually, the ApplyAnointedKitStats is called as a post-creation hook.
-        // But since our method signature matches wrong, let me take a different approach:
-        // We'll use a postfix on LootGenerationFactory's loot creation that iterates
-        // over created items and applies our changes.
-
-        try
-        {
-            // Postfix on LootGenerationFactory.CreateAndMutateWcid — 
-            // applies randomized stats to Anointed kits right after creation.
             var mutateMethod = AccessTools.Method(
                 typeof(ACE.Server.Factories.LootGenerationFactory),
                 "CreateAndMutateWcid",
@@ -139,7 +100,7 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
             }
             else
             {
-                ModManager.Log("[Empower] Could not find CreateAndMutateWcid — trying alternate hook.", ModManager.LogLevel.Warn);
+                ModManager.Log("[Empower] Could not find CreateAndMutateWcid — Anointed kit stats will NOT be applied.", ModManager.LogLevel.Error);
             }
         }
         catch (Exception ex)
@@ -172,28 +133,6 @@ public class PatchClass(ACE.Shared.Mods.BasicMod mod, string settingsName = "Set
 
         try
         {
-            // Postfix on Healer.DoHealing — applies perk effects
-            var doHealing = AccessTools.Method(typeof(Healer), nameof(Healer.DoHealing));
-            if (doHealing != null)
-            {
-                var postfix = AccessTools.Method(typeof(Healing.AnointedKitEffects),
-                    nameof(Healing.AnointedKitEffects.PostDoHealing));
-                ModC.Harmony?.Patch(doHealing, null, new HarmonyMethod(postfix));
-            }
-
-            // Postfix on Healer.GetHealAmount — Efficiency + Critical Surge
-            var getHealAmount = AccessTools.Method(typeof(Healer), nameof(Healer.GetHealAmount));
-            if (getHealAmount != null)
-            {
-                var effPostfix = AccessTools.Method(typeof(Healing.AnointedKitEffects),
-                    nameof(Healing.AnointedKitEffects.PostGetHealAmount));
-                ModC.Harmony?.Patch(getHealAmount, null, new HarmonyMethod(effPostfix));
-
-                var critPostfix = AccessTools.Method(typeof(Healing.AnointedKitEffects),
-                    nameof(Healing.AnointedKitEffects.PostGetHealAmountCrit));
-                ModC.Harmony?.Patch(getHealAmount, null, new HarmonyMethod(critPostfix));
-            }
-
             // Prefix on Food.OnActivate — Auto-Self (one-click heal, no reticle)
             // Must patch the base virtual method on WorldObject (Food inherits it)
             var foodActivate = AccessTools.Method(typeof(WorldObject), nameof(WorldObject.OnActivate),

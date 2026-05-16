@@ -42,8 +42,8 @@ public class AnointedKitSettings
     };
 
     [JsonPropertyName("// DropChance")]
-    public string DropChanceDoc { get; init; } = "Chance (0-1) that a healing kit loot drop is an Anointed kit instead of a vanilla kit. 0.15 = 15%.";
-    public double DropChance { get; set; } = 0.15;
+    public string DropChanceDoc { get; init; } = "Chance (0-1) that a healing kit loot drop is an Anointed kit instead of a vanilla kit. No vanilla fallback — 0 = no kits drop. Default 0.50 = 50%.";
+    public double DropChance { get; set; } = 0.50;
 
     // Perk count ranges per tier
     [JsonPropertyName("// PerkCountRanges")]

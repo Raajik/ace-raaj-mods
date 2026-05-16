@@ -185,7 +185,7 @@ internal static class AnointedKitEffects
 
     /// <summary>
     /// Applies Anointed kit perks after a successful heal.
-    /// Called from both ApplyKitHealing (Food path) and PostDoHealing (Healer path).
+    /// Called from ApplyKitHealing (Food path).
     /// </summary>
     private static void ApplyAnointedPerks(Player healer, Player target, WorldObject kit, PropertyAttribute2nd boosterEnum, int healAmount, uint missingVital)
     {
@@ -202,7 +202,7 @@ internal static class AnointedKitEffects
         if (HasPerk(kit, AnointedPerk.Regeneration))
         {
             double hotPct = kit.GetProperty((PropertyFloat)AnointedKitPropertyIds.Value_Regeneration) ?? 0.5;
-            StartRegenerationHot(healer, kit, hotPct);
+            StartRegenerationHot(healer, kit, hotPct, boosterEnum);
         }
 
         // Cleansing
@@ -227,146 +227,6 @@ internal static class AnointedKitEffects
         }
     }
 
-    // ======================================================================
-    // HEALING PERKS — applied after the heal resolves
-    // ======================================================================
-
-    /// <summary>
-    /// Postfix on Healer.DoHealing — applies all non-trivial perk effects.
-    /// </summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Healer), nameof(Healer.DoHealing))]
-    public static void PostDoHealing(Healer __instance, Player healer, Player target, uint missingVital)
-    {
-        try
-        {
-            if (healer == null || target == null) return;
-            Healer kit = __instance;
-
-            var settings = S.Settings?.AnointedKits;
-            if (settings == null || !(S.Settings?.EnableAnointedHealingKits ?? false)) return;
-
-            // Only apply to Anointed kits (check for our property)
-            bool isAnointed = IsAnointedKit(kit);
-            if (!isAnointed) return;
-
-            int tier = Math.Clamp((kit.GetProperty((PropertyInt)AnointedKitPropertyIds.KitTier) ?? 1) - 1, 0, 7);
-
-        // 1. Efficiency — already applied in GetHealAmount via prefix
-        // 2. Critical Surge — already applied in GetHealAmount via prefix
-
-        // 3. Omni-Heal: splash to other vitals
-        if (HasPerk(kit, AnointedPerk.OmniHeal))
-        {
-            double splashPct = kit.GetProperty((PropertyFloat)AnointedKitPropertyIds.Value_OmniHeal) ?? 0.2;
-            ApplyOmniHeal(healer, target, kit, kit.BoosterEnum, splashPct);
-        }
-
-        // 4. Regeneration: start HoT
-        if (HasPerk(kit, AnointedPerk.Regeneration))
-        {
-            double hotPct = kit.GetProperty((PropertyFloat)AnointedKitPropertyIds.Value_Regeneration) ?? 0.5;
-            StartRegenerationHot(healer, kit, hotPct);
-        }
-
-        // 5. Cleansing
-        if (HasPerk(kit, AnointedPerk.Cleansing))
-        {
-            double chance = kit.GetProperty((PropertyFloat)AnointedKitPropertyIds.Value_Cleansing) ?? 0.2;
-            TryCleanse(target, chance);
-        }
-
-        // 6. Reactive Barrier
-        if (HasPerk(kit, AnointedPerk.ReactiveBarrier))
-        {
-            int dr = (int)(kit.GetProperty((PropertyFloat)AnointedKitPropertyIds.Value_ReactiveBarrier) ?? 2);
-            ApplyReactiveBarrier(healer, dr);
-        }
-
-        // 7. Boon
-        if (HasPerk(kit, AnointedPerk.Boon))
-        {
-            double percent = kit.GetProperty((PropertyFloat)AnointedKitPropertyIds.Value_Boon) ?? 0.1;
-            ApplyBoon(healer, percent);
-        }
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[Empower] PostDoHealing error: {ex.Message}", ModManager.LogLevel.Error);
-        }
-    }
-
-    // ======================================================================
-    // EFFICIENCY PREFIX — reduce stamina cost during heal amount calc
-    // ======================================================================
-
-    /// <summary>
-    /// Prefix on Healer.GetHealAmount — modifies stamina cost for Efficiency perk.
-    /// </summary>
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Healer), nameof(Healer.GetHealAmount))]
-    public static void PreGetHealAmount(Healer __instance, ref uint staminaCost)
-    {
-        if (__instance == null) return;
-        if (!HasPerk(__instance, AnointedPerk.Efficiency)) return;
-
-        double reduction = __instance.GetProperty((PropertyFloat)AnointedKitPropertyIds.Value_Efficiency) ?? 0.0;
-        if (reduction <= 0) return;
-
-        // staminaCost is set inside GetHealAmount, not an input param.
-        // We can't modify it via prefix because it's computed inside the method.
-        // Instead, we'll postfix it.
-    }
-
-    /// <summary>
-    /// Postfix on Healer.GetHealAmount — applies Efficiency stamina reduction.
-    /// </summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Healer), nameof(Healer.GetHealAmount))]
-    public static void PostGetHealAmount(Healer __instance, ref uint staminaCost)
-    {
-        try
-        {
-            if (__instance == null) return;
-            if (!HasPerk(__instance, AnointedPerk.Efficiency)) return;
-
-            double reduction = __instance.GetProperty((PropertyFloat)AnointedKitPropertyIds.Value_Efficiency) ?? 0.0;
-            if (reduction <= 0) return;
-
-            uint saved = (uint)(staminaCost * (1.0 - reduction));
-            staminaCost = Math.Max(1u, saved);
-        }
-        catch (Exception ex) { ModManager.Log($"[Empower] Efficiency postfix: {ex.Message}", ModManager.LogLevel.Error); }
-    }
-
-    // ======================================================================
-    // CRITICAL SURGE — modify crit chance in GetHealAmount
-    // ======================================================================
-
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(Healer), nameof(Healer.GetHealAmount))]
-    public static void PreGetHealAmountCrit(Healer __instance, ref bool criticalHeal)
-    {
-        // This is too early — the actual crit roll happens inside GetHealAmount.
-        // We need to re-roll after the fact.
-    }
-
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(Healer), nameof(Healer.GetHealAmount))]
-    public static void PostGetHealAmountCrit(Healer __instance, Player healer, Player target, uint missingVital, ref bool criticalHeal, ref uint staminaCost)
-    {
-        if (__instance == null) return;
-        if (!HasPerk(__instance, AnointedPerk.CriticalSurge)) return;
-
-        // If already a crit from the vanilla 10% check, leave it.
-        if (criticalHeal) return;
-
-        double bonusChance = __instance.GetProperty((PropertyFloat)AnointedKitPropertyIds.Value_CriticalSurge) ?? 0.0;
-        if (bonusChance <= 0) return;
-
-        if (ThreadSafeRandom.Next(0.0f, 1.0f) < bonusChance)
-            criticalHeal = true;
-    }
 
     // ======================================================================
     // OMNI-HEAL IMPLEMENTATION
@@ -411,7 +271,7 @@ internal static class AnointedKitEffects
 
     private static readonly ConcurrentDictionary<uint, RegenerationState> _activeHots = new();
 
-    private static void StartRegenerationHot(Player player, WorldObject kit, double totalHotPct)
+    private static void StartRegenerationHot(Player player, WorldObject kit, double totalHotPct, PropertyAttribute2nd boosterEnum)
     {
         if (player.IsDead || player == null) return;
 
@@ -430,6 +290,7 @@ internal static class AnointedKitEffects
         {
             HealPerTick = (float)healPerTick,
             RemainingTicks = totalTicks,
+            BoosterEnum = boosterEnum,
         };
 
         if (!_hotTickRunning.ContainsKey(id))
@@ -456,6 +317,15 @@ internal static class AnointedKitEffects
         if (player == null || player.IsDead) return;
 
         uint id = player.Guid.Full;
+
+        // If player logged out (null session), clean up and stop the chain
+        if (player.Session == null)
+        {
+            _activeHots.TryRemove(id, out _);
+            _hotTickRunning.TryRemove(id, out _);
+            return;
+        }
+
         if (!_activeHots.TryGetValue(id, out var state) || state == null)
         {
             _hotTickRunning.TryRemove(id, out _);
@@ -463,8 +333,9 @@ internal static class AnointedKitEffects
         }
 
         var heal = (int)Math.Round(state.HealPerTick);
-        if (heal > 0 && player.Health.Current < player.Health.MaxValue)
-            player.UpdateVitalDelta(player.Health, heal);
+        var vital = player.GetCreatureVital(state.BoosterEnum);
+        if (heal > 0 && vital != null && vital.Current < vital.MaxValue)
+            player.UpdateVitalDelta(vital, heal);
 
         state.RemainingTicks--;
         if (state.RemainingTicks <= 0)
@@ -484,6 +355,7 @@ internal static class AnointedKitEffects
     {
         public float HealPerTick { get; set; }
         public int RemainingTicks { get; set; }
+        public PropertyAttribute2nd BoosterEnum { get; set; }
     }
 
     // ======================================================================
@@ -610,12 +482,7 @@ internal static class AnointedKitEffects
 
     private static bool IsAnointedKit(WorldObject kit)
     {
-        // Check for any of our perk flags
-        foreach (uint flag in AnointedKitPropertyIds.AllPerkFlags)
-        {
-            if (kit.GetProperty((PropertyBool)flag) ?? false)
-                return true;
-        }
-        return false;
+        var settings = S.Settings?.AnointedKits;
+        return kit?.WeenieClassId == settings?.AnointedKitWcid;
     }
 }

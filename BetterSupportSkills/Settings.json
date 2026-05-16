@@ -39,7 +39,7 @@
     "DamageResistanceSpecialized": 20
   },
   "EnableFletching": false,
-  "EnableHealing": true,
+  "EnableHealing": false,
   "EnableLeadership": true,
   "Leadership": {
     "ExtraCombatPetSlotsTrained": 1,

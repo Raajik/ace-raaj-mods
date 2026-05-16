@@ -66,7 +66,18 @@ public class AutoLoot
         // Skill Glyphs
         6322, 6323, 6324, 6325, 6326, 6327, 6328,
         19400, 19401, 19402, 19403, 19404, 19405, 19406, 19407, 19408, 19409, 19410,
-        37310, 37341, 37346, 38760, 41746,
+        32944,
+        37300, 37301, 37302, 37303, 37304, 37305, 37307, 37309,
+        37310, 37311, 37312, 37313, 37314, 37315, 37316, 37317, 37318, 37319,
+        37321, 37323, 37324, 37325, 37326, 37327, 37328, 37329, 37330, 37331, 37332, 37333,
+        37336, 37337, 37338, 37339, 37340,
+        37341, 37342, 37343, 37344, 37345, 37346, 37347, 37348, 37349, 37350, 37351, 37352,
+        37366, 37367, 37368, 37369, 37370, 37371, 37372, 37373,
+        38760,
+        41746, 41747,
+        43379, 43380, 43387,
+        45370, 45371, 45372, 45373, 45374,
+        49455,
     };
 
     static IReadOnlyList<string> GetEffectiveDefaultProfileNames(Settings settings)
@@ -545,21 +556,22 @@ public class AutoLoot
     }
 
     /// <summary>
-    /// Snapshots current LLL salvage property values for standard salvage WCIDs (20981-21089).
-    /// Property = 40201 + (wcid - 20981), matching default LLL config.
+    /// Snapshots current LLL salvage property values for salvage WCIDs (20980-21089).
+    /// Resolves bank PropertyInt64 via LeyLineLedgerSalvageBankInterop (DepositRules-indexed),
+    /// not WCID-offset arithmetic, so snapshot correctly tracks deltas for non-sequential rules.
     /// Returns a list of (materialName, bankProp, beforeValue).
     /// </summary>
     static List<(string name, int prop, long before)> SnapshotLLLSalvageTotals(Player player)
     {
         var results = new List<(string, int, long)>();
-        const int firstProp = 40201;
-        const uint firstWcid = 20981;
-        const int count = 109;
+        const uint firstWcid = 20980;
+        const int count = 110; // WCIDs 20980-21089
 
         for (int i = 0; i < count; i++)
         {
             uint wcid = firstWcid + (uint)i;
-            int bankProp = firstProp + i;
+            int bankProp = LeyLineLedgerSalvageBankInterop.GetSalvageMaterialBankPropertyId(wcid);
+            if (bankProp <= 0) continue; // skip WCIDs not in DepositRules
             string name = BetterSupportSkillsBridge.GetCompactSalvageName((uint)i, wcid);
             long before = LeyLineLedgerBankInterop.GetBanked(player, bankProp);
             results.Add((name, bankProp, before));
@@ -1641,7 +1653,17 @@ public class AutoLoot
                         lootedItems[lootName] = existing + qty;
 
                         lootedSet.Add(removed);
-                        AutolootTryCreateInInventoryWithNetworking(player, removed);
+                        // Try merging into existing stacks first (for stackable items)
+                        if (!TryMergeIntoExistingStacks(player, removed))
+                        {
+                            // No existing partial stack had room — create as a new item
+                            AutolootTryCreateInInventoryWithNetworking(player, removed);
+                        }
+                        else
+                        {
+                            // Fully merged — destroy the empty placeholder
+                            removed.Destroy();
+                        }
                     }
                     break;
                 }

@@ -1662,7 +1662,7 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
                 bool accountWide = IsClassUnlockedAccountWide(player, cls);
                 bool meetsReqs = AchievementUnlockedApi.CheckMeetsRequirements(player, cls);
                 int readiness = GetClassReadinessScore(player, cls);
-                return new { Name = cls, Unlocked = unlocked, AccountWide = accountWide, MeetsReqs = meetsReqs, Readiness = readiness };
+                return (Name: cls, Unlocked: unlocked, AccountWide: accountWide, MeetsReqs: meetsReqs, Readiness: readiness);
             }).ToList();
 
             var ordered = classEntries
@@ -1677,24 +1677,38 @@ static void StartDestroyTimer(CombatPet pet, int seconds)
             sb.AppendLine($"Active: {activeClass ?? "None"} {(isManual ? "(manual)" : "(auto)")}");
             sb.AppendLine();
 
-            foreach (var entry in ordered)
+            // Categorize classes
+            var summoningClasses = new[] { "Druid", "Elementalist", "Necromancer", "Enchanter", "Artificer" };
+            var combatClasses = new[] { "Rogue", "Berserker", "Crusader", "Windwalker", "Battlemage", "DeathKnight", "Bloodmage" };
+            var supportClasses = new[] { "Healer", "Adventurer" };
+
+            static string StatusLine(string name, string? activeClass, bool unlocked, bool accountWide, bool meetsReqs, int readiness)
             {
-                var (desc, reqs) = ClassDescriptions[entry.Name];
-
-                string status;
-                if (entry.Name == activeClass)
-                    status = "[ACTIVE]";
-                else if (entry.Unlocked)
-                    status = entry.AccountWide ? "[UNLOCKED account-wide]" : "[UNLOCKED]";
-                else if (entry.MeetsReqs)
-                    status = "[READY — specialize required skills]";
-                else
-                    status = $"[{entry.Readiness}% ready]";
-
-                sb.AppendLine($"{entry.Name} {status}");
-                sb.AppendLine($"  {desc}");
-                sb.AppendLine($"  Requires: {reqs}");
+                if (name == activeClass) return "[ACTIVE]";
+                if (unlocked) return accountWide ? "[UNLOCKED] (account)" : "[UNLOCKED]";
+                if (meetsReqs) return "[READY]  specialize required skills";
+                return $"[{readiness,3}% ready]   ";
             }
+
+            void WriteClassGroup(StringBuilder sb, string header, IEnumerable<(string Name, bool Unlocked, bool AccountWide, bool MeetsReqs, int Readiness)> entries)
+            {
+                sb.AppendLine($"  {header}");
+                sb.AppendLine();
+                foreach (var entry in entries)
+                {
+                    var entry2 = entry;
+                    ClassDescriptions.TryGetValue(entry2.Name, out var info);
+                    string status = StatusLine(entry2.Name, activeClass, entry2.Unlocked, entry2.AccountWide, entry2.MeetsReqs, entry2.Readiness);
+                    sb.AppendLine($"  {entry2.Name,-16} {status}");
+                    sb.AppendLine($"    {info.Description}");
+                    sb.AppendLine($"    Reqs: {info.Requirements}");
+                }
+                sb.AppendLine();
+            }
+
+            WriteClassGroup(sb, "Summoning Classes", ordered.Where(c => summoningClasses.Contains(c.Name)));
+            WriteClassGroup(sb, "Combat Classes", ordered.Where(c => combatClasses.Contains(c.Name)));
+            WriteClassGroup(sb, "Support Classes", ordered.Where(c => supportClasses.Contains(c.Name)));
 
             sb.AppendLine();
             sb.AppendLine("Usage: /class auto  OR  /class <class name>");

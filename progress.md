@@ -1,35 +1,53 @@
-# Progress — May 13 Evening Session
+# Progress Log
 
-| Step | Status | Notes |
-|------|--------|-------|
-| Git branch created | ✅ | `jeremy/bugfix/may13-evening-bugs` |
-| README commits stashed | ✅ | Prior session docs committed |
-| Plan files created | ✅ | task_plan.md, findings.md, progress.md |
-| EA WeaponQuestGrowth ephemeral fix | ✅ | `SetPersistentPropertyInt` for DamageRating/CritDamageRating |
-| EA BiotaPropertyHelper key fix | ✅ | Cast `PropertyInt` to `(int)` before Biota dict indexing |
-| BLC chest reset interval fix | ✅ | 1-3s → 300-480s (5-8 min) |
-| BetterKeys bank unlock suppress fix | ✅ | Removed `RegisterSuppressFirstChestOpenAfterSkeletonUnlock` from banked unlocks |
-| BSS Minor Summoning cantrip detection fix | ✅ | Check both `Weenie.PropertiesSpellBook` and `Biota.PropertiesSpellBook` |
-| BSS PetDevice unlimited charges | ✅ | Prefix `ActOnUse` to skip `Structure--` |
-| BLC loot WCID substitution | ✅ | Mana stones → charges; Encapsulated Spirit (49485) removed |
-| Overtinked PostGetRecipe fixes | ✅ | Nether Rending, Cleaving, JewelryCleave shell recipes |
-| Overtinked ImbueSalvageWcids mapping | ✅ | Added `NetherRending` (21064) mapping |
-| All affected mods build | ✅ | BetterKeys, BLC, BSS, EA, Overtinked |
-| Commit batch 1 | ✅ | `488ebcc7` — EA/BLC/BetterKeys/BSS fixes |
-| Commit batch 2 | ✅ | `488c1d4c` — Overtinked + BLC loot sub + BSS PetDevice charges |
-| Lottery persistence path | ✅ | `cf743ad9` — now uses `Server/ModData/LeyLineLedger/` |
-| Chaos passup → lottery | ✅ | `ChallengePassupAbsorb.cs` reflection bridge to `Lottery.AddToPool`, configurable rate |
-| Luminance lottery prize | ✅ | `Lottery.cs` — `LuminancePrizeConversionRate` (default 10000) bonus luminance for winners |
-| Pre-unlock luminance Nalicana | ✅ | `PostGetPropertyInt64` makes banked lum visible to `InqInt64Stat`; `PreSpendLuminance` auto-withdraws; `/bank activate luminance` command |
+## Session: 2026-05-16
 
-## Still Remaining
-- Sho Pathwarden chest Lesser Coalesced Mana — SQL exists at `Windblown/Content/SQL/Pathwarden/01_ChestAddLesserMana.sql`; needs apply/verify on void-test and wb_test DBs
+### Grill Session
+- **Status:** complete
+- **Started:** 2026-05-16
+- Actions taken:
+  - Interviewed user on 8 decision branches for Empower - Healing mod
+  - Applied all 8 decisions as code and doc changes
+  - Wiki entry on Harmony postfix + non-void return methods
+- Files created/modified:
+  - `Empower/Healing/AnointedKitEffects.cs` — removed dead patches, WCID IsAnointedKit, HoT BoosterEnum, logout guard
+  - `Empower/PatchClass.cs` — removed Healer registrations, cleaned loot patch
+  - `Empower/Settings.cs` — DropChance 0.50
+  - `Empower/Settings.json` — DropChance 0.50
+  - `Empower/PROJECT_PLAN.md` — Reactive Barrier 20s
+  - `Empower/Content/SQL/01_Anointed_Healing_Kit_Template.sql` — fixed header
+  - `A:\obsidian\jeremy\wiki\ace-raaj-mods Patterns.md` — new lesson section
 
-## Evening Bugs (2026-05-13)
-| Step | Status | Notes |
-|------|--------|-------|
-| Issue 1: Lockpick bank ratio | 🟡 Implemented (uncommitted) | AutoLoot→0%, LLL→50% |
-| Issue 2: Cloak spell activation | 🟡 Implemented (uncommitted) | New CloakSpellActivation.cs + settings wiring |
-| Issue 3: Coalesced mana rates | 🟡 Implemented (uncommitted) | 0.4% drop, universal tier dist (60/30/10) |
-| Issue 4: /fac teleport | ✅ **Resolved** | Bad cell 0x8A020212 (no instances) → 0x8A020210 (Steward cell) |
-| Issue 5: Behdo Yii collector msg | 🟡 Implemented (uncommitted) | Removed 10842 from CollectorWcids |
+### Phase 1: Finalize code changes
+- **Status:** complete
+- **Completed:** 2026-05-16
+- Actions taken:
+  - All grill-session edits applied (8 decisions)
+  - Build succeeded with 0 errors, 0 warnings
+  - Fixed `IsLoggedOut` → `Session == null` guard
+
+### Phase 3: Commit & push
+- **Status:** complete
+- Actions taken:
+  - Committed "feat(Empower): grill-session cleanup..." (b2b0f26d)
+  - Pushed to origin
+  - graphify updated
+
+## Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| | | | | |
+
+## Error Log
+| Timestamp | Error | Attempt | Resolution |
+|-----------|-------|---------|------------|
+| | | 1 | |
+
+## 5-Question Reboot Check
+| Question | Answer |
+|----------|--------|
+| Where am I? | Phase 1: Finalize code changes (build step) |
+| Where am I going? | Phase 2: Deploy & SQL, Phase 3: In-game verify, Phase 4: Commit |
+| What's the goal? | Complete Empower - Healing mod: cleanup, build, deploy, verify |
+| What have I learned? | See findings.md |
+| What have I done? | Applied all grill-session decisions to code and docs |

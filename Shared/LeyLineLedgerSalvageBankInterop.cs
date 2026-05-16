@@ -10,8 +10,10 @@ namespace AceRaajMods.Shared;
 // BetterSupportSkills credits this slot via LeyLineLedgerBankInterop.IncBanked — wrong id desyncs bag-fill messages from /bank salvage status.
 public static class LeyLineLedgerSalvageBankInterop
 {
-    const uint MinSalvageWcid = 20981;
+    const uint MinSalvageWcid = 20980;
     const uint MaxSalvageWcid = 21089;
+    // Legacy fallback base (kept at 20981 to preserve existing WCID-offset property mappings for 20981–21089).
+    const uint LegacySalvageBaseWcid = 20981;
     const int LegacyFirstMaterialBankPropertyId = 40201;
 
     static bool _loggedResolveFailure;
@@ -35,7 +37,7 @@ public static class LeyLineLedgerSalvageBankInterop
                     ModManager.LogLevel.Info);
             }
 
-            return LegacyFirstMaterialBankPropertyId + (int)(salvageWcid - MinSalvageWcid);
+            return LegacyFirstMaterialBankPropertyId + (int)(salvageWcid - LegacySalvageBaseWcid);
         }
 
         return -1;
@@ -104,6 +106,15 @@ public static class LeyLineLedgerSalvageBankInterop
 
             int bankOverride = CoerceInt32(ruleType.GetProperty("BankProperty")?.GetValue(rule));
             bankPropertyId = bankOverride != 0 ? bankOverride : firstId + i;
+
+            // Diagnostic: log suspect-range WCID resolutions (21072-21089, 20980) at Info level
+            if ((targetWcid >= 21072 && targetWcid <= 21089) || targetWcid == 20980)
+            {
+                ModManager.Log(
+                    $"[LLLSalvageBankInterop-DIAG] WCID {targetWcid} resolved to DepositRules index {i}, property {bankPropertyId} (BankProperty={bankOverride}, firstId={firstId}).",
+                    ModManager.LogLevel.Info);
+            }
+
             return true;
         }
 

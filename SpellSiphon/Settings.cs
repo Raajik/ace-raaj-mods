@@ -79,12 +79,6 @@ public class Settings
 		"Bane",
 		"Fester",
 		"Decay",
-		"Bludgeon",
-		"Piercing",
-		"Flame",
-		"Frost",
-		"Acid",
-		"Electric",
 	};
 
 	// Mana pool for newly spelled items

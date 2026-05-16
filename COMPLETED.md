@@ -1,6 +1,41 @@
 # Completed Features & Fixes
 
-## 2026-05-14
+## 2026-05-16
+
+### Salvage fixes: Alabaster range bug, withdraw name matching, diagnostics
+### Swayss InqYesNo emote fix (resilient to world-sync)
+
+Branch: `raajik/feature/empower-healing-kits` | Commit: *(pending)*
+
+#### 1. Alabaster (20980) excluded from auto-deposit
+**Problem:** `MinSalvageWcid = 20981` in three places silently rejected WCID 20980 before auto-deposit ever reached DepositRules lookup. Items with MaterialType 66 (Alabaster/Stone) were never banked on auto-salvage.
+**Fix:** Lowered `MinSalvageWcid` to `20980` across Shared interop, BSS interop, and BSS SalvageAutoDeposit. Adjusted all index computations (`materialIndex = wcid - 20980`), range checks (0-109), and the material names array (prepended Alabaster at index 0). Kept a separate `LegacySalvageBaseWcid = 20981` for the LLL-absent fallback so legacy WCID-offset property mappings remain stable.
+**Files:** `Shared/LeyLineLedgerSalvageBankInterop.cs`, `BetterSupportSkills/Skills/LeyLineLedgerSalvageInterop.cs`, `BetterSupportSkills/Skills/SalvageAutoDeposit.cs`, `AutoLoot/Autoloot.cs`
+
+#### 2. AutoLoot salvage snapshot used legacy property arithmetic
+**Problem:** `SnapshotLLLSalvageTotals` computed properties via `40201 + (WCID − 20981)`, which returns wrong properties for non-sequential DepositRules (e.g., Ruby at WCID 21072 read property 40292 instead of 40254). Before/after deltas in loot messages were wrong for materials at DepositRules indices 15-71.
+**Fix:** Now resolves properties via `LeyLineLedgerSalvageBankInterop.GetSalvageMaterialBankPropertyId(wcid)` (same interop BSS/LLL use), extended range to include 20980.
+**Files:** `AutoLoot/Autoloot.cs`
+
+#### 3. Withdraw name matching picked ambiguous substring first
+**Problem:** `/bank salvage redeem Opal` matched "Black Opal" (lower index 16) before plain "Opal" (index 33) because the loop used `label.Contains(token)` with no exact-match pass. Any ambiguous token ("Opal", "Garnet", "Garnet", "Jade") hit the wrong material.
+**Fix:** `TryResolveDepositRuleIndex` now does an exact-match pass first (`label.Equals(token, OrdinalIgnoreCase)`) before falling through to substring matching.
+**Files:** `LeyLineLedger/BankSalvage.cs`
+
+#### 4. Diagnostic logging for suspect-range auto-deposit
+**Problem:** Materials at DepositRules indices 53-71 (WCIDs 21072-21089 and 20980) showed persistent 0 balances in `/bank salvage status` despite confirmed looting. Root cause unclear — property resolution is identical between BSS and LLL display.
+**Fix:** Added automatic Info-level logging at two levels:
+- Shared interop logs every time a suspect WCID is resolved (WCID → DepositRules index → property)
+- BSS TryIncSalvage logs every time a suspect WCID is credited (WCID, property, units, resulting total)
+- Manual `/bank salvage debug resolve` command prints the full DepositRules property mapping table
+
+Collect by deploying and playing normally — the server mod log captures every deposit attempt for the suspect range.
+**Files:** `Shared/LeyLineLedgerSalvageBankInterop.cs`, `BetterSupportSkills/Skills/LeyLineLedgerSalvageInterop.cs`, `LeyLineLedger/BankSalvage.cs`
+
+#### 5. Swayss InqYesNo emote fix (resilient to world-sync)
+**Problem:** Swayss (810002) kept showing "FreeRedistribute" as the popup text instead of "Would you like to redistribute your skills?" because the safety UPDATE targeted a hardcoded `emote_Id = 93157`. World-sync between databases changed Swayss's emote header ID, leaving the old broken row untouched.
+**Fix:** Changed `INSERT IGNORE` to `INSERT ... ON DUPLICATE KEY UPDATE` so existing rows with wrong values are overwritten on every SQL run. Changed the safety UPDATE to match by `object_Id + category + type` (not by emote_Id), so it catches any InqYesNo action on Swayss's Use emote regardless of ID.
+**Files:** `Windblown/Content/SQL/Vendors/04_Swayss_810002.sql`
 
 ### Bug fixes: Vaetha empty emote crash + ManaConversion thread-safety
 

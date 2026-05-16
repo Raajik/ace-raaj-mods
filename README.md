@@ -34,7 +34,7 @@ Server-side corpse autoloot with optional `.utl` profiles (Decal UT classic comp
 - **Learned scroll summary** — after a successful learn, the mod does not echo the scroll name again in the aggregated loot line (vanilla message only).
 - `/autoloot` toggles and profile selection.
 - **Close-time material salvage** — after closing a corpse or non-house chest (house storage excluded), optional pass sends **material-type items and raw salvage bags** (WCID 20981–21089) through BetterSupportSkills auto-salvage into the material bank; other loot stays in the container. Coalesced Mana can still bank to LeyLineLedger on loot/close without a profile match.
-- **Loot stack consolidation** — merges duplicate same-WCID stackable rows in freshly generated corpses (e.g. multiple drudge charm create-list entries). Windblown collector trophies (drudge/rat/wasp/scalp/mob heads) use custom WCIDs **850300–850336** with sibling replacement to vanilla bases; drudge tiers **850300–850303** include **24835** in replacement. SQL stub `Windblown/Content/SQL/Items/05_WindblownCollectorTrophies_850300-850336.sql`; registry `Windblown/docs/TrophyLineRegistry.md`.
+- **Loot stack consolidation** — merges duplicate same-WCID stackable rows in freshly generated corpses (e.g. multiple drudge charm create-list entries). Windblown collector trophies (drudge/rat/wasp/scalp/mob heads) use custom WCIDs **850300–850365** with sibling replacement to vanilla bases; drudge tiers **850300–850303** include **24835** in replacement. Letters (850337–850338) and Olthoi Ichor (850339) are also auto-looted. SQL stub `Windblown/Content/SQL/Items/05_WindblownCollectorTrophies_850300-850336.sql`; registry `Windblown/docs/TrophyLineRegistry.md`.
 
 ### BetterLootControl
 Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot` chest mod; those folders removed from the repo). **Single source of truth for vendor loot rotation** (migrated from QOL 2026-05-05).
@@ -77,7 +77,7 @@ A mutator pipeline for loot, corpses, generators, and player-driven item awakeni
 - **Point-based item leveling** — ALL creature kills grant +1 leveling point; QB-eligible quest completions grant +100. Items level up via discrete points instead of raw XP, decoupling from billion-XP/hour endgame player XP.
 - **Coalesced Mana awakening + upgrading** — All three tiers (Lesser `800000`, Greater `800001`, Aetheric `800002`) can both awaken new items AND upgrade existing awakened items. These items also serve as trophy turn-ins to Collector Vaetha (Windblown). QuickStart is the single configurable default profile.
 - **Loot-time item XP** (`LootGrowthItem`) — items can drop with XP progress already applied.
-- **Pre-awakened drops** (~0.2%) — Awakened-style tiered awakening with XP profiles (QuickStart/Steady/Brutal/Casual), "Awakened" rename, and visual glow.
+- **Pre-awakened drops** (~0.2%) — Awakened-style tiered awakening with XP profiles (QuickStart/Steady/Brutal/Casual), "Awakened" rename (strips gem/element/stat text to base item type, e.g. "Awakened Baton"), and visual glow.
 - **Quest equipment guaranteed pre-awaken** — all NPC-given gear gets auto-awakened + workmanship + imbue.
 - **Pre-imbued loot** (~5%) — random elemental rend, slayer, cleave, or secondary imbue on weapons; defense imbue on armor.
 - **Wield requirement capping** — all loot items get `tier × 50` wield caps so drops match source creature difficulty.
@@ -98,7 +98,7 @@ Applies shard-wide `PropertyManager` presets from a single configuration file.
 ### SpellSiphon
 Extract, cleanse, and transfer spells on items.
 
-**Spellsiphon (WCID 850200)** — a single-use **negative spell cleanser**. Use it on any spell-bearing item to remove harmful debuffs (e.g., Vulnerability, Imperil, Bane). Target item survives; Spellsiphon is consumed. Success rate scales with Magic Item Tinkering skill and Charmed Smith augment.
+**Spellsiphon (WCID 850200)** — a single-use **negative spell cleanser**. Use it on any spell-bearing item to remove harmful debuffs (e.g., Vulnerability, Imperil, Bane, Fester, Decay). Uses ACE's native `IsBeneficial` flag plus a configurable name denylist (`NegativeSpellNameContains`). Target item survives; Spellsiphon is consumed. Success rate scales with Magic Item Tinkering skill and Charmed Smith augment.
 
 **Glyph of Extraction (WCIDs 850210–850219)** — tiered spell extraction tools sold by jewelers:
 - Tier 0 extracts cantrips + unique non-tiered spells

@@ -4,12 +4,12 @@ using AceRaajMods.Shared;
 
 namespace BetterSupportSkills.Skills;
 
-// Bridge to LeyLineLedger /bank salvage PropertyInt64 slots for stack salvage WCIDs 20981–21089.
+// Bridge to LeyLineLedger /bank salvage PropertyInt64 slots for stack salvage WCIDs 20980–21089.
 // Property id must match LeyLineLedger.BankSalvage.ResolveMaterialBankProperty (DepositRules order + optional BankProperty),
 // not WCID − 20981 row index — see Shared/LeyLineLedgerSalvageBankInterop.cs.
 public static class LeyLineLedgerSalvageInterop
 {
-    const uint MinSalvageWcid = 20981;
+    const uint MinSalvageWcid = 20980;
     const uint MaxSalvageWcid = 21089;
 
     public static int GetSalvagePropertyId(uint salvageWcid)
@@ -43,6 +43,13 @@ public static class LeyLineLedgerSalvageInterop
         }
 
         LeyLineLedgerBankInterop.IncBanked(player, prop, units);
+
+        // Info-level logging for suspect WCIDs (21072-21089, indices 53-71) to debug zero-balance issue
+        if (salvageWcid >= 21072 && salvageWcid <= 21089)
+        {
+            ModManager.Log($"[BSS->LLL Salvage-DIAG] WCID {salvageWcid} -> DepositRules prop {prop}: credited {units} units (total after: {LeyLineLedgerBankInterop.GetBanked(player, prop)}).", ModManager.LogLevel.Info);
+        }
+
         ModManager.Log($"[BSS->LLL Salvage] Credited {units} units of WCID {salvageWcid} to property {prop}.", ModManager.LogLevel.Debug);
         return true;
     }

@@ -8,7 +8,7 @@ using ACE.Server.Managers;
 using ACE.Server.WorldObjects;
 
 /// <summary>
-/// Scales mob level/difficulty/XP to nearby players within the same landblock.
+/// Scales mob level/difficulty/XP toward nearby players within the same landblock (upward only — never below template Level).
 /// Solo: scales to player's level. Group: scales to average level of all players inside.
 /// Landscape mobs have soft level caps based on world area tiers; dungeon mobs scale fully.
 /// Players can opt out via chat toggle (/xp mob_scaling in QOL).
@@ -178,6 +178,10 @@ internal static class DynamicMobScaling
             if (settings.LandscapeTierMaxLevels.TryGetValue(tier, out int tierMax))
                 targetLevel = Math.Min(targetLevel, tierMax);
         }
+
+        // Never scale below weenie template. Downward scaling left skills/vitals/loot tier incoherent
+        // (sqrt curves vs linear level, DeathTreasure tier swap only on upscales, etc.).
+        targetLevel = Math.Max(targetLevel, baseLevel);
 
         if (settings.DebugScaling)
         {

@@ -93,7 +93,7 @@ public class Settings
 
     [JsonPropertyName("// EnableHealing")]
     public string EnableHealingDoc { get; init; } = "Healing skill bonus — Recuperation heal-over-time after healing kits (see Recuperation object).";
-    public bool EnableHealing { get; set; } = true;
+    public bool EnableHealing { get; set; } = false;
 
     [JsonPropertyName("// EnableLeadership")]
     public string EnableLeadershipDoc { get; init; } = "Leadership: extra concurrent CombatPet summons (trained +1, specialized +2 vs base 1).";

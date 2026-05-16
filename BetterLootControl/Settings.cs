@@ -97,6 +97,10 @@ public class Settings
     public bool VendorLootLowStatMode { get; init; } = false;
     public bool VendorLootSalvageOnRotation { get; init; } = false;
 
+    // -- Suppressed Drops (WCIDs to strip from ALL creature loot) --
+    public bool EnableSuppressedDropFilter { get; init; } = true;
+    public List<int> SuppressedDropWcids { get; init; } = new() { 22168 };
+
     // -- Loot Economy Control (value + quantity adjustments on corpse loot) --
     public bool EnableLootEconomyControl { get; init; } = false;
     public double LootValueMultiplier { get; init; } = 0.1;

@@ -7,10 +7,10 @@ Item enhancement, mutators, and loot growth system for Windblown.
 EmpyreanAlteration is the largest and most complex mod in the repo. It provides:
 
 1. **Mutators** — runtime item property modifiers applied at drop-time (prefixes, suffixes, auras, scaling)
-2. **Item Level-Up Growth** — XP-based item leveling with augments, chaos triggers, and fixed-level unlocks
+2. **Item Level-Up Growth** — XP-based item leveling with spell upgrades, ratings, imbues, and tinker effects
 3. **Fake Properties** — runtime-computed pseudo-properties that look like real ACE properties (leech, reflections, spell split/splash, kill tasks, etc.)
 4. **Proc Systems** — on-attack and on-hit proc effects with configurable rates
-5. **Item Awakening** — "Awakened" prefix system for loot items
+5. **Item Awakening** — "Awakened" prefix system for loot items; awakening is the on/off switch for XP gain
 
 ## Feature Groups
 
@@ -21,7 +21,7 @@ Features are gated by `AlterationFeature` enum values in `Settings.Features`. Ea
 | Feature | File | Description |
 |---------|------|-------------|
 | `MutatorHooks` | `Features/MutatorHooks.cs` | Master mutator system; applies mutators to items at creation |
-| `ItemLevelUpGrowth` | `Features/ItemLevelingPoints.cs`, `Features/ItemLevelUpLootGrowth.cs` | XP-based item leveling with augments |
+| `ItemLevelUpGrowth` | `Features/ItemLevelUpLootGrowth.cs` | Legacy; ItemXP growth now handled by `QuestItemGrowthHarmony.PostGrantItemXP` |
 | `FakeItemLoot` | `Features/FakeItemLoot.cs` | Runtime item generation for fake-item systems |
 
 ### Item Awakening
@@ -93,7 +93,7 @@ Features are gated by `AlterationFeature` enum values in `Settings.Features`. Ea
 | `Ironman` | — | Ironman mode |
 | `TimeInGame` | `Features/TimeInGame.cs` | In-game time tracking |
 | `EquipPostCreation` | — | Equipment post-creation hooks |
-| `QuestCompletionItemLeveling` | `Features/QuestCompletionItemLeveling.cs` | Quest-based item leveling |
+| `QuestCompletionItemLeveling` | *(deleted)* | Removed — ACE's built-in `GrantItemXP` now handles kill/quest XP for awakened items |
 | `DisableAttunedQOL` | `Features/DisableAttunedQOL.cs` | Attuned item QOL overrides |
 | `EquipmentSetSpellRefresh` | `Features/EquipmentSetSpellRefresh.cs` | Equipment set spell refresh |
 | `ContainerRootPlayer` | — | Container root player tracking |
@@ -123,11 +123,7 @@ Mutators are applied at item drop creation. Each mutator adds prefixes, suffixes
 
 ### Quest Item Growth (Pathwarden / Seasoned Explorer Gear)
 
-Quest reward items (e.g., Pathwarden "Seasoned Explorer" gear) are **not Living Items** — they use a dedicated quest-growth pipeline (`QuestItemGrowthCatchUp`, `QuestItemGrowthLevelEngine`). The system:
-
-- Grants phantom tiers at reward time so organic level-ups match quest-earned quality.
-- Uses point-based curves (`baseXp=15`, `divisor=8.0`, `power=3.2`) — ~400 cumulative quest points = display level 7; this is expected, not a bug.
-- **Rating persistence**: `ArmorJewelryRatingGrowth` and `QuestItemGrowthLevelEngine` write ratings via `BiotaPropertyHelper.SetPersistentPropertyInt`, which updates **both** biota and ACE's ephemeral property cache so ratings survive relogs and are visible immediately.
+Quest reward items (e.g., Pathwarden "Seasoned Explorer" gear) are **not Living Items** — they use a dedicated quest-growth pipeline (`QuestItemGrowthCatchUp`, `QuestItemGrowthLevelEngine`).
 
 ## Cross-Mod Integration
 
@@ -147,8 +143,8 @@ All settings in `Settings.json` (test) / `Settings.json` (repo template).
 | Setting | Type | Default | Purpose |
 |---------|------|---------|---------|
 | `Features` | `List<AlterationFeature>` | `[MutatorHooks]` | Enabled feature groups |
-| `ItemLevelUpGrowthEnabled` | `bool` | `true` | XP-based item leveling |
 | `ChaosTriggeredGrowth` | `bool` | `true` | Chaos tinker → level-up mode |
+| `ItemXpCurveMode` | `enum` | `CharacterTable` | XP curve: `AceGeometric` (stock doubling, caps ~48), `CharacterTable` (XP table deltas, caps ~275, client-compatible), `Geometric` (custom, high caps but client mismatch) |
 | `CloakProcRate` | `double` | `0.05` | Cloak mutator proc rate |
 | `AetheriaProcRate` | `float` | `0.05f` | Aetheria proc rate |
 

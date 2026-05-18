@@ -78,4 +78,42 @@ Collect by deploying and playing normally — the server mod log captures every 
 **Fix:** Changed `INSERT IGNORE` to `INSERT ... ON DUPLICATE KEY UPDATE` so existing rows with wrong values are overwritten on every SQL run. Changed the safety UPDATE to match by `object_Id + category + type` (not by emote_Id), so it catches any InqYesNo action on Swayss's Use emote regardless of ID.
 **Files:** `Windblown/Content/SQL/Vendors/04_Swayss_810002.sql`
 
+## 2026-05-17 (session 2)
+
+### Consolidated item XP system: direct kill/quest XP, CharacterTable curve, weighted level-up distribution
+
+**Branches:** `jeremy/fix/rating-levelup-client-update`, `jeremy/refactor/direct-item-xp-consolidation`
+
+#### 1. Rating level-up client update fix
+**Problem:** `ArmorJewelryRatingGrowth` and `WeaponQuestGrowth` methods wrote rating properties (DamageRating, CritDamageRating, etc.) to the biota and in-memory cache via `SetPersistentPropertyInt`, but never sent `GameMessagePrivateUpdatePropertyInt` to the player's client. The client continued showing cached old values — ratings appeared "added" in the message but never showed on the item.
+**Fix:** Added `GameMessagePrivateUpdatePropertyInt` to all 6 rating methods in `ArmorJewelryRatingGrowth` and both methods in `WeaponQuestGrowth`, matching the existing pattern in `TryScaleExistingRatings`.
+**Files:** `EmpyreanAlteration/ArmorJewelryRatingGrowth.cs`, `EmpyreanAlteration/WeaponQuestGrowth.cs`
+
+#### 2. Removed point-based leveling workaround, re-enabled ACE GrantItemXP
+**Problem:** `PreGrantItemXP` returned `false` for awakened items, suppressing ACE's built-in kill/quest XP auto-allocation. A separate point system (1 pt/kill, 100 pts/quest) replaced it with flat rates that didn't scale with creature difficulty.
+**Fix:** Removed the `return false` skip — ACE's `GrantItemXP` now delivers full kill/quest XP to awakened items. Deleted `CreatureDeathItemLeveling`, `QuestCompletionItemLeveling`, `ItemLevelingPoints` (3 files). Removed `ItemLevelUpGrowth` (redundant — `PostGrantItemXP` handles all growth). Removed settings `ItemLevelingKillPoints`, `ItemLevelingQuestCompletionPoints`, `ItemLevelingBossKillMultiplier`.
+**Files:** Multiple — see commit 59d6a048
+
+#### 3. CharacterTable XP curve mode
+**Problem:** Custom `Geometric` curve (50k base, 1.15x) produced different ItemLevel from the client's built-in math, showing wrong item levels (e.g., 7/15 vs 15/15). Stock `AceGeometric` hard-capped at level 48 due to ulong overflow.
+**Fix:** Switched to `CharacterTable` mode — maps item levels to character XP table deltas (virtual level 6 anchor, 1.0x multiplier). Both server and client compute identically. Supports levels up to ~275 (table max). Skipped the profile-based curve for awakened items when in client-compatible modes.
+**Files:** `EmpyreanAlteration/QuestItemGrowthHarmony.cs`, `EmpyreanAlteration/Settings.json`
+
+#### 4. Weighted level-up distribution
+**Change:** Restructured all four `TryApply*LevelUp` methods to use weighted random rolls: 40% spell upgrade, 20% rating, 15% imbue, 15% tinker, 10% utility. If the preferred outcome can't apply, falls through to remaining paths in priority order — every level-up produces something.
+**Files:** `EmpyreanAlteration/QuestItemGrowthLevelEngine.cs`
+
+#### 5. Protection mods guard for zero-armor items
+**Problem:** Protection mods (ArmorModVsSlash, etc.) have no visible effect on items with 0 armor level (e.g., cloaks). Weighted rolls could pick these as the primary outcome, wasting the level-up.
+**Fix:** Added `ArmorLevel` guard in `TryApplyArmorSteelOrRandomProtection` — skip protection mods if armor level is null or 0. Steel (which bumps armor level) still applies normally.
+**Files:** `EmpyreanAlteration/QuestItemGrowthLevelEngine.cs`
+
+#### 6. Client sync after catch-up growth
+**Fix:** Added explicit `GameMessagePrivateUpdatePropertyInt64` for `ItemTotalXp` and `GameMessagePrivateUpdatePropertyInt` for `ItemMaxLevel` after batch catch-up growth, ensuring the client's item panel shows the correct level and XP bar.
+**Files:** `EmpyreanAlteration/QuestItemGrowthCatchUp.cs`
+
+#### 7. Disabled random spells on awakening
+**Change:** Set `EnableAwakenRandomSpells` default to `false` — newly awakened items no longer roll random spells from SpellSiphon's gem pool.
+**Files:** `EmpyreanAlteration/Settings.LivingItem.cs`, `EmpyreanAlteration/Settings.json`
+
 ### Bug fixes: Vaetha empty emote crash + ManaConversion thread-safety

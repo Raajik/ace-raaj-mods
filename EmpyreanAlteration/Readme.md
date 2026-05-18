@@ -123,6 +123,24 @@ Mutators are applied at item drop creation. Each mutator adds prefixes, suffixes
 
 ### Quest Item Growth (Pathwarden / Seasoned Explorer Gear)
 
+## Gear Rating Properties (Important)
+
+ACE's equipped-item rating cache and combat system read `Gear*` properties (370+ range), **not** the base `DamageRating` (307) / `CritDamageRating` (314) properties.
+
+| Client display | Property the mod sets | Required by ACE |
+|---------------|----------------------|----------------|
+| Damage Rating | `GearDamage` (370) | `GetEquippedItemsRatingSum(PropertyInt.GearDamage)` |
+| Crit Damage Rating | `GearCritDamage` (374) | `GetEquippedItemsRatingSum(PropertyInt.GearCritDamage)` |
+| Damage Resist Rating | `GearDamageResist` (371) | `GetEquippedItemsRatingSum(PropertyInt.GearDamageResist)` |
+| Crit Damage Resist Rating | `GearCritDamageResist` (375) | `GetEquippedItemsRatingSum(PropertyInt.GearCritDamageResist)` |
+| Crit Chance Rating | `GearCrit` (372) | `GetEquippedItemsRatingSum(PropertyInt.GearCrit)` |
+| Healing Boost Rating | `GearHealingBoost` (376) | `GetEquippedItemsRatingSum(PropertyInt.GearHealingBoost)` |
+| Vitality Rating | `GearMaxHealth` (379) ✅ | `GetEquippedItemsRatingSum(PropertyInt.GearMaxHealth)` |
+
+The base `DamageRating` (307) / `CritDamageRating` (314) properties are used for **creature base stats** (e.g., monster damage ratings). Setting them on items writes to the biota correctly but ACE's combat system and client display ignore them for gear.
+
+**All rating code paths** (`ArmorJewelryRatingGrowth`, `WeaponQuestGrowth` minor outcomes, `CloakLootUpgrade`, `TryScaleExistingRatings`) use `Gear*` properties.
+
 Quest reward items (e.g., Pathwarden "Seasoned Explorer" gear) are **not Living Items** — they use a dedicated quest-growth pipeline (`QuestItemGrowthCatchUp`, `QuestItemGrowthLevelEngine`).
 
 ## Cross-Mod Integration

@@ -116,4 +116,9 @@ Collect by deploying and playing normally — the server mod log captures every 
 **Change:** Set `EnableAwakenRandomSpells` default to `false` — newly awakened items no longer roll random spells from SpellSiphon's gem pool.
 **Files:** `EmpyreanAlteration/Settings.LivingItem.cs`, `EmpyreanAlteration/Settings.json`
 
+#### 8. Gear* properties for item ratings (root cause of invisible ratings)
+**Problem:** All rating code paths were setting `DamageRating` (307), `CritDamageRating` (314), `DamageResistRating` (308), `CritDamageResistRating` (316), `HealingBoostRating` (323), `CritRating` (313) — the **creature-base properties**. ACE's equipped-item rating cache and combat system read `GearDamage` (370), `GearCritDamage` (374), `GearDamageResist` (371), `GearCritDamageResist` (375), `GearHealingBoost` (376), `GearCrit` (372) instead. The ratings were correctly stored in the biota but ACE's combat system and client display ignored them for gear items. `GearMaxHealth` (379) was already correct — explaining why Vitality was the only visible rating.
+**Fix:** Changed every property reference across `ArmorJewelryRatingGrowth`, `WeaponQuestGrowth`, `CloakLootUpgrade.ApplyRatingProperty`, `TryScaleExistingRatings`, and `CloakLootRatingTypes` to use the corresponding `GearDamage` instead of `DamageRating`/`CritDamageRating`/etc.
+**Files:** `EmpyreanAlteration/ArmorJewelryRatingGrowth.cs`, `EmpyreanAlteration/Mutators/CloakLootUpgrade.cs`, `EmpyreanAlteration/QuestItemGrowthLevelEngine.cs`, `EmpyreanAlteration/Settings.CloakLoot.cs`, `EmpyreanAlteration/WeaponQuestGrowth.cs`
+
 ### Bug fixes: Vaetha empty emote crash + ManaConversion thread-safety

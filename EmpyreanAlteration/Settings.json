@@ -119,7 +119,7 @@
   "UseFixedGlobalItemMaxLevel": false,
   "GlobalItemMaxLevel": 250,
   "GlobalItemXpPlayerScale": 2.0,
-  "ItemXpGeometricFirstLevelTotal": 20000,
+  "ItemXpGeometricFirstLevelTotal": 50000,
   "ItemXpGeometricMultiplierPerStep": 1.15,
   "UseTierScaledItemMaxLevel": false,
   "ItemMaxLevelsPerTreasureTier": 5,

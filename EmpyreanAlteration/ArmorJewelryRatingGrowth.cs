@@ -122,12 +122,14 @@ internal static class ArmorJewelryRatingGrowth
         QuestItemGrowthLevelEngine.GrowthSummary? summary)
     {
         int before = item.DamageRating ?? 0;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.DamageRating, before + 1);
+        int after = before + 1;
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.DamageRating, after);
         if (summary != null)
             summary.GearDamageRatingSteps += 1;
         if (emitMessages)
             player.SendMessage(
-                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage Rating ({before} -> {before + 1}).");
+                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage Rating ({before} -> {after}).");
+        try { player?.Session?.Network?.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.DamageRating, after)); } catch { }
         return true;
     }
 
@@ -139,12 +141,14 @@ internal static class ArmorJewelryRatingGrowth
         QuestItemGrowthLevelEngine.GrowthSummary? summary)
     {
         int before = item.CritDamageRating ?? 0;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.CritDamageRating, before + 1);
+        int after = before + 1;
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.CritDamageRating, after);
         if (summary != null)
             summary.GearCritDamageRatingSteps += 1;
         if (emitMessages)
             player.SendMessage(
-                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Crit Damage Rating ({before} -> {before + 1}).");
+                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Crit Damage Rating ({before} -> {after}).");
+        try { player?.Session?.Network?.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.CritDamageRating, after)); } catch { }
         return true;
     }
 
@@ -156,12 +160,14 @@ internal static class ArmorJewelryRatingGrowth
         QuestItemGrowthLevelEngine.GrowthSummary? summary)
     {
         int before = item.DamageResistRating ?? 0;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.DamageResistRating, before + 1);
+        int after = before + 1;
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.DamageResistRating, after);
         if (summary != null)
             summary.GearDamageResistRatingSteps += 1;
         if (emitMessages)
             player.SendMessage(
-                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage Resistance Rating ({before} -> {before + 1}).");
+                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage Resistance Rating ({before} -> {after}).");
+        try { player?.Session?.Network?.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.DamageResistRating, after)); } catch { }
         return true;
     }
 
@@ -173,12 +179,14 @@ internal static class ArmorJewelryRatingGrowth
         QuestItemGrowthLevelEngine.GrowthSummary? summary)
     {
         int before = item.CritDamageResistRating ?? 0;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.CritDamageResistRating, before + 1);
+        int after = before + 1;
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.CritDamageResistRating, after);
         if (summary != null)
             summary.GearCritDamageResistRatingSteps += 1;
         if (emitMessages)
             player.SendMessage(
-                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Crit Damage Resistance Rating ({before} -> {before + 1}).");
+                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Crit Damage Resistance Rating ({before} -> {after}).");
+        try { player?.Session?.Network?.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.CritDamageResistRating, after)); } catch { }
         return true;
     }
 
@@ -197,12 +205,14 @@ internal static class ArmorJewelryRatingGrowth
 
         int delta = minV == maxV ? minV : Random.Shared.Next(minV, maxV + 1);
         int before = item.HealingBoostRating ?? 0;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.HealingBoostRating, before + delta);
+        int after = before + delta;
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.HealingBoostRating, after);
         if (summary != null)
             summary.GearHealingBoostRatingGained += delta;
         if (emitMessages)
             player.SendMessage(
-                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{delta} Healing Boost Rating ({before} -> {before + delta}).");
+                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{delta} Healing Boost Rating ({before} -> {after}).");
+        try { player?.Session?.Network?.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.HealingBoostRating, after)); } catch { }
         return true;
     }
 
@@ -221,12 +231,14 @@ internal static class ArmorJewelryRatingGrowth
 
         int delta = minV == maxV ? minV : Random.Shared.Next(minV, maxV + 1);
         int before = item.GearMaxHealth ?? 0;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.GearMaxHealth, before + delta);
+        int after = before + delta;
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.GearMaxHealth, after);
         if (summary != null)
             summary.GearVitalityRatingGained += delta;
         if (emitMessages)
             player.SendMessage(
-                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{delta} Vitality Rating ({before} -> {before + delta}).");
+                $"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +{delta} Vitality Rating ({before} -> {after}).");
+        try { player?.Session?.Network?.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.GearMaxHealth, after)); } catch { }
         return true;
     }
 }

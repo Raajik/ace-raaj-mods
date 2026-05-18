@@ -107,7 +107,7 @@ public class Settings
     public int LockpickBankProperty { get; set; } = 40130;
 
     [JsonPropertyName("// LockpickLootBankPercent")]
-    public string LockpickLootBankPercentDoc { get; init; } = "Fraction of lockpick structure banked when looted from corpses/chests (0.0 = disabled; 0.50 = 50%). Must match LeyLineLedger LockpickLootBankRatio to keep banking consistent.";
+    public string LockpickLootBankPercentDoc { get; init; } = "Fraction of lockpick structure banked when looted from corpses/chests (0.0 = disabled; 0.50 = 50%). Must match LeyLineLedger LockpickLootBankRatio to keep banking consistent."; (feat: lockpick banking at 50%, add to /b list; remove VoidTestWatchdog)
     public float LockpickLootBankPercent { get; set; } = 0.50f;
 
     [JsonPropertyName("// EnableChestAutoLoot")]

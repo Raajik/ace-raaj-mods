@@ -788,6 +788,14 @@ public partial class PatchClass(BasicMod mod, string settingsName = "Settings.js
             sb.Append($"\nPyreals:\n  {pyrealsBanked:N0} banked, {pyrealsHeld:N0} held");
         }
 
+        // Lockpick durability banked (AutoLoot banks lockpicks from corpses to PropertyInt64 40130)
+        const int lockpickBankProp = 40130;
+        long lockpickBanked = player.GetProperty((ACE.Entity.Enum.Properties.PropertyInt64)lockpickBankProp) ?? 0L;
+        if (lockpickBanked > 0)
+        {
+            sb.Append($"\nLockpick Durability (Banked):\n  {lockpickBanked:N0}");
+        }
+
         foreach (var entry in ownedItems)
             sb.Append($"\n{entry.Item.Name}:\n  {entry.Banked:N0} banked, {entry.Held:N0} held");
 

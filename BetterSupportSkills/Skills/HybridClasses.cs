@@ -314,7 +314,7 @@ internal static class HybridClasses
         try
         {
             int extraTargets = 0;
-            foreach (var obj in lb.GetWorldObjectsForPhysicsHandling())
+            foreach (var obj in lb.GetWorldObjectsForPhysicsHandling().ToList())
             {
                 if (obj is not Creature c || c == target || c.IsDead || c is Player) continue;
                 if (player.GetDistance(obj) > settings.DrainSpellRangeMeters) continue;
@@ -405,7 +405,7 @@ internal static class HybridClasses
 
             float range = (float)bmSettings.AuraRangeMeters;
             int totalDrain = 0;
-            foreach (var obj in lb.GetWorldObjectsForPhysicsHandling())
+            foreach (var obj in lb.GetWorldObjectsForPhysicsHandling().ToList())
             {
                 if (obj is not Creature c || c is Player || c.IsDead)
                     continue;

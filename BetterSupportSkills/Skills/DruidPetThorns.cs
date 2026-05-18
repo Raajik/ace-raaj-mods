@@ -143,7 +143,7 @@ internal static class DruidPetThorns
         if (lb == null)
             return;
 
-        var raw = lb.GetWorldObjectsForPhysicsHandling();
+        var raw = lb.GetWorldObjectsForPhysicsHandling().ToList();
         if (raw == null)
             return;
 

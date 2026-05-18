@@ -107,8 +107,8 @@ public class Settings
     public int LockpickBankProperty { get; set; } = 40130;
 
     [JsonPropertyName("// LockpickLootBankPercent")]
-    public string LockpickLootBankPercentDoc { get; init; } = "Percent of lockpick structure banked when looted from corpses (0.0 = disabled; LeyLineLedger now owns lockpick banking).";
-    public float LockpickLootBankPercent { get; set; } = 0.0f;
+    public string LockpickLootBankPercentDoc { get; init; } = "Fraction of lockpick structure banked when looted from corpses/chests (0.0 = disabled; 0.50 = 50%). Must match LeyLineLedger LockpickLootBankRatio to keep banking consistent.";
+    public float LockpickLootBankPercent { get; set; } = 0.50f;
 
     [JsonPropertyName("// EnableChestAutoLoot")]
     public string EnableChestAutoLootDoc { get; init; } = "When true, opening a non-house chest runs profile autoloot immediately; closing runs the same banking/profile passes so leftovers credit LLL before ACE clears the chest (then EnableDelayedSalvageSweep controls material salvage). House chests (HouseOwner) are never touched.";

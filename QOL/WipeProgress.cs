@@ -61,6 +61,18 @@ internal static class WipeProgress
             if (string.IsNullOrWhiteSpace(parentDir))
                 parentDir = modDir;
 
+            // Also wipe from ModData (survives deploy but contains live state)
+            string serverRoot;
+            try
+            {
+                serverRoot = Path.GetDirectoryName(typeof(ModManager).Assembly.Location) ?? ".";
+            }
+            catch
+            {
+                serverRoot = ".";
+            }
+            var modDataRoot = Path.GetFullPath(Path.Combine(serverRoot, "ModData"));
+
             var filesToWipe = new[]
             {
                 Path.Combine(parentDir, "AchievementUnlocked", "AccountAchievements.json"),
@@ -68,6 +80,12 @@ internal static class WipeProgress
                 Path.Combine(parentDir, "AchievementUnlocked", "AccountMilestoneBonus.json"),
                 Path.Combine(parentDir, "AchievementUnlocked", "AccountTierProgress.json"),
                 Path.Combine(parentDir, "Loremaster", "AccountQuestFlags.json"),
+                // ModData equivalents
+                Path.Combine(modDataRoot, "AchievementUnlocked", "AccountAchievements.json"),
+                Path.Combine(modDataRoot, "AchievementUnlocked", "AccountPoolBonus.json"),
+                Path.Combine(modDataRoot, "AchievementUnlocked", "AccountMilestoneBonus.json"),
+                Path.Combine(modDataRoot, "AchievementUnlocked", "AccountTierProgress.json"),
+                Path.Combine(modDataRoot, "Loremaster", "AccountQuestFlags.json"),
             };
 
             foreach (var path in filesToWipe)

@@ -25,7 +25,7 @@ public partial class Settings
 
     [JsonPropertyName("// EnableAwakenRandomSpells")]
     public string EnableAwakenRandomSpellsDoc { get; init; } = "When true and SpellSiphon is loaded, newly awakened items roll bonus magic spells using SpellSiphon's gem spell pool.";
-    public bool EnableAwakenRandomSpells { get; set; } = true;
+    public bool EnableAwakenRandomSpells { get; set; } = false;
 
     [JsonPropertyName("// AwakenRandomSpellCountMin")]
     public string AwakenRandomSpellCountMinDoc { get; init; } = "Minimum bonus spells rolled onto an awakened item (SpellSiphon pool).";

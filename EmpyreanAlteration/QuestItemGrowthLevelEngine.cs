@@ -173,26 +173,55 @@ internal static class QuestItemGrowthLevelEngine
 
     private static bool TryApplyWeaponLevelUp(WorldObject item, Player player, int level, Settings settings, bool emitMessages, GrowthSummary? summary)
     {
-        // Normally: 0) Rare +Cleaving / +surge rating (WeaponQuestGrowth), 1) Imbues, 2) ladder + stat + minor, 3) salvage-like bonuses.
-        // After one imbue and while spellbook has fewer than four entries: spells/stat/minor/salvage/utility first; defer further imbues until spell cap or no other effect.
+        // Rare cleaving/surge always rolls first (very rare, ~1%)
         if (settings.WeaponQuestGrowth is { Enabled: true }
             && WeaponQuestGrowth.TryApplyRarePropertyLevelUp(item, player, level, settings, emitMessages, summary))
             return true;
 
-        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item, settings);
+        bool wqEnabled = settings.WeaponQuestGrowth is { Enabled: true };
 
-        if (!prioritizeSpells)
+        // Weighted primary outcome
+        double primaryRoll = Random.Shared.NextDouble();
+
+        if (primaryRoll < 0.40 && wqEnabled)  // 40%: spell ladder
+        {
+            if (WeaponQuestGrowth.TryApplySpellLadder(item, player, level, settings, emitMessages, out string? wld))
+            {
+                if (summary != null && !string.IsNullOrWhiteSpace(wld))
+                    summary.AddSpell(wld);
+                return true;
+            }
+        }
+        else if (primaryRoll < 0.60)  // 20%: stat/rating
+        {
+            if (wqEnabled && WeaponQuestGrowth.TryApplyStatBranch(item, player, level, settings, emitMessages, summary, out _))
+                return true;
+            if (wqEnabled && WeaponQuestGrowth.TryApplyMinorOutcome(item, player, level, settings, emitMessages, summary, out _))
+                return true;
+        }
+        else if (primaryRoll < 0.75)  // 15%: imbue
         {
             if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary))
                 return true;
         }
-
-        if (settings.WeaponQuestGrowth is { Enabled: true })
+        else if (primaryRoll < 0.90)  // 15%: salvage
         {
-            if (WeaponQuestGrowth.TryApplySpellLadder(item, player, level, settings, emitMessages, out string? weaponLadderDesc))
+            if (TryApplySalvageLikeBonus(item, player, level, settings, forWeapons: true, emitMessages, summary))
+                return true;
+        }
+        else  // 10%: utility
+        {
+            if (QuestGrowthUtilityHelper.TryApplyUtility(item, player, level, settings, emitMessages, summary))
+                return true;
+        }
+
+        // Fall through to remaining paths
+        if (wqEnabled)
+        {
+            if (WeaponQuestGrowth.TryApplySpellLadder(item, player, level, settings, emitMessages, out string? wld2))
             {
-                if (summary != null && !string.IsNullOrWhiteSpace(weaponLadderDesc))
-                    summary.AddSpell(weaponLadderDesc);
+                if (summary != null && !string.IsNullOrWhiteSpace(wld2))
+                    summary.AddSpell(wld2);
                 return true;
             }
 
@@ -202,28 +231,15 @@ internal static class QuestItemGrowthLevelEngine
             if (WeaponQuestGrowth.TryApplyMinorOutcome(item, player, level, settings, emitMessages, summary, out _))
                 return true;
         }
-        else if (SpellGrowthHelper.TryApplySpellGrowth(
-                     item,
-                     player,
-                     level,
-                     settings,
-                     emitMessages,
-                     out string? spellDesc,
-                     SpellGrowthHelper.GetWeaponSpellCategory(item)))
-        {
-            if (summary != null && !string.IsNullOrWhiteSpace(spellDesc))
-                summary.AddSpell(spellDesc);
+
+        if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary))
             return true;
-        }
 
         if (TryApplySalvageLikeBonus(item, player, level, settings, forWeapons: true, emitMessages, summary))
             return true;
 
         if (QuestGrowthUtilityHelper.TryApplyUtility(item, player, level, settings, emitMessages, summary))
             return true;
-
-        if (prioritizeSpells)
-            return TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary);
 
         return false;
     }
@@ -235,37 +251,53 @@ internal static class QuestItemGrowthLevelEngine
 
     private static bool TryApplyArmorLevelUp(WorldObject item, Player player, int level, Settings settings, bool emitMessages, GrowthSummary? summary)
     {
-        // 1) Try a defensive imbue / effect first (skipped while prioritizing spell fill after first imbue).
-        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item, settings);
+        // Weighted primary: try a preferred outcome first; fall through to remaining if it fails.
+        double primaryRoll = Random.Shared.NextDouble();
 
-        if (!prioritizeSpells)
+        if (primaryRoll < 0.40)  // 40%: spell upgrade
+        {
+            if (SpellGrowthHelper.TryApplySpellGrowth(item, player, level, settings, emitMessages, out string? sd, SpellGrowthCategory.ArmorClothing))
+            {
+                if (summary != null && !string.IsNullOrWhiteSpace(sd))
+                    summary.AddSpell(sd);
+                return true;
+            }
+        }
+        else if (primaryRoll < 0.60)  // 20%: rating
+        {
+            if (ArmorJewelryRatingGrowth.TryApply(item, player, level, settings, ArmorJewelryRatingGrowth.RatingSlotKind.NonJewelryClothing, emitMessages, summary))
+                return true;
+        }
+        else if (primaryRoll < 0.75)  // 15%: imbue
         {
             if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary))
                 return true;
         }
-
-        if (SpellGrowthHelper.TryApplySpellGrowth(
-                item,
-                player,
-                level,
-                settings,
-                emitMessages,
-                out string? spellDesc,
-                SpellGrowthCategory.ArmorClothing))
+        else if (primaryRoll < 0.90)  // 15%: tinker (steel/protection, salvage)
         {
-            if (summary != null && !string.IsNullOrWhiteSpace(spellDesc))
-                summary.AddSpell(spellDesc);
+            if (TryApplyArmorSteelOrRandomProtection(item, player, level, settings, emitMessages, summary))
+                return true;
+            if (TryApplySalvageLikeBonus(item, player, level, settings, forWeapons: false, emitMessages, summary))
+                return true;
+        }
+        else  // 10%: utility
+        {
+            if (QuestGrowthUtilityHelper.TryApplyUtility(item, player, level, settings, emitMessages, summary))
+                return true;
+        }
+
+        // Fall through: remaining paths in priority order
+        if (SpellGrowthHelper.TryApplySpellGrowth(item, player, level, settings, emitMessages, out string? fd, SpellGrowthCategory.ArmorClothing))
+        {
+            if (summary != null && !string.IsNullOrWhiteSpace(fd))
+                summary.AddSpell(fd);
             return true;
         }
 
-        if (ArmorJewelryRatingGrowth.TryApply(
-                item,
-                player,
-                level,
-                settings,
-                ArmorJewelryRatingGrowth.RatingSlotKind.NonJewelryClothing,
-                emitMessages,
-                summary))
+        if (ArmorJewelryRatingGrowth.TryApply(item, player, level, settings, ArmorJewelryRatingGrowth.RatingSlotKind.NonJewelryClothing, emitMessages, summary))
+            return true;
+
+        if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary))
             return true;
 
         if (TryApplyArmorSteelOrRandomProtection(item, player, level, settings, emitMessages, summary))
@@ -276,9 +308,6 @@ internal static class QuestItemGrowthLevelEngine
 
         if (QuestGrowthUtilityHelper.TryApplyUtility(item, player, level, settings, emitMessages, summary))
             return true;
-
-        if (prioritizeSpells)
-            return TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary);
 
         return false;
     }
@@ -371,36 +400,50 @@ internal static class QuestItemGrowthLevelEngine
 
     private static bool TryApplyShieldLevelUp(WorldObject item, Player player, int level, Settings settings, bool emitMessages, GrowthSummary? summary)
     {
-        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item, settings);
+        double primaryRoll = Random.Shared.NextDouble();
 
-        if (!prioritizeSpells)
+        if (primaryRoll < 0.40)  // 40%: spell upgrade
+        {
+            if (SpellGrowthHelper.TryApplySpellGrowth(item, player, level, settings, emitMessages, out string? sd, SpellGrowthCategory.Shield))
+            {
+                if (summary != null && !string.IsNullOrWhiteSpace(sd))
+                    summary.AddSpell(sd);
+                return true;
+            }
+        }
+        else if (primaryRoll < 0.60)  // 20%: rating
+        {
+            if (ArmorJewelryRatingGrowth.TryApply(item, player, level, settings, ArmorJewelryRatingGrowth.RatingSlotKind.Shield, emitMessages, summary))
+                return true;
+        }
+        else if (primaryRoll < 0.75)  // 15%: imbue
         {
             if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary))
                 return true;
         }
-
-        if (SpellGrowthHelper.TryApplySpellGrowth(
-                item,
-                player,
-                level,
-                settings,
-                emitMessages,
-                out string? spellDesc,
-                SpellGrowthCategory.Shield))
+        else if (primaryRoll < 0.90)  // 15%: tinker (salvage)
         {
-            if (summary != null && !string.IsNullOrWhiteSpace(spellDesc))
-                summary.AddSpell(spellDesc);
+            if (TryApplySalvageLikeBonus(item, player, level, settings, forWeapons: false, emitMessages, summary))
+                return true;
+        }
+        else  // 10%: utility
+        {
+            if (QuestGrowthUtilityHelper.TryApplyUtility(item, player, level, settings, emitMessages, summary))
+                return true;
+        }
+
+        // Fall through
+        if (SpellGrowthHelper.TryApplySpellGrowth(item, player, level, settings, emitMessages, out string? fd, SpellGrowthCategory.Shield))
+        {
+            if (summary != null && !string.IsNullOrWhiteSpace(fd))
+                summary.AddSpell(fd);
             return true;
         }
 
-        if (ArmorJewelryRatingGrowth.TryApply(
-                item,
-                player,
-                level,
-                settings,
-                ArmorJewelryRatingGrowth.RatingSlotKind.Shield,
-                emitMessages,
-                summary))
+        if (ArmorJewelryRatingGrowth.TryApply(item, player, level, settings, ArmorJewelryRatingGrowth.RatingSlotKind.Shield, emitMessages, summary))
+            return true;
+
+        if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary))
             return true;
 
         if (TryApplySalvageLikeBonus(item, player, level, settings, forWeapons: false, emitMessages, summary))
@@ -408,9 +451,6 @@ internal static class QuestItemGrowthLevelEngine
 
         if (QuestGrowthUtilityHelper.TryApplyUtility(item, player, level, settings, emitMessages, summary))
             return true;
-
-        if (prioritizeSpells)
-            return TryGrantImbue(item, player, level, settings, isArmorOrWeapon: true, emitMessages, summary);
 
         return false;
     }
@@ -422,38 +462,50 @@ internal static class QuestItemGrowthLevelEngine
 
     private static bool TryApplyJewelryLevelUp(WorldObject item, Player player, int level, Settings settings, bool emitMessages, GrowthSummary? summary)
     {
-        // Jewelry: strongly prefer an imbue if none exists, then spells/cantrips, then fall back to defensive/utility salvage-like tweaks.
-        // After one imbue and while spellbook has fewer than four entries: spells and other effects before further imbues.
-        bool prioritizeSpells = ShouldPrioritizeSpellsOverImbueAndSalvage(item, settings);
+        double primaryRoll = Random.Shared.NextDouble();
 
-        if (!prioritizeSpells)
+        if (primaryRoll < 0.40)  // 40%: spell upgrade
+        {
+            if (SpellGrowthHelper.TryApplySpellGrowth(item, player, level, settings, emitMessages, out string? sd, SpellGrowthCategory.Jewelry))
+            {
+                if (summary != null && !string.IsNullOrWhiteSpace(sd))
+                    summary.AddSpell(sd);
+                return true;
+            }
+        }
+        else if (primaryRoll < 0.60)  // 20%: rating
+        {
+            if (ArmorJewelryRatingGrowth.TryApply(item, player, level, settings, ArmorJewelryRatingGrowth.RatingSlotKind.Jewelry, emitMessages, summary))
+                return true;
+        }
+        else if (primaryRoll < 0.75)  // 15%: imbue
         {
             if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: false, emitMessages, summary))
                 return true;
         }
-
-        if (SpellGrowthHelper.TryApplySpellGrowth(
-                item,
-                player,
-                level,
-                settings,
-                emitMessages,
-                out string? spellDesc,
-                SpellGrowthCategory.Jewelry))
+        else if (primaryRoll < 0.90)  // 15%: tinker (jewelry salvage)
         {
-            if (summary != null && !string.IsNullOrWhiteSpace(spellDesc))
-                summary.AddSpell(spellDesc);
+            if (TryApplySalvageLikeBonus(item, player, level, settings, forWeapons: false, emitMessages, summary, preferJewelry: true))
+                return true;
+        }
+        else  // 10%: utility
+        {
+            if (QuestGrowthUtilityHelper.TryApplyUtility(item, player, level, settings, emitMessages, summary))
+                return true;
+        }
+
+        // Fall through
+        if (SpellGrowthHelper.TryApplySpellGrowth(item, player, level, settings, emitMessages, out string? fd, SpellGrowthCategory.Jewelry))
+        {
+            if (summary != null && !string.IsNullOrWhiteSpace(fd))
+                summary.AddSpell(fd);
             return true;
         }
 
-        if (ArmorJewelryRatingGrowth.TryApply(
-                item,
-                player,
-                level,
-                settings,
-                ArmorJewelryRatingGrowth.RatingSlotKind.Jewelry,
-                emitMessages,
-                summary))
+        if (ArmorJewelryRatingGrowth.TryApply(item, player, level, settings, ArmorJewelryRatingGrowth.RatingSlotKind.Jewelry, emitMessages, summary))
+            return true;
+
+        if (TryGrantImbue(item, player, level, settings, isArmorOrWeapon: false, emitMessages, summary))
             return true;
 
         if (TryApplySalvageLikeBonus(item, player, level, settings, forWeapons: false, emitMessages, summary, preferJewelry: true))
@@ -461,9 +513,6 @@ internal static class QuestItemGrowthLevelEngine
 
         if (QuestGrowthUtilityHelper.TryApplyUtility(item, player, level, settings, emitMessages, summary))
             return true;
-
-        if (prioritizeSpells)
-            return TryGrantImbue(item, player, level, settings, isArmorOrWeapon: false, emitMessages, summary);
 
         return false;
     }

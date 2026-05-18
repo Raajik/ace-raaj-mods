@@ -543,7 +543,7 @@
   "// UseItemTypeInAwakenedName": "When true, names use '{prefix} {ItemType}' (e.g. Awakened MeleeWeapon). When false, strip material from original name (legacy).",
   "UseItemTypeInAwakenedName": true,
   "// EnableAwakenRandomSpells": "When true and SpellSiphon is loaded, awakened items roll bonus spells from SpellSiphon's gem pool.",
-  "EnableAwakenRandomSpells": true,
+  "EnableAwakenRandomSpells": false,
   "// AwakenRandomSpellCountMin": "Minimum bonus spells on awaken (SpellSiphon pool).",
   "AwakenRandomSpellCountMin": 2,
   "// AwakenRandomSpellCountMax": "Maximum bonus spells on awaken (SpellSiphon pool).",

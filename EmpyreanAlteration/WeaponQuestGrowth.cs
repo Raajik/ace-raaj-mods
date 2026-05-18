@@ -317,12 +317,14 @@ internal static class WeaponQuestGrowth
     {
         appliedDescription = null;
         int drBefore = BiotaPropertyHelper.GetBiotaPropertyIntRaw(item, PropertyInt.DamageRating) ?? 0;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.DamageRating, drBefore + 1);
+        int drAfter = drBefore + 1;
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.DamageRating, drAfter);
         if (summary != null)
             summary.MinorDamageRatingCount++;
         appliedDescription = "+1 damage rating (minor)";
         if (emitMessages)
-            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage Rating ({drBefore} -> {drBefore + 1}).");
+            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Damage Rating ({drBefore} -> {drAfter}).");
+        try { player?.Session?.Network?.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.DamageRating, drAfter)); } catch { }
         return true;
     }
 
@@ -336,12 +338,14 @@ internal static class WeaponQuestGrowth
     {
         appliedDescription = null;
         int critBefore = BiotaPropertyHelper.GetBiotaPropertyIntRaw(item, PropertyInt.CritDamageRating) ?? 0;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.CritDamageRating, critBefore + 1);
+        int critAfter = critBefore + 1;
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.CritDamageRating, critAfter);
         if (summary != null)
             summary.MinorCritDamageRatingCount++;
         appliedDescription = "+1 crit damage rating (minor)";
         if (emitMessages)
-            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Crit Damage Rating ({critBefore} -> {critBefore + 1}).");
+            player.SendMessage($"{item.Name} has reached level {level}/{item.ItemMaxLevel} and gains +1 Crit Damage Rating ({critBefore} -> {critAfter}).");
+        try { player?.Session?.Network?.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.CritDamageRating, critAfter)); } catch { }
         return true;
     }
 

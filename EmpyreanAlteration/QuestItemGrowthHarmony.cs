@@ -112,8 +112,10 @@ internal static class QuestItemGrowthItemXpCurveHarmony
         Settings? s = PatchClass.Settings;
 
         // Awakened items with a LivingEquipment-style profile use the profile-based curve
-        // (skipped in AceGeometric mode so client stock ACE math matches)
-        if (item != null && s != null && s.ItemXpCurveMode != ItemXpCurveMode.AceGeometric
+        // (skipped in AceGeometric and CharacterTable modes — client math matches natively)
+        if (item != null && s != null
+            && s.ItemXpCurveMode != ItemXpCurveMode.AceGeometric
+            && s.ItemXpCurveMode != ItemXpCurveMode.CharacterTable
             && item.GetProperty(LivingEquipmentProperties.IsAwakened) == true)
         {
             AwakenedItemAwakener.TryMigrateCurve(item, s);
@@ -159,8 +161,10 @@ internal static class QuestItemGrowthItemXpCurveHarmony
         Settings? s = PatchClass.Settings;
 
         // Awakened items with a LivingEquipment-style profile use the profile-based curve
-        // (skipped in AceGeometric mode so client stock ACE math matches)
-        if (item != null && s != null && s.ItemXpCurveMode != ItemXpCurveMode.AceGeometric
+        // (skipped in AceGeometric and CharacterTable modes -- client math matches natively)
+        if (item != null && s != null
+            && s.ItemXpCurveMode != ItemXpCurveMode.AceGeometric
+            && s.ItemXpCurveMode != ItemXpCurveMode.CharacterTable
             && item.GetProperty(LivingEquipmentProperties.IsAwakened) == true)
         {
             AwakenedItemAwakener.TryMigrateCurve(item, s);

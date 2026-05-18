@@ -123,7 +123,7 @@
   "ItemXpGeometricMultiplierPerStep": 1.15,
   "UseTierScaledItemMaxLevel": false,
   "ItemMaxLevelsPerTreasureTier": 5,
-  "ItemXpCurveMode": "AceGeometric",
+  "ItemXpCurveMode": "CharacterTable",
   "ItemXpVirtualCharacterLevel": 6,
   "ItemXpCharacterCurveMultiplier": 1.0,
   "ItemXpDummyBaseXp": 1,

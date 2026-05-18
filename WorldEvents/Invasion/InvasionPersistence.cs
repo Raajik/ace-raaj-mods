@@ -4,7 +4,7 @@ namespace WorldEvents;
 
 internal static class InvasionPersistence
 {
-    static readonly string DataDir = Path.Combine(ModManager.ModPath, "WorldEvents", "Data", "Invasion");
+    static readonly string DataDir = WorldEventsDataPaths.InModData("Data", "Invasion");
     static readonly string ActiveFile = Path.Combine(DataDir, "ActiveInvasion.json");
     static readonly string LegacyCwdFile = Path.Combine(Environment.CurrentDirectory, "Data", "Invasion", "ActiveInvasion.json");
 

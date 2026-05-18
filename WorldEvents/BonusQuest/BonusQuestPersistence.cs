@@ -12,7 +12,7 @@ internal static class BonusQuestPersistence
     };
 
     static string DataDirectory =>
-        Path.Combine(ModManager.ModPath, "WorldEvents", "Data", "BonusQuest");
+        WorldEventsDataPaths.InModData("Data", "BonusQuest");
 
     static string ActiveWindowFile =>
         Path.Combine(DataDirectory, "ActiveBonusQuest.json");

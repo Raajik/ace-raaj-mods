@@ -10,7 +10,7 @@ internal static class HuntPersistence
     };
 
     internal static string DataDirectory =>
-        Path.Combine(ModManager.ModPath, "WorldEvents", "Data");
+        WorldEventsDataPaths.InModData("Data");
 
     internal static string GlobalFile =>
         Path.Combine(DataDirectory, "GlobalSpeciesKills.json");

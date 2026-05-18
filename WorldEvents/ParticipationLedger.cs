@@ -6,7 +6,7 @@ namespace WorldEvents;
 
 public static class ParticipationLedger
 {
-    internal static readonly string BasePath = Path.Combine(ModManager.ModPath, "WorldEvents", "Participation");
+    internal static readonly string BasePath = WorldEventsDataPaths.InModData("Participation");
     private static readonly ConcurrentDictionary<uint, object> FileLocks = new();
 
     public static void RecordCompletion(uint accountId, string eventType, string questName)

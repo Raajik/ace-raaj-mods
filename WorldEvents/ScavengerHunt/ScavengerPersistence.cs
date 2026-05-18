@@ -10,7 +10,7 @@ internal static class ScavengerPersistence
     };
 
     internal static string DataDirectory =>
-        Path.Combine(ModManager.ModPath, "WorldEvents", "Data", "ScavengerHunt");
+        WorldEventsDataPaths.InModData("Data", "ScavengerHunt");
 
     internal static string ActiveEventFile =>
         Path.Combine(DataDirectory, "ActiveEvent.json");

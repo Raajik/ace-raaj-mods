@@ -4,9 +4,9 @@ namespace WorldEvents;
 
 internal static class SalePersistence
 {
-    static string DataDir => Path.Combine(ModManager.ModPath, "WorldEvents", "Data", "Sale");
+    static string DataDir => WorldEventsDataPaths.InModData("Data", "Sale");
     static string ActiveSalePath => Path.Combine(DataDir, "ActiveSale.json");
-    static string LegacyActiveSalePath => Path.Combine(ModManager.ModPath, "Data", "Sale", "ActiveSale.json");
+    static string LegacyActiveSalePath => WorldEventsDataPaths.InLegacyModRoot("Data", "Sale", "ActiveSale.json");
 
     internal static void EnsureDirectories() => Directory.CreateDirectory(DataDir);
 

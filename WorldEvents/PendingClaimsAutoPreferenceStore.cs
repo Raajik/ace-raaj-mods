@@ -10,7 +10,7 @@ internal sealed class PendingClaimsAutoPreferenceFile
 // Per-character disk preference for 2h periodic auto-claim (/claim auto toggles). Survives logouts (JSON next to PendingClaims).
 internal static class PendingClaimsAutoPreferenceStore
 {
-    internal static readonly string BasePath = Path.Combine(ModManager.ModPath, "WorldEvents", "PendingClaimsAuto");
+    internal static readonly string BasePath = WorldEventsDataPaths.InModData("PendingClaimsAuto");
 
     internal static bool IsPeriodicAutoEnabled(uint characterGuidFull)
     {

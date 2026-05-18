@@ -22,7 +22,7 @@ internal sealed class PendingEventClaimsFile
 
 internal static class PendingEventClaimsStore
 {
-    internal static readonly string BasePath = Path.Combine(ModManager.ModPath, "WorldEvents", "PendingClaims");
+    internal static readonly string BasePath = WorldEventsDataPaths.InModData("PendingClaims");
     private static readonly ConcurrentDictionary<string, object> FileLocks = new(StringComparer.Ordinal);
 
     internal static void Enqueue(uint characterGuidFull, PendingEventLootEntry entry)

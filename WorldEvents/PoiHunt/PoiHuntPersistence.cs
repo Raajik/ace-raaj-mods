@@ -13,7 +13,7 @@ internal static class PoiHuntPersistence
     };
 
     internal static string DataDirectory =>
-        Path.Combine(ModManager.ModPath, "WorldEvents", "Data", "PoiHunt");
+        WorldEventsDataPaths.InModData("Data", "PoiHunt");
 
     internal static string ActiveEventFile =>
         Path.Combine(DataDirectory, "ActiveEvent.json");

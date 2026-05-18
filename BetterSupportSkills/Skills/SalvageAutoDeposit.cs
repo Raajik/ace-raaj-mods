@@ -171,8 +171,17 @@ public static class SalvageAutoDeposit
         if (rate <= 0.0)
             return true;
 
+        // Not a salvage bag — try material-type salvage (raw gems, armor, weapons)
         if (!IsSalvageStack(item.WeenieClassId))
+        {
+            if (TryAutoSalvageItem(__instance, item))
+            {
+                item.Destroy();
+                __result = true;
+                return false;
+            }
             return true;
+        }
 
         var settings = PatchClass.Settings;
         if (settings?.EnableSalvage != true)

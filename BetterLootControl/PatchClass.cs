@@ -58,6 +58,9 @@ public partial class PatchClass : BasicPatch<Settings>
 
         // Apply global rare drops (Mana Lattice, Glyph of Extraction)
         ApplyGlobalRareDropsPatch(ModC.Harmony);
+
+        // Apply suppressed drop filter (quarterstaff suppression)
+        ApplySuppressedDropFilterPatch(ModC.Harmony);
     }
 
     public override async Task OnStartSuccess()
@@ -113,6 +116,32 @@ public partial class PatchClass : BasicPatch<Settings>
         catch (Exception ex)
         {
             ModManager.Log($"[BetterLootControl] Failed to apply loot WCID substitution patch: {ex.Message}", ModManager.LogLevel.Warn);
+        }
+    }
+
+    // Manually apply SuppressedDropFilter.PreTryAddToInventory prefix — PatchAllUncategorized
+    // does not discover patches in separate classes without HarmonyPatchCategory.
+    // Switched from GenerateTreasure postfix to TryAddToInventory prefix for more reliable interception
+    // (GenerateTreasure postfix was silently not executing despite being "applied").
+    private static void ApplySuppressedDropFilterPatch(Harmony harmony)
+    {
+        try
+        {
+            var tryAdd = AccessTools.DeclaredMethod(typeof(Container), nameof(Container.TryAddToInventory), new[] { typeof(WorldObject), typeof(int), typeof(bool), typeof(bool) });
+            if (tryAdd != null)
+            {
+                var prefix = new HarmonyMethod(typeof(SuppressedDropFilter), nameof(SuppressedDropFilter.PreTryAddToInventory));
+                harmony.Patch(tryAdd, prefix: prefix);
+                ModManager.Log("[BetterLootControl] SuppressedDropFilter patch applied (prefixed Corpse.TryAddToInventory).", ModManager.LogLevel.Info);
+            }
+            else
+            {
+                ModManager.Log("[BetterLootControl] Could not find Container.TryAddToInventory for patching.", ModManager.LogLevel.Warn);
+            }
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[BetterLootControl] Failed to apply SuppressedDropFilter patch: {ex.Message}", ModManager.LogLevel.Warn);
         }
     }
 

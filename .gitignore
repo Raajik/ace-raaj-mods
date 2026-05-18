@@ -58,6 +58,16 @@ ACE-1.76.4751/
 all_cs.txt
 cs_files.txt
 
+# Runtime artifacts (server-generated, never tracked)
+AccountQuestFlags.json
+BLC_DEBUG.txt
+BLC_VENDOR.txt
+ExchangePool.json
+RepeatQbTracker.json
+Data/
+ModData/
+Server/
+
 # WIP mods and experiments (not tracked until promoted out of this folder)
 Work-In-Progress/
 

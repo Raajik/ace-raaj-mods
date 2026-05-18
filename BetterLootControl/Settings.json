@@ -10,10 +10,10 @@
   "MinResetIntervalSeconds": 600,
   "MaxResetIntervalSeconds": 1200,
 
-  FilterUnusableScrollDropsForKiller: true,
+  "FilterUnusableScrollDropsForKiller": true,
 
-  EnableSuppressedDropFilter: true,
-  SuppressedDropWcids: [22168],
+  "EnableSuppressedDropFilter": true,
+  "SuppressedDropWcids": [22168],
 
   "EnableGlobalRareDrops": true,
   "RareDropChance": 0.007,

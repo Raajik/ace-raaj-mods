@@ -111,12 +111,12 @@ public static class LeyLineLedgerSalvageBankInterop
             int bankOverride = CoerceInt32(ruleType.GetProperty("BankProperty")?.GetValue(rule));
             bankPropertyId = bankOverride != 0 ? bankOverride : firstId + i;
 
-            // Diagnostic: log suspect-range WCID resolutions (21072-21089, 20980) at Info level
+            // Diagnostic: log suspect-range WCID resolutions (21072-21089, 20980) at Debug level
             if ((targetWcid >= 21072 && targetWcid <= 21089) || targetWcid == 20980)
             {
                 ModManager.Log(
                     $"[LLLSalvageBankInterop-DIAG] WCID {targetWcid} resolved to DepositRules index {i}, property {bankPropertyId} (BankProperty={bankOverride}, firstId={firstId}).",
-                    ModManager.LogLevel.Info);
+                    ModManager.LogLevel.Debug);
             }
 
             return true;

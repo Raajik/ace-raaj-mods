@@ -1,7 +1,7 @@
 namespace EmpyreanAlteration;
 
 // ACE Cloak.RollProc returns false when ItemLevel < 1. Awakened cloaks start at ItemTotalXp 0, which maps to
-// LivingItemAwakener.ComputeLevelFromTotalXp(...) == 0, so weave never rolls. Seed cumulative XP to the
+// AwakenedItemAwakener.ComputeLevelFromTotalXp(...) == 0, so weave never rolls. Seed cumulative XP to the
 // minimum that yields item level 1 on the profile curve (same math as ItemLevel getter / harmony patches).
 internal static class AwakenedCloakWeaveXpSeed
 {
@@ -27,11 +27,11 @@ internal static class AwakenedCloakWeaveXpSeed
             maxLevel = 1;
 
         long totalPoints = item.GetProperty(PropertyInt64.ItemTotalXp) ?? 0;
-        int level = LivingItemAwakener.ComputeLevelFromTotalXp(totalPoints, baseXp, divisor, power, maxLevel);
+        int level = AwakenedItemAwakener.ComputeLevelFromTotalXp(totalPoints, baseXp, divisor, power, maxLevel);
         if (level >= 1)
             return;
 
-        ulong minTotal = LivingItemAwakener.ComputeTotalXpForLevel(1, baseXp, divisor, power, maxLevel);
+        ulong minTotal = AwakenedItemAwakener.ComputeTotalXpForLevel(1, baseXp, divisor, power, maxLevel);
         item.SetProperty(PropertyInt64.ItemTotalXp, (long)minTotal);
     }
 }

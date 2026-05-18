@@ -43,7 +43,7 @@ internal static class AcademyAutoAwakenHook
         if (item.GetProperty(LivingEquipmentProperties.IsAwakened) == true)
             return;
 
-        LivingItemAwakener.TryAutoAwaken(__instance, item);
+        AwakenedItemAwakener.TryAutoAwaken(__instance, item);
     }
 }
 
@@ -126,12 +126,12 @@ internal static class LivingEquipmentUseOnTarget
         WorldObject? mana = null;
         WorldObject? item = null;
 
-        if (LivingItemAwakener.IsCoalescedMana(__instance, s) && ItemLevelingEligibility.IsEquippableGearShape(target))
+        if (AwakenedItemAwakener.IsCoalescedMana(__instance, s) && ItemLevelingEligibility.IsEquippableGearShape(target))
         {
             mana = __instance;
             item = target;
         }
-        else if (LivingItemAwakener.IsCoalescedMana(target, s) && ItemLevelingEligibility.IsEquippableGearShape(__instance))
+        else if (AwakenedItemAwakener.IsCoalescedMana(target, s) && ItemLevelingEligibility.IsEquippableGearShape(__instance))
         {
             mana = target;
             item = __instance;
@@ -161,7 +161,7 @@ internal static class LivingEquipmentUseOnTarget
         player.EnqueueBroadcastMotion(new Motion(player, MotionCommand.ClapHands));
 
         // Attempt awakening/upgrade
-        if (LivingItemAwakener.TryAwakenOrUpgrade(player, item, mana))
+        if (AwakenedItemAwakener.TryAwakenOrUpgrade(player, item, mana))
         {
             if (mana.StackSize > 1)
             {

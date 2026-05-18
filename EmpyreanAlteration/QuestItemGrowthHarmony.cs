@@ -116,14 +116,14 @@ internal static class QuestItemGrowthItemXpCurveHarmony
         // Awakened items with a LivingEquipment-style profile use the profile-based curve
         if (item != null && s != null && item.GetProperty(LivingEquipmentProperties.IsAwakened) == true)
         {
-            LivingItemAwakener.TryMigrateCurve(item, s);
+            AwakenedItemAwakener.TryMigrateCurve(item, s);
 
             long baseXp = item.GetProperty(PropertyInt64.ItemBaseXp) ?? 15;
             double divisor = item.GetProperty(LivingEquipmentProperties.ProfileDivisor) ?? 8.0;
             double power = item.GetProperty(LivingEquipmentProperties.ProfilePower) ?? 3.2;
             int cap = item.ItemMaxLevel ?? s.ItemLevelingCap;
 
-            __result = LivingItemAwakener.ComputeLevelFromTotalXp((long)gainedXP, baseXp, divisor, power, cap);
+            __result = AwakenedItemAwakener.ComputeLevelFromTotalXp((long)gainedXP, baseXp, divisor, power, cap);
             return false;
         }
 
@@ -161,14 +161,14 @@ internal static class QuestItemGrowthItemXpCurveHarmony
         // Awakened items with a LivingEquipment-style profile use the profile-based curve
         if (item != null && s != null && item.GetProperty(LivingEquipmentProperties.IsAwakened) == true)
         {
-            LivingItemAwakener.TryMigrateCurve(item, s);
+            AwakenedItemAwakener.TryMigrateCurve(item, s);
 
             long baseXp = item.GetProperty(PropertyInt64.ItemBaseXp) ?? 15;
             double divisor = item.GetProperty(LivingEquipmentProperties.ProfileDivisor) ?? 8.0;
             double power = item.GetProperty(LivingEquipmentProperties.ProfilePower) ?? 3.2;
             int cap = item.ItemMaxLevel ?? s.ItemLevelingCap;
 
-            __result = LivingItemAwakener.ComputeTotalXpForLevel(itemLevel, baseXp, divisor, power, cap);
+            __result = AwakenedItemAwakener.ComputeTotalXpForLevel(itemLevel, baseXp, divisor, power, cap);
             return false;
         }
 

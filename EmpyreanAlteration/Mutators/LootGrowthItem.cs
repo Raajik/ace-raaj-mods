@@ -147,7 +147,7 @@ internal class LootGrowthItem : Mutator
         if (Random.Shared.NextDouble() > chance / 100.0) return false;
 
         var s = PatchClass.Settings;
-        var profile = LivingItemAwakener.GetDefaultProfile(s);
+        var profile = AwakenedItemAwakener.GetDefaultProfile(s);
         if (profile == null) return false;
 
         // Random initial cap bonus: +5, +10, or +15 (equal weights)
@@ -656,7 +656,7 @@ internal class LootGrowthItem : Mutator
 
     private static bool TryApplyQuestPreAwaken(WorldObject item, Settings s)
     {
-        var profile = LivingItemAwakener.GetDefaultProfile(s);
+        var profile = AwakenedItemAwakener.GetDefaultProfile(s);
         if (profile == null) return false;
 
         // Random initial cap bonus: +5, +10, or +15 (equal weights)

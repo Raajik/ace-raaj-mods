@@ -1,7 +1,7 @@
 namespace AceRaajMods.Shared;
 
 /// <summary>
-/// Shared item name utilities used across mods (VendorLootRotation, LivingItemAwakener,
+/// Shared item name utilities used across mods (VendorLootRotation, AwakenedItemAwakener,
 /// LootGrowthItem, SpecialCreatureLoot) to produce consistent short awakened names.
 /// </summary>
 public static class ItemNameHelper

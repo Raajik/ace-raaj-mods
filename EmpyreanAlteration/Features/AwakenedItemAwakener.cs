@@ -12,7 +12,7 @@ namespace EmpyreanAlteration;
 /// Rewritten: all mana tiers raise cap incrementally (+5/+10/+15) up to a hard cap.
 /// Item leveling uses a point-based curve (kills/quests) stored per-item.
 /// </summary>
-internal static class LivingItemAwakener
+internal static class AwakenedItemAwakener
 {
     internal static bool TryAwakenOrUpgrade(Player player, WorldObject item, WorldObject mana)
     {

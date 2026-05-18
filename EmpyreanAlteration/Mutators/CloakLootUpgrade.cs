@@ -80,7 +80,7 @@ internal class CloakLootUpgrade : Mutator
         if (item.GetProperty(LivingEquipmentProperties.IsAwakened) == true)
             return;
 
-        var profile = LivingItemAwakener.GetDefaultProfile(s);
+        var profile = AwakenedItemAwakener.GetDefaultProfile(s);
         string originalName = item.Name ?? "Item";
         item.SetProperty(LivingEquipmentProperties.OriginalName, originalName);
 

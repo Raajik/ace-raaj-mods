@@ -84,6 +84,8 @@ Collect by deploying and playing normally — the server mod log captures every 
 
 **Branches:** `jeremy/fix/rating-levelup-client-update`, `jeremy/refactor/direct-item-xp-consolidation`
 
+**Verified working on void-test (2026-05-17).**
+
 #### 1. Rating level-up client update fix
 **Problem:** `ArmorJewelryRatingGrowth` and `WeaponQuestGrowth` methods wrote rating properties (DamageRating, CritDamageRating, etc.) to the biota and in-memory cache via `SetPersistentPropertyInt`, but never sent `GameMessagePrivateUpdatePropertyInt` to the player's client. The client continued showing cached old values — ratings appeared "added" in the message but never showed on the item.
 **Fix:** Added `GameMessagePrivateUpdatePropertyInt` to all 6 rating methods in `ArmorJewelryRatingGrowth` and both methods in `WeaponQuestGrowth`, matching the existing pattern in `TryScaleExistingRatings`.

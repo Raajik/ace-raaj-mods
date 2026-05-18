@@ -1,46 +1,44 @@
 using System.Collections.Generic;
-using System.Linq;
-using ACE.Entity.Enum;
 using ACE.Server.WorldObjects;
 
 namespace BetterLootControl;
 
 /// <summary>
-/// Strips suppressed WCIDs (e.g. Quarterstaff New 22168) from creature corpse loot
-/// after GenerateTreasure. Uses the SuppressedDropWcids list in Settings.
+/// Prefix on Container.TryAddToInventory — intercepts items entering any corpse
+/// and destroys suppressed WCIDs before they can reach the player.
+/// More reliable than a postfix on Creature.GenerateTreasure because it catches
+/// every code path that places items into a corpse.
 /// </summary>
 [HarmonyPatch]
 internal static class SuppressedDropFilter
 {
-    [HarmonyPatch(typeof(Creature), nameof(Creature.GenerateTreasure), new[] { typeof(ACE.Server.Entity.DamageHistoryInfo), typeof(Corpse) })]
-    [HarmonyPostfix]
-    public static void PostGenerateTreasureSuppressDrops(ACE.Server.Entity.DamageHistoryInfo killer, Corpse corpse)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Container), nameof(Container.TryAddToInventory),
+        new[] { typeof(WorldObject), typeof(int), typeof(bool), typeof(bool) })]
+    public static bool PreTryAddToInventory(WorldObject worldObject, Container __instance, ref bool __result)
     {
+        // Only filter items going into corpses
+        if (__instance is not Corpse)
+            return true;
+
         var settings = PatchClass.CurrentSettings;
         if (settings is null || !settings.EnableSuppressedDropFilter)
-            return;
+            return true;
 
         var suppressed = settings.SuppressedDropWcids;
         if (suppressed is null || suppressed.Count == 0)
-            return;
+            return true;
 
-        if (corpse?.Inventory is null || corpse.Inventory.Count == 0)
-            return;
+        if (worldObject is null)
+            return true;
 
-        var toRemove = new List<WorldObject>();
-        foreach (var kvp in corpse.Inventory)
+        if (suppressed.Contains((int)worldObject.WeenieClassId))
         {
-            var item = kvp.Value;
-            if (item is not null && suppressed.Contains((int)item.WeenieClassId))
-                toRemove.Add(item);
+            worldObject.Destroy();
+            __result = false;
+            return false;
         }
 
-        foreach (var item in toRemove)
-        {
-            if (corpse.TryRemoveFromInventory(item.Guid, out var removed))
-            {
-                removed.Destroy();
-            }
-        }
+        return true;
     }
 }

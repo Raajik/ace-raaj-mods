@@ -99,6 +99,7 @@ public class Settings
 
     // -- Suppressed Drops (WCIDs to strip from ALL creature loot) --
     public bool EnableSuppressedDropFilter { get; init; } = true;
+    // Quest/turn-in unused junk that drops unmuted (e.g. Quarter Staff New 22168)
     public List<int> SuppressedDropWcids { get; init; } = new() { 22168 };
 
     // -- Loot Economy Control (value + quantity adjustments on corpse loot) --

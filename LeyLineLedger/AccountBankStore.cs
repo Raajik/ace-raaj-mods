@@ -11,13 +11,46 @@ internal static class AccountBankStore
 {
     static readonly ConcurrentDictionary<string, object> Locks = new();
 
-    static string ModDataDir
+    static readonly string ModDataDir = Path.Combine(
+        Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location ?? ".") ?? ".",
+        "ModData", "LeyLineLedger", "AccountBanks");
+
+    static readonly string OldModDataDir = Path.Combine(
+        Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location ?? ".") ?? ".",
+        "Server", "ModData", "LeyLineLedger", "AccountBanks");
+
+    static bool _migrationAttempted;
+
+    static void MaybeMigrateFromOldPath()
     {
-        get
+        if (_migrationAttempted)
+            return;
+        _migrationAttempted = true;
+
+        if (!Directory.Exists(OldModDataDir))
+            return;
+
+        try
         {
-            var assemblyDir = Path.GetDirectoryName(typeof(AccountBankStore).Assembly.Location) ?? "";
-            var serverRoot = Path.GetDirectoryName(Path.GetDirectoryName(assemblyDir)) ?? "";
-            return Path.Combine(serverRoot, "Server", "ModData", "LeyLineLedger", "AccountBanks");
+            Directory.CreateDirectory(ModDataDir);
+            var files = Directory.GetFiles(OldModDataDir, "*.json");
+            int copied = 0;
+            foreach (var f in files)
+            {
+                var name = Path.GetFileName(f);
+                var dest = Path.Combine(ModDataDir, name);
+                if (!File.Exists(dest))
+                {
+                    File.Copy(f, dest);
+                    copied++;
+                }
+            }
+            if (copied > 0)
+                ModManager.Log($"[LeyLineLedger] Migrated {copied} account bank file(s) from old path to {ModDataDir}", ModManager.LogLevel.Info);
+        }
+        catch (Exception ex)
+        {
+            ModManager.Log($"[LeyLineLedger] Account bank migration failed: {ex.Message}", ModManager.LogLevel.Warn);
         }
     }
 
@@ -272,6 +305,7 @@ internal static class AccountBankStore
 
     static AccountBankData ReadOrCreate(string storageKey)
     {
+        MaybeMigrateFromOldPath();
         Directory.CreateDirectory(ModDataDir);
         var path = FilePath(storageKey);
         if (!File.Exists(path))

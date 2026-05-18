@@ -22,7 +22,10 @@ public static class BankSalvage
         }
 
         MaybePurgeLegacyPooledSalvage(player, settings.SalvageBank);
-        MaybeMergeLegacyWcidOffsetSalvageBank(player, settings.SalvageBank);
+        // Disabled: WCID-offset legacy merge collides with current DepositRules-index correct props,
+        // stealing balances (e.g. Emerald legacy 40268 = White Sapphire correct 40268 correct 40268).
+        // See git log for original code.
+        // MaybeMergeLegacyWcidOffsetSalvageBank(player, settings.SalvageBank);
 
         if (parameters.Length < 2 || string.IsNullOrEmpty(parameters[1]))
         {
@@ -1126,7 +1129,8 @@ public static class BankSalvage
         var s = PatchClass.Settings;
         if (s?.SalvageBank.Enabled != true) return;
         MaybePurgeLegacyPooledSalvage(__instance, s.SalvageBank);
-        MaybeMergeLegacyWcidOffsetSalvageBank(__instance, s.SalvageBank);
+        // Disabled: collides with current prop formula (steals balances).
+        // MaybeMergeLegacyWcidOffsetSalvageBank(__instance, s.SalvageBank);
         TryGrantSalvageHoarder(__instance, s.SalvageBank);
     }
 }

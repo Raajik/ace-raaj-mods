@@ -33,6 +33,8 @@ internal static class CloakSpellActivation
                 ModManager.LogLevel.Warn);
             return false;
         }
+        ModManager.Log("[QOL] CloakSpellActivation: patch applied to TryEquipObjectWithNetworking.",
+            ModManager.LogLevel.Info);
         return true;
     }
 
@@ -69,9 +71,16 @@ internal static class CloakSpellActivation
         if (!hasActivateableSpell)
             return;
 
-        // Force ItemCurMana to at least 1 so TryActivateSpells will process it
+        // Force ItemCurMana to at least 2 so TryActivateSpells will process it
+        // ACE's TryActivateSpells treats ItemCurMana == 1 as a "never activated" sentinel
+        // and returns false immediately, skipping all spell activations.
         if (item.ItemCurMana == null || item.ItemCurMana < 1)
-            item.ItemCurMana = 1;
+        {
+            int charges = Math.Max(1, item.ItemMaxMana ?? 5);
+            if (charges < 2)
+                charges = 2;
+            item.ItemCurMana = charges;
+        }
 
         // Invoke TryActivateSpells via reflection (it's a private method)
         try

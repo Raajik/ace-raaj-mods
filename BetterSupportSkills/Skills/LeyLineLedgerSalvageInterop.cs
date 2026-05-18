@@ -41,10 +41,10 @@ public static class LeyLineLedgerSalvageInterop
 
         LeyLineLedgerBankInterop.IncBanked(player, prop, units);
 
-        // Info-level logging for suspect WCIDs (21072-21089, indices 53-71) to debug zero-balance issue
+        // Debug-level logging for suspect WCIDs (21072-21089, indices 53-71) to debug zero-balance issue
         if (salvageWcid >= 21072 && salvageWcid <= 21089)
         {
-            ModManager.Log($"[BSS->LLL Salvage-DIAG] WCID {salvageWcid} -> DepositRules prop {prop}: credited {units} units (total after: {LeyLineLedgerBankInterop.GetBanked(player, prop)}).", ModManager.LogLevel.Info);
+            ModManager.Log($"[BSS->LLL Salvage-DIAG] WCID {salvageWcid} -> DepositRules prop {prop}: credited {units} units (total after: {LeyLineLedgerBankInterop.GetBanked(player, prop)}).", ModManager.LogLevel.Debug);
         }
 
         ModManager.Log($"[BSS->LLL Salvage] Credited {units} units of WCID {salvageWcid} to property {prop}.", ModManager.LogLevel.Debug);

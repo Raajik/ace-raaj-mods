@@ -15,8 +15,6 @@ internal static class QuestItemGrowthHarmony
         && (
             s.EnableLootItemLeveling
             || s.EnableCloakLootUpgrade
-            || s.ItemLevelingKillPoints > 0
-            || s.ItemLevelingQuestCompletionPoints > 0
         );
 
     internal static MethodBase? TargetMethodContainerTryAddToInventory()
@@ -202,16 +200,9 @@ internal static class QuestItemGrowthOnItemLevelUpHarmony
 {
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Player), nameof(Player.GrantItemXP), typeof(WorldObject), typeof(long))]
-    public static bool PreGrantItemXP(WorldObject item, ref int __state)
+    public static void PreGrantItemXP(WorldObject item, ref int __state)
     {
         __state = item?.ItemLevel ?? 0;
-
-        // Awakened items use our point-based leveling system only.
-        // Suppress vanilla ACE item-XP feed (which scales with player XP).
-        if (item?.GetProperty(LivingEquipmentProperties.IsAwakened) == true)
-            return false;
-
-        return true;
     }
 
     [HarmonyPostfix]

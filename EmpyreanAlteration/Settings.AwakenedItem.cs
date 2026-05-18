@@ -60,17 +60,7 @@ public partial class Settings
     public string ItemXpCurveVersionDoc { get; init; } = "Global curve version. When an item's stored CurveVersion differs, the item's progress is auto-migrated to the new curve (same level, new XP).";
     public int ItemXpCurveVersion { get; set; } = 1;
 
-    [JsonPropertyName("// ItemLevelingKillPoints")]
-    public string ItemLevelingKillPointsDoc { get; init; } = "Points awarded to every equipped awakened item when the player gets kill credit on a creature.";
-    public int ItemLevelingKillPoints { get; set; } = 1;
 
-    [JsonPropertyName("// ItemLevelingQuestCompletionPoints")]
-    public string ItemLevelingQuestCompletionPointsDoc { get; init; } = "Points awarded to every equipped awakened item when the player completes a quest that would grant QB (via Loremaster bridge).";
-    public int ItemLevelingQuestCompletionPoints { get; set; } = 100;
-
-    [JsonPropertyName("// ItemLevelingBossKillMultiplier")]
-    public string ItemLevelingBossKillMultiplierDoc { get; init; } = "Multiplier for points from boss creature kills (Creature.IsBoss). Applied on top of base kill points. 1 = no bonus.";
-    public float ItemLevelingBossKillMultiplier { get; set; } = 5.0f;
 
     [JsonPropertyName("// ItemLevelingCap")]
     public string ItemLevelingCapDoc { get; init; } = "Absolute hard cap for awakened item max level.";

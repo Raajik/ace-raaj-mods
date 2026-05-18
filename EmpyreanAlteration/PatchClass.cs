@@ -60,16 +60,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
     {
         Settings = SettingsContainer.Settings ?? new Settings();
         PatchClass.Settings = Settings;
-        ItemLevelUpGrowth.ItemGrowthSettings = Settings;
 
-        try
-        {
-            ModC.Harmony.UnpatchCategory(nameof(ItemLevelUpGrowth));
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[EmpyreanAlteration] Unpatch ItemLevelUpGrowth: {ex.Message}", ModManager.LogLevel.Warn);
-        }
+
 
         try
         {
@@ -80,23 +72,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             ModManager.Log($"[EmpyreanAlteration] Unpatch QuestItemGrowth: {ex.Message}", ModManager.LogLevel.Warn);
         }
 
-        try
-        {
-            ModC.Harmony.UnpatchCategory("QuestCompletionItemLeveling");
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[EmpyreanAlteration] Unpatch QuestCompletionItemLeveling: {ex.Message}", ModManager.LogLevel.Warn);
-        }
-
-        try
-        {
-            ModC.Harmony.UnpatchCategory("CreatureDeathItemLeveling");
-        }
-        catch (Exception ex)
-        {
-            ModManager.Log($"[EmpyreanAlteration] Unpatch CreatureDeathItemLeveling: {ex.Message}", ModManager.LogLevel.Warn);
-        }
 
         try
         {
@@ -145,27 +120,13 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
         MutatorHooks.SetupMutators();
 
-        if (Settings.ItemLevelUpGrowthEnabled)
-        {
-            try
-            {
-                ModC.Harmony.PatchCategory(nameof(ItemLevelUpGrowth));
-            }
-            catch (Exception ex)
-            {
-                ModManager.Log($"[EmpyreanAlteration] PatchCategory ItemLevelUpGrowth: {ex.Message}", ModManager.LogLevel.Warn);
-            }
-        }
-
         if (Settings.ChaosTriggeredGrowth)
         {
             ChaosTriggeredGrowth.TryApplyPatch(ModC.Harmony);
         }
 
         if (Settings.EnableLootItemLeveling
-            || Settings.EnableCloakLootUpgrade
-            || Settings.ItemLevelingKillPoints > 0
-            || Settings.ItemLevelingQuestCompletionPoints > 0)
+            || Settings.EnableCloakLootUpgrade)
         {
             try
             {
@@ -177,30 +138,6 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
             }
         }
 
-        // Core item-leveling point system (kill points + quest completion points)
-        if (Settings.ItemLevelingKillPoints > 0 || Settings.ItemLevelingQuestCompletionPoints > 0)
-        {
-            try
-            {
-                ModC.Harmony.PatchCategory("QuestCompletionItemLeveling");
-            }
-            catch (Exception ex)
-            {
-                ModManager.Log($"[EmpyreanAlteration] PatchCategory QuestCompletionItemLeveling: {ex.Message}", ModManager.LogLevel.Warn);
-            }
-        }
-
-        if (Settings.ItemLevelingKillPoints > 0)
-        {
-            try
-            {
-                ModC.Harmony.PatchCategory("CreatureDeathItemLeveling");
-            }
-            catch (Exception ex)
-            {
-                ModManager.Log($"[EmpyreanAlteration] PatchCategory CreatureDeathItemLeveling: {ex.Message}", ModManager.LogLevel.Warn);
-            }
-        }
 
         if (Settings.DisableAttunedGlobally)
         {

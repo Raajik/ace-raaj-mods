@@ -1,5 +1,5 @@
 {
-  "Description": "Tumerok Insignia tier line — custom WCIDs 850362-850365. Clones from 3695 (Gold Tumerok Insignia); MirrorEmoteFromWcid 3695. Base item renamed from 'Gold Tumerok Insignia' to 'Tumerok Insignia'. Blue IconUnderlay 100676435 + black number overlays 1-4.",
+  "Description": "Tumerok Insignia tier line \u2014 custom WCIDs 850362-850365. Clones from 3695 (Gold Tumerok Insignia); MirrorEmoteFromWcid 3695. Base item renamed from 'Gold Tumerok Insignia' to 'Tumerok Insignia'. Blue IconUnderlay 100676435 + black number overlays 1-4.",
   "Weenies": [
     {
       "ClassId": 850362,
@@ -11,7 +11,7 @@
       "PropertiesString": {
         "Name": "Tumerok Insignia",
         "PluralName": "Tumerok Insignias",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these insignias to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -25,8 +25,13 @@
         "IconOverlay": 100690976
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -39,7 +44,7 @@
       "PropertiesString": {
         "Name": "Tumerok Insignia (Quality)",
         "PluralName": "Tumerok Insignias (Quality)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these insignias to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -53,8 +58,13 @@
         "IconOverlay": 100690977
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -67,7 +77,7 @@
       "PropertiesString": {
         "Name": "Tumerok Insignia (Pristine)",
         "PluralName": "Tumerok Insignias (Pristine)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these insignias to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -81,8 +91,13 @@
         "IconOverlay": 100690978
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -95,7 +110,7 @@
       "PropertiesString": {
         "Name": "Tumerok Insignia (Perfect)",
         "PluralName": "Tumerok Insignias (Perfect)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these insignias to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -109,8 +124,13 @@
         "IconOverlay": 100690979
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     }
   ]

@@ -1,0 +1,46 @@
+{
+  "Description": "Armoredillo Spine tier line \u2014 four custom WCIDs (850374-850377). Uses vanilla WCID 3689 as clone/mirror source.",
+  "Lines": [
+    {
+      "Name": "ArmoredilloSpine",
+      "Enabled": true,
+      "CreatureTypeGate": "Armoredillo",
+      "TurnInDisplayName": "Armoredillo Spine",
+      "Tiers": [
+        {
+          "TierName": "Regular",
+          "Wcid": 850374,
+          "DropChance": 0.025,
+          "XpFraction": 0.05,
+          "BankCredit": 25000
+        },
+        {
+          "TierName": "Quality",
+          "Wcid": 850375,
+          "DropChance": 0.01,
+          "XpFraction": 0.1,
+          "BankCredit": 50000
+        },
+        {
+          "TierName": "Pristine",
+          "Wcid": 850376,
+          "DropChance": 0.004,
+          "XpFraction": 0.15,
+          "BankCredit": 100000
+        },
+        {
+          "TierName": "Perfect",
+          "Wcid": 850377,
+          "DropChance": 0.0015,
+          "XpFraction": 0.3,
+          "BankCredit": 250000
+        }
+      ],
+      "ReplaceSiblingWcids": [
+        3689
+      ],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    }
+  ]
+}

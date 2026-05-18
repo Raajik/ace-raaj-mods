@@ -1,16 +1,16 @@
 {
-  "Description": "Large Lugian Sinew tier line \u2014 custom WCIDs 850344-850347. Clones from 7043; MirrorEmoteFromWcid 7043. Blue IconUnderlay 100676435 + black number overlays 1-4. ReplaceSiblingWcids includes both 7043 (Large) and 7042 (Small) to remove both vanilla sinews from the loot pool.",
+  "Description": "Mattekar Paw tier line \u2014 custom WCIDs 850386-850389. Clones from 9412; MirrorEmoteFromWcid 9412. Blue IconUnderlay 100676435 + black number overlays 1-4.",
   "Weenies": [
     {
-      "ClassId": 850344,
-      "ClassName": "lugiansinew_regular_wb",
+      "ClassId": 850386,
+      "ClassName": "mattekar-paw_regular_wb",
       "WeenieType": "Stackable",
-      "BaseWcid": 7043,
-      "MirrorEmoteFromWcid": 7043,
-      "Notes": "Regular tier (custom). Frost (128) glow. Overlay '1' top-right black (100690976).",
+      "BaseWcid": 9412,
+      "MirrorEmoteFromWcid": 9412,
+      "Notes": "Regular tier. Frost (128) glow. Overlay '1' top-right black.",
       "PropertiesString": {
-        "Name": "Large Lugian Sinew",
-        "PluralName": "Large Lugian Sinews",
+        "Name": "Mattekar Paw",
+        "PluralName": "Mattekar Paws",
         "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
@@ -35,15 +35,15 @@
       }
     },
     {
-      "ClassId": 850345,
-      "ClassName": "lugiansinew_quality_wb",
+      "ClassId": 850387,
+      "ClassName": "mattekar-paw_quality_wb",
       "WeenieType": "Stackable",
-      "BaseWcid": 7043,
-      "MirrorEmoteFromWcid": 7043,
-      "Notes": "Quality tier. Acid (256) glow. Overlay '2' top-right black (100690977).",
+      "BaseWcid": 9412,
+      "MirrorEmoteFromWcid": 9412,
+      "Notes": "Quality tier. Acid (256) glow. Overlay '2' top-right black.",
       "PropertiesString": {
-        "Name": "Large Lugian Sinew (Quality)",
-        "PluralName": "Large Lugian Sinews (Quality)",
+        "Name": "Mattekar Paw (Quality)",
+        "PluralName": "Mattekar Paws (Quality)",
         "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
@@ -68,15 +68,15 @@
       }
     },
     {
-      "ClassId": 850346,
-      "ClassName": "lugiansinew_pristine_wb",
+      "ClassId": 850388,
+      "ClassName": "mattekar-paw_pristine_wb",
       "WeenieType": "Stackable",
-      "BaseWcid": 7043,
-      "MirrorEmoteFromWcid": 7043,
-      "Notes": "Pristine tier. Magical (1) glow. Overlay '3' top-right black (100690978).",
+      "BaseWcid": 9412,
+      "MirrorEmoteFromWcid": 9412,
+      "Notes": "Pristine tier. Magical (1) glow. Overlay '3' top-right black.",
       "PropertiesString": {
-        "Name": "Large Lugian Sinew (Pristine)",
-        "PluralName": "Large Lugian Sinews (Pristine)",
+        "Name": "Mattekar Paw (Pristine)",
+        "PluralName": "Mattekar Paws (Pristine)",
         "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
@@ -101,15 +101,15 @@
       }
     },
     {
-      "ClassId": 850347,
-      "ClassName": "lugiansinew_perfect_wb",
+      "ClassId": 850389,
+      "ClassName": "mattekar-paw_perfect_wb",
       "WeenieType": "Stackable",
-      "BaseWcid": 7043,
-      "MirrorEmoteFromWcid": 7043,
-      "Notes": "Perfect tier. Lightning (64) glow. Overlay '4' top-right black (100690979).",
+      "BaseWcid": 9412,
+      "MirrorEmoteFromWcid": 9412,
+      "Notes": "Perfect tier. Lightning (64) glow. Overlay '4' top-right black.",
       "PropertiesString": {
-        "Name": "Large Lugian Sinew (Perfect)",
-        "PluralName": "Large Lugian Sinews (Perfect)",
+        "Name": "Mattekar Paw (Perfect)",
+        "PluralName": "Mattekar Paws (Perfect)",
         "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {

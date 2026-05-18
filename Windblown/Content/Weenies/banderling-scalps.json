@@ -1,5 +1,5 @@
 {
-  "Description": "Banderling Scalp tier line — custom WCIDs 850312-850315. Clones from 3693; MirrorEmoteFromWcid 3693. IconUnderlay 100676435 (cold rend / ice blue) on all tiers; Value=1, EncumbranceVal=1.",
+  "Description": "Banderling Scalp tier line \u2014 custom WCIDs 850312-850315. Clones from 3693; MirrorEmoteFromWcid 3693. IconUnderlay 100676435 (cold rend / ice blue) on all tiers; Value=1, EncumbranceVal=1.",
   "Weenies": [
     {
       "ClassId": 850312,
@@ -11,7 +11,7 @@
       "PropertiesString": {
         "Name": "Banderling Scalp",
         "PluralName": "Banderling Scalps",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -25,8 +25,13 @@
         "IconOverlay": 100690976
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -39,7 +44,7 @@
       "PropertiesString": {
         "Name": "Banderling Scalp (Quality)",
         "PluralName": "Banderling Scalps (Quality)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -53,8 +58,13 @@
         "IconOverlay": 100690977
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -67,7 +77,7 @@
       "PropertiesString": {
         "Name": "Banderling Scalp (Pristine)",
         "PluralName": "Banderling Scalps (Pristine)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -81,8 +91,13 @@
         "IconOverlay": 100690978
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -95,7 +110,7 @@
       "PropertiesString": {
         "Name": "Banderling Scalp (Perfect)",
         "PluralName": "Banderling Scalps (Perfect)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these scalps to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -109,8 +124,13 @@
         "IconOverlay": 100690979
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     }
   ]

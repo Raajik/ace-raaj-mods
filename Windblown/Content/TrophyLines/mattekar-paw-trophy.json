@@ -1,0 +1,46 @@
+{
+  "Description": "Mattekar Paw tier line \u2014 four custom WCIDs (850386-850389). Uses vanilla WCID 9412 as clone/mirror source.",
+  "Lines": [
+    {
+      "Name": "MattekarPaw",
+      "Enabled": true,
+      "CreatureTypeGate": "Mattekar",
+      "TurnInDisplayName": "Mattekar Paw",
+      "Tiers": [
+        {
+          "TierName": "Regular",
+          "Wcid": 850386,
+          "DropChance": 0.025,
+          "XpFraction": 0.05,
+          "BankCredit": 25000
+        },
+        {
+          "TierName": "Quality",
+          "Wcid": 850387,
+          "DropChance": 0.01,
+          "XpFraction": 0.1,
+          "BankCredit": 50000
+        },
+        {
+          "TierName": "Pristine",
+          "Wcid": 850388,
+          "DropChance": 0.004,
+          "XpFraction": 0.15,
+          "BankCredit": 100000
+        },
+        {
+          "TierName": "Perfect",
+          "Wcid": 850389,
+          "DropChance": 0.0015,
+          "XpFraction": 0.3,
+          "BankCredit": 250000
+        }
+      ],
+      "ReplaceSiblingWcids": [
+        9412
+      ],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    }
+  ]
+}

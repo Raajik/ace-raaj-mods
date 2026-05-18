@@ -1,0 +1,46 @@
+{
+  "Description": "Grievver Tibia tier line \u2014 four custom WCIDs (850390-850393). Uses vanilla WCID 19476 as clone/mirror source.",
+  "Lines": [
+    {
+      "Name": "GrievverTibia",
+      "Enabled": true,
+      "CreatureTypeGate": "Grievver",
+      "TurnInDisplayName": "Grievver Tibia",
+      "Tiers": [
+        {
+          "TierName": "Regular",
+          "Wcid": 850390,
+          "DropChance": 0.025,
+          "XpFraction": 0.05,
+          "BankCredit": 25000
+        },
+        {
+          "TierName": "Quality",
+          "Wcid": 850391,
+          "DropChance": 0.01,
+          "XpFraction": 0.1,
+          "BankCredit": 50000
+        },
+        {
+          "TierName": "Pristine",
+          "Wcid": 850392,
+          "DropChance": 0.004,
+          "XpFraction": 0.15,
+          "BankCredit": 100000
+        },
+        {
+          "TierName": "Perfect",
+          "Wcid": 850393,
+          "DropChance": 0.0015,
+          "XpFraction": 0.3,
+          "BankCredit": 250000
+        }
+      ],
+      "ReplaceSiblingWcids": [
+        19476
+      ],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    }
+  ]
+}

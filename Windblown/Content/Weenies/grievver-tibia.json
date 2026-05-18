@@ -1,16 +1,16 @@
 {
-  "Description": "Large Lugian Sinew tier line \u2014 custom WCIDs 850344-850347. Clones from 7043; MirrorEmoteFromWcid 7043. Blue IconUnderlay 100676435 + black number overlays 1-4. ReplaceSiblingWcids includes both 7043 (Large) and 7042 (Small) to remove both vanilla sinews from the loot pool.",
+  "Description": "Grievver Tibia tier line \u2014 custom WCIDs 850390-850393. Clones from 19476; MirrorEmoteFromWcid 19476. Blue IconUnderlay 100676435 + black number overlays 1-4.",
   "Weenies": [
     {
-      "ClassId": 850344,
-      "ClassName": "lugiansinew_regular_wb",
+      "ClassId": 850390,
+      "ClassName": "grievver-tibia_regular_wb",
       "WeenieType": "Stackable",
-      "BaseWcid": 7043,
-      "MirrorEmoteFromWcid": 7043,
-      "Notes": "Regular tier (custom). Frost (128) glow. Overlay '1' top-right black (100690976).",
+      "BaseWcid": 19476,
+      "MirrorEmoteFromWcid": 19476,
+      "Notes": "Regular tier. Frost (128) glow. Overlay '1' top-right black.",
       "PropertiesString": {
-        "Name": "Large Lugian Sinew",
-        "PluralName": "Large Lugian Sinews",
+        "Name": "Grievver Tibia",
+        "PluralName": "Grievver Tibias",
         "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
@@ -35,15 +35,15 @@
       }
     },
     {
-      "ClassId": 850345,
-      "ClassName": "lugiansinew_quality_wb",
+      "ClassId": 850391,
+      "ClassName": "grievver-tibia_quality_wb",
       "WeenieType": "Stackable",
-      "BaseWcid": 7043,
-      "MirrorEmoteFromWcid": 7043,
-      "Notes": "Quality tier. Acid (256) glow. Overlay '2' top-right black (100690977).",
+      "BaseWcid": 19476,
+      "MirrorEmoteFromWcid": 19476,
+      "Notes": "Quality tier. Acid (256) glow. Overlay '2' top-right black.",
       "PropertiesString": {
-        "Name": "Large Lugian Sinew (Quality)",
-        "PluralName": "Large Lugian Sinews (Quality)",
+        "Name": "Grievver Tibia (Quality)",
+        "PluralName": "Grievver Tibias (Quality)",
         "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
@@ -68,15 +68,15 @@
       }
     },
     {
-      "ClassId": 850346,
-      "ClassName": "lugiansinew_pristine_wb",
+      "ClassId": 850392,
+      "ClassName": "grievver-tibia_pristine_wb",
       "WeenieType": "Stackable",
-      "BaseWcid": 7043,
-      "MirrorEmoteFromWcid": 7043,
-      "Notes": "Pristine tier. Magical (1) glow. Overlay '3' top-right black (100690978).",
+      "BaseWcid": 19476,
+      "MirrorEmoteFromWcid": 19476,
+      "Notes": "Pristine tier. Magical (1) glow. Overlay '3' top-right black.",
       "PropertiesString": {
-        "Name": "Large Lugian Sinew (Pristine)",
-        "PluralName": "Large Lugian Sinews (Pristine)",
+        "Name": "Grievver Tibia (Pristine)",
+        "PluralName": "Grievver Tibias (Pristine)",
         "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
@@ -101,15 +101,15 @@
       }
     },
     {
-      "ClassId": 850347,
-      "ClassName": "lugiansinew_perfect_wb",
+      "ClassId": 850393,
+      "ClassName": "grievver-tibia_perfect_wb",
       "WeenieType": "Stackable",
-      "BaseWcid": 7043,
-      "MirrorEmoteFromWcid": 7043,
-      "Notes": "Perfect tier. Lightning (64) glow. Overlay '4' top-right black (100690979).",
+      "BaseWcid": 19476,
+      "MirrorEmoteFromWcid": 19476,
+      "Notes": "Perfect tier. Lightning (64) glow. Overlay '4' top-right black.",
       "PropertiesString": {
-        "Name": "Large Lugian Sinew (Perfect)",
-        "PluralName": "Large Lugian Sinews (Perfect)",
+        "Name": "Grievver Tibia (Perfect)",
+        "PluralName": "Grievver Tibias (Perfect)",
         "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {

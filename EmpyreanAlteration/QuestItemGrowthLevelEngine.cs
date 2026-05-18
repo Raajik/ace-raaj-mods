@@ -342,6 +342,11 @@ internal static class QuestItemGrowthLevelEngine
             return true;
         }
 
+        // Protection mods (ArmorModVs*) have no visible effect on items with 0 armor level (e.g. cloaks).
+        int? armorLv = item.ArmorLevel;
+        if (armorLv is null or 0)
+            return false;
+
         if (Random.Shared.NextDouble() >= ag.RandomArmorModChance)
             return false;
 

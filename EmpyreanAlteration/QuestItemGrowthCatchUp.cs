@@ -65,6 +65,19 @@ internal static class QuestItemGrowthCatchUp
             string msg = BuildCatchUpSummaryMessage(item, delta, summary);
             player.SendMessage(msg);
         }
+
+        // Force client sync: send current item XP/cap values so the client XP bar and level display match the server
+        if (player.Session?.Network != null)
+        {
+            try
+            {
+                if (item.ItemTotalXp.HasValue)
+                    player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt64(item, PropertyInt64.ItemTotalXp, item.ItemTotalXp.Value));
+                if (item.ItemMaxLevel.HasValue)
+                    player.Session.Network.EnqueueSend(new GameMessagePrivateUpdatePropertyInt(item, PropertyInt.ItemMaxLevel, item.ItemMaxLevel.Value));
+            }
+            catch { }
+        }
     }
 
     private static bool CanSendPlayerChat(Player? player) =>

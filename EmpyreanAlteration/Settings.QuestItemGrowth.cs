@@ -158,7 +158,7 @@ public partial class Settings
     public List<int> LootItemPreAwakenMaxLevels { get; set; } = new() { 25, 50, 75 };
     public List<PreAwakenXpProfile> LootItemPreAwakenXpProfiles { get; set; } = new()
     {
-        new() { Name = "QuickStart", ItemBaseXp = 15, Divisor = 8.0, Power = 3.2, Description = "Fast early levels, dramatic ramp after 20. ~300k total points to cap." },
+        new() { Name = "QuickStart", ItemBaseXp = 50000, Divisor = 8.0, Power = 3.2, Description = "50k first level, stock ACE doubling curve." },
         new() { Name = "Steady",    ItemBaseXp = 25, Divisor = 15.0, Power = 2.5, Description = "Moderate, consistent grind. ~150k total points to cap." },
         new() { Name = "Brutal",    ItemBaseXp = 50, Divisor = 5.0, Power = 4.0, Description = "Steep from level 1, very grindy. ~1M total points to cap." },
         new() { Name = "Casual",    ItemBaseXp = 5,  Divisor = 20.0, Power = 2.0, Description = "Very easy, minimal grind. ~30k total points to cap." },

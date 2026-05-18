@@ -1039,6 +1039,33 @@ Spells: **5622** = Weave of the Creature Enchantment V (+50 CE), **5652** = Weav
 
 **Remaining:** Pre-existing build errors in `SummoningClasses.cs` (missing usings) need fixing for clean BSS deploy.
 
+## 2026-05-18
+
+### Branch Consolidation — Merged 6 branches, cleaned 12 stale branches
+
+All development branches rebased onto main (resolving all conflicts), merged, and pushed. Local and remote branch landscape reduced from 16 branches to 1 (`main`).
+
+**Merged to main:**
+
+| Branch | Commits | Description |
+|--------|---------|-------------|
+| `raajik/fix/cloak-spell-activation` | 1 | Fix cloak spell activation (ItemCurMana==1 sentinel) |
+| `jeremy/fix/rating-levelup-client-update` | 1 | Send `GameMessagePrivateUpdatePropertyInt` for rating level-up |
+| `Raajik/fix/bss-crash-worldobjects-enumeration` | 2 | Prevent 'Collection was modified' crashes + lockpick banking 50% |
+| `jeremy/refactor/direct-item-xp-consolidation` |  ation` + `ai-codebase-scan` | 15 | EmpyreanAlteration refactor (Gear* properties, CharacterTable mode, ModData migration, lockpick banking, VoidTestWatchdog removal, DataPaths files, WipeProgress, clean scratch files) |
+| `jeremy/feature/glyph-extraction` | 1 | Glyph of Extraction tiered items (SpellSiphon) |
+| `Raajik/task/today-plate` | 15 | Overtinked (Nether vanilla-ize + spell cleave), WorldEvents (unified scheduler, invasion fixes), Windblown (bestower QoL), salvage alignment, ModData migration, script fixes, docs |
+
+**Cleaned up:**
+- 7 stale local branches deleted (already merged into main)
+- 8 stale remote branches deleted from GitHub
+- 3 worktree-checked-out branches pruned (Claude, feature/worldevents-expansion, OpenCode)
+- 1 duplicate branch deleted (`jeremy/refactor/ai-codebase-scan` — identical to `direct-item-xp-consolidation`)
+
+**Patch saved:** Uncommitted AugmentSystem defense imbue fixes (`|=` with duplicate checks for Peridot/YellowTopaz/Zircon) from the worldevents worktree — verified already incorporated in main.
+
+**Result:** `main` (1 local only — 0 unsolved branches.
+
 ## Earlier Features
 
 

@@ -33,12 +33,12 @@ internal static class ArmorJewelryRatingGrowth
         int pick = outcomes[Random.Shared.Next(0, outcomes.Count)];
         return pick switch
         {
-            0 => ApplyDamageRating(item, player, level, emitMessages, summary),
-            1 => ApplyCritDamageRating(item, player, level, emitMessages, summary),
-            2 => ApplyDamageResistRating(item, player, level, emitMessages, summary),
-            3 => ApplyCritDamageResistRating(item, player, level, emitMessages, summary),
-            4 => ApplyHealingBoostRating(item, player, level, rg, emitMessages, summary),
-            5 => ApplyVitalityGearMaxHealth(item, player, level, rg, emitMessages, summary),
+            0 => ApplyGearDamage(item, player, level, emitMessages, summary),
+            1 => ApplyGearCritDamage(item, player, level, emitMessages, summary),
+            2 => ApplyGearDamageResist(item, player, level, emitMessages, summary),
+            3 => ApplyGearCritDamageResist(item, player, level, emitMessages, summary),
+            4 => ApplyGearHealingBoost(item, player, level, rg, emitMessages, summary),
+            5 => ApplyGearMaxHealth(item, player, level, rg, emitMessages, summary),
             _ => false,
         };
     }
@@ -64,10 +64,10 @@ internal static class ArmorJewelryRatingGrowth
 
             case RatingSlotKind.NonJewelryClothing:
             default:
-                GetClothingLayerFlags(item, out bool allowDr, out bool allowCdr);
-                if (allowDr)
+                GetClothingLayerFlags(item, out bool allowGearDamage, out bool allowGearCritDamage);
+                if (allowGearDamage)
                     list.Add(0);
-                if (allowCdr)
+                if (allowGearCritDamage)
                     list.Add(1);
                 list.Add(2);
                 list.Add(3);
@@ -76,10 +76,10 @@ internal static class ArmorJewelryRatingGrowth
         }
     }
 
-    private static void GetClothingLayerFlags(WorldObject item, out bool allowDamageRating, out bool allowCritDamageRating)
+    private static void GetClothingLayerFlags(WorldObject item, out bool allowGearDamage, out bool allowGearCritDamage)
     {
-        allowDamageRating = true;
-        allowCritDamageRating = true;
+        allowGearDamage = true;
+        allowGearCritDamage = true;
 
         CoverageMask? cp = item.ClothingPriority ?? item.VisualClothingPriority;
         if (!cp.HasValue)
@@ -109,21 +109,21 @@ internal static class ArmorJewelryRatingGrowth
         bool hasO = (v & outerBits) != 0;
 
         if (hasU && !hasO)
-            allowCritDamageRating = false;
+            allowGearCritDamage = false;
         else if (hasO && !hasU)
-            allowDamageRating = false;
+            allowGearDamage = false;
     }
 
-    private static bool ApplyDamageRating(
+    private static bool ApplyGearDamage(
         WorldObject item,
         Player player,
         int level,
         bool emitMessages,
         QuestItemGrowthLevelEngine.GrowthSummary? summary)
     {
-        int before = item.DamageRating ?? 0;
+        int before = item.GearDamage ?? 0;
         int after = before + 1;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.DamageRating, after);
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.GearDamage, after);
         if (summary != null)
             summary.GearDamageRatingSteps += 1;
         if (emitMessages)
@@ -133,16 +133,16 @@ internal static class ArmorJewelryRatingGrowth
         return true;
     }
 
-    private static bool ApplyCritDamageRating(
+    private static bool ApplyGearCritDamage(
         WorldObject item,
         Player player,
         int level,
         bool emitMessages,
         QuestItemGrowthLevelEngine.GrowthSummary? summary)
     {
-        int before = item.CritDamageRating ?? 0;
+        int before = item.GearCritDamage ?? 0;
         int after = before + 1;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.CritDamageRating, after);
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.GearCritDamage, after);
         if (summary != null)
             summary.GearCritDamageRatingSteps += 1;
         if (emitMessages)
@@ -152,16 +152,16 @@ internal static class ArmorJewelryRatingGrowth
         return true;
     }
 
-    private static bool ApplyDamageResistRating(
+    private static bool ApplyGearDamageResist(
         WorldObject item,
         Player player,
         int level,
         bool emitMessages,
         QuestItemGrowthLevelEngine.GrowthSummary? summary)
     {
-        int before = item.DamageResistRating ?? 0;
+        int before = item.GearDamageResist ?? 0;
         int after = before + 1;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.DamageResistRating, after);
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.GearDamageResist, after);
         if (summary != null)
             summary.GearDamageResistRatingSteps += 1;
         if (emitMessages)
@@ -171,16 +171,16 @@ internal static class ArmorJewelryRatingGrowth
         return true;
     }
 
-    private static bool ApplyCritDamageResistRating(
+    private static bool ApplyGearCritDamageResist(
         WorldObject item,
         Player player,
         int level,
         bool emitMessages,
         QuestItemGrowthLevelEngine.GrowthSummary? summary)
     {
-        int before = item.CritDamageResistRating ?? 0;
+        int before = item.GearCritDamageResist ?? 0;
         int after = before + 1;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.CritDamageResistRating, after);
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.GearCritDamageResist, after);
         if (summary != null)
             summary.GearCritDamageResistRatingSteps += 1;
         if (emitMessages)
@@ -190,7 +190,7 @@ internal static class ArmorJewelryRatingGrowth
         return true;
     }
 
-    private static bool ApplyHealingBoostRating(
+    private static bool ApplyGearHealingBoost(
         WorldObject item,
         Player player,
         int level,
@@ -204,9 +204,9 @@ internal static class ArmorJewelryRatingGrowth
             (minV, maxV) = (maxV, minV);
 
         int delta = minV == maxV ? minV : Random.Shared.Next(minV, maxV + 1);
-        int before = item.HealingBoostRating ?? 0;
+        int before = item.GearHealingBoost ?? 0;
         int after = before + delta;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.HealingBoostRating, after);
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.GearHealingBoost, after);
         if (summary != null)
             summary.GearHealingBoostRatingGained += delta;
         if (emitMessages)
@@ -216,7 +216,7 @@ internal static class ArmorJewelryRatingGrowth
         return true;
     }
 
-    private static bool ApplyVitalityGearMaxHealth(
+    private static bool ApplyGearMaxHealth(
         WorldObject item,
         Player player,
         int level,

@@ -316,9 +316,9 @@ internal static class WeaponQuestGrowth
         out string? appliedDescription)
     {
         appliedDescription = null;
-        int drBefore = BiotaPropertyHelper.GetBiotaPropertyIntRaw(item, PropertyInt.DamageRating) ?? 0;
+        int drBefore = BiotaPropertyHelper.GetBiotaPropertyIntRaw(item, PropertyInt.GearDamage) ?? 0;
         int drAfter = drBefore + 1;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.DamageRating, drAfter);
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.GearDamage, drAfter);
         if (summary != null)
             summary.MinorDamageRatingCount++;
         appliedDescription = "+1 damage rating (minor)";
@@ -337,9 +337,9 @@ internal static class WeaponQuestGrowth
         out string? appliedDescription)
     {
         appliedDescription = null;
-        int critBefore = BiotaPropertyHelper.GetBiotaPropertyIntRaw(item, PropertyInt.CritDamageRating) ?? 0;
+        int critBefore = BiotaPropertyHelper.GetBiotaPropertyIntRaw(item, PropertyInt.GearCritDamage) ?? 0;
         int critAfter = critBefore + 1;
-        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.CritDamageRating, critAfter);
+        BiotaPropertyHelper.SetPersistentPropertyInt(item, PropertyInt.GearCritDamage, critAfter);
         if (summary != null)
             summary.MinorCritDamageRatingCount++;
         appliedDescription = "+1 crit damage rating (minor)";

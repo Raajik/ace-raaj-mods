@@ -181,12 +181,12 @@ internal class CloakLootUpgrade : Mutator
 
             PropertyInt? propInt = ratingName switch
             {
-                "DamageRating" => PropertyInt.DamageRating,
-                "CritDamageRating" => PropertyInt.CritDamageRating,
-                "DamageResistRating" => PropertyInt.DamageResistRating,
-                "CritDamageResistRating" => PropertyInt.CritDamageResistRating,
-                "CritRating" => PropertyInt.CritRating,
-                "HealingBoostRating" => PropertyInt.HealingBoostRating,
+                "GearDamage" => PropertyInt.GearDamage,
+                "GearCritDamage" => PropertyInt.GearCritDamage,
+                "GearDamageResist" => PropertyInt.GearDamageResist,
+                "GearCritDamageResist" => PropertyInt.GearCritDamageResist,
+                "GearCrit" => PropertyInt.GearCrit,
+                "GearHealingBoost" => PropertyInt.GearHealingBoost,
                 "GearMaxHealth" => PropertyInt.GearMaxHealth,
                 _ => null,
             };

@@ -44,12 +44,12 @@ public partial class Settings
 
     public List<string> CloakLootRatingTypes { get; set; } = new()
     {
-        "DamageRating",
-        "CritDamageRating",
-        "DamageResistRating",
-        "CritDamageResistRating",
-        "CritRating",
-        "HealingBoostRating",
+        "GearDamage",
+        "GearCritDamage",
+        "GearDamageResist",
+        "GearCritDamageResist",
+        "GearCrit",
+        "GearHealingBoost",
         "GearMaxHealth",
     };
 

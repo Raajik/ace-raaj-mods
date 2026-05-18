@@ -878,12 +878,12 @@ internal static class QuestItemGrowthLevelEngine
 
         var ratingProps = new (PropertyInt prop, string name, Action<int>? track)[]
         {
-            (PropertyInt.DamageRating, "Damage Rating", v => { if (summary != null) summary.GearDamageRatingSteps += v; }),
-            (PropertyInt.CritDamageRating, "Crit Damage Rating", v => { if (summary != null) summary.GearCritDamageRatingSteps += v; }),
-            (PropertyInt.DamageResistRating, "Damage Resist Rating", v => { if (summary != null) summary.GearDamageResistRatingSteps += v; }),
-            (PropertyInt.CritDamageResistRating, "Crit Damage Resist Rating", v => { if (summary != null) summary.GearCritDamageResistRatingSteps += v; }),
-            (PropertyInt.CritRating, "Crit Rating", null),
-            (PropertyInt.HealingBoostRating, "Healing Boost Rating", v => { if (summary != null) summary.GearHealingBoostRatingGained += v; }),
+            (PropertyInt.GearDamage, "Damage Rating", v => { if (summary != null) summary.GearDamageRatingSteps += v; }),
+            (PropertyInt.GearCritDamage, "Crit Damage Rating", v => { if (summary != null) summary.GearCritDamageRatingSteps += v; }),
+            (PropertyInt.GearDamageResist, "Damage Resist Rating", v => { if (summary != null) summary.GearDamageResistRatingSteps += v; }),
+            (PropertyInt.GearCritDamageResist, "Crit Damage Resist Rating", v => { if (summary != null) summary.GearCritDamageResistRatingSteps += v; }),
+            (PropertyInt.GearCrit, "Crit Rating", null),
+            (PropertyInt.GearHealingBoost, "Healing Boost Rating", v => { if (summary != null) summary.GearHealingBoostRatingGained += v; }),
             (PropertyInt.GearMaxHealth, "Vitality Rating", v => { if (summary != null) summary.GearVitalityRatingGained += v; }),
         };
 

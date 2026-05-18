@@ -7,9 +7,7 @@ namespace BetterSupportSkills.Skills;
 /// </summary>
 public static class QuestTurnInTracker
 {
-    static readonly string DataPath = Path.Combine(
-        Path.GetDirectoryName(typeof(QuestTurnInTracker).Assembly.Location) ?? "",
-        "QuestTurnInTracker.json");
+    static readonly string DataPath = BetterSupportSkillsDataPaths.InModData("QuestTurnInTracker.json");
 
     static readonly Dictionary<uint, Dictionary<uint, TurnInRecord>> _data = new();
     static bool _loaded;

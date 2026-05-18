@@ -7,9 +7,7 @@ namespace Loremaster;
 // (portal restrictions, NPC dialogue, etc.). Repeat completions are still allowed.
 public static class AccountQuestFlags
 {
-    static readonly string DataPath = Path.Combine(
-        Path.GetDirectoryName(typeof(AccountQuestFlags).Assembly.Location) ?? "",
-        "AccountQuestFlags.json");
+    static readonly string DataPath = LoremasterDataPaths.InModData("AccountQuestFlags.json");
 
     static readonly Dictionary<uint, HashSet<string>> _flags = new();
     static bool _loaded;

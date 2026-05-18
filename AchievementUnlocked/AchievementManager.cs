@@ -64,7 +64,7 @@ public static class AchievementManager
 
         _initialized = true;
 
-        var modDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
+        var modDir = AchievementUnlockedDataPaths.ModDataRoot;
         AccountDataPath = Path.Combine(modDir, "AccountAchievements.json");
         AccountTierProgressPath = Path.Combine(modDir, "AccountTierProgress.json");
         LoadAccountData();

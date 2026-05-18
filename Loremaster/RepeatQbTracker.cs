@@ -9,9 +9,7 @@ namespace Loremaster;
 /// </summary>
 public static class RepeatQbTracker
 {
-    static readonly string DataPath = Path.Combine(
-        Path.GetDirectoryName(typeof(RepeatQbTracker).Assembly.Location) ?? "",
-        "RepeatQbTracker.json");
+    static readonly string DataPath = LoremasterDataPaths.InModData("RepeatQbTracker.json");
 
     static readonly Dictionary<uint, Dictionary<string, long>> _data = new();
     static bool _loaded;
@@ -22,9 +20,7 @@ public static class RepeatQbTracker
         try
         {
             // Migrate from old filename if it exists
-            var oldPath = Path.Combine(
-                Path.GetDirectoryName(typeof(RepeatQbTracker).Assembly.Location) ?? "",
-                "AccountRepeatQuests.json");
+            var oldPath = LoremasterDataPaths.InModData("AccountRepeatQuests.json");
             if (File.Exists(oldPath) && !File.Exists(DataPath))
             {
                 File.Move(oldPath, DataPath);

@@ -241,8 +241,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
 
     static string GetPlayerDataPath(Player player)
     {
-        var modDir = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location) ?? "";
-        var dir = Path.Combine(modDir, "Data", "PlayerData");
+        var modDir = ChallengeModesDataPaths.ModDataRoot;
+        var dir = Path.Combine(modDir, "PlayerData");
         Directory.CreateDirectory(dir);
         return Path.Combine(dir, $"{player.Guid.Full}.json");
     }
@@ -502,8 +502,8 @@ public class PatchClass(BasicMod mod, string settingsName = "Settings.json") : B
         try
         {
             // Player prefs use the same id as shard Biota.Id / player.Guid.Full (ACE instance id).
-            var modDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-            var path = Path.Combine(modDir, "Data", "PlayerData", $"{biotaId}.json");
+            var modDir = ChallengeModesDataPaths.ModDataRoot;
+            var path = Path.Combine(modDir, "PlayerData", $"{biotaId}.json");
             if (!File.Exists(path))
                 return false;
 

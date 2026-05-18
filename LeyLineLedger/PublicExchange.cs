@@ -30,8 +30,7 @@ internal static class PublicExchange
 
     public static Settings Settings => PatchClass.Settings;
 
-    static string PoolPath => Path.Combine(
-        Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "",
+    static string PoolPath => LeyLineLedgerDataPaths.InModData(
         Settings.PublicExchange.PoolJsonPath);
 
     public static void TryApply()

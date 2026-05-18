@@ -11,10 +11,7 @@ internal static class AccountBankStore
 {
     static readonly ConcurrentDictionary<string, object> Locks = new();
 
-    static readonly string ModDataDir = Path.Combine(
-        Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location ?? ".") ?? ".",
-        "ModData", "LeyLineLedger", "AccountBanks");
-
+    static readonly string ModDataDir = LeyLineLedgerDataPaths.InModData("AccountBanks");
     static readonly string OldModDataDir = Path.Combine(
         Path.GetDirectoryName(System.Reflection.Assembly.GetEntryAssembly()?.Location ?? ".") ?? ".",
         "Server", "ModData", "LeyLineLedger", "AccountBanks");

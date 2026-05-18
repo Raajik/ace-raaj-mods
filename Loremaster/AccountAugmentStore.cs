@@ -15,8 +15,7 @@ internal static class AccountAugmentStore
     {
         get
         {
-            var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-            return Path.Combine(dir, "Data", "AccountAugments");
+            return LoremasterDataPaths.InModData("AccountAugments");
         }
     }
 

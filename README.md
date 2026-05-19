@@ -55,7 +55,7 @@ Consolidated loot-table control (former `SharedLoot` library + `BetterChestLoot`
 
 **Chest & Loot:**
 - **Chest guaranteed drops** — adds salvage, trade notes, healing kits, keys, crystals, and gear to treasure chests.
-- **Global rare drops** — SpellSiphon tool and Mana Lattice have a small chance to drop from any creature with a treasure profile. Mana Lattice can pre-roll bonus spells from SpellSiphon's gem pool when that mod is loaded; lattice uses gem-style self-cast when the item spellbook is non-empty (SpellSiphon hook + client refresh after bootstrap).
+- **Global rare drops** — Spellsiphon tool and Mana Lattice have a small chance to drop from any creature with a treasure profile. Mana Lattice can pre-roll bonus spells from Spellsiphon's gem pool when that mod is loaded; lattice uses gem-style self-cast when the item spellbook is non-empty (Spellsiphon hook + client refresh after bootstrap).
 - **Salvage bag shaping** — auto-shapes dropped salvage bags to 100-unit stacks.
 - **Suppressed drop filter** — strips unwanted vanilla WCIDs from ALL creature corpse loot. Add WCIDs to `SuppressedDropWcids` in Settings.json. Default: `[22168]` (quarterstaff new).
 - **Loot rolling** — pooled rarity system (common/uncommon/rare/extremely rare) with independent salvage and gear rolls.
@@ -88,7 +88,7 @@ A mutator pipeline for loot, corpses, generators, and player-driven item awakeni
 - **Item growth on level-up** — equippables can gain bonuses as the player levels.
 - **Awakened cloaks + item sets** — after point-based level gains on awakened cloaks, `OnItemLevelUp` runs when the item has an equipment set so cloak proc spell tiers stay aligned; cloak loot-upgrade / kill-point gating matches item XP curve Harmony when those features are on.
 - **DisableAttunedGlobally** — server-wide QOL toggle making ALL items tradeable/sellable (including quest rewards and Coalesced Mana).
-- **Awaken workmanship** — first awakening sets sensible `ItemWorkmanship` / `NumTimesTinkered` when missing. Optional **bonus spells** from SpellSiphon's pool when that mod is present (`EnableAwakenRandomSpells`).
+- **Awaken workmanship** — first awakening sets sensible `ItemWorkmanship` / `NumTimesTinkered` when missing. Optional **bonus spells** from Spellsiphon's pool when that mod is present (`EnableAwakenRandomSpells`).
 
 ### EasyServerSettings
 Applies shard-wide `PropertyManager` presets from a single configuration file.
@@ -97,7 +97,7 @@ Applies shard-wide `PropertyManager` presets from a single configuration file.
 - `/essapply` re-runs the preset without a restart.
 - Safe to leave enabled; idempotent on repeated applies.
 
-### SpellSiphon
+### Spellsiphon
 Extract, cleanse, and transfer spells on items.
 
 **Spellsiphon (WCID 850200)** — a single-use **negative spell cleanser**. Use it on any spell-bearing item to remove harmful debuffs (e.g., Vulnerability, Imperil, Bane, Fester, Decay). Uses ACE's native `IsBeneficial` flag plus a configurable name denylist (`NegativeSpellNameContains`). Target item survives; Spellsiphon is consumed. Success rate scales with Magic Item Tinkering skill and Charmed Smith augment.
@@ -116,7 +116,7 @@ Extract, cleanse, and transfer spells on items.
 
 **Infinite Gems** (optional) — all gem spells reusable without consumption.
 
-See `SpellSiphon/Readme.md` for full documentation, SQL file order, and settings reference.
+See `Spellsiphon/Readme.md` for full documentation, SQL file order, and settings reference.
 
 > **Status:** Disabled by default. Enable in `Meta.json` when ready to deploy.
 
@@ -242,7 +242,7 @@ Local builds write DLLs and copied `Meta.json` / `Settings.json` to **`build/<Mo
 
 ```powershell
 # Build a single mod
-dotnet build SpellSiphon/SpellSiphon.csproj
+dotnet build Spellsiphon/Spellsiphon.csproj
 
 # Build all mods (PowerShell)
 Get-ChildItem -Directory | Where-Object { Test-Path "$($_.FullName)/$($_.Name).csproj" } | ForEach-Object { dotnet build "$($_.FullName)/$($_.Name).csproj" }

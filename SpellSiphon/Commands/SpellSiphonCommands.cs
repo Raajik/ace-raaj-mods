@@ -1,11 +1,11 @@
-namespace SpellSiphon.Commands;
+namespace Spellsiphon.Commands;
 
-internal static class SpellSiphonCommands
+internal static class SpellsiphonCommands
 {
 	[CommandHandler("spellsiphon", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld, 0,
-		"SpellSiphon debug and status commands.",
+		"Spellsiphon debug and status commands.",
 		"Usage: /spellsiphon status | spawn [count]")]
-	public static void HandleSpellSiphon(Session session, params string[] parameters)
+	public static void HandleSpellsiphon(Session session, params string[] parameters)
 	{
 		if (session?.Player is not Player player)
 			return;
@@ -13,7 +13,7 @@ internal static class SpellSiphonCommands
 		Settings? s = PatchClass.Settings;
 		if (s == null || !s.Enabled)
 		{
-			player.SendMessage("[SpellSiphon] Mod is disabled or settings not loaded.");
+			player.SendMessage("[Spellsiphon] Mod is disabled or settings not loaded.");
 			return;
 		}
 
@@ -22,10 +22,10 @@ internal static class SpellSiphonCommands
 		switch (cmd)
 		{
 			case "status":
-				player.SendMessage($"[SpellSiphon] Enabled={s.Enabled}, Verbose={s.Verbose}");
-				player.SendMessage($"[SpellSiphon] ToolWcid={s.SpellsiphonToolWcid}, ManaLatticeWcid={s.ManaLatticeWcid}");
-				player.SendMessage($"[SpellSiphon] Base success={s.BaseExtractionSuccessRate}%, CharmedSmith=+{s.CharmedSmithBonus}%, MIT bonus={s.MitBonusPerPoint}% per point, Max={s.MaxSuccessRate}%");
-				player.SendMessage($"[SpellSiphon] Source survive on success={s.SuccessSourceSurviveChance}%, strip on failure={s.FailureStripChance}%");
+				player.SendMessage($"[Spellsiphon] Enabled={s.Enabled}, Verbose={s.Verbose}");
+				player.SendMessage($"[Spellsiphon] ToolWcid={s.SpellsiphonToolWcid}, ManaLatticeWcid={s.ManaLatticeWcid}");
+				player.SendMessage($"[Spellsiphon] Base success={s.BaseExtractionSuccessRate}%, CharmedSmith=+{s.CharmedSmithBonus}%, MIT bonus={s.MitBonusPerPoint}% per point, Max={s.MaxSuccessRate}%");
+				player.SendMessage($"[Spellsiphon] Source survive on success={s.SuccessSourceSurviveChance}%, strip on failure={s.FailureStripChance}%");
 				break;
 
 			case "spawn":
@@ -33,7 +33,7 @@ internal static class SpellSiphonCommands
 				break;
 
 			default:
-				player.SendMessage("[SpellSiphon] Usage: /spellsiphon status | spawn [count]");
+				player.SendMessage("[Spellsiphon] Usage: /spellsiphon status | spawn [count]");
 				break;
 		}
 	}
@@ -68,6 +68,6 @@ internal static class SpellSiphonCommands
 			catch { }
 		}
 
-		player.SendMessage($"[SpellSiphon] Spawned {created} gem(s).");
+		player.SendMessage($"[Spellsiphon] Spawned {created} gem(s).");
 	}
 }

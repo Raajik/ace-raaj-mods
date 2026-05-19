@@ -1,4 +1,4 @@
--- SpellSiphon Tool Creation v2.0
+-- Spellsiphon Tool Creation v2.0
 -- WCID 850200 — MaxStackSize 250 (vendor may inject same stack count), burden 1, value 1.
 -- TargetType ItemEnchantableTarget (560015): ManaStone/Misc/etc. so crystals and odd spell items validate.
 -- Use directly on spell-bearing items to attempt extraction.

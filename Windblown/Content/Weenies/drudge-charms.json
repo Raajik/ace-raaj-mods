@@ -11,7 +11,7 @@
       "PropertiesString": {
         "Name": "Drudge Charm",
         "PluralName": "Drudge Charms",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -44,7 +44,7 @@
       "PropertiesString": {
         "Name": "Drudge Charm (Quality)",
         "PluralName": "Drudge Charms (Quality)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -77,7 +77,7 @@
       "PropertiesString": {
         "Name": "Drudge Charm (Pristine)",
         "PluralName": "Drudge Charms (Pristine)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -110,7 +110,7 @@
       "PropertiesString": {
         "Name": "Drudge Charm (Perfect)",
         "PluralName": "Drudge Charms (Perfect)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these charms to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,

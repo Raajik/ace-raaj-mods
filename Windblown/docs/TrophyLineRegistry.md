@@ -21,6 +21,14 @@ Canonical reference for Windblown collector trophy lines — WCIDs, drop configs
 | 850355–850357 | Unlocked Mnemosyne tiers (Regular→Perfect) — Unlocked Tiny/Unlocked Small/Unlocked Large |
 | 850358–850361 | Sharp Tusker Slave Tusk tiers |
 | 850362–850365 | Tumerok Insignia tiers |
+| 850366–850369 | Auroch Horn tiers |
+| 850370–850373 | Golem Heart tiers |
+| 850374–850377 | Armoredillo Spine tiers |
+| 850378–850381 | Mattekar Pelt tiers |
+| 850382–850385 | Mattekar Horn tiers |
+| 850386–850389 | Mattekar Paw tiers |
+| 850390–850393 | Grievver Tibia tiers |
+| 850394–850397 | Grievver Acid tiers |
 
 **Retired:** 850271–850273 (drudge), 850280–850282 (rat), 850283–850285 (wasp). Vanilla trophy WCIDs are no longer registered as custom weenies except as `BaseWcid` / `MirrorEmoteFromWcid` sources.
 
@@ -78,7 +86,39 @@ Each head line: single tier, custom WCID, `ReplaceSiblingWcids` includes the van
 
 ### Tumerok Insignia (850362-850365)
 
-**4-tier line.** Clones from **3695** (vanilla Gold Tumerok Insignia). Base renamed to "Tumerok Insignia" (dropping "Gold") with standard Quality/Pristine/Perfect suffixes. Blue underlay **100676435** + number overlays 1-4. `CreatureTypeGate`: **Tumerok**. `ReplaceSiblingWcids`: **[3695]**.
+**4-tier line.** Clones from **3695** (vanilla Gold Tumerok Insignia). Base renamed to "Tumerok Insignia" (droppingy" with standard Quality/Pristine/Perfect suffixes. Blue underlay **100676435** + number overlays 1-4. `CreatureTypeGate`: **Tumerok**. `ReplaceSiblingWcids`: **[3695]**.Tumerok**. `ReplaceSiblingWcids`: **[3695]**.Tumerok**. `ReplaceSiblingWcids`: **[3695]**.
+
+### Auroch Horn (850366-850369)
+
+**4-tier line.** Clones from **266** (vanilla Auroch Horn). Blue underlay **100676435** + number overlays 1-4. `CreatureTypeGate`: **Auroch**. `ReplaceSiblingWcids`: **[266]**.
+
+### Golem Heart (850370-850373)
+
+**4-tier line.** Clones from **23202** (vanilla Platinum Golem Heart). Blue underlay **100676435** + number overlays 1-4. `CreatureTypeGate`: **Golem**. `ReplaceSiblingWcids`: **[23202]**.
+
+### Armoredillo Spine (850374-850377)
+
+**4-tier line.** Clones from **3689** (vanilla Grey Spine). Blue underlay **100676435** + number overlays 1-4. `CreatureTypeGate`: **Armoredillo**. `ReplaceSiblingWcids`: **[3689]**.
+
+### Mattekar Pelt (850378-850381)
+
+**4-tier line.** Clones from **10868** (vanilla Canescent Mattekar Pelt). Blue** Blue underlay **100676435** + number overlays 1-4. `CreatureTypeGate`: **Mattekar**. `ReplaceSiblingWcids`: **[10868]**.
+
+### Mattekar Horn (850382-850385)
+
+**4-tier line.** Clones from **Clones from **7044** (vanilla Great Mattekar Horn). Blue underlay **100676435**Stac** + number overlays 1-4. `CreatureTypeGate`: **Mattekar**. `ReplaceSiblingWcids`: **[7044]**.
+
+### Mattekar Paw (850386-850389)
+
+**4-tier line.** Clones from **9412** (vanilla Dire Mattekar Paw). Blue underlay **100676435** + number overlays 1-4. `CreatureTypeGate`: **Mattekar**. `ReplaceSiblingWcids`: **[9412]**.
+
+### Grievver Tibia (850390-850393)
+
+**4-tier line.** Clones from **19476** (vanilla Grievver Tibia). Blue underlay **100676435** + number overlays 1-4.4. . `CreatureTypeGate`: **Grievver**. `ReplaceSiblingWcidsGrievver**. `ReplaceSiblingWcidsGrievver**. `ReplaceSiblingWcids`: **[19476]**.
+
+### Grievver Acid (850394-850397)
+
+**4-tier line.** Clones from **9098** (vanilla Vial of Grievver Acid). Blue underlay **100676435** + number overlays 1-4. `CreatureTypeGate`: **Grievver**. `ReplaceSiblingWcids`: **[9098]**.
 
 ## Adding a new trophy line
 

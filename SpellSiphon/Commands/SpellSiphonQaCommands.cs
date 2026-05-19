@@ -1,15 +1,15 @@
-using SpellSiphon.Features;
+using Spellsiphon.Features;
 
-namespace SpellSiphon.Commands;
+namespace Spellsiphon.Commands;
 
 using AceModQa;
 
-internal static class SpellSiphonQaCommands
+internal static class SpellsiphonQaCommands
 {
 	[CommandHandler("spellsiphonqa", AccessLevel.Admin, CommandHandlerFlag.RequiresWorld, 0,
-		"SpellSiphon QA utilities (Admin-only).",
+		"Spellsiphon QA utilities (Admin-only).",
 		"Usage: /spellsiphonqa status | /spellsiphonqa manalattice auto | /spellsiphonqa manalattice auto off")]
-	public static void HandleSpellSiphonQa(Session session, params string[] parameters)
+	public static void HandleSpellsiphonQa(Session session, params string[] parameters)
 	{
 		if (session?.Player is not Player player)
 			return;
@@ -17,7 +17,7 @@ internal static class SpellSiphonQaCommands
 		Settings? s = PatchClass.Settings;
 		if (s == null || !s.Enabled)
 		{
-			player.SendMessage("[SpellSiphon] Mod is disabled or settings not loaded.");
+			player.SendMessage("[Spellsiphon] Mod is disabled or settings not loaded.");
 			return;
 		}
 
@@ -25,8 +25,8 @@ internal static class SpellSiphonQaCommands
 
 		if (cmd == "status")
 		{
-			player.SendMessage("[SpellSiphon QA] Tool WCID: " + s.SpellsiphonToolWcid);
-			player.SendMessage("[SpellSiphon QA] Mana Lattice WCID: " + s.ManaLatticeWcid);
+			player.SendMessage("[Spellsiphon QA] Tool WCID: " + s.SpellsiphonToolWcid);
+			player.SendMessage("[Spellsiphon QA] Mana Lattice WCID: " + s.ManaLatticeWcid);
 		}
 		else if (cmd == "manalattice")
 		{
@@ -36,17 +36,17 @@ internal static class SpellSiphonQaCommands
 				string onOff = parameters.Length > 2 ? parameters[2].ToLowerInvariant() : "on";
 				bool enabled = onOff != "off";
 				ManaLatticeAutoBuff.SetAutoLatticeEnabled(player, enabled);
-				player.SendMessage($"[SpellSiphon] Mana Lattice auto-buff: {(enabled ? "ON" : "OFF")}.");
+				player.SendMessage($"[Spellsiphon] Mana Lattice auto-buff: {(enabled ? "ON" : "OFF")}.");
 			}
 			else
 			{
 				bool enabled = ManaLatticeAutoBuff.IsAutoLatticeEnabled(player);
-				player.SendMessage($"[SpellSiphon] Mana Lattice auto-buff: {(enabled ? "ON" : "OFF")}. Usage: /spellsiphonqa manalattice auto [off]");
+				player.SendMessage($"[Spellsiphon] Mana Lattice auto-buff: {(enabled ? "ON" : "OFF")}. Usage: /spellsiphonqa manalattice auto [off]");
 			}
 		}
 		else
 		{
-			player.SendMessage("[SpellSiphon QA] Usage: /spellsiphonqa status | /spellsiphonqa manalattice auto [off]");
+			player.SendMessage("[Spellsiphon QA] Usage: /spellsiphonqa status | /spellsiphonqa manalattice auto [off]");
 		}
 	}
 }

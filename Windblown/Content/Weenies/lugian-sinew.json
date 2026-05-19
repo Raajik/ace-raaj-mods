@@ -1,5 +1,5 @@
 {
-  "Description": "Large Lugian Sinew tier line — custom WCIDs 850344-850347. Clones from 7043; MirrorEmoteFromWcid 7043. Blue IconUnderlay 100676435 + black number overlays 1-4. ReplaceSiblingWcids includes both 7043 (Large) and 7042 (Small) to remove both vanilla sinews from the loot pool.",
+  "Description": "Large Lugian Sinew tier line \u2014 custom WCIDs 850344-850347. Clones from 7043; MirrorEmoteFromWcid 7043. Blue IconUnderlay 100676435 + black number overlays 1-4. ReplaceSiblingWcids includes both 7043 (Large) and 7042 (Small) to remove both vanilla sinews from the loot pool.",
   "Weenies": [
     {
       "ClassId": 850344,
@@ -11,7 +11,7 @@
       "PropertiesString": {
         "Name": "Large Lugian Sinew",
         "PluralName": "Large Lugian Sinews",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these sinews to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -25,8 +25,13 @@
         "IconOverlay": 100690976
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -39,7 +44,7 @@
       "PropertiesString": {
         "Name": "Large Lugian Sinew (Quality)",
         "PluralName": "Large Lugian Sinews (Quality)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these sinews to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -53,8 +58,13 @@
         "IconOverlay": 100690977
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -67,7 +77,7 @@
       "PropertiesString": {
         "Name": "Large Lugian Sinew (Pristine)",
         "PluralName": "Large Lugian Sinews (Pristine)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these sinews to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -81,8 +91,13 @@
         "IconOverlay": 100690978
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -95,7 +110,7 @@
       "PropertiesString": {
         "Name": "Large Lugian Sinew (Perfect)",
         "PluralName": "Large Lugian Sinews (Perfect)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these sinews to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -109,8 +124,13 @@
         "IconOverlay": 100690979
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     }
   ]

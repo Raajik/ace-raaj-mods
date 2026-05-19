@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace SpellSiphon;
+namespace Spellsiphon;
 
 // ACE builds purchased default-vendor stacks via Vendor.ItemProfileToWorldObjects (fresh WO from weenie).
 // Without this, StackUnitValue from the shop template is not applied to those clones, so cost/quantity breaks.

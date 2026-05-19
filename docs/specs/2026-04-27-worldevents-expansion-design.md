@@ -1,4 +1,4 @@
-# Design: WorldEvents Expansion + SpellSiphon + LeyLineLedger Robustness
+# Design: WorldEvents Expansion + Spellsiphon + LeyLineLedger Robustness
 
 **Date:** 2026-04-27  
 **Status:** Approved  
@@ -11,7 +11,7 @@
 This design covers five distinct workstreams:
 1. **LeyLineLedger robustness** — Prevent crashes from missing/deleted weenies
 2. **WorldEvents Solo Competitor Bonus** — Reward lone event participants
-3. **SpellSiphon** (formerly GemCrafter) — Any-item spell extraction
+3. **Spellsiphon** (formerly GemCrafter) — Any-item spell extraction
 4. **WorldEvents POI Hunt** ("Where in Dereth?") — Multi-round narrator chase
 5. **WorldEvents Scavenger Hunt** — Global monster trophy turn-in
 
@@ -163,25 +163,25 @@ public class SoloCompetitorBonusSettings
 
 ---
 
-## Workstream 3: SpellSiphon (formerly GemCrafter)
+## Workstream 3: Spellsiphon (formerly GemCrafter)
 
 ### Goal
-Rebrand GemCrafter to SpellSiphon and expand scope to crush any spell-bearing item.
+Rebrand GemCrafter to Spellsiphon and expand scope to crush any spell-bearing item.
 
 ### Rename Checklist
-- [ ] Folder: `GemCrafter/` → `SpellSiphon/`
-- [ ] Project: `GemCrafter.csproj` → `SpellSiphon.csproj` (update AssemblyName, RootNamespace)
-- [ ] `Meta.json`: Name = `"SpellSiphon"`, update description
+- [ ] Folder: `GemCrafter/` → `Spellsiphon/`
+- [ ] Project: `GemCrafter.csproj` → `Spellsiphon.csproj` (update AssemblyName, RootNamespace)
+- [ ] `Meta.json`: Name = `"Spellsiphon"`, update description
 - [ ] `GlobalUsings.cs`: Update namespace imports
 - [ ] `Mod.cs`: Update namespace
 - [ ] `PatchClass.cs`: Update namespace
 - [ ] `Settings.cs`: Update namespace
 - [ ] `MortarAndPestleHooks.cs` → `ExtractionTool.cs`
-- [ ] `GemcrafterCommands.cs` → `SpellSiphonCommands.cs`
-- [ ] `GemcrafterQaCommands.cs` → `SpellSiphonQaCommands.cs`
-- [ ] `GemcrafterQaTests.cs` → `SpellSiphonQaTests.cs`
+- [ ] `GemcrafterCommands.cs` → `SpellsiphonCommands.cs`
+- [ ] `GemcrafterQaCommands.cs` → `SpellsiphonQaCommands.cs`
+- [ ] `GemcrafterQaTests.cs` → `SpellsiphonQaTests.cs`
 - [ ] Internal class names: `GemLootMutator` → `LootMutator`
-- [ ] Update all `using GemCrafter` → `using SpellSiphon`
+- [ ] Update all `using GemCrafter` → `using Spellsiphon`
 - [ ] Update `ace-raaj-mods.sln` project reference
 - [ ] Update `.github/workflows/release.yml` if project name is hardcoded
 
@@ -226,7 +226,7 @@ if (ThreadSafeRandom.Next(0f, 100f) > rate)
 
 **Success:** Existing behavior — extract spells into mortar payload.
 
-#### `SpellSiphonCommands.cs`
+#### `SpellsiphonCommands.cs`
 - `/spellsiphon crush [item]` — crush target item
 - `/spellsiphon apply [item]` — apply mortar payload to target equipment
 - `/spellsiphon status` — show current mortar payload
@@ -256,7 +256,7 @@ if (ThreadSafeRandom.Next(0f, 100f) > rate)
 ```
 
 ### Files Renamed/Modified
-- `GemCrafter/` → `SpellSiphon/` (all files)
+- `GemCrafter/` → `Spellsiphon/` (all files)
 - `ace-raaj-mods.sln`
 - `.github/workflows/release.yml` (if needed)
 
@@ -778,7 +778,7 @@ VALUES (800016, 'lorewalkerzahirscavenger', 12);
 | 1 | LeyLineLedger robustness | ~250 | 0 | 6 |
 | 2 | Solo Competitor Bonus | ~150 | 0 | 12 |
 | 3 | Unified QB Ledger | ~200 | 2 | 3 |
-| 4 | SpellSiphon rename + expansion | ~500 | 0 (renames) | 8 |
+| 4 | Spellsiphon rename + expansion | ~500 | 0 (renames) | 8 |
 | 5 | POI Hunt | ~1200 | 9 | 5 |
 | 6 | Scavenger Hunt | ~900 | 8 | 6 |
 | **Total** | | **~3200** | **19** | **40** |
@@ -810,7 +810,7 @@ VALUES (800016, 'lorewalkerzahirscavenger', 12);
 - [ ] Trigger Invasion with 1 participant → bonus loot + XP + broadcast
 - [ ] Trigger event with 2+ participants → no bonus
 
-### SpellSiphon
+### Spellsiphon
 - [ ] Crush gem (existing behavior) → works
 - [ ] Crush rare crystal with spells → success roll, item destroyed on failure
 - [ ] Crush attuned item with `AllowAttunedAndBonded=true` → works
@@ -835,6 +835,6 @@ VALUES (800016, 'lorewalkerzahirscavenger', 12);
 
 ## Open Items (Post-Implementation)
 - Curate additional POI locations beyond initial city set
-- Tune success rates for SpellSiphon based on player feedback
+- Tune success rates for Spellsiphon based on player feedback
 - Balance Scavenger Hunt fallback pool based on economy data
 - Document LandblockScanner API for other mod authors

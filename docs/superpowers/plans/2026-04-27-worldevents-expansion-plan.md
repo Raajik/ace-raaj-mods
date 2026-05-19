@@ -1,10 +1,10 @@
-# WorldEvents Expansion + SpellSiphon + LeyLineLedger Implementation Plan
+# WorldEvents Expansion + Spellsiphon + LeyLineLedger Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement 6 workstreams: LeyLineLedger robustness, Solo Competitor Bonus, Unified QB Ledger, SpellSiphon rename/expansion, POI Hunt, and Scavenger Hunt.
+**Goal:** Implement 6 workstreams: LeyLineLedger robustness, Solo Competitor Bonus, Unified QB Ledger, Spellsiphon rename/expansion, POI Hunt, and Scavenger Hunt.
 
-**Architecture:** Sequential implementation building from defensive foundations (LeyLineLedger) through cross-cutting refactors (QB Ledger, SpellSiphon) to new event types (POI Hunt, Scavenger Hunt). Each workstream is independently testable.
+**Architecture:** Sequential implementation building from defensive foundations (LeyLineLedger) through cross-cutting refactors (QB Ledger, Spellsiphon) to new event types (POI Hunt, Scavenger Hunt). Each workstream is independently testable.
 
 **Tech Stack:** C# 11, .NET 6, Harmony 2, ACEmulator server APIs, JSON persistence, SQL weenie definitions.
 
@@ -42,16 +42,16 @@
 | `WorldEvents/BonusQuest/BonusQuestParticipation.cs` | Modify | Refactor to use `ParticipationLedger` |
 | `WorldEvents/PatchClass.cs` | Modify | Update `/top qb` command |
 
-### Phase 4: SpellSiphon Rename + Expansion
+### Phase 4: Spellsiphon Rename + Expansion
 | File | Action | Responsibility |
 |------|--------|--------------|
-| `GemCrafter/` → `SpellSiphon/` | Rename | All files in folder |
-| `GemCrafter.csproj` → `SpellSiphon.csproj` | Rename | Project file |
-| `SpellSiphon/Settings.cs` | Modify | Add any-item crushing settings |
-| `SpellSiphon/ExtractionTool.cs` | Rename+Modify | Eligibility check, success rate, failure handling |
-| `SpellSiphon/SpellSiphonCommands.cs` | Rename+Modify | Command handlers |
-| `SpellSiphon/SpellSiphonQaCommands.cs` | Rename | QA commands |
-| `SpellSiphon/SpellSiphonQaTests.cs` | Rename | QA tests |
+| `GemCrafter/` → `Spellsiphon/` | Rename | All files in folder |
+| `GemCrafter.csproj` → `Spellsiphon.csproj` | Rename | Project file |
+| `Spellsiphon/Settings.cs` | Modify | Add any-item crushing settings |
+| `Spellsiphon/ExtractionTool.cs` | Rename+Modify | Eligibility check, success rate, failure handling |
+| `Spellsiphon/SpellsiphonCommands.cs` | Rename+Modify | Command handlers |
+| `Spellsiphon/SpellsiphonQaCommands.cs` | Rename | QA commands |
+| `Spellsiphon/SpellsiphonQaTests.cs` | Rename | QA tests |
 | `ace-raaj-mods.sln` | Modify | Update project reference |
 
 ### Phase 5: POI Hunt
@@ -621,72 +621,72 @@ Expected: 0 errors, 0 warnings.
 
 ---
 
-## Phase 4: SpellSiphon Rename + Expansion
+## Phase 4: Spellsiphon Rename + Expansion
 
 ### Task 4.1: Rename Folder and Project
 
 **Files:**
-- Rename: `GemCrafter/` → `SpellSiphon/`
-- Rename: `GemCrafter/GemCrafter.csproj` → `SpellSiphon/SpellSiphon.csproj`
+- Rename: `GemCrafter/` → `Spellsiphon/`
+- Rename: `GemCrafter/GemCrafter.csproj` → `Spellsiphon/Spellsiphon.csproj`
 
 - [ ] **Step 1: Rename folder**
 
 ```bash
 cd A:\ai\projects\ace-raaj-mods
-mv GemCrafter SpellSiphon
+mv GemCrafter Spellsiphon
 ```
 
 - [ ] **Step 2: Rename project file**
 
 ```bash
-cd A:\ai\projects\ace-raaj-mods\SpellSiphon
-mv GemCrafter.csproj SpellSiphon.csproj
+cd A:\ai\projects\ace-raaj-mods\Spellsiphon
+mv GemCrafter.csproj Spellsiphon.csproj
 ```
 
 - [ ] **Step 3: Update project file contents**
 
-Edit `SpellSiphon.csproj`:
+Edit `Spellsiphon.csproj`:
 ```xml
-<AssemblyName>SpellSiphon</AssemblyName>
-<RootNamespace>SpellSiphon</RootNamespace>
+<AssemblyName>Spellsiphon</AssemblyName>
+<RootNamespace>Spellsiphon</RootNamespace>
 ```
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add SpellSiphon/
-git commit -m "refactor(SpellSiphon): rename GemCrafter to SpellSiphon"
+git add Spellsiphon/
+git commit -m "refactor(Spellsiphon): rename GemCrafter to Spellsiphon"
 ```
 
 ### Task 4.2: Rename Source Files and Update Namespaces
 
 **Files:**
-- Rename: `SpellSiphon/MortarAndPestleHooks.cs` → `SpellSiphon/ExtractionTool.cs`
-- Rename: `SpellSiphon/GemcrafterCommands.cs` → `SpellSiphon/SpellSiphonCommands.cs`
-- Rename: `SpellSiphon/GemcrafterQaCommands.cs` → `SpellSiphon/SpellSiphonQaCommands.cs`
-- Rename: `SpellSiphon/GemcrafterQaTests.cs` → `SpellSiphon/SpellSiphonQaTests.cs`
-- Modify: `SpellSiphon/Mod.cs`, `SpellSiphon/PatchClass.cs`, `SpellSiphon/Settings.cs`, `SpellSiphon/GlobalUsings.cs`
+- Rename: `Spellsiphon/MortarAndPestleHooks.cs` → `Spellsiphon/ExtractionTool.cs`
+- Rename: `Spellsiphon/GemcrafterCommands.cs` → `Spellsiphon/SpellsiphonCommands.cs`
+- Rename: `Spellsiphon/GemcrafterQaCommands.cs` → `Spellsiphon/SpellsiphonQaCommands.cs`
+- Rename: `Spellsiphon/GemcrafterQaTests.cs` → `Spellsiphon/SpellsiphonQaTests.cs`
+- Modify: `Spellsiphon/Mod.cs`, `Spellsiphon/PatchClass.cs`, `Spellsiphon/Settings.cs`, `Spellsiphon/GlobalUsings.cs`
 
 - [ ] **Step 1: Rename files**
 
 ```bash
-cd A:\ai\projects\ace-raaj-mods\SpellSiphon
+cd A:\ai\projects\ace-raaj-mods\Spellsiphon
 mv MortarAndPestleHooks.cs ExtractionTool.cs
-mv GemcrafterCommands.cs SpellSiphonCommands.cs
-mv GemcrafterQaCommands.cs SpellSiphonQaCommands.cs
-mv GemcrafterQaTests.cs SpellSiphonQaTests.cs
+mv GemcrafterCommands.cs SpellsiphonCommands.cs
+mv GemcrafterQaCommands.cs SpellsiphonQaCommands.cs
+mv GemcrafterQaTests.cs SpellsiphonQaTests.cs
 ```
 
 - [ ] **Step 2: Update namespaces in all .cs files**
 
-Replace `namespace GemCrafter` with `namespace SpellSiphon` in:
+Replace `namespace GemCrafter` with `namespace Spellsiphon` in:
 - `Mod.cs`
 - `PatchClass.cs`
 - `Settings.cs`
 - `ExtractionTool.cs`
-- `SpellSiphonCommands.cs`
-- `SpellSiphonQaCommands.cs`
-- `SpellSiphonQaTests.cs`
+- `SpellsiphonCommands.cs`
+- `SpellsiphonQaCommands.cs`
+- `SpellsiphonQaTests.cs`
 - `Features/InfusedPowderApplyHooks.cs`
 - `Features/MortarAndPestleDirectHooks.cs`
 - `Features/UseOnTargetHooks.cs`
@@ -696,13 +696,13 @@ Replace `namespace GemCrafter` with `namespace SpellSiphon` in:
 
 - [ ] **Step 3: Update `using` statements**
 
-Replace `using GemCrafter` with `using SpellSiphon` in any file that references it (usually within the same project, so namespace change covers it).
+Replace `using GemCrafter` with `using Spellsiphon` in any file that references it (usually within the same project, so namespace change covers it).
 
 - [ ] **Step 4: Update `Meta.json`**
 
 ```json
 {
-  "Name": "SpellSiphon",
+  "Name": "Spellsiphon",
   "Description": "Crush spell-bearing items to extract their spells and infuse them into equipment.",
   ...
 }
@@ -711,8 +711,8 @@ Replace `using GemCrafter` with `using SpellSiphon` in any file that references 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add SpellSiphon/
-git commit -m "refactor(SpellSiphon): rename all classes and namespaces"
+git add Spellsiphon/
+git commit -m "refactor(Spellsiphon): rename all classes and namespaces"
 ```
 
 ### Task 4.3: Update Solution File
@@ -724,7 +724,7 @@ git commit -m "refactor(SpellSiphon): rename all classes and namespaces"
 
 Find the `GemCrafter` project line and update:
 ```
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpellSiphon", "SpellSiphon\SpellSiphon.csproj", "{GUID}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spellsiphon", "Spellsiphon\Spellsiphon.csproj", "{GUID}"
 ```
 
 Keep the same GUID to preserve solution bindings.
@@ -733,13 +733,13 @@ Keep the same GUID to preserve solution bindings.
 
 ```bash
 git add ace-raaj-mods.sln
-git commit -m "build: update solution for SpellSiphon rename"
+git commit -m "build: update solution for Spellsiphon rename"
 ```
 
 ### Task 4.4: Add Any-Item Crushing Settings
 
 **Files:**
-- Modify: `SpellSiphon/Settings.cs`
+- Modify: `Spellsiphon/Settings.cs`
 
 - [ ] **Step 1: Add new settings**
 
@@ -783,14 +783,14 @@ public List<uint> NonCrushableWcids { get; set; } = new();
 - [ ] **Step 2: Commit**
 
 ```bash
-git add SpellSiphon/Settings.cs
-git commit -m "feat(SpellSiphon): add any-item crushing settings"
+git add Spellsiphon/Settings.cs
+git commit -m "feat(Spellsiphon): add any-item crushing settings"
 ```
 
 ### Task 4.5: Implement Any-Item Crushing Logic
 
 **Files:**
-- Modify: `SpellSiphon/ExtractionTool.cs`
+- Modify: `Spellsiphon/ExtractionTool.cs`
 
 - [ ] **Step 1: Add eligibility check**
 
@@ -858,7 +858,7 @@ if (roll > successRate)
     // Failure: destroy item only
     InventoryHelpers.TryRemoveOneFromPlayer(player, item);
     player.SendMessage("Your mortar shatters the item but fails to capture any spells.");
-    ModManager.Log($"[SpellSiphon] {player.Name} failed to crush {item.Name} (roll {roll:F1}% > {successRate:F1}%).");
+    ModManager.Log($"[Spellsiphon] {player.Name} failed to crush {item.Name} (roll {roll:F1}% > {successRate:F1}%).");
     return;
 }
 
@@ -867,21 +867,21 @@ if (roll > successRate)
 
 - [ ] **Step 4: Update commands**
 
-In `SpellSiphonCommands.cs`, update `/spellsiphon crush` to call `CanCrushItem` first.
+In `SpellsiphonCommands.cs`, update `/spellsiphon crush` to call `CanCrushItem` first.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add SpellSiphon/ExtractionTool.cs SpellSiphon/SpellSiphonCommands.cs
-git commit -m "feat(SpellSiphon): implement any-item crushing with skill-based success rate"
+git add Spellsiphon/ExtractionTool.cs Spellsiphon/SpellsiphonCommands.cs
+git commit -m "feat(Spellsiphon): implement any-item crushing with skill-based success rate"
 ```
 
 ### Task 4.6: Test & Build
 
-- [ ] **Step 1: Build SpellSiphon**
+- [ ] **Step 1: Build Spellsiphon**
 
 ```bash
-cd A:\ai\projects\ace-raaj-mods\SpellSiphon
+cd A:\ai\projects\ace-raaj-mods\Spellsiphon
 dotnet build
 ```
 
@@ -2158,7 +2158,7 @@ Expected: 0 errors, 0 warnings across all projects.
 
 - [ ] **Step 1: Update `README.md`**
 
-Add `SpellSiphon` to mod list (replaces GemCrafter). Update descriptions if needed.
+Add `Spellsiphon` to mod list (replaces GemCrafter). Update descriptions if needed.
 
 - [ ] **Step 2: Update `PLAN.md`**
 
@@ -2193,7 +2193,7 @@ dotnet test --verbosity normal
 
 ```bash
 git add .
-git commit -m "feat: complete WorldEvents expansion - POI Hunt, Scavenger Hunt, SpellSiphon, Solo Bonus, Ledger robustness"
+git commit -m "feat: complete WorldEvents expansion - POI Hunt, Scavenger Hunt, Spellsiphon, Solo Bonus, Ledger robustness"
 ```
 
 ---
@@ -2208,8 +2208,8 @@ git commit -m "feat: complete WorldEvents expansion - POI Hunt, Scavenger Hunt, 
 | Solo Competitor Bonus settings | Task 2.1 |
 | Solo Competitor Bonus across all events | Tasks 2.2–2.5 |
 | Unified QB Ledger service | Tasks 3.1–3.3 |
-| SpellSiphon rename | Tasks 4.1–4.3 |
-| SpellSiphon any-item crushing | Tasks 4.4–4.5 |
+| Spellsiphon rename | Tasks 4.1–4.3 |
+| Spellsiphon any-item crushing | Tasks 4.4–4.5 |
 | POI Hunt settings & enum | Task 5.1 |
 | POI Hunt data models | Task 5.2 |
 | LandblockScanner helper | Task 5.3 |

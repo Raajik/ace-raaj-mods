@@ -30,13 +30,13 @@
 
 **Change:** `README.md` § Build & Deploy documents local `build/` output, **`deploy-void-test.sh`** vs **`deploy-wb-test.sh`** (paths, wipe behavior, env overrides, SQL reminder, live caveat). Wiki **`operations/Deploy Procedures`** — trigger table distinguishes ad-hoc `"push test"` vs full-tree `deploy-wb-test.sh`; new section **Full-tree mod deploy**; index link from **ace-raaj-mods Patterns** to Deploy Procedures.
 
-### SpellSiphon — rare crystal crafting dialog shows true compound extraction chance
+### Spellsiphon — rare crystal crafting dialog shows true compound extraction chance
 
 **Problem:** Rare crystals used a **secondary roll** after primary recipe success in `PostHandleRecipe`, but `PostGetRecipeChance` only returned the **primary** MIT-based rate — crafting confirmation showed ~33%+ instead of ~1% overall.
 
 **Fix:** For targets in `RareCrystalWcids`, **`GetRecipeChance` postfix multiplies primary probability by `RareCrystalSecondarySuccessChance`** (default `0.03`, configurable). Same setting drives the secondary roll so UI matches mechanics.
 
-**Files:** `SpellSiphon/Features/RecipeHooks.cs`, `SpellSiphon/Settings.cs`, `SpellSiphon/Settings.json`.
+**Files:** `Spellsiphon/Features/RecipeHooks.cs`, `Spellsiphon/Settings.cs`, `Spellsiphon/Settings.json`.
 
 ### Windblown — rename Jochi vendor SQL file (was Radi)
 
@@ -60,13 +60,13 @@
 
 **Files:** `Windblown/Content/SQL/Vendors/04_Swayss_810002.sql`. **Commit:** `7dbbb8db`.
 
-### SpellSiphon — vendor blank tools as trade-note stacks (quantity × unit price)
+### Spellsiphon — vendor blank tools as trade-note stacks (quantity × unit price)
 
 **Problem:** Injected blank Spellsiphon lived in **`UniqueItemsForSale`** with **`StackSize` 250**. ACE unique buys hand over the **whole** `WorldObject`; quantity UI does not scale cost like trade notes. Buying “2” could still grant a full vendor stack / wrong pricing.
 
 **Fix:** Add blank tools to **`DefaultItemsForSale`** with **`PropertyInt.StackUnitValue`** = unit pyreals, **`SetStackSize(1)`** on the shop row, **`VendorShopCreateListStackSize`** = max per purchase (from `VendorSpellsiphonStackSize` / new `VendorManaLatticeMaxBuy`). Harmony **postfix** on **`Vendor.ItemProfileToWorldObjects`** reapplies unit pricing to stacks ACE creates at purchase time (fresh WO from weenie). **BetterLootControl** plain jeweler Spellsiphon/Mana Lattice generators use the same pattern; luxury tax loop skips those WCIDs so it does not overwrite **`Value`** on stackable math.
 
-**Files:** `SpellSiphon/VendorIntegration.cs`, `SpellSiphon/VendorStackUnitPricePostfix.cs`, `SpellSiphon/PatchClass.cs`, `SpellSiphon/Settings.cs` / `Settings.json`, `BetterLootControl/VendorLootRotation.cs`.
+**Files:** `Spellsiphon/VendorIntegration.cs`, `Spellsiphon/VendorStackUnitPricePostfix.cs`, `Spellsiphon/PatchClass.cs`, `Spellsiphon/Settings.cs` / `Settings.json`, `BetterLootControl/VendorLootRotation.cs`.
 
 **Commit:** `adb7a22a`.
 
@@ -76,11 +76,11 @@
 
 **Fix:** Use stable key **`(Location.LandblockId, WeenieClassId)`** (`VendorRotationStableKey`) for `_vendorLastRotation` and `_vendorRotatedItems`. `ClearVendorCooldown` now takes `(LandblockId, uint weenieClassId)`.
 
-**Follow-up (jeweler only):** Skip the broad strip that removed **all** jewelry/gems from `DefaultItemsForSale` before lootgen refill. Rolled stock is appended to **`UniqueItemsForSale` only**; stripping Default left shops **empty or SpellSiphon-only** when lootgen returned few rows. Prior rotation rows are still removed via `oldRotated`.
+**Follow-up (jeweler only):** Skip the broad strip that removed **all** jewelry/gems from `DefaultItemsForSale` before lootgen refill. Rolled stock is appended to **`UniqueItemsForSale` only**; stripping Default left shops **empty or Spellsiphon-only** when lootgen returned few rows. Prior rotation rows are still removed via `oldRotated`.
 
 **File:** `BetterLootControl/VendorLootRotation.cs`.
 
-### SpellSiphon — vendor stacks 250, `TargetType` widen, apply vs extraction guard
+### Spellsiphon — vendor stacks 250, `TargetType` widen, apply vs extraction guard
 
 **Problem:** (1) Tool max stack / vendor purchase size stuck at 100. (2) After WCID / weenie work, many spell targets failed vanilla use validation (`TargetType` too narrow). (3) Vendor or DB “prefilled” Spellsiphons with spellbook rows but no charged flag hijacked `RecipeManager.GetRecipe` extraction and **stripped the real target** instead of applying stored spells.
 
@@ -92,7 +92,7 @@
 - **`RecipeHooks.PostGetRecipe`** — skip injection when apply-ready (no bogus extraction on prefilled tools).
 - **`UseOnTargetHooks`** — apply branch uses same test; spell list = payload then **spellbook** fallback.
 
-**Wiki:** `A:/obsidian/jeremy/wiki/SpellSiphon.md` (vendor + apply vs extraction).
+**Wiki:** `A:/obsidian/jeremy/wiki/Spellsiphon.md` (vendor + apply vs extraction).
 
 **Commit:** `4bc0a8ab`.
 
@@ -180,12 +180,12 @@ on vendor approach.
 **Goal:** Organize all custom weenies by type into dedicated WCID ranges with 10k gaps, convert from REPLACE pattern to ADDITION pattern, consolidate WindblownContent into Windblown/.
 
 **New organized WCID ranges (documented in AGENTS.md §8.16):**
-- `800000–809999`: Items (Coalesced Mana, SpellSiphon, ManaLattice, Letters)
+- `800000–809999`: Items (Coalesced Mana, Spellsiphon, ManaLattice, Letters)
 - `810000–819999`: Vendors / NPCs (Jochi, Kaelith)
 
 **Files reorganized into `Windblown/Content/SQL/`:**
 - `Items/01_CoalescedMana_800000-800002.sql`
-- `Items/02_SpellSiphon_800003.sql`, `Items/03_ManaLattice_800004.sql`
+- `Items/02_Spellsiphon_800003.sql`, `Items/03_ManaLattice_800004.sql`
 - `Items/04_CustomLetters_800005-800006.sql`
 - `Vendors/01_Jochi_810000.sql` (full vendor def: 87 gem items, emotes, attributes; was `01_Radi_810000.sql`)
 - `Vendors/02_Kaelith_810001.sql` (26 Academy weapons only, trimmed from original)
@@ -199,7 +199,7 @@ on vendor approach.
 - EmpyreanAlteration: Settings.LivingItem.cs + Settings.json
 - LeyLineLedger: Settings.cs (bank item IDs)
 - AutoLoot: Autoloot.cs (coalesced mana bank property mapping)
-- SpellSiphon: Settings.cs/Settings.json + VendorIntegration.cs
+- Spellsiphon: Settings.cs/Settings.json + VendorIntegration.cs
 - Windblown: LetterTurnInPatches.cs (850340→800005, 850341→800006)
 - WorldEvents: PathwardenVendorManager (3 dead vendors removed, Kaelith kept at 810001), Settings.cs
 - QOL/Lockboxes/Loremaster: LootConfig.json letter WCIDs updated
@@ -1053,7 +1053,7 @@ All development branches rebased onto main (resolving all conflicts), merged, an
 | `jeremy/fix/rating-levelup-client-update` | 1 | Send `GameMessagePrivateUpdatePropertyInt` for rating level-up |
 | `Raajik/fix/bss-crash-worldobjects-enumeration` | 2 | Prevent 'Collection was modified' crashes + lockpick banking 50% |
 | `jeremy/refactor/direct-item-xp-consolidation` |  ation` + `ai-codebase-scan` | 15 | EmpyreanAlteration refactor (Gear* properties, CharacterTable mode, ModData migration, lockpick banking, VoidTestWatchdog removal, DataPaths files, WipeProgress, clean scratch files) |
-| `jeremy/feature/glyph-extraction` | 1 | Glyph of Extraction tiered items (SpellSiphon) |
+| `jeremy/feature/glyph-extraction` | 1 | Glyph of Extraction tiered items (Spellsiphon) |
 | `Raajik/task/today-plate` | 15 | Overtinked (Nether vanilla-ize + spell cleave), WorldEvents (unified scheduler, invasion fixes), Windblown (bestower QoL), salvage alignment, ModData migration, script fixes, docs |
 
 **Cleaned up:**

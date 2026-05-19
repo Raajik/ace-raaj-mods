@@ -1,4 +1,4 @@
--- SpellSiphon Coalesced Mana Update
+-- Spellsiphon Coalesced Mana Update
 -- Updates existing unused Coalesced Mana items (42516-42518) into tiered extraction materials.
 -- These items already exist in the loot pool and will now serve as the catalyst for spell extraction.
 

@@ -1,4 +1,4 @@
-# SpellSiphon
+# Spellsiphon
 
 An ACE (Asheron's Call Emulator) server mod for extracting, cleansing, and transferring spells on items.
 
@@ -69,7 +69,7 @@ When enabled, all gem spells are reusable and do not consume the gem on use.
 
 | Setting | Type | Default | Description |
 |---|---|---|---|
-| `Enabled` | bool | `true` | Master switch for all SpellSiphon patches. |
+| `Enabled` | bool | `true` | Master switch for all Spellsiphon patches. |
 | `EnableImmersiveUseHooks` | bool | `true` | Immersive item-on-item UX (use tool on target). |
 | `SpellsiphonToolWcid` | uint | `850200` | WCID of the blank Spellsiphon tool. |
 | `ManaLatticeWcid` | uint | `850201` | WCID of the Mana Lattice. |

@@ -11,7 +11,7 @@
       "PropertiesString": {
         "Name": "Lucky Gold Letter",
         "PluralName": "Lucky Gold Letters",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these letters to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 100,
@@ -23,8 +23,13 @@
         "IconUnderlay": 100676435
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -37,7 +42,7 @@
       "PropertiesString": {
         "Name": "Scarlet Red Letter",
         "PluralName": "Scarlet Red Letters",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these letters to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 100,
@@ -49,8 +54,13 @@
         "IconUnderlay": 100676435
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     }
   ]

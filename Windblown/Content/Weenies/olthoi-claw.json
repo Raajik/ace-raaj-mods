@@ -1,5 +1,5 @@
 {
-  "Description": "Olthoi Claw tier line — custom WCIDs 850340-850343. Clones from 3679; MirrorEmoteFromWcid 3679. Blue IconUnderlay 100676435 + black number overlays 1-4.",
+  "Description": "Olthoi Claw tier line \u2014 custom WCIDs 850340-850343. Clones from 3679; MirrorEmoteFromWcid 3679. Blue IconUnderlay 100676435 + black number overlays 1-4.",
   "Weenies": [
     {
       "ClassId": 850340,
@@ -11,7 +11,7 @@
       "PropertiesString": {
         "Name": "Olthoi Claw",
         "PluralName": "Olthoi Claws",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these claws to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -25,8 +25,13 @@
         "IconOverlay": 100690976
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -39,7 +44,7 @@
       "PropertiesString": {
         "Name": "Olthoi Claw (Quality)",
         "PluralName": "Olthoi Claws (Quality)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these claws to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -53,8 +58,13 @@
         "IconOverlay": 100690977
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -67,7 +77,7 @@
       "PropertiesString": {
         "Name": "Olthoi Claw (Pristine)",
         "PluralName": "Olthoi Claws (Pristine)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these claws to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -81,8 +91,13 @@
         "IconOverlay": 100690978
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     },
     {
@@ -95,7 +110,7 @@
       "PropertiesString": {
         "Name": "Olthoi Claw (Perfect)",
         "PluralName": "Olthoi Claws (Perfect)",
-        "LongDesc": "Collectors will reward a great deal of experience and pyreals for turning in these claws to Collector Vaetha in the Town Network."
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
       },
       "PropertiesInt": {
         "MaxStackSize": 999,
@@ -109,8 +124,13 @@
         "IconOverlay": 100690979
       },
       "Delete": {
-        "PropertiesString": ["Use", "ShortDesc"],
-        "PropertiesInt": ["ImbuedEffect"]
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
       }
     }
   ]

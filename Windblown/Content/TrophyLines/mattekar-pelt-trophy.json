@@ -1,0 +1,46 @@
+{
+  "Description": "Mattekar Pelt tier line \u2014 four custom WCIDs (850378-850381). Uses vanilla WCID 10868 as clone/mirror source.",
+  "Lines": [
+    {
+      "Name": "MattekarPelt",
+      "Enabled": true,
+      "CreatureTypeGate": "Mattekar",
+      "TurnInDisplayName": "Mattekar Pelt",
+      "Tiers": [
+        {
+          "TierName": "Regular",
+          "Wcid": 850378,
+          "DropChance": 0.025,
+          "XpFraction": 0.05,
+          "BankCredit": 25000
+        },
+        {
+          "TierName": "Quality",
+          "Wcid": 850379,
+          "DropChance": 0.01,
+          "XpFraction": 0.1,
+          "BankCredit": 50000
+        },
+        {
+          "TierName": "Pristine",
+          "Wcid": 850380,
+          "DropChance": 0.004,
+          "XpFraction": 0.15,
+          "BankCredit": 100000
+        },
+        {
+          "TierName": "Perfect",
+          "Wcid": 850381,
+          "DropChance": 0.0015,
+          "XpFraction": 0.3,
+          "BankCredit": 250000
+        }
+      ],
+      "ReplaceSiblingWcids": [
+        10868
+      ],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    }
+  ]
+}

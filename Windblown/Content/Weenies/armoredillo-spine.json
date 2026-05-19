@@ -1,0 +1,137 @@
+{
+  "Description": "Armoredillo Spine tier line \u2014 custom WCIDs 850374-850377. Clones from 3689; MirrorEmoteFromWcid 3689. Blue IconUnderlay 100676435 + black number overlays 1-4.",
+  "Weenies": [
+    {
+      "ClassId": 850374,
+      "ClassName": "armoredillo-spine_regular_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3689,
+      "MirrorEmoteFromWcid": 3689,
+      "Notes": "Regular tier. Frost (128) glow. Overlay '1' top-right black.",
+      "PropertiesString": {
+        "Name": "Armoredillo Spine",
+        "PluralName": "Armoredillo Spines",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850375,
+      "ClassName": "armoredillo-spine_quality_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3689,
+      "MirrorEmoteFromWcid": 3689,
+      "Notes": "Quality tier. Acid (256) glow. Overlay '2' top-right black.",
+      "PropertiesString": {
+        "Name": "Armoredillo Spine (Quality)",
+        "PluralName": "Armoredillo Spines (Quality)",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850376,
+      "ClassName": "armoredillo-spine_pristine_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3689,
+      "MirrorEmoteFromWcid": 3689,
+      "Notes": "Pristine tier. Magical (1) glow. Overlay '3' top-right black.",
+      "PropertiesString": {
+        "Name": "Armoredillo Spine (Pristine)",
+        "PluralName": "Armoredillo Spines (Pristine)",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850377,
+      "ClassName": "armoredillo-spine_perfect_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 3689,
+      "MirrorEmoteFromWcid": 3689,
+      "Notes": "Perfect tier. Lightning (64) glow. Overlay '4' top-right black.",
+      "PropertiesString": {
+        "Name": "Armoredillo Spine (Perfect)",
+        "PluralName": "Armoredillo Spines (Perfect)",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 64
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690979
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    }
+  ]
+}

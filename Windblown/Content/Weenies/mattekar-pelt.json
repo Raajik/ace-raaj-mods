@@ -1,0 +1,137 @@
+{
+  "Description": "Mattekar Pelt tier line \u2014 custom WCIDs 850378-850381. Clones from 10868; MirrorEmoteFromWcid 10868. Blue IconUnderlay 100676435 + black number overlays 1-4.",
+  "Weenies": [
+    {
+      "ClassId": 850378,
+      "ClassName": "mattekar-pelt_regular_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 10868,
+      "MirrorEmoteFromWcid": 10868,
+      "Notes": "Regular tier. Frost (128) glow. Overlay '1' top-right black.",
+      "PropertiesString": {
+        "Name": "Mattekar Pelt",
+        "PluralName": "Mattekar Pelts",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850379,
+      "ClassName": "mattekar-pelt_quality_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 10868,
+      "MirrorEmoteFromWcid": 10868,
+      "Notes": "Quality tier. Acid (256) glow. Overlay '2' top-right black.",
+      "PropertiesString": {
+        "Name": "Mattekar Pelt (Quality)",
+        "PluralName": "Mattekar Pelts (Quality)",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850380,
+      "ClassName": "mattekar-pelt_pristine_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 10868,
+      "MirrorEmoteFromWcid": 10868,
+      "Notes": "Pristine tier. Magical (1) glow. Overlay '3' top-right black.",
+      "PropertiesString": {
+        "Name": "Mattekar Pelt (Pristine)",
+        "PluralName": "Mattekar Pelts (Pristine)",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850381,
+      "ClassName": "mattekar-pelt_perfect_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 10868,
+      "MirrorEmoteFromWcid": 10868,
+      "Notes": "Perfect tier. Lightning (64) glow. Overlay '4' top-right black.",
+      "PropertiesString": {
+        "Name": "Mattekar Pelt (Perfect)",
+        "PluralName": "Mattekar Pelts (Perfect)",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 64
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690979
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    }
+  ]
+}

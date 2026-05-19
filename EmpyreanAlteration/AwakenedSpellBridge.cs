@@ -5,7 +5,7 @@ using ACE.Server.WorldObjects;
 
 namespace EmpyreanAlteration;
 
-// Rolls SpellSiphon gem spell pool onto awakened items when SpellSiphon is present (reflection; no assembly reference).
+// Rolls Spellsiphon gem spell pool onto awakened items when Spellsiphon is present (reflection; no assembly reference).
 internal static class AwakenedSpellBridge
 {
     internal static void TryRollSpellsOntoItem(WorldObject item, Settings s)
@@ -16,15 +16,15 @@ internal static class AwakenedSpellBridge
         try
         {
             Assembly? asm = AppDomain.CurrentDomain.GetAssemblies()
-                .FirstOrDefault(a => string.Equals(a.GetName().Name, "SpellSiphon", StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(a => string.Equals(a.GetName().Name, "Spellsiphon", StringComparison.OrdinalIgnoreCase));
             if (asm == null)
                 return;
 
-            object? spellSettings = LoadSpellSiphonSettings(asm);
+            object? spellSettings = LoadSpellsiphonSettings(asm);
             if (spellSettings == null)
                 return;
 
-            Type? lootMutator = asm.GetType("SpellSiphon.Features.LootMutator");
+            Type? lootMutator = asm.GetType("Spellsiphon.Features.LootMutator");
             MethodInfo? pick = lootMutator?.GetMethod("PickRandomSpellIds", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             MethodInfo? addSpell = lootMutator?.GetMethod("TryAddSpellId", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
             if (pick == null || addSpell == null)
@@ -45,13 +45,13 @@ internal static class AwakenedSpellBridge
         }
         catch
         {
-            // SpellSiphon absent or incompatible — skip bonus spells.
+            // Spellsiphon absent or incompatible — skip bonus spells.
         }
     }
 
-    static object? LoadSpellSiphonSettings(Assembly asm)
+    static object? LoadSpellsiphonSettings(Assembly asm)
     {
-        Type? t = asm.GetType("SpellSiphon.Settings");
+        Type? t = asm.GetType("Spellsiphon.Settings");
         if (t == null)
             return null;
 

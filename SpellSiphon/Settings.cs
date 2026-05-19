@@ -1,12 +1,12 @@
-namespace SpellSiphon;
+namespace Spellsiphon;
 
 public class Settings
 {
-	[JsonPropertyName("// SpellSiphon")]
-	public string SpellSiphonDoc { get; init; } = "Reading order: every // key is documentation; real settings follow in the same order.";
+	[JsonPropertyName("// Spellsiphon")]
+	public string SpellsiphonDoc { get; init; } = "Reading order: every // key is documentation; real settings follow in the same order.";
 
 	[JsonPropertyName("// Enabled")]
-	public string EnabledDoc { get; init; } = "Master switch for SpellSiphon patches and behavior.";
+	public string EnabledDoc { get; init; } = "Master switch for Spellsiphon patches and behavior.";
 	public bool Enabled { get; set; } = true;
 
 	[JsonPropertyName("// Verbose")]
@@ -118,11 +118,11 @@ public class Settings
 
 	// Vendor integration
 	[JsonPropertyName("// EnableVendorSales")]
-	public string EnableVendorSalesDoc { get; init; } = "When true, SpellSiphon tools and Glyphs are sold at jewelers (vendors selling jewelry/gems).";
+	public string EnableVendorSalesDoc { get; init; } = "When true, Spellsiphon tools and Glyphs are sold at jewelers (vendors selling jewelry/gems).";
 	public bool EnableVendorSales { get; set; } = true;
 
 	[JsonPropertyName("// VendorPrice")]
-	public string VendorPriceDoc { get; init; } = "Price in pyreals for the SpellSiphon tool at vendors.";
+	public string VendorPriceDoc { get; init; } = "Price in pyreals for the Spellsiphon tool at vendors.";
 	public int VendorPrice { get; set; } = 10000;
 
 	[JsonPropertyName("// VendorSpellsiphonStackSize")]

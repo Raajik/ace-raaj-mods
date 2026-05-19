@@ -16,24 +16,24 @@ internal static class ManaLatticeSpellBootstrap
         try
         {
             Assembly? asm = AppDomain.CurrentDomain.GetAssemblies()
-                .FirstOrDefault(a => string.Equals(a.GetName().Name, "SpellSiphon", StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(a => string.Equals(a.GetName().Name, "Spellsiphon", StringComparison.OrdinalIgnoreCase));
             if (asm == null)
             {
-                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: SpellSiphon assembly not loaded.", ModManager.LogLevel.Warn);
+                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: Spellsiphon assembly not loaded.", ModManager.LogLevel.Warn);
                 return;
             }
 
-            object? spellSettings = LoadSpellSiphonSettings(asm);
+            object? spellSettings = LoadSpellsiphonSettings(asm);
             if (spellSettings == null)
             {
-                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: Could not load SpellSiphon settings (tried {asm.Location}/Settings.json and Activator.CreateInstance).", ModManager.LogLevel.Warn);
+                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: Could not load Spellsiphon settings (tried {asm.Location}/Settings.json and Activator.CreateInstance).", ModManager.LogLevel.Warn);
                 return;
             }
 
-            Type? lootMutator = asm.GetType("SpellSiphon.Features.LootMutator");
+            Type? lootMutator = asm.GetType("Spellsiphon.Features.LootMutator");
             if (lootMutator == null)
             {
-                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: SpellSiphon.Features.LootMutator type not found via reflection.", ModManager.LogLevel.Warn);
+                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: Spellsiphon.Features.LootMutator type not found via reflection.", ModManager.LogLevel.Warn);
                 return;
             }
 
@@ -51,7 +51,7 @@ internal static class ManaLatticeSpellBootstrap
             object? idsObj = pick.Invoke(null, new[] { spellSettings, lattice, lo, hi });
             if (idsObj is not List<int> ids || ids.Count == 0)
             {
-                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: Spell pool empty (lattice {lattice.Name} WCID {lattice.WeenieClassId}, count {lo}-{hi}). Check SpellSiphon Settings.json spell lists.", ModManager.LogLevel.Warn);
+                ModManager.Log($"[BetterLootControl] ManaLattice bootstrap: Spell pool empty (lattice {lattice.Name} WCID {lattice.WeenieClassId}, count {lo}-{hi}). Check Spellsiphon Settings.json spell lists.", ModManager.LogLevel.Warn);
                 return;
             }
 
@@ -92,9 +92,9 @@ internal static class ManaLatticeSpellBootstrap
         }
     }
 
-    static object? LoadSpellSiphonSettings(Assembly asm)
+    static object? LoadSpellsiphonSettings(Assembly asm)
     {
-        Type? t = asm.GetType("SpellSiphon.Settings");
+        Type? t = asm.GetType("Spellsiphon.Settings");
         if (t == null)
             return null;
 

@@ -1,4 +1,4 @@
-namespace SpellSiphon.Features;
+namespace Spellsiphon.Features;
 
 // Legacy recipe-based apply hooks.
 // Deprecated in favor of immersive use-on-target workflow (UseOnTargetHooks).

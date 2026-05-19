@@ -1,0 +1,46 @@
+{
+  "Description": "Auroch Horn tier line \u2014 four custom WCIDs (850366-850369). Uses vanilla WCID 266 as clone/mirror source.",
+  "Lines": [
+    {
+      "Name": "AurochHorn",
+      "Enabled": true,
+      "CreatureTypeGate": "Auroch",
+      "TurnInDisplayName": "Auroch Horn",
+      "Tiers": [
+        {
+          "TierName": "Regular",
+          "Wcid": 850366,
+          "DropChance": 0.025,
+          "XpFraction": 0.05,
+          "BankCredit": 25000
+        },
+        {
+          "TierName": "Quality",
+          "Wcid": 850367,
+          "DropChance": 0.01,
+          "XpFraction": 0.1,
+          "BankCredit": 50000
+        },
+        {
+          "TierName": "Pristine",
+          "Wcid": 850368,
+          "DropChance": 0.004,
+          "XpFraction": 0.15,
+          "BankCredit": 100000
+        },
+        {
+          "TierName": "Perfect",
+          "Wcid": 850369,
+          "DropChance": 0.0015,
+          "XpFraction": 0.3,
+          "BankCredit": 250000
+        }
+      ],
+      "ReplaceSiblingWcids": [
+        266
+      ],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    }
+  ]
+}

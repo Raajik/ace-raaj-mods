@@ -1,0 +1,137 @@
+{
+  "Description": "Mattekar Horn tier line \u2014 custom WCIDs 850382-850385. Clones from 7044; MirrorEmoteFromWcid 7044. Blue IconUnderlay 100676435 + black number overlays 1-4.",
+  "Weenies": [
+    {
+      "ClassId": 850382,
+      "ClassName": "mattekar-horn_regular_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 7044,
+      "MirrorEmoteFromWcid": 7044,
+      "Notes": "Regular tier. Frost (128) glow. Overlay '1' top-right black.",
+      "PropertiesString": {
+        "Name": "Mattekar Horn",
+        "PluralName": "Mattekar Horns",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850383,
+      "ClassName": "mattekar-horn_quality_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 7044,
+      "MirrorEmoteFromWcid": 7044,
+      "Notes": "Quality tier. Acid (256) glow. Overlay '2' top-right black.",
+      "PropertiesString": {
+        "Name": "Mattekar Horn (Quality)",
+        "PluralName": "Mattekar Horns (Quality)",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850384,
+      "ClassName": "mattekar-horn_pristine_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 7044,
+      "MirrorEmoteFromWcid": 7044,
+      "Notes": "Pristine tier. Magical (1) glow. Overlay '3' top-right black.",
+      "PropertiesString": {
+        "Name": "Mattekar Horn (Pristine)",
+        "PluralName": "Mattekar Horns (Pristine)",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850385,
+      "ClassName": "mattekar-horn_perfect_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 7044,
+      "MirrorEmoteFromWcid": 7044,
+      "Notes": "Perfect tier. Lightning (64) glow. Overlay '4' top-right black.",
+      "PropertiesString": {
+        "Name": "Mattekar Horn (Perfect)",
+        "PluralName": "Mattekar Horns (Perfect)",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 64
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690979
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    }
+  ]
+}

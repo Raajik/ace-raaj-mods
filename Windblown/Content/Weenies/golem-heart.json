@@ -1,0 +1,137 @@
+{
+  "Description": "Golem Heart tier line \u2014 custom WCIDs 850370-850373. Clones from 23202; MirrorEmoteFromWcid 23202. Blue IconUnderlay 100676435 + black number overlays 1-4.",
+  "Weenies": [
+    {
+      "ClassId": 850370,
+      "ClassName": "golem-heart_regular_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 23202,
+      "MirrorEmoteFromWcid": 23202,
+      "Notes": "Regular tier. Frost (128) glow. Overlay '1' top-right black.",
+      "PropertiesString": {
+        "Name": "Golem Heart",
+        "PluralName": "Golem Hearts",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 128
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690976
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850371,
+      "ClassName": "golem-heart_quality_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 23202,
+      "MirrorEmoteFromWcid": 23202,
+      "Notes": "Quality tier. Acid (256) glow. Overlay '2' top-right black.",
+      "PropertiesString": {
+        "Name": "Golem Heart (Quality)",
+        "PluralName": "Golem Hearts (Quality)",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 256
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690977
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850372,
+      "ClassName": "golem-heart_pristine_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 23202,
+      "MirrorEmoteFromWcid": 23202,
+      "Notes": "Pristine tier. Magical (1) glow. Overlay '3' top-right black.",
+      "PropertiesString": {
+        "Name": "Golem Heart (Pristine)",
+        "PluralName": "Golem Hearts (Pristine)",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 1
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690978
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    },
+    {
+      "ClassId": 850373,
+      "ClassName": "golem-heart_perfect_wb",
+      "WeenieType": "Stackable",
+      "BaseWcid": 23202,
+      "MirrorEmoteFromWcid": 23202,
+      "Notes": "Perfect tier. Lightning (64) glow. Overlay '4' top-right black.",
+      "PropertiesString": {
+        "Name": "Golem Heart (Perfect)",
+        "PluralName": "Golem Hearts (Perfect)",
+        "LongDesc": "Turn this item in to Collector Vaetha (810003) in the Town Network for experience and pyreal rewards."
+      },
+      "PropertiesInt": {
+        "MaxStackSize": 999,
+        "StackSize": 1,
+        "Value": 1,
+        "EncumbranceVal": 1,
+        "UiEffects": 64
+      },
+      "PropertiesDID": {
+        "IconUnderlay": 100676435,
+        "IconOverlay": 100690979
+      },
+      "Delete": {
+        "PropertiesString": [
+          "Use",
+          "ShortDesc"
+        ],
+        "PropertiesInt": [
+          "ImbuedEffect"
+        ]
+      }
+    }
+  ]
+}

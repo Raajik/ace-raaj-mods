@@ -929,7 +929,7 @@ public static class VendorLootRotation
 
         // Jewelers: do NOT strip all SQL create_list jewelry/gems from DefaultItemsForSale.
         // Rotation only adds rolled stock to UniqueItemsForSale; wiping Default leaves the shop
-        // empty (or SpellSiphon-only) when lootgen returns few items. Prior rotation GUIDs are
+        // empty (or Spellsiphon-only) when lootgen returns few items. Prior rotation GUIDs are
         // already removed above via oldRotated.
         if (vendorClass != VendorTypeClassification.Jeweler)
         {

@@ -506,7 +506,7 @@ public sealed class Settings
     };
 
     [JsonPropertyName("// PathwardenVendorSettings")]
-    public string PathwardenVendorSettingsDoc { get; init; } = "Settings for Pathwarden vendor system - vendors in Town Network that sell Academy weapons, Pathwarden armor, and SpellSiphon tools.";
+    public string PathwardenVendorSettingsDoc { get; init; } = "Settings for Pathwarden vendor system - vendors in Town Network that sell Academy weapons, Pathwarden armor, and Spellsiphon tools.";
 
     [JsonPropertyName("// EnablePathwardenVendorTracking")]
     public string EnablePathwardenVendorTrackingDoc { get; init; } = "When true, tracks all purchases from Pathwarden vendors (player, account, item, price) for analytics.";

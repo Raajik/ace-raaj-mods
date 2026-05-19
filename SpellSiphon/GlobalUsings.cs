@@ -44,6 +44,6 @@ global using ACE.Shared;
 global using ACE.Shared.Helpers;
 global using ACE.Shared.Mods;
 
-global using SpellSiphon.Helpers;
-global using SpellSiphon.Features;
+global using Spellsiphon.Helpers;
+global using Spellsiphon.Features;
 

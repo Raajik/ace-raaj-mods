@@ -24,15 +24,15 @@ public partial class Settings
     public bool UseItemTypeInAwakenedName { get; set; } = true;
 
     [JsonPropertyName("// EnableAwakenRandomSpells")]
-    public string EnableAwakenRandomSpellsDoc { get; init; } = "When true and SpellSiphon is loaded, newly awakened items roll bonus magic spells using SpellSiphon's gem spell pool.";
+    public string EnableAwakenRandomSpellsDoc { get; init; } = "When true and Spellsiphon is loaded, newly awakened items roll bonus magic spells using Spellsiphon's gem spell pool.";
     public bool EnableAwakenRandomSpells { get; set; } = false;
 
     [JsonPropertyName("// AwakenRandomSpellCountMin")]
-    public string AwakenRandomSpellCountMinDoc { get; init; } = "Minimum bonus spells rolled onto an awakened item (SpellSiphon pool).";
+    public string AwakenRandomSpellCountMinDoc { get; init; } = "Minimum bonus spells rolled onto an awakened item (Spellsiphon pool).";
     public int AwakenRandomSpellCountMin { get; set; } = 2;
 
     [JsonPropertyName("// AwakenRandomSpellCountMax")]
-    public string AwakenRandomSpellCountMaxDoc { get; init; } = "Maximum bonus spells rolled onto an awakened item (SpellSiphon pool).";
+    public string AwakenRandomSpellCountMaxDoc { get; init; } = "Maximum bonus spells rolled onto an awakened item (Spellsiphon pool).";
     public int AwakenRandomSpellCountMax { get; set; } = 5;
 
     [JsonPropertyName("// AutoAwakenTier1Wcids")]

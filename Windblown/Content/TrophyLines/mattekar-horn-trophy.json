@@ -1,0 +1,46 @@
+{
+  "Description": "Mattekar Horn tier line \u2014 four custom WCIDs (850382-850385). Uses vanilla WCID 7044 as clone/mirror source.",
+  "Lines": [
+    {
+      "Name": "MattekarHorn",
+      "Enabled": true,
+      "CreatureTypeGate": "Mattekar",
+      "TurnInDisplayName": "Mattekar Horn",
+      "Tiers": [
+        {
+          "TierName": "Regular",
+          "Wcid": 850382,
+          "DropChance": 0.025,
+          "XpFraction": 0.05,
+          "BankCredit": 25000
+        },
+        {
+          "TierName": "Quality",
+          "Wcid": 850383,
+          "DropChance": 0.01,
+          "XpFraction": 0.1,
+          "BankCredit": 50000
+        },
+        {
+          "TierName": "Pristine",
+          "Wcid": 850384,
+          "DropChance": 0.004,
+          "XpFraction": 0.15,
+          "BankCredit": 100000
+        },
+        {
+          "TierName": "Perfect",
+          "Wcid": 850385,
+          "DropChance": 0.0015,
+          "XpFraction": 0.3,
+          "BankCredit": 250000
+        }
+      ],
+      "ReplaceSiblingWcids": [
+        7044
+      ],
+      "BankCashProperty": 39999,
+      "EnableBulkTurnIn": true
+    }
+  ]
+}

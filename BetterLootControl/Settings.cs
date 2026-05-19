@@ -126,13 +126,13 @@ public class Settings
     // When true, scrolls on monster corpses that the killing player cannot read (Player.CanReadScroll) are destroyed after treasure gen.
     public bool FilterUnusableScrollDropsForKiller { get; init; } = true;
 
-    // -- Global Rare Drops (SpellSiphon / Mana Lattice / Coalesced Mana) --
+    // -- Global Rare Drops (Spellsiphon / Mana Lattice / Coalesced Mana) --
     public bool EnableGlobalRareDrops { get; init; } = true;
     public double RareDropChance { get; init; } = 0.005; // 0.5%
     public uint SpellsiphonToolWcid { get; init; } = 850200;
     public uint ManaLatticeWcid { get; init; } = 850201;
 
-    // Pre-rolled spells on Mana Lattice drops (SpellSiphon gem pool when that mod is loaded).
+    // Pre-rolled spells on Mana Lattice drops (Spellsiphon gem pool when that mod is loaded).
     public int ManaLatticeSpellCountMin { get; init; } = 3;
     public int ManaLatticeSpellCountMax { get; init; } = 7;
     public uint GlyphExtractionBaseWcid { get; init; } = 850210;

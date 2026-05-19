@@ -77,7 +77,7 @@ internal static class ItemLevelingGrowthTrigger
         }
         catch
         {
-            // Same defensive pattern as SpellSiphon item mutations; do not fail level-up if broadcast throws.
+            // Same defensive pattern as Spellsiphon item mutations; do not fail level-up if broadcast throws.
         }
 
         if (s.Verbose)

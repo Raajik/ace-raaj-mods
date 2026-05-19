@@ -68,7 +68,7 @@ internal static class ChaosTinker
         if (player == null || PatchClass.Settings?.EnableChaosTinkerAchievement != true)
             return;
 
-        // Skip synthetic mod recipes (SpellSiphon id=900001, etc.) — those are not tinkering.
+        // Skip synthetic mod recipes (Spellsiphon id=900001, etc.) — those are not tinkering.
         if (recipe == null || recipe.Id >= 900000)
             return;
 
@@ -129,7 +129,7 @@ internal static class ChaosTinker
         if (player == null)
             return;
 
-        // Skip synthetic mod recipes (SpellSiphon id=900001, etc.) — those are not tinkering.
+        // Skip synthetic mod recipes (Spellsiphon id=900001, etc.) — those are not tinkering.
         if (recipe == null || recipe.Id >= 900000)
             return;
 

@@ -1,4 +1,4 @@
-namespace SpellSiphon.Features;
+namespace Spellsiphon.Features;
 
 using System.Timers;
 using ACE.Entity.Enum;
@@ -19,7 +19,7 @@ internal static class ManaLatticeAutoBuff
     // Match QOL AutoBuff's default TogglePropertyId (45215)
     // If QOL is loaded with a different ID, we fall back to our own toggle.
     private const int QolAutoBuffToggleId = 45215;
-    private const int SpellSiphonAutoLatticeId = 45216;
+    private const int SpellsiphonAutoLatticeId = 45216;
 
     public static void TryApply()
     {
@@ -33,7 +33,7 @@ internal static class ManaLatticeAutoBuff
             _checkTimer.Elapsed += (s, e) => OnCheckTimer();
             _checkTimer.Start();
 
-            ModManager.Log("[SpellSiphon] ManaLatticeAutoBuff timer enabled (10m interval).", ModManager.LogLevel.Info);
+            ModManager.Log("[Spellsiphon] ManaLatticeAutoBuff timer enabled (10m interval).", ModManager.LogLevel.Info);
         }
     }
 
@@ -83,19 +83,19 @@ internal static class ManaLatticeAutoBuff
                         {
                             gem.ActOnUse(player);
                             if (PatchClass.Settings?.Verbose == true)
-                                ModManager.Log($"[SpellSiphon] Auto-buff: reused Mana Lattice for {player.Name}", ModManager.LogLevel.Info);
+                                ModManager.Log($"[Spellsiphon] Auto-buff: reused Mana Lattice for {player.Name}", ModManager.LogLevel.Info);
                         }
                     }
                     catch (Exception ex)
                     {
-                        ModManager.Log($"[SpellSiphon] ManaLattice auto-use failed for {player.Name}: {ex.Message}", ModManager.LogLevel.Warn);
+                        ModManager.Log($"[Spellsiphon] ManaLattice auto-use failed for {player.Name}: {ex.Message}", ModManager.LogLevel.Warn);
                     }
                 }
             }
         }
         catch (Exception ex)
         {
-            ModManager.Log($"[SpellSiphon] ManaLatticeAutoBuff timer error: {ex.Message}", ModManager.LogLevel.Warn);
+            ModManager.Log($"[Spellsiphon] ManaLatticeAutoBuff timer error: {ex.Message}", ModManager.LogLevel.Warn);
         }
     }
 
@@ -106,8 +106,8 @@ internal static class ManaLatticeAutoBuff
         if (qol.HasValue)
             return qol.Value != 0;
 
-        // Fall back to SpellSiphon's own toggle
-        int? own = player.GetProperty((PropertyInt)SpellSiphonAutoLatticeId);
+        // Fall back to Spellsiphon's own toggle
+        int? own = player.GetProperty((PropertyInt)SpellsiphonAutoLatticeId);
         if (own.HasValue)
             return own.Value != 0;
 
@@ -117,7 +117,7 @@ internal static class ManaLatticeAutoBuff
 
     public static void SetAutoLatticeEnabled(Player player, bool enabled)
     {
-        player.SetProperty((PropertyInt)SpellSiphonAutoLatticeId, enabled ? 1 : 0);
+        player.SetProperty((PropertyInt)SpellsiphonAutoLatticeId, enabled ? 1 : 0);
     }
 
     static Gem? FindManaLatticeInInventory(Player player)

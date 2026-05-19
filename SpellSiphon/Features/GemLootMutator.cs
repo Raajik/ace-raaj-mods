@@ -1,4 +1,4 @@
-namespace SpellSiphon.Features;
+namespace Spellsiphon.Features;
 
 // Temporarily disabled: this dynamic loot-factory patch caused startup/shutdown instability on your ACE build.
 // We'll re-enable once we identify a stable, patchable loot hook for your server version.

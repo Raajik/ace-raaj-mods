@@ -2,7 +2,7 @@ using ACE.Server.Entity;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.WorldObjects;
 
-namespace SpellSiphon.Features;
+namespace Spellsiphon.Features;
 
 /// <summary>
 /// Fixes Mana Lattice activation by intercepting Gem.UseGem.
@@ -23,7 +23,7 @@ internal static class ManaLatticeGemHooks
         List<int> spellIds = ReadItemSpellIds(__instance);
         if (spellIds.Count == 0)
         {
-            player.SendMessage("[SpellSiphon] This Mana Lattice holds no spells.");
+            player.SendMessage("[Spellsiphon] This Mana Lattice holds no spells.");
             return;
         }
 
@@ -46,7 +46,7 @@ internal static class ManaLatticeGemHooks
             }
             catch (Exception ex)
             {
-                ModManager.Log($"[SpellSiphon] ManaLattice cast error for spell {spellId}: {ex.Message}", ModManager.LogLevel.Warn);
+                ModManager.Log($"[Spellsiphon] ManaLattice cast error for spell {spellId}: {ex.Message}", ModManager.LogLevel.Warn);
             }
         }
 
@@ -56,7 +56,7 @@ internal static class ManaLatticeGemHooks
                 || __instance.Name?.Contains("Endless Mana Lattice", StringComparison.OrdinalIgnoreCase) == true;
 
             string label = isEndless ? "Endless Mana Lattice" : "Mana Lattice";
-            player.SendMessage($"[SpellSiphon] The {label} pulses with {castCount} spell(s).");
+            player.SendMessage($"[Spellsiphon] The {label} pulses with {castCount} spell(s).");
         }
     }
 

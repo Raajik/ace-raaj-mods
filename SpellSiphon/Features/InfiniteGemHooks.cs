@@ -1,4 +1,4 @@
-namespace SpellSiphon.Features;
+namespace Spellsiphon.Features;
 
 using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;

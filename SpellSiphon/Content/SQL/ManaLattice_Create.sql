@@ -1,5 +1,5 @@
 -- Mana Lattice (Buff Gem Base)
--- WCID 850201 — gem-style (Contained + Creature + Magical); CastSpell activation; SpellSiphon casts from spellbook.
+-- WCID 850201 — gem-style (Contained + Creature + Magical); CastSpell activation; Spellsiphon casts from spellbook.
 
 DELETE FROM `weenie_properties_create_list` WHERE `object_Id` = 850201;
 DELETE FROM `weenie_properties_emote_action` WHERE `emote_Id` IN (SELECT `id` FROM `weenie_properties_emote` WHERE `object_Id` = 850201);

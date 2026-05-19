@@ -1,4 +1,4 @@
-namespace SpellSiphon.Helpers;
+namespace Spellsiphon.Helpers;
 
 internal static class ItemPayload
 {

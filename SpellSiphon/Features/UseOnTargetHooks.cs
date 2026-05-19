@@ -4,7 +4,7 @@ using ACE.Entity.Enum;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.WorldObjects;
 
-namespace SpellSiphon.Features;
+namespace Spellsiphon.Features;
 
 // v2.1 — Apply step only. Extraction is handled by native RecipeManager (RecipeHooks.cs).
 // Charged Spellsiphon + equipment/gem/ManaLattice = apply (100% success).
@@ -177,7 +177,7 @@ internal static class UseOnTargetHooks
 		if (spellIds.Count == 0)
 		{
 			string label = isGlyph ? "That Glyph" : "That Spellsiphon";
-			player.SendMessage($"[SpellSiphon] {label} holds no extracted spells.");
+			player.SendMessage($"[Spellsiphon] {label} holds no extracted spells.");
 			player.SendUseDoneEvent();
 			return false;
 		}
@@ -206,7 +206,7 @@ internal static class UseOnTargetHooks
 
 		if (added <= 0)
 		{
-			player.SendMessage("[SpellSiphon] No transferable spells could be applied.");
+			player.SendMessage("[Spellsiphon] No transferable spells could be applied.");
 			player.SendUseDoneEvent();
 			return false;
 		}
@@ -232,15 +232,15 @@ internal static class UseOnTargetHooks
 		{
 			// Transform Mana Lattice into reusable buff gem
 			TransformToBuffGem(targetItem, addedNames, s);
-			player.SendMessage($"[SpellSiphon] The Mana Lattice absorbs {addedNames[0]} and becomes a reusable buff gem.");
+			player.SendMessage($"[Spellsiphon] The Mana Lattice absorbs {addedNames[0]} and becomes a reusable buff gem.");
 		}
 		else if (isGem)
 		{
-			player.SendMessage($"[SpellSiphon] The gem is infused with {addedNames[0]} and can now be reused infinitely.");
+			player.SendMessage($"[Spellsiphon] The gem is infused with {addedNames[0]} and can now be reused infinitely.");
 		}
 		else
 		{
-			player.SendMessage($"[SpellSiphon] {targetItem.Name} gains: {string.Join(", ", addedNames.Distinct())}");
+			player.SendMessage($"[Spellsiphon] {targetItem.Name} gains: {string.Join(", ", addedNames.Distinct())}");
 		}
 
 		TryConsumeChargedToolFromPlayer(player, chargedTool, isGlyph);

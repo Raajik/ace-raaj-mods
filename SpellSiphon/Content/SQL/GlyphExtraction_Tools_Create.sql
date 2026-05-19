@@ -1026,4 +1026,4 @@ VALUES (850219,   1, 0x020013AE)
      , (850219,   8, 0x060063D8)
      , (850219,  22, 0x3400002B)
      , (850219,  50, 0x06006C3C);
->>>>>>> 1dfeadeb (feat(SpellSiphon): add Glyph of Extraction tiered items (0-9))
+>>>>>>> 1dfeadeb (feat(Spellsiphon): add Glyph of Extraction tiered items (0-9))

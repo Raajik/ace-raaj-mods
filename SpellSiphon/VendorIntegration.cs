@@ -3,9 +3,9 @@ using ACE.Entity.Enum.Properties;
 using ACE.Server.WorldObjects;
 using HarmonyLib;
 
-namespace SpellSiphon;
+namespace Spellsiphon;
 
-// Injects SpellSiphon tool + Mana Lattice into vendor DefaultItemsForSale (trade-note style:
+// Injects Spellsiphon tool + Mana Lattice into vendor DefaultItemsForSale (trade-note style:
 // StackUnitValue = unit pyreals, template StackSize 1, VendorShopCreateListStackSize = max buy).
 internal static class VendorIntegration
 {
@@ -126,7 +126,7 @@ internal static class VendorIntegration
 		var weenie = ACE.Database.DatabaseManager.World.GetCachedWeenie(toolWcid);
 		if (weenie == null)
 		{
-			ModManager.Log($"[SpellSiphon] VendorIntegration: Weenie {toolWcid} not found.", ModManager.LogLevel.Warn);
+			ModManager.Log($"[Spellsiphon] VendorIntegration: Weenie {toolWcid} not found.", ModManager.LogLevel.Warn);
 			return;
 		}
 
@@ -143,7 +143,7 @@ internal static class VendorIntegration
 		if (vendor.DefaultItemsForSale != null && !vendor.DefaultItemsForSale.ContainsKey(tool.Guid))
 		{
 			vendor.DefaultItemsForSale.Add(tool.Guid, tool);
-			ModManager.Log($"[SpellSiphon] Added {tool.Name} to vendor {vendor.Name} (WCID {vendorWcid}) default shop: unit {unitPricePyr:N0} pyreals, max buy {maxBuyPerTransaction}.", ModManager.LogLevel.Info);
+			ModManager.Log($"[Spellsiphon] Added {tool.Name} to vendor {vendor.Name} (WCID {vendorWcid}) default shop: unit {unitPricePyr:N0} pyreals, max buy {maxBuyPerTransaction}.", ModManager.LogLevel.Info);
 		}
 	}
 

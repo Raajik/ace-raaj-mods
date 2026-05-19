@@ -1,8 +1,8 @@
-# SpellSiphon WCID Registry
+# Spellsiphon WCID Registry
 
-This document lists all custom WCIDs used by the SpellSiphon mod to help other developers and server admins avoid conflicts.
+This document lists all custom WCIDs used by the Spellsiphon mod to help other developers and server admins avoid conflicts.
 
-## Custom WCIDs (Reserved by SpellSiphon)
+## Custom WCIDs (Reserved by Spellsiphon)
 
 | WCID | Name | Type | Purpose |
 |------|------|------|---------|
@@ -19,7 +19,7 @@ This document lists all custom WCIDs used by the SpellSiphon mod to help other d
 | **850218** | Glyph of Extraction IX | CraftTool | Tier 8 — reserved for Level 8 spell extraction. |
 | **850219** | Glyph of Extraction X | CraftTool | Tier 9 — reserved for Level 9 spell extraction. |
 
-## Repurposed Existing WCIDs (Updated by SpellSiphon)
+## Repurposed Existing WCIDs (Updated by Spellsiphon)
 
 | WCID | Original Name | New Name | Tier | Base Success | Fail Behavior |
 |------|--------------|----------|------|-------------|---------------|
@@ -46,4 +46,4 @@ This document lists all custom WCIDs used by the SpellSiphon mod to help other d
 - **850200-850219** are in the mod-reserved 850xxx range. No other mods in this repo use this range.
 - **42516-42518** are existing ACE weenies (Coalesced Mana tiers) — currently mentioned in settings but not actively used in the extraction flow.
 - All payload properties use the 401xx range to avoid conflicts with other mods.
-- For questions or conflict reports, see the SpellSiphon README or open an issue.
+- For questions or conflict reports, see the Spellsiphon README or open an issue.

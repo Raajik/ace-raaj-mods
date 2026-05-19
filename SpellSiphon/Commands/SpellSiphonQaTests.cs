@@ -1,8 +1,8 @@
-namespace SpellSiphon.Commands;
+namespace Spellsiphon.Commands;
 
 using AceModQa;
 
-internal sealed class SpellSiphonSmokeTest : IQaTestCase
+internal sealed class SpellsiphonSmokeTest : IQaTestCase
 {
 	public string Name => "smoke";
 
@@ -19,6 +19,6 @@ internal sealed class SpellSiphonSmokeTest : IQaTestCase
 		if (s.ManaLatticeWcid == 0)
 			return QaResult.Fail("ManaLatticeWcid is not configured.");
 
-		return QaResult.Pass("SpellSiphon configuration looks valid.");
+		return QaResult.Pass("Spellsiphon configuration looks valid.");
 	}
 }

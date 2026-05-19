@@ -1,6 +1,6 @@
-using SpellSiphon.Features;
+using Spellsiphon.Features;
 
-namespace SpellSiphon;
+namespace Spellsiphon;
 
 [HarmonyPatch]
 public class PatchClass : BasicPatch<Settings>
@@ -44,7 +44,7 @@ public class PatchClass : BasicPatch<Settings>
 			}
 			catch (Exception ex)
 			{
-				ModManager.Log($"[SpellSiphon] UnpatchAll on Stop: {ex.Message}", ModManager.LogLevel.Warn);
+				ModManager.Log($"[Spellsiphon] UnpatchAll on Stop: {ex.Message}", ModManager.LogLevel.Warn);
 			}
 			finally
 			{
@@ -87,15 +87,15 @@ public class PatchClass : BasicPatch<Settings>
 							}
 							catch (Exception ex)
 							{
-								ModManager.Log($"[SpellSiphon] Skipping use hook patch target: {target.DeclaringType?.FullName ?? target.ToString()}. Reason: {ex.Message}", ModManager.LogLevel.Warn);
+								ModManager.Log($"[Spellsiphon] Skipping use hook patch target: {target.DeclaringType?.FullName ?? target.ToString()}. Reason: {ex.Message}", ModManager.LogLevel.Warn);
 							}
 						}
 					}
 
 					if (patched > 0)
-						ModManager.Log($"[SpellSiphon] Immersive use hooks enabled. Patched {patched} overload(s).", ModManager.LogLevel.Info);
+						ModManager.Log($"[Spellsiphon] Immersive use hooks enabled. Patched {patched} overload(s).", ModManager.LogLevel.Info);
 					else
-						ModManager.Log("[SpellSiphon] Immersive use hook targets not found.", ModManager.LogLevel.Warn);
+						ModManager.Log("[Spellsiphon] Immersive use hook targets not found.", ModManager.LogLevel.Warn);
 				}
 
 				// 2. Native recipe hooks (extraction dialog + skill check)
@@ -121,7 +121,7 @@ public class PatchClass : BasicPatch<Settings>
 						if (prefix != null)
 						{
 							ModC.Harmony.Patch(approachVendor, prefix: new HarmonyMethod(prefix));
-							ModManager.Log("[SpellSiphon] Vendor integration enabled.", ModManager.LogLevel.Info);
+							ModManager.Log("[Spellsiphon] Vendor integration enabled.", ModManager.LogLevel.Info);
 						}
 					}
 
@@ -132,7 +132,7 @@ public class PatchClass : BasicPatch<Settings>
 						if (stackPost != null)
 						{
 							ModC.Harmony.Patch(itemProfileToWo, postfix: new HarmonyMethod(stackPost));
-							ModManager.Log("[SpellSiphon] Vendor stack unit price postfix enabled.", ModManager.LogLevel.Info);
+							ModManager.Log("[Spellsiphon] Vendor stack unit price postfix enabled.", ModManager.LogLevel.Info);
 						}
 					}
 				}
@@ -141,7 +141,7 @@ public class PatchClass : BasicPatch<Settings>
 			}
 			catch (Exception ex)
 			{
-				ModManager.Log($"[SpellSiphon] Failed to apply hooks: {ex.Message}", ModManager.LogLevel.Warn);
+				ModManager.Log($"[Spellsiphon] Failed to apply hooks: {ex.Message}", ModManager.LogLevel.Warn);
 			}
 		}
 	}
@@ -158,7 +158,7 @@ public class PatchClass : BasicPatch<Settings>
 				if (postfix != null)
 				{
 					ModC.Harmony.Patch(getRecipe, postfix: new HarmonyMethod(postfix));
-					ModManager.Log("[SpellSiphon] Recipe hook applied (GetRecipe postfix).", ModManager.LogLevel.Info);
+					ModManager.Log("[Spellsiphon] Recipe hook applied (GetRecipe postfix).", ModManager.LogLevel.Info);
 				}
 			}
 
@@ -170,7 +170,7 @@ public class PatchClass : BasicPatch<Settings>
 				if (postfix != null)
 				{
 					ModC.Harmony.Patch(getRecipeChance, postfix: new HarmonyMethod(postfix));
-					ModManager.Log("[SpellSiphon] Recipe hook applied (GetRecipeChance postfix).", ModManager.LogLevel.Info);
+					ModManager.Log("[Spellsiphon] Recipe hook applied (GetRecipeChance postfix).", ModManager.LogLevel.Info);
 				}
 			}
 
@@ -182,7 +182,7 @@ public class PatchClass : BasicPatch<Settings>
 				if (prefix != null)
 				{
 					ModC.Harmony.Patch(handleRecipe, prefix: new HarmonyMethod(prefix));
-					ModManager.Log("[SpellSiphon] Recipe hook applied (HandleRecipe prefix).", ModManager.LogLevel.Info);
+					ModManager.Log("[Spellsiphon] Recipe hook applied (HandleRecipe prefix).", ModManager.LogLevel.Info);
 				}
 			}
 
@@ -194,7 +194,7 @@ public class PatchClass : BasicPatch<Settings>
 				if (postfix != null)
 				{
 					ModC.Harmony.Patch(createDestroy, postfix: new HarmonyMethod(postfix));
-					ModManager.Log("[SpellSiphon] Recipe hook applied (CreateDestroyItems postfix).", ModManager.LogLevel.Info);
+					ModManager.Log("[Spellsiphon] Recipe hook applied (CreateDestroyItems postfix).", ModManager.LogLevel.Info);
 				}
 			}
 
@@ -205,13 +205,13 @@ public class PatchClass : BasicPatch<Settings>
 				if (postfix != null)
 				{
 					ModC.Harmony.Patch(handleRecipe, postfix: new HarmonyMethod(postfix));
-					ModManager.Log("[SpellSiphon] Recipe hook applied (HandleRecipe postfix).", ModManager.LogLevel.Info);
+					ModManager.Log("[Spellsiphon] Recipe hook applied (HandleRecipe postfix).", ModManager.LogLevel.Info);
 				}
 			}
 		}
 		catch (Exception ex)
 		{
-			ModManager.Log($"[SpellSiphon] Recipe hooks failed: {ex.Message}", ModManager.LogLevel.Warn);
+			ModManager.Log($"[Spellsiphon] Recipe hooks failed: {ex.Message}", ModManager.LogLevel.Warn);
 		}
 	}
 
@@ -226,13 +226,13 @@ public class PatchClass : BasicPatch<Settings>
 				if (prefix != null)
 				{
 					ModC.Harmony.Patch(gemUseMethod, prefix: new HarmonyMethod(prefix));
-					ModManager.Log("[SpellSiphon] Infinite gem hook applied (Gem.UseGem prefix).", ModManager.LogLevel.Info);
+					ModManager.Log("[Spellsiphon] Infinite gem hook applied (Gem.UseGem prefix).", ModManager.LogLevel.Info);
 				}
 			}
 		}
 		catch (Exception ex)
 		{
-			ModManager.Log($"[SpellSiphon] Infinite gem hook failed: {ex.Message}", ModManager.LogLevel.Warn);
+			ModManager.Log($"[Spellsiphon] Infinite gem hook failed: {ex.Message}", ModManager.LogLevel.Warn);
 		}
 	}
 
@@ -247,13 +247,13 @@ public class PatchClass : BasicPatch<Settings>
 				if (postfix != null)
 				{
 					ModC.Harmony.Patch(gemUseMethod, postfix: new HarmonyMethod(postfix));
-					ModManager.Log("[SpellSiphon] Mana Lattice Gem hook applied (Gem.UseGem postfix).", ModManager.LogLevel.Info);
+					ModManager.Log("[Spellsiphon] Mana Lattice Gem hook applied (Gem.UseGem postfix).", ModManager.LogLevel.Info);
 				}
 			}
 		}
 		catch (Exception ex)
 		{
-			ModManager.Log($"[SpellSiphon] Mana Lattice Gem hook failed: {ex.Message}", ModManager.LogLevel.Warn);
+			ModManager.Log($"[Spellsiphon] Mana Lattice Gem hook failed: {ex.Message}", ModManager.LogLevel.Warn);
 		}
 	}
 }

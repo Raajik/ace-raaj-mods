@@ -7,7 +7,7 @@ using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.WorldObjects;
 using HarmonyLib;
 
-namespace SpellSiphon.Features;
+namespace Spellsiphon.Features;
 
 /// <summary>
 /// Native ACE RecipeManager integration for Spellsiphon and Glyph of Extraction.
@@ -67,13 +67,13 @@ internal static class RecipeHooks
 		{
 			if (spellIds.Count == 0)
 			{
-				player.SendMessage("[SpellSiphon] The Spellsiphon finds no spells to extract on this item.", ChatMessageType.Magic);
+				player.SendMessage("[Spellsiphon] The Spellsiphon finds no spells to extract on this item.", ChatMessageType.Magic);
 				player.SendUseDoneEvent();
 				return false;
 			}
 			if (!s.EnableAnyItemExtraction && target.WeenieType != WeenieType.Gem && (target.ItemType & ItemType.Gem) == 0)
 			{
-				player.SendMessage("[SpellSiphon] The Spellsiphon can only extract spells from gems.", ChatMessageType.Magic);
+				player.SendMessage("[Spellsiphon] The Spellsiphon can only extract spells from gems.", ChatMessageType.Magic);
 				player.SendUseDoneEvent();
 				return false;
 			}
@@ -86,7 +86,7 @@ internal static class RecipeHooks
 				string expected = glyphTier == 0
 					? "cantrips or unique non-tiered spells"
 					: $"Level {glyphTier} spells";
-				player.SendMessage($"[SpellSiphon] Glyph of Extraction has no valid extraction targets on this item. Try it on an item that carries {expected}.", ChatMessageType.Magic);
+				player.SendMessage($"[Spellsiphon] Glyph of Extraction has no valid extraction targets on this item. Try it on an item that carries {expected}.", ChatMessageType.Magic);
 				player.SendUseDoneEvent();
 				return false;
 			}
@@ -109,7 +109,7 @@ internal static class RecipeHooks
 			SuccessAmount = 0,
 			FailWCID = 0,
 			FailAmount = 0,
-			SuccessMessage = "[SpellSiphon] The spells are successfully extracted!",
+			SuccessMessage = "[Spellsiphon] The spells are successfully extracted!",
 			FailMessage = "",  // Custom message sent in PostHandleRecipe postfix.
 			SuccessDestroySourceChance = 1.0,
 			SuccessDestroySourceAmount = 1,
@@ -123,7 +123,7 @@ internal static class RecipeHooks
 			LastModified = DateTime.UtcNow
 		};
 
-		ModManager.Log($"[SpellSiphon] Created recipe {SpellsiphonRecipeId}: FailDestroyTargetAmount={_spellsiphonRecipe.FailDestroyTargetAmount}, FailDestroyTargetChance={_spellsiphonRecipe.FailDestroyTargetChance}");
+		ModManager.Log($"[Spellsiphon] Created recipe {SpellsiphonRecipeId}: FailDestroyTargetAmount={_spellsiphonRecipe.FailDestroyTargetAmount}, FailDestroyTargetChance={_spellsiphonRecipe.FailDestroyTargetChance}");
 
 		return _spellsiphonRecipe;
 	}
@@ -182,7 +182,7 @@ internal static class RecipeHooks
 				string expected = glyphTier == 0
 					? "cantrips or unique non-tiered spells"
 					: $"Level {glyphTier} spells";
-				player.SendMessage($"[SpellSiphon] {tierName} has no valid extraction targets on this item. Try it on an item that carries {expected}.", ChatMessageType.Magic);
+				player.SendMessage($"[Spellsiphon] {tierName} has no valid extraction targets on this item. Try it on an item that carries {expected}.", ChatMessageType.Magic);
 				return; // Do NOT inject recipe — tool stays intact
 			}
 		}
@@ -307,7 +307,7 @@ internal static class RecipeHooks
 			string expected = state.GlyphTier == 0
 				? "cantrips or unique non-tiered spells"
 				: $"Level {state.GlyphTier} spells";
-			player.SendMessage($"[SpellSiphon] {tierName} has no valid extraction targets on this item. Try it on an item that carries {expected}.", ChatMessageType.Magic);
+			player.SendMessage($"[Spellsiphon] {tierName} has no valid extraction targets on this item. Try it on an item that carries {expected}.", ChatMessageType.Magic);
 			return;
 		}
 
@@ -328,7 +328,7 @@ internal static class RecipeHooks
 					try { target.Destroy(); }
 					catch (Exception ex)
 					{
-						ModManager.Log($"[SpellSiphon] PostHandleRecipe manual target.Destroy failed: {ex.Message}", ModManager.LogLevel.Warn);
+						ModManager.Log($"[Spellsiphon] PostHandleRecipe manual target.Destroy failed: {ex.Message}", ModManager.LogLevel.Warn);
 					}
 				}
 			}
@@ -340,7 +340,7 @@ internal static class RecipeHooks
 			float secondary = Math.Clamp(s.RareCrystalSecondarySuccessChance, 0f, 1f);
 			if (ThreadSafeRandom.Next(0.0f, 1.0f) > secondary)
 			{
-				player.SendMessage("[SpellSiphon] The crystal's ancient magic resists your attempt.");
+				player.SendMessage("[Spellsiphon] The crystal's ancient magic resists your attempt.");
 				return;
 			}
 		}
@@ -379,7 +379,7 @@ internal static class RecipeHooks
 
 		if (charged == null)
 		{
-			player.SendMessage($"[SpellSiphon] ERROR: Failed to create charged {resultLabel}. Report this.");
+			player.SendMessage($"[Spellsiphon] ERROR: Failed to create charged {resultLabel}. Report this.");
 			return;
 		}
 
@@ -389,7 +389,7 @@ internal static class RecipeHooks
 		{
 			charged.Location = player.Location;
 			charged.EnterWorld();
-			player.SendMessage($"[SpellSiphon] Your inventory is full. The charged {resultLabel} drops at your feet.");
+			player.SendMessage($"[Spellsiphon] Your inventory is full. The charged {resultLabel} drops at your feet.");
 		}
 		else
 		{
@@ -402,7 +402,7 @@ internal static class RecipeHooks
 		}
 
 		var spellNames = extracted.Select(id => LootMutator.TryGetSpellName(id)).Where(n => !string.IsNullOrEmpty(n)).ToList();
-		player.SendMessage($"[SpellSiphon] Extracted {extracted.Count} spell(s): {string.Join(", ", spellNames)}.");
+		player.SendMessage($"[Spellsiphon] Extracted {extracted.Count} spell(s): {string.Join(", ", spellNames)}.");
 	}
 
 	// ==================== GLYPH TIER FILTERING ====================
@@ -617,7 +617,7 @@ internal static class RecipeHooks
 		}
 		catch (Exception ex)
 		{
-			ModManager.Log($"[SpellSiphon] CreateChargedSpellsiphon failed: {ex}");
+			ModManager.Log($"[Spellsiphon] CreateChargedSpellsiphon failed: {ex}");
 			return null;
 		}
 	}
@@ -677,7 +677,7 @@ internal static class RecipeHooks
 		}
 		catch (Exception ex)
 		{
-			ModManager.Log($"[SpellSiphon] CreateChargedGlyph failed: {ex}");
+			ModManager.Log($"[Spellsiphon] CreateChargedGlyph failed: {ex}");
 			return null;
 		}
 	}
@@ -705,9 +705,9 @@ internal static class RecipeHooks
 		if (spellIds.Count == 0)
 		{
 			if (isEndless)
-				player.SendMessage("[SpellSiphon] The Endless Mana Lattice holds no spells.");
+				player.SendMessage("[Spellsiphon] The Endless Mana Lattice holds no spells.");
 			else
-				player.SendMessage("[SpellSiphon] This Mana Lattice has no spells. Infuse it with a charged Spellsiphon, or ensure BetterLootControl can pre-roll spells (SpellSiphon loaded with a non-empty spell pool in Settings.json).");
+				player.SendMessage("[Spellsiphon] This Mana Lattice has no spells. Infuse it with a charged Spellsiphon, or ensure BetterLootControl can pre-roll spells (Spellsiphon loaded with a non-empty spell pool in Settings.json).");
 			return false;
 		}
 
@@ -725,14 +725,14 @@ internal static class RecipeHooks
 			}
 			catch (Exception ex)
 			{
-				ModManager.Log($"[SpellSiphon] ManaLattice cast error for spell {spellId}: {ex.Message}", ModManager.LogLevel.Warn);
+				ModManager.Log($"[Spellsiphon] ManaLattice cast error for spell {spellId}: {ex.Message}", ModManager.LogLevel.Warn);
 			}
 		}
 
 		if (castCount > 0)
 		{
 			string label = isEndless ? "Endless Mana Lattice" : "Mana Lattice";
-			player.SendMessage($"[SpellSiphon] The {label} pulses with {castCount} spell(s).");
+			player.SendMessage($"[Spellsiphon] The {label} pulses with {castCount} spell(s).");
 		}
 
 		return false;

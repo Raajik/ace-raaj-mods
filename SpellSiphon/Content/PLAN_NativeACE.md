@@ -1,4 +1,4 @@
-# SpellSiphon v2.1 — Native ACE Integration Plan
+# Spellsiphon v2.1 — Native ACE Integration Plan
 
 ## Reference Analysis: Pocket Buffing Stone (WCID 802940)
 
@@ -114,13 +114,13 @@ Instead of Harmony patches for usage, use emotes:
 
 | File | Action |
 |------|--------|
-| `SpellSiphon/Features/RecipeHooks.cs` | NEW — RecipeManager integration |
-| `SpellSiphon/Features/UseOnTargetHooks.cs` | SIMPLIFY — Remove extraction logic, keep apply logic |
-| `SpellSiphon/Content/SQL/Recipe_Create.sql` | NEW — Recipe database entries |
-| `SpellSiphon/Content/SQL/ManaLattice_Create.sql` | UPDATE — Add emotes for CastSpell |
-| `SpellSiphon/Features/EndlessGemHooks.cs` | DELETE — Replaced by native emotes |
-| `SpellSiphon/Helpers/InventoryHelpers.cs` | DELETE — Use ACE recipe consumption |
-| `SpellSiphon/PatchClass.cs` | UPDATE — Wire new RecipeHooks |
+| `Spellsiphon/Features/RecipeHooks.cs` | NEW — RecipeManager integration |
+| `Spellsiphon/Features/UseOnTargetHooks.cs` | SIMPLIFY — Remove extraction logic, keep apply logic |
+| `Spellsiphon/Content/SQL/Recipe_Create.sql` | NEW — Recipe database entries |
+| `Spellsiphon/Content/SQL/ManaLattice_Create.sql` | UPDATE — Add emotes for CastSpell |
+| `Spellsiphon/Features/EndlessGemHooks.cs` | DELETE — Replaced by native emotes |
+| `Spellsiphon/Helpers/InventoryHelpers.cs` | DELETE — Use ACE recipe consumption |
+| `Spellsiphon/PatchClass.cs` | UPDATE — Wire new RecipeHooks |
 
 ---
 

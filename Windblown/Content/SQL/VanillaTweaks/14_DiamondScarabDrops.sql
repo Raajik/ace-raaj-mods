@@ -1,13 +1,23 @@
 -- ============================================================
 -- Diamond Scarab (7299) drops from Diamond Golems — 2026-05-19
 -- Adds a 50% chance for 1-3 Diamond Scarabs from any Diamond
--- Golem variant, as a replacement for removed Diamond Hearts.
+-- Golem variant, replacing removed Diamond Hearts (7338).
 -- Uses destination_Type = 9 (ContainTreasure) with probability
 -- sets: each golem gets 4 rows forming one set:
 --   7299 stack=1 (17%), 7299 stack=2 (17%), 7299 stack=3 (16%),
 --   nothing (50%)
+--
+-- Restore file: 14_DiamondScarabDrops_restore_hearts.sql
 -- ============================================================
 
+-- Step 1: Remove existing Diamond Heart (7338) entries
+DELETE FROM weenie_properties_create_list
+WHERE weenie_Class_Id = 7338
+  AND object_Id IN (4216,7421,11991,15267,19543,27798,36829,36830);
+
+SELECT CONCAT('Removed ', ROW_COUNT(), ' Diamond Heart entries') AS step1;
+
+-- Step 2: Add Diamond Scarab drops
 INSERT INTO `weenie_properties_create_list` (`object_Id`, `destination_Type`, `weenie_Class_Id`, `stack_Size`, `palette`, `shade`, `try_To_Bond`)
 VALUES
 -- Diamond Golem (4216)

@@ -17,7 +17,14 @@ WHERE weenie_Class_Id = 7338
 
 SELECT CONCAT('Removed ', ROW_COUNT(), ' Diamond Heart entries') AS step1;
 
--- Step 2: Add Diamond Scarab drops
+-- Step 2: Remove any existing Diamond Scarab entries (idempotent)
+DELETE FROM weenie_properties_create_list
+WHERE weenie_Class_Id = 7299
+  AND object_Id IN (4216,7421,11991,15267,19543,23998,23999,24000,27798,36829,36830);
+
+SELECT CONCAT('Cleared ', ROW_COUNT(), ' existing Diamond Scarab entries') AS step2;
+
+-- Step 3: Add Diamond Scarab drops
 INSERT INTO `weenie_properties_create_list` (`object_Id`, `destination_Type`, `weenie_Class_Id`, `stack_Size`, `palette`, `shade`, `try_To_Bond`)
 VALUES
 -- Diamond Golem (4216)

@@ -76,6 +76,7 @@ Always check in this order:
 - Build locally via `dotnet build ModName/ModName.csproj` — output goes to `A:\ai\projects\ace-raaj-mods\build\$(AssemblyName)\` locally (**never** touches any server).
 - **MySQL credentials for deploy/sync:** Optional local file **`scripts/.deploy-mysql.env`** (gitignored) — copy from **`scripts/.deploy-mysql.env.example`**, set `ACE_MYSQL_USER` / `ACE_MYSQL_PASSWORD`. **`deploy-void-test.sh`**, **`deploy-wb-test.sh`**, and **`sync-world-void-test-to-wb-test.sh`** source it when present so you do not need to export vars each session.
 - **Repo SQL layout:** `ModName/Content/SQL/**/*.sql` applies to the **world** DB (`void-test_world` / `ace_world` by default). `ModName/Content/SQL-shard/**/*.sql` applies to **`WB_TEST_SHARD_DATABASE`** (e.g. `ace_shard`) when set in `scripts/.deploy-mysql.env` or exported — required for biota/player-item patches on split world/shard installs.
+- **GitHub Actions (self-hosted Windows):** Workflow **Deploy test servers** (`.github/workflows/deploy-test-servers.yml`) — `workflow_dispatch` for void-test, wb_test, or both. Requires a self-hosted runner on the machine with `A:\void-test` and `C:\ACE`; repo secrets `ACE_MYSQL_USER` / `ACE_MYSQL_PASSWORD`. Setup: `docs/github-actions-deploy.md`.
 - **void-test deploy (`push void` / `deploy void`):** Run `bash scripts/deploy-void-test.sh` from repo root (Git Bash). This:
   1. Builds ALL mods (failing mods are skipped, not a hard stop)
   2. **Wipes** `A:\void-test\Mods\` entirely (no stale DLLs from deleted mods)

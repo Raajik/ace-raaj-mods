@@ -1,0 +1,176 @@
+# Deploy ace-raaj-mods to void-test (A:\void-test) and/or wb_test (C:\ACE).
+#
+# Requires a self-hosted Windows runner with:
+#   - Git Bash (bash on PATH, or standard "C:\Program Files\Git\bin\bash.exe")
+#   - .NET 10 SDK
+#   - ACE server binaries at C:\ACE\Server (or set repository variable ACE_EMULATOR_PATH)
+#   - void-test install at A:\void-test and wb_test at C:\ACE (default paths in deploy scripts)
+#   - MySQL client reachable from the runner (for SQL apply)
+#
+# GitHub repo secrets (Settings → Secrets → Actions):
+#   ACE_MYSQL_USER
+#   ACE_MYSQL_PASSWORD
+#
+# Optional repository variables:
+#   ACE_EMULATOR_PATH — e.g. C:\ACE\Server (skips ACE clone when set and valid)
+#
+# Register runner: see docs/github-actions-deploy.md
+
+name: Deploy test servers
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Deploy target
+        required: true
+        default: both
+        type: choice
+        options:
+          - void
+          - wb_test
+          - both
+      git_ref:
+        description: Branch or tag to deploy
+        required: true
+        default: main
+      skip_sql:
+        description: Skip MySQL SQL apply (mods/DLLs only)
+        required: false
+        default: false
+        type: boolean
+      skip_world_sync:
+        description: 'wb_test only: skip void-test_world → ace_world clone'
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: deploy-test-servers
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, windows]
+    timeout-minutes: 120
+    env:
+      VOID_TEST_SKIP_SQL: ${{ inputs.skip_sql && '1' || '0' }}
+      WB_TEST_SKIP_SQL: ${{ inputs.skip_sql && '1' || '0' }}
+      DEPLOY_WB_TEST_SKIP_WORLD_SYNC: ${{ inputs.skip_world_sync && '1' || '0' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.git_ref }}
+          fetch-depth: 1
+
+      - name: Resolve Git Bash
+        id: bash
+        shell: pwsh
+        run: |
+          $candidates = @(
+            $env:ProgramFiles + '\Git\bin\bash.exe',
+            ${env:ProgramFiles(x86)} + '\Git\bin\bash.exe',
+            'C:\Program Files\Git\bin\bash.exe'
+          )
+          $bash = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $bash) {
+            # Hope bash is on PATH for self-hosted runners that preconfigure it
+            $bash = (Get-Command bash -ErrorAction SilentlyContinue).Source
+          }
+          if (-not $bash) {
+            throw 'Git Bash not found. Install Git for Windows or add bash to PATH on the self-hosted runner.'
+          }
+          "path=$bash" >> $env:GITHUB_OUTPUT
+          Write-Host "Using bash: $bash"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Resolve ACE build path
+        id: ace
+        shell: pwsh
+        run: |
+          $configured = '${{ vars.ACE_EMULATOR_PATH }}'.Trim()
+          if ($configured -and (Test-Path (Join-Path $configured 'ACE.Server.dll'))) {
+            Write-Host "Using ACE_EMULATOR_PATH from repository variable: $configured"
+            "path=$configured" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          $default = 'C:\ACE\Server'
+          if (Test-Path (Join-Path $default 'ACE.Server.dll')) {
+            Write-Host "Using default ACE install: $default"
+            "path=$default" >> $env:GITHUB_OUTPUT
+            exit 0
+          }
+          Write-Host 'Cloning and building ACE (first-time runner setup)...'
+          $aceRoot = Join-Path $env:RUNNER_TEMP 'ACE'
+          if (-not (Test-Path $aceRoot)) {
+            git clone --depth 1 https://github.com/ACEmulator/ACE.git $aceRoot
+          }
+          dotnet build "$aceRoot\Source\ACE.Server\ACE.Server.csproj" -c Release
+          $dll = Get-ChildItem "$aceRoot\Source\ACE.Server\bin\Release\net*\ACE.Server.dll" | Select-Object -First 1
+          if (-not $dll) { throw 'ACE.Server.dll not found after build' }
+          "path=$($dll.DirectoryName)" >> $env:GITHUB_OUTPUT
+
+      - name: Load MySQL credentials
+        shell: pwsh
+        env:
+          ACE_MYSQL_USER_SECRET: ${{ secrets.ACE_MYSQL_USER }}
+          ACE_MYSQL_PASSWORD_SECRET: ${{ secrets.ACE_MYSQL_PASSWORD }}
+        run: |
+          $user = $env:ACE_MYSQL_USER_SECRET
+          $pass = $env:ACE_MYSQL_PASSWORD_SECRET
+          $envFile = Join-Path $env:GITHUB_WORKSPACE 'scripts\.deploy-mysql.env'
+          if ((-not $user -or $null -eq $pass) -and (Test-Path $envFile)) {
+            Write-Host "Sourcing scripts/.deploy-mysql.env from workspace (not committed)."
+            Get-Content $envFile | ForEach-Object {
+              if ($_ -match '^\s*export\s+ACE_MYSQL_USER=(.+)$') { $user = $matches[1].Trim('"', "'") }
+              if ($_ -match '^\s*export\s+ACE_MYSQL_PASSWORD=(.+)$') { $pass = $matches[1].Trim('"', "'") }
+            }
+          }
+          $target = '${{ inputs.target }}'
+          $skipSql = '${{ inputs.skip_sql }}' -eq 'true'
+          $skipSync = '${{ inputs.skip_world_sync }}' -eq 'true'
+          $deployWb = $target -eq 'wb_test' -or $target -eq 'both'
+          $needMysql = (-not $skipSql) -or ($deployWb -and -not $skipSync)
+          if ((-not $user -or $null -eq $pass) -and $needMysql) {
+            throw 'Set GitHub secrets ACE_MYSQL_USER and ACE_MYSQL_PASSWORD, or add scripts/.deploy-mysql.env on the runner machine, or enable skip_sql and skip_world_sync for DLL-only deploy.'
+          }
+          if ($user -and $null -ne $pass) {
+            "ACE_MYSQL_USER=$user" >> $env:GITHUB_ENV
+            "ACE_MYSQL_PASSWORD=$pass" >> $env:GITHUB_ENV
+          } else {
+            Write-Host 'MySQL credentials not set; continuing with DLL-only / no world-sync steps.'
+          }
+
+      - name: Deploy void-test
+        if: inputs.target == 'void' || inputs.target == 'both'
+        shell: pwsh
+        env:
+          ACE_EMULATOR_PATH: ${{ steps.ace.outputs.path }}
+        run: |
+          $bash = '${{ steps.bash.outputs.path }}'
+          $repo = $env:GITHUB_WORKSPACE -replace '\\', '/'
+          & $bash -lc "export ACE_EMULATOR_PATH='$($env:ACE_EMULATOR_PATH -replace '\\','/')'; cd '$repo' && bash scripts/deploy-void-test.sh"
+
+      - name: Deploy wb_test
+        if: inputs.target == 'wb_test' || inputs.target == 'both'
+        shell: pwsh
+        env:
+          ACE_EMULATOR_PATH: ${{ steps.ace.outputs.path }}
+        run: |
+          $bash = '${{ steps.bash.outputs.path }}'
+          $repo = $env:GITHUB_WORKSPACE -replace '\\', '/'
+          & $bash -lc "export ACE_EMULATOR_PATH='$($env:ACE_EMULATOR_PATH -replace '\\','/')'; cd '$repo' && bash scripts/deploy-wb-test.sh"
+
+      - name: Deploy summary
+        shell: pwsh
+        run: |
+          Write-Host '=== Deploy workflow finished ==='
+          Write-Host "Target: ${{ inputs.target }}"
+          Write-Host "Ref: ${{ inputs.git_ref }}"
+          Write-Host 'Restart void-test ACE (A:\void-test) and/or wb_test ACE (C:\ACE) to load new DLLs.'
+          Write-Host 'Watchdogs usually pick up restarts automatically if not blocked.'

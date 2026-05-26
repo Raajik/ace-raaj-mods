@@ -20,12 +20,36 @@ $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptDir
 
-$bash = "${env:ProgramFiles}\Git\bin\bash.exe"
-if (-not (Test-Path $bash)) {
-    $bash = (Get-Command bash -ErrorAction SilentlyContinue).Source
+function Test-UsableGitBash([string]$path) {
+    if (-not $path) { return $false }
+    if (-not (Test-Path $path)) { return $false }
+    if ($path -match '(?i)\\Windows\\System32\\bash\.exe$') { return $false }
+    if ($path -match '(?i)\\WindowsApps\\') { return $false }
+    return $true
+}
+
+$bash = $null
+foreach ($candidate in @(
+        $env:GITHUB_BASH,
+        "${env:ProgramFiles}\Git\bin\bash.exe",
+        "${env:ProgramFiles(x86)}\Git\bin\bash.exe",
+        'C:\Program Files\Git\bin\bash.exe'
+    )) {
+    if (Test-UsableGitBash $candidate) {
+        $bash = $candidate
+        break
+    }
 }
 if (-not $bash) {
-    throw 'Git Bash not found. Install Git for Windows.'
+    foreach ($cmd in Get-Command bash -All -ErrorAction SilentlyContinue) {
+        if (Test-UsableGitBash $cmd.Source) {
+            $bash = $cmd.Source
+            break
+        }
+    }
+}
+if (-not $bash) {
+    throw 'Git Bash not found. Install Git for Windows (not WSL). Standard path: C:\Program Files\Git\bin\bash.exe'
 }
 
 $envFile = Join-Path $repoRoot 'scripts\.deploy-mysql.env'
@@ -49,7 +73,7 @@ if ($env:ACE_EMULATOR_PATH) {
 }
 
 $aceUnix = $acePath -replace '\\', '/'
-$repoUnix = $repoRoot -replace '\\', '/'
+$bashUnix = $bash -replace '\\', '/'
 
 if ($SkipSql) {
     $env:VOID_TEST_SKIP_SQL = '1'
@@ -59,20 +83,21 @@ if ($SkipWorldSync) {
     $env:DEPLOY_WB_TEST_SKIP_WORLD_SYNC = '1'
 }
 
-$runBash = {
-    param([string]$cmd)
-    & $bash -lc "export ACE_EMULATOR_PATH='$aceUnix'; cd '$repoUnix' && $cmd"
-    if ($LASTEXITCODE -ne 0) { throw "Command failed: $cmd" }
+$runDeployScript = {
+    param([string]$scriptRel)
+    Set-Location $repoRoot
+    & $bash -c "export ACE_EMULATOR_PATH='$aceUnix'; exec '$bashUnix' $scriptRel"
+    if ($LASTEXITCODE -ne 0) { throw "Command failed: $scriptRel" }
 }
 
 if (-not $WbOnly) {
     Write-Host '=== deploy void-test ===' -ForegroundColor Cyan
-    & $runBash 'bash scripts/deploy-void-test.sh'
+    & $runDeployScript 'scripts/deploy-void-test.sh'
 }
 
 if (-not $VoidOnly) {
     Write-Host '=== deploy wb_test ===' -ForegroundColor Cyan
-    & $runBash 'bash scripts/deploy-wb-test.sh'
+    & $runDeployScript 'scripts/deploy-wb-test.sh'
 }
 
 Write-Host ''

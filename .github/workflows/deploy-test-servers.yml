@@ -54,6 +54,7 @@ jobs:
     runs-on: [self-hosted, windows]
     timeout-minutes: 120
     env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       VOID_TEST_SKIP_SQL: ${{ inputs.skip_sql == true && '1' || '0' }}
       WB_TEST_SKIP_SQL: ${{ inputs.skip_sql == true && '1' || '0' }}
       DEPLOY_WB_TEST_SKIP_WORLD_SYNC: ${{ inputs.skip_world_sync == true && '1' || '0' }}
@@ -68,18 +69,30 @@ jobs:
         id: bash
         shell: pwsh
         run: |
+          function Test-UsableGitBash([string]$path) {
+            if (-not $path) { return $false }
+            if (-not (Test-Path $path)) { return $false }
+            if ($path -match '(?i)\\Windows\\System32\\bash\.exe$') { return $false }
+            if ($path -match '(?i)\\WindowsApps\\') { return $false }
+            return $true
+          }
           $candidates = @(
+            $env:GITHUB_BASH,
             $env:ProgramFiles + '\Git\bin\bash.exe',
             ${env:ProgramFiles(x86)} + '\Git\bin\bash.exe',
             'C:\Program Files\Git\bin\bash.exe'
-          )
-          $bash = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+          ) | Where-Object { $_ }
+          $bash = $candidates | Where-Object { Test-UsableGitBash $_ } | Select-Object -First 1
           if (-not $bash) {
-            # Hope bash is on PATH for self-hosted runners that preconfigure it
-            $bash = (Get-Command bash -ErrorAction SilentlyContinue).Source
+            foreach ($cmd in Get-Command bash -All -ErrorAction SilentlyContinue) {
+              if (Test-UsableGitBash $cmd.Source) {
+                $bash = $cmd.Source
+                break
+              }
+            }
           }
           if (-not $bash) {
-            throw 'Git Bash not found. Install Git for Windows or add bash to PATH on the self-hosted runner.'
+            throw 'Git Bash not found. Install Git for Windows (not WSL). Standard path: C:\Program Files\Git\bin\bash.exe'
           }
           "path=$bash" >> $env:GITHUB_OUTPUT
           Write-Host "Using bash: $bash"
@@ -153,8 +166,12 @@ jobs:
           ACE_EMULATOR_PATH: ${{ steps.ace.outputs.path }}
         run: |
           $bash = '${{ steps.bash.outputs.path }}'
-          $repo = $env:GITHUB_WORKSPACE -replace '\\', '/'
-          & $bash -lc "export ACE_EMULATOR_PATH='$($env:ACE_EMULATOR_PATH -replace '\\','/')'; cd '$repo' && bash scripts/deploy-void-test.sh"
+          $bashUnix = $bash -replace '\\', '/'
+          $aceUnix = $env:ACE_EMULATOR_PATH -replace '\\', '/'
+          Set-Location $env:GITHUB_WORKSPACE
+          # Use explicit Git Bash path — inner `bash` on PATH is often System32 WSL shim.
+          & $bash -c "export ACE_EMULATOR_PATH='$aceUnix'; exec '$bashUnix' scripts/deploy-void-test.sh"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Deploy wb_test
         if: inputs.target == 'wb_test' || inputs.target == 'both'
@@ -163,8 +180,11 @@ jobs:
           ACE_EMULATOR_PATH: ${{ steps.ace.outputs.path }}
         run: |
           $bash = '${{ steps.bash.outputs.path }}'
-          $repo = $env:GITHUB_WORKSPACE -replace '\\', '/'
-          & $bash -lc "export ACE_EMULATOR_PATH='$($env:ACE_EMULATOR_PATH -replace '\\','/')'; cd '$repo' && bash scripts/deploy-wb-test.sh"
+          $bashUnix = $bash -replace '\\', '/'
+          $aceUnix = $env:ACE_EMULATOR_PATH -replace '\\', '/'
+          Set-Location $env:GITHUB_WORKSPACE
+          & $bash -c "export ACE_EMULATOR_PATH='$aceUnix'; exec '$bashUnix' scripts/deploy-wb-test.sh"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Deploy summary
         shell: pwsh

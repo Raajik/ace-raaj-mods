@@ -23,7 +23,7 @@ Glyphs extract spells from items into **charged glyphs** that can be applied to 
 
 | Tier | WCID | Extracts |
 |------|------|----------|
-| 0 | 850210 | Cantrips + unique non-tiered spells only |
+| 0 | 850210 | Cantrips + unique non-tiered spells only (includes Minor/Major/Epic/Legendary imbue-tier spell names; reads imbue `PropertiesEnchantmentRegistry` on targets, not only spellbook) |
 | 1–9 | 850211–850219 | Spells matching that exact level |
 
 - **Target item is destroyed** on both success and failure (extraction mechanic).
@@ -60,6 +60,8 @@ Both tools are automatically added to **jeweler vendors** (vendors selling jewel
 | Glyph of Extraction (tier N) | `GlyphPrice + N × GlyphPricePerTier` | `VendorGlyphStackSize` (250) |
 
 Also injected at **mage vendors** (spell component sellers) for Spellsiphon + Mana Lattice.
+
+Injection runs on **ApproachVendor** and again after **BetterLootControl** `Vendor.LoadInventory` rotation so glyphs are not wiped when jeweler stock refreshes.
 
 ### 6. Infinite Gems (optional)
 

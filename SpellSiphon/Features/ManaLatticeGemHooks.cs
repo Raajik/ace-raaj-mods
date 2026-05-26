@@ -1,6 +1,7 @@
 using ACE.Server.Entity;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.WorldObjects;
+using Spellsiphon.Helpers;
 
 namespace Spellsiphon.Features;
 
@@ -20,7 +21,7 @@ internal static class ManaLatticeGemHooks
         if (__instance.WeenieClassId != s.ManaLatticeWcid)
             return;
 
-        List<int> spellIds = ReadItemSpellIds(__instance);
+        List<int> spellIds = ItemSpellIds.Read(__instance);
         if (spellIds.Count == 0)
         {
             player.SendMessage("[Spellsiphon] This Mana Lattice holds no spells.");
@@ -60,28 +61,4 @@ internal static class ManaLatticeGemHooks
         }
     }
 
-    private static List<int> ReadItemSpellIds(WorldObject item)
-    {
-        List<int> result = new();
-        try
-        {
-            var book = item.Biota?.PropertiesSpellBook;
-            if (book != null && book.Count > 0)
-                foreach (int id in book.Keys)
-                    if (id > 0) result.Add(id);
-        }
-        catch { }
-
-        try
-        {
-            uint? did = item.SpellDID;
-            if (!did.HasValue)
-                did = item.GetProperty(PropertyDataId.Spell);
-            if (did.HasValue && did.Value > 0 && !result.Contains((int)did.Value))
-                result.Add((int)did.Value);
-        }
-        catch { }
-
-        return result;
-    }
 }

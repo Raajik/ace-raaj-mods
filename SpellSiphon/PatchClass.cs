@@ -121,7 +121,18 @@ public class PatchClass : BasicPatch<Settings>
 						if (prefix != null)
 						{
 							ModC.Harmony.Patch(approachVendor, prefix: new HarmonyMethod(prefix));
-							ModManager.Log("[Spellsiphon] Vendor integration enabled.", ModManager.LogLevel.Info);
+							ModManager.Log("[Spellsiphon] Vendor integration enabled (ApproachVendor).", ModManager.LogLevel.Info);
+						}
+					}
+
+					var loadInventory = AccessTools.Method(typeof(Vendor), "LoadInventory", Type.EmptyTypes);
+					if (loadInventory != null)
+					{
+						var loadPost = AccessTools.Method(typeof(VendorIntegration), nameof(VendorIntegration.OnVendorLoadInventoryPostfix));
+						if (loadPost != null)
+						{
+							ModC.Harmony.Patch(loadInventory, postfix: new HarmonyMethod(loadPost) { priority = Priority.Last });
+							ModManager.Log("[Spellsiphon] Vendor integration enabled (LoadInventory postfix, after loot rotation).", ModManager.LogLevel.Info);
 						}
 					}
 
@@ -206,6 +217,19 @@ public class PatchClass : BasicPatch<Settings>
 				{
 					ModC.Harmony.Patch(handleRecipe, postfix: new HarmonyMethod(postfix));
 					ModManager.Log("[Spellsiphon] Recipe hook applied (HandleRecipe postfix).", ModManager.LogLevel.Info);
+				}
+			}
+
+			// Run before Overtinked RecipeManagerEx so invalid targets get Spellsiphon messages, not generic craft text.
+			var useOnTarget = AccessTools.Method(typeof(RecipeManager), nameof(RecipeManager.UseObjectOnTarget),
+				new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject), typeof(bool) });
+			if (useOnTarget != null)
+			{
+				var preUse = AccessTools.Method(typeof(RecipeHooks), nameof(RecipeHooks.PreUseObjectOnTarget));
+				if (preUse != null)
+				{
+					ModC.Harmony.Patch(useOnTarget, prefix: new HarmonyMethod(preUse) { priority = Priority.First });
+					ModManager.Log("[Spellsiphon] Recipe hook applied (UseObjectOnTarget prefix).", ModManager.LogLevel.Info);
 				}
 			}
 		}

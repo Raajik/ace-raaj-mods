@@ -223,3 +223,25 @@ Material bank slots for stack salvage WCIDs **20981–21089** are **`SalvageBank
 - **`A:\obsidian\jeremy\wiki\game-engine\ACE-Realms-Source-Map.md`** — **Primary** mechanics / ACE.Server source routing.
 - **`A:\obsidian\jeremy\wiki\index.md`** — **Collective second brain — YOUR FIRST STOP.**
 - **`BetterSupportSkills/ClassPerks.md`** — Reference for ALL class-related work.
+
+## Cursor Cloud specific instructions
+
+### Environment overview
+This is a C# modding repo (24 mods) for ACEmulator. All mods target **net10.0** and compile against ACE.Server DLLs. There is **no .sln file** — each mod builds independently via its own `.csproj`.
+
+### Build
+- **ACE reference DLLs** are cloned and built by the update script to `/tmp/ACE`. `ACE_EMULATOR_PATH` is set in `~/.bashrc` to `/tmp/ACE/Source/ACE.Server/bin/Release/net10.0`.
+- Build a single mod: `dotnet build ModName/ModName.csproj`
+- Build all mods (bash loop): see `README.md` § Build & Deploy. The CI also skips failures, so 1-2 failing mods is expected.
+- **Known build failures (pre-existing):** `Lockboxes` fails on a post-build copy to `/mnt/c/ACE/Server/Content/` (Windows path). `Windblown` has a syntax error in `ItemsRemovalPatches.cs`. Both are expected to fail in cloud.
+
+### Lint / Validation
+- `bash scripts/validate_sot.sh` — source-of-truth audit (README + Settings.json coverage). Pre-existing failures: `FEATURE_MATRIX.md` and `FEATURE_TRUTH.md` are missing from the repo.
+
+### Testing
+- No automated unit/integration test suite exists in this repo. Verification is done by building mods and deploying to a running ACE server.
+- The ACE server itself (MySQL, game client) is **not** available in the cloud VM — only compilation can be validated here.
+
+### Gotchas
+- Several mods reference `../../ACE.Shared/ACE.Shared.csproj` (a sibling project outside this repo). These produce MSB9008 warnings but build successfully because the NuGet `ACEmulator.ACE.Shared` package provides the same types.
+- `ACE_EMULATOR_PATH` must be set before builds. The update script handles this via `~/.bashrc`.

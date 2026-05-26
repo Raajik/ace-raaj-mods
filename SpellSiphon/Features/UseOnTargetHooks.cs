@@ -3,6 +3,7 @@ using ACE.Database;
 using ACE.Entity.Enum;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.WorldObjects;
+using Spellsiphon.Helpers;
 
 namespace Spellsiphon.Features;
 
@@ -172,7 +173,7 @@ internal static class UseOnTargetHooks
 
 		List<int> spellIds = ItemPayload.ReadSpellPayload(chargedTool);
 		if (spellIds.Count == 0)
-			spellIds = ReadItemSpellIds(chargedTool);
+			spellIds = ItemSpellIds.Read(chargedTool);
 
 		if (spellIds.Count == 0)
 		{
@@ -188,7 +189,7 @@ internal static class UseOnTargetHooks
 		List<string> addedNames = new();
 
 		// Track existing spells for deduplication
-		var existingSpells = ReadItemSpellIds(targetItem);
+		var existingSpells = ItemSpellIds.Read(targetItem);
 		var finalSpells = new List<int>(existingSpells);
 
 		foreach (int id in spellIds)
@@ -344,32 +345,6 @@ internal static class UseOnTargetHooks
 			catch { }
 		}
 		catch { }
-	}
-
-	private static List<int> ReadItemSpellIds(WorldObject item)
-	{
-		HashSet<int> ids = new();
-
-		try
-		{
-			var book = item.Biota?.PropertiesSpellBook;
-			if (book != null && book.Count > 0)
-				foreach (int id in book.Keys)
-					if (id > 0) ids.Add(id);
-		}
-		catch { }
-
-		try
-		{
-			uint? did = item.SpellDID;
-			if (!did.HasValue)
-				did = item.GetProperty(PropertyDataId.Spell);
-			if (did.HasValue && did.Value > 0)
-				ids.Add((int)did.Value);
-		}
-		catch { }
-
-		return ids.ToList();
 	}
 
 	private static bool TryMergeSpell(List<int> existingSpells, int newSpellId)

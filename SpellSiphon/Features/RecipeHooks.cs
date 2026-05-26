@@ -6,6 +6,7 @@ using ACE.Server.Managers;
 using ACE.Server.Network.GameMessages.Messages;
 using ACE.Server.WorldObjects;
 using HarmonyLib;
+using Spellsiphon.Helpers;
 
 namespace Spellsiphon.Features;
 
@@ -61,7 +62,7 @@ internal static class RecipeHooks
 		if (isGlyph && ItemPayload.IsGlyphApplyReady(source))
 			return true;
 
-		var spellIds = ReadItemSpellIds(target);
+		var spellIds = ItemSpellIds.Read(target);
 
 		if (isSpellsiphon)
 		{
@@ -174,7 +175,7 @@ internal static class RecipeHooks
 		// If no eligible spells, send message and bail so the tool is NOT consumed.
 		if (isGlyph)
 		{
-			var allSpellIds = ReadItemSpellIds(target);
+			var allSpellIds = ItemSpellIds.Read(target);
 			var eligible = FilterSpellsForGlyphTier(allSpellIds, glyphTier);
 			if (eligible.Count == 0)
 			{
@@ -246,7 +247,7 @@ internal static class RecipeHooks
 		if (isGlyph)
 		{
 			// Glyph extraction: filter spells by tier eligibility
-			spellIds = ReadItemSpellIds(target);
+			spellIds = ItemSpellIds.Read(target);
 			var eligible = FilterSpellsForGlyphTier(spellIds, glyphTier);
 
 			if (eligible.Count == 0)
@@ -260,7 +261,7 @@ internal static class RecipeHooks
 		}
 		else
 		{
-			spellIds = ReadItemSpellIds(target);
+			spellIds = ItemSpellIds.Read(target);
 		}
 
 		bool isRare = target != null && RareCrystalWcids.Contains(target.WeenieClassId);
@@ -446,8 +447,7 @@ internal static class RecipeHooks
 		if (!s.EnableAnyItemExtraction)
 			return (item.ItemType & ItemType.Gem) != 0 || item.WeenieType == WeenieType.Gem;
 
-		// Same sources as PreHandleRecipe / ReadItemSpellIds (SpellDID + PropertyDataId.Spell, not only spellbook).
-		return ReadItemSpellIds(item).Count > 0;
+		return ItemSpellIds.Read(item).Count > 0;
 	}
 
 	private static double CalculateSuccessRate(Player player, Settings s)
@@ -468,32 +468,6 @@ internal static class RecipeHooks
 		float mitBonus = mit * s.MitBonusPerPoint;
 
 		return Math.Clamp(baseRate + augmentBonus + mitBonus, 0f, s.MaxSuccessRate) / 100.0;
-	}
-
-	private static List<int> ReadItemSpellIds(WorldObject item)
-	{
-		HashSet<int> ids = new();
-
-		try
-		{
-			var book = item.Biota?.PropertiesSpellBook;
-			if (book != null && book.Count > 0)
-				foreach (int id in book.Keys)
-					if (id > 0) ids.Add(id);
-		}
-		catch { }
-
-		try
-		{
-			uint? did = item.SpellDID;
-			if (!did.HasValue)
-				did = item.GetProperty(PropertyDataId.Spell);
-			if (did.HasValue && did.Value > 0)
-				ids.Add((int)did.Value);
-		}
-		catch { }
-
-		return ids.ToList();
 	}
 
 	private static List<int> DeduplicateByHighestLevel(List<int> spellIds)
@@ -547,9 +521,13 @@ internal static class RecipeHooks
 		{
 			var spell = new ACE.Server.Entity.Spell(spellId);
 			string name = spell.Name ?? "";
-			if (name.Contains("Cantrip", StringComparison.OrdinalIgnoreCase)) return true;
+			if (name.Contains("Cantrip", StringComparison.OrdinalIgnoreCase))
+				return true;
+			if (ItemSpellIds.LooksLikeCantripTierPrefix(name))
+				return true;
 			// Also treat level 1-2 spells with short duration as cantrip-tier
-			if (spell.Level <= 2 && spell.Duration <= 120) return true;
+			if (spell.Level <= 2 && spell.Duration <= 120)
+				return true;
 		}
 		catch { }
 		return false;
@@ -701,7 +679,7 @@ internal static class RecipeHooks
 		bool isEndless = (__instance.GetProperty((PropertyBool)ItemPayload.IsEndlessManaLatticeProp) ?? false)
 			|| __instance.Name?.Contains("Endless Mana Lattice", StringComparison.OrdinalIgnoreCase) == true;
 
-		List<int> spellIds = ReadItemSpellIdsForCast(__instance);
+		List<int> spellIds = ItemSpellIds.Read(__instance);
 		if (spellIds.Count == 0)
 		{
 			if (isEndless)
@@ -738,28 +716,4 @@ internal static class RecipeHooks
 		return false;
 	}
 
-	private static List<int> ReadItemSpellIdsForCast(WorldObject item)
-	{
-		List<int> result = new();
-		try
-		{
-			var book = item.Biota?.PropertiesSpellBook;
-			if (book != null && book.Count > 0)
-				foreach (int id in book.Keys)
-					if (id > 0) result.Add(id);
-		}
-		catch { }
-
-		try
-		{
-			uint? did = item.SpellDID;
-			if (!did.HasValue)
-				did = item.GetProperty(PropertyDataId.Spell);
-			if (did.HasValue && did.Value > 0)
-				result.Add((int)did.Value);
-		}
-		catch { }
-
-		return result;
-	}
 }

@@ -30,15 +30,26 @@ internal static class VendorIntegration
 
 	public static void OnVendorApproachPrefix(Player player, VendorType action, uint altCurrencySpent, Vendor __instance)
 	{
+		TryInjectVendorTools(__instance);
+	}
+
+	// Runs after BetterLootControl Vendor.LoadInventory rotation so injected stock is not wiped.
+	public static void OnVendorLoadInventoryPostfix(Vendor __instance)
+	{
+		TryInjectVendorTools(__instance);
+	}
+
+	static void TryInjectVendorTools(Vendor? vendor)
+	{
 		if (PatchClass.Settings?.EnableVendorSales != true)
 			return;
 
-		if (__instance == null || player?.Session == null)
+		if (vendor == null)
 			return;
 
-		uint vendorWcid = __instance.WeenieClassId;
-		bool isMage = IsMageVendor(__instance);
-		bool isJeweler = IsJewelerVendor(__instance);
+		uint vendorWcid = vendor.WeenieClassId;
+		bool isMage = IsMageVendor(vendor);
+		bool isJeweler = IsJewelerVendor(vendor);
 
 		if (!isMage && !isJeweler)
 			return;
@@ -51,14 +62,11 @@ internal static class VendorIntegration
 		int latticeUnit = st?.VendorManaLatticePrice ?? 5000;
 		int latticeMaxBuy = System.Math.Clamp(st?.VendorManaLatticeMaxBuy ?? 250, 1, 250);
 
-		InjectTool(__instance, vendorWcid, spellsiphonWcid, siphonUnit, siphonMaxBuy);
-		InjectTool(__instance, vendorWcid, latticeWcid, latticeUnit, latticeMaxBuy);
+		InjectTool(vendor, vendorWcid, spellsiphonWcid, siphonUnit, siphonMaxBuy);
+		InjectTool(vendor, vendorWcid, latticeWcid, latticeUnit, latticeMaxBuy);
 
-		// Only jewelers get Glyph of Extraction
 		if (isJeweler)
-		{
-			InjectGlyphs(__instance, vendorWcid, st);
-		}
+			InjectGlyphs(vendor, vendorWcid, st);
 	}
 
 	static void InjectGlyphs(Vendor vendor, uint vendorWcid, Settings? st)
@@ -86,7 +94,7 @@ internal static class VendorIntegration
 		{
 			foreach (WorldObject? wo in vendor.DefaultItemsForSale.Values)
 			{
-				if (wo != null && wo.WeenieClassId == wcid)
+				if (wo != null && wo.WeenieClassId == wcid && IsSellableVendorStock(wo))
 					return true;
 			}
 		}
@@ -95,12 +103,29 @@ internal static class VendorIntegration
 		{
 			foreach (WorldObject? wo in vendor.UniqueItemsForSale.Values)
 			{
-				if (wo != null && wo.WeenieClassId == wcid)
+				if (wo != null && wo.WeenieClassId == wcid && IsSellableVendorStock(wo))
 					return true;
 			}
 		}
 
 		return false;
+	}
+
+	// Stale/broken create_list rows can reference a WCID without a valid weenie; do not treat as stocked.
+	static bool IsSellableVendorStock(WorldObject wo)
+	{
+		if (wo == null || wo.IsDestroyed)
+			return false;
+
+		try
+		{
+			var weenie = ACE.Database.DatabaseManager.World.GetCachedWeenie(wo.WeenieClassId);
+			return weenie != null;
+		}
+		catch
+		{
+			return false;
+		}
 	}
 
 	static void ConfigureDefaultShopStack(WorldObject tool, int unitPricePyr, int maxBuyPerTransaction)

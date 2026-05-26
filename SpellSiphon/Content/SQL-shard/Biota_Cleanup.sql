@@ -24,6 +24,16 @@ WHERE b.`weenie_Class_Id` = 850200
 ON DUPLICATE KEY UPDATE `value` = 35215;
 
 -- ============================================
+-- Glyph of Extraction tiers 0-9 (WCIDs 850210-850219)
+-- Fix: narrow TargetType on older biotas blocks use on armor/jewelry with imbue majors
+-- ============================================
+INSERT INTO `biota_properties_int` (`object_Id`, `type`, `value`)
+SELECT b.`id`, 94, 560015
+FROM `biota` b
+WHERE b.`weenie_Class_Id` BETWEEN 850210 AND 850219
+ON DUPLICATE KEY UPDATE `value` = 560015;
+
+-- ============================================
 -- Lesser Coalesced Mana (WCID 42516)
 -- Fix: TargetType missing (needed for bidirectional use)
 -- Fix: Em-dash → hyphen in descriptions (Windows-1252 compatibility)

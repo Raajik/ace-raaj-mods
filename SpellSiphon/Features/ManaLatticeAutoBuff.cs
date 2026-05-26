@@ -5,6 +5,7 @@ using ACE.Entity.Enum;
 using ACE.Entity.Enum.Properties;
 using ACE.Server.Entity;
 using ACE.Server.WorldObjects;
+using Spellsiphon.Helpers;
 
 /// <summary>
 /// Auto-buff integration for Mana Lattice.
@@ -60,7 +61,7 @@ internal static class ManaLatticeAutoBuff
                 if (lattice == null)
                     continue;
 
-                var spellIds = ReadLatticeSpellIds(lattice);
+                var spellIds = ItemSpellIds.Read(lattice);
                 if (spellIds.Count == 0)
                     continue;
 
@@ -142,31 +143,6 @@ internal static class ManaLatticeAutoBuff
         }
 
         return null;
-    }
-
-    static List<int> ReadLatticeSpellIds(WorldObject lattice)
-    {
-        List<int> result = new();
-        try
-        {
-            var book = lattice.Biota?.PropertiesSpellBook;
-            if (book != null && book.Count > 0)
-                foreach (int id in book.Keys)
-                    if (id > 0) result.Add(id);
-        }
-        catch { }
-
-        try
-        {
-            uint? did = lattice.SpellDID;
-            if (!did.HasValue)
-                did = lattice.GetProperty(PropertyDataId.Spell);
-            if (did.HasValue && did.Value > 0 && !result.Contains((int)did.Value))
-                result.Add((int)did.Value);
-        }
-        catch { }
-
-        return result;
     }
 
     static bool ShouldRecast(Player player, int spellId)

@@ -97,10 +97,10 @@ else
     check_fail "PULL_REQUEST_TEMPLATE.md MISSING"
 fi
 
-if [ -f "Docs/FeatureTemplate.md" ]; then
-    check_pass "Docs/FeatureTemplate.md exists"
+if [ -f "docs/FeatureTemplate.md" ] || [ -f "Docs/FeatureTemplate.md" ]; then
+    check_pass "docs/FeatureTemplate.md exists"
 else
-    check_warn "Docs/FeatureTemplate.md MISSING"
+    check_warn "docs/FeatureTemplate.md MISSING"
 fi
 
 echo ""

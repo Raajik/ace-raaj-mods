@@ -85,10 +85,7 @@ if ($missing.Count -gt 0) {
 Write-Step 'Downloading GitHub Actions runner (latest win-x64)'
 
 $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/actions/runner/releases/latest' -Headers @{ 'User-Agent' = 'ace-raaj-mods-setup' }
-$asset = $release.assets | Where-Object { $_.name -eq 'actions-runner-win-x64-2.331.0.zip' } | Select-Object -First 1
-if (-not $asset) {
-    $asset = $release.assets | Where-Object { $_.name -like 'actions-runner-win-x64-*.zip' } | Select-Object -First 1
-}
+$asset = $release.assets | Where-Object { $_.name -like 'actions-runner-win-x64-*.zip' } | Select-Object -First 1
 if (-not $asset) {
     throw 'Could not find actions-runner-win-x64 zip in latest release.'
 }
@@ -128,6 +125,8 @@ Write-Step 'Configuring runner'
 
 Push-Location $InstallDir
 try {
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
     $configArgs = @(
         '--url', $RepoUrl,
         '--token', $token,
@@ -136,25 +135,40 @@ try {
         '--unattended',
         '--replace'
     )
+    if (-not $SkipServiceInstall -and $isAdmin) {
+        # GitHub recommends installing the Windows service during config (not svc.cmd after).
+        $configArgs += '--runAsService'
+        Write-Host '  Admin: will register as Windows service (--runAsService).'
+    }
+
     Write-Host "  Running: config.cmd $($configArgs -join ' ')"
-    & .\config.cmd @configArgs
+    $configExe = Join-Path $InstallDir 'config.cmd'
+    if (-not (Test-Path $configExe)) {
+        throw "config.cmd not found in $InstallDir"
+    }
+    # Invoke via cmd.exe so .cmd files work in PowerShell 7+.
+    $configCmdLine = 'config.cmd ' + ($configArgs -join ' ')
+    cmd.exe /c $configCmdLine
     if ($LASTEXITCODE -ne 0) {
         throw "config.cmd failed with exit code $LASTEXITCODE"
     }
 
     if (-not $SkipServiceInstall) {
-        Write-Step 'Installing runner as Windows service (starts on boot)'
-        $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-        if (-not $isAdmin) {
-            Write-Host '  Not elevated — skipping service install. Start manually with:' -ForegroundColor Yellow
+        Write-Step 'Runner service status'
+        $svc = Get-Service -Name 'actions.runner.*' -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($svc) {
+            if ($svc.Status -ne 'Running') {
+                Start-Service $svc.Name
+            }
+            Write-Host "  OK: $($svc.Name) is $($svc.Status)"
+        } elseif ($isAdmin) {
+            Write-Host '  No actions.runner service found. Start interactively:' -ForegroundColor Yellow
             Write-Host "    cd $InstallDir"
             Write-Host '    .\run.cmd'
-            Write-Host ''
-            Write-Host '  Or re-run this script as Administrator to install the service.'
         } else {
-            & .\svc.cmd install
-            & .\svc.cmd start
-            Write-Host '  Service installed and started.'
+            Write-Host '  Not elevated — start manually:' -ForegroundColor Yellow
+            Write-Host "    cd $InstallDir"
+            Write-Host '    .\run.cmd'
         }
     } else {
         Write-Host '  Skipped service install. Start with: .\run.cmd' -ForegroundColor Yellow

@@ -61,6 +61,8 @@ Both tools are automatically added to **jeweler vendors** (vendors selling jewel
 
 Also injected at **mage vendors** (spell component sellers) for Spellsiphon + Mana Lattice.
 
+Injection runs on **ApproachVendor** and again after **BetterLootControl** `Vendor.LoadInventory` rotation so glyphs are not wiped when jeweler stock refreshes.
+
 ### 6. Infinite Gems (optional)
 
 When enabled, all gem spells are reusable and do not consume the gem on use.

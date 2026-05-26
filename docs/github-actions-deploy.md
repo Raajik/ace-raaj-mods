@@ -1,63 +1,64 @@
 # GitHub Actions — deploy void-test / wb_test
 
-Workflow: [`.github/workflows/deploy-test-servers.yml`](../.github/workflows/deploy-test-servers.yml)
+## Cannot find GitHub Settings? Do this instead (recommended)
 
-Runs the same scripts as local deploy:
+On your **Windows game PC** (where `A:\void-test` and `C:\ACE` live), open **PowerShell** and run:
 
-- `scripts/deploy-void-test.sh` → `A:\void-test\Mods`
-- `scripts/deploy-wb-test.sh` → `C:\ACE\Mods` (optional world sync + SQL)
+```powershell
+cd A:\ai\projects\ace-raaj-mods
+git pull
+.\scripts\Setup-GitHubDeployRunner.ps1
+.\scripts\Setup-GitHubDeploySecrets.ps1
+```
 
-## One-time: self-hosted runner
+1. **Setup-GitHubDeployRunner.ps1** — downloads the Actions runner, opens the correct GitHub page in your browser, asks you to paste a one-time token, installs the runner service.
 
-1. On the Windows machine that has `A:\void-test`, `C:\ACE`, and MySQL access, install [GitHub Actions Runner](https://github.com/actions/runner/releases) (Windows x64).
-2. From the repo **Settings → Actions → Runners → New self-hosted runner**, register the machine.
-3. Use labels: `self-hosted`, `windows` (defaults from registration).
-4. Install on that machine:
-   - **Git for Windows** (Git Bash)
-   - **.NET 10 SDK**
-   - **ACE** at `C:\ACE\Server` (recommended — workflow uses it for `dotnet build` of mods)
+2. **Setup-GitHubDeploySecrets.ps1** — reads `scripts\.deploy-mysql.env` and uploads MySQL creds to GitHub (needs `gh auth login` once).
 
-Start the runner service so it stays online.
+After that: **GitHub → Actions → Deploy test servers → Run workflow**.
 
-## Secrets and optional config
+### Even simpler: skip GitHub entirely
 
-### Required for SQL apply (default)
+Same deploy, no runner setup:
 
-In the GitHub repo: **Settings → Secrets and variables → Actions → New repository secret**
+```powershell
+cd A:\ai\projects\ace-raaj-mods
+.\scripts\Deploy-All-Test.ps1
+```
 
-| Secret | Value |
-|--------|--------|
-| `ACE_MYSQL_USER` | MySQL user |
-| `ACE_MYSQL_PASSWORD` | MySQL password |
+Uses the same `deploy-void-test.sh` / `deploy-wb-test.sh` scripts locally.
 
-Alternatively, place `scripts/.deploy-mysql.env` on the runner’s persistent checkout (gitignored locally; copy manually to the runner machine). The workflow sources it if secrets are unset.
+---
 
-### Optional repository variable
+## Where things are in GitHub (manual path)
 
-| Variable | Example | Purpose |
-|----------|---------|---------|
-| `ACE_EMULATOR_PATH` | `C:\ACE\Server` | ACE DLL folder for mod builds (avoids cloning ACE on the runner) |
+| What | URL |
+|------|-----|
+| **New self-hosted runner** | https://github.com/Raajik/ace-raaj-mods/settings/actions/runners/new |
+| **Actions secrets** | https://github.com/Raajik/ace-raaj-mods/settings/secrets/actions |
+| **Run deploy workflow** | https://github.com/Raajik/ace-raaj-mods/actions/workflows/deploy-test-servers.yml |
 
-Shard DB names (`VOID_SHARD_DATABASE`, `WB_TEST_SHARD_DATABASE`) follow `scripts/.deploy-mysql.env` when present on the runner.
+Repo **Settings** is only visible if you are logged in as an owner/collaborator with admin access. If you do not see **Settings**, ask the repo owner or use **Deploy-All-Test.ps1** locally.
 
-## Run a deploy
+---
 
-1. **Actions** → **Deploy test servers** → **Run workflow**
-2. Choose:
-   - **target:** `void`, `wb_test`, or `both`
-   - **git_ref:** branch or tag (default `main`)
-   - **skip_sql:** mods only, no MySQL
-   - **skip_world_sync:** wb_test only — no `void-test_world` → `ace_world` clone
+## Workflow reference
 
-3. After success, restart ACE on the affected servers (or let watchdogs restart).
+Workflow file: [`.github/workflows/deploy-test-servers.yml`](../.github/workflows/deploy-test-servers.yml)
 
-## Notes
+| Input | Purpose |
+|-------|---------|
+| `target` | `void`, `wb_test`, or `both` |
+| `git_ref` | Branch/tag (default `main`) |
+| `skip_sql` | Mods only |
+| `skip_world_sync` | wb_test: no world DB clone |
 
-- **Never** targets live `C:\ACE-WB\` (Windblown live). Only void-test and wb_test paths from `AGENTS.md`.
-- `wb_test` deploy **wipes** `C:\ACE\Mods\*\Settings.json` from repo templates. Back up operator-tuned JSON first if needed.
-- Workflow uses concurrency group `deploy-test-servers` so two deploys do not overlap.
-- Cloud-hosted `ubuntu-latest` runners **cannot** run this workflow; paths and MySQL are on your PC.
+**Secrets:** `ACE_MYSQL_USER`, `ACE_MYSQL_PASSWORD` (or `scripts/.deploy-mysql.env` on the runner machine).
 
-## Trigger phrases (local)
+**Optional variable:** `ACE_EMULATOR_PATH` = `C:\ACE\Server`
 
-Same behavior as manual scripts: `push void`, `deploy void`, `push wb test`, `deploy wb test` — see `AGENTS.md` §5.
+**Runner labels:** `self-hosted`, `windows` (set automatically by setup script).
+
+Cloud GitHub-hosted runners **cannot** run this job — only your PC with ACE installed.
+
+See `AGENTS.md` §5 for void vs wb_test behavior and warnings.

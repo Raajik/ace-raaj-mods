@@ -1,0 +1,10 @@
+{
+  "Name": "CustomSpells",
+  "Author": "Raaj",
+  "Description": "Custom spell creation from templates",
+  "Version": "1.0",
+  "Enabled": true,
+  "HotReload": true,
+  "RegisterCommands": true,
+  "ACEVersion": "0.0"
+}

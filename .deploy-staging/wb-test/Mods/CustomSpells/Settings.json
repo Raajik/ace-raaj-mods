@@ -1,0 +1,23 @@
+{
+  "AutoloadSpreadsheet": false,
+  "Spreadsheet": "Spells.xlsx",
+  "CustomSpells": [
+    { "Template": 3731, "Id": 90000001, "Name": "Satiated (Health)", "StatModVal": 7.5, "Duration": 86400, "Bitfield": "SelfTargeted" },
+    { "Template": 3732, "Id": 90000002, "Name": "Satiated (Stamina)", "StatModVal": 7.5, "Duration": 86400, "Bitfield": "SelfTargeted" },
+    { "Template": 3725, "Id": 90000003, "Name": "Satiated (Mana)", "StatModVal": 7.5, "Duration": 86400, "Bitfield": "SelfTargeted" },
+    { "Template": 3731, "Id": 90000004, "Name": "Well Fed (Health)", "StatModVal": 15, "Duration": 86400, "Bitfield": "SelfTargeted" },
+    { "Template": 3732, "Id": 90000005, "Name": "Well Fed (Stamina)", "StatModVal": 15, "Duration": 86400, "Bitfield": "SelfTargeted" },
+    { "Template": 3725, "Id": 90000006, "Name": "Well Fed (Mana)", "StatModVal": 15, "Duration": 86400, "Bitfield": "SelfTargeted" },
+    { "Template": 5953, "Id": 90000007, "Name": "DF Def Debuff", "StatModVal": -20, "Duration": 180 },
+    { "Template": 5949, "Id": 90000008, "Name": "DF Def Debuff Sup", "StatModVal": -40, "Duration": 180 },
+    { "Template": 5951, "Id": 90000009, "Name": "DF Att Debuff", "StatModVal": -20, "Duration": 180 },
+    { "Template": 5947, "Id": 90000010, "Name": "DF Att Debuff Sup", "StatModVal": -40, "Duration": 180 },
+    { "Template": 5954, "Id": 90000011, "Name": "DF Heal Debuff", "StatModVal": -30, "Duration": 180 },
+    { "Template": 5950, "Id": 90000012, "Name": "DF Heal Debuff Sup", "StatModVal": -60, "Duration": 180 },
+    { "Template": 5952, "Id": 90000013, "Name": "DF Bleed Trained", "StatModVal": 2, "Duration": 180 },
+    { "Template": 5948, "Id": 90000014, "Name": "DF Bleed Specialized", "StatModVal": 4, "Duration": 180 },
+    { "Template": 5622, "Id": 90000017, "Name": "CE +50 (ManaC untrained support)", "StatModVal": 50, "Duration": 86400, "Bitfield": "SelfTargeted" },
+    { "Template": 5652, "Id": 90000018, "Name": "IE +50 (ManaC untrained support)", "StatModVal": 50, "Duration": 86400, "Bitfield": "SelfTargeted" }
+  ],
+  "Sets": {}
+}

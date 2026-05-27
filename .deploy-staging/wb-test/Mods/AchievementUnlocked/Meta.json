@@ -1,0 +1,10 @@
+{
+  "Name": "AchievementUnlocked",
+  "Author": "",
+  "Description": "Achievement framework and content gate for ACE mods. Define achievements in Settings.json; other mods query via static API.",
+  "Version": "1.0",
+  "Enabled": true,
+  "HotReload": true,
+  "RegisterCommands": true,
+  "ACEVersion": "0.0"
+}

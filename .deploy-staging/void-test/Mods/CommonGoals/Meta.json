@@ -1,0 +1,10 @@
+{
+  "Name": "CommonGoals",
+  "Author": "ace-raaj-mods",
+  "Description": "Instanced personal loot: each player who tagged a creature gets their own corpse with an independent loot roll. Integrates with AutoLoot. Requires Achievement Tier 1 (Loremaster).",
+  "Version": "0.1.0",
+  "Enabled": true,
+  "HotReload": true,
+  "RegisterCommands": false,
+  "ACEVersion": "0.0"
+}

@@ -93,7 +93,7 @@ internal static class RecipeHooks
 			}
 		}
 
-		return true;
+		return TryRunExtractionCraft(player, source, target, confirmed);
 	}
 
 	private static Recipe GetSpellsiphonRecipe()
@@ -131,6 +131,11 @@ internal static class RecipeHooks
 
 	// ==================== GLYPH WCID HELPERS ====================
 
+	internal static bool IsGlyphExtractionTool(uint wcid)
+	{
+		return IsGlyphWcid(wcid, out _);
+	}
+
 	private static bool IsGlyphWcid(uint wcid, out int tier)
 	{
 		uint baseWcid = PatchClass.Settings?.GlyphExtractionBaseWcid ?? 850210;
@@ -140,6 +145,52 @@ internal static class RecipeHooks
 			return true;
 		}
 		tier = -1;
+		return false;
+	}
+
+	// Runs extraction craft without relying on GetRecipe (Overtinked calls GetRecipe before our postfix can help).
+	private static bool TryRunExtractionCraft(Player player, WorldObject source, WorldObject target, bool confirmed)
+	{
+		if (player?.Session?.Network == null)
+			return false;
+
+		if (source == target)
+		{
+			player.Session.Network.EnqueueSend(new GameMessageSystemChat(
+				$"The {source.NameWithMaterial} cannot be combined with itself.", ChatMessageType.Craft));
+			player.SendUseDoneEvent();
+			return false;
+		}
+
+		Recipe recipe = GetSpellsiphonRecipe();
+
+		if (!RecipeManager.VerifyRequirements(recipe, player, source, target))
+		{
+			player.SendUseDoneEvent(WeenieError.YouDoNotPassCraftingRequirements);
+			return false;
+		}
+
+		double? percentSuccess = RecipeManager.GetRecipeChance(player, source, target, recipe);
+		if (percentSuccess == null)
+		{
+			player.SendUseDoneEvent();
+			return false;
+		}
+
+		bool showDialog = RecipeManager.HasDifficulty(recipe)
+			&& player.GetCharacterOption(CharacterOption.UseCraftingChanceOfSuccessDialog);
+
+		if (showDialog && !confirmed)
+		{
+			RecipeManager.ShowDialog(player, source, target, recipe, percentSuccess.Value);
+			return false;
+		}
+
+		RecipeManager.HandleRecipe(player, source, target, recipe, percentSuccess.Value);
+
+		if (!showDialog)
+			player.SendUseDoneEvent();
+
 		return false;
 	}
 
@@ -408,7 +459,7 @@ internal static class RecipeHooks
 
 	// ==================== GLYPH TIER FILTERING ====================
 
-	private static List<int> FilterSpellsForGlyphTier(List<int> spellIds, int tier)
+	internal static List<int> FilterSpellsForGlyphTier(List<int> spellIds, int tier)
 	{
 		var result = new List<int>();
 		foreach (int id in spellIds)

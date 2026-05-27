@@ -16,6 +16,9 @@ public class RecipeManagerEx
         if (player?.Session?.Network == null)
             return false;
 
+        if (SpellsiphonInterop.ShouldSuppressOvertinkedCraftFlow(source, target))
+            return false;
+
         var allowCraftInCombat = PropertyManager.GetBool("allow_combat_mode_crafting").Item;
 
         if (CheckBusy(player, allowCraftInCombat))

@@ -1,0 +1,10 @@
+{
+  "Name": "Loremaster",
+  "Author": "",
+  "Description": "Extended quest bonus system. Tracks account-wide unique quests, multiplies XP by quest progress, grants one-time XP and loot on first solves, broadcasts server-wide milestone messages, and optional barkeeper parchment quests (one active contract, bartender vendor rows, Town Crier explore/fetch, tier XP; Gems in Settings.json).",
+  "Version": "1.0",
+  "Enabled": true,
+  "HotReload": true,
+  "RegisterCommands": true,
+  "ACEVersion": "0.0"
+}

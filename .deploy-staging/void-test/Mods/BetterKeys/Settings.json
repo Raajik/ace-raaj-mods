@@ -1,0 +1,21 @@
+{
+  "// Keys": "Skeleton key WCID map is in PatchClass.EnsureKeyMap: SIK doors <=1000, SSK chests <=1000, MFK doors <=5000, LEG chests <=5000.",
+  "UseLockpickPathForSkeletonKeys": false,
+  "// UseLockpickPathForSkeletonKeys": "When true, skeleton keys use the lockpick unlock (very high effective skill). Pickable locks only; does not replace the door empty-LockCode bypass.",
+  "EnableUnlockChestUsingSkeletonBank": true,
+  "// EnableUnlockChestUsingSkeletonBank": "When true: locked chest with no chest-capable skeleton key in inventory can debit SSK (40500) or LEG (41000) bank lines. Props must match LeyLineLedger Items[].Prop for SSK/LEG.",
+  "SkeletonBankPropChestSsk": 40500,
+  "SkeletonBankPropChestLeg": 41000,
+  "// LegendaryChestWcids": "Bank fallback: debit LEG line for these WCIDs when resist-based debit did not apply.",
+  "LegendaryChestWcids": [48741, 48742, 48743, 48744],
+  "// ManaForgeChestWcids": "Bank fallback: debit LEG line for these WCIDs.",
+  "ManaForgeChestWcids": [38443, 38444, 38445, 38446, 38447, 38457],
+  "// SturdySteelChestWcids": "Bank fallback: debit SSK line for these WCIDs.",
+  "SturdySteelChestWcids": [24476],
+  "// SturdyIronChestWcids": "Bank fallback: debit SSK line for these WCIDs.",
+  "SturdyIronChestWcids": [8999, 3985],
+  "// SuppressImmediateChestOpenAfterSkeletonKeyUnlock": "When true: first Chest.Open within the time window after a skeleton key or bank unlock is skipped (client follow-up use). Set false for stock ACE behavior (unlock opens UI immediately).",
+  "SuppressImmediateChestOpenAfterSkeletonKeyUnlock": true,
+  "// SuppressImmediateChestOpenWindowMs": "Milliseconds after unlock in which the first matching chest Open is suppressed; increase if the client is slow.",
+  "SuppressImmediateChestOpenWindowMs": 280
+}

@@ -20,37 +20,7 @@ $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = Split-Path -Parent $scriptDir
 
-function Test-UsableGitBash([string]$path) {
-    if (-not $path) { return $false }
-    if (-not (Test-Path $path)) { return $false }
-    if ($path -match '(?i)\\Windows\\System32\\bash\.exe$') { return $false }
-    if ($path -match '(?i)\\WindowsApps\\') { return $false }
-    return $true
-}
-
-$bash = $null
-foreach ($candidate in @(
-        $env:GITHUB_BASH,
-        "${env:ProgramFiles}\Git\bin\bash.exe",
-        "${env:ProgramFiles(x86)}\Git\bin\bash.exe",
-        'C:\Program Files\Git\bin\bash.exe'
-    )) {
-    if (Test-UsableGitBash $candidate) {
-        $bash = $candidate
-        break
-    }
-}
-if (-not $bash) {
-    foreach ($cmd in Get-Command bash -All -ErrorAction SilentlyContinue) {
-        if (Test-UsableGitBash $cmd.Source) {
-            $bash = $cmd.Source
-            break
-        }
-    }
-}
-if (-not $bash) {
-    throw 'Git Bash not found. Install Git for Windows (not WSL). Standard path: C:\Program Files\Git\bin\bash.exe'
-}
+$bash = & (Join-Path $repoRoot 'scripts/Get-GitBashPath.ps1')
 
 $envFile = Join-Path $repoRoot 'scripts\.deploy-mysql.env'
 if (Test-Path $envFile) {
@@ -72,9 +42,6 @@ if ($env:ACE_EMULATOR_PATH) {
     throw 'Set ACE_EMULATOR_PATH or install ACE at C:\ACE\Server'
 }
 
-$aceUnix = $acePath -replace '\\', '/'
-$bashUnix = $bash -replace '\\', '/'
-
 if ($SkipSql) {
     $env:VOID_TEST_SKIP_SQL = '1'
     $env:WB_TEST_SKIP_SQL = '1'
@@ -86,7 +53,8 @@ if ($SkipWorldSync) {
 $runDeployScript = {
     param([string]$scriptRel)
     Set-Location $repoRoot
-    & $bash -c "export ACE_EMULATOR_PATH='$aceUnix'; exec '$bashUnix' $scriptRel"
+    $env:ACE_EMULATOR_PATH = $acePath
+    & "$bash" $scriptRel
     if ($LASTEXITCODE -ne 0) { throw "Command failed: $scriptRel" }
 }
 

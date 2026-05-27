@@ -67,6 +67,6 @@ The workflow log shows `/bin/bash` and a `cd` to `C:/actions-runner/...` that fa
 
 ### Deploy failed with `The term 'C:\Program Files' is not recognized`
 
-The resolved Git Bash path contains spaces. Older workflow versions wrote `path=C:\Program Files\...` to `GITHUB_OUTPUT` without a heredoc, so only `C:\Program Files` was passed to the next step. Update to latest `main` and re-run.
+Git Bash lives under `C:\Program Files\Git\...`. **Do not** pass that path through `steps.*.outputs` or workflow `env:` — GitHub Actions splits on spaces. Current workflow resolves bash in-process via `scripts/Get-GitBashPath.ps1` on each deploy step. Pull latest `main` and re-run.
 
 See `AGENTS.md` §5 for void vs wb_test behavior and warnings.

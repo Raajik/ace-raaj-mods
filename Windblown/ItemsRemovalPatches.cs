@@ -22,7 +22,8 @@ public partial class PatchClass
 
     /// WCIDs that should never be created.
 
-    /// </summary>    private static readonly HashSet<uint> BlockedCreationWcids = new()
+    /// </summary>
+    private static readonly HashSet<uint> BlockedCreationWcids = new()
     {
         266, // Auroch Horn,
         3670, // Copper Heart,

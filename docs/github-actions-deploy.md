@@ -61,4 +61,8 @@ Workflow file: [`.github/workflows/deploy-test-servers.yml`](../.github/workflow
 
 Cloud GitHub-hosted runners **cannot** run this job — only your PC with ACE installed.
 
+### Deploy failed with `cd: ... No such file or directory`
+
+The workflow log shows `/bin/bash` and a `cd` to `C:/actions-runner/...` that fails — that is almost always the **WSL shim** at `C:\Windows\System32\bash.exe`, not Git Bash. The runner must have **Git for Windows** at `C:\Program Files\Git\bin\bash.exe`. Re-run the workflow after updating `main`; the deploy job refuses System32 bash and calls deploy scripts with the resolved Git Bash path only.
+
 See `AGENTS.md` §5 for void vs wb_test behavior and warnings.

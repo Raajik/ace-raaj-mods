@@ -1,5 +1,15 @@
 # Completed Features & Fixes
 
+## 2026-05-26
+
+### SpellSiphon — glyph regression fix (tier 0 / tier 9 SQL era)
+
+**Problem:** After tier 0 property + tier 9 glyph SQL work, tier 0 glyph on imbued armor showed Overtinked *cannot be used on*; jewelers missing glyphs. Git history: `05e6ec57` committed SQL with merge conflict markers; `dfe01ba2` refactor dropped `UseObjectOnTarget` patch registration (fixed in PR #9 `a0757c8a`).
+
+**Shipped on `main`:** `ItemSpellIds` reads biota imbue registry + live `EnchantmentManager`; `GetRecipe` postfix on 3-arg overload at `Priority.Last`; tier 9 (850219) vendor injection; `docs/Glyph-Regression-Timeline.md`; `scripts/Deploy-SpellSiphon-GlyphFix.ps1` (mods + shard `Biota_Cleanup.sql`).
+
+**Deploy on game PC:** `git pull` then `.\scripts\Deploy-SpellSiphon-GlyphFix.ps1` — restart ACE; verify log lines for UseObjectOnTarget + GetRecipe postfix.
+
 ### Overtinked — Nether Rend vanilla-ization + Cleaving spell expansion
 
 **Nether Rending:** Moved from custom `PropertyInt 40133` bitmask to **vanilla** `ImbuedEffectType.NetherRending`.

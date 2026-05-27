@@ -63,6 +63,10 @@ Cloud GitHub-hosted runners **cannot** run this job — only your PC with ACE in
 
 ### Deploy failed with `cd: ... No such file or directory`
 
-The workflow log shows `/bin/bash` and a `cd` to `C:/actions-runner/...` that fails — that is almost always the **WSL shim** at `C:\Windows\System32\bash.exe`, not Git Bash. The runner must have **Git for Windows** at `C:\Program Files\Git\bin\bash.exe`. Re-run the workflow after updating `main`; the deploy job refuses System32 bash and calls deploy scripts with the resolved Git Bash path only.
+The workflow log shows `/bin/bash` and a `cd` to `C:/actions-runner/...` that fails — that is almost always the **WSL shim** at `C:\Windows\System32\bash.exe`, not Git Bash. Install **Git for Windows** at `C:\Program Files\Git\bin\bash.exe`.
+
+### Deploy failed with `The term 'C:\Program Files' is not recognized`
+
+The resolved Git Bash path contains spaces. Older workflow versions wrote `path=C:\Program Files\...` to `GITHUB_OUTPUT` without a heredoc, so only `C:\Program Files` was passed to the next step. Update to latest `main` and re-run.
 
 See `AGENTS.md` §5 for void vs wb_test behavior and warnings.

@@ -94,7 +94,11 @@ jobs:
           if (-not $bash) {
             throw 'Git Bash not found. Install Git for Windows (not WSL). Standard path: C:\Program Files\Git\bin\bash.exe'
           }
-          "path=$bash" >> $env:GITHUB_OUTPUT
+          # GITHUB_OUTPUT key=value breaks on spaces (e.g. C:\Program Files\...).
+          $delim = 'git_bash_path'
+          Add-Content -Path $env:GITHUB_OUTPUT -Value "path<<$delim"
+          Add-Content -Path $env:GITHUB_OUTPUT -Value $bash
+          Add-Content -Path $env:GITHUB_OUTPUT -Value $delim
           Write-Host "Using bash: $bash"
 
       - name: Setup .NET
@@ -107,15 +111,21 @@ jobs:
         shell: pwsh
         run: |
           $configured = '${{ vars.ACE_EMULATOR_PATH }}'.Trim()
+          function Set-AceOutputPath([string]$Value) {
+            $delim = 'ace_emulator_path'
+            Add-Content -Path $env:GITHUB_OUTPUT -Value "path<<$delim"
+            Add-Content -Path $env:GITHUB_OUTPUT -Value $Value
+            Add-Content -Path $env:GITHUB_OUTPUT -Value $delim
+          }
           if ($configured -and (Test-Path (Join-Path $configured 'ACE.Server.dll'))) {
             Write-Host "Using ACE_EMULATOR_PATH from repository variable: $configured"
-            "path=$configured" >> $env:GITHUB_OUTPUT
+            Set-AceOutputPath $configured
             exit 0
           }
           $default = 'C:\ACE\Server'
           if (Test-Path (Join-Path $default 'ACE.Server.dll')) {
             Write-Host "Using default ACE install: $default"
-            "path=$default" >> $env:GITHUB_OUTPUT
+            Set-AceOutputPath $default
             exit 0
           }
           Write-Host 'Cloning and building ACE (first-time runner setup)...'
@@ -126,7 +136,7 @@ jobs:
           dotnet build "$aceRoot\Source\ACE.Server\ACE.Server.csproj" -c Release
           $dll = Get-ChildItem "$aceRoot\Source\ACE.Server\bin\Release\net*\ACE.Server.dll" | Select-Object -First 1
           if (-not $dll) { throw 'ACE.Server.dll not found after build' }
-          "path=$($dll.DirectoryName)" >> $env:GITHUB_OUTPUT
+          Set-AceOutputPath $dll.DirectoryName
 
       - name: Load MySQL credentials
         shell: pwsh
@@ -163,27 +173,30 @@ jobs:
         if: inputs.target == 'void' || inputs.target == 'both'
         shell: pwsh
         env:
+          GIT_BASH_EXE: ${{ steps.bash.outputs.path }}
           ACE_EMULATOR_PATH: ${{ steps.ace.outputs.path }}
         run: |
-          $bash = '${{ steps.bash.outputs.path }}'
-          $bashUnix = $bash -replace '\\', '/'
-          $aceUnix = $env:ACE_EMULATOR_PATH -replace '\\', '/'
+          $bash = $env:GIT_BASH_EXE
+          if (-not (Test-Path -LiteralPath $bash)) {
+            throw "Git Bash not found at: $bash"
+          }
           Set-Location $env:GITHUB_WORKSPACE
-          # Use explicit Git Bash path — inner `bash` on PATH is often System32 WSL shim.
-          & $bash -c "export ACE_EMULATOR_PATH='$aceUnix'; exec '$bashUnix' scripts/deploy-void-test.sh"
+          & "$bash" scripts/deploy-void-test.sh
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Deploy wb_test
         if: inputs.target == 'wb_test' || inputs.target == 'both'
         shell: pwsh
         env:
+          GIT_BASH_EXE: ${{ steps.bash.outputs.path }}
           ACE_EMULATOR_PATH: ${{ steps.ace.outputs.path }}
         run: |
-          $bash = '${{ steps.bash.outputs.path }}'
-          $bashUnix = $bash -replace '\\', '/'
-          $aceUnix = $env:ACE_EMULATOR_PATH -replace '\\', '/'
+          $bash = $env:GIT_BASH_EXE
+          if (-not (Test-Path -LiteralPath $bash)) {
+            throw "Git Bash not found at: $bash"
+          }
           Set-Location $env:GITHUB_WORKSPACE
-          & $bash -c "export ACE_EMULATOR_PATH='$aceUnix'; exec '$bashUnix' scripts/deploy-wb-test.sh"
+          & "$bash" scripts/deploy-wb-test.sh
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Deploy summary

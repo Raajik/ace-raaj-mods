@@ -79,13 +79,12 @@ internal static class VendorIntegration
 		int pricePerTier = st.GlyphPricePerTier;
 		int maxBuy = System.Math.Clamp(st.VendorGlyphStackSize, 1, 250);
 
-		for (int tier = 0; tier <= 8; tier++)
+		for (int tier = 0; tier <= 9; tier++)
 		{
 			uint wcid = baseWcid + (uint)tier;
 			int price = basePrice + tier * pricePerTier;
 			InjectTool(vendor, vendorWcid, wcid, price, maxBuy);
 		}
-		// Tier 9 (X) is reserved but hidden from vendors until level 9 spells are implemented.
 	}
 
 	static bool VendorAlreadySellsWcid(Vendor vendor, uint wcid)

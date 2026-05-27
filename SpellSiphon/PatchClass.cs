@@ -161,15 +161,16 @@ public class PatchClass : BasicPatch<Settings>
 	{
 		try
 		{
-			// Patch GetRecipe to inject Spellsiphon recipe
-			var getRecipe = AccessTools.Method(typeof(RecipeManager), nameof(RecipeManager.GetRecipe));
+			// Patch GetRecipe (Player, source, target) — same overload Overtinked RecipeManagerEx calls.
+			var getRecipe = AccessTools.Method(typeof(RecipeManager), nameof(RecipeManager.GetRecipe),
+				new Type[] { typeof(Player), typeof(WorldObject), typeof(WorldObject) });
 			if (getRecipe != null)
 			{
 				var postfix = AccessTools.Method(typeof(RecipeHooks), nameof(RecipeHooks.PostGetRecipe));
 				if (postfix != null)
 				{
-					ModC.Harmony.Patch(getRecipe, postfix: new HarmonyMethod(postfix));
-					ModManager.Log("[Spellsiphon] Recipe hook applied (GetRecipe postfix).", ModManager.LogLevel.Info);
+					ModC.Harmony.Patch(getRecipe, postfix: new HarmonyMethod(postfix) { priority = Priority.Last });
+					ModManager.Log("[Spellsiphon] Recipe hook applied (GetRecipe postfix, Priority.Last).", ModManager.LogLevel.Info);
 				}
 			}
 

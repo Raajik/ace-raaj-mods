@@ -112,6 +112,7 @@ Apply these in order to your world database (`void-test_world` → `ace_world` �
 1. **`Content/SQL/Spellsiphon_Tool_Create.sql`** — Creates the Spellsiphon tool weenie (850200).
 2. **`Content/SQL/ManaLattice_Create.sql`** — Creates the Mana Lattice weenie (850201).
 3. **`Content/SQL/GlyphExtraction_Tools_Create.sql`** — Creates all 10 Glyph of Extraction weenies (850210–850219).
+4. If glyphs regressed after tier SQL work, see **`docs/Glyph-Regression-Timeline.md`** (commit history + deploy checklist).
 4. **`Content/SQL/CoalescedMana_Update.sql`** — Updates Coalesced Mana for bidirectional charging (if still using Coalesced Mana features).
 
 ## Architecture

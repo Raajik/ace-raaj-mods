@@ -1,5 +1,5 @@
-using ACE.Entity.Models;
 using ACE.Entity.Enum;
+using ACE.Entity.Models;
 using ACE.Server.WorldObjects;
 
 namespace Spellsiphon.Helpers;
@@ -50,7 +50,39 @@ internal static class ItemSpellIds
 		}
 		catch { }
 
+		// Live enchantments (imbues on armor/jewelry) may be on EnchantmentManager even when biota registry is stale.
+		try
+		{
+			if (item.EnchantmentManager != null)
+			{
+				AddLiveEnchantmentSpellIds(item.EnchantmentManager.GetEnchantments(MagicSchool.ItemEnchantment), ids);
+				AddLiveEnchantmentSpellIds(item.EnchantmentManager.GetEnchantments(MagicSchool.CreatureEnchantment), ids);
+				AddLiveEnchantmentSpellIds(item.EnchantmentManager.GetEnchantments(MagicSchool.LifeMagic), ids);
+			}
+		}
+		catch { }
+
 		return ids.ToList();
+	}
+
+	private static void AddLiveEnchantmentSpellIds(System.Collections.IEnumerable? enchantments, HashSet<int> ids)
+	{
+		if (enchantments == null)
+			return;
+
+		foreach (object entry in enchantments)
+		{
+			if (entry == null)
+				continue;
+
+			try
+			{
+				var spellIdProp = entry.GetType().GetProperty("SpellId");
+				if (spellIdProp?.GetValue(entry) is int spellId && spellId > 0)
+					ids.Add(spellId);
+			}
+			catch { }
+		}
 	}
 
 	internal static bool LooksLikeCantripTierPrefix(string name)

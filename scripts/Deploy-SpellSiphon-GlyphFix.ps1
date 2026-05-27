@@ -140,7 +140,8 @@ if (-not $SkipSql) {
 
 Write-Host ''
 Write-Host '=== Step 3: Restart ACE ===' -ForegroundColor Cyan
-Write-Host 'Restart void-test ACE and/or C:\ACE so Spellsiphon.dll reloads.'
+Write-Host 'Restart void-test ACE and/or C:\ACE so Spellsiphon.dll AND Overtinked.dll reload.'
+Write-Host 'Both mods required for glyph fix (OvertinkedInterop skip).'
 Write-Host 'Ace_Log.txt should show:'
 Write-Host '  [Spellsiphon] Recipe hook applied (UseObjectOnTarget prefix)'
 Write-Host '  [Spellsiphon] Recipe hook applied (GetRecipe postfix, Priority.Last)'

@@ -1,0 +1,9 @@
+{
+  "Name": "Empower",
+  "Author": "Raajik",
+  "Description": "Empowered loot items with randomized stats and perks — Healing kits, salvage, and more.",
+  "Version": "1.0",
+  "Enabled": true,
+  "HotReload": true,
+  "RegisterCommands": true
+}

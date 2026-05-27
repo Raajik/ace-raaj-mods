@@ -1,0 +1,10 @@
+{
+  "Name": "ChallengeModes",
+  "Author": "",
+  "Description": "Challenge hub: /cm-only commands for SSF, hardcore, alternate leveling, aptitude (WIP), achievement XP/luminance rewards. SSF/hardcore hooks load with Enabled; players opt in via /cm. Settings: AlternateLeveling, BonusStats, ChallengeAchievementRewardsEnabled. No /iron /aptitude top-level commands.",
+  "Version": "1.0",
+  "Enabled": true,
+  "HotReload": true,
+  "RegisterCommands": true,
+  "ACEVersion": "0.0"
+}

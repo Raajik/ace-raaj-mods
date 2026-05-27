@@ -1,0 +1,287 @@
+{
+  "EnableAutoCastReagentCosts": true,
+  "EnableAlchemy": true,
+  "Alchemy": {
+    "EchoIntervalTrained": 15.0,
+    "EchoIntervalSpecialized": 10.0,
+    "EchoDuration": 360.0,
+    "PotionDropChance": 0.20,
+    "ExtraPotionRollsTrained": 2,
+    "ExtraPotionRollsSpecialized": 3,
+    "ShowEchoMessages": true
+  },
+  "EnableArcaneLore": true,
+  "ArcaneLore": {
+    "EchoSpellCasts": true,
+    "EchoDebuffSpells": true,
+    "EchoImperilSpellId": 4312,
+    "EchoFesterSpellId": 4489
+  },
+  "EnableAssessCreature": true,
+  "EnableSalvage": true,
+  "EnableCooking": true,
+  "EnableDeception": true,
+  "EnableDirtyFighting": true,
+  "DirtyFighting": {
+    "DebuffDurationSeconds": 180,
+    "AttackDebuffTrained": -20,
+    "AttackDebuffSpecialized": -40,
+    "DefenseDebuffTrained": -20,
+    "DefenseDebuffSpecialized": -40,
+    "HealDebuffTrained": -30,
+    "HealDebuffSpecialized": -60,
+    "BleedPercentTrained": 0.01,
+    "BleedPercentSpecialized": 0.02
+  },
+  "EnableDualWield": true,
+  "DualWield": {
+    "DamageResistanceTrained": 10,
+    "DamageResistanceSpecialized": 20
+  },
+  "EnableFletching": false,
+  "EnableHealing": false,
+  "EnableLeadership": true,
+  "Leadership": {
+    "ExtraCombatPetSlotsTrained": 1,
+    "ExtraCombatPetSlotsSpecialized": 2
+  },
+  "EnableLockpick": true,
+  "EnableLoyalty": true,
+  "Loyalty": {
+    "CorruptionSpellIds": [],
+    "SummoningSkillPerTier": 50,
+    "CooldownSeconds": 4.0,
+    "EnableHealingAura": true,
+    "AuraRange": 13.716,
+    "PercentMaxHealthPerSecondTrained": 0.005,
+    "PercentMaxHealthPerSecondSpecialized": 0.01
+  },
+  "EnableManaConversion": true,
+  "EnableMagicWithoutManaConversion": true,
+  "MagicWithoutManaConversion": {
+    "EchoWarVoidHarmful": true,
+    "TripleLifeHarmful": true,
+    "CreatureEnchantmentWeaveSpellId": 5622,
+    "ItemEnchantmentWeaveSpellId": 5652,
+    "WeaveStacksForPlus50": 1
+  },
+  "EnableMeleeLifeSpellProc": true,
+  "MeleeLifeSpellProc": {
+    "SpellId": 0,
+    "ProcChance": 0.12,
+    "CooldownSeconds": 4.0
+  },
+  "EnableMissileDefense": true,
+  "EnableRecklessness": true,
+  "RecklessnessCleave": {
+    "CleaveTargetsTrained": 1,
+    "CleaveTargetsSpecialized": 2,
+    "CleaveRangeMeters": 15.0,
+    "SplashDamageFraction": 0.65,
+    "CooldownSeconds": 0.35,
+    "MaxTotalExtraTargetsCap": 6,
+    "SplashPlayerVictims": false
+  },
+  "EnableShield": true,
+  "EnableSneakAttack": true,
+  "SneakAttack": {
+    "ExtraWeaponFollowUpsTrained": 1,
+    "ExtraWeaponFollowUpsSpecialized": 2,
+    "FollowUpDamageFraction": 0.32,
+    "ExtraHarmfulSpellCastsTrained": 1,
+    "ExtraHarmfulSpellCastsSpecialized": 2,
+    "AllowPlayerSpellVictims": false,
+    "AllowPlayerWeaponVictims": false
+  },
+  "EnableTrophyDrops": true,
+  "TrophyDrops": {
+    "ExtraRollsTrained": 3,
+    "ExtraRollsSpecialized": 5,
+    "MaxExtraRolls": 10,
+    "BonusTreasureChance": 0.5
+  },
+  "EnableTinkeringLootGating": false,
+  "TinkeringLootGating": {
+    "MaxLevelBonusTrained": 10,
+    "MaxLevelBonusSpecialized": 20
+  },
+  "Cooking": {
+    "CookingUseLegacySpellBuffs": false,
+    "// CookingRegenPercentPerTickTrained": "5% max vital per 5-second tick when healthy (trained)",
+    "CookingRegenPercentPerTickTrained": 0.01,
+    "// CookingRegenPercentPerTickSpecialized": "10% max vital per 5-second tick when healthy (specialized), or per 1-second when low",
+    "CookingRegenPercentPerTickSpecialized": 0.02,
+    "// CookingFastRegenVitalThreshold": "Below 30% HP/stamina/mana = 1-second ticks, above = 5-second ticks",
+    "CookingFastRegenVitalThreshold": 0.30,
+    "LegendaryHealthSpell": 6077,
+    "LegendaryStaminaSpell": 6076,
+    "LegendaryManaSpell": 6078,
+    "ProdigalHealthSpell": 3731,
+    "ProdigalStaminaSpell": 3732,
+    "ProdigalManaSpell": 3725
+  },
+  "Recuperation": {
+    "HotDurationSeconds": 15.0,
+    "HotTickSeconds": 1.0,
+    "BaseSkillPercentPerTick": 0.025,
+    "SpecializedMultiplier": 2.0,
+    "EnableHealthKits": true,
+    "EnableStaminaKits": true,
+    "EnableManaKits": true,
+    "EnableDebugMessages": false
+  },
+  "ManaConversion": {
+    "CleaveTargetsTrained": 1,
+    "CleaveTargetsSpecialized": 2,
+    "CleaveRange": 15.0,
+    "EquipmentManaEfficiencyTrained": 0.25,
+    "EquipmentManaEfficiencySpecialized": 0.50
+  },
+  "Salvage": {
+    "UnitsPerItem": 1,
+    "AutoDepositPercent": 0.001,
+    "AutoDepositPercentUnlocked": 0.0005,
+    "RequireQuestsForUnlock": 100,
+    "DefaultAutoSalvageEnabled": true
+  },
+  "EnableSummoningClasses": true,
+  "SummoningClasses": {
+    "SummonDurationSeconds": 30,
+    "AutoSummonObjScaleMultiplier": 0.5,
+    "AutoSummonMoveSpeedMultiplier": 10,
+    "MasteryDamageRatingBonus": 10,
+    "PetAwarenessRange": 5.0,
+    "FollowDistanceThreshold": 15.0,
+    "FollowWhileOwnerMoving": true,
+    "MoveFollowDistanceThreshold": 6.0,
+    "FollowMaxDistanceBeforeDestroy": 250.0,
+    "BlockPetWarVoidRingWallSpells": false,
+    "BlockPetProjectileDamageToOwner": true,
+    "ArtificerWispMeleeMinCycleSeconds": 0.5,
+    "ArtificerWispImperilDrainProcChance": 1.0,
+    "ArtificerWispProcMaxSpellTier": 8,
+    "ArtificerWispProcAoERadiusMeters": 10.0,
+    "EnableCantripBonusPets": true,
+    "CantripBonusPetsLegendarySpellId": 0,
+    "Druid": {
+      "Enabled": true,
+      "TotalCap": 4,
+      "PetTypes": {
+        "Wasps": { "Enabled": true, "Count": 4 },
+        "Grievvers": { "Enabled": false, "Count": 4 },
+        "Moars": { "Enabled": false, "Count": 4 },
+        "Custom1": { "Enabled": false, "Count": 4 },
+        "Custom2": { "Enabled": false, "Count": 4 },
+        "Custom3": { "Enabled": false, "Count": 4 }
+      }
+    },
+    "Elementalist": {
+      "Enabled": true,
+      "TotalCap": 4,
+      "PetTypes": {
+        "Elementals": { "Enabled": true, "Count": 4 },
+        "K'naths": { "Enabled": false, "Count": 4 },
+        "Wisps": { "Enabled": false, "Count": 4 },
+        "Golems": { "Enabled": false, "Count": 4 },
+        "Grievvers": { "Enabled": false, "Count": 4 },
+        "Moars": { "Enabled": false, "Count": 4 },
+        "Custom1": { "Enabled": false, "Count": 4 },
+        "Custom2": { "Enabled": false, "Count": 4 },
+        "Custom3": { "Enabled": false, "Count": 4 }
+      }
+    },
+    "Necromancer": {
+      "Enabled": true,
+      "TotalCap": 10,
+      "PetTypes": {
+        "Skeletons": { "Enabled": true, "Count": 4 },
+        "Spectres": { "Enabled": true, "Count": 4 },
+        "Zombies": { "Enabled": true, "Count": 4 },
+        "Custom1": { "Enabled": false, "Count": 4 },
+        "Custom2": { "Enabled": false, "Count": 4 },
+        "Custom3": { "Enabled": false, "Count": 4 }
+      }
+    },
+    "Enchanter": {
+      "Enabled": true,
+      "TotalCap": 10,
+      "PetTypes": {
+        "Golems": { "Enabled": true, "Count": 4 },
+        "Custom1": { "Enabled": false, "Count": 4 },
+        "Custom2": { "Enabled": false, "Count": 4 },
+        "Custom3": { "Enabled": false, "Count": 4 }
+      }
+    },
+    "Artificer": {
+      "Enabled": true,
+      "TotalCap": 1,
+      "PetTypes": {
+        "Wisps": { "Enabled": true, "Count": 1 },
+        "Custom1": { "Enabled": false, "Count": 4 },
+        "Custom2": { "Enabled": false, "Count": 4 },
+        "Custom3": { "Enabled": false, "Count": 4 }
+      }
+    }
+  },
+  "EnableDruidPetThorns": true,
+  "DruidPetThorns": {
+    "Enabled": true,
+    "AoERadius": 5.0,
+    "DamageMultiplier": 1.0
+  },
+  "EnableCombatClasses": true,
+  "CombatClasses": {
+    "Rogue": {
+      "BleedPercentPerHit": 0.005,
+      "BleedTicks": 10,
+      "BleedIntervalSeconds": 1.0,
+      "DebuffMultiplier": 2.0
+    },
+    "Berserker": {
+      "LifeStealPercent": 0.08,
+      "LifeStealMaxPerHit": 50
+    },
+    "Crusader": {
+      "PassiveHealPercentPerSecond": 0.01,
+      "CritDamageMultiplier": 1.5,
+      "ThornsMultiplier": 2.0,
+      "ThornsOnAllHits": true
+    },
+    "Windwalker": {
+      "SkillPerTier": 150,
+      "StreakRangeMeters": 15.0,
+      "EchoEnabled": true,
+      "ManaCostMultiplier": 0.5
+    },
+    "Battlemage": {
+      "EchoEnabled": true,
+      "ManaCostMultiplier": 0.5
+    },
+    "DeathKnight": {
+      "AuraRangeMeters": 15.0,
+      "AuraDamagePerTick": 5,
+      "AuraTickSeconds": 1.0,
+      "SkillPerTier": 150,
+      "MaxVoidSpellTier": 2,
+      "EchoEnabled": true,
+      "ManaCostMultiplier": 0
+    },
+    "Bloodmage": {
+      "EchoCount": 5,
+      "EchoTierDrop": 1,
+      "DrainSpellRangeMeters": 15.0,
+      "AuraRangeMeters": 15.0,
+      "AuraDrainPerTick": 1,
+      "AuraTickSeconds": 1.0,
+      "ManaCostMultiplier": 0.5
+    },
+    "Adventurer": {
+      "Enabled": false,
+      "AttributeBonus": 50,
+      "SkillBonus": 50,
+      "VitalPercentBonus": 0.20,
+      "ResistanceBonus": 10,
+      "BurdenLimitBonusRanks": 2
+    }
+  }
+}

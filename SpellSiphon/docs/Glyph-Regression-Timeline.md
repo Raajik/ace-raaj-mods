@@ -6,7 +6,7 @@ Use this when tier 0 / vendor behavior regressed after SQL or tier 9 work.
 
 | Symptom | Likely cause |
 |--------|----------------|
-| `The Glyph of Extraction cannot be used on the …` (Overtinked craft text) | `GetRecipe` returned null — old DLL, wrong Harmony target, or spells not read from imbues |
+| `The Glyph of Extraction cannot be used on the …` (Overtinked craft text) | **Harmony runs Overtinked's `UseObjectOnTarget` prefix after Spellsiphon's** — Overtinked called `GetRecipe` before injection. Fix: Spellsiphon runs craft directly + `Overtinked/SpellsiphonInterop.cs` skips Overtinked for glyph/Spellsiphon tools. **Deploy both `Spellsiphon.dll` and `Overtinked.dll`.** |
 | `[Spellsiphon] … no valid extraction targets` | Tier filter or spell list empty (different code path; fix is working) |
 | Glyphs missing at jewelers | Vendor inject before BLC `LoadInventory`, or weenie 850210–850219 missing in world DB |
 | Glyph works on gems but not imbued armor | Pre-fix `ReadItemSpellIds` skipped `PropertiesEnchantmentRegistry` / live `EnchantmentManager` |

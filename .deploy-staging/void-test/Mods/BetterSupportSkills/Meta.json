@@ -1,9 +1,0 @@
-{
-  "Name": "BetterSupportSkills",
-  "Author": "Raajik",
-  "Description": "Substantial bonuses to often-overlooked secondary skills in Asheron's Call.",
-  "Version": "1.0",
-  "Enabled": true,
-  "HotReload": true,
-  "RegisterCommands": true
-}
